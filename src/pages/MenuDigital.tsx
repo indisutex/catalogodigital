@@ -1,16 +1,17 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Producto } from '../types';
-import { Loader2, Search, MessageCircle, Info, Calendar } from 'lucide-react';
+import { Loader2, Search, Plus, Info, Calendar, ShoppingBag, X, Minus } from 'lucide-react';
+import { useCart } from '../context/CartContext';
 import './MenuDigital.css';
 
 export default function MenuDigital() {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [cargando, setCargando] = useState(true);
   const [filtroCategoria, setFiltroCategoria] = useState<string>('todos');
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
-  // Asegúrate de cambiar esto por tu número real
-  const whatsappNumber = '1234567890'; 
+  const { items, addToCart, removeFromCart, updateQuantity, total } = useCart();
 
   useEffect(() => {
     async function cargarProductos() {
@@ -32,15 +33,11 @@ export default function MenuDigital() {
     cargarProductos();
   }, []);
 
-  const handlePedir = (producto: Producto) => {
-    const message = `Hola! Me interesa pedir del menú:\n\n*${producto.nombre}*\nPrecio: $${producto.precio.toFixed(2)}`;
-    const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
-    window.open(url, '_blank');
-  };
-
   const productosFiltrados = filtroCategoria === 'todos' 
     ? productos 
     : productos.filter(p => p.categoria === filtroCategoria);
+
+  const totalItems = items.reduce((sum, item) => sum + item.cantidad, 0);
 
   return (
     <div className="menu-app-container">
@@ -134,16 +131,80 @@ export default function MenuDigital() {
                 </div>
                 <button 
                   className="item-add-btn" 
-                  onClick={() => handlePedir(producto)}
-                  aria-label="Pedir por WhatsApp"
+                  onClick={() => addToCart(producto)}
+                  aria-label="Añadir al carrito"
                 >
-                  <MessageCircle size={20} />
+                  <Plus size={20} />
                 </button>
               </div>
             ))
           )}
         </div>
       </div>
+
+      {/* Floating Cart Button */}
+      {totalItems > 0 && (
+        <button className="floating-cart-btn" onClick={() => setIsCartOpen(true)}>
+          <div className="cart-icon-wrapper">
+            <ShoppingBag size={24} />
+            <span className="cart-badge">{totalItems}</span>
+          </div>
+          <span className="cart-total-float">Ver Carrito - ${total.toFixed(2)}</span>
+        </button>
+      )}
+
+      {/* Cart Modal */}
+      {isCartOpen && (
+        <div className="cart-modal-overlay">
+          <div className="cart-modal">
+            <div className="cart-header">
+              <h3>Tu Pedido</h3>
+              <button onClick={() => setIsCartOpen(false)} className="close-btn"><X size={24} /></button>
+            </div>
+            
+            <div className="cart-items">
+              {items.length === 0 ? (
+                <p className="empty-cart">Tu carrito está vacío.</p>
+              ) : (
+                items.map(item => (
+                  <div key={item.id} className="cart-item">
+                    <div className="cart-item-img">
+                      {item.imagen_url ? <img src={item.imagen_url} alt={item.nombre} /> : <div className="img-placeholder-small"></div>}
+                    </div>
+                    <div className="cart-item-info">
+                      <h5>{item.nombre}</h5>
+                      <p>${item.precio.toFixed(2)}</p>
+                    </div>
+                    <div className="cart-item-actions">
+                      <button onClick={() => updateQuantity(item.id, item.cantidad - 1)} disabled={item.cantidad <= 1}><Minus size={14}/></button>
+                      <span>{item.cantidad}</span>
+                      <button onClick={() => updateQuantity(item.id, item.cantidad + 1)}><Plus size={14}/></button>
+                      <button className="remove-btn" onClick={() => removeFromCart(item.id)}><X size={14}/></button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="cart-footer">
+              <div className="cart-total">
+                <span>Total:</span>
+                <span>${total.toFixed(2)}</span>
+              </div>
+              <button 
+                className="checkout-btn" 
+                disabled={items.length === 0}
+                onClick={() => {
+                  alert("Procediendo al Checkout...");
+                  // Aquí conectaremos Stripe después
+                }}
+              >
+                Pagar Pedido
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
