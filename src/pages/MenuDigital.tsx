@@ -166,6 +166,44 @@ export default function MenuDigital() {
           </div>
         </div>
 
+        {/* Subcategories Filter Chips */}
+        {filtroCategoria === 'bebe' && (
+          <div style={{display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '0.5rem', paddingLeft: '0.5rem'}}>
+            <button 
+              onClick={() => setFiltroSubcategoria('todas')}
+              style={{
+                padding: '0.4rem 1rem', borderRadius: '20px', border: 'none', fontWeight: 700, fontSize: '0.8rem',
+                backgroundColor: filtroSubcategoria === 'todas' ? 'var(--primary)' : '#eee',
+                color: filtroSubcategoria === 'todas' ? 'white' : '#555', cursor: 'pointer', whiteSpace: 'nowrap'
+              }}
+            >Todas</button>
+            <button 
+              onClick={() => setFiltroSubcategoria('mamelucos')}
+              style={{
+                padding: '0.4rem 1rem', borderRadius: '20px', border: 'none', fontWeight: 700, fontSize: '0.8rem',
+                backgroundColor: filtroSubcategoria === 'mamelucos' ? 'var(--primary)' : '#eee',
+                color: filtroSubcategoria === 'mamelucos' ? 'white' : '#555', cursor: 'pointer', whiteSpace: 'nowrap'
+              }}
+            >Mamelucos</button>
+            <button 
+              onClick={() => setFiltroSubcategoria('pijamas')}
+              style={{
+                padding: '0.4rem 1rem', borderRadius: '20px', border: 'none', fontWeight: 700, fontSize: '0.8rem',
+                backgroundColor: filtroSubcategoria === 'pijamas' ? 'var(--primary)' : '#eee',
+                color: filtroSubcategoria === 'pijamas' ? 'white' : '#555', cursor: 'pointer', whiteSpace: 'nowrap'
+              }}
+            >Pijamas</button>
+            <button 
+              onClick={() => setFiltroSubcategoria('conjuntos')}
+              style={{
+                padding: '0.4rem 1rem', borderRadius: '20px', border: 'none', fontWeight: 700, fontSize: '0.8rem',
+                backgroundColor: filtroSubcategoria === 'conjuntos' ? 'var(--primary)' : '#eee',
+                color: filtroSubcategoria === 'conjuntos' ? 'white' : '#555', cursor: 'pointer', whiteSpace: 'nowrap'
+              }}
+            >Conjuntos</button>
+          </div>
+        )}
+
         {/* Product List */}
         <div className="menu-list">
           {cargando ? (
