@@ -239,8 +239,8 @@ export default function Admin() {
 
   if (!isAuthenticated) {
     return (
-      <div className="admin-login-container">
-        <form onSubmit={handleLogin} className="admin-login-form">
+      <div className="pin-screen">
+        <form onSubmit={handleLogin} style={{display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem'}}>
           <h2>🔐 Acceso Administrativo</h2>
           <input 
             type="password" 
@@ -249,7 +249,7 @@ export default function Admin() {
             placeholder="Introduce el PIN" 
             autoFocus
           />
-          <button type="submit">Ingresar</button>
+          <button type="submit" style={{padding: '0.8rem 2rem', background: 'var(--primary)', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '1.2rem', cursor: 'pointer'}}>Ingresar</button>
         </form>
       </div>
     );
