@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Producto } from '../types';
 import './Admin.css';
-import { Plus, X, Video, Image as ImageIcon } from 'lucide-react';
+import { Plus, X, Video } from 'lucide-react';
 
 const SECRET_PIN = '0000';
 
