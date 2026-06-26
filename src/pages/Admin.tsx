@@ -749,6 +749,74 @@ export default function Admin() {
                       </div>
                     ))
                   )}
+                 </div>
+               </div>
+             </div>
+           )}
+
+          {/* ── SUBCATEGORIES PANEL ── */}
+          {activeTab === 'categorias' && (
+            <div className="admin-panel" style={{ marginTop: '1.5rem' }}>
+              <div className="panel-header">
+                <div>
+                  <h3><Tag size={16} /> Gestión de Subcategorías</h3>
+                  <p>Crea subcategorías dentro de cada categoría</p>
+                </div>
+              </div>
+              <div className="panel-body">
+                <form onSubmit={handleCreateSubcategory}>
+                  <div className="form-grid" style={{ marginBottom: '1.5rem' }}>
+                    <div className="form-field">
+                      <label>Categoría Padre *</label>
+                      <select value={subcatParentId} onChange={e => setSubcatParentId(e.target.value)} required>
+                        <option value="">-- Seleccionar categoría --</option>
+                        {categoriasData.map(c => (
+                          <option key={c.id} value={c.id}>{c.icono} {c.nombre}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-field">
+                      <label>Nombre de la Subcategoría *</label>
+                      <input required value={subcatNombre} onChange={e => setSubcatNombre(e.target.value)} placeholder="Ej: Pijamas" />
+                    </div>
+                    <div className="form-field">
+                      <label>Slug (auto si vacío)</label>
+                      <input value={subcatSlug} onChange={e => setSubcatSlug(e.target.value)} placeholder="Ej: pijamas" />
+                    </div>
+                  </div>
+                  <button type="submit" className="btn-primary" disabled={loading}>
+                    <Plus size={14} /> {loading ? 'Creando...' : 'Crear Subcategoría'}
+                  </button>
+                </form>
+
+                <hr className="divider" style={{ margin: '1.5rem 0' }} />
+                <p style={{ fontSize: '0.78rem', color: '#555', marginBottom: '1rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Subcategorías Activas</p>
+                <div className="category-list">
+                  {subcategoriasData.length === 0 ? (
+                    <div className="empty-state">
+                      <div className="es-icon">📂</div>
+                      <h4>Sin subcategorías</h4>
+                      <p>Crea tu primera subcategoría arriba</p>
+                    </div>
+                  ) : (
+                    subcategoriasData.map(s => {
+                      const parentCat = categoriasData.find(c => c.id === s.categoria_id);
+                      return (
+                        <div key={s.id} className="category-row">
+                          <div className="cat-color-dot" style={{ background: parentCat?.color || '#888' }}>
+                            {parentCat?.icono || '📂'}
+                          </div>
+                          <div className="cat-row-info">
+                            <h4>{s.nombre}</h4>
+                            <p>/{s.slug} · en {parentCat?.nombre || 'Categoría eliminada'}</p>
+                          </div>
+                          <button className="btn-danger" onClick={() => handleDeleteSubcategory(s.id)}>
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
               </div>
             </div>

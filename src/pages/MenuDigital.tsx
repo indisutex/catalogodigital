@@ -115,19 +115,18 @@ export default function MenuDigital() {
         <div className="stars-overlay"></div>
         <div className="menu-app-logo">
           {configuracion?.logo_url ? (
-            <img src={configuracion.logo_url} alt="Logo" style={{height: '45px', objectFit: 'contain'}} />
+            <img
+              src={configuracion.logo_url}
+              alt="Logo"
+              className="store-logo-round"
+            />
           ) : (
-            <>
+            <div className="store-logo-round store-logo-placeholder">
                <span className="logo-letter c1">M</span>
                <span className="logo-letter c2">o</span>
                <span className="logo-letter c3">z</span>
                <span className="logo-letter c4">t</span>
-               <span className="logo-letter c1">a</span>
-               <span className="logo-letter c2">c</span>
-               <span className="logo-letter c3">i</span>
-               <span className="logo-letter c4">t</span>
-               <span className="logo-letter c1">o</span>
-            </>
+            </div>
           )}
         </div>
         <p className="menu-app-subtitle">{configuracion?.descripcion_hero || 'TIENDA & BABY'}</p>
