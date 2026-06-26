@@ -138,18 +138,6 @@
   border-radius: 50%;
 }
 
-.header-scallop-border {
-  height: 15px;
-  background-image: radial-gradient(circle at 10px 0, transparent 10px, white 11px);
-  background-size: 20px 15px;
-  background-repeat: repeat-x;
-  width: 100%;
-  position: absolute;
-  bottom: -14px;
-  left: 0;
-  z-index: 5;
-}
-
 .layout-content {
   display: flex;
   flex-direction: column;
@@ -179,39 +167,35 @@
 }
 
 .sidebar-menu {
-  background-color: var(--secondary);
-  border-radius: 20px;
+  background-color: var(--surface);
+  border-radius: var(--radius-lg);
   padding: 1.5rem 0;
   display: flex;
   flex-direction: column;
-  box-shadow: var(--shadow-md);
-  position: relative;
-  /* Use mask for clean scalloped edges without corner bleed */
-  -webkit-mask-image: radial-gradient(circle at 15px 0px, transparent 12px, black 13px), radial-gradient(circle at 15px 100%, transparent 12px, black 13px), linear-gradient(black, black);
-  -webkit-mask-size: 30px 20px, 30px 20px, 100% calc(100% - 40px);
-  -webkit-mask-position: top left, bottom left, center;
-  -webkit-mask-repeat: repeat-x, repeat-x, no-repeat;
-  mask-image: radial-gradient(circle at 15px 0px, transparent 12px, black 13px), radial-gradient(circle at 15px 100%, transparent 12px, black 13px), linear-gradient(black, black);
-  mask-size: 30px 20px, 30px 20px, 100% calc(100% - 40px);
-  mask-position: top left, bottom left, center;
-  mask-repeat: repeat-x, repeat-x, no-repeat;
-  padding: 2.5rem 0; /* extra padding to account for the cutouts */
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
 }
 
 .sidebar-link {
   display: flex;
   align-items: center;
   gap: 1rem;
-  padding: 0.8rem 1.5rem;
-  color: white;
-  font-family: 'Fredoka', cursive;
-  font-weight: 500;
-  font-size: 1.1rem;
-  transition: background-color 0.2s ease;
+  padding: 0.8rem 2rem;
+  color: var(--text-main);
+  text-decoration: none;
+  font-weight: 600;
+  transition: all 0.2s ease;
 }
 
 .sidebar-link:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(146, 208, 219, 0.1);
+  color: var(--primary);
+}
+
+.sidebar-link.active {
+  background-color: rgba(243, 107, 142, 0.08);
+  color: var(--primary);
+  border-right: 4px solid var(--primary);
 }
 
 .sidebar-icon-wrapper {
@@ -230,11 +214,12 @@
 .sidebar-icon-wrapper.i4 { color: #8ab4f8; }
 
 .newsletter-box {
-  background-color: #f7f1e3;
+  background: linear-gradient(135deg, rgba(247, 241, 227, 0.5), rgba(247, 241, 227, 0.9));
   padding: 2rem 1.5rem;
   border-radius: var(--radius-lg);
   text-align: center;
   box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
 }
 
 .newsletter-box h4 {

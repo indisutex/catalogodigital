@@ -32,8 +32,12 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  padding: 1.5rem;
-  border-radius: var(--radius-lg);
+  padding: 1rem 1.5rem;
+  border-radius: var(--radius-pill);
+  background-color: var(--surface);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border);
+  margin-bottom: 2rem;
 }
 
 @media (min-width: 768px) {

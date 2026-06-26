@@ -44,7 +44,6 @@ export default function Layout() {
             </button>
           </div>
         </div>
-        <div className="header-scallop-border"></div>
       </header>
 
       <div className="layout-content container">
