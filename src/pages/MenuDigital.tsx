@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
-import type { Producto } from '../types';
+import type { Producto, Categoria, Subcategoria, Configuracion } from '../types';
 import { Loader2, Search, Plus, Info, Calendar, ShoppingBag, X } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import './MenuDigital.css';
 
 export default function MenuDigital() {
   const [productos, setProductos] = useState<Producto[]>([]);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
+  const [configuracion, setConfiguracion] = useState<Configuracion | null>(null);
   const [cargando, setCargando] = useState(true);
+  
   const [filtroCategoria, setFiltroCategoria] = useState<string>('todos');
   const [filtroSubcategoria, setFiltroSubcategoria] = useState<string>('todas');
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const [isCheckoutMode, setIsCheckoutMode] = useState(false);
   
   // Size Selection State
   const [sizeModalProduct, setSizeModalProduct] = useState<Producto | null>(null);
@@ -26,22 +28,26 @@ export default function MenuDigital() {
   const { items, addToCart, removeFromCart, updateQuantity, total, clearCart } = useCart();
 
   useEffect(() => {
-    async function cargarProductos() {
+    async function cargarDatos() {
       try {
-        const { data, error } = await supabase
-          .from('productos')
-          .select('*')
-          .order('created_at', { ascending: false });
+        const [prodRes, catRes, subcatRes, confRes] = await Promise.all([
+          supabase.from('productos').select('*').order('created_at', { ascending: false }),
+          supabase.from('categorias').select('*').order('orden', { ascending: true }),
+          supabase.from('subcategorias').select('*').order('orden', { ascending: true }),
+          supabase.from('configuracion').select('*').limit(1).single()
+        ]);
         
-        if (error) throw error;
-        if (data) setProductos(data);
+        if (prodRes.data) setProductos(prodRes.data);
+        if (catRes.data) setCategorias(catRes.data);
+        if (subcatRes.data) setSubcategorias(subcatRes.data);
+        if (confRes.data) setConfiguracion(confRes.data);
       } catch (err) {
-        console.error('Error cargando productos:', err);
+        console.error('Error cargando datos:', err);
       } finally {
         setCargando(false);
       }
     }
-    cargarProductos();
+    cargarDatos();
   }, []);
 
   const handleAddClick = (producto: Producto) => {
@@ -61,10 +67,10 @@ export default function MenuDigital() {
 
   let productosFiltrados = filtroCategoria === 'todos' 
     ? productos 
-    : productos.filter(p => p.categoria === filtroCategoria);
+    : productos.filter(p => p.categoria === filtroCategoria || p.categoria === categorias.find(c => c.slug === filtroCategoria)?.nombre);
 
-  if (filtroCategoria === 'bebe' && filtroSubcategoria !== 'todas') {
-    productosFiltrados = productosFiltrados.filter(p => p.subcategoria === filtroSubcategoria);
+  if (filtroCategoria !== 'todos' && filtroSubcategoria !== 'todas') {
+    productosFiltrados = productosFiltrados.filter(p => p.subcategoria === filtroSubcategoria || p.subcategoria === subcategorias.find(s => s.slug === filtroSubcategoria)?.nombre);
   }
 
   const totalItems = items.reduce((sum, item) => sum + item.cantidad, 0);
@@ -87,7 +93,7 @@ export default function MenuDigital() {
     mensaje += `\n*TOTAL:* $${total.toFixed(2)}\n\n`;
     mensaje += `Por favor indícame los métodos de pago para confirmar mi compra.`;
 
-    const numeroWhatsApp = '573185637317'; // Actualizado con tu número
+    const numeroWhatsApp = configuracion?.whatsapp || '573185637317';
     const url = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
     
     window.open(url, '_blank');
@@ -105,17 +111,23 @@ export default function MenuDigital() {
       <div className="menu-app-header">
         <div className="stars-overlay"></div>
         <div className="menu-app-logo">
-           <span className="logo-letter c1">M</span>
-           <span className="logo-letter c2">o</span>
-           <span className="logo-letter c3">z</span>
-           <span className="logo-letter c4">t</span>
-           <span className="logo-letter c1">a</span>
-           <span className="logo-letter c2">c</span>
-           <span className="logo-letter c3">i</span>
-           <span className="logo-letter c4">t</span>
-           <span className="logo-letter c1">o</span>
+          {configuracion?.logo_url ? (
+            <img src={configuracion.logo_url} alt="Logo" style={{height: '45px', objectFit: 'contain'}} />
+          ) : (
+            <>
+               <span className="logo-letter c1">M</span>
+               <span className="logo-letter c2">o</span>
+               <span className="logo-letter c3">z</span>
+               <span className="logo-letter c4">t</span>
+               <span className="logo-letter c1">a</span>
+               <span className="logo-letter c2">c</span>
+               <span className="logo-letter c3">i</span>
+               <span className="logo-letter c4">t</span>
+               <span className="logo-letter c1">o</span>
+            </>
+          )}
         </div>
-        <p className="menu-app-subtitle">TIENDA & BABY</p>
+        <p className="menu-app-subtitle">{configuracion?.descripcion_hero || 'TIENDA & BABY'}</p>
         
         <div className="menu-app-actions">
           <button className="pill-btn"><span className="status-dot"></span> ABIERTO</button>
@@ -143,31 +155,26 @@ export default function MenuDigital() {
             </div>
           </div>
           
-          <div 
-            className={`category-card ${filtroCategoria === 'bebe' ? 'active' : ''}`}
-            onClick={() => setFiltroCategoria('bebe')}
-          >
-            <div className="cat-img-placeholder" style={{backgroundColor: '#92d0db'}}>👶</div>
-            <div className="cat-info">
-              <h3>ROPA DE BEBÉS</h3>
-              <p>{productos.filter(p=>p.categoria === 'bebe').length} ITEMS</p>
+          {categorias.map(cat => (
+            <div 
+              key={cat.id}
+              className={`category-card ${filtroCategoria === cat.slug ? 'active' : ''}`}
+              onClick={() => {
+                setFiltroCategoria(cat.slug);
+                setFiltroSubcategoria('todas');
+              }}
+            >
+              <div className="cat-img-placeholder" style={{backgroundColor: cat.color || '#eee'}}>{cat.icono}</div>
+              <div className="cat-info">
+                <h3>{cat.nombre.toUpperCase()}</h3>
+                <p>{productos.filter(p=>p.categoria === cat.slug || p.categoria === cat.nombre).length} ITEMS</p>
+              </div>
             </div>
-          </div>
-
-          <div 
-            className={`category-card ${filtroCategoria === 'pijamas' ? 'active' : ''}`}
-            onClick={() => setFiltroCategoria('pijamas')}
-          >
-            <div className="cat-img-placeholder" style={{backgroundColor: '#eab951'}}>🌙</div>
-            <div className="cat-info">
-              <h3>PIJAMAS INFANTILES</h3>
-              <p>{productos.filter(p=>p.categoria === 'pijamas').length} ITEMS</p>
-            </div>
-          </div>
+          ))}
         </div>
 
         {/* Subcategories Filter Chips */}
-        {filtroCategoria === 'bebe' && (
+        {filtroCategoria !== 'todos' && subcategorias.filter(s => s.categoria_id === categorias.find(c => c.slug === filtroCategoria)?.id).length > 0 && (
           <div style={{display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '0.5rem', paddingLeft: '0.5rem'}}>
             <button 
               onClick={() => setFiltroSubcategoria('todas')}
@@ -177,30 +184,21 @@ export default function MenuDigital() {
                 color: filtroSubcategoria === 'todas' ? 'white' : '#555', cursor: 'pointer', whiteSpace: 'nowrap'
               }}
             >Todas</button>
-            <button 
-              onClick={() => setFiltroSubcategoria('mamelucos')}
-              style={{
-                padding: '0.4rem 1rem', borderRadius: '20px', border: 'none', fontWeight: 700, fontSize: '0.8rem',
-                backgroundColor: filtroSubcategoria === 'mamelucos' ? 'var(--primary)' : '#eee',
-                color: filtroSubcategoria === 'mamelucos' ? 'white' : '#555', cursor: 'pointer', whiteSpace: 'nowrap'
-              }}
-            >Mamelucos</button>
-            <button 
-              onClick={() => setFiltroSubcategoria('pijamas')}
-              style={{
-                padding: '0.4rem 1rem', borderRadius: '20px', border: 'none', fontWeight: 700, fontSize: '0.8rem',
-                backgroundColor: filtroSubcategoria === 'pijamas' ? 'var(--primary)' : '#eee',
-                color: filtroSubcategoria === 'pijamas' ? 'white' : '#555', cursor: 'pointer', whiteSpace: 'nowrap'
-              }}
-            >Pijamas</button>
-            <button 
-              onClick={() => setFiltroSubcategoria('conjuntos')}
-              style={{
-                padding: '0.4rem 1rem', borderRadius: '20px', border: 'none', fontWeight: 700, fontSize: '0.8rem',
-                backgroundColor: filtroSubcategoria === 'conjuntos' ? 'var(--primary)' : '#eee',
-                color: filtroSubcategoria === 'conjuntos' ? 'white' : '#555', cursor: 'pointer', whiteSpace: 'nowrap'
-              }}
-            >Conjuntos</button>
+            
+            {subcategorias
+              .filter(s => s.categoria_id === categorias.find(c => c.slug === filtroCategoria)?.id)
+              .map(subcat => (
+                <button 
+                  key={subcat.id}
+                  onClick={() => setFiltroSubcategoria(subcat.slug)}
+                  style={{
+                    padding: '0.4rem 1rem', borderRadius: '20px', border: 'none', fontWeight: 700, fontSize: '0.8rem',
+                    backgroundColor: filtroSubcategoria === subcat.slug ? 'var(--primary)' : '#eee',
+                    color: filtroSubcategoria === subcat.slug ? 'white' : '#555', cursor: 'pointer', whiteSpace: 'nowrap'
+                  }}
+                >{subcat.nombre}</button>
+              ))
+            }
           </div>
         )}
 

@@ -28,11 +28,19 @@ const emptyProduct: ProductFormData = {
   tallas: ''
 };
 
+type TabType = 'productos' | 'categorias' | 'config';
+
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [pinInput, setPinInput] = useState('');
+  const [pin, setPin] = useState('');
   
+  const [activeTab, setActiveTab] = useState<TabType>('productos');
+  
+  // Products State
   const [productos, setProductos] = useState<Producto[]>([]);
+  const [categoriasData, setCategoriasData] = useState<Categoria[]>([]);
+  const [subcategoriasData, setSubcategoriasData] = useState<Subcategoria[]>([]);
+  const [configuracion, setConfiguracion] = useState<Configuracion | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Bulk Add State
@@ -49,20 +57,30 @@ export default function Admin() {
   }, [isAuthenticated]);
 
   async function cargarProductos() {
-    const { data } = await supabase
-      .from('productos')
-      .select('*')
-      .order('created_at', { ascending: false });
-    if (data) setProductos(data);
+    try {
+      const [prodRes, catRes, subcatRes, confRes] = await Promise.all([
+        supabase.from('productos').select('*').order('created_at', { ascending: false }),
+        supabase.from('categorias').select('*').order('orden', { ascending: true }),
+        supabase.from('subcategorias').select('*').order('orden', { ascending: true }),
+        supabase.from('configuracion').select('*').limit(1).single()
+      ]);
+
+      if (prodRes.data) setProductos(prodRes.data);
+      if (catRes.data) setCategoriasData(catRes.data);
+      if (subcatRes.data) setSubcategoriasData(subcatRes.data);
+      if (confRes.data) setConfiguracion(confRes.data);
+    } catch (err) {
+      console.error('Error cargando datos:', err);
+    }
   }
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (pinInput === SECRET_PIN) {
+    if (pin === SECRET_PIN) {
       setIsAuthenticated(true);
     } else {
       alert('PIN Incorrecto');
-      setPinInput('');
+      setPin('');
     }
   };
 
@@ -80,7 +98,6 @@ export default function Admin() {
       tallas: producto.tallas || ''
     });
     
-    // Scroll to top
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -138,43 +155,50 @@ export default function Admin() {
     setBulkForms(newForms);
   };
 
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, index: number) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setLoading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage
+        .from('archivos')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
+      updateBulkForm(index, 'imagen_url', data.publicUrl);
+    } catch (error) {
+      console.error('Error uploading:', error);
+      alert('Error al subir archivo');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleAutoFill = async (index: number) => {
-    const url = prompt('🔗 Pega el enlace completo de Temu aquí:');
+    const url = prompt('🔗 Pega el enlace de Temu:');
     if (!url) return;
     
     setLoading(true);
     try {
-      // Usamos el endpoint raw para obtener el HTML directo
       const response = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`);
-      if (!response.ok) throw new Error('Proxy falló');
-      
       const html = await response.text();
-      
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
       
-      let title = doc.querySelector('meta[property="og:title"]')?.getAttribute('content') || doc.querySelector('title')?.innerText || '';
-      title = title.replace(/\| Temu.*/g, '').trim();
-      
-      const desc = doc.querySelector('meta[name="description"]')?.getAttribute('content') || doc.querySelector('meta[property="og:description"]')?.getAttribute('content') || '';
-      
+      const title = doc.querySelector('meta[property="og:title"]')?.getAttribute('content')?.replace(/\| Temu.*/g, '').trim() || '';
+      const desc = doc.querySelector('meta[name="description"]')?.getAttribute('content') || '';
       const img = doc.querySelector('meta[property="og:image"]')?.getAttribute('content') || '';
       
-      if (!title && !img) {
-        throw new Error('No se encontraron metaetiquetas. Temu bloqueó la petición por ser un robot.');
-      }
-
       const newForms = [...bulkForms];
-      newForms[index] = {
-        ...newForms[index],
-        nombre: title || newForms[index].nombre,
-        descripcion: desc || newForms[index].descripcion,
-        imagen_url: img || newForms[index].imagen_url
-      };
+      newForms[index] = { ...newForms[index], nombre: title, descripcion: desc, imagen_url: img };
       setBulkForms(newForms);
     } catch (err) {
-      console.error('AutoFill Error:', err);
-      alert('Error al extraer datos de Temu. Puede que el enlace sea inválido o Temu esté bloqueando la conexión. Por favor, ingresa los datos manualmente.');
+      alert('Error al extraer datos. Intenta manualmente.');
     }
     setLoading(false);
   };
@@ -182,15 +206,7 @@ export default function Admin() {
   const handleBulkSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
-    // Filter out completely empty rows
     const validForms = bulkForms.filter(f => f.nombre.trim() !== '' && f.precio !== '');
-
-    if (validForms.length === 0) {
-      alert('Por favor, llena al menos un producto.');
-      setLoading(false);
-      return;
-    }
 
     const newProducts = validForms.map(f => ({
       nombre: f.nombre,
@@ -200,153 +216,82 @@ export default function Admin() {
       subcategoria: f.subcategoria || null,
       imagen_url: f.imagen_url,
       video_url: f.video_url || null,
-      tallas: f.tallas || null,
-      stock: 100
+      tallas: f.tallas || null
     }));
 
     const { error } = await supabase.from('productos').insert(newProducts);
-    
     setLoading(false);
     
     if (error) {
-      alert('Error subiendo productos: ' + error.message);
+      alert('Error: ' + error.message);
     } else {
-      alert(`¡${validForms.length} productos subidos exitosamente!`);
+      alert('¡Productos subidos!');
       setBulkForms([{ ...emptyProduct }]);
       cargarProductos();
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('¿Estás seguro de que quieres borrar este producto?')) return;
-    
+    if (!window.confirm('¿Seguro?')) return;
     const { error } = await supabase.from('productos').delete().eq('id', id);
-    if (error) {
-      alert('Error borrando: ' + error.message);
-    } else {
-      if (editingId === id) cancelEdit();
-      cargarProductos();
-    }
+    if (!error) cargarProductos();
   };
 
   if (!isAuthenticated) {
     return (
-      <div className="admin-page">
-        <form onSubmit={handleLogin} className="pin-screen">
-          <h2>Panel Secreto de Administración</h2>
-          <p>Ingresa tu PIN para continuar</p>
+      <div className="admin-login-container">
+        <form onSubmit={handleLogin} className="admin-login-form">
+          <h2>🔐 Acceso Administrativo</h2>
           <input 
             type="password" 
-            value={pinInput} 
-            onChange={(e) => setPinInput(e.target.value)}
-            placeholder="****"
-            maxLength={4}
+            value={pin} 
+            onChange={e => setPin(e.target.value)} 
+            placeholder="Introduce el PIN" 
             autoFocus
           />
-          <button type="submit" className="pill-btn" style={{backgroundColor: 'var(--primary)', color: 'white', marginTop: '1rem'}}>
-            Entrar
-          </button>
+          <button type="submit">Ingresar</button>
         </form>
       </div>
     );
   }
 
   return (
-    <div className="admin-page">
-      <div className="admin-dashboard">
-        <h2>Gestor de Productos Moztacito</h2>
-        
-        {editingId ? (
-          // EDIT FORM
-          <form onSubmit={handleUpdateProduct} className="admin-form">
-            <h3>✏️ Actualizar Producto</h3>
-            
-            <div className="form-group">
-              <label>Nombre del Producto</label>
-              <input required type="text" value={editForm.nombre} onChange={e => setEditForm({...editForm, nombre: e.target.value})} />
-            </div>
+    <div className="admin-container">
+      <div className="admin-header">
+        <h1>Centro de Control Moztacito</h1>
+        <p>Gestiona todo tu negocio desde aquí</p>
+      </div>
 
-            <div className="form-group">
-              <label>Descripción (Opcional)</label>
-              <textarea value={editForm.descripcion} onChange={e => setEditForm({...editForm, descripcion: e.target.value})}></textarea>
-            </div>
+      <div className="admin-tabs">
+        <button className={`tab-btn ${activeTab === 'productos' ? 'active' : ''}`} onClick={() => setActiveTab('productos')}>📦 Productos</button>
+        <button className={`tab-btn ${activeTab === 'categorias' ? 'active' : ''}`} onClick={() => setActiveTab('categorias')}>🗂️ Categorías</button>
+        <button className={`tab-btn ${activeTab === 'config' ? 'active' : ''}`} onClick={() => setActiveTab('config')}>⚙️ Configuración</button>
+      </div>
 
-            <div className="form-row" style={{display: 'flex', gap: '1rem'}}>
-              <div className="form-group" style={{flex: 1}}>
-                <label>Precio de Venta ($ COP)</label>
-                <input required type="number" step="0.01" value={editForm.precio} onChange={e => setEditForm({...editForm, precio: e.target.value})} />
-              </div>
-              <div className="form-group" style={{flex: 1}}>
-                <label>Categoría</label>
-                <select value={editForm.categoria} onChange={e => setEditForm({...editForm, categoria: e.target.value})}>
-                  <option value="bebe">Ropa de Bebés</option>
-                  <option value="accesorios">Accesorios</option>
-                </select>
-              </div>
-              {editForm.categoria === 'bebe' && (
-                <div className="form-group" style={{flex: 1}}>
-                  <label>Subcategoría</label>
-                  <select value={editForm.subcategoria} onChange={e => setEditForm({...editForm, subcategoria: e.target.value})}>
-                    <option value="">Todas</option>
-                    <option value="mamelucos">Mamelucos</option>
-                    <option value="pijamas">Pijamas</option>
-                    <option value="conjuntos">Conjuntos</option>
-                  </select>
-                </div>
-              )}
-            </div>
-
-            <div className="form-group">
-              <label>Tallas (Separadas por coma, Ej: 6 Meses, 12 Meses)</label>
-              <input type="text" value={editForm.tallas} onChange={e => setEditForm({...editForm, tallas: e.target.value})} />
-            </div>
-
-            <div className="form-group">
-              <label>Enlace de la Foto (Obligatorio)</label>
-              <input required type="url" value={editForm.imagen_url} onChange={e => setEditForm({...editForm, imagen_url: e.target.value})} />
-            </div>
-
-            <div className="form-group">
-              <label>Enlace del Video de Temu (Opcional)</label>
-              <input type="url" value={editForm.video_url} onChange={e => setEditForm({...editForm, video_url: e.target.value})} placeholder="https://...mp4" />
-            </div>
-
-            <div style={{display: 'flex', gap: '1rem'}}>
-              <button type="submit" disabled={loading} style={{flex: 1}}>
-                {loading ? 'Guardando...' : 'Guardar Cambios'}
-              </button>
-              <button type="button" onClick={cancelEdit} style={{backgroundColor: '#ccc', color: '#333'}}>
-                Cancelar
-              </button>
-            </div>
-          </form>
-        ) : (
-          // BULK ADD FORM
-          <form onSubmit={handleBulkSubmit} className="admin-form">
-            <h3>🚀 Subida Rápida (Carga Múltiple)</h3>
-            <p style={{fontSize: '0.85rem', color: '#666', marginBottom: '1rem'}}>Llena tantas filas como quieras y súbelas todas al mismo tiempo.</p>
-            
-            <div className="bulk-container">
+      {activeTab === 'productos' && (
+        <>
+          <div className="admin-box bulk-upload-box">
+            <form onSubmit={handleBulkSubmit} className="admin-form">
+              <h3>🚀 Subida Rápida</h3>
               {bulkForms.map((form, index) => (
                 <div key={index} className="bulk-row">
                   <div className="bulk-header">
                     <h4>Producto {index + 1}</h4>
                     <div style={{display: 'flex', gap: '0.5rem'}}>
-                      <button type="button" onClick={() => handleAutoFill(index)} className="autofill-btn" title="Extraer datos de Temu">
-                        ✨ AutoFill
-                      </button>
-                      {bulkForms.length > 1 && (
-                        <button type="button" onClick={() => removeBulkRow(index)} className="bulk-remove"><X size={16}/></button>
-                      )}
+                      <button type="button" onClick={() => handleAutoFill(index)} className="autofill-btn">✨ AutoFill</button>
+                      <label className="file-upload-btn">
+                        <Upload size={16}/>
+                        <input type="file" onChange={(e) => handleFileUpload(e, index)} style={{display: 'none'}} />
+                      </label>
+                      {bulkForms.length > 1 && <button type="button" onClick={() => removeBulkRow(index)}><X size={16}/></button>}
                     </div>
                   </div>
-                  
                   <div className="form-group">
                     <input required type="text" value={form.nombre} onChange={e => updateBulkForm(index, 'nombre', e.target.value)} placeholder="Nombre del Producto" />
                   </div>
-
+                  
                   <div className="form-group">
-                    <textarea value={form.descripcion} onChange={e => updateBulkForm(index, 'descripcion', e.target.value)} placeholder="Descripción del producto (Opcional)" rows={2} style={{width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ccc', fontFamily: 'inherit'}}></textarea>
+                    <textarea value={form.descripcion} onChange={e => updateBulkForm(index, 'descripcion', e.target.value)} placeholder="Descripción (Opcional)" rows={2} style={{width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ccc', fontFamily: 'inherit'}}></textarea>
                   </div>
 
                   <div className="bulk-grid" style={{display: 'flex', gap: '0.5rem', marginBottom: '0.5rem'}}>
@@ -354,24 +299,10 @@ export default function Admin() {
                       <input required type="number" step="0.01" value={form.precio} onChange={e => updateBulkForm(index, 'precio', e.target.value)} placeholder="Precio ($ COP)" />
                     </div>
                     <div className="form-group" style={{flex: 1, marginBottom: 0}}>
-                      <select value={form.categoria} onChange={e => {
-                        updateBulkForm(index, 'categoria', e.target.value);
-                        if (e.target.value !== 'bebe') updateBulkForm(index, 'subcategoria', '');
-                      }} style={{width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ccc', backgroundColor: 'white'}}>
-                        <option value="bebe">Cat: Ropa Bebés</option>
-                        <option value="accesorios">Cat: Accesorios</option>
+                      <select value={form.categoria} onChange={e => updateBulkForm(index, 'categoria', e.target.value)} style={{width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ccc', backgroundColor: 'white'}}>
+                        {categoriasData.map(c => <option key={c.id} value={c.slug}>{c.nombre}</option>)}
                       </select>
                     </div>
-                    {form.categoria === 'bebe' && (
-                      <div className="form-group" style={{flex: 1, marginBottom: 0}}>
-                        <select value={form.subcategoria} onChange={e => updateBulkForm(index, 'subcategoria', e.target.value)} style={{width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ccc', backgroundColor: 'white'}}>
-                          <option value="">Subcat: Todas</option>
-                          <option value="mamelucos">Mamelucos</option>
-                          <option value="pijamas">Pijamas</option>
-                          <option value="conjuntos">Conjuntos</option>
-                        </select>
-                      </div>
-                    )}
                   </div>
 
                   <div className="form-group">
@@ -381,44 +312,151 @@ export default function Admin() {
                   <div className="form-group">
                     <input required type="url" value={form.imagen_url} onChange={e => updateBulkForm(index, 'imagen_url', e.target.value)} placeholder="URL de la Foto" />
                   </div>
+                  
                   <div className="form-group">
                     <input type="url" value={form.video_url} onChange={e => updateBulkForm(index, 'video_url', e.target.value)} placeholder="URL del Video (Opcional)" />
                   </div>
                 </div>
               ))}
-            </div>
+              <div className="actions">
+                <button type="button" onClick={addBulkRow}>+ Añadir fila</button>
+                <button type="submit" disabled={loading}>{loading ? 'Subiendo...' : 'Subir productos'}</button>
+              </div>
+            </form>
+          </div>
 
-            <div style={{display: 'flex', gap: '1rem', marginTop: '1rem'}}>
-              <button type="button" onClick={addBulkRow} style={{backgroundColor: '#f36b8e', color: 'white', flex: 1, display: 'flex', justifyContent: 'center', gap: '0.5rem'}}>
-                <Plus size={20} /> Añadir otra fila
-              </button>
-              <button type="submit" disabled={loading} style={{flex: 2}}>
-                {loading ? 'Subiendo...' : `Subir ${bulkForms.length} producto(s) ahora`}
-              </button>
+          <div className="product-list">
+            <h3>Tus Productos ({productos.length})</h3>
+            {productos.map(p => (
+              <div key={p.id} className="admin-product-item">
+                <div className="admin-product-media">
+                  <img src={p.imagen_url || ''} alt="" />
+                  {p.video_url && <div className="video-badge"><Video size={12}/> Video</div>}
+                </div>
+                <div className="admin-product-info">
+                  <h4>{p.nombre}</h4>
+                  <p>${p.precio} - {p.categoria}</p>
+                </div>
+                <div style={{display: 'flex', gap: '0.5rem'}}>
+                  <button className="edit-btn" onClick={() => handleEditClick(p)}>Editar</button>
+                  <button className="delete-btn" onClick={() => handleDelete(p.id)}>Borrar</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {activeTab === 'categorias' && (
+        <div className="admin-box">
+          <h2>🗂️ Gestión de Categorías</h2>
+          <p>Crea las categorías principales de tu tienda.</p>
+          
+          <form className="admin-form" onSubmit={async (e) => {
+            e.preventDefault();
+            const form = e.target as HTMLFormElement;
+            const nombre = (form.elements.namedItem('nombre') as HTMLInputElement).value;
+            const slug = (form.elements.namedItem('slug') as HTMLInputElement).value || nombre.toLowerCase().replace(/ /g, '-');
+            const icono = (form.elements.namedItem('icono') as HTMLInputElement).value;
+            const color = (form.elements.namedItem('color') as HTMLInputElement).value;
+            
+            setLoading(true);
+            const { error } = await supabase.from('categorias').insert([{ nombre, slug, icono, color }]);
+            setLoading(false);
+            
+            if (error) alert('Error: ' + error.message);
+            else { form.reset(); cargarProductos(); }
+          }}>
+            <div className="bulk-grid">
+              <input required name="nombre" placeholder="Nombre (Ej: Ropa Bebés)" />
+              <input name="slug" placeholder="Slug (Opcional, ej: bebe)" />
             </div>
+            <div className="bulk-grid">
+              <input name="icono" placeholder="Ícono (Emoji, ej: 👶)" />
+              <input name="color" placeholder="Color Fondo (Ej: #92d0db)" />
+            </div>
+            <button type="submit" disabled={loading}>Crear Categoría</button>
           </form>
-        )}
 
-        <div className="product-list">
-          <h3>Tus Productos Activos ({productos.length})</h3>
-          {productos.map(p => (
-            <div key={p.id} className="admin-product-item">
-              <div className="admin-product-media">
-                <img src={p.imagen_url || ''} alt="" />
-                {p.video_url && <div className="video-badge"><Video size={12}/> Video</div>}
+          <div className="product-list" style={{marginTop: '2rem'}}>
+            <h3>Categorías Actuales</h3>
+            {categoriasData.map(c => (
+              <div key={c.id} className="admin-product-item" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                <div>
+                  <h4>{c.icono} {c.nombre}</h4>
+                  <p style={{color: c.color}}>Slug: {c.slug} - Color: {c.color}</p>
+                </div>
+                <button className="delete-btn" onClick={async () => {
+                  if (!window.confirm('¿Seguro?')) return;
+                  await supabase.from('categorias').delete().eq('id', c.id);
+                  cargarProductos();
+                }}>Borrar</button>
               </div>
-              <div className="admin-product-info">
-                <h4>{p.nombre}</h4>
-                <p>${p.precio} - Categoría: {p.categoria}</p>
-              </div>
-              <div style={{display: 'flex', gap: '0.5rem'}}>
-                <button className="edit-btn" onClick={() => handleEditClick(p)}>Editar</button>
-                <button className="delete-btn" onClick={() => handleDelete(p.id)}>Borrar</button>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
+
+      {activeTab === 'config' && (
+        <div className="admin-box">
+          <h2>⚙️ Configuración Global</h2>
+          <p>Ajusta los detalles principales de tu tienda.</p>
+          
+          {configuracion ? (
+            <form className="admin-form" onSubmit={async (e) => {
+              e.preventDefault();
+              setLoading(true);
+              const { error } = await supabase.from('configuracion').update({
+                nombre_negocio: configuracion.nombre_negocio,
+                whatsapp: configuracion.whatsapp,
+                logo_url: configuracion.logo_url,
+                descripcion_hero: configuracion.descripcion_hero
+              }).eq('id', configuracion.id);
+              setLoading(false);
+              if (error) alert('Error: ' + error.message);
+              else alert('Configuración guardada!');
+            }}>
+              <div className="form-group">
+                <label>Nombre del Negocio</label>
+                <input required type="text" value={configuracion.nombre_negocio} onChange={e => setConfiguracion({...configuracion, nombre_negocio: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label>WhatsApp (Sin el +)</label>
+                <input required type="text" value={configuracion.whatsapp} onChange={e => setConfiguracion({...configuracion, whatsapp: e.target.value})} />
+              </div>
+              <div className="form-group">
+                <label>URL del Logo (Opcional)</label>
+                <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
+                  <input type="url" value={configuracion.logo_url || ''} onChange={e => setConfiguracion({...configuracion, logo_url: e.target.value})} style={{flex: 1}} />
+                  <label className="pill-btn" style={{cursor: 'pointer', padding: '0.8rem'}}>
+                    <Upload size={16} /> Subir
+                    <input type="file" style={{display: 'none'}} onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setLoading(true);
+                      try {
+                        const fileExt = file.name.split('.').pop();
+                        const fileName = `logo_${Date.now()}.${fileExt}`;
+                        await supabase.storage.from('archivos').upload(fileName, file);
+                        const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
+                        setConfiguracion({...configuracion, logo_url: data.publicUrl});
+                      } catch (err) { alert('Error subiendo logo'); }
+                      setLoading(false);
+                    }} />
+                  </label>
+                </div>
+              </div>
+              <div className="form-group">
+                <label>Texto Principal (Hero)</label>
+                <input type="text" value={configuracion.descripcion_hero || ''} onChange={e => setConfiguracion({...configuracion, descripcion_hero: e.target.value})} />
+              </div>
+              <button type="submit" disabled={loading}>{loading ? 'Guardando...' : 'Guardar Configuración'}</button>
+            </form>
+          ) : (
+            <p>Cargando configuración...</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
