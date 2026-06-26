@@ -63,7 +63,7 @@ export default function MenuDigital() {
     mensaje += `\n*TOTAL:* $${total.toFixed(2)}\n\n`;
     mensaje += `Por favor indícame los métodos de pago para confirmar mi compra.`;
 
-    const numeroWhatsApp = '1234567890'; // ¡Cambiar por tu número!
+    const numeroWhatsApp = '573185637317'; // Actualizado con tu número
     const url = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
     
     window.open(url, '_blank');
