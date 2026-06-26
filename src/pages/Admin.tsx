@@ -132,30 +132,34 @@ export default function Admin() {
       }
     };
 
-    const extractSizes = (docObj: Document): string => {
-      const textToSearch = (docObj.title + ' ' + (docObj.querySelector('meta[name="description"]')?.getAttribute('content') || '') + ' ' + (docObj.body?.textContent || '')).toLowerCase();
-      const foundSizes: string[] = [];
+    const extractSizes = (htmlStr: string, docObj: Document): string => {
+      const textToSearch = (htmlStr + ' ' + docObj.title + ' ' + 
+        (docObj.querySelector('meta[name="description"]')?.getAttribute('content') || '') + ' ' + 
+        (docObj.querySelector('meta[property="og:description"]')?.getAttribute('content') || '')
+      ).toLowerCase();
+      
+      const foundSizes = new Set<string>();
 
-      const babyPatterns = [
-        { regex: /\b0[-_]3\s*m(?:es)?(?:es)?\b/gi, label: '0-3 Meses' },
-        { regex: /\b3[-_]6\s*m(?:es)?(?:es)?\b/gi, label: '3-6 Meses' },
-        { regex: /\b6[-_]9\s*m(?:es)?(?:es)?\b/gi, label: '6-9 Meses' },
-        { regex: /\b9[-_]12\s*m(?:es)?(?:es)?\b/gi, label: '9-12 Meses' },
-        { regex: /\b12[-_]18\s*m(?:es)?(?:es)?\b/gi, label: '12-18 Meses' },
-        { regex: /\b18[-_]24\s*m(?:es)?(?:es)?\b/gi, label: '18-24 Meses' },
-        { regex: /\b2\s*t\b/gi, label: '2T' },
-        { regex: /\b3\s*t\b/gi, label: '3T' },
-        { regex: /\b4\s*t\b/gi, label: '4T' },
-        { regex: /\b5\s*t\b/gi, label: '5T' },
-        { regex: /\b6\s*t\b/gi, label: '6T' }
-      ];
+      // Buscar rangos de meses como: 0-3m, 3-6m, 6-9m, etc.
+      const babyRegex = /\b(0[-_]3|3[-_]6|6[-_]9|9[-_]12|12[-_]18|18[-_]24)\s*([mM])\b/g;
+      let match;
+      while ((match = babyRegex.exec(textToSearch)) !== null) {
+        foundSizes.add(`${match[1]}M`);
+      }
 
-      babyPatterns.forEach(p => {
-        if (p.regex.test(textToSearch)) {
-          foundSizes.push(p.label);
-        }
-      });
+      // Buscar meses individuales como: 3m, 6m, 12m, 18m, 24m
+      const singleMonthRegex = /\b(3|6|9|12|18|24)\s*(meses|mes|m)\b/g;
+      while ((match = singleMonthRegex.exec(textToSearch)) !== null) {
+        foundSizes.add(`${match[1]}M`);
+      }
 
+      // Buscar tallas T: 2t, 3t, 4t, 5t, 6t
+      const tRegex = /\b([2-6])\s*t\b/g;
+      while ((match = tRegex.exec(textToSearch)) !== null) {
+        foundSizes.add(`${match[1].toUpperCase()}T`);
+      }
+
+      // JSON-LD scripts
       const jsonLdScripts = docObj.querySelectorAll('script[type="application/ld+json"]');
       jsonLdScripts.forEach(script => {
         try {
@@ -163,13 +167,18 @@ export default function Admin() {
           const searchSizes = (obj: any) => {
             if (!obj || typeof obj !== 'object') return;
             if ('size' in obj && typeof obj.size === 'string') {
-              foundSizes.push(obj.size.trim());
+              const sz = obj.size.trim();
+              if (sz.length < 10) foundSizes.add(sz);
             }
             if ('offers' in obj && Array.isArray(obj.offers)) {
               obj.offers.forEach((o: any) => {
                 if (o && typeof o === 'object') {
-                  if (o.size && typeof o.size === 'string') foundSizes.push(o.size.trim());
-                  if (o.name && typeof o.name === 'string' && o.name.length < 15) foundSizes.push(o.name.trim());
+                  if (o.size && typeof o.size === 'string' && o.size.length < 10) {
+                    foundSizes.add(o.size.trim());
+                  }
+                  if (o.name && typeof o.name === 'string' && o.name.length < 10) {
+                    foundSizes.add(o.name.trim());
+                  }
                 }
               });
             }
@@ -181,19 +190,31 @@ export default function Admin() {
         } catch (e) {}
       });
 
-      if (foundSizes.length === 0) {
+      // Tallas estándar de adultos
+      if (foundSizes.size === 0) {
         const stdSizes = ['xxs', 'xs', 's', 'm', 'l', 'xl', 'xxl', 'xxxl'];
         stdSizes.forEach(size => {
           const regex = new RegExp(`\\b${size}\\b`, 'i');
           const shortText = (docObj.title + ' ' + (docObj.querySelector('meta[name="description"]')?.getAttribute('content') || '')).toLowerCase();
           if (regex.test(shortText)) {
-            foundSizes.push(size.toUpperCase());
+            foundSizes.add(size.toUpperCase());
           }
         });
       }
 
-      const unique = Array.from(new Set(foundSizes)).filter(s => s && s.length < 15);
-      return unique.join(', ');
+      const sizeList = Array.from(foundSizes).filter(s => s && s.length < 15);
+      
+      // Ordenar tallas cronológicamente si son de bebé/niño
+      const sortSizes = (a: string, b: string) => {
+        const parseAge = (s: string) => {
+          const m = s.match(/^(\d+)/);
+          return m ? parseInt(m[1]) : 999;
+        };
+        return parseAge(a) - parseAge(b);
+      };
+      
+      sizeList.sort(sortSizes);
+      return sizeList.join(', ');
     };
 
     try {
@@ -263,7 +284,7 @@ export default function Admin() {
         finalPrice = String(Math.round(priceWithTax / 100) * 100);
       }
 
-      const sizesStr = extractSizes(doc);
+      const sizesStr = extractSizes(html, doc);
 
       const newForms = [...bulkForms];
       newForms[index] = {
