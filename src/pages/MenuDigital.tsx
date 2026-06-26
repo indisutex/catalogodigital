@@ -15,6 +15,9 @@ export default function MenuDigital() {
   const [filtroCategoria, setFiltroCategoria] = useState<string>('todos');
   const [filtroSubcategoria, setFiltroSubcategoria] = useState<string>('todas');
   
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isCheckoutMode, setIsCheckoutMode] = useState(false);
+  
   // Size Selection State
   const [sizeModalProduct, setSizeModalProduct] = useState<Producto | null>(null);
   
