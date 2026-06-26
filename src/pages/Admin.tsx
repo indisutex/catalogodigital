@@ -13,6 +13,7 @@ export default function Admin() {
   const [loading, setLoading] = useState(false);
 
   // Form state
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [precio, setPrecio] = useState('');
@@ -43,11 +44,31 @@ export default function Admin() {
     }
   };
 
-  const handleAddProduct = async (e: React.FormEvent) => {
+  const handleEditClick = (producto: Producto) => {
+    setEditingId(producto.id);
+    setNombre(producto.nombre);
+    setDescripcion(producto.descripcion || '');
+    setPrecio(producto.precio.toString());
+    setCategoria(producto.categoria);
+    setImagenUrl(producto.imagen_url || '');
+    
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setNombre('');
+    setDescripcion('');
+    setPrecio('');
+    setImagenUrl('');
+  };
+
+  const handleAddOrUpdateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    const newProduct = {
+    const productData = {
       nombre,
       descripcion,
       precio: parseFloat(precio),
@@ -56,19 +77,30 @@ export default function Admin() {
       stock: 100 // Default stock
     };
 
-    const { error } = await supabase.from('productos').insert([newProduct]);
+    let error;
+
+    if (editingId) {
+      // Update
+      const response = await supabase
+        .from('productos')
+        .update(productData)
+        .eq('id', editingId);
+      error = response.error;
+    } else {
+      // Insert
+      const response = await supabase
+        .from('productos')
+        .insert([productData]);
+      error = response.error;
+    }
     
     setLoading(false);
     
     if (error) {
-      alert('Error subiendo producto: ' + error.message);
+      alert('Error guardando producto: ' + error.message);
     } else {
-      alert('¡Producto subido exitosamente!');
-      // Reset form
-      setNombre('');
-      setDescripcion('');
-      setPrecio('');
-      setImagenUrl('');
+      alert(editingId ? '¡Producto actualizado exitosamente!' : '¡Producto subido exitosamente!');
+      cancelEdit();
       cargarProductos();
     }
   };
@@ -80,6 +112,7 @@ export default function Admin() {
     if (error) {
       alert('Error borrando: ' + error.message);
     } else {
+      if (editingId === id) cancelEdit();
       cargarProductos();
     }
   };
@@ -111,8 +144,8 @@ export default function Admin() {
       <div className="admin-dashboard">
         <h2>Gestor de Productos Moztacito</h2>
         
-        <form onSubmit={handleAddProduct} className="admin-form">
-          <h3>Subir Nuevo Producto de Temu</h3>
+        <form onSubmit={handleAddOrUpdateProduct} className="admin-form">
+          <h3>{editingId ? '✏️ Actualizar Producto' : 'Subir Nuevo Producto de Temu'}</h3>
           
           <div className="form-group">
             <label>Nombre del Producto</label>
@@ -134,17 +167,25 @@ export default function Admin() {
             <select value={categoria} onChange={e => setCategoria(e.target.value)}>
               <option value="bebe">Ropa de Bebés</option>
               <option value="pijamas">Pijamas Infantiles</option>
+              <option value="mamelucos">Mamelucos</option>
             </select>
           </div>
 
           <div className="form-group">
-            <label>Enlace de la Foto (URL de Temu)</label>
+            <label>Enlace de la Foto (URL de Temu o de la web)</label>
             <input type="url" value={imagenUrl} onChange={e => setImagenUrl(e.target.value)} placeholder="https://..." />
           </div>
 
-          <button type="submit" disabled={loading}>
-            {loading ? 'Subiendo...' : '🚀 Publicar en la Tienda'}
-          </button>
+          <div style={{display: 'flex', gap: '1rem'}}>
+            <button type="submit" disabled={loading} style={{flex: 1}}>
+              {loading ? 'Guardando...' : (editingId ? 'Guardar Cambios' : '🚀 Publicar en la Tienda')}
+            </button>
+            {editingId && (
+              <button type="button" onClick={cancelEdit} style={{backgroundColor: '#ccc', color: '#333'}}>
+                Cancelar
+              </button>
+            )}
+          </div>
         </form>
 
         <div className="product-list">
@@ -156,7 +197,10 @@ export default function Admin() {
                 <h4>{p.nombre}</h4>
                 <p>${p.precio} - Categoría: {p.categoria}</p>
               </div>
-              <button className="delete-btn" onClick={() => handleDelete(p.id)}>Borrar</button>
+              <div style={{display: 'flex', gap: '0.5rem'}}>
+                <button className="edit-btn" onClick={() => handleEditClick(p)}>Editar</button>
+                <button className="delete-btn" onClick={() => handleDelete(p.id)}>Borrar</button>
+              </div>
             </div>
           ))}
         </div>
