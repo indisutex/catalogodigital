@@ -330,13 +330,21 @@ export default function Admin() {
                     <input required type="text" value={form.nombre} onChange={e => updateBulkForm(index, 'nombre', e.target.value)} placeholder="Nombre del Producto" />
                   </div>
 
+                  <div className="form-group">
+                    <textarea value={form.descripcion} onChange={e => updateBulkForm(index, 'descripcion', e.target.value)} placeholder="Descripción del producto (Opcional)" rows={2} style={{width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ccc', fontFamily: 'inherit'}}></textarea>
+                  </div>
+
                   <div className="bulk-grid" style={{display: 'flex', gap: '0.5rem', marginBottom: '0.5rem'}}>
-                    <input required type="number" step="0.01" value={form.precio} onChange={e => updateBulkForm(index, 'precio', e.target.value)} placeholder="Precio ($ COP)" style={{flex: 1}} />
-                    <select value={form.categoria} onChange={e => updateBulkForm(index, 'categoria', e.target.value)} style={{flex: 1}}>
-                      <option value="bebe">Ropa Bebés</option>
-                      <option value="pijamas">Pijamas</option>
-                      <option value="mamelucos">Mamelucos</option>
-                    </select>
+                    <div className="form-group" style={{flex: 1, marginBottom: 0}}>
+                      <input required type="number" step="0.01" value={form.precio} onChange={e => updateBulkForm(index, 'precio', e.target.value)} placeholder="Precio ($ COP)" />
+                    </div>
+                    <div className="form-group" style={{flex: 1, marginBottom: 0}}>
+                      <select value={form.categoria} onChange={e => updateBulkForm(index, 'categoria', e.target.value)} style={{width: '100%', padding: '0.8rem', borderRadius: '8px', border: '1px solid #ccc', backgroundColor: 'white'}}>
+                        <option value="bebe">Categoría: Ropa Bebés</option>
+                        <option value="pijamas">Categoría: Pijamas</option>
+                        <option value="mamelucos">Categoría: Mamelucos</option>
+                      </select>
+                    </div>
                   </div>
 
                   <div className="form-group">

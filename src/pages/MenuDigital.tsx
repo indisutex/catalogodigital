@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Producto } from '../types';
-import { Loader2, Search, Plus, Info, Calendar, ShoppingBag, X, Minus } from 'lucide-react';
+import { Loader2, Search, Plus, Info, Calendar, ShoppingBag, X } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import './MenuDigital.css';
 
