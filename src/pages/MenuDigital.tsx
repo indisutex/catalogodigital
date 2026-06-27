@@ -17,6 +17,24 @@ export default function MenuDigital() {
   
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutMode, setIsCheckoutMode] = useState(false);
+  const [overrideWhatsApp, setOverrideWhatsApp] = useState<string | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const wsParam = params.get('ws');
+    if (wsParam) {
+      const cleanNum = wsParam.replace(/\D/g, '');
+      if (cleanNum) {
+        setOverrideWhatsApp(cleanNum);
+        sessionStorage.setItem(`ws_override_${getTenantId()}`, cleanNum);
+      }
+    } else {
+      const savedOverride = sessionStorage.getItem(`ws_override_${getTenantId()}`);
+      if (savedOverride) {
+        setOverrideWhatsApp(savedOverride);
+      }
+    }
+  }, []);
   
   useEffect(() => {
     if (configuracion?.nombre_negocio) {
@@ -117,7 +135,7 @@ export default function MenuDigital() {
     mensaje += `\n*TOTAL:* $${total.toFixed(2)}\n\n`;
     mensaje += `Por favor indícame los métodos de pago para confirmar mi compra.`;
 
-    const numeroWhatsApp = configuracion?.whatsapp || '573185637317';
+    const numeroWhatsApp = overrideWhatsApp || configuracion?.whatsapp || '573185637317';
     const url = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
     
     window.open(url, '_blank');
@@ -135,7 +153,7 @@ export default function MenuDigital() {
         {/* Enlaces Especiales en la Esquina Superior Derecha */}
         <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'flex-end', zIndex: 10 }}>
           <a 
-            href={configuracion?.link_ganar_dinero || `https://wa.me/${(configuracion?.whatsapp || '').replace(/\D/g, '')}?text=Hola,%20quiero%20saber%20cómo%20ganar%20dinero%20con%20ustedes`} 
+            href={configuracion?.link_ganar_dinero || `https://wa.me/${overrideWhatsApp || (configuracion?.whatsapp || '').replace(/\D/g, '')}?text=Hola,%20quiero%20saber%20cómo%20ganar%20dinero%20con%20ustedes`} 
             target="_blank" 
             rel="noopener noreferrer"
             style={{ 
@@ -155,7 +173,7 @@ export default function MenuDigital() {
             💸 ¿Ganar dinero?
           </a>
           <a 
-            href={configuracion?.link_dropshipper || `https://wa.me/${(configuracion?.whatsapp || '').replace(/\D/g, '')}?text=Hola,%20soy%20dropshipper,%20me%20interesa%20trabajar%20con%20ustedes`} 
+            href={configuracion?.link_dropshipper || `https://wa.me/${overrideWhatsApp || (configuracion?.whatsapp || '').replace(/\D/g, '')}?text=Hola,%20soy%20dropshipper,%20me%20interesa%20trabajar%20con%20ustedes`} 
             target="_blank" 
             rel="noopener noreferrer"
             style={{ 
