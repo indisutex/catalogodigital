@@ -52,4 +52,6 @@ export interface Pedido {
   linea_whatsapp: string;
   tenant_id: string;
   created_at: string;
+  pantallazo_url?: string;
+  atendido?: boolean;
 }

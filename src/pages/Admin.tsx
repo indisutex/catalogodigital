@@ -1692,6 +1692,32 @@ export default function Admin() {
               </div>
             </div>
 
+            {/* Pantallazo Nequi */}
+            {selectedPedido.pantallazo_url && (
+              <div style={{ marginTop: '1.5rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
+                <h4 style={{ margin: '0 0 0.75rem', fontSize: '0.9rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  💳 Comprobante de Pago (Nequi)
+                </h4>
+                <a href={selectedPedido.pantallazo_url} target="_blank" rel="noopener noreferrer">
+                  <img
+                    src={selectedPedido.pantallazo_url}
+                    alt="Comprobante Nequi"
+                    style={{ width: '100%', maxHeight: '260px', objectFit: 'contain', borderRadius: '12px', border: '1px solid #e2e8f0' }}
+                  />
+                </a>
+                <p style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600, marginTop: '0.5rem', textAlign: 'center' }}>
+                  ✅ Comprobante recibido — Click para ver en pantalla completa
+                </p>
+              </div>
+            )}
+            {!selectedPedido.pantallazo_url && (
+              <div style={{ marginTop: '1.5rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.25rem', textAlign: 'center' }}>
+                <p style={{ color: '#f59e0b', fontWeight: 600, fontSize: '0.85rem', margin: 0 }}>
+                  ⏳ Esperando comprobante de pago del cliente
+                </p>
+              </div>
+            )}
+
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e2e8f0', marginTop: '1.5rem', paddingTop: '1.5rem' }}>
               <span style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>Total del Pedido:</span>
               <span style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10b981' }}>

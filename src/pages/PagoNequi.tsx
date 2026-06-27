@@ -40,16 +40,24 @@ export default function PagoNequi() {
       const { error: uploadErr } = await supabase.storage
         .from('archivos')
         .upload(fileName, file);
-      if (uploadErr) throw uploadErr;
+      if (uploadErr) {
+        console.error('Storage upload error:', uploadErr);
+        throw new Error(`Error de Storage: ${uploadErr.message}`);
+      }
+      
       const { data: urlData } = supabase.storage.from('archivos').getPublicUrl(fileName);
       const { error: updateErr } = await supabase
         .from('pedidos')
         .update({ pantallazo_url: urlData.publicUrl })
         .eq('id', pedidoId);
-      if (updateErr) throw updateErr;
+      if (updateErr) {
+        console.error('Database update error:', updateErr);
+        throw new Error(`Error de Base de Datos: ${updateErr.message}`);
+      }
       setEnviado(true);
     } catch (e: any) {
-      setError('Error al subir la imagen. Intenta de nuevo.');
+      console.error('Submit error:', e);
+      setError(e.message || 'Error al subir la imagen. Intenta de nuevo.');
     } finally {
       setSubiendo(false);
     }
