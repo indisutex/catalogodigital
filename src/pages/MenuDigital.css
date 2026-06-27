@@ -669,18 +669,18 @@
 .menu-app-header.has-video {
   padding: 0 !important;
   overflow: hidden;
-  background: #000;
+  background: transparent;
   position: relative;
 }
 
 .menu-app-header.has-video .hero-background-video {
   position: relative;
   width: 100%;
-  height: 600px; /* Fixed height for plenty of room */
+  height: 600px;
   object-fit: cover;
-  object-position: center 15%; /* Push vertical alignment up, showing head space and moving face down */
+  object-position: center 15%;
   display: block;
-  opacity: 0.65;
+  opacity: 1;
 }
 
 .hero-content-overlay {
@@ -747,13 +747,15 @@
 }
 
 /* ── VERTICAL SUBTITLE LEFT EDGE ── */
-.menu-app-subtitle.vertical-text {
+.menu-app-header.has-video .menu-app-subtitle.vertical-text {
   position: absolute;
   left: 0;
   top: 0;
-  height: 100%;
+  bottom: 0;
+  width: 1.6rem;
   display: flex;
   align-items: center;
+  justify-content: center;
   writing-mode: vertical-rl;
   transform: rotate(180deg);
   white-space: nowrap;
@@ -765,9 +767,15 @@
   text-transform: uppercase;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95);
   z-index: 3;
-  padding: 0 0.35rem;
   pointer-events: none;
   background: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Hide subtitle completely when there's no video */
+.menu-app-header:not(.has-video) .menu-app-subtitle.vertical-text {
+  display: none;
 }
 
 .special-header-btn {
