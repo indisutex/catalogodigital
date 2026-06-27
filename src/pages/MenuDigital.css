@@ -1,7 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Playfair+Display:ital,wght@0,700;1,700&display=swap');
+
 .menu-app-container {
   min-height: 100vh;
   background-color: #fafafa;
-  font-family: 'Nunito', sans-serif;
+  font-family: 'Outfit', sans-serif;
   margin: -2rem -1rem -4rem -1rem; /* Negate the container padding from Layout.tsx for full width */
 }
 
@@ -674,15 +676,16 @@
 .menu-app-header.has-video .hero-background-video {
   position: relative;
   width: 100%;
-  height: auto;
-  max-height: 520px;
+  height: 600px; /* Fixed height for plenty of room */
+  object-fit: cover;
+  object-position: center 15%; /* Push vertical alignment up, showing head space and moving face down */
   display: block;
   opacity: 0.65;
 }
 
 .hero-content-overlay {
   position: absolute;
-  top: 1.5rem;
+  top: 1rem; /* Push logo higher up to the top edge */
   left: 0;
   width: 100%;
   display: flex;
@@ -698,9 +701,9 @@
 }
 
 .menu-app-header.has-video .store-logo-round {
-  width: 75px !important;
-  height: 75px !important;
-  border-width: 3px !important;
+  width: 65px !important; /* Smaller logo so it takes less space */
+  height: 65px !important;
+  border-width: 2.5px !important;
 }
 
 .menu-app-header.has-video .menu-app-subtitle {
@@ -709,11 +712,12 @@
   z-index: 2;
   margin: 0;
   color: #ffffff;
-  font-size: 1.15rem;
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.35rem; /* Larger, clearer font */
   font-weight: 900;
   letter-spacing: 2px;
   text-transform: uppercase;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.95);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.95);
   white-space: nowrap;
 }
 
