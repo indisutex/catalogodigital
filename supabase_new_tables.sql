@@ -55,7 +55,7 @@ CREATE POLICY "Permitir todo a productos" ON public.productos FOR ALL TO public 
 
 -- 7. Insertar fila inicial de configuración si está vacía
 INSERT INTO public.configuracion (nombre_negocio, whatsapp, descripcion_hero, logo_url)
-SELECT 'Moztacito', '573185637317', 'TIENDA & BABY', 'https://images.unsplash.com/photo-1596814234568-19ebcc1af3fa?auto=format&fit=crop&q=80&w=100'
+SELECT 'Indisutex', '573185637317', 'CATÁLOGO DIGITAL', 'https://images.unsplash.com/photo-1596814234568-19ebcc1af3fa?auto=format&fit=crop&q=80&w=100'
 WHERE NOT EXISTS (SELECT 1 FROM public.configuracion);
 
 -- 8. Crear bucket de storage 'archivos' si no existe
