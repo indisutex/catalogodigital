@@ -973,11 +973,50 @@ export default function Admin() {
                       ) : (
                         categoriasData.map(c => (
                           <div key={c.id} className="category-row">
-                            <div className="cat-color-dot" style={{ background: c.color || '#333' }}>{c.icono}</div>
+                            {/* Thumbnail: imagen si existe, de lo contrario emoji */}
+                            {c.imagen_url ? (
+                              <img
+                                src={c.imagen_url}
+                                alt={c.nombre}
+                                style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #f36b8e' }}
+                              />
+                            ) : (
+                              <div className="cat-color-dot" style={{ background: c.color || '#333' }}>{c.icono}</div>
+                            )}
                             <div className="cat-row-info">
                               <h4>{c.nombre}</h4>
                               <p>/{c.slug} · {productos.filter(p => p.categoria === c.slug || p.categoria === c.nombre).length} productos</p>
                             </div>
+                            {/* Botón subir imagen de categoría */}
+                            <label
+                              title="Subir imagen"
+                              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: '50%', background: '#f0f0f0', border: '1px solid #ddd' }}
+                            >
+                              <Upload size={13} />
+                              <input
+                                type="file"
+                                accept="image/*"
+                                style={{ display: 'none' }}
+                                onChange={async (ev) => {
+                                  const file = ev.target.files?.[0];
+                                  if (!file) return;
+                                  setLoading(true);
+                                  try {
+                                    const fileName = `cat_${c.id}_${Date.now()}.${file.name.split('.').pop()}`;
+                                    const { error: upErr } = await supabase.storage.from('archivos').upload(fileName, file, { upsert: true });
+                                    if (upErr) throw upErr;
+                                    const { data: urlData } = supabase.storage.from('archivos').getPublicUrl(fileName);
+                                    await supabase.from('categorias').update({ imagen_url: urlData.publicUrl }).eq('id', c.id);
+                                    cargarDatos();
+                                    showToast('Imagen de categoría actualizada ✓');
+                                  } catch {
+                                    showToast('Error al subir imagen', 'error');
+                                  } finally {
+                                    setLoading(false);
+                                  }
+                                }}
+                              />
+                            </label>
                             <button className="btn-danger" onClick={async () => {
                               if (!window.confirm('¿Eliminar categoría?')) return;
                               await supabase.from('categorias').delete().eq('id', c.id);

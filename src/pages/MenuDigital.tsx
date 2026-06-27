@@ -307,7 +307,16 @@ export default function MenuDigital() {
                 setFiltroSubcategoria('todas');
               }}
             >
-              <div className="cat-img-placeholder" style={{backgroundColor: cat.color || '#eee'}}>{cat.icono}</div>
+              {cat.imagen_url ? (
+                <img
+                  src={cat.imagen_url}
+                  alt={cat.nombre}
+                  className="cat-img-placeholder"
+                  style={{ objectFit: 'cover' }}
+                />
+              ) : (
+                <div className="cat-img-placeholder" style={{backgroundColor: cat.color || '#eee'}}>{cat.icono}</div>
+              )}
               <div className="cat-info">
                 <h3>{cat.nombre.toUpperCase()}</h3>
                 <p>{productos.filter(p=>p.categoria === cat.slug || p.categoria === cat.nombre).length} ITEMS</p>

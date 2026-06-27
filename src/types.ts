@@ -18,6 +18,7 @@ export interface Categoria {
   icono?: string;
   color?: string;
   orden: number;
+  imagen_url?: string;
 }
 
 export interface Subcategoria {
