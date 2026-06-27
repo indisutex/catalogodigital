@@ -54,6 +54,8 @@ export default function Admin() {
 
   const [editingProduct, setEditingProduct] = useState<Producto | null>(null);
 
+  const [isAddingProduct, setIsAddingProduct] = useState(false);
+
   function showToast(message: string, type: 'success' | 'error' = 'success') {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
@@ -64,6 +66,14 @@ export default function Admin() {
     setSelectedCompany(null);
     setPin('');
   }
+
+  useEffect(() => {
+    if (configuracion?.nombre_negocio) {
+      document.title = `${configuracion.nombre_negocio} - Panel Administrativo`;
+    } else {
+      document.title = 'Panel Administrativo';
+    }
+  }, [configuracion]);
 
   useEffect(() => {
     if (isAuthenticated) cargarDatos();
@@ -400,6 +410,7 @@ export default function Admin() {
     } else {
       showToast(`${validForms.length} producto(s) guardado(s) exitosamente ✓`);
       setBulkForms([{ ...emptyProduct }]);
+      setIsAddingProduct(false);
       cargarDatos();
     }
   };
@@ -684,9 +695,15 @@ export default function Admin() {
           </div>
           <div className="topbar-actions">
             {activeTab === 'productos' && (
-              <button className="btn-primary" onClick={() => { setBulkForms([{ ...emptyProduct }]); }}>
-                <Plus size={14} /> Nuevo Producto
-              </button>
+              isAddingProduct ? (
+                <button className="btn-secondary" onClick={() => setIsAddingProduct(false)}>
+                  <X size={14} /> Volver al Inventario
+                </button>
+              ) : (
+                <button className="btn-primary" onClick={() => { setBulkForms([{ ...emptyProduct }]); setIsAddingProduct(true); }}>
+                  <Plus size={14} /> Nuevo Producto
+                </button>
+              )
             )}
           </div>
         </div>
@@ -696,9 +713,10 @@ export default function Admin() {
           {/* ── PRODUCTS TAB ── */}
           {activeTab === 'productos' && (
             <>
-              {/* QUICK ADD PANEL */}
-              <div className="admin-panel">
-                <div className="panel-header">
+              {isAddingProduct ? (
+                /* QUICK ADD PANEL */
+                <div className="admin-panel">
+                  <div className="panel-header">
                   <div>
                     <h3><Zap size={16} /> Subida Rápida de Productos</h3>
                     <p>Usa AutoFill para llenar datos desde Temu u otras tiendas</p>
@@ -823,10 +841,10 @@ export default function Admin() {
                   </form>
                 </div>
               </div>
-
-              {/* PRODUCT LIST PANEL */}
-              <div className="admin-panel">
-                <div className="panel-header">
+              ) : (
+                /* PRODUCT LIST PANEL */
+                <div className="admin-panel">
+                  <div className="panel-header">
                   <div>
                     <h3><Package size={16} /> Inventario ({filteredProducts.length})</h3>
                     <p>Todos los productos publicados en tu tienda</p>
@@ -844,7 +862,10 @@ export default function Admin() {
                     <div className="empty-state">
                       <div className="es-icon">📦</div>
                       <h4>No hay productos aún</h4>
-                      <p>Usa el formulario de arriba para agregar tu primer producto</p>
+                      <p>Aún no tienes ningún producto en tu inventario.</p>
+                      <button className="btn-primary" onClick={() => setIsAddingProduct(true)} style={{ marginTop: '1rem' }}>
+                        + Agregar Primer Producto
+                      </button>
                     </div>
                   ) : (
                     <div className="products-grid">
@@ -873,6 +894,7 @@ export default function Admin() {
                   )}
                 </div>
               </div>
+              )}
             </>
           )}
 
@@ -1240,6 +1262,17 @@ function SidebarContent({
         >
           <span>👁️</span> Ver Catálogo
         </a>
+        
+        {configuracion?.whatsapp && (
+          <a 
+            href={`https://wa.me/${configuracion.whatsapp.replace(/\D/g, '')}`} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', width: '100%', padding: '0.8rem', borderRadius: '8px', textDecoration: 'none', background: '#25D366', color: 'white', fontWeight: 600, fontSize: '0.9rem' }}
+          >
+            <span style={{ fontSize: '1.2rem' }}>💬</span> {configuracion.whatsapp}
+          </a>
+        )}
         
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginTop: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

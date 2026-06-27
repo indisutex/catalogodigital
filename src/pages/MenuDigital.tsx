@@ -18,6 +18,14 @@ export default function MenuDigital() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutMode, setIsCheckoutMode] = useState(false);
   
+  useEffect(() => {
+    if (configuracion?.nombre_negocio) {
+      document.title = configuracion.nombre_negocio;
+    } else {
+      document.title = 'Catálogo Digital';
+    }
+  }, [configuracion]);
+  
   // Size Selection State
   const [sizeModalProduct, setSizeModalProduct] = useState<Producto | null>(null);
   
