@@ -750,12 +750,14 @@
 .menu-app-subtitle.vertical-text {
   position: absolute;
   left: 0;
-  top: 50%;
-  transform: translateY(-50%) rotate(180deg);
+  top: 0;
+  height: 100%;
+  display: flex;
+  align-items: center;
   writing-mode: vertical-rl;
-  text-orientation: mixed;
+  transform: rotate(180deg);
   white-space: nowrap;
-  color: rgba(255, 255, 255, 0.88);
+  color: rgba(255, 255, 255, 0.95);
   font-family: 'Outfit', sans-serif;
   font-size: 0.72rem;
   font-weight: 900;
@@ -763,9 +765,8 @@
   text-transform: uppercase;
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.85);
   z-index: 3;
-  padding: 0.4rem 0.3rem;
-  background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.18), transparent);
-  border-radius: 0 4px 4px 0;
+  padding: 0 0.35rem;
+  background: linear-gradient(to right, rgba(0,0,0,0.22), transparent);
 }
 
 .special-header-btn {
