@@ -517,7 +517,7 @@ export default function Admin() {
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
               {!imageErrors['main'] ? (
                 <img 
-                  src="/indisutex-logo.jpg" 
+                  src="/indisutex-logo.png" 
                   alt="Indisutex Logo" 
                   style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #eee' }} 
                   onError={() => setImageErrors(prev => ({ ...prev, main: true }))} 
@@ -1254,7 +1254,7 @@ function SidebarContent({
 
       <div className="sidebar-footer" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', padding: '1.2rem', borderTop: '1px solid #f1f5f9' }}>
         <a 
-          href={`/${configuracion?.tenant_id || getTenantId()}`} 
+          href={`/${getTenantId()}`} 
           target="_blank" 
           rel="noopener noreferrer"
           className="btn-primary" 
