@@ -1046,7 +1046,8 @@ export default function Admin() {
                       logo_url: configuracion.logo_url,
                       descripcion_hero: configuracion.descripcion_hero,
                       link_dropshipper: configuracion.link_dropshipper,
-                      link_ganar_dinero: configuracion.link_ganar_dinero
+                      link_ganar_dinero: configuracion.link_ganar_dinero,
+                      video_hero_url: configuracion.video_hero_url
                     }).eq('id', configuracion.id);
                     setLoading(false);
                     if (error) showToast('Error: ' + error.message, 'error');
@@ -1099,11 +1100,40 @@ export default function Admin() {
                               setLoading(true);
                               try {
                                 const fileName = `logo_${Date.now()}.${file.name.split('.').pop()}`;
-                                await supabase.storage.from('archivos').upload(fileName, file);
+                                  await supabase.storage.from('archivos').upload(fileName, file);
                                 const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
                                 setConfiguracion({ ...configuracion, logo_url: data.publicUrl });
                                 showToast('Logo subido ✓');
                               } catch { showToast('Error subiendo logo', 'error'); }
+                              setLoading(false);
+                            }} />
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="config-section" style={{ marginTop: '1.5rem' }}>
+                      <div className="config-section-title">📹 Video de Portada (Hero Section)</div>
+                      <div className="form-field">
+                        <label>Subir Video de Fondo (.mp4 / .webm)</label>
+                        <div className="img-input-row">
+                          {configuracion.video_hero_url && (
+                            <video src={configuracion.video_hero_url} muted style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover', background: '#0f172a' }} />
+                          )}
+                          <input type="url" value={configuracion.video_hero_url || ''} onChange={e => setConfiguracion({ ...configuracion, video_hero_url: e.target.value })} placeholder="https://..." style={{ flex: 1 }} />
+                          <label className="btn-upload-img" style={{ flexShrink: 0, cursor: 'pointer' }}>
+                            <Upload size={12} /> Subir Video
+                            <input type="file" accept="video/*" style={{ display: 'none' }} onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              setLoading(true);
+                              try {
+                                const fileName = `hero_video_${Date.now()}.${file.name.split('.').pop()}`;
+                                await supabase.storage.from('archivos').upload(fileName, file);
+                                const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
+                                setConfiguracion({ ...configuracion, video_hero_url: data.publicUrl });
+                                showToast('Video de portada subido ✓');
+                              } catch { showToast('Error subiendo video', 'error'); }
                               setLoading(false);
                             }} />
                           </label>

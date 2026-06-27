@@ -36,6 +36,7 @@ export interface Configuracion {
   descripcion_hero?: string;
   link_dropshipper?: string;
   link_ganar_dinero?: string;
+  video_hero_url?: string;
 }
 
 export interface Pedido {

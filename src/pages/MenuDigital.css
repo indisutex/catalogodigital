@@ -651,3 +651,28 @@
   background: rgba(16, 185, 129, 0.15) !important;
 }
 
+/* ── HERO VIDEO BACKGROUND ── */
+.hero-background-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+  opacity: 0.45; /* Soft background overlay */
+  pointer-events: none;
+}
+
+.menu-app-subtitle {
+  position: relative;
+  z-index: 2;
+  font-weight: 800;
+  font-size: 0.82rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #1e293b;
+  margin-top: 0.4rem;
+}
+
+

@@ -167,6 +167,16 @@ export default function MenuDigital() {
   return (
     <div className="menu-app-container">
       <div className="menu-app-header" style={{ position: 'relative' }}>
+        {configuracion?.video_hero_url && (
+          <video 
+            src={configuracion.video_hero_url} 
+            autoPlay 
+            loop 
+            muted 
+            playsInline 
+            className="hero-background-video"
+          />
+        )}
         {/* Enlace Especial Ganar Dinero en la Esquina Superior Derecha */}
         <div style={{ position: 'absolute', top: '2.2rem', right: '1.2rem', zIndex: 10 }}>
           <a 
