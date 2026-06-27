@@ -603,7 +603,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} categoriasData={categoriasData} configuracion={configuracion} handleLogout={handleLogout} />
+          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} categoriasData={categoriasData} configuracion={configuracion} handleLogout={handleLogout} setIsAddingProduct={setIsAddingProduct} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -677,7 +677,7 @@ export default function Admin() {
     <div className="admin-app">
       {/* SIDEBAR */}
       <aside className="admin-sidebar">
-        <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} categoriasData={categoriasData} configuracion={configuracion} handleLogout={handleLogout} />
+        <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} categoriasData={categoriasData} configuracion={configuracion} handleLogout={handleLogout} setIsAddingProduct={setIsAddingProduct} />
       </aside>
 
       {/* MAIN */}
@@ -1237,7 +1237,7 @@ export default function Admin() {
 
 // ── SIDEBAR COMPONENT ──
 function SidebarContent({
-  activeTab, setActiveTab, productos, categoriasData, configuracion, handleLogout
+  activeTab, setActiveTab, productos, categoriasData, configuracion, handleLogout, setIsAddingProduct
 }: {
   activeTab: TabType;
   setActiveTab: (t: TabType) => void;
@@ -1245,6 +1245,7 @@ function SidebarContent({
   categoriasData: Categoria[];
   configuracion: Configuracion | null;
   handleLogout: () => void;
+  setIsAddingProduct: (b: boolean) => void;
 }) {
   return (
     <>
@@ -1262,32 +1263,57 @@ function SidebarContent({
         </div>
       </div>
 
-      <div className="sidebar-stats">
-        <div className="stat-pill">
-          <span className="label">Productos</span>
-          <span className="value">{productos.length}</span>
+      <div className="sidebar-action-card">
+        <div className="action-card-text">
+          <h4>Nuevo Producto</h4>
+          <p>Añade al inventario</p>
         </div>
-        <div className="stat-pill">
-          <span className="label">Categorías</span>
-          <span className="value">{categoriasData.length}</span>
-        </div>
+        <button 
+          onClick={() => {
+            setActiveTab('productos');
+            setIsAddingProduct(true);
+          }}
+          className="action-card-btn"
+        >
+          <Plus size={16} />
+        </button>
       </div>
 
       <nav className="sidebar-nav">
         <div className="sidebar-nav-label">Navegación</div>
         <button className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
           <span className="nav-icon"><LayoutDashboard size={14} /></span> Dashboard
+          {activeTab === 'dashboard' && <span className="active-dot"></span>}
         </button>
         <button className={`nav-item ${activeTab === 'productos' ? 'active' : ''}`} onClick={() => setActiveTab('productos')}>
           <span className="nav-icon"><Package size={14} /></span> Productos
+          {activeTab === 'productos' && <span className="active-dot"></span>}
         </button>
         <button className={`nav-item ${activeTab === 'categorias' ? 'active' : ''}`} onClick={() => setActiveTab('categorias')}>
           <span className="nav-icon"><Tag size={14} /></span> Categorías
+          {activeTab === 'categorias' && <span className="active-dot"></span>}
         </button>
         <button className={`nav-item ${activeTab === 'config' ? 'active' : ''}`} onClick={() => setActiveTab('config')}>
           <span className="nav-icon"><Settings size={14} /></span> Configuración
+          {activeTab === 'config' && <span className="active-dot"></span>}
         </button>
       </nav>
+
+      <div className="sidebar-storage-stats">
+        <div className="storage-text">
+          <strong>{productos.length} Productos</strong>
+          <span>límite sugerido 500</span>
+        </div>
+        <div className="storage-bar">
+          <div className="storage-progress" style={{ width: `${Math.min((productos.length / 500) * 100, 100)}%` }}></div>
+        </div>
+      </div>
+
+      <div className="sidebar-banner-card">
+        <div className="banner-tag">PRO ACTIVE</div>
+        <h4>Indisutex Cloud</h4>
+        <p>Catálogo 100% Autogestionable</p>
+      </div>
 
       <div className="sidebar-footer" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', padding: '1.2rem', borderTop: '1px solid #f1f5f9' }}>
         <a 
