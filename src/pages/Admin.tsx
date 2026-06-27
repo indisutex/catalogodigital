@@ -1282,9 +1282,9 @@ function SidebarContent({
               target="_blank" 
               rel="noopener noreferrer"
               className="sidebar-wa-link"
-              style={{ fontSize: '0.75rem', color: '#10b981', textDecoration: 'none', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.3rem', whiteSpace: 'nowrap' }}
+              style={{ fontSize: '0.75rem', color: '#10b981', textDecoration: 'none', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.3rem', whiteSpace: 'nowrap' }}
             >
-              <span>💬</span> WhatsApp: {configuracion.whatsapp}
+              <Phone size={12} style={{ strokeWidth: 2.5 }} /> WhatsApp: {configuracion.whatsapp}
             </a>
           )}
         </div>
