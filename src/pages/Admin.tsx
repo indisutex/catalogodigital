@@ -463,13 +463,34 @@ export default function Admin() {
   );
 
   // ── LOGIN SCREEN ──
+  const [dbCompanies, setDbCompanies] = useState<any[]>([]);
+  
+  useEffect(() => {
+    if (!isAuthenticated) {
+      supabase.from('configuracion').select('tenant_id, nombre_negocio, logo_url')
+        .then(({ data, error }) => {
+          if (data && !error) setDbCompanies(data);
+        });
+    }
+  }, [isAuthenticated]);
+
   if (!isAuthenticated) {
-    const companies = [
+    const baseCompanies = [
       { id: 'saramantha', name: 'Saramantha', logo: '/saramantha-logo.jpg' }, 
       { id: 'sublimados_majestic', name: 'Sublimados Majestic', logo: '/sublimados-logo.jpg' },
       { id: 'pijamas_lucerito', name: 'Pijamas Lucerito', logo: '/lucerito-logo.jpg' },
       { id: 'sueno_de_reina', name: 'Sueño de Reina', logo: '/sueno-de-reina-logo.jpg' },
     ];
+    
+    // Mezclar las bases con las de la base de datos
+    const companies = baseCompanies.map(base => {
+      const dbMatch = dbCompanies.find(c => c.tenant_id === base.id);
+      return {
+        id: base.id,
+        name: dbMatch?.nombre_negocio || base.name,
+        logo: dbMatch?.logo_url || base.logo
+      };
+    });
 
     return (
       <div className="admin-login-wrapper">
