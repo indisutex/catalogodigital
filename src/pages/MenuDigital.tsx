@@ -227,7 +227,7 @@ export default function MenuDigital() {
           </a>
         </div>
 
-        <p className="menu-app-subtitle vertical-text">{configuracion?.descripcion_hero || 'CATÁLOGO DIGITAL'}</p>
+
 
         <div className="hero-content-overlay">
           <div className="menu-app-logo">
@@ -250,7 +250,7 @@ export default function MenuDigital() {
 
       <div className="menu-app-body">
         <div className="explore-header">
-          <h2>EXPLORAR MENÚ</h2>
+          <h2>EXPLORAR CATÁLOGO DIGITAL</h2>
           <div className="search-icon-btn"><Search size={18} /></div>
         </div>
 
