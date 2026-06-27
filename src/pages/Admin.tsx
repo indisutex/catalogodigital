@@ -1002,15 +1002,36 @@ export default function Admin() {
                                   if (!file) return;
                                   setLoading(true);
                                   try {
-                                    const fileName = `cat_${c.id}_${Date.now()}.${file.name.split('.').pop()}`;
-                                    const { error: upErr } = await supabase.storage.from('archivos').upload(fileName, file, { upsert: true });
-                                    if (upErr) throw upErr;
-                                    const { data: urlData } = supabase.storage.from('archivos').getPublicUrl(fileName);
-                                    await supabase.from('categorias').update({ imagen_url: urlData.publicUrl }).eq('id', c.id);
-                                    cargarDatos();
+                                    // PASO 1: subir al storage
+                                    const ext = file.name.split('.').pop() || 'jpg';
+                                    const fileName = `cat_${c.id}_${Date.now()}.${ext}`;
+                                    const { error: upErr } = await supabase.storage
+                                      .from('archivos')
+                                      .upload(fileName, file, { upsert: true });
+                                    if (upErr) {
+                                      showToast(`Error Storage: ${upErr.message}`, 'error');
+                                      return;
+                                    }
+
+                                    // PASO 2: obtener URL pública
+                                    const { data: urlData } = supabase.storage
+                                      .from('archivos')
+                                      .getPublicUrl(fileName);
+
+                                    // PASO 3: guardar URL en la tabla categorias
+                                    const { error: dbErr } = await supabase
+                                      .from('categorias')
+                                      .update({ imagen_url: urlData.publicUrl })
+                                      .eq('id', c.id);
+                                    if (dbErr) {
+                                      showToast(`Error DB: ${dbErr.message}`, 'error');
+                                      return;
+                                    }
+
+                                    await cargarDatos();
                                     showToast('Imagen de categoría actualizada ✓');
-                                  } catch {
-                                    showToast('Error al subir imagen', 'error');
+                                  } catch (err: any) {
+                                    showToast(`Error inesperado: ${err?.message || err}`, 'error');
                                   } finally {
                                     setLoading(false);
                                   }
