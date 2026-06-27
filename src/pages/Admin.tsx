@@ -65,6 +65,10 @@ export default function Admin() {
   const [uploadMethod, setUploadMethod] = useState<'manual' | 'excel'>('manual');
   const [excelProducts, setExcelProducts] = useState<any[]>([]);
 
+  // States for Editing Categories & Subcategories
+  const [editingCategory, setEditingCategory] = useState<Categoria | null>(null);
+  const [editingSubcategory, setEditingSubcategory] = useState<Subcategoria | null>(null);
+
   function showToast(message: string, type: 'success' | 'error' = 'success') {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
@@ -347,6 +351,46 @@ export default function Admin() {
     }
   };
 
+  const handleUpdateCategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCategory) return;
+    setLoading(true);
+    const { error } = await supabase.from('categorias').update({
+      nombre: editingCategory.nombre,
+      slug: editingCategory.slug,
+      icono: editingCategory.icono,
+      color: editingCategory.color,
+      imagen_url: editingCategory.imagen_url
+    }).eq('id', editingCategory.id);
+    setLoading(false);
+    if (error) {
+      showToast('Error al actualizar: ' + error.message, 'error');
+    } else {
+      showToast('Categoría actualizada ✓');
+      setEditingCategory(null);
+      cargarDatos();
+    }
+  };
+
+  const handleUpdateSubcategory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingSubcategory) return;
+    setLoading(true);
+    const { error } = await supabase.from('subcategorias').update({
+      nombre: editingSubcategory.nombre,
+      slug: editingSubcategory.slug,
+      categoria_id: editingSubcategory.categoria_id
+    }).eq('id', editingSubcategory.id);
+    setLoading(false);
+    if (error) {
+      showToast('Error al actualizar: ' + error.message, 'error');
+    } else {
+      showToast('Subcategoría actualizada ✓');
+      setEditingSubcategory(null);
+      cargarDatos();
+    }
+  };
+
   const filteredProducts = productos.filter(p =>
     p.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.categoria.toLowerCase().includes(searchQuery.toLowerCase())
@@ -532,6 +576,146 @@ export default function Admin() {
                     <div className="form-field full">
                       <label>URL de Video (Opcional)</label>
                       <input value={editingProduct.video_url || ''} onChange={e => setEditingProduct({ ...editingProduct, video_url: e.target.value })} placeholder="https://..." />
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── EDIT CATEGORY MODAL ──
+  if (editingCategory) {
+    return (
+      <div className="admin-app">
+        <aside className="admin-sidebar">
+          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} />
+        </aside>
+        <div className="admin-main">
+          <div className="admin-topbar">
+            <div className="topbar-title">
+              <h2>✏️ Editando Categoría</h2>
+              <p>{editingCategory.nombre}</p>
+            </div>
+            <div className="topbar-actions">
+              <button className="btn-secondary" onClick={() => setEditingCategory(null)}>Cancelar</button>
+              <button className="btn-primary" form="edit-category-form" type="submit" disabled={loading}>
+                <Check size={14} /> {loading ? 'Guardando...' : 'Guardar Cambios'}
+              </button>
+            </div>
+          </div>
+          <div className="admin-content">
+            <div className="admin-panel">
+              <div className="panel-header">
+                <div>
+                  <h3><Pencil size={16} /> Editar Categoría</h3>
+                  <p>Modifica los datos y guarda</p>
+                </div>
+              </div>
+              <div className="panel-body">
+                <form id="edit-category-form" onSubmit={handleUpdateCategory}>
+                  <div className="form-grid">
+                    <div className="form-field full">
+                      <label>Nombre de la Categoría</label>
+                      <input required value={editingCategory.nombre} onChange={e => setEditingCategory({ ...editingCategory, nombre: e.target.value })} />
+                    </div>
+                    <div className="form-field">
+                      <label>Slug (identificador)</label>
+                      <input required value={editingCategory.slug} onChange={e => setEditingCategory({ ...editingCategory, slug: e.target.value })} />
+                    </div>
+                    <div className="form-field">
+                      <label>Ícono (Emoji)</label>
+                      <input value={editingCategory.icono || ''} onChange={e => setEditingCategory({ ...editingCategory, icono: e.target.value })} />
+                    </div>
+                    <div className="form-field">
+                      <label>Color de Fondo</label>
+                      <input value={editingCategory.color || ''} onChange={e => setEditingCategory({ ...editingCategory, color: e.target.value })} />
+                    </div>
+                    <div className="form-field full">
+                      <label>URL de Imagen</label>
+                      <div className="img-input-row">
+                        {editingCategory.imagen_url && <img src={editingCategory.imagen_url} className="img-preview-thumb" alt="" />}
+                        <input value={editingCategory.imagen_url || ''} onChange={e => setEditingCategory({ ...editingCategory, imagen_url: e.target.value })} placeholder="https://..." />
+                        <label className="btn-upload-img" style={{ flexShrink: 0, cursor: 'pointer' }}>
+                          <Upload size={12} /> Subir Imagen
+                          <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (ev) => {
+                            const file = ev.target.files?.[0];
+                            if (!file) return;
+                            setLoading(true);
+                            try {
+                              const ext = file.name.split('.').pop() || 'jpg';
+                              const fileName = `cat_${editingCategory.id}_${Date.now()}.${ext}`;
+                              const { error: upErr } = await supabase.storage.from('archivos').upload(fileName, file, { upsert: true });
+                              if (upErr) throw upErr;
+                              const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
+                              setEditingCategory({ ...editingCategory, imagen_url: data.publicUrl });
+                              showToast('Imagen cargada ✓');
+                            } catch (err: any) {
+                              showToast(`Error al subir imagen: ${err.message || err}`, 'error');
+                            } finally {
+                              setLoading(false);
+                            }
+                          }} />
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── EDIT SUBCATEGORY MODAL ──
+  if (editingSubcategory) {
+    return (
+      <div className="admin-app">
+        <aside className="admin-sidebar">
+          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} />
+        </aside>
+        <div className="admin-main">
+          <div className="admin-topbar">
+            <div className="topbar-title">
+              <h2>✏️ Editando Subcategoría</h2>
+              <p>{editingSubcategory.nombre}</p>
+            </div>
+            <div className="topbar-actions">
+              <button className="btn-secondary" onClick={() => setEditingSubcategory(null)}>Cancelar</button>
+              <button className="btn-primary" form="edit-subcategory-form" type="submit" disabled={loading}>
+                <Check size={14} /> {loading ? 'Guardando...' : 'Guardar Cambios'}
+              </button>
+            </div>
+          </div>
+          <div className="admin-content">
+            <div className="admin-panel">
+              <div className="panel-header">
+                <div>
+                  <h3><Pencil size={16} /> Editar Subcategoría</h3>
+                  <p>Modifica los datos y guarda</p>
+                </div>
+              </div>
+              <div className="panel-body">
+                <form id="edit-subcategory-form" onSubmit={handleUpdateSubcategory}>
+                  <div className="form-grid">
+                    <div className="form-field full">
+                      <label>Nombre de la Subcategoría</label>
+                      <input required value={editingSubcategory.nombre} onChange={e => setEditingSubcategory({ ...editingSubcategory, nombre: e.target.value })} />
+                    </div>
+                    <div className="form-field">
+                      <label>Slug (identificador)</label>
+                      <input required value={editingSubcategory.slug} onChange={e => setEditingSubcategory({ ...editingSubcategory, slug: e.target.value })} />
+                    </div>
+                    <div className="form-field">
+                      <label>Categoría Padre</label>
+                      <select value={editingSubcategory.categoria_id} onChange={e => setEditingSubcategory({ ...editingSubcategory, categoria_id: e.target.value })}>
+                        {categoriasData.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                      </select>
                     </div>
                   </div>
                 </form>
@@ -1038,6 +1222,9 @@ export default function Admin() {
                                 }}
                               />
                             </label>
+                            <button className="btn-edit" onClick={() => setEditingCategory(c)} style={{ padding: '0.4rem 0.6rem', height: 30, display: 'flex', alignItems: 'center', gap: '0.2rem', borderRadius: 8, background: '#f1f5f9', border: 'none', cursor: 'pointer', fontSize: '0.75rem' }}>
+                              <Pencil size={11} /> Editar
+                            </button>
                             <button className="btn-danger" onClick={async () => {
                               if (!window.confirm('¿Eliminar categoría?')) return;
                               await supabase.from('categorias').delete().eq('id', c.id);
@@ -1071,6 +1258,9 @@ export default function Admin() {
                                   <h4>{s.nombre}</h4>
                                   <p>/{s.slug} · en {parentCat?.nombre || 'Categoría eliminada'}</p>
                                 </div>
+                                <button className="btn-edit" onClick={() => setEditingSubcategory(s)} style={{ padding: '0.4rem 0.6rem', height: 30, display: 'flex', alignItems: 'center', gap: '0.2rem', borderRadius: 8, background: '#f1f5f9', border: 'none', cursor: 'pointer', fontSize: '0.75rem' }}>
+                                  <Pencil size={11} /> Editar
+                                </button>
                                 <button className="btn-danger" onClick={() => handleDeleteSubcategory(s.id)}>
                                   <Trash2 size={12} />
                                 </button>
