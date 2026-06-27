@@ -749,9 +749,9 @@
 /* ── VERTICAL SUBTITLE LEFT EDGE ── */
 .menu-app-subtitle.vertical-text {
   position: absolute;
-  left: 0.6rem;
+  left: 0;
   top: 50%;
-  transform: translateY(-50%);
+  transform: translateY(-50%) rotate(180deg);
   writing-mode: vertical-rl;
   text-orientation: mixed;
   white-space: nowrap;
@@ -762,7 +762,10 @@
   letter-spacing: 4px;
   text-transform: uppercase;
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.85);
-  z-index: 2;
+  z-index: 3;
+  padding: 0.4rem 0.3rem;
+  background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.18), transparent);
+  border-radius: 0 4px 4px 0;
 }
 
 .special-header-btn {
