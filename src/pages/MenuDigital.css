@@ -929,26 +929,29 @@
 /* ── HEADER BOTTOM BAR CONTAINER ── */
 .header-bottom-bar {
   position: absolute;
-  top: 3.5rem; /* Aligned with center of 90px logo at top:2.2rem */
+  top: 1rem; /* Moved up to avoid logo */
   left: 0;
   width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 1.5rem;
+  padding: 0 1rem;
   z-index: 10;
 }
 
-.header-bottom-bar > *:first-child {
-  justify-self: start;
+@media (max-width: 400px) {
+  .special-header-btn {
+    font-size: 0.72rem !important;
+    padding: 0.25rem 0.5rem !important;
+  }
 }
 
-.header-bottom-bar > *:nth-child(2) {
-  justify-self: center;
+.header-bottom-bar > *:first-child {
+  flex-shrink: 1;
 }
 
 .header-bottom-bar > *:last-child {
-  justify-self: end;
+  flex-shrink: 1;
 }
 
 /* ── VERTICAL SUBTITLE LEFT EDGE ── */
@@ -1320,10 +1323,9 @@
 /* Mobile viewport settings */
 @media (max-width: 480px) {
   .detail-modal {
-    max-width: 100%;
-    border-radius: 20px 20px 0 0;
-    max-height: 95dvh;
-    margin-top: auto;
+    max-width: 95%;
+    max-height: 90dvh;
+    border-radius: 20px;
   }
   .detail-carousel {
     max-height: 45dvh;

@@ -195,6 +195,7 @@ export default function MenuDigital() {
             muted 
             playsInline 
             className="hero-background-video"
+            ref={el => { if (el) el.play().catch(() => {}); }}
           />
         )}
         <div className="header-bottom-bar">
@@ -416,6 +417,7 @@ export default function MenuDigital() {
                       muted 
                       playsInline 
                       style={{width: '100%', height: '100%', objectFit: 'cover'}}
+                      ref={el => { if (el) el.play().catch(() => {}); }}
                     />
                   ) : producto.imagen_url ? (
                     <img src={producto.imagen_url} alt={producto.nombre} />
@@ -596,7 +598,7 @@ export default function MenuDigital() {
               {/* ── CAROUSEL ── */}
               <div className="detail-carousel">
                 {detailProduct.video_url ? (
-                  <video src={detailProduct.video_url} autoPlay loop muted playsInline className="detail-carousel-img" />
+                  <video src={detailProduct.video_url} autoPlay loop muted playsInline className="detail-carousel-img" ref={el => { if (el) el.play().catch(() => {}); }} />
                 ) : allImages.length > 0 ? (
                   <img src={allImages[safeIdx]} alt={detailProduct.nombre} className="detail-carousel-img" />
                 ) : (

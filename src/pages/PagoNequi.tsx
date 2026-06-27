@@ -241,13 +241,13 @@ export default function PagoNequi() {
               <p style={{ margin: '0.25rem 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>JPG, PNG, WEBP — máx. 10 MB</p>
             </div>
           )}
-          <input type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleFile} />
+          <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
         </label>
 
         {preview && (
           <label style={{ display: 'block', textAlign: 'center', marginTop: '0.5rem', cursor: 'pointer', color: '#6366f1', fontWeight: 600, fontSize: '0.85rem' }}>
             Cambiar imagen
-            <input type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={handleFile} />
+            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
           </label>
         )}
 

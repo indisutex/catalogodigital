@@ -323,7 +323,7 @@ export default function Admin() {
     // 1. Abrir WhatsApp con cobro y enlace
     const num = (ped.cliente_telefono || '').replace(/\D/g, '');
     const uploadLink = `${window.location.origin}/pago/${ped.id}`;
-    const msg = `¡Hola ${ped.cliente_nombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: $${ped.total.toLocaleString()} COP*\n\n💳 *Datos Nequi/Bancolombia:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\nUna vez realices el pago, por favor envíanos el pantallazo por este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
+    const msg = `¡Hola ${ped.cliente_nombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: $${ped.total.toLocaleString()} COP*\n\n💳 *Datos del banco:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\nPara poder completar tu pedido, haz la captura de pantalla de tu pago o de transacción y envíala por este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
     window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
 
     // 2. Marcar en Base de Datos como atendido
@@ -1643,11 +1643,11 @@ export default function Admin() {
                             <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
                               {ped.pantallazo_url ? (
                                 <span style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 600, display: 'inline-block', lineHeight: '1.2' }}>
-                                  ✅ El cliente ya subió el comprobante de pago
+                                  ✅ Comprobante subido
                                 </span>
                               ) : (
                                 <span style={{ background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 600, display: 'inline-block', lineHeight: '1.2' }}>
-                                  ⏳ El cliente aún no ha subido el comprobante de pago
+                                  ⏳ Pendiente de comprobante
                                 </span>
                               )}
                             </td>
@@ -1761,7 +1761,7 @@ export default function Admin() {
             {!selectedPedido.pantallazo_url && (
               <div style={{ marginTop: '1.5rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.25rem', textAlign: 'center' }}>
                 <p style={{ color: '#f59e0b', fontWeight: 600, fontSize: '0.85rem', margin: 0 }}>
-                  ⏳ Esperando comprobante de pago del cliente
+                  ⏳ Pendiente de comprobante
                 </p>
               </div>
             )}
@@ -1780,7 +1780,7 @@ export default function Admin() {
                 onClick={() => {
                   const num = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
                   const uploadLink = `${window.location.origin}/pago/${selectedPedido.id}`;
-                  const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: $${selectedPedido.total.toLocaleString()} COP*\n\n💳 *Datos Nequi/Bancolombia:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\nUna vez realices el pago, por favor envíanos el pantallazo en este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
+                  const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: $${selectedPedido.total.toLocaleString()} COP*\n\n💳 *Datos del banco:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\nPara poder completar tu pedido, haz la captura de pantalla de tu pago o de transacción y envíala por este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
                   window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
                 }}
               >
