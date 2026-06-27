@@ -168,11 +168,12 @@ export default function MenuDigital() {
     <div className="menu-app-container">
       <div className="menu-app-header" style={{ position: 'relative' }}>
         {/* Enlaces Especiales en la Esquina Superior Derecha */}
-        <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'flex-end', zIndex: 10 }}>
+        <div style={{ position: 'absolute', top: '2.2rem', right: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'flex-end', zIndex: 10 }}>
           <a 
             href={configuracion?.link_ganar_dinero || `https://wa.me/${overrideWhatsApp || (configuracion?.whatsapp || '').replace(/\D/g, '')}?text=Hola,%20quiero%20saber%20cómo%20ganar%20dinero%20con%20ustedes`} 
             target="_blank" 
             rel="noopener noreferrer"
+            className="ganar-dinero-pulse"
             style={{ 
               background: 'rgba(16, 185, 129, 0.1)', 
               color: '#059669', 
