@@ -1247,6 +1247,18 @@ function SidebarContent({
   handleLogout: () => void;
   setIsAddingProduct: (b: boolean) => void;
 }) {
+  const [isOnline, setIsOnline] = useState(window.navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
   return (
     <>
       <div className="sidebar-brand">
@@ -1309,10 +1321,12 @@ function SidebarContent({
         </div>
       </div>
 
-      <div className="sidebar-banner-card">
-        <div className="banner-tag">PRO ACTIVE</div>
-        <h4>Indisutex Cloud</h4>
-        <p>Catálogo 100% Autogestionable</p>
+      <div className="sidebar-network-status" style={{ padding: '0 1.5rem', marginBottom: '1.5rem' }}>
+        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.5rem' }}>Estado de Red</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: isOnline ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', color: isOnline ? '#059669' : '#dc2626', padding: '0.6rem 0.8rem', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 700 }}>
+          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: isOnline ? '#10b981' : '#ef4444', boxShadow: isOnline ? '0 0 8px #10b981' : '0 0 8px #ef4444', animation: 'pulse 2s infinite' }}></span>
+          {isOnline ? 'Bueno' : 'Malo'}
+        </div>
       </div>
 
       <div className="sidebar-footer" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', padding: '1.2rem', borderTop: '1px solid #f1f5f9' }}>
