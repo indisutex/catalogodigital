@@ -683,7 +683,11 @@
 .hero-content-overlay {
   position: absolute;
   top: 1.5rem;
-  left: 1.2rem;
+  left: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   z-index: 2;
 }
 
@@ -700,10 +704,7 @@
 }
 
 .menu-app-header.has-video .menu-app-subtitle {
-  position: absolute;
-  bottom: 1.5rem;
-  left: 50%;
-  transform: translateX(-50%);
+  position: static;
   text-align: center;
   z-index: 2;
   margin: 0;
@@ -714,6 +715,31 @@
   text-transform: uppercase;
   text-shadow: 0 2px 6px rgba(0, 0, 0, 0.95);
   white-space: nowrap;
+}
+
+/* ── HEADER BOTTOM BAR CONTAINER ── */
+.header-bottom-bar {
+  position: absolute;
+  bottom: 2rem;
+  left: 0;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 0 2.2rem; /* Margen amplio de los bordes laterales */
+  z-index: 10;
+}
+
+.header-bottom-bar > *:first-child {
+  justify-self: start;
+}
+
+.header-bottom-bar > *:nth-child(2) {
+  justify-self: center;
+}
+
+.header-bottom-bar > *:last-child {
+  justify-self: end;
 }
 
 .menu-app-subtitle {

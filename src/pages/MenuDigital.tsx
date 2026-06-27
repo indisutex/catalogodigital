@@ -177,8 +177,34 @@ export default function MenuDigital() {
             className="hero-background-video"
           />
         )}
-        {/* Enlace Especial Ganar Dinero en la Esquina Inferior Derecha */}
-        <div style={{ position: 'absolute', bottom: '1.5rem', right: '1.2rem', zIndex: 10 }}>
+        <div className="header-bottom-bar">
+          {/* Enlace Especial Dropshipper en la Esquina Inferior Izquierda */}
+          <a 
+            href={configuracion?.link_dropshipper || `https://wa.me/${overrideWhatsApp || (configuracion?.whatsapp || '').replace(/\D/g, '')}?text=Hola,%20soy%20dropshipper,%20me%20interesa%20trabajar%20con%20ustedes`} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="special-header-btn"
+            style={{ 
+              background: '#f36b8e', 
+              color: '#ffffff', 
+              padding: '0.45rem 0.9rem', 
+              borderRadius: '20px', 
+              fontSize: '0.72rem', 
+              fontWeight: 800, 
+              textDecoration: 'none', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.2rem', 
+              border: 'none',
+              boxShadow: '0 4px 10px rgba(243, 107, 142, 0.35)'
+            }}
+          >
+            🚀 ¿Dropshipper?
+          </a>
+
+          <p className="menu-app-subtitle">{configuracion?.descripcion_hero || 'TIENDA & BABY'}</p>
+
+          {/* Enlace Especial Ganar Dinero en la Esquina Inferior Derecha */}
           <a 
             href={configuracion?.link_ganar_dinero || `https://wa.me/${overrideWhatsApp || (configuracion?.whatsapp || '').replace(/\D/g, '')}?text=Hola,%20quiero%20saber%20cómo%20ganar%20dinero%20con%20ustedes`} 
             target="_blank" 
@@ -202,34 +228,6 @@ export default function MenuDigital() {
             💸 ¿Ganar dinero?
           </a>
         </div>
-
-        {/* Enlace Especial Dropshipper en la Esquina Inferior Izquierda */}
-        <div style={{ position: 'absolute', bottom: '1.5rem', left: '1.2rem', zIndex: 10 }}>
-          <a 
-            href={configuracion?.link_dropshipper || `https://wa.me/${overrideWhatsApp || (configuracion?.whatsapp || '').replace(/\D/g, '')}?text=Hola,%20soy%20dropshipper,%20me%20interesa%20trabajar%20con%20ustedes`} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="special-header-btn"
-            style={{ 
-              background: '#f36b8e', 
-              color: '#ffffff', 
-              padding: '0.45rem 0.9rem', 
-              borderRadius: '20px', 
-              fontSize: '0.72rem', 
-              fontWeight: 800, 
-              textDecoration: 'none', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.2rem', 
-              border: 'none',
-              boxShadow: '0 4px 10px rgba(243, 107, 142, 0.35)'
-            }}
-          >
-            🚀 ¿Dropshipper?
-          </a>
-        </div>
-
-        <p className="menu-app-subtitle">{configuracion?.descripcion_hero || 'TIENDA & BABY'}</p>
 
         <div className="hero-content-overlay">
           <div className="menu-app-logo">
