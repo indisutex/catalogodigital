@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
 export default function PagoNequi() {
@@ -84,18 +84,120 @@ export default function PagoNequi() {
 
   if (enviado) return (
     <div style={styles.page}>
+      <style>{`
+        .checkmark-svg {
+          width: 80px;
+          height: 80px;
+          border-radius: 50%;
+          display: block;
+          stroke-width: 4;
+          stroke: #10b981;
+          stroke-miterlimit: 10;
+          margin: 0 auto 1.5rem;
+          box-shadow: inset 0px 0px 0px #10b981;
+          animation: fillAnimation .4s ease-in-out .4s forwards, scaleUp .3s ease-in-out .9s both;
+        }
+
+        .checkmark-circle {
+          stroke-dasharray: 166;
+          stroke-dashoffset: 166;
+          stroke-width: 4;
+          stroke-miterlimit: 10;
+          stroke: #10b981;
+          fill: none;
+          animation: strokeAnimation .6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+        }
+
+        .checkmark-check {
+          transform-origin: 50% 50%;
+          stroke-dasharray: 48;
+          stroke-dashoffset: 48;
+          stroke: white;
+          animation: strokeAnimation .3s cubic-bezier(0.65, 0, 0.45, 1) .8s forwards;
+        }
+
+        @keyframes strokeAnimation {
+          100% {
+            stroke-dashoffset: 0;
+          }
+        }
+
+        @keyframes scaleUp {
+          0%, 100% {
+            transform: none;
+          }
+          50% {
+            transform: scale3d(1.15, 1.15, 1);
+          }
+        }
+
+        @keyframes fillAnimation {
+          100% {
+            box-shadow: inset 0px 0px 0px 40px #10b981;
+          }
+        }
+
+        .fade-in-up {
+          opacity: 0;
+          transform: translateY(15px);
+          animation: fadeInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .delay-1 { animation-delay: 0.2s; }
+        .delay-2 { animation-delay: 0.4s; }
+        .delay-3 { animation-delay: 0.6s; }
+
+        @keyframes fadeInUp {
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
       <div style={styles.card}>
-        <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>✅</div>
-        <h2 style={{ color: '#10b981', marginBottom: '0.5rem' }}>¡Pantallazo recibido!</h2>
-        <p style={{ color: '#475569', textAlign: 'center', lineHeight: 1.6 }}>
+        <div style={{ textAlign: 'center' }}>
+          <svg className="checkmark-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+            <circle className="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+            <path className="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+          </svg>
+        </div>
+        <h2 className="fade-in-up delay-1" style={{ color: '#10b981', marginBottom: '0.5rem', textAlign: 'center', fontWeight: 800 }}>
+          ¡Pantallazo recibido!
+        </h2>
+        <p className="fade-in-up delay-2" style={{ color: '#475569', textAlign: 'center', lineHeight: 1.6, margin: '0.5rem 0 1rem' }}>
           Hemos recibido tu comprobante de pago.<br />
           Tu pedido será procesado en breve. <strong>¡Gracias por tu compra!</strong>
         </p>
-        <div style={{ background: '#f0fdf4', borderRadius: '12px', padding: '1rem 1.5rem', marginTop: '1.5rem', border: '1px solid #bbf7d0', textAlign: 'center' }}>
-          <span style={{ fontSize: '0.9rem', color: '#15803d', fontWeight: 600 }}>
+        <div className="fade-in-up delay-3" style={{ background: '#f0fdf4', borderRadius: '12px', padding: '1rem 1.5rem', marginTop: '1rem', border: '1px solid #bbf7d0', textAlign: 'center' }}>
+          <span style={{ fontSize: '0.9rem', color: '#15803d', fontWeight: 700 }}>
             📦 Pedido #{pedidoId?.slice(0, 8).toUpperCase()}
           </span>
         </div>
+        <Link 
+          to="/" 
+          className="fade-in-up delay-3"
+          style={{ 
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.5rem',
+            width: '100%',
+            padding: '0.9rem',
+            background: 'linear-gradient(135deg, #f36b8e 0%, #e85d95 100%)',
+            color: 'white',
+            border: 'none',
+            borderRadius: '50px',
+            textDecoration: 'none',
+            fontSize: '0.95rem',
+            fontWeight: 800,
+            marginTop: '1.5rem',
+            boxShadow: '0 6px 20px rgba(243,107,142,0.3)',
+            textAlign: 'center',
+            transition: 'opacity 0.2s'
+          }}
+        >
+          🛍️ ¿Quieres seguir comprando?
+        </Link>
       </div>
     </div>
   );
