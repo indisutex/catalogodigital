@@ -7,6 +7,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Faltan las credenciales de Supabase en el archivo .env');
 }
 
+export const TENANT_ID = import.meta.env.VITE_TENANT_ID || 'default';
+
 export const supabase = createClient(
   supabaseUrl || 'https://placeholder.supabase.co',
   supabaseAnonKey || 'placeholder-key'

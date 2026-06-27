@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, TENANT_ID } from '../lib/supabase';
 import type { Producto, Categoria, Subcategoria, Configuracion } from '../types';
 import './Admin.css';
 import { X, Video, Upload, Package, Tag, Settings, LayoutDashboard, Zap, Plus, Trash2, Pencil, Check } from 'lucide-react';
@@ -64,15 +64,28 @@ export default function Admin() {
   async function cargarDatos() {
     try {
       const [prodRes, catRes, subcatRes, confRes] = await Promise.all([
-        supabase.from('productos').select('*').order('created_at', { ascending: false }),
-        supabase.from('categorias').select('*').order('orden', { ascending: true }),
-        supabase.from('subcategorias').select('*').order('orden', { ascending: true }),
-        supabase.from('configuracion').select('*').limit(1).single()
+        supabase.from('productos').select('*').eq('tenant_id', TENANT_ID).order('created_at', { ascending: false }),
+        supabase.from('categorias').select('*').eq('tenant_id', TENANT_ID).order('orden', { ascending: true }),
+        supabase.from('subcategorias').select('*').eq('tenant_id', TENANT_ID).order('orden', { ascending: true }),
+        supabase.from('configuracion').select('*').eq('tenant_id', TENANT_ID).limit(1).single()
       ]);
       if (prodRes.data) setProductos(prodRes.data);
       if (catRes.data) setCategoriasData(catRes.data);
       if (subcatRes.data) setSubcategoriasData(subcatRes.data);
-      if (confRes.data) setConfiguracion(confRes.data);
+      
+      if (confRes.data) {
+        setConfiguracion(confRes.data);
+      } else {
+        // Create default config for this tenant if it doesn't exist
+        const defaultConfig = {
+          nombre_negocio: TENANT_ID,
+          whatsapp: '573185637317',
+          descripcion_hero: 'CATÁLOGO DIGITAL',
+          tenant_id: TENANT_ID
+        };
+        const { data: newConf } = await supabase.from('configuracion').insert([defaultConfig]).select().single();
+        if (newConf) setConfiguracion(newConf);
+      }
     } catch (err) {
       console.error('Error cargando datos:', err);
     }
@@ -367,7 +380,8 @@ export default function Admin() {
       subcategoria: f.subcategoria || null,
       imagen_url: f.imagenes.find(u => u.trim()) || '',
       video_url: f.video_url || null,
-      tallas: f.tallas || null
+      tallas: f.tallas || null,
+      tenant_id: TENANT_ID
     }));
     const { error } = await supabase.from('productos').insert(newProducts);
     setLoading(false);
@@ -415,7 +429,7 @@ export default function Admin() {
     setLoading(true);
     const slug = subcatSlug.trim() || subcatNombre.toLowerCase().replace(/ /g, '-').replace(/[^\w-]/g, '');
     const { error } = await supabase.from('subcategorias').insert([
-      { nombre: subcatNombre.trim(), slug, categoria_id: subcatParentId }
+      { nombre: subcatNombre.trim(), slug, categoria_id: subcatParentId, tenant_id: TENANT_ID }
     ]);
     setLoading(false);
     if (error) {
@@ -788,7 +802,7 @@ export default function Admin() {
                   const icono = (form.elements.namedItem('icono') as HTMLInputElement).value;
                   const color = (form.elements.namedItem('color') as HTMLInputElement).value;
                   setLoading(true);
-                  const { error } = await supabase.from('categorias').insert([{ nombre, slug, icono, color }]);
+                  const { error } = await supabase.from('categorias').insert([{ nombre, slug, icono, color, tenant_id: TENANT_ID }]);
                   setLoading(false);
                   if (error) showToast('Error: ' + error.message, 'error');
                   else { form.reset(); cargarDatos(); showToast('Categoría creada ✓'); }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase, TENANT_ID } from '../lib/supabase';
 import type { Producto } from '../types';
 import './Home.css';
 
@@ -17,6 +17,7 @@ export default function Home() {
         const { data, error } = await supabase
           .from('productos')
           .select('*')
+          .eq('tenant_id', TENANT_ID)
           .order('created_at', { ascending: false })
           .limit(4);
         
