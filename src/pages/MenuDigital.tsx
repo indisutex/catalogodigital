@@ -166,7 +166,7 @@ export default function MenuDigital() {
 
   return (
     <div className="menu-app-container">
-      <div className="menu-app-header" style={{ position: 'relative' }}>
+      <div className={`menu-app-header ${configuracion?.video_hero_url ? 'has-video' : ''}`} style={{ position: 'relative' }}>
         {configuracion?.video_hero_url && (
           <video 
             src={configuracion.video_hero_url} 

@@ -664,6 +664,42 @@
   pointer-events: none;
 }
 
+.menu-app-header.has-video {
+  padding: 0 !important;
+  overflow: hidden;
+  background: #000;
+}
+
+.menu-app-header.has-video .hero-background-video {
+  position: relative;
+  width: 100%;
+  height: auto;
+  max-height: 320px;
+  display: block;
+  opacity: 0.65;
+}
+
+.menu-app-header.has-video .menu-app-logo {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+  margin-bottom: 0;
+}
+
+.menu-app-header.has-video .menu-app-subtitle {
+  position: absolute;
+  bottom: 1.2rem;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  z-index: 2;
+  margin: 0;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+}
+
 .menu-app-subtitle {
   position: relative;
   z-index: 2;
@@ -674,5 +710,6 @@
   color: #1e293b;
   margin-top: 0.4rem;
 }
+
 
 
