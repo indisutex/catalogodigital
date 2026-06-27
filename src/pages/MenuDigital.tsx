@@ -383,7 +383,7 @@ export default function MenuDigital() {
                 </div>
                 <div className="item-details">
                   <h4>{producto.nombre}</h4>
-                  <p className="item-desc">{producto.descripcion?.substring(0, 60)}...</p>
+                  <p className="item-desc">{producto.descripcion}</p>
                   <p className="item-price">${producto.precio.toLocaleString('es-CO')}</p>
                 </div>
                 <button 
