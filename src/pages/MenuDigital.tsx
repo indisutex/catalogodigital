@@ -226,22 +226,24 @@ export default function MenuDigital() {
           </a>
         </div>
 
-        <div className="menu-app-logo">
-          {configuracion?.logo_url ? (
-            <img
-              src={configuracion.logo_url}
-              alt="Logo"
-              className="store-logo-round"
-            />
-          ) : (
-            <div className="store-logo-round store-logo-placeholder">
-              <span className="logo-letter c1" style={{ fontSize: '24px', fontWeight: 'bold' }}>
-                {(configuracion?.nombre_negocio || 'T').substring(0, 1).toUpperCase()}
-              </span>
-            </div>
-          )}
+        <div className="hero-content-overlay">
+          <div className="menu-app-logo">
+            {configuracion?.logo_url ? (
+              <img
+                src={configuracion.logo_url}
+                alt="Logo"
+                className="store-logo-round"
+              />
+            ) : (
+              <div className="store-logo-round store-logo-placeholder">
+                <span className="logo-letter c1" style={{ fontSize: '24px', fontWeight: 'bold' }}>
+                  {(configuracion?.nombre_negocio || 'T').substring(0, 1).toUpperCase()}
+                </span>
+              </div>
+            )}
+          </div>
+          <p className="menu-app-subtitle">{configuracion?.descripcion_hero || 'TIENDA & BABY'}</p>
         </div>
-        <p className="menu-app-subtitle">{configuracion?.descripcion_hero || 'TIENDA & BABY'}</p>
       </div>
 
       <div className="menu-app-body">

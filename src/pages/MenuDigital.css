@@ -668,31 +668,41 @@
   padding: 0 !important;
   overflow: hidden;
   background: #000;
+  position: relative;
 }
 
 .menu-app-header.has-video .hero-background-video {
   position: relative;
   width: 100%;
   height: auto;
-  max-height: 320px;
+  max-height: 520px;
   display: block;
   opacity: 0.65;
 }
 
-.menu-app-header.has-video .menu-app-logo {
+.hero-content-overlay {
   position: absolute;
-  top: 45%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   z-index: 2;
+  gap: 0.8rem;
+  padding: 1.5rem;
+}
+
+.menu-app-header.has-video .menu-app-logo {
+  position: static;
+  transform: none;
   margin-bottom: 0;
 }
 
 .menu-app-header.has-video .menu-app-subtitle {
-  position: absolute;
-  bottom: 1.2rem;
-  left: 0;
-  width: 100%;
+  position: static;
   text-align: center;
   z-index: 2;
   margin: 0;
