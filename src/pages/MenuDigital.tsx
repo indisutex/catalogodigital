@@ -135,10 +135,9 @@ export default function MenuDigital() {
             />
           ) : (
             <div className="store-logo-round store-logo-placeholder">
-               <span className="logo-letter c1">M</span>
-               <span className="logo-letter c2">o</span>
-               <span className="logo-letter c3">z</span>
-               <span className="logo-letter c4">t</span>
+              <span className="logo-letter c1" style={{ fontSize: '24px', fontWeight: 'bold' }}>
+                {(configuracion?.nombre_negocio || 'T').substring(0, 1).toUpperCase()}
+              </span>
             </div>
           )}
         </div>

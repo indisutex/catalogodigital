@@ -59,6 +59,12 @@ export default function Admin() {
     setTimeout(() => setToast(null), 3000);
   }
 
+  function handleLogout() {
+    setIsAuthenticated(false);
+    setSelectedCompany(null);
+    setPin('');
+  }
+
   useEffect(() => {
     if (isAuthenticated) cargarDatos();
   }, [isAuthenticated]);
@@ -582,7 +588,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} categoriasData={categoriasData} configuracion={configuracion} />
+          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} categoriasData={categoriasData} configuracion={configuracion} handleLogout={handleLogout} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -656,7 +662,7 @@ export default function Admin() {
     <div className="admin-app">
       {/* SIDEBAR */}
       <aside className="admin-sidebar">
-        <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} categoriasData={categoriasData} configuracion={configuracion} />
+        <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} categoriasData={categoriasData} configuracion={configuracion} handleLogout={handleLogout} />
       </aside>
 
       {/* MAIN */}
@@ -1172,13 +1178,14 @@ export default function Admin() {
 
 // ── SIDEBAR COMPONENT ──
 function SidebarContent({
-  activeTab, setActiveTab, productos, categoriasData, configuracion
+  activeTab, setActiveTab, productos, categoriasData, configuracion, handleLogout
 }: {
   activeTab: TabType;
   setActiveTab: (t: TabType) => void;
   productos: Producto[];
   categoriasData: Categoria[];
   configuracion: Configuracion | null;
+  handleLogout: () => void;
 }) {
   return (
     <>
@@ -1223,11 +1230,32 @@ function SidebarContent({
         </button>
       </nav>
 
-      <div className="sidebar-footer">
-        <div className="avatar">👑</div>
-        <div className="user-info">
-          <h4>Administrador</h4>
-          <p>Sesión activa</p>
+      <div className="sidebar-footer" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', padding: '1.2rem', borderTop: '1px solid #f1f5f9' }}>
+        <a 
+          href={`/?tienda=${configuracion?.tenant_id || getTenantId()}`} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="btn-primary" 
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', width: '100%', padding: '0.8rem', borderRadius: '8px', textDecoration: 'none', background: '#0ea5e9' }}
+        >
+          <span>👁️</span> Ver Catálogo
+        </a>
+        
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginTop: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className="avatar">👑</div>
+            <div className="user-info">
+              <h4 style={{ fontSize: '0.9rem', margin: 0 }}>Administrador</h4>
+              <p style={{ fontSize: '0.75rem', color: '#10b981', margin: 0 }}>Sesión activa</p>
+            </div>
+          </div>
+          <button 
+            onClick={handleLogout}
+            style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '0.5rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            title="Cerrar sesión"
+          >
+            ❌
+          </button>
         </div>
       </div>
     </>
