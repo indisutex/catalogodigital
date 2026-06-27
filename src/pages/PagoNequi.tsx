@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { compressImage } from '../lib/imageCompression';
 
 export default function PagoNequi() {
   const { pedidoId } = useParams<{ pedidoId: string }>();
@@ -35,11 +36,12 @@ export default function PagoNequi() {
     setSubiendo(true);
     setError('');
     try {
-      const ext = file.name.split('.').pop();
+      const compressedFile = await compressImage(file, 1000, 0.7);
+      const ext = compressedFile.name.split('.').pop() || 'jpg';
       const fileName = `pago_${pedidoId}_${Date.now()}.${ext}`;
       const { error: uploadErr } = await supabase.storage
         .from('archivos')
-        .upload(fileName, file);
+        .upload(fileName, compressedFile);
       if (uploadErr) {
         console.error('Storage upload error:', uploadErr);
         throw new Error(`Error de Storage: ${uploadErr.message}`);

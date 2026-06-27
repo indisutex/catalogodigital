@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase, getTenantId, setTenantId } from '../lib/supabase';
+import { compressImage } from '../lib/imageCompression';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido } from '../types';
 import './Admin.css';
 import { X, Video, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy } from 'lucide-react';
@@ -155,8 +156,9 @@ export default function Admin() {
     try {
       const uploadedUrls: string[] = [];
       for (const file of files) {
-        const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${file.name.split('.').pop()}`;
-        const { error: uploadError } = await supabase.storage.from('archivos').upload(fileName, file);
+        const compFile = await compressImage(file);
+        const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${compFile.name.split('.').pop()}`;
+        const { error: uploadError } = await supabase.storage.from('archivos').upload(fileName, compFile);
         if (uploadError) throw uploadError;
         const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
         uploadedUrls.push(data.publicUrl);
@@ -361,8 +363,9 @@ export default function Admin() {
     if (!file || !editingProduct) return;
     setLoading(true);
     try {
-      const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${file.name.split('.').pop()}`;
-      const { error: uploadError } = await supabase.storage.from('archivos').upload(fileName, file);
+      const compFile = await compressImage(file);
+      const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${compFile.name.split('.').pop()}`;
+      const { error: uploadError } = await supabase.storage.from('archivos').upload(fileName, compFile);
       if (uploadError) throw uploadError;
       const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
       setEditingProduct({ ...editingProduct, imagen_url: data.publicUrl });
@@ -378,8 +381,9 @@ export default function Admin() {
     try {
       const uploadedUrls: string[] = [];
       for (const file of files) {
-        const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${file.name.split('.').pop()}`;
-        const { error: uploadError } = await supabase.storage.from('archivos').upload(fileName, file);
+        const compFile = await compressImage(file);
+        const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${compFile.name.split('.').pop()}`;
+        const { error: uploadError } = await supabase.storage.from('archivos').upload(fileName, compFile);
         if (uploadError) throw uploadError;
         const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
         uploadedUrls.push(data.publicUrl);
@@ -683,8 +687,9 @@ export default function Admin() {
                           try {
                             const urls: string[] = [];
                             for (const file of files) {
-                              const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${file.name.split('.').pop()}`;
-                              const { error: uploadError } = await supabase.storage.from('archivos').upload(fileName, file);
+                              const compFile = await compressImage(file);
+                              const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${compFile.name.split('.').pop()}`;
+                              const { error: uploadError } = await supabase.storage.from('archivos').upload(fileName, compFile);
                               if (uploadError) throw uploadError;
                               const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
                               urls.push(data.publicUrl);
@@ -770,9 +775,10 @@ export default function Admin() {
                             if (!file) return;
                             setLoading(true);
                             try {
-                              const ext = file.name.split('.').pop() || 'jpg';
+                              const compFile = await compressImage(file);
+                              const ext = compFile.name.split('.').pop() || 'jpg';
                               const fileName = `cat_${editingCategory.id}_${Date.now()}.${ext}`;
-                              const { error: upErr } = await supabase.storage.from('archivos').upload(fileName, file, { upsert: true });
+                              const { error: upErr } = await supabase.storage.from('archivos').upload(fileName, compFile, { upsert: true });
                               if (upErr) throw upErr;
                               const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
                               setEditingCategory({ ...editingCategory, imagen_url: data.publicUrl });
@@ -1474,8 +1480,9 @@ export default function Admin() {
                               if (!file) return;
                               setLoading(true);
                               try {
-                                const fileName = `logo_${Date.now()}.${file.name.split('.').pop()}`;
-                                  await supabase.storage.from('archivos').upload(fileName, file);
+                                const compFile = await compressImage(file);
+                                const fileName = `logo_${Date.now()}.${compFile.name.split('.').pop()}`;
+                                await supabase.storage.from('archivos').upload(fileName, compFile);
                                 const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
                                 setConfiguracion({ ...configuracion, logo_url: data.publicUrl });
                                 showToast('Logo subido ✓');

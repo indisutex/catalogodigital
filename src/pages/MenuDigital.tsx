@@ -424,6 +424,7 @@ export default function MenuDigital() {
                   ) : (
                     <div className="img-placeholder"></div>
                   )}
+                  <div className="sku-badge">{producto.nombre}</div>
                   
                   <button 
                     className="item-add-btn" 
@@ -604,6 +605,9 @@ export default function MenuDigital() {
                 ) : (
                   <div className="detail-carousel-placeholder" />
                 )}
+                <div className="sku-badge" style={{ fontSize: '0.85rem', padding: '0.3rem 0.6rem' }}>
+                  {detailProduct.nombre}
+                </div>
 
                 {allImages.length > 1 && (
                   <>
