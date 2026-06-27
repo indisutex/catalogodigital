@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import MenuDigital from './pages/MenuDigital';
 import Admin from './pages/Admin';
+import PagoNequi from './pages/PagoNequi';
 
 function App() {
   return (
@@ -12,6 +13,9 @@ function App() {
         
         {/* Panel de Administración */}
         <Route path="/admin" element={<Admin />} />
+
+        {/* Pago Nequi - página pública para subir comprobante */}
+        <Route path="/pago/:pedidoId" element={<PagoNequi />} />
 
         {/* Fallback para URLs antiguas como /products */}
         <Route path="*" element={<MenuDigital />} />

@@ -14,6 +14,8 @@ export default function MenuDigital() {
   
   const [filtroCategoria, setFiltroCategoria] = useState<string>('todos');
   const [filtroSubcategoria, setFiltroSubcategoria] = useState<string>('todas');
+  const [busqueda, setBusqueda] = useState('');
+  const [searchVisible, setSearchVisible] = useState(false);
   
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutMode, setIsCheckoutMode] = useState(false);
@@ -121,6 +123,16 @@ export default function MenuDigital() {
         || pSub === (subcatActual?.nombre || '').toLowerCase().trim()
         || pSub === (subcatActual?.slug || '').toLowerCase().trim();
     });
+  }
+
+  // Text search filter
+  if (busqueda.trim()) {
+    const q = busqueda.toLowerCase().trim();
+    productosFiltrados = productosFiltrados.filter(p =>
+      (p.nombre || '').toLowerCase().includes(q) ||
+      (p.descripcion || '').toLowerCase().includes(q) ||
+      (p.categoria || '').toLowerCase().includes(q)
+    );
   }
 
   const totalItems = items.reduce((sum, item) => sum + item.cantidad, 0);
@@ -290,8 +302,32 @@ export default function MenuDigital() {
       <div className="menu-app-body">
         <div className="explore-header">
           <h2>EXPLORAR CATÁLOGO DIGITAL</h2>
-          <div className="search-icon-btn"><Search size={18} /></div>
+          <button
+            className="search-icon-btn"
+            onClick={() => { setSearchVisible(v => !v); if (searchVisible) setBusqueda(''); }}
+            aria-label="Buscar"
+          >
+            <Search size={18} />
+          </button>
         </div>
+
+        {/* Search bar */}
+        {searchVisible && (
+          <div className="search-bar-wrap">
+            <Search size={16} className="search-bar-icon" />
+            <input
+              className="search-bar-input"
+              type="text"
+              autoFocus
+              placeholder="Buscar producto, categoría..."
+              value={busqueda}
+              onChange={e => setBusqueda(e.target.value)}
+            />
+            {busqueda && (
+              <button className="search-bar-clear" onClick={() => setBusqueda('')}>×</button>
+            )}
+          </div>
+        )}
 
         {/* Categories Carousel */}
         <div className="categories-carousel">
@@ -409,10 +445,11 @@ export default function MenuDigital() {
       {totalItems > 0 && !isCartOpen && (
         <button className="floating-cart-btn" onClick={() => setIsCartOpen(true)}>
           <div className="cart-icon-wrapper">
-            <ShoppingBag size={24} />
+            <ShoppingBag size={22} />
             <span className="cart-badge">{totalItems}</span>
+            <span>Ver Carrito</span>
           </div>
-          <span className="cart-total-float">Ver Carrito - ${total.toLocaleString('es-CO')}</span>
+          <span className="cart-total-float">${total.toLocaleString('es-CO')}</span>
         </button>
       )}
 
@@ -452,7 +489,7 @@ export default function MenuDigital() {
                     required 
                     value={formData.telefono}
                     onChange={e => setFormData({...formData, telefono: e.target.value})}
-                    placeholder="Ej. +52 123 456 7890"
+                    placeholder="Ej. 3001234567"
                   />
                 </div>
                 <div className="form-group">
@@ -462,17 +499,17 @@ export default function MenuDigital() {
                     required 
                     value={formData.ciudad}
                     onChange={e => setFormData({...formData, ciudad: e.target.value})}
-                    placeholder="Ej. Ciudad de México"
+                    placeholder="Ej. Cali, Bogotá, Medellín..."
                   />
                 </div>
                 <div className="form-group">
-                  <label>Dirección Exacta de Envío</label>
+                  <label>Dirección exacta (Barrio, Calle, Casa/Apto)</label>
                   <textarea 
                     required 
                     rows={3}
                     value={formData.direccion}
                     onChange={e => setFormData({...formData, direccion: e.target.value})}
-                    placeholder="Calle, Número, Colonia, Código Postal, Referencias..."
+                    placeholder="Barrio, Calle #, Casa o Apto, referencias..."
                   />
                 </div>
 

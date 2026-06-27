@@ -1613,13 +1613,24 @@ export default function Admin() {
                             <td style={{ padding: '1rem', fontWeight: 700, color: '#10b981' }}>
                               ${ped.total.toLocaleString()}
                             </td>
-                            <td style={{ padding: '1rem', textAlign: 'center' }}>
+                            <td style={{ padding: '0.8rem', textAlign: 'center', display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
                               <button 
                                 className="btn-secondary" 
                                 style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '6px' }}
                                 onClick={() => setSelectedPedido(ped)}
                               >
                                 <Eye size={12} /> Ver Detalle
+                              </button>
+                              <button
+                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '6px', background: '#25D366', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: 700 }}
+                                onClick={() => {
+                                  const num = (ped.cliente_telefono || '').replace(/\D/g, '');
+                                  const uploadLink = `${window.location.origin}/pago/${ped.id}`;
+                                  const msg = `¡Hola ${ped.cliente_nombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: $${ped.total.toLocaleString()} COP*\n\n💳 *Datos Nequi/Bancolombia:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\nUna vez realices el pago, por favor envíanos el pantallazo por este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
+                                  window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
+                                }}
+                              >
+                                💳 Atender
                               </button>
                             </td>
                           </tr>
@@ -1686,6 +1697,31 @@ export default function Admin() {
               <span style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10b981' }}>
                 ${selectedPedido.total.toLocaleString()}
               </span>
+            </div>
+
+            {/* Botones de acción */}
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem', flexWrap: 'wrap' }}>
+              <button
+                style={{ flex: 1, padding: '0.85rem 1rem', background: '#25D366', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                onClick={() => {
+                  const num = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
+                  const uploadLink = `${window.location.origin}/pago/${selectedPedido.id}`;
+                  const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: $${selectedPedido.total.toLocaleString()} COP*\n\n💳 *Datos Nequi/Bancolombia:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\nUna vez realices el pago, por favor envíanos el pantallazo en este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
+                  window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
+                }}
+              >
+                💳 Cobrar por Nequi/WhatsApp
+              </button>
+              <button
+                style={{ flex: 1, padding: '0.85rem 1rem', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                onClick={() => {
+                  const num = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
+                  const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋 Tu pedido ha sido *VERIFICADO y DESPACHADO* 🚚\n\nPedido: ${selectedPedido.productos?.map((p: any) => `${p.cantidad}x ${p.nombre}`).join(', ')}\nTotal: $${selectedPedido.total.toLocaleString()} COP\n\n📦 Tu paquete está en camino. ¡Gracias por tu compra!`;
+                  window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
+                }}
+              >
+                🚚 Confirmar Despacho
+              </button>
             </div>
           </div>
         </div>
