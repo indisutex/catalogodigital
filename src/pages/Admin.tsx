@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import { supabase, getTenantId, setTenantId } from '../lib/supabase';
 import type { Producto, Categoria, Subcategoria, Configuracion } from '../types';
 import './Admin.css';
-import { X, Video, Upload, Package, Tag, Settings, LayoutDashboard, Zap, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User } from 'lucide-react';
+import { X, Video, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 const SECRET_PIN = '0000';
 
@@ -59,6 +60,8 @@ export default function Admin() {
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [isAddingSubcategory, setIsAddingSubcategory] = useState(false);
+  const [uploadMethod, setUploadMethod] = useState<'manual' | 'excel'>('manual');
+  const [excelProducts, setExcelProducts] = useState<any[]>([]);
 
   function showToast(message: string, type: 'success' | 'error' = 'success') {
     setToast({ message, type });
@@ -182,76 +185,6 @@ export default function Admin() {
     setBulkForms(newForms);
   };
 
-  const handleAutoFill = async (index: number) => {
-    const url = prompt('🔗 Pega el enlace de Temu o cualquier tienda:');
-    if (!url) return;
-    setLoading(true);
-
-    const translateToSpanish = async (text: string): Promise<string> => {
-      if (!text) return '';
-      const clean = text.replace(/<[^>]*>/g, '').trim();
-      if (!clean) return '';
-      try {
-        const transUrl = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=es&dt=t&q=${encodeURIComponent(clean)}`;
-        const res = await fetch(transUrl);
-        const json = await res.json();
-        if (json && json[0]) {
-          return json[0].map((item: any) => item[0]).join('').trim();
-        }
-        return clean;
-      } catch (e) {
-        console.error('Translation error:', e);
-        return clean;
-      }
-    };
-
-    const extractSizes = (htmlStr: string, docObj: Document): string => {
-      const textToSearch = (htmlStr + ' ' + docObj.title + ' ' + 
-        (docObj.querySelector('meta[name="description"]')?.getAttribute('content') || '') + ' ' + 
-        (docObj.querySelector('meta[property="og:description"]')?.getAttribute('content') || '')
-      ).toLowerCase();
-      
-      const foundSizes = new Set<string>();
-
-      // Buscar rangos de meses como: 0-3m, 3-6m, 6-9m, etc.
-      const babyRegex = /\b(0[-_]3|3[-_]6|6[-_]9|9[-_]12|12[-_]18|18[-_]24)\s*([mM])\b/g;
-      let match;
-      while ((match = babyRegex.exec(textToSearch)) !== null) {
-        foundSizes.add(`${match[1]}M`);
-      }
-
-      // Buscar meses individuales como: 3m, 6m, 12m, 18m, 24m
-      const singleMonthRegex = /\b(3|6|9|12|18|24)\s*(meses|mes|m)\b/g;
-      while ((match = singleMonthRegex.exec(textToSearch)) !== null) {
-        foundSizes.add(`${match[1]}M`);
-      }
-
-      // Buscar tallas T: 2t, 3t, 4t, 5t, 6t
-      const tRegex = /\b([2-6])\s*t\b/g;
-      while ((match = tRegex.exec(textToSearch)) !== null) {
-        foundSizes.add(`${match[1].toUpperCase()}T`);
-      }
-
-      // JSON-LD scripts
-      const jsonLdScripts = docObj.querySelectorAll('script[type="application/ld+json"]');
-      jsonLdScripts.forEach(script => {
-        try {
-          const data = JSON.parse(script.textContent || '');
-          const searchSizes = (obj: any) => {
-            if (!obj || typeof obj !== 'object') return;
-            if ('size' in obj && typeof obj.size === 'string') {
-              const sz = obj.size.trim();
-              if (sz.length < 10) foundSizes.add(sz);
-            }
-            if ('offers' in obj && Array.isArray(obj.offers)) {
-              obj.offers.forEach((o: any) => {
-                if (o && typeof o === 'object') {
-                  if (o.size && typeof o.size === 'string' && o.size.length < 10) {
-                    foundSizes.add(o.size.trim());
-                  }
-                  if (o.name && typeof o.name === 'string' && o.name.length < 10) {
-                    foundSizes.add(o.name.trim());
-                  }
                 }
               });
             }
@@ -416,6 +349,76 @@ export default function Admin() {
     } else {
       showToast(`${validForms.length} producto(s) guardado(s) exitosamente ✓`);
       setBulkForms([{ ...emptyProduct }]);
+      setIsAddingProduct(false);
+      cargarDatos();
+    }
+  };
+
+  const handleExcelImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLoading(true);
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const data = evt.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(sheet);
+        
+        const mapped = rows.map((row: any) => {
+          const findVal = (keys: string[]) => {
+            const foundKey = Object.keys(row).find(k => keys.includes(k.toLowerCase().trim()));
+            return foundKey ? String(row[foundKey]).trim() : '';
+          };
+          return {
+            nombre: findVal(['nombre', 'titulo', 'title', 'name']),
+            descripcion: findVal(['descripcion', 'detalles', 'description']),
+            precio: parseFloat(findVal(['precio', 'valor', 'price'])) || 0,
+            categoria: findVal(['categoria', 'category', 'cat']),
+            subcategoria: findVal(['subcategoria', 'subcategory', 'subcat']),
+            imagen_url: findVal(['imagen', 'imagen_url', 'image', 'image_url']),
+            video_url: findVal(['video', 'video_url', 'url_video']),
+            tallas: findVal(['tallas', 'talla', 'sizes', 'size'])
+          };
+        });
+        
+        const valid = mapped.filter(p => p.nombre);
+        setExcelProducts(valid);
+        showToast(`Se cargaron ${valid.length} productos del Excel ✓`);
+      } catch (err) {
+        showToast('Error leyendo el archivo Excel', 'error');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
+
+  const handleExcelSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (excelProducts.length === 0) return;
+    setLoading(true);
+    const newProducts = excelProducts.map(p => ({
+      nombre: p.nombre,
+      descripcion: p.descripcion,
+      precio: p.precio,
+      categoria: p.categoria,
+      subcategoria: p.subcategoria || null,
+      imagen_url: p.imagen_url || '',
+      video_url: p.video_url || null,
+      tallas: p.tallas || null,
+      tenant_id: getTenantId()
+    }));
+    const { error } = await supabase.from('productos').insert(newProducts);
+    setLoading(false);
+    if (error) {
+      showToast('Error al guardar: ' + error.message, 'error');
+    } else {
+      showToast(`${excelProducts.length} productos guardados exitosamente ✓`);
+      setExcelProducts([]);
       setIsAddingProduct(false);
       cargarDatos();
     }
@@ -681,7 +684,7 @@ export default function Admin() {
     <div className="admin-app">
       {/* SIDEBAR */}
       <aside className="admin-sidebar">
-        <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} categoriasData={categoriasData} configuracion={configuracion} handleLogout={handleLogout} setIsAddingProduct={setIsAddingProduct} />
+        <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} />
       </aside>
 
       {/* MAIN */}
@@ -738,133 +741,206 @@ export default function Admin() {
           {activeTab === 'productos' && (
             <>
               {isAddingProduct ? (
-                /* QUICK ADD PANEL */
                 <div className="admin-panel">
-                  <div className="panel-header">
-                  <div>
-                    <h3><Zap size={16} /> Subida Rápida de Productos</h3>
-                    <p>Usa AutoFill para llenar datos desde Temu u otras tiendas</p>
-                  </div>
-                  <button className="btn-secondary" onClick={() => setBulkForms([...bulkForms, { ...emptyProduct }])}>
-                    <Plus size={14} /> Añadir fila
-                  </button>
-                </div>
-                <div className="panel-body">
-                  <form onSubmit={handleBulkSubmit}>
-                    {bulkForms.map((form, index) => (
-                      <div key={index} className="bulk-product-card">
-                        <div className="bulk-product-card-header">
-                          <h4># Producto {index + 1}</h4>
-                          <div className="bulk-actions-bar">
-                            <button type="button" className="btn-autofill" onClick={() => handleAutoFill(index)}>
-                              <Zap size={12} /> AutoFill
-                            </button>
-                            <label className="btn-upload-img">
-                              <Upload size={12} /> Subir Fotos
-                              <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={e => handleFileUpload(e, index, 0)} />
-                            </label>
-                            {bulkForms.length > 1 && (
-                              <button type="button" className="btn-remove-row" onClick={() => {
-                                const f = [...bulkForms]; f.splice(index, 1); setBulkForms(f);
-                              }}>
-                                <X size={14} />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                        <div className="form-grid">
-                          <div className="form-field full">
-                            <label>Nombre del Producto</label>
-                            <input required value={form.nombre} onChange={e => updateBulkForm(index, 'nombre', e.target.value)} placeholder="Ej: Mameluco Oso Polar 0-3 Meses" />
-                          </div>
-                          <div className="form-field full">
-                            <label>Descripción</label>
-                            <textarea value={form.descripcion} onChange={e => updateBulkForm(index, 'descripcion', e.target.value)} placeholder="Detalles del producto..." rows={2} />
-                          </div>
-                          <div className="form-field">
-                            <label>Precio (COP)</label>
-                            <input required type="number" step="0.01" value={form.precio} onChange={e => updateBulkForm(index, 'precio', e.target.value)} placeholder="25000" />
-                          </div>
-                          <div className="form-field">
-                            <label>Categoría</label>
-                            <select value={form.categoria} onChange={e => updateBulkForm(index, 'categoria', e.target.value)}>
-                              <option value="">Seleccionar...</option>
-                              {categoriasData.map(c => <option key={c.id} value={c.slug}>{c.icono} {c.nombre}</option>)}
-                            </select>
-                          </div>
-                          <div className="form-field full">
-                            <label>Tallas (separadas por coma, opcional)</label>
-                            <input value={form.tallas} onChange={e => updateBulkForm(index, 'tallas', e.target.value)} placeholder="Ej: 6 Meses, 12 Meses, 18 Meses" />
-                          </div>
-                          <div className="form-field full">
-                            <label>🖼️ Imágenes del Producto</label>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                              {form.imagenes.map((imgUrl, imgIdx) => (
-                                <div key={imgIdx} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', background: '#f8fafc', borderRadius: '12px', padding: '0.8rem', border: '1px solid #e2e8f0', minHeight: '170px' }}>
-                                  {imgUrl ? (
-                                    <img
-                                      src={imgUrl}
-                                      style={{ width: 160, height: 160, borderRadius: 10, objectFit: 'cover', flexShrink: 0, border: '2px solid #cbd5e1', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
-                                      alt=""
-                                      onError={e => (e.currentTarget.style.display = 'none')}
-                                    />
-                                  ) : (
-                                    <div style={{ width: 160, height: 160, borderRadius: 10, flexShrink: 0, background: '#e2e8f0', border: '2px dashed #94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.4rem', color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600 }}>
-                                      <span style={{ fontSize: '2rem' }}>🖼️</span>
-                                      <span>Sin imagen</span>
-                                    </div>
-                                  )}
-                                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                    <input
-                                      value={imgUrl}
-                                      onChange={e => updateImagenUrl(index, imgIdx, e.target.value)}
-                                      placeholder={imgIdx === 0 ? 'URL de imagen principal...' : 'URL de imagen extra...'}
-                                    />
-                                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                      <label className="btn-upload-img" style={{ fontSize: '0.75rem', padding: '0.4rem 0.9rem', cursor: 'pointer' }}>
-                                        <Upload size={12} /> Subir archivo(s)
-                                        <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={e => handleFileUpload(e, index, imgIdx)} />
-                                      </label>
-                                      {imgIdx === 0 && (
-                                        <span style={{ fontSize: '0.7rem', color: '#0ea5e9', fontWeight: 700, alignSelf: 'center', background: 'rgba(14,165,233,0.1)', padding: '0.2rem 0.6rem', borderRadius: 6 }}>★ Principal</span>
-                                      )}
-                                    </div>
-                                  </div>
-                                  {form.imagenes.length > 1 && (
-                                    <button
-                                      type="button"
-                                      onClick={() => removeImagenRow(index, imgIdx)}
-                                      style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.3rem', borderRadius: 6, marginLeft: 'auto' }}
-                                    >
-                                      <X size={16} />
-                                    </button>
-                                  )}
-                                </div>
-                              ))}
-                              <button
-                                type="button"
-                                onClick={() => addImagenRow(index)}
-                                style={{ alignSelf: 'flex-start', background: 'rgba(14,165,233,0.08)', border: '1px dashed #0ea5e9', color: '#0ea5e9', borderRadius: 8, padding: '0.4rem 1rem', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                              >
-                                <Plus size={13} /> Agregar URL
-                              </button>
-                            </div>
-                          </div>
-                          <div className="form-field full">
-                            <label>URL de Video (Opcional)</label>
-                            <input value={form.video_url} onChange={e => updateBulkForm(index, 'video_url', e.target.value)} placeholder="https://..." />
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-                      <button type="submit" className="btn-primary" disabled={loading} style={{ padding: '0.7rem 2rem', fontSize: '0.9rem' }}>
-                        {loading ? <><span className="loading-dot" /> Guardando...</> : <><Check size={14} /> Guardar Productos</>}
+                  <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
+                    <div>
+                      <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}><Package size={18} /> Agregar Productos</h3>
+                      <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Selecciona tu método preferido para subir productos</p>
+                    </div>
+                    <div style={{ display: 'flex', background: '#f1f5f9', padding: '0.25rem', borderRadius: '8px', gap: '0.25rem' }}>
+                      <button 
+                        type="button" 
+                        className={`btn-tab ${uploadMethod === 'manual' ? 'active' : ''}`}
+                        onClick={() => setUploadMethod('manual')}
+                        style={{ border: 'none', background: uploadMethod === 'manual' ? '#ffffff' : 'transparent', color: uploadMethod === 'manual' ? '#0f172a' : '#64748b', padding: '0.4rem 1rem', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', boxShadow: uploadMethod === 'manual' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
+                      >
+                        Subida Manual
+                      </button>
+                      <button 
+                        type="button" 
+                        className={`btn-tab ${uploadMethod === 'excel' ? 'active' : ''}`}
+                        onClick={() => setUploadMethod('excel')}
+                        style={{ border: 'none', background: uploadMethod === 'excel' ? '#ffffff' : 'transparent', color: uploadMethod === 'excel' ? '#0f172a' : '#64748b', padding: '0.4rem 1rem', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', boxShadow: uploadMethod === 'excel' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
+                      >
+                        Importar Excel (Masivo)
                       </button>
                     </div>
-                  </form>
+                  </div>
+
+                  {uploadMethod === 'manual' ? (
+                    <div className="panel-body">
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
+                        <button className="btn-secondary" onClick={() => setBulkForms([...bulkForms, { ...emptyProduct }])}>
+                          <Plus size={14} /> Añadir fila
+                        </button>
+                      </div>
+                      <form onSubmit={handleBulkSubmit}>
+                        {bulkForms.map((form, index) => (
+                          <div key={index} className="bulk-product-card">
+                            <div className="bulk-product-card-header">
+                              <h4># Producto {index + 1}</h4>
+                              <div className="bulk-actions-bar">
+                                <label className="btn-upload-img">
+                                  <Upload size={12} /> Subir Fotos
+                                  <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={e => handleFileUpload(e, index, 0)} />
+                                </label>
+                                {bulkForms.length > 1 && (
+                                  <button type="button" className="btn-remove-row" onClick={() => {
+                                    const f = [...bulkForms]; f.splice(index, 1); setBulkForms(f);
+                                  }}>
+                                    <X size={14} />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            <div className="form-grid">
+                              <div className="form-field full">
+                                <label>Nombre del Producto</label>
+                                <input required value={form.nombre} onChange={e => updateBulkForm(index, 'nombre', e.target.value)} placeholder="Ej: Mameluco Oso Polar 0-3 Meses" />
+                              </div>
+                              <div className="form-field full">
+                                <label>Descripción</label>
+                                <textarea value={form.descripcion} onChange={e => updateBulkForm(index, 'descripcion', e.target.value)} placeholder="Detalles del producto..." rows={2} />
+                              </div>
+                              <div className="form-field">
+                                <label>Precio (COP)</label>
+                                <input required type="number" step="0.01" value={form.precio} onChange={e => updateBulkForm(index, 'precio', e.target.value)} placeholder="25000" />
+                              </div>
+                              <div className="form-field">
+                                <label>Categoría</label>
+                                <select value={form.categoria} onChange={e => updateBulkForm(index, 'categoria', e.target.value)}>
+                                  <option value="">Seleccionar...</option>
+                                  {categoriasData.map(c => <option key={c.id} value={c.slug}>{c.icono} {c.nombre}</option>)}
+                                </select>
+                              </div>
+                              <div className="form-field full">
+                                <label>Tallas (separadas por coma, opcional)</label>
+                                <input value={form.tallas} onChange={e => updateBulkForm(index, 'tallas', e.target.value)} placeholder="Ej: 6 Meses, 12 Meses, 18 Meses" />
+                              </div>
+                              <div className="form-field full">
+                                <label>🖼️ Imágenes del Producto</label>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                  {form.imagenes.map((imgUrl, imgIdx) => (
+                                    <div key={imgIdx} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', background: '#f8fafc', borderRadius: '12px', padding: '0.8rem', border: '1px solid #e2e8f0', minHeight: '170px' }}>
+                                      {imgUrl ? (
+                                        <img
+                                          src={imgUrl}
+                                          style={{ width: 160, height: 160, borderRadius: 10, objectFit: 'cover', flexShrink: 0, border: '2px solid #cbd5e1', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
+                                          alt=""
+                                          onError={e => (e.currentTarget.style.display = 'none')}
+                                        />
+                                      ) : (
+                                        <div style={{ width: 160, height: 160, borderRadius: 10, flexShrink: 0, background: '#e2e8f0', border: '2px dashed #94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.4rem', color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600 }}>
+                                          <span style={{ fontSize: '2rem' }}>🖼️</span>
+                                          <span>Sin imagen</span>
+                                        </div>
+                                      )}
+                                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                        <input
+                                          value={imgUrl}
+                                          onChange={e => updateImagenUrl(index, imgIdx, e.target.value)}
+                                          placeholder={imgIdx === 0 ? 'URL de imagen principal...' : 'URL de imagen extra...'}
+                                        />
+                                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                          <label className="btn-upload-img" style={{ fontSize: '0.75rem', padding: '0.4rem 0.9rem', cursor: 'pointer' }}>
+                                            <Upload size={12} /> Subir archivo(s)
+                                            <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={e => handleFileUpload(e, index, imgIdx)} />
+                                          </label>
+                                          {imgIdx === 0 && (
+                                            <span style={{ fontSize: '0.7rem', color: '#0ea5e9', fontWeight: 700, alignSelf: 'center', background: 'rgba(14,165,233,0.1)', padding: '0.2rem 0.6rem', borderRadius: 6 }}>★ Principal</span>
+                                          )}
+                                        </div>
+                                      </div>
+                                      {form.imagenes.length > 1 && (
+                                        <button
+                                          type="button"
+                                          onClick={() => removeImagenRow(index, imgIdx)}
+                                          style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.3rem', borderRadius: 6, marginLeft: 'auto' }}
+                                        >
+                                          <X size={16} />
+                                        </button>
+                                      )}
+                                    </div>
+                                  ))}
+                                  <button
+                                    type="button"
+                                    onClick={() => addImagenRow(index)}
+                                    style={{ alignSelf: 'flex-start', background: 'rgba(14,165,233,0.08)', border: '1px dashed #0ea5e9', color: '#0ea5e9', borderRadius: 8, padding: '0.4rem 1rem', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                                  >
+                                    <Plus size={13} /> Agregar URL
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="form-field full">
+                                <label>URL de Video (Opcional)</label>
+                                <input value={form.video_url} onChange={e => updateBulkForm(index, 'video_url', e.target.value)} placeholder="https://..." />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+                          <button type="submit" className="btn-primary" disabled={loading} style={{ padding: '0.7rem 2rem', fontSize: '0.9rem' }}>
+                            {loading ? <><span className="loading-dot" /> Guardando...</> : <><Check size={14} /> Guardar Productos</>}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  ) : (
+                    <div className="panel-body">
+                      <div style={{ background: '#f8fafc', padding: '3rem 2rem', border: '2px dashed #cbd5e1', borderRadius: '16px', textAlign: 'center', marginBottom: '2rem' }}>
+                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
+                        <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b', fontSize: '1.1rem' }}>Selecciona tu archivo Excel (.xlsx, .xls, .csv)</h4>
+                        <p style={{ margin: '0 0 1.5rem 0', color: '#64748b', fontSize: '0.85rem', maxWidth: '500px', marginLeft: 'auto', marginRight: 'auto', lineHeight: '1.4' }}>
+                          Las columnas se detectan automáticamente de forma inteligente. Asegúrate de incluir encabezados claros como: <strong>Nombre, Descripción, Precio, Categoría, Subcategoría, Imagen, Video, Tallas</strong>.
+                        </p>
+                        <label className="btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.7rem 1.8rem', borderRadius: '8px', fontSize: '0.9rem' }}>
+                          <Upload size={14} /> Seleccionar Archivo Excel
+                          <input type="file" accept=".xlsx, .xls, .csv" style={{ display: 'none' }} onChange={handleExcelImport} />
+                        </label>
+                      </div>
+
+                      {excelProducts.length > 0 && (
+                        <form onSubmit={handleExcelSubmit}>
+                          <div className="panel-header" style={{ borderBottom: 'none', padding: 0, marginBottom: '1rem' }}>
+                            <div>
+                              <h4 style={{ margin: 0, fontSize: '1rem' }}>Vista Previa de Productos ({excelProducts.length})</h4>
+                              <p style={{ color: '#64748b', fontSize: '0.8rem', margin: '0.2rem 0 0 0' }}>Revisa la información antes de importarla en tu base de datos</p>
+                            </div>
+                          </div>
+                          <div style={{ overflowX: 'auto', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', marginBottom: '1.5rem' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
+                              <thead>
+                                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                                  <th style={{ padding: '0.8rem 1rem' }}>Nombre</th>
+                                  <th style={{ padding: '0.8rem 1rem' }}>Precio</th>
+                                  <th style={{ padding: '0.8rem 1rem' }}>Categoría</th>
+                                  <th style={{ padding: '0.8rem 1rem' }}>Subcategoría</th>
+                                  <th style={{ padding: '0.8rem 1rem' }}>Tallas</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {excelProducts.map((p, i) => (
+                                  <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                    <td style={{ padding: '0.8rem 1rem', fontWeight: 600, color: '#0f172a' }}>{p.nombre}</td>
+                                    <td style={{ padding: '0.8rem 1rem', color: '#10b981', fontWeight: 700 }}>${p.precio.toLocaleString()}</td>
+                                    <td style={{ padding: '0.8rem 1rem', color: '#64748b' }}>{p.categoria}</td>
+                                    <td style={{ padding: '0.8rem 1rem', color: '#64748b' }}>{p.subcategoria || '-'}</td>
+                                    <td style={{ padding: '0.8rem 1rem', color: '#64748b' }}>{p.tallas || '-'}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                            <button type="submit" className="btn-primary" disabled={loading} style={{ padding: '0.7rem 2rem' }}>
+                              {loading ? <><span className="loading-dot" /> Guardando...</> : <><Check size={14} /> Importar {excelProducts.length} Productos</>}
+                            </button>
+                          </div>
+                        </form>
+                      )}
+                    </div>
+                  )}
                 </div>
-              </div>
               ) : (
                 /* PRODUCT LIST PANEL */
                 <div className="admin-panel">
@@ -1104,7 +1180,9 @@ export default function Admin() {
                       nombre_negocio: configuracion.nombre_negocio,
                       whatsapp: configuracion.whatsapp,
                       logo_url: configuracion.logo_url,
-                      descripcion_hero: configuracion.descripcion_hero
+                      descripcion_hero: configuracion.descripcion_hero,
+                      link_dropshipper: configuracion.link_dropshipper,
+                      link_ganar_dinero: configuracion.link_ganar_dinero
                     }).eq('id', configuracion.id);
                     setLoading(false);
                     if (error) showToast('Error: ' + error.message, 'error');
@@ -1124,6 +1202,20 @@ export default function Admin() {
                         <div className="form-field full">
                           <label>Texto Principal de la Tienda (Hero)</label>
                           <input value={configuracion.descripcion_hero || ''} onChange={e => setConfiguracion({ ...configuracion, descripcion_hero: e.target.value })} placeholder="TIENDA & BABY" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="config-section" style={{ marginTop: '1.5rem' }}>
+                      <div className="config-section-title">🔗 Enlaces Especiales</div>
+                      <div className="form-grid">
+                        <div className="form-field full">
+                          <label>Enlace para Dropshippers (Opcional, vacío usa WhatsApp)</label>
+                          <input type="url" value={configuracion.link_dropshipper || ''} onChange={e => setConfiguracion({ ...configuracion, link_dropshipper: e.target.value })} placeholder="https://..." />
+                        </div>
+                        <div className="form-field full">
+                          <label>Enlace "Quieres Ganar Dinero?" (Opcional, vacío usa WhatsApp)</label>
+                          <input type="url" value={configuracion.link_ganar_dinero || ''} onChange={e => setConfiguracion({ ...configuracion, link_ganar_dinero: e.target.value })} placeholder="https://..." />
                         </div>
                       </div>
                     </div>
@@ -1241,15 +1333,13 @@ export default function Admin() {
 
 // ── SIDEBAR COMPONENT ──
 function SidebarContent({
-  activeTab, setActiveTab, productos, categoriasData, configuracion, handleLogout, setIsAddingProduct
+  activeTab, setActiveTab, productos, configuracion, handleLogout
 }: {
   activeTab: TabType;
   setActiveTab: (t: TabType) => void;
   productos: Producto[];
-  categoriasData: Categoria[];
   configuracion: Configuracion | null;
   handleLogout: () => void;
-  setIsAddingProduct: (b: boolean) => void;
 }) {
   const [isOnline, setIsOnline] = useState(window.navigator.onLine);
 
@@ -1284,7 +1374,7 @@ function SidebarContent({
               className="sidebar-wa-link"
               style={{ fontSize: '0.75rem', color: '#10b981', textDecoration: 'none', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.3rem', whiteSpace: 'nowrap' }}
             >
-              <Phone size={12} style={{ strokeWidth: 2.5 }} /> WhatsApp: {configuracion.whatsapp}
+              <Phone size={12} style={{ strokeWidth: 2.5 }} /> Línea: {configuracion.whatsapp}
             </a>
           )}
         </div>

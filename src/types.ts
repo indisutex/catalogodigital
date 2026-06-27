@@ -34,4 +34,6 @@ export interface Configuracion {
   whatsapp: string;
   logo_url?: string;
   descripcion_hero?: string;
+  link_dropshipper?: string;
+  link_ganar_dinero?: string;
 }

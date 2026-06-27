@@ -131,9 +131,51 @@ export default function MenuDigital() {
 
   return (
     <div className="menu-app-container">
-      {/* Dark Header */}
-      <div className="menu-app-header">
-        <div className="stars-overlay"></div>
+      <div className="menu-app-header" style={{ position: 'relative' }}>
+        {/* Enlaces Especiales en la Esquina Superior Derecha */}
+        <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'flex-end', zIndex: 10 }}>
+          <a 
+            href={configuracion?.link_ganar_dinero || `https://wa.me/${(configuracion?.whatsapp || '').replace(/\D/g, '')}?text=Hola,%20quiero%20saber%20cómo%20ganar%20dinero%20con%20ustedes`} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style={{ 
+              background: 'rgba(16, 185, 129, 0.1)', 
+              color: '#059669', 
+              padding: '0.35rem 0.75rem', 
+              borderRadius: '20px', 
+              fontSize: '0.72rem', 
+              fontWeight: 700, 
+              textDecoration: 'none', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.2rem', 
+              border: '1px solid rgba(16, 185, 129, 0.2)'
+            }}
+          >
+            💸 ¿Ganar dinero?
+          </a>
+          <a 
+            href={configuracion?.link_dropshipper || `https://wa.me/${(configuracion?.whatsapp || '').replace(/\D/g, '')}?text=Hola,%20soy%20dropshipper,%20me%20interesa%20trabajar%20con%20ustedes`} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style={{ 
+              background: 'rgba(59, 130, 246, 0.1)', 
+              color: '#2563eb', 
+              padding: '0.35rem 0.75rem', 
+              borderRadius: '20px', 
+              fontSize: '0.72rem', 
+              fontWeight: 700, 
+              textDecoration: 'none', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.2rem', 
+              border: '1px solid rgba(59, 130, 246, 0.2)'
+            }}
+          >
+            🚀 ¿Dropshipper?
+          </a>
+        </div>
+
         <div className="menu-app-logo">
           {configuracion?.logo_url ? (
             <img
@@ -151,10 +193,8 @@ export default function MenuDigital() {
         </div>
         <p className="menu-app-subtitle">{configuracion?.descripcion_hero || 'TIENDA & BABY'}</p>
         
-        <div className="menu-app-actions">
-          <button className="pill-btn"><span className="status-dot"></span> ABIERTO</button>
+        <div className="menu-app-actions" style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 1rem', marginTop: '0.5rem' }}>
           <button className="pill-btn"><Info size={14} /> NOSOTROS</button>
-          <button className="pill-btn"><Calendar size={14} /> CONTACTO</button>
         </div>
       </div>
 
