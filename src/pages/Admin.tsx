@@ -465,18 +465,20 @@ export default function Admin() {
   // ── LOGIN SCREEN ──
   if (!isAuthenticated) {
     const companies = [
-      { id: 'saramantha', name: 'Saramantha', logo: 'https://images.unsplash.com/photo-1596814234568-19ebcc1af3fa?auto=format&fit=crop&q=80&w=150' }, // Use a generic baby logo or placeholder
-      { id: 'sublimados_majestic', name: 'Sublimados Majestic', logo: 'https://images.unsplash.com/photo-1513346940221-6f673d962e97?auto=format&fit=crop&q=80&w=150' }, // generic sublimation
-      { id: 'pijamas_lucerito', name: 'Pijamas Lucerito', logo: 'https://images.unsplash.com/photo-1590481023775-6fcecc6fcbf9?auto=format&fit=crop&q=80&w=150' },
-      { id: 'sueno_de_reina', name: 'Sueño de Reina', logo: 'https://images.unsplash.com/photo-1534062325324-406a4bcbf343?auto=format&fit=crop&q=80&w=150' },
+      { id: 'saramantha', name: 'Saramantha', logo: '/saramantha-logo.jpg' }, 
+      { id: 'sublimados_majestic', name: 'Sublimados Majestic', logo: '/sublimados-logo.jpg' },
+      { id: 'pijamas_lucerito', name: 'Pijamas Lucerito', logo: '/lucerito-logo.jpg' },
+      { id: 'sueno_de_reina', name: 'Sueño de Reina', logo: '/sueno-de-reina-logo.jpg' },
     ];
 
     return (
       <div className="admin-login-wrapper">
         <div className="admin-login-card" style={{ maxWidth: selectedCompany ? '400px' : '550px' }}>
           <div>
-            <div className="login-logo">🛍️</div>
-            <h1>Moztacito Admin</h1>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+              <img src="/indisutex-logo.jpg" alt="Indisutex Logo" style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #eee' }} onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/80?text=Indisutex'; }} />
+            </div>
+            <h1>Indisutex Admin</h1>
             <p>Selecciona tu empresa para gestionar el catálogo</p>
           </div>
           
@@ -497,7 +499,7 @@ export default function Admin() {
                       transition: 'all 0.2s'
                     }}
                   >
-                    <img src={company.logo} alt={company.name} style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover' }} />
+                    <img src={company.logo} alt={company.name} style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover' }} onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/60?text=' + company.name.substring(0, 3); }} />
                     <span style={{ fontWeight: 700, color: '#333', fontSize: '0.9rem', textAlign: 'center' }}>{company.name}</span>
                   </button>
                 ))}
