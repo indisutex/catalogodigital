@@ -166,45 +166,42 @@
 }
 
 .category-card {
-  min-width: 120px;
-  background-color: #ffffff;
-  border-radius: 20px;
-  overflow: hidden;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+  min-width: 90px;
+  background-color: transparent;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  border: 2px solid transparent;
   display: flex;
   flex-direction: column;
-  padding-bottom: 0.8rem;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.category-card:hover {
+.category-card:hover .cat-img-placeholder {
   transform: translateY(-4px);
-  box-shadow: 0 14px 28px rgba(243, 107, 142, 0.15);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
 }
 
-.category-card.active {
-  border-color: var(--primary);
-  background-color: #fff9fa;
+.category-card.active .cat-img-placeholder {
+  border: 3px solid var(--primary);
   transform: translateY(-4px);
-  box-shadow: 0 14px 28px rgba(243, 107, 142, 0.2);
+  box-shadow: 0 10px 20px rgba(243, 107, 142, 0.3);
 }
 
 .cat-img-placeholder {
+  width: 75px;
   height: 75px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 2.2rem;
-  border-radius: 0 0 20px 20px;
-  margin-bottom: 0.6rem;
-  /* Adds a glass/shine effect over the inline background color */
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   background-image: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(0,0,0,0.05) 100%);
+  transition: all 0.3s ease;
+  flex-shrink: 0;
 }
 
 .cat-info {
-  padding: 0 0.8rem;
   text-align: center;
   display: flex;
   flex-direction: column;
