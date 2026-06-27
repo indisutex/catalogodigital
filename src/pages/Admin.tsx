@@ -1270,28 +1270,23 @@ function SidebarContent({
           )}
         </div>
         <div className="brand-text">
-          <h2 style={{ textTransform: 'capitalize', fontSize: '1.1rem' }}>{configuracion?.nombre_negocio || 'Catálogo'}</h2>
-          <p>Panel Administrativo</p>
+          <h2 style={{ textTransform: 'capitalize', fontSize: '1.1rem', color: '#0f172a' }}>{configuracion?.nombre_negocio || 'Catálogo'}</h2>
+          <p style={{ margin: 0 }}>Panel Administrativo</p>
+          {configuracion?.whatsapp && (
+            <a 
+              href={`https://wa.me/${configuracion.whatsapp.replace(/\D/g, '')}`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="sidebar-wa-link"
+              style={{ fontSize: '0.78rem', color: '#10b981', textDecoration: 'none', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.3rem' }}
+            >
+              <span>💬</span> WhatsApp: {configuracion.whatsapp}
+            </a>
+          )}
         </div>
       </div>
 
-      <div className="sidebar-action-card">
-        <div className="action-card-text">
-          <h4>Nuevo Producto</h4>
-          <p>Añade al inventario</p>
-        </div>
-        <button 
-          onClick={() => {
-            setActiveTab('productos');
-            setIsAddingProduct(true);
-          }}
-          className="action-card-btn"
-        >
-          <Plus size={16} />
-        </button>
-      </div>
-
-      <nav className="sidebar-nav">
+      <nav className="sidebar-nav" style={{ paddingTop: '0.5rem' }}>
         <div className="sidebar-nav-label">Navegación</div>
         <button className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
           <span className="nav-icon"><LayoutDashboard size={14} /></span> Dashboard
@@ -1339,17 +1334,6 @@ function SidebarContent({
         >
           <Eye size={16} /> Ver Catálogo
         </a>
-        
-        {configuracion?.whatsapp && (
-          <a 
-            href={`https://wa.me/${configuracion.whatsapp.replace(/\D/g, '')}`} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', width: '100%', padding: '0.8rem', borderRadius: '8px', textDecoration: 'none', background: '#25D366', color: 'white', fontWeight: 600, fontSize: '0.9rem' }}
-          >
-            <Phone size={16} /> Línea WhatsApp: {configuracion.whatsapp}
-          </a>
-        )}
         
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginTop: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
