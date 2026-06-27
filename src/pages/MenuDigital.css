@@ -701,9 +701,9 @@
 }
 
 .menu-app-header.has-video .store-logo-round {
-  width: 65px !important; /* Smaller logo so it takes less space */
-  height: 65px !important;
-  border-width: 2.5px !important;
+  width: 90px !important;
+  height: 90px !important;
+  border-width: 3px !important;
 }
 
 .menu-app-header.has-video .menu-app-subtitle {
@@ -749,20 +749,19 @@
 /* ── VERTICAL SUBTITLE LEFT EDGE ── */
 .menu-app-subtitle.vertical-text {
   position: absolute;
-  left: -0.6rem;
+  left: 0.6rem;
   top: 50%;
-  transform: translateY(-50%) rotate(-90deg);
-  transform-origin: center center;
+  transform: translateY(-50%);
   writing-mode: vertical-rl;
   text-orientation: mixed;
   white-space: nowrap;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.88);
   font-family: 'Outfit', sans-serif;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 900;
-  letter-spacing: 3px;
+  letter-spacing: 4px;
   text-transform: uppercase;
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.85);
   z-index: 2;
 }
 
