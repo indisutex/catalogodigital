@@ -464,6 +464,7 @@ export default function Admin() {
 
   // ── LOGIN SCREEN ──
   const [dbCompanies, setDbCompanies] = useState<any[]>([]);
+  const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   
   useEffect(() => {
     if (!isAuthenticated) {
@@ -497,7 +498,16 @@ export default function Admin() {
         <div className="admin-login-card" style={{ maxWidth: selectedCompany ? '400px' : '550px' }}>
           <div>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
-              <img src="/indisutex-logo.jpg" alt="Indisutex Logo" style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #eee' }} onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/80?text=Indisutex'; }} />
+              {!imageErrors['main'] ? (
+                <img 
+                  src="/indisutex-logo.jpg" 
+                  alt="Indisutex Logo" 
+                  style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #eee' }} 
+                  onError={() => setImageErrors(prev => ({ ...prev, main: true }))} 
+                />
+              ) : (
+                <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#0ea5e9', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 'bold' }}>IN</div>
+              )}
             </div>
             <h1>Indisutex Admin</h1>
             <p>Selecciona tu empresa para gestionar el catálogo</p>
@@ -520,7 +530,18 @@ export default function Admin() {
                       transition: 'all 0.2s'
                     }}
                   >
-                    <img src={company.logo} alt={company.name} style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover' }} onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/60?text=' + company.name.substring(0, 3); }} />
+                    {!imageErrors[company.id] ? (
+                      <img 
+                        src={company.logo} 
+                        alt={company.name} 
+                        style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover' }} 
+                        onError={() => setImageErrors(prev => ({ ...prev, [company.id]: true }))} 
+                      />
+                    ) : (
+                      <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#f1f5f9', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 'bold' }}>
+                        {company.name.substring(0, 2).toUpperCase()}
+                      </div>
+                    )}
                     <span style={{ fontWeight: 700, color: '#333', fontSize: '0.9rem', textAlign: 'center' }}>{company.name}</span>
                   </button>
                 ))}
