@@ -29,7 +29,7 @@ const emptyProduct: ProductFormData = {
   tallas: ''
 };
 
-type TabType = 'dashboard' | 'productos' | 'categorias' | 'config';
+type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos';
 
 type Toast = { message: string; type: 'success' | 'error' } | null;
 
@@ -46,6 +46,8 @@ export default function Admin() {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [categoriasData, setCategoriasData] = useState<Categoria[]>([]);
   const [subcategoriasData, setSubcategoriasData] = useState<Subcategoria[]>([]);
+  const [pedidos, setPedidos] = useState<Pedido[]>([]);
+  const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
   const [subcatNombre, setSubcatNombre] = useState('');
   const [subcatSlug, setSubcatSlug] = useState('');
   const [subcatParentId, setSubcatParentId] = useState('');
@@ -90,15 +92,17 @@ export default function Admin() {
   async function cargarDatos() {
     try {
       const tenant = getTenantId();
-      const [prodRes, catRes, subcatRes, confRes] = await Promise.all([
+      const [prodRes, catRes, subcatRes, confRes, pedRes] = await Promise.all([
         supabase.from('productos').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
         supabase.from('categorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
         supabase.from('subcategorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
-        supabase.from('configuracion').select('*').eq('tenant_id', tenant).limit(1).single()
+        supabase.from('configuracion').select('*').eq('tenant_id', tenant).limit(1).single(),
+        supabase.from('pedidos').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false })
       ]);
       if (prodRes.data) setProductos(prodRes.data);
       if (catRes.data) setCategoriasData(catRes.data);
       if (subcatRes.data) setSubcategoriasData(subcatRes.data);
+      if (pedRes.data) setPedidos(pedRes.data);
       
       if (confRes.data) {
         setConfiguracion(confRes.data);
@@ -185,147 +189,7 @@ export default function Admin() {
     setBulkForms(newForms);
   };
 
-                }
-              });
-            }
-            for (const key in obj) {
-              searchSizes(obj[key]);
-            }
-          };
-          searchSizes(data);
-        } catch (e) {}
-      });
 
-      // Tallas estándar de adultos
-      if (foundSizes.size === 0) {
-        const stdSizes = ['xxs', 'xs', 's', 'm', 'l', 'xl', 'xxl', 'xxxl'];
-        stdSizes.forEach(size => {
-          const regex = new RegExp(`\\b${size}\\b`, 'i');
-          const shortText = (docObj.title + ' ' + (docObj.querySelector('meta[name="description"]')?.getAttribute('content') || '')).toLowerCase();
-          if (regex.test(shortText)) {
-            foundSizes.add(size.toUpperCase());
-          }
-        });
-      }
-
-      const sizeList = Array.from(foundSizes).filter(s => s && s.length < 15);
-      
-      // Ordenar tallas cronológicamente si son de bebé/niño
-      const sortSizes = (a: string, b: string) => {
-        const parseAge = (s: string) => {
-          const m = s.match(/^(\d+)/);
-          return m ? parseInt(m[1]) : 999;
-        };
-        return parseAge(a) - parseAge(b);
-      };
-      
-      sizeList.sort(sortSizes);
-      return sizeList.join(', ');
-    };
-
-    try {
-      const response = await fetch(`https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`);
-      const html = await response.text();
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
-
-      const rawTitle = doc.querySelector('meta[property="og:title"]')?.getAttribute('content')
-        ?.replace(/[-|]\s*(Temu|temu)[\s\S]*/g, '')
-        ?.replace(/\s+/g, ' ')
-        .trim() || '';
-      const rawDesc = doc.querySelector('meta[name="description"]')?.getAttribute('content') || doc.querySelector('meta[property="og:description"]')?.getAttribute('content') || '';
-
-      const translatedTitle = await translateToSpanish(rawTitle);
-      const translatedDesc = await translateToSpanish(rawDesc);
-
-      let img = doc.querySelector('meta[property="og:image"]')?.getAttribute('content') || '';
-      if (img && img.startsWith('//')) {
-        img = 'https:' + img;
-      }
-
-      // Si og:image no dio resultado, buscar en el HTML crudo la primera imagen del CDN de Temu
-      if (!img) {
-        const temuImgMatch = html.match(/https:\/\/img\.kwcdn\.com\/product\/[^"'\s]+/);
-        if (temuImgMatch) {
-          // Limpiar parámetros de tamaño y obtener imagen grande
-          img = temuImgMatch[0].split('?')[0];
-        }
-      }
-      // Si sigue vacío, buscar cualquier imagen con 'product' en la URL de Temu
-      if (!img) {
-        const fallbackMatch = html.match(/https:\/\/[^"'\s]*temu[^"'\s]*\.(?:jpg|jpeg|png|webp)/);
-        if (fallbackMatch) img = fallbackMatch[0];
-      }
-
-      let extractedPrice: number | null = null;
-      const jsonLdScripts = doc.querySelectorAll('script[type="application/ld+json"]');
-      jsonLdScripts.forEach(script => {
-        try {
-          const data = JSON.parse(script.textContent || '');
-          const searchPrice = (obj: any) => {
-            if (!obj || typeof obj !== 'object') return;
-            if ('price' in obj && (typeof obj.price === 'string' || typeof obj.price === 'number')) {
-              const p = parseFloat(String(obj.price).replace(/[^\d.]/g, ''));
-              if (!isNaN(p) && p > 0) {
-                extractedPrice = p;
-                return;
-              }
-            }
-            if ('lowPrice' in obj && (typeof obj.lowPrice === 'string' || typeof obj.lowPrice === 'number')) {
-              const p = parseFloat(String(obj.lowPrice).replace(/[^\d.]/g, ''));
-              if (!isNaN(p) && p > 0) {
-                extractedPrice = p;
-                return;
-              }
-            }
-            for (const key in obj) {
-              searchPrice(obj[key]);
-            }
-          };
-          searchPrice(data);
-        } catch (e) {}
-      });
-
-      if (!extractedPrice) {
-        const priceMeta = doc.querySelector('meta[property="product:price:amount"], meta[property="og:price:amount"], meta[name="twitter:data1"]');
-        if (priceMeta) {
-          const pStr = priceMeta.getAttribute('content') || priceMeta.getAttribute('value') || '';
-          const p = parseFloat(pStr.replace(/[^\d.]/g, ''));
-          if (!isNaN(p) && p > 0) {
-            extractedPrice = p;
-          }
-        }
-      }
-
-      let finalPrice = '';
-      if (extractedPrice) {
-        let p = extractedPrice;
-        if (p < 200) {
-          p = p * 4000;
-        }
-        const priceWithTax = p * 1.10;
-        finalPrice = String(Math.round(priceWithTax / 100) * 100);
-      }
-
-      const sizesStr = extractSizes(html, doc);
-
-      const newForms = [...bulkForms];
-      newForms[index] = {
-        ...newForms[index],
-        nombre: translatedTitle,
-        descripcion: translatedDesc,
-        precio: finalPrice,
-        imagenes: img ? [img] : [''],
-        tallas: sizesStr
-      };
-      setBulkForms(newForms);
-      showToast('Datos extraídos automáticamente ✓');
-    } catch (err) {
-      console.error(err);
-      showToast('No se pudo extraer. Completa manualmente.', 'error');
-    }
-    setLoading(false);
-  };
 
   const handleBulkSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1314,11 +1178,129 @@ export default function Admin() {
                   </div>
                 </div>
               </div>
-            </>
+          {/* ── PEDIDOS TAB ── */}
+          {activeTab === 'pedidos' && (
+            <div className="admin-panel">
+              <div className="panel-header">
+                <div>
+                  <h3><ShoppingBag size={16} /> Registro de Pedidos</h3>
+                  <p>Pedidos recibidos desde el catálogo digital y su asignación de línea</p>
+                </div>
+              </div>
+              <div className="panel-body">
+                {pedidos.length === 0 ? (
+                  <div className="empty-state">
+                    <div className="es-icon">📋</div>
+                    <p style={{ marginTop: '1rem' }}>No hay pedidos registrados todavía</p>
+                  </div>
+                ) : (
+                  <div style={{ overflowX: 'auto', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', textAlign: 'left' }}>
+                      <thead>
+                        <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b', fontWeight: 600 }}>
+                          <th style={{ padding: '1rem' }}>Fecha</th>
+                          <th style={{ padding: '1rem' }}>Cliente</th>
+                          <th style={{ padding: '1rem' }}>Teléfono</th>
+                          <th style={{ padding: '1rem' }}>Dirección</th>
+                          <th style={{ padding: '1rem' }}>Línea Receptora</th>
+                          <th style={{ padding: '1rem' }}>Total</th>
+                          <th style={{ padding: '1rem', textAlign: 'center' }}>Acción</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pedidos.map((ped) => (
+                          <tr key={ped.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                            <td style={{ padding: '1rem', color: '#64748b' }}>
+                              {new Date(ped.created_at).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}
+                            </td>
+                            <td style={{ padding: '1rem', fontWeight: 600, color: '#0f172a' }}>{ped.cliente_nombre}</td>
+                            <td style={{ padding: '1rem', color: '#475569' }}>{ped.cliente_telefono}</td>
+                            <td style={{ padding: '1rem', color: '#475569' }}>{ped.direccion}, {ped.ciudad}</td>
+                            <td style={{ padding: '1rem' }}>
+                              <span style={{ background: '#e0f2fe', color: '#0369a1', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700 }}>
+                                📞 {ped.linea_whatsapp}
+                              </span>
+                            </td>
+                            <td style={{ padding: '1rem', fontWeight: 700, color: '#10b981' }}>
+                              ${ped.total.toLocaleString()}
+                            </td>
+                            <td style={{ padding: '1rem', textAlign: 'center' }}>
+                              <button 
+                                className="btn-secondary" 
+                                style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '6px' }}
+                                onClick={() => setSelectedPedido(ped)}
+                              >
+                                <Eye size={12} /> Ver Detalle
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
           )}
 
         </div>
       </div>
+
+      {/* MODAL DETALLE PEDIDO */}
+      {selectedPedido && (
+        <div className="modal-overlay" onClick={() => setSelectedPedido(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', width: '100%', borderRadius: '16px', padding: '2rem' }}>
+            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
+              <h3 style={{ margin: 0 }}>📦 Detalle del Pedido</h3>
+              <button onClick={() => setSelectedPedido(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+              <div>
+                <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase' }}>Cliente</h5>
+                <p style={{ margin: 0, fontWeight: 600, color: '#0f172a' }}>{selectedPedido.cliente_nombre}</p>
+                <p style={{ margin: '0.2rem 0 0 0', color: '#475569' }}>{selectedPedido.cliente_telefono}</p>
+              </div>
+              <div>
+                <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase' }}>Línea WhatsApp Asignada</h5>
+                <p style={{ margin: 0, fontWeight: 700, color: '#0ea5e9' }}>📞 {selectedPedido.linea_whatsapp}</p>
+              </div>
+              <div style={{ gridColumn: 'span 2' }}>
+                <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase' }}>Dirección de Entrega</h5>
+                <p style={{ margin: 0, color: '#0f172a' }}>{selectedPedido.direccion}, {selectedPedido.ciudad}</p>
+              </div>
+            </div>
+
+            <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
+              <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem' }}>Productos Solicitados</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '250px', overflowY: 'auto', paddingRight: '0.5rem' }}>
+                {Array.isArray(selectedPedido.productos) && selectedPedido.productos.map((prod: any, idx: number) => (
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '10px', border: '1px solid #f1f5f9' }}>
+                    <div>
+                      <h5 style={{ margin: 0, color: '#0f172a' }}>{prod.nombre}</h5>
+                      <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                        Cantidad: {prod.cantidad} {prod.talla ? ` | Talla: ${prod.talla}` : ''}
+                      </span>
+                    </div>
+                    <span style={{ fontWeight: 700, color: '#0f172a' }}>
+                      ${(prod.precio * prod.cantidad).toLocaleString()}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e2e8f0', marginTop: '1.5rem', paddingTop: '1.5rem' }}>
+              <span style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>Total del Pedido:</span>
+              <span style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10b981' }}>
+                ${selectedPedido.total.toLocaleString()}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* TOAST */}
       {toast && (
@@ -1386,13 +1368,17 @@ function SidebarContent({
           <span className="nav-icon"><LayoutDashboard size={14} /></span> Dashboard
           {activeTab === 'dashboard' && <span className="active-dot"></span>}
         </button>
-        <button className={`nav-item ${activeTab === 'productos' ? 'active' : ''}`} onClick={() => setActiveTab('productos')}>
+         <button className={`nav-item ${activeTab === 'productos' ? 'active' : ''}`} onClick={() => setActiveTab('productos')}>
           <span className="nav-icon"><Package size={14} /></span> Productos
           {activeTab === 'productos' && <span className="active-dot"></span>}
         </button>
         <button className={`nav-item ${activeTab === 'categorias' ? 'active' : ''}`} onClick={() => setActiveTab('categorias')}>
           <span className="nav-icon"><Tag size={14} /></span> Categorías
           {activeTab === 'categorias' && <span className="active-dot"></span>}
+        </button>
+        <button className={`nav-item ${activeTab === 'pedidos' ? 'active' : ''}`} onClick={() => setActiveTab('pedidos')}>
+          <span className="nav-icon"><ShoppingBag size={14} /></span> Pedidos
+          {activeTab === 'pedidos' && <span className="active-dot"></span>}
         </button>
         <button className={`nav-item ${activeTab === 'config' ? 'active' : ''}`} onClick={() => setActiveTab('config')}>
           <span className="nav-icon"><Settings size={14} /></span> Configuración

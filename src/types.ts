@@ -37,3 +37,16 @@ export interface Configuracion {
   link_dropshipper?: string;
   link_ganar_dinero?: string;
 }
+
+export interface Pedido {
+  id: string;
+  cliente_nombre: string;
+  cliente_telefono: string;
+  direccion: string;
+  ciudad: string;
+  total: number;
+  productos: any;
+  linea_whatsapp: string;
+  tenant_id: string;
+  created_at: string;
+}

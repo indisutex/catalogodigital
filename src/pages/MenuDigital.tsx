@@ -117,7 +117,7 @@ export default function MenuDigital() {
 
   const totalItems = items.reduce((sum, item) => sum + item.cantidad, 0);
 
-  const handleEnviarPedido = (e: React.FormEvent) => {
+  const handleEnviarPedido = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Construir el mensaje para WhatsApp
@@ -136,6 +136,23 @@ export default function MenuDigital() {
     mensaje += `Por favor indícame los métodos de pago para confirmar mi compra.`;
 
     const numeroWhatsApp = overrideWhatsApp || configuracion?.whatsapp || '573185637317';
+
+    // Guardar en la base de datos de pedidos
+    try {
+      await supabase.from('pedidos').insert({
+        cliente_nombre: formData.nombre,
+        cliente_telefono: formData.telefono,
+        direccion: formData.direccion,
+        ciudad: formData.ciudad,
+        total: total,
+        productos: items,
+        linea_whatsapp: numeroWhatsApp,
+        tenant_id: getTenantId()
+      });
+    } catch (dbErr) {
+      console.error('Error al registrar pedido en base de datos:', dbErr);
+    }
+
     const url = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
     
     window.open(url, '_blank');
