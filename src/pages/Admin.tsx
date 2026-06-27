@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase, TENANT_ID } from '../lib/supabase';
+import { supabase, getTenantId, setTenantId } from '../lib/supabase';
 import type { Producto, Categoria, Subcategoria, Configuracion } from '../types';
 import './Admin.css';
 import { X, Video, Upload, Package, Tag, Settings, LayoutDashboard, Zap, Plus, Trash2, Pencil, Check } from 'lucide-react';
@@ -37,6 +37,8 @@ export default function Admin() {
   const [pin, setPin] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('productos');
   const [toast, setToast] = useState<Toast>(null);
+  
+  const [selectedCompany, setSelectedCompany] = useState<string | null>(getTenantId() || null);
 
   const [productos, setProductos] = useState<Producto[]>([]);
   const [categoriasData, setCategoriasData] = useState<Categoria[]>([]);
@@ -63,11 +65,12 @@ export default function Admin() {
 
   async function cargarDatos() {
     try {
+      const tenant = getTenantId();
       const [prodRes, catRes, subcatRes, confRes] = await Promise.all([
-        supabase.from('productos').select('*').eq('tenant_id', TENANT_ID).order('created_at', { ascending: false }),
-        supabase.from('categorias').select('*').eq('tenant_id', TENANT_ID).order('orden', { ascending: true }),
-        supabase.from('subcategorias').select('*').eq('tenant_id', TENANT_ID).order('orden', { ascending: true }),
-        supabase.from('configuracion').select('*').eq('tenant_id', TENANT_ID).limit(1).single()
+        supabase.from('productos').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
+        supabase.from('categorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
+        supabase.from('subcategorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
+        supabase.from('configuracion').select('*').eq('tenant_id', tenant).limit(1).single()
       ]);
       if (prodRes.data) setProductos(prodRes.data);
       if (catRes.data) setCategoriasData(catRes.data);
@@ -77,11 +80,12 @@ export default function Admin() {
         setConfiguracion(confRes.data);
       } else {
         // Create default config for this tenant if it doesn't exist
+        const tenant = getTenantId();
         const defaultConfig = {
-          nombre_negocio: TENANT_ID,
+          nombre_negocio: tenant,
           whatsapp: '573185637317',
           descripcion_hero: 'CATÁLOGO DIGITAL',
-          tenant_id: TENANT_ID
+          tenant_id: tenant
         };
         const { data: newConf } = await supabase.from('configuracion').insert([defaultConfig]).select().single();
         if (newConf) setConfiguracion(newConf);
@@ -381,7 +385,7 @@ export default function Admin() {
       imagen_url: f.imagenes.find(u => u.trim()) || '',
       video_url: f.video_url || null,
       tallas: f.tallas || null,
-      tenant_id: TENANT_ID
+      tenant_id: getTenantId()
     }));
     const { error } = await supabase.from('productos').insert(newProducts);
     setLoading(false);
@@ -429,7 +433,7 @@ export default function Admin() {
     setLoading(true);
     const slug = subcatSlug.trim() || subcatNombre.toLowerCase().replace(/ /g, '-').replace(/[^\w-]/g, '');
     const { error } = await supabase.from('subcategorias').insert([
-      { nombre: subcatNombre.trim(), slug, categoria_id: subcatParentId, tenant_id: TENANT_ID }
+      { nombre: subcatNombre.trim(), slug, categoria_id: subcatParentId, tenant_id: getTenantId() }
     ]);
     setLoading(false);
     if (error) {
@@ -460,26 +464,64 @@ export default function Admin() {
 
   // ── LOGIN SCREEN ──
   if (!isAuthenticated) {
+    const companies = [
+      { id: 'saramantha', name: 'Saramantha', logo: 'https://images.unsplash.com/photo-1596814234568-19ebcc1af3fa?auto=format&fit=crop&q=80&w=150' }, // Use a generic baby logo or placeholder
+      { id: 'sublimados_majestic', name: 'Sublimados Majestic', logo: 'https://images.unsplash.com/photo-1513346940221-6f673d962e97?auto=format&fit=crop&q=80&w=150' }, // generic sublimation
+      { id: 'pijamas_lucerito', name: 'Pijamas Lucerito', logo: 'https://images.unsplash.com/photo-1590481023775-6fcecc6fcbf9?auto=format&fit=crop&q=80&w=150' },
+      { id: 'sueno_de_reina', name: 'Sueño de Reina', logo: 'https://images.unsplash.com/photo-1534062325324-406a4bcbf343?auto=format&fit=crop&q=80&w=150' },
+    ];
+
     return (
       <div className="admin-login-wrapper">
-        <div className="admin-login-card">
+        <div className="admin-login-card" style={{ maxWidth: selectedCompany ? '400px' : '550px' }}>
           <div>
             <div className="login-logo">🛍️</div>
             <h1>Moztacito Admin</h1>
-            <p>Centro de control de tu tienda</p>
+            <p>Selecciona tu empresa para gestionar el catálogo</p>
           </div>
-          <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            <input
-              type="password"
-              value={pin}
-              onChange={e => setPin(e.target.value)}
-              placeholder="• • • •"
-              maxLength={6}
-              autoFocus
-            />
-            <button type="submit" className="login-btn">Ingresar al Panel</button>
-          </form>
-          <p style={{ fontSize: '0.72rem', color: '#333' }}>Panel Administrativo v2.0</p>
+          
+          {!selectedCompany ? (
+            <div className="company-selector">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+                {companies.map(company => (
+                  <button 
+                    key={company.id}
+                    className="company-btn"
+                    onClick={() => {
+                      setTenantId(company.id);
+                      setSelectedCompany(company.id);
+                    }}
+                    style={{
+                      background: 'white', border: '2px solid #eee', borderRadius: '12px', padding: '1rem',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.8rem', cursor: 'pointer',
+                      transition: 'all 0.2s'
+                    }}
+                  >
+                    <img src={company.logo} alt={company.name} style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover' }} />
+                    <span style={{ fontWeight: 700, color: '#333', fontSize: '0.9rem', textAlign: 'center' }}>{company.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ textAlign: 'center', marginBottom: '1rem', background: '#f8fafc', padding: '0.8rem', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontWeight: 600, color: '#333' }}>Empresa: {companies.find(c => c.id === selectedCompany)?.name || selectedCompany}</span>
+                <button type="button" onClick={() => setSelectedCompany(null)} style={{ background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>Cambiar</button>
+              </div>
+              <input
+                type="password"
+                value={pin}
+                onChange={e => setPin(e.target.value)}
+                placeholder="PIN (0000)"
+                maxLength={6}
+                autoFocus
+              />
+              <button type="submit" className="login-btn">Ingresar al Panel</button>
+            </form>
+          )}
+          
+          <p style={{ fontSize: '0.72rem', color: '#333', marginTop: '1.5rem' }}>Panel Administrativo v2.0</p>
         </div>
         {toast && (
           <div className={`admin-toast ${toast.type}`}>
@@ -802,7 +844,7 @@ export default function Admin() {
                   const icono = (form.elements.namedItem('icono') as HTMLInputElement).value;
                   const color = (form.elements.namedItem('color') as HTMLInputElement).value;
                   setLoading(true);
-                  const { error } = await supabase.from('categorias').insert([{ nombre, slug, icono, color, tenant_id: TENANT_ID }]);
+                  const { error } = await supabase.from('categorias').insert([{ nombre, slug, icono, color, tenant_id: getTenantId() }]);
                   setLoading(false);
                   if (error) showToast('Error: ' + error.message, 'error');
                   else { form.reset(); cargarDatos(); showToast('Categoría creada ✓'); }

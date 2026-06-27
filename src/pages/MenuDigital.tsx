@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase, TENANT_ID } from '../lib/supabase';
+import { supabase, getTenantId } from '../lib/supabase';
 import type { Producto, Categoria, Subcategoria, Configuracion } from '../types';
 import { Loader2, Search, Plus, Info, Calendar, ShoppingBag, X } from 'lucide-react';
 import { useCart } from '../context/CartContext';
@@ -33,11 +33,12 @@ export default function MenuDigital() {
   useEffect(() => {
     async function cargarDatos() {
       try {
+        const tenant = getTenantId();
         const [prodRes, catRes, subcatRes, confRes] = await Promise.all([
-          supabase.from('productos').select('*').eq('tenant_id', TENANT_ID).order('created_at', { ascending: false }),
-          supabase.from('categorias').select('*').eq('tenant_id', TENANT_ID).order('orden', { ascending: true }),
-          supabase.from('subcategorias').select('*').eq('tenant_id', TENANT_ID).order('orden', { ascending: true }),
-          supabase.from('configuracion').select('*').eq('tenant_id', TENANT_ID).limit(1).single()
+          supabase.from('productos').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
+          supabase.from('categorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
+          supabase.from('subcategorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
+          supabase.from('configuracion').select('*').eq('tenant_id', tenant).limit(1).single()
         ]);
         
         if (prodRes.data) setProductos(prodRes.data);
