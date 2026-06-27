@@ -177,8 +177,8 @@ export default function MenuDigital() {
             className="hero-background-video"
           />
         )}
-        {/* Enlace Especial Ganar Dinero en la Esquina Superior Derecha */}
-        <div style={{ position: 'absolute', top: '2.2rem', right: '1.2rem', zIndex: 10 }}>
+        {/* Enlace Especial Ganar Dinero en la Esquina Inferior Derecha */}
+        <div style={{ position: 'absolute', bottom: '1.5rem', right: '1.2rem', zIndex: 10 }}>
           <a 
             href={configuracion?.link_ganar_dinero || `https://wa.me/${overrideWhatsApp || (configuracion?.whatsapp || '').replace(/\D/g, '')}?text=Hola,%20quiero%20saber%20cómo%20ganar%20dinero%20con%20ustedes`} 
             target="_blank" 
@@ -202,8 +202,8 @@ export default function MenuDigital() {
           </a>
         </div>
 
-        {/* Enlace Especial Dropshipper en la Esquina Superior Izquierda */}
-        <div style={{ position: 'absolute', top: '2.2rem', left: '1.2rem', zIndex: 10 }}>
+        {/* Enlace Especial Dropshipper en la Esquina Inferior Izquierda */}
+        <div style={{ position: 'absolute', bottom: '1.5rem', left: '1.2rem', zIndex: 10 }}>
           <a 
             href={configuracion?.link_dropshipper || `https://wa.me/${overrideWhatsApp || (configuracion?.whatsapp || '').replace(/\D/g, '')}?text=Hola,%20soy%20dropshipper,%20me%20interesa%20trabajar%20con%20ustedes`} 
             target="_blank" 

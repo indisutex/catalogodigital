@@ -682,16 +682,14 @@
 
 .hero-content-overlay {
   position: absolute;
-  top: 0;
+  top: 2rem;
   left: 0;
   width: 100%;
-  height: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
   z-index: 2;
-  gap: 0.8rem;
+  gap: 0.6rem;
   padding: 1.5rem;
 }
 
