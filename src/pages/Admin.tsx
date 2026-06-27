@@ -1270,7 +1270,7 @@ function SidebarContent({
             rel="noopener noreferrer"
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', width: '100%', padding: '0.8rem', borderRadius: '8px', textDecoration: 'none', background: '#25D366', color: 'white', fontWeight: 600, fontSize: '0.9rem' }}
           >
-            <span style={{ fontSize: '1.2rem' }}>💬</span> {configuracion.whatsapp}
+            <span style={{ fontSize: '1.2rem' }}>💬</span> Línea WhatsApp: {configuracion.whatsapp}
           </a>
         )}
         
