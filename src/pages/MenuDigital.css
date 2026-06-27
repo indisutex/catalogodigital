@@ -746,6 +746,13 @@
   justify-self: end;
 }
 
+.special-header-btn {
+  font-family: 'Outfit', sans-serif !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.5px;
+}
+
+
 .menu-app-subtitle {
   position: relative;
   z-index: 2;
