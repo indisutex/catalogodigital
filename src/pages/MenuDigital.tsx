@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase, getTenantId } from '../lib/supabase';
 import type { Producto, Categoria, Subcategoria, Configuracion } from '../types';
-import { Loader2, Search, Plus, Info, Calendar, ShoppingBag, X } from 'lucide-react';
+import { Loader2, Search, Plus, ShoppingBag, X } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import './MenuDigital.css';
 
@@ -244,6 +244,33 @@ export default function MenuDigital() {
                 </span>
               </div>
             )}
+          </div>
+        </div>
+
+        {/* ── TICKER STRIP ── */}
+        <div className="hero-ticker-wrap">
+          <div className="hero-ticker-track">
+            {[
+              '🇨🇴 Fabricación colombiana · Indisutex SAS',
+              '🚚 Pago contra entrega en todo Colombia',
+              '📲 Catálogo mayorista por WhatsApp',
+              '💰 Margen de reventa hasta 116%',
+              '📦 Pedido mínimo: 6 unidades',
+              '✅ Precios mayoristas por WhatsApp',
+              '🌟 Envíos a toda Colombia',
+              '💎 Calidad garantizada',
+            ].concat([
+              '🇨🇴 Fabricación colombiana · Indisutex SAS',
+              '🚚 Pago contra entrega en todo Colombia',
+              '📲 Catálogo mayorista por WhatsApp',
+              '💰 Margen de reventa hasta 116%',
+              '📦 Pedido mínimo: 6 unidades',
+              '✅ Precios mayoristas por WhatsApp',
+              '🌟 Envíos a toda Colombia',
+              '💎 Calidad garantizada',
+            ]).map((item, i) => (
+              <span key={i} className="hero-ticker-item">{item}</span>
+            ))}
           </div>
         </div>
       </div>

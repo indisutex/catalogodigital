@@ -666,7 +666,45 @@
   pointer-events: none;
 }
 
+/* ── HERO TICKER STRIP ── */
+.hero-ticker-wrap {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 4;
+  padding: 0.45rem 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.hero-ticker-track {
+  display: flex;
+  width: max-content;
+  animation: ticker-scroll 30s linear infinite;
+  gap: 0;
+}
+
+.hero-ticker-item {
+  white-space: nowrap;
+  color: #fff;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  padding: 0 2.5rem;
+  border-right: 1px solid rgba(255,255,255,0.2);
+}
+
+@keyframes ticker-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
 .menu-app-header.has-video {
+
   padding: 0 !important;
   overflow: hidden;
   background: transparent;
@@ -685,7 +723,7 @@
 
 .hero-content-overlay {
   position: absolute;
-  top: 2.2rem; /* Lower logo from top edge to prevent clipping */
+  top: 2.2rem;
   left: 0;
   width: 100%;
   display: flex;
@@ -724,13 +762,13 @@
 /* ── HEADER BOTTOM BAR CONTAINER ── */
 .header-bottom-bar {
   position: absolute;
-  bottom: 2rem;
+  top: 3.5rem; /* Aligned with center of 90px logo at top:2.2rem */
   left: 0;
   width: 100%;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 2rem;
+  padding: 0 1.5rem;
   z-index: 10;
 }
 
