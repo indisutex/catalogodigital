@@ -55,6 +55,8 @@ export default function Admin() {
   const [editingProduct, setEditingProduct] = useState<Producto | null>(null);
 
   const [isAddingProduct, setIsAddingProduct] = useState(false);
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [isAddingSubcategory, setIsAddingSubcategory] = useState(false);
 
   function showToast(message: string, type: 'success' | 'error' = 'success') {
     setToast({ message, type });
