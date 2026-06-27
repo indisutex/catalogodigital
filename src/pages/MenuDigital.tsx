@@ -202,8 +202,6 @@ export default function MenuDigital() {
             🚀 ¿Dropshipper?
           </a>
 
-          <p className="menu-app-subtitle">{configuracion?.descripcion_hero || 'TIENDA & BABY'}</p>
-
           {/* Enlace Especial Ganar Dinero en la Esquina Inferior Derecha */}
           <a 
             href={configuracion?.link_ganar_dinero || `https://wa.me/${overrideWhatsApp || (configuracion?.whatsapp || '').replace(/\D/g, '')}?text=Hola,%20quiero%20saber%20cómo%20ganar%20dinero%20con%20ustedes`} 
@@ -228,6 +226,8 @@ export default function MenuDigital() {
             💸 ¿Ganar dinero?
           </a>
         </div>
+
+        <p className="menu-app-subtitle vertical-text">{configuracion?.descripcion_hero || 'CATÁLOGO DIGITAL'}</p>
 
         <div className="hero-content-overlay">
           <div className="menu-app-logo">
