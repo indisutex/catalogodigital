@@ -187,16 +187,16 @@ export default function MenuDigital() {
             style={{ 
               background: '#f36b8e', 
               color: '#ffffff', 
-              padding: '0.4rem 1rem', 
+              padding: '0.3rem 0.75rem', 
               borderRadius: '20px', 
-              fontSize: '1rem', 
+              fontSize: '0.82rem', 
               fontFamily: "'Bebas Neue', sans-serif",
-              letterSpacing: '1px',
+              letterSpacing: '0.8px',
               fontWeight: 400, 
               textDecoration: 'none', 
               display: 'flex', 
               alignItems: 'center', 
-              gap: '0.3rem', 
+              gap: '0.25rem', 
               border: 'none',
               boxShadow: '0 4px 10px rgba(243, 107, 142, 0.35)'
             }}
@@ -213,16 +213,16 @@ export default function MenuDigital() {
             style={{ 
               background: '#f36b8e', 
               color: '#ffffff', 
-              padding: '0.4rem 1rem', 
+              padding: '0.3rem 0.75rem', 
               borderRadius: '20px', 
-              fontSize: '1rem', 
+              fontSize: '0.82rem', 
               fontFamily: "'Bebas Neue', sans-serif",
-              letterSpacing: '1px',
+              letterSpacing: '0.8px',
               fontWeight: 400, 
               textDecoration: 'none', 
               display: 'flex', 
               alignItems: 'center', 
-              gap: '0.3rem', 
+              gap: '0.25rem', 
               border: 'none',
               boxShadow: '0 4px 10px rgba(243, 107, 142, 0.35)'
             }}
