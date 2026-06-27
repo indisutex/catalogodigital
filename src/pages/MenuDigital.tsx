@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase, getTenantId } from '../lib/supabase';
 import type { Producto, Categoria, Subcategoria, Configuracion } from '../types';
-import { Loader2, Search, Plus, ShoppingBag, X } from 'lucide-react';
+import { Loader2, Search, Plus, ShoppingBag, X, ChevronLeft, ChevronRight, ShoppingCart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import './MenuDigital.css';
 
@@ -44,8 +44,29 @@ export default function MenuDigital() {
     }
   }, [configuracion]);
   
-  // Size Selection State
-  const [sizeModalProduct, setSizeModalProduct] = useState<Producto | null>(null);
+  // Product Detail Popup
+  const [detailProduct, setDetailProduct] = useState<Producto | null>(null);
+  const [carouselIdx, setCarouselIdx] = useState(0);
+  const [selectedTalla, setSelectedTalla] = useState<string>('');
+  const [selectedCantidad, setSelectedCantidad] = useState(1);
+
+  const openDetail = (producto: Producto) => {
+    setDetailProduct(producto);
+    setCarouselIdx(0);
+    setSelectedTalla('');
+    setSelectedCantidad(1);
+  };
+
+  const handleAddFromDetail = () => {
+    if (!detailProduct) return;
+    const tallas = detailProduct.tallas?.split(',').map(t => t.trim()).filter(Boolean) || [];
+    if (tallas.length > 0 && !selectedTalla) {
+      alert('Por favor selecciona una talla');
+      return;
+    }
+    addToCart(detailProduct, selectedTalla || undefined, selectedCantidad);
+    setDetailProduct(null);
+  };
   
   const [formData, setFormData] = useState({
     nombre: '',
@@ -80,20 +101,7 @@ export default function MenuDigital() {
     cargarDatos();
   }, []);
 
-  const handleAddClick = (producto: Producto) => {
-    if (producto.tallas) {
-      setSizeModalProduct(producto);
-    } else {
-      addToCart(producto);
-    }
-  };
 
-  const handleSizeSelect = (talla: string) => {
-    if (sizeModalProduct) {
-      addToCart(sizeModalProduct, talla);
-      setSizeModalProduct(null);
-    }
-  };
 
   const catActual = categorias.find(c => c.slug === filtroCategoria);
   let productosFiltrados = filtroCategoria === 'todos' 
@@ -294,7 +302,6 @@ export default function MenuDigital() {
             <div className="cat-img-placeholder" style={{backgroundColor: '#f36b8e'}}>⭐</div>
             <div className="cat-info">
               <h3>TODOS LOS PRODUCTOS</h3>
-              <p>{productos.length} ITEMS</p>
             </div>
           </div>
           
@@ -319,7 +326,6 @@ export default function MenuDigital() {
               )}
               <div className="cat-info">
                 <h3>{cat.nombre.toUpperCase()}</h3>
-                <p>{productos.filter(p=>p.categoria === cat.slug || p.categoria === cat.nombre).length} ITEMS</p>
               </div>
             </div>
           ))}
@@ -364,7 +370,7 @@ export default function MenuDigital() {
             <p className="no-items">No hay productos aquí.</p>
           ) : (
             productosFiltrados.map(producto => (
-              <div key={producto.id} className="menu-list-item">
+              <div key={producto.id} className="menu-list-item" onClick={() => openDetail(producto)} style={{cursor:'pointer'}}>
                 <div className="item-img">
                   {producto.video_url ? (
                     <video 
@@ -380,19 +386,19 @@ export default function MenuDigital() {
                   ) : (
                     <div className="img-placeholder"></div>
                   )}
+                  
+                  <button 
+                    className="item-add-btn" 
+                    onClick={e => { e.stopPropagation(); openDetail(producto); }}
+                    aria-label="Añadir al carrito"
+                  >
+                    <Plus size={20} />
+                  </button>
                 </div>
                 <div className="item-details">
                   <h4>{producto.nombre}</h4>
-                  <p className="item-desc">{producto.descripcion}</p>
                   <p className="item-price">${producto.precio.toLocaleString('es-CO')}</p>
                 </div>
-                <button 
-                  className="item-add-btn" 
-                  onClick={() => handleAddClick(producto)}
-                  aria-label="Añadir al carrito"
-                >
-                  <Plus size={20} />
-                </button>
               </div>
             ))
           )}
@@ -535,40 +541,99 @@ export default function MenuDigital() {
         </div>
       )}
 
-      {/* SIZE SELECTION MODAL */}
-      {sizeModalProduct && (
-        <div className="cart-modal-overlay" onClick={() => setSizeModalProduct(null)}>
-          <div className="cart-modal" onClick={e => e.stopPropagation()} style={{textAlign: 'center', padding: '2rem'}}>
-            <button className="close-modal-btn" onClick={() => setSizeModalProduct(null)}><X size={24} /></button>
-            <h3>Selecciona la Talla</h3>
-            <p style={{marginBottom: '1rem', color: '#666'}}>{sizeModalProduct.nombre}</p>
-            
-            <div style={{display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center'}}>
-              {sizeModalProduct.tallas?.split(',').map((t, idx) => {
-                const talla = t.trim();
-                if (!talla) return null;
-                return (
-                  <button 
-                    key={idx} 
-                    onClick={() => handleSizeSelect(talla)}
-                    style={{
-                      padding: '0.8rem 1.5rem',
-                      border: '2px solid var(--primary)',
-                      borderRadius: '8px',
-                      background: 'white',
-                      color: 'var(--primary)',
-                      fontWeight: 'bold',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    {talla}
-                  </button>
-                );
-              })}
+
+      {/* ── PRODUCT DETAIL POPUP ── */}
+      {detailProduct && (() => {
+        const allImages = [
+          ...(detailProduct.imagen_url ? [detailProduct.imagen_url] : []),
+          ...(detailProduct.imagenes_extra || [])
+        ];
+        const tallas = detailProduct.tallas?.split(',').map(t => t.trim()).filter(Boolean) || [];
+        const safeIdx = Math.min(carouselIdx, allImages.length - 1);
+        return (
+          <div className="detail-overlay" onClick={() => setDetailProduct(null)}>
+            <div className="detail-modal" onClick={e => e.stopPropagation()}>
+              {/* Close button */}
+              <button className="detail-close" onClick={() => setDetailProduct(null)}><X size={20} /></button>
+
+              {/* ── CAROUSEL ── */}
+              <div className="detail-carousel">
+                {detailProduct.video_url ? (
+                  <video src={detailProduct.video_url} autoPlay loop muted playsInline className="detail-carousel-img" />
+                ) : allImages.length > 0 ? (
+                  <img src={allImages[safeIdx]} alt={detailProduct.nombre} className="detail-carousel-img" />
+                ) : (
+                  <div className="detail-carousel-placeholder" />
+                )}
+
+                {allImages.length > 1 && (
+                  <>
+                    <button className="carousel-btn carousel-btn-left" onClick={() => setCarouselIdx(i => (i - 1 + allImages.length) % allImages.length)}>
+                      <ChevronLeft size={20} />
+                    </button>
+                    <button className="carousel-btn carousel-btn-right" onClick={() => setCarouselIdx(i => (i + 1) % allImages.length)}>
+                      <ChevronRight size={20} />
+                    </button>
+                    <div className="carousel-dots">
+                      {allImages.map((_, i) => (
+                        <button key={i} className={`carousel-dot${i === safeIdx ? ' active' : ''}`} onClick={() => setCarouselIdx(i)} />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+
+
+
+
+              {/* ── INFO ── */}
+              <div className="detail-info">
+                <div className="detail-header-row">
+                  <h3 className="detail-name">{detailProduct.nombre}</h3>
+                  <p className="detail-price">${detailProduct.precio.toLocaleString('es-CO')}</p>
+                </div>
+                {detailProduct.descripcion && (
+                  <p className="detail-desc">{detailProduct.descripcion}</p>
+                )}
+
+                {/* ── TALLAS + CANTIDAD en una fila ── */}
+                <div className="detail-controls-row">
+                  {tallas.length > 0 && (
+                    <div className="detail-tallas">
+                      <p className="detail-section-label">Talla</p>
+                      <div className="tallas-grid">
+                        {tallas.map(t => (
+                          <button
+                            key={t}
+                            className={`talla-chip${selectedTalla === t ? ' active' : ''}`}
+                            onClick={() => setSelectedTalla(t)}
+                          >{t}</button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="detail-cantidad">
+                    <p className="detail-section-label">Cantidad</p>
+                    <div className="cantidad-control">
+                      <button className="qty-btn" onClick={() => setSelectedCantidad(q => Math.max(1, q - 1))}>−</button>
+                      <span className="qty-value">{selectedCantidad}</span>
+                      <button className="qty-btn" onClick={() => setSelectedCantidad(q => q + 1)}>+</button>
+                    </div>
+                  </div>
+                </div>
+
+
+                {/* ── ADD TO CART ── */}
+                <button className="detail-add-btn" onClick={handleAddFromDetail}>
+                  <ShoppingCart size={18} />
+                  Añadir al carrito · ${(detailProduct.precio * selectedCantidad).toLocaleString('es-CO')}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }

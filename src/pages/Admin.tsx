@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase, getTenantId, setTenantId } from '../lib/supabase';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido } from '../types';
 import './Admin.css';
-import { X, Video, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag } from 'lucide-react';
+import { X, Video, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const SECRET_PIN = '0000';
@@ -299,6 +299,22 @@ export default function Admin() {
     const { error } = await supabase.from('productos').delete().eq('id', id);
     if (!error) { cargarDatos(); showToast('Producto eliminado'); }
     else showToast('Error al eliminar', 'error');
+  };
+
+  const handleDuplicate = async (p: any) => {
+    setLoading(true);
+    const copy = { ...p };
+    delete copy.id;
+    delete copy.created_at;
+    copy.nombre = `${copy.nombre} (Copia)`;
+    const { error } = await supabase.from('productos').insert([copy]);
+    setLoading(false);
+    if (!error) {
+      cargarDatos();
+      showToast('Producto duplicado ✓');
+    } else {
+      showToast('Error al duplicar: ' + error.message, 'error');
+    }
   };
 
   const handleUpdateProduct = async (e: React.FormEvent) => {
@@ -1123,6 +1139,7 @@ export default function Admin() {
                           </div>
                           <div className="product-card-actions">
                             <button className="btn-edit" onClick={() => { setEditingProduct(p); setEditExtraImages(p.imagenes_extra || []); }}><Pencil size={12} /> Editar</button>
+                            <button className="btn-secondary" onClick={() => handleDuplicate(p)} style={{ fontSize: '0.8rem', padding: '0.4rem 0.6rem', display: 'flex', alignItems: 'center', gap: '0.4rem', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', background: 'white' }}><Copy size={12} /> Duplicar</button>
                             <button className="btn-danger" onClick={() => handleDelete(p.id)}><Trash2 size={12} /> Borrar</button>
                           </div>
                         </div>
