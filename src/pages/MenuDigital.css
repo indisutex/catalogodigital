@@ -682,7 +682,7 @@
 
 .hero-content-overlay {
   position: absolute;
-  top: 2rem;
+  top: 1.5rem;
   left: 0;
   width: 100%;
   display: flex;
@@ -699,13 +699,27 @@
   margin-bottom: 0;
 }
 
+.menu-app-header.has-video .store-logo-round {
+  width: 75px !important;
+  height: 75px !important;
+  border-width: 3px !important;
+}
+
 .menu-app-header.has-video .menu-app-subtitle {
-  position: static;
+  position: absolute;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
   text-align: center;
   z-index: 2;
   margin: 0;
   color: #ffffff;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.95);
+  white-space: nowrap;
 }
 
 .menu-app-subtitle {

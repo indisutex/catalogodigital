@@ -183,19 +183,20 @@ export default function MenuDigital() {
             href={configuracion?.link_ganar_dinero || `https://wa.me/${overrideWhatsApp || (configuracion?.whatsapp || '').replace(/\D/g, '')}?text=Hola,%20quiero%20saber%20cómo%20ganar%20dinero%20con%20ustedes`} 
             target="_blank" 
             rel="noopener noreferrer"
-            className="ganar-dinero-pulse"
+            className="ganar-dinero-pulse special-header-btn"
             style={{ 
-              background: 'rgba(16, 185, 129, 0.1)', 
-              color: '#059669', 
-              padding: '0.35rem 0.75rem', 
+              background: '#f36b8e', 
+              color: '#ffffff', 
+              padding: '0.45rem 0.9rem', 
               borderRadius: '20px', 
               fontSize: '0.72rem', 
-              fontWeight: 700, 
+              fontWeight: 800, 
               textDecoration: 'none', 
               display: 'flex', 
               alignItems: 'center', 
               gap: '0.2rem', 
-              border: '1px solid rgba(16, 185, 129, 0.2)'
+              border: 'none',
+              boxShadow: '0 4px 10px rgba(243, 107, 142, 0.35)'
             }}
           >
             💸 ¿Ganar dinero?
@@ -208,23 +209,27 @@ export default function MenuDigital() {
             href={configuracion?.link_dropshipper || `https://wa.me/${overrideWhatsApp || (configuracion?.whatsapp || '').replace(/\D/g, '')}?text=Hola,%20soy%20dropshipper,%20me%20interesa%20trabajar%20con%20ustedes`} 
             target="_blank" 
             rel="noopener noreferrer"
+            className="special-header-btn"
             style={{ 
-              background: 'rgba(59, 130, 246, 0.1)', 
-              color: '#2563eb', 
-              padding: '0.35rem 0.75rem', 
+              background: '#f36b8e', 
+              color: '#ffffff', 
+              padding: '0.45rem 0.9rem', 
               borderRadius: '20px', 
               fontSize: '0.72rem', 
-              fontWeight: 700, 
+              fontWeight: 800, 
               textDecoration: 'none', 
               display: 'flex', 
               alignItems: 'center', 
               gap: '0.2rem', 
-              border: '1px solid rgba(59, 130, 246, 0.2)'
+              border: 'none',
+              boxShadow: '0 4px 10px rgba(243, 107, 142, 0.35)'
             }}
           >
             🚀 ¿Dropshipper?
           </a>
         </div>
+
+        <p className="menu-app-subtitle">{configuracion?.descripcion_hero || 'TIENDA & BABY'}</p>
 
         <div className="hero-content-overlay">
           <div className="menu-app-logo">
@@ -242,7 +247,6 @@ export default function MenuDigital() {
               </div>
             )}
           </div>
-          <p className="menu-app-subtitle">{configuracion?.descripcion_hero || 'TIENDA & BABY'}</p>
         </div>
       </div>
 
