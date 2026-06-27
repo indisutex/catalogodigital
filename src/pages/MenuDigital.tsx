@@ -167,8 +167,8 @@ export default function MenuDigital() {
   return (
     <div className="menu-app-container">
       <div className="menu-app-header" style={{ position: 'relative' }}>
-        {/* Enlaces Especiales en la Esquina Superior Derecha */}
-        <div style={{ position: 'absolute', top: '2.2rem', right: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'flex-end', zIndex: 10 }}>
+        {/* Enlace Especial Ganar Dinero en la Esquina Superior Derecha */}
+        <div style={{ position: 'absolute', top: '2.2rem', right: '1.2rem', zIndex: 10 }}>
           <a 
             href={configuracion?.link_ganar_dinero || `https://wa.me/${overrideWhatsApp || (configuracion?.whatsapp || '').replace(/\D/g, '')}?text=Hola,%20quiero%20saber%20cómo%20ganar%20dinero%20con%20ustedes`} 
             target="_blank" 
@@ -190,6 +190,10 @@ export default function MenuDigital() {
           >
             💸 ¿Ganar dinero?
           </a>
+        </div>
+
+        {/* Enlace Especial Dropshipper en la Esquina Superior Izquierda */}
+        <div style={{ position: 'absolute', top: '2.2rem', left: '1.2rem', zIndex: 10 }}>
           <a 
             href={configuracion?.link_dropshipper || `https://wa.me/${overrideWhatsApp || (configuracion?.whatsapp || '').replace(/\D/g, '')}?text=Hola,%20soy%20dropshipper,%20me%20interesa%20trabajar%20con%20ustedes`} 
             target="_blank" 
@@ -228,10 +232,6 @@ export default function MenuDigital() {
           )}
         </div>
         <p className="menu-app-subtitle">{configuracion?.descripcion_hero || 'TIENDA & BABY'}</p>
-        
-        <div className="menu-app-actions" style={{ display: 'flex', justifyContent: 'flex-end', padding: '0 1rem', marginTop: '0.5rem' }}>
-          <button className="pill-btn"><Info size={14} /> NOSOTROS</button>
-        </div>
       </div>
 
       <div className="menu-app-body">
