@@ -58,6 +58,8 @@ export default function Admin() {
   const [bulkForms, setBulkForms] = useState<ProductFormData[]>([{ ...emptyProduct }]);
 
   const [editingProduct, setEditingProduct] = useState<Producto | null>(null);
+  const [editExtraImages, setEditExtraImages] = useState<string[]>([]);
+  const [editUploadingIdx, setEditUploadingIdx] = useState<number | null>(null);
 
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [isAddingCategory, setIsAddingCategory] = useState(false);
@@ -310,12 +312,51 @@ export default function Admin() {
       categoria: editingProduct.categoria,
       subcategoria: editingProduct.subcategoria || null,
       imagen_url: editingProduct.imagen_url,
+      imagenes_extra: editExtraImages.filter(u => u.trim()),
       video_url: editingProduct.video_url,
       tallas: editingProduct.tallas
     }).eq('id', editingProduct.id);
     setLoading(false);
     if (error) showToast('Error al actualizar', 'error');
     else { showToast('Producto actualizado ✓'); setEditingProduct(null); cargarDatos(); }
+  };
+
+  const handleEditMainImgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !editingProduct) return;
+    setLoading(true);
+    try {
+      const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${file.name.split('.').pop()}`;
+      const { error: uploadError } = await supabase.storage.from('archivos').upload(fileName, file);
+      if (uploadError) throw uploadError;
+      const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
+      setEditingProduct({ ...editingProduct, imagen_url: data.publicUrl });
+      showToast('Foto principal actualizada ✓');
+    } catch { showToast('Error al subir foto', 'error'); }
+    finally { setLoading(false); }
+  };
+
+  const handleEditExtraUpload = async (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setEditUploadingIdx(idx);
+    try {
+      const uploadedUrls: string[] = [];
+      for (const file of files) {
+        const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${file.name.split('.').pop()}`;
+        const { error: uploadError } = await supabase.storage.from('archivos').upload(fileName, file);
+        if (uploadError) throw uploadError;
+        const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
+        uploadedUrls.push(data.publicUrl);
+      }
+      setEditExtraImages(prev => {
+        const next = [...prev];
+        next.splice(idx, 1, ...uploadedUrls);
+        return next;
+      });
+      showToast(`${uploadedUrls.length} foto(s) extra subida(s) ✓`);
+    } catch { showToast('Error al subir foto extra', 'error'); }
+    finally { setEditUploadingIdx(null); }
   };
 
   const handleCreateSubcategory = async (e: React.FormEvent) => {
@@ -514,6 +555,9 @@ export default function Admin() {
   }
 
   // ── EDIT PRODUCT MODAL ──
+  // Sync editExtraImages when editingProduct changes
+  // (handled via setEditingProduct call site – pre-populate below at click)
+
   if (editingProduct) {
     return (
       <div className="admin-app">
@@ -567,12 +611,57 @@ export default function Admin() {
                       <input value={editingProduct.tallas || ''} onChange={e => setEditingProduct({ ...editingProduct, tallas: e.target.value })} placeholder="Ej: S, M, L, XL" />
                     </div>
                     <div className="form-field full">
-                      <label>URL de Imagen</label>
+                      <label>Foto Principal</label>
                       <div className="img-input-row">
                         {editingProduct.imagen_url && <img src={editingProduct.imagen_url} className="img-preview-thumb" alt="" />}
-                        <input value={editingProduct.imagen_url || ''} onChange={e => setEditingProduct({ ...editingProduct, imagen_url: e.target.value })} />
+                        <input value={editingProduct.imagen_url || ''} onChange={e => setEditingProduct({ ...editingProduct, imagen_url: e.target.value })} placeholder="URL de imagen principal" />
+                      </div>
+                      <label htmlFor="edit-main-img-upload" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.5rem', cursor: 'pointer', background: '#f0f9ff', border: '1px dashed #0ea5e9', borderRadius: '8px', padding: '0.4rem 0.9rem', fontSize: '0.8rem', color: '#0ea5e9', fontWeight: 600 }}>
+                        <Upload size={14} /> Subir foto principal
+                      </label>
+                      <input id="edit-main-img-upload" type="file" accept="image/*" style={{ display: 'none' }} onChange={handleEditMainImgUpload} />
+                    </div>
+
+                    {/* ── FOTOS EXTRA ── */}
+                    <div className="form-field full">
+                      <label>📸 Fotos Adicionales del Producto</label>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '0.5rem' }}>
+                        {editExtraImages.map((url, idx) => (
+                          <div key={idx} style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '0.3rem', alignItems: 'center' }}>
+                            {url && <img src={url} alt="" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 8, border: '2px solid #e2e8f0' }} />}
+                            {!url && <div style={{ width: 80, height: 80, background: '#f1f5f9', borderRadius: 8, border: '2px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>📷</div>}
+                            <label htmlFor={`edit-extra-${idx}`} style={{ cursor: 'pointer', fontSize: '0.7rem', color: '#0ea5e9', fontWeight: 600 }}>
+                              {editUploadingIdx === idx ? '...' : '📤 Cambiar'}
+                            </label>
+                            <input id={`edit-extra-${idx}`} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleEditExtraUpload(e, idx)} />
+                            <button type="button" onClick={() => setEditExtraImages(prev => prev.filter((_, i) => i !== idx))} style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: '#ef4444', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                          </div>
+                        ))}
+                        {/* Botón agregar foto extra */}
+                        <label htmlFor="edit-extra-new" style={{ width: 80, height: 80, background: '#f0fdf4', border: '2px dashed #22c55e', borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.65rem', color: '#16a34a', fontWeight: 700, gap: '0.2rem' }}>
+                          <span style={{ fontSize: '1.4rem' }}>+</span> Agregar foto
+                        </label>
+                        <input id="edit-extra-new" type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={async e => {
+                          const files = Array.from(e.target.files || []);
+                          if (!files.length) return;
+                          setEditUploadingIdx(-1);
+                          try {
+                            const urls: string[] = [];
+                            for (const file of files) {
+                              const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${file.name.split('.').pop()}`;
+                              const { error: uploadError } = await supabase.storage.from('archivos').upload(fileName, file);
+                              if (uploadError) throw uploadError;
+                              const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
+                              urls.push(data.publicUrl);
+                            }
+                            setEditExtraImages(prev => [...prev, ...urls]);
+                            showToast(`${urls.length} foto(s) agregada(s) ✓`);
+                          } catch { showToast('Error al subir foto(s)', 'error'); }
+                          finally { setEditUploadingIdx(null); }
+                        }} />
                       </div>
                     </div>
+
                     <div className="form-field full">
                       <label>URL de Video (Opcional)</label>
                       <input value={editingProduct.video_url || ''} onChange={e => setEditingProduct({ ...editingProduct, video_url: e.target.value })} placeholder="https://..." />
@@ -1033,7 +1122,7 @@ export default function Admin() {
                             <p className="p-price">${p.precio.toLocaleString()}</p>
                           </div>
                           <div className="product-card-actions">
-                            <button className="btn-edit" onClick={() => setEditingProduct(p)}><Pencil size={12} /> Editar</button>
+                            <button className="btn-edit" onClick={() => { setEditingProduct(p); setEditExtraImages(p.imagenes_extra || []); }}><Pencil size={12} /> Editar</button>
                             <button className="btn-danger" onClick={() => handleDelete(p.id)}><Trash2 size={12} /> Borrar</button>
                           </div>
                         </div>

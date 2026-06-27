@@ -9,7 +9,7 @@ export interface CartItem extends Producto {
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (producto: Producto, talla?: string) => void;
+  addToCart: (producto: Producto, talla?: string, cantidad?: number) => void;
   removeFromCart: (id: string, talla?: string) => void;
   updateQuantity: (id: string, cantidad: number, talla?: string) => void;
   clearCart: () => void;
@@ -28,17 +28,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('moztacito_cart', JSON.stringify(items));
   }, [items]);
 
-  const addToCart = (producto: Producto, talla?: string) => {
+  const addToCart = (producto: Producto, talla?: string, cantidad: number = 1) => {
     setItems(prevItems => {
       const existingItem = prevItems.find(item => item.id === producto.id && item.talla === talla);
       if (existingItem) {
         return prevItems.map(item =>
           (item.id === producto.id && item.talla === talla)
-            ? { ...item, cantidad: item.cantidad + 1 }
+            ? { ...item, cantidad: item.cantidad + cantidad }
             : item
         );
       }
-      return [...prevItems, { ...producto, cantidad: 1, talla }];
+      return [...prevItems, { ...producto, cantidad, talla }];
     });
   };
 
