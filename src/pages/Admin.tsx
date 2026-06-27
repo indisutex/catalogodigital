@@ -516,14 +516,16 @@ export default function Admin() {
           <div>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
               {!imageErrors['main'] ? (
-                <img 
-                  src="/indisutex-logo.png" 
-                  alt="Indisutex Logo" 
-                  style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #eee' }} 
-                  onError={() => setImageErrors(prev => ({ ...prev, main: true }))} 
-                />
+                <div style={{ width: '100px', height: '100px', borderRadius: '50%', overflow: 'hidden', border: '3px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white' }}>
+                  <img 
+                    src="/indisutex-logo.png" 
+                    alt="Indisutex Logo" 
+                    style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(1.5)' }} 
+                    onError={() => setImageErrors(prev => ({ ...prev, main: true }))} 
+                  />
+                </div>
               ) : (
-                <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: '#0ea5e9', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: 'bold' }}>IN</div>
+                <div style={{ width: '100px', height: '100px', borderRadius: '50%', background: '#0ea5e9', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', fontWeight: 'bold' }}>IN</div>
               )}
             </div>
             <h1>Indisutex Admin</h1>
