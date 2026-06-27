@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase, getTenantId, setTenantId } from '../lib/supabase';
-import type { Producto, Categoria, Subcategoria, Configuracion } from '../types';
+import type { Producto, Categoria, Subcategoria, Configuracion, Pedido } from '../types';
 import './Admin.css';
-import { X, Video, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User } from 'lucide-react';
+import { X, Video, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const SECRET_PIN = '0000';
@@ -1178,6 +1178,9 @@ export default function Admin() {
                   </div>
                 </div>
               </div>
+            </>
+          )}
+
           {/* ── PEDIDOS TAB ── */}
           {activeTab === 'pedidos' && (
             <div className="admin-panel">
