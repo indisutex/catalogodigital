@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase, getTenantId, setTenantId } from '../lib/supabase';
 import type { Producto, Categoria, Subcategoria, Configuracion } from '../types';
 import './Admin.css';
-import { X, Video, Upload, Package, Tag, Settings, LayoutDashboard, Zap, Plus, Trash2, Pencil, Check } from 'lucide-react';
+import { X, Video, Upload, Package, Tag, Settings, LayoutDashboard, Zap, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User } from 'lucide-react';
 
 const SECRET_PIN = '0000';
 
@@ -1260,7 +1260,7 @@ function SidebarContent({
           className="btn-primary" 
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', width: '100%', padding: '0.8rem', borderRadius: '8px', textDecoration: 'none', background: '#0ea5e9' }}
         >
-          <span>👁️</span> Ver Catálogo
+          <Eye size={16} /> Ver Catálogo
         </a>
         
         {configuracion?.whatsapp && (
@@ -1270,24 +1270,28 @@ function SidebarContent({
             rel="noopener noreferrer"
             style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', width: '100%', padding: '0.8rem', borderRadius: '8px', textDecoration: 'none', background: '#25D366', color: 'white', fontWeight: 600, fontSize: '0.9rem' }}
           >
-            <span style={{ fontSize: '1.2rem' }}>💬</span> Línea WhatsApp: {configuracion.whatsapp}
+            <Phone size={16} /> Línea WhatsApp: {configuracion.whatsapp}
           </a>
         )}
         
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginTop: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div className="avatar">👑</div>
+            <div className="avatar" style={{ background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '50%', border: '1px solid #e2e8f0', color: '#64748b' }}>
+              <User size={18} />
+            </div>
             <div className="user-info">
-              <h4 style={{ fontSize: '0.9rem', margin: 0 }}>Administrador</h4>
+              <h4 style={{ fontSize: '0.9rem', margin: 0, color: '#334155' }}>Administrador</h4>
               <p style={{ fontSize: '0.75rem', color: '#10b981', margin: 0 }}>Sesión activa</p>
             </div>
           </div>
           <button 
             onClick={handleLogout}
-            style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '0.5rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '0.6rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
             title="Cerrar sesión"
+            onMouseEnter={(e) => e.currentTarget.style.background = '#fecaca'}
+            onMouseLeave={(e) => e.currentTarget.style.background = '#fee2e2'}
           >
-            ❌
+            <LogOut size={16} />
           </button>
         </div>
       </div>
