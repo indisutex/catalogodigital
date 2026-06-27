@@ -582,7 +582,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} categoriasData={categoriasData} />
+          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} categoriasData={categoriasData} configuracion={configuracion} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -656,7 +656,7 @@ export default function Admin() {
     <div className="admin-app">
       {/* SIDEBAR */}
       <aside className="admin-sidebar">
-        <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} categoriasData={categoriasData} />
+        <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} categoriasData={categoriasData} configuracion={configuracion} />
       </aside>
 
       {/* MAIN */}
@@ -1172,19 +1172,26 @@ export default function Admin() {
 
 // ── SIDEBAR COMPONENT ──
 function SidebarContent({
-  activeTab, setActiveTab, productos, categoriasData
+  activeTab, setActiveTab, productos, categoriasData, configuracion
 }: {
   activeTab: TabType;
   setActiveTab: (t: TabType) => void;
   productos: Producto[];
   categoriasData: Categoria[];
+  configuracion: Configuracion | null;
 }) {
   return (
     <>
       <div className="sidebar-brand">
-        <div className="brand-icon">🛍️</div>
+        <div className="brand-icon" style={configuracion?.logo_url ? { background: 'transparent', padding: 0 } : {}}>
+          {configuracion?.logo_url ? (
+            <img src={configuracion.logo_url} alt="Logo" style={{ width: '100%', height: '100%', borderRadius: '8px', objectFit: 'cover' }} />
+          ) : (
+            '🛍️'
+          )}
+        </div>
         <div className="brand-text">
-          <h2>Moztacito</h2>
+          <h2 style={{ textTransform: 'capitalize', fontSize: '1.1rem' }}>{configuracion?.nombre_negocio || 'Catálogo'}</h2>
           <p>Panel Administrativo</p>
         </div>
       </div>
