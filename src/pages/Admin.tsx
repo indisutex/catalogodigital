@@ -33,7 +33,9 @@ type TabType = 'dashboard' | 'productos' | 'categorias' | 'config';
 type Toast = { message: string; type: 'success' | 'error' } | null;
 
 export default function Admin() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem(`admin_auth_${getTenantId()}`) === 'true';
+  });
   const [pin, setPin] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>('productos');
   const [toast, setToast] = useState<Toast>(null);
@@ -64,6 +66,7 @@ export default function Admin() {
   }
 
   function handleLogout() {
+    localStorage.removeItem(`admin_auth_${getTenantId()}`);
     setIsAuthenticated(false);
     setSelectedCompany(null);
     setPin('');
@@ -116,6 +119,7 @@ export default function Admin() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (pin === SECRET_PIN) {
+      localStorage.setItem(`admin_auth_${getTenantId()}`, 'true');
       setIsAuthenticated(true);
     } else {
       showToast('PIN incorrecto. Intenta de nuevo.', 'error');
