@@ -890,7 +890,7 @@
 
 .hero-content-overlay {
   position: absolute;
-  top: 2.2rem;
+  top: max(1.5rem, env(safe-area-inset-top, 1.5rem)); /* Aligned with buttons */
   left: 0;
   width: 100%;
   display: flex;
@@ -929,20 +929,24 @@
 /* ── HEADER BOTTOM BAR CONTAINER ── */
 .header-bottom-bar {
   position: absolute;
-  top: 1rem; /* Moved up to avoid logo */
+  top: max(1.5rem, env(safe-area-inset-top, 1.5rem)); /* Aligned with logo */
   left: 0;
   width: 100%;
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 0 1rem;
+  align-items: flex-start;
+  padding: 0 0.5rem;
   z-index: 10;
 }
 
 @media (max-width: 400px) {
   .special-header-btn {
-    font-size: 0.72rem !important;
-    padding: 0.25rem 0.5rem !important;
+    font-size: 0.68rem !important;
+    padding: 0.25rem 0.4rem !important;
+  }
+  .menu-app-header.has-video .store-logo-round {
+    width: 75px !important;
+    height: 75px !important;
   }
 }
 

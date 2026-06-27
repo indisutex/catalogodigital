@@ -1746,13 +1746,13 @@ export default function Admin() {
                 <h4 style={{ margin: '0 0 0.75rem', fontSize: '0.9rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   💳 Comprobante de Pago (Nequi)
                 </h4>
-                <a href={selectedPedido.pantallazo_url} target="_blank" rel="noopener noreferrer">
+                <div onClick={() => setPagoModalUrl(selectedPedido.pantallazo_url)} style={{ cursor: 'pointer' }}>
                   <img
                     src={selectedPedido.pantallazo_url}
                     alt="Comprobante Nequi"
                     style={{ width: '100%', maxHeight: '260px', objectFit: 'contain', borderRadius: '12px', border: '1px solid #e2e8f0' }}
                   />
-                </a>
+                </div>
                 <p style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600, marginTop: '0.5rem', textAlign: 'center' }}>
                   ✅ Comprobante recibido — Click para ver en pantalla completa
                 </p>
