@@ -8,7 +8,17 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const getTenantId = () => {
-  // First check URL params
+  // First check URL path (slug)
+  const pathname = window.location.pathname.replace(/^\/+/g, '').trim();
+  const validTenants = ['saramantha', 'sublimados_majestic', 'pijamas_lucerito', 'sueno_de_reina', 'sublimados-majestic', 'pijamas-lucerito', 'sueno-de-reina'];
+  
+  if (pathname && validTenants.includes(pathname.toLowerCase())) {
+    const normalised = pathname.toLowerCase().replace(/-/g, '_');
+    setTenantId(normalised);
+    return normalised;
+  }
+
+  // Then check URL params
   const urlParams = new URLSearchParams(window.location.search);
   const urlTenant = urlParams.get('tienda');
   if (urlTenant) {
