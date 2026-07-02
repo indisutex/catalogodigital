@@ -198,7 +198,18 @@ export default function MenuDigital() {
             ref={el => { if (el) el.play().catch(() => {}); }}
           />
         )}
-        <div className="header-bottom-bar">
+        <div className="header-bottom-bar" style={{
+          position: 'absolute',
+          top: '4.8rem',
+          transform: 'translateY(-50%)',
+          width: '100%',
+          padding: '0 2rem',
+          boxSizing: 'border-box',
+          display: 'flex',
+          justifyContent: 'space-between',
+          zIndex: 20,
+          pointerEvents: 'none' /* so the space between doesn't block clicks */
+        }}>
           {/* Enlace Especial Dropshipper en la Esquina Inferior Izquierda */}
           <a 
             href={configuracion?.link_dropshipper || `https://wa.me/${overrideWhatsApp || (configuracion?.whatsapp || '').replace(/\D/g, '')}?text=Hola,%20soy%20dropshipper,%20me%20interesa%20trabajar%20con%20ustedes`} 
@@ -219,7 +230,8 @@ export default function MenuDigital() {
               alignItems: 'center', 
               gap: '0.25rem', 
               border: 'none',
-              boxShadow: '0 4px 10px rgba(243, 107, 142, 0.35)'
+              boxShadow: '0 4px 10px rgba(243, 107, 142, 0.35)',
+              pointerEvents: 'auto'
             }}
           >
             🚀 ¿Dropshipper?
@@ -245,7 +257,8 @@ export default function MenuDigital() {
               alignItems: 'center', 
               gap: '0.25rem', 
               border: 'none',
-              boxShadow: '0 4px 10px rgba(243, 107, 142, 0.35)'
+              boxShadow: '0 4px 10px rgba(243, 107, 142, 0.35)',
+              pointerEvents: 'auto'
             }}
           >
             💸 ¿Ganar dinero?
@@ -254,8 +267,8 @@ export default function MenuDigital() {
 
 
 
-        <div className="hero-content-overlay">
-          <div className="menu-app-logo">
+        <div className="hero-content-overlay" style={{ paddingTop: '1.5rem' }}>
+          <div className="menu-app-logo" style={{ marginTop: '-1rem' }}>
             {configuracion?.logo_url ? (
               <img
                 src={configuracion.logo_url}
@@ -424,7 +437,7 @@ export default function MenuDigital() {
                   ) : (
                     <div className="img-placeholder"></div>
                   )}
-                  <div className="sku-badge">{producto.nombre}</div>
+                  <div className="sku-badge">Ref: {producto.nombre}</div>
                   
                   <button 
                     className="item-add-btn" 
@@ -606,7 +619,7 @@ export default function MenuDigital() {
                   <div className="detail-carousel-placeholder" />
                 )}
                 <div className="sku-badge" style={{ fontSize: '0.85rem', padding: '0.3rem 0.6rem' }}>
-                  {detailProduct.nombre}
+                  Ref: {detailProduct.nombre}
                 </div>
 
                 {allImages.length > 1 && (

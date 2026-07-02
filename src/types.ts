@@ -9,6 +9,7 @@ export interface Producto {
   descripcion: string;
   video_url?: string;
   tallas?: string;
+  tenant_id?: string;
   created_at: string;
 }
 
