@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { supabase, getTenantId, setTenantId } from '../lib/supabase';
 import { compressImage } from '../lib/imageCompression';
+import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido } from '../types';
 import './Admin.css';
-import { X, Video, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy } from 'lucide-react';
+import { X, Video, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Database } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const SECRET_PIN = '0000';
@@ -30,7 +31,7 @@ const emptyProduct: ProductFormData = {
   tallas: ''
 };
 
-type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos';
+type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo';
 
 type Toast = { message: string; type: 'success' | 'error' } | null;
 
@@ -67,6 +68,8 @@ export default function Admin() {
   const [isAddingSubcategory, setIsAddingSubcategory] = useState(false);
   const [uploadMethod, setUploadMethod] = useState<'manual' | 'excel'>('manual');
   const [excelProducts, setExcelProducts] = useState<any[]>([]);
+  const [siigoLoading, setSiigoLoading] = useState(false);
+  const [siigoLogs, setSiigoLogs] = useState<string[]>([]);
 
   // States for Editing Categories & Subcategories
   const [editingCategory, setEditingCategory] = useState<Categoria | null>(null);
@@ -1539,6 +1542,148 @@ export default function Admin() {
             </div>
           )}
 
+          {/* ── SIIGO TAB ── */}
+          {activeTab === 'siigo' && (
+            <div className="admin-panel">
+              <div className="panel-header">
+                <div>
+                  <h3><Database size={16} /> Integración Siigo Nube</h3>
+                  <p>Sincroniza tus productos, precios e inventario automáticamente</p>
+                </div>
+              </div>
+              <div className="panel-body">
+                {configuracion ? (
+                  <div>
+                    <form onSubmit={async (e) => {
+                      e.preventDefault();
+                      setLoading(true);
+                      const { error } = await supabase.from('configuracion').update({
+                        siigo_username: configuracion.siigo_username,
+                        siigo_access_key: configuracion.siigo_access_key
+                      }).eq('id', configuracion.id);
+                      setLoading(false);
+                      if (error) showToast('Error al guardar credenciales: ' + error.message, 'error');
+                      else showToast('Credenciales de Siigo guardadas ✓');
+                    }}>
+                      <div className="config-section">
+                        <div className="config-section-title">🔑 Credenciales de la API</div>
+                        <div className="form-grid">
+                          <div className="form-field full">
+                            <label>Usuario (Correo de Siigo Nube)</label>
+                            <input 
+                              type="email" 
+                              required 
+                              value={configuracion.siigo_username || ''} 
+                              onChange={e => setConfiguracion({ ...configuracion, siigo_username: e.target.value })} 
+                              placeholder="ejemplo@correo.com"
+                            />
+                          </div>
+                          <div className="form-field full">
+                            <label>Access Key (Llave de API generada en Siigo)</label>
+                            <input 
+                              type="password" 
+                              required 
+                              value={configuracion.siigo_access_key || ''} 
+                              onChange={e => setConfiguracion({ ...configuracion, siigo_access_key: e.target.value })} 
+                              placeholder="Ingresa tu access key de Siigo"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                        <button type="submit" className="btn-secondary" disabled={loading} style={{ padding: '0.6rem 1.5rem' }}>
+                          Guardar Credenciales
+                        </button>
+
+                        <button 
+                          type="button" 
+                          className="btn-primary" 
+                          style={{ padding: '0.6rem 1.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
+                          disabled={siigoLoading || !configuracion.siigo_username || !configuracion.siigo_access_key}
+                          onClick={async () => {
+                            setSiigoLoading(true);
+                            setSiigoLogs([]);
+                            const addLog = (msg: string) => setSiigoLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${msg}`]);
+                            
+                            try {
+                              const creds = {
+                                username: configuracion.siigo_username || '',
+                                accessKey: configuracion.siigo_access_key || ''
+                              };
+                              const tenantId = getTenantId() || '';
+                              
+                              const result = await SiigoService.syncSiigoProducts(tenantId, creds, addLog);
+                              addLog(`¡Sincronización Completada!`);
+                              addLog(`Productos creados: ${result.imported}`);
+                              addLog(`Productos actualizados (precio/stock): ${result.updated}`);
+                              showToast('Catálogo sincronizado con Siigo Nube ✓');
+                              
+                              // Actualizar configuración localmente
+                              setConfiguracion(prev => prev ? { ...prev, siigo_sincronizado_at: new Date().toISOString() } : null);
+                              cargarDatos(); // Recargar productos locales
+                            } catch (err: any) {
+                              addLog(`❌ Error: ${err.message}`);
+                              showToast('Error en la sincronización: ' + err.message, 'error');
+                            } finally {
+                              setSiigoLoading(false);
+                            }
+                          }}
+                        >
+                          <RefreshCw size={14} style={{ animation: siigoLoading ? 'spin 1s linear infinite' : 'none' }} /> {siigoLoading ? 'Sincronizando...' : 'Sincronizar Catálogo'}
+                        </button>
+                      </div>
+                    </form>
+
+                    <div className="config-section" style={{ marginTop: '2rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
+                      <div className="config-section-title">📊 Estado de Sincronización</div>
+                      <div style={{ fontSize: '0.9rem', color: '#475569', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <div>
+                          <strong>Última Sincronización Exitosa:</strong>{' '}
+                          {configuracion.siigo_sincronizado_at ? (
+                            <span style={{ color: '#059669', fontWeight: 600 }}>
+                              {new Date(configuracion.siigo_sincronizado_at).toLocaleString()}
+                            </span>
+                          ) : (
+                            <span style={{ color: '#64748b' }}>Nunca se ha sincronizado</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {siigoLogs.length > 0 && (
+                        <div style={{ marginTop: '1.5rem' }}>
+                          <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.5rem' }}>Registro de Actividad (Logs):</label>
+                          <div style={{ 
+                            background: '#0f172a', 
+                            color: '#38bdf8', 
+                            fontFamily: 'monospace', 
+                            padding: '1rem', 
+                            borderRadius: '8px', 
+                            fontSize: '0.8rem', 
+                            maxHeight: '200px', 
+                            overflowY: 'auto',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.35rem'
+                          }}>
+                            {siigoLogs.map((log, i) => (
+                              <div key={i}>{log}</div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="empty-state">
+                    <div className="loading-dot" />
+                    <p style={{ marginTop: '1rem' }}>Cargando datos de integración...</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* ── DASHBOARD TAB ── */}
           {activeTab === 'dashboard' && (
             <>
@@ -1900,6 +2045,10 @@ function SidebarContent({
         <button className={`nav-item ${activeTab === 'pedidos' ? 'active' : ''}`} onClick={() => setActiveTab('pedidos')}>
           <span className="nav-icon"><ShoppingBag size={14} /></span> Pedidos
           {activeTab === 'pedidos' && <span className="active-dot"></span>}
+        </button>
+        <button className={`nav-item ${activeTab === 'siigo' ? 'active' : ''}`} onClick={() => setActiveTab('siigo')}>
+          <span className="nav-icon"><Database size={14} /></span> Sincronizar Siigo
+          {activeTab === 'siigo' && <span className="active-dot"></span>}
         </button>
         <button className={`nav-item ${activeTab === 'config' ? 'active' : ''}`} onClick={() => setActiveTab('config')}>
           <span className="nav-icon"><Settings size={14} /></span> Configuración

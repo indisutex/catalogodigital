@@ -10,6 +10,8 @@ export interface Producto {
   video_url?: string;
   tallas?: string;
   tenant_id?: string;
+  referencia?: string;
+  stock?: number;
   created_at: string;
 }
 
@@ -40,6 +42,9 @@ export interface Configuracion {
   link_dropshipper?: string;
   link_ganar_dinero?: string;
   video_hero_url?: string;
+  siigo_username?: string;
+  siigo_access_key?: string;
+  siigo_sincronizado_at?: string;
 }
 
 export interface Pedido {
