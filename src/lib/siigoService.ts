@@ -9,16 +9,15 @@ export interface SiigoCredentials {
 export class SiigoService {
   // En desarrollo usamos el proxy de Vite '/api-siigo' para evitar errores de CORS.
   // En producción, si no es localhost, puedes mantener '/api-siigo' si configuras las redirecciones en Vercel/Netlify.
-  private static BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-    ? '/api-siigo'
-    : '/api-siigo'; // O cambiar a 'https://api.siigo.com/v1' si se habilita CORS en tu backend.
+  private static BASE_URL = '/api-siigo';
+  private static AUTH_URL = '/api-siigo-auth';
 
   /**
    * Genera el token de autenticación contra la API de Siigo
    */
   public static async authenticate(credentials: SiigoCredentials): Promise<string> {
     // Siigo requiere username (email) y access_key
-    const response = await fetch(`${this.BASE_URL}/oauth/token`, {
+    const response = await fetch(`${this.AUTH_URL}/oauth/token`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -47,7 +46,7 @@ export class SiigoService {
     let hasMore = true;
 
     while (hasMore) {
-      const response = await fetch(`${this.BASE_URL}/products?page=${page}&page_size=100`, {
+      const response = await fetch(`${this.BASE_URL}/products?page=${page}&page_size=25`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -64,7 +63,7 @@ export class SiigoService {
       allProducts = [...allProducts, ...results];
 
       // Verificar si hay más páginas
-      if (results.length < 100) {
+      if (results.length < 25) {
         hasMore = false;
       } else {
         page++;

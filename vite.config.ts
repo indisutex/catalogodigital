@@ -7,6 +7,14 @@ export default defineConfig({
   server: {
     allowedHosts: true,
     proxy: {
+      '/api-siigo-auth': {
+        target: 'https://api.siigo.com/auth/v1',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api-siigo-auth/, ''),
+        headers: {
+          'Origin': 'https://api.siigo.com'
+        }
+      },
       '/api-siigo': {
         target: 'https://api.siigo.com/v1',
         changeOrigin: true,
