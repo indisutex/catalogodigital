@@ -7,7 +7,11 @@ export interface SiigoCredentials {
 }
 
 export class SiigoService {
-  private static BASE_URL = 'https://api.siigo.com/v1';
+  // En desarrollo usamos el proxy de Vite '/api-siigo' para evitar errores de CORS.
+  // En producción, si no es localhost, puedes mantener '/api-siigo' si configuras las redirecciones en Vercel/Netlify.
+  private static BASE_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? '/api-siigo'
+    : '/api-siigo'; // O cambiar a 'https://api.siigo.com/v1' si se habilita CORS en tu backend.
 
   /**
    * Genera el token de autenticación contra la API de Siigo
