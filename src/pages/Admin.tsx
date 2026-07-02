@@ -70,6 +70,8 @@ export default function Admin() {
   const [excelProducts, setExcelProducts] = useState<any[]>([]);
   const [siigoLoading, setSiigoLoading] = useState(false);
   const [siigoLogs, setSiigoLogs] = useState<string[]>([]);
+  const [syncPending, setSyncPending] = useState<{ toCreate: any[]; toUpdate: any[] } | null>(null);
+  const [showSyncConfirm, setShowSyncConfirm] = useState(false);
 
   // States for Editing Categories & Subcategories
   const [editingCategory, setEditingCategory] = useState<Categoria | null>(null);
@@ -1613,27 +1615,123 @@ export default function Admin() {
                               };
                               const tenantId = getTenantId() || '';
                               
-                              const result = await SiigoService.syncSiigoProducts(tenantId, creds, addLog);
-                              addLog(`¡Sincronización Completada!`);
-                              addLog(`Productos creados: ${result.imported}`);
-                              addLog(`Productos actualizados (precio/stock): ${result.updated}`);
-                              showToast('Catálogo sincronizado con Siigo Nube ✓');
-                              
-                              // Actualizar configuración localmente
-                              setConfiguracion(prev => prev ? { ...prev, siigo_sincronizado_at: new Date().toISOString() } : null);
-                              cargarDatos(); // Recargar productos locales
+                              const result = await SiigoService.fetchAndCompare(tenantId, creds, addLog);
+                              setSyncPending(result);
+                              setShowSyncConfirm(true);
+                              addLog(`Comparación completada. Esperando confirmación para aplicar cambios...`);
                             } catch (err: any) {
                               addLog(`❌ Error: ${err.message}`);
-                              showToast('Error en la sincronización: ' + err.message, 'error');
+                              showToast('Error al conectar con Siigo: ' + err.message, 'error');
                             } finally {
                               setSiigoLoading(false);
                             }
                           }}
                         >
-                          <RefreshCw size={14} style={{ animation: siigoLoading ? 'spin 1s linear infinite' : 'none' }} /> {siigoLoading ? 'Sincronizando...' : 'Sincronizar Catálogo'}
+                          <RefreshCw size={14} style={{ animation: siigoLoading ? 'spin 1s linear infinite' : 'none' }} /> {siigoLoading ? 'Conectando...' : 'Sincronizar Catálogo'}
                         </button>
                       </div>
                     </form>
+
+                    {/* Modal/Caja de Confirmación de Sincronización */}
+                    {showSyncConfirm && syncPending && (
+                      <div style={{
+                        marginTop: '2rem',
+                        padding: '1.5rem',
+                        background: '#f8fafc',
+                        border: '1px solid #bfdbfe',
+                        borderRadius: '16px',
+                        boxShadow: '0 4px 12px rgba(14, 165, 233, 0.05)'
+                      }}>
+                        <h4 style={{ margin: '0 0 0.5rem 0', color: '#0369a1', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          📢 Resumen de Cambios Detectados en Siigo Nube
+                        </h4>
+                        <p style={{ margin: '0 0 1.5rem 0', fontSize: '0.85rem', color: '#475569' }}>
+                          Por favor confirma si deseas aplicar los siguientes cambios de categorías, productos e inventarios en tu Catálogo Digital:
+                        </p>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                          {/* Nuevos */}
+                          <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                            <h5 style={{ margin: '0 0 0.75rem 0', color: '#16a34a', fontWeight: 700 }}>
+                              🆕 Productos Nuevos para Crear ({syncPending.toCreate.length})
+                            </h5>
+                            <div style={{ maxHeight: '150px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                              {syncPending.toCreate.map((p, i) => (
+                                <div key={i} style={{ fontSize: '0.78rem', padding: '0.4rem', background: '#f0fdf4', borderRadius: '6px', border: '1px solid #bbf7d0' }}>
+                                  <strong>Ref: {p.referencia}</strong> - {p.nombre} (${p.precio.toLocaleString()} COP | Stock: {p.stock})
+                                </div>
+                              ))}
+                              {syncPending.toCreate.length === 0 && (
+                                <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>Ningún producto nuevo detectado.</p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Actualizaciones */}
+                          <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                            <h5 style={{ margin: '0 0 0.75rem 0', color: '#2563eb', fontWeight: 700 }}>
+                              🔄 Productos para Actualizar ({syncPending.toUpdate.length})
+                            </h5>
+                            <div style={{ maxHeight: '150px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                              {syncPending.toUpdate.map((p, i) => (
+                                <div key={i} style={{ fontSize: '0.78rem', padding: '0.4rem', background: '#eff6ff', borderRadius: '6px', border: '1px solid #bfdbfe' }}>
+                                  <strong>Ref: {p.referencia}</strong> - {p.nombre}
+                                  <div style={{ color: '#475569', marginTop: '0.2rem', display: 'flex', gap: '1rem' }}>
+                                    <span>Precio: ${p.precioViejo.toLocaleString()} ➔ <strong>${p.precioNuevo.toLocaleString()}</strong></span>
+                                    <span>Stock: {p.stockViejo} ➔ <strong>{p.stockNuevo}</strong></span>
+                                  </div>
+                                </div>
+                              ))}
+                              {syncPending.toUpdate.length === 0 && (
+                                <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>Ningún cambio de precio o stock detectado en productos existentes.</p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                          <button 
+                            type="button" 
+                            className="btn-secondary" 
+                            disabled={siigoLoading}
+                            style={{ padding: '0.5rem 1.5rem' }}
+                            onClick={() => {
+                              setShowSyncConfirm(false);
+                              setSyncPending(null);
+                            }}
+                          >
+                            Descartar Sincronización
+                          </button>
+                          <button 
+                            type="button" 
+                            className="btn-primary" 
+                            disabled={siigoLoading || (syncPending.toCreate.length === 0 && syncPending.toUpdate.length === 0)}
+                            style={{ padding: '0.5rem 1.5rem', background: '#16a34a' }}
+                            onClick={async () => {
+                              setSiigoLoading(true);
+                              const addLog = (msg: string) => setSiigoLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${msg}`]);
+                              
+                              try {
+                                const tenantId = getTenantId() || '';
+                                const result = await SiigoService.applySync(tenantId, syncPending.toCreate, syncPending.toUpdate, addLog);
+                                showToast('¡Sincronización finalizada con éxito! ✓');
+                                setConfiguracion(prev => prev ? { ...prev, siigo_sincronizado_at: new Date().toISOString() } : null);
+                                cargarDatos();
+                                setShowSyncConfirm(false);
+                                setSyncPending(null);
+                              } catch (err: any) {
+                                addLog(`❌ Error aplicando cambios: ${err.message}`);
+                                showToast('Error al guardar datos de Siigo', 'error');
+                              } finally {
+                                setSiigoLoading(false);
+                              }
+                            }}
+                          >
+                            {siigoLoading ? 'Aplicando...' : 'Confirmar e Importar'}
+                          </button>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="config-section" style={{ marginTop: '2rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
                       <div className="config-section-title">📊 Estado de Sincronización</div>
