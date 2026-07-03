@@ -75,6 +75,7 @@ export default function Admin() {
   const [webhookUrl, setWebhookUrl] = useState('');
   const [showToolsModal, setShowToolsModal] = useState(false);
   const [wipeConfirmText, setWipeConfirmText] = useState('');
+  const [deleteDate, setDeleteDate] = useState('');
   const [cleaningDuplicates, setCleaningDuplicates] = useState(false);
   const [wipingCatalog, setWipingCatalog] = useState(false);
 
