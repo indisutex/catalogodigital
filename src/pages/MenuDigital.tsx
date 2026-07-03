@@ -749,7 +749,7 @@ export default function MenuDigital() {
                 ) : (
                   <div className="detail-carousel-placeholder" />
                 )}
-                <div className="sku-badge" style={{ fontSize: '0.85rem', padding: '0.3rem 0.6rem' }}>
+                <div className="sku-badge" style={{ fontSize: '0.6rem', padding: '0.15rem 0.4rem', left: '0.5rem', right: 'auto' }}>
                   Ref: {detailProduct.nombre}
                 </div>
 

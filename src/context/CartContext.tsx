@@ -21,12 +21,12 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>(() => {
-    const saved = localStorage.getItem('moztacito_cart');
+    const saved = localStorage.getItem('indisutex_cart');
     return saved ? JSON.parse(saved) : [];
   });
 
   useEffect(() => {
-    localStorage.setItem('moztacito_cart', JSON.stringify(items));
+    localStorage.setItem('indisutex_cart', JSON.stringify(items));
   }, [items]);
 
   const addToCart = (producto: Producto, talla?: string, estampado?: string, cantidad: number = 1) => {
