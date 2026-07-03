@@ -86,7 +86,8 @@ export default function Admin() {
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [isAddingSubcategory, setIsAddingSubcategory] = useState(false);
-  const [uploadMethod, setUploadMethod] = useState<'manual' | 'excel'>('manual');
+  const [uploadMethod, setUploadMethod] = useState<'manual' | 'excel' | 'texto'>('manual');
+  const [pastedText, setPastedText] = useState('');
   const [excelProducts, setExcelProducts] = useState<any[]>([]);
   const [siigoLoading, setSiigoLoading] = useState(false);
   const [siigoLogs, setSiigoLogs] = useState<string[]>([]);
@@ -342,15 +343,24 @@ export default function Admin() {
             const foundKey = Object.keys(row).find(k => keys.includes(k.toLowerCase().trim()));
             return foundKey ? String(row[foundKey]).trim() : '';
           };
+          
+          const desc = findVal(['descripcion', 'detalles', 'description']);
+          const ref = findVal(['referencia', 'ref', 'code']);
+          const name = findVal(['nombre', 'titulo', 'title', 'name']) || desc || `Producto ${ref}`;
+          
           return {
-            nombre: findVal(['nombre', 'titulo', 'title', 'name']),
-            descripcion: findVal(['descripcion', 'detalles', 'description']),
-            precio: parseFloat(findVal(['precio', 'valor', 'price'])) || 0,
-            categoria: findVal(['categoria', 'category', 'cat']),
-            subcategoria: findVal(['subcategoria', 'subcategory', 'subcat']),
+            nombre: name,
+            descripcion: desc || name,
+            referencia: ref,
+            precio: parseFloat(findVal(['detal', 'precio', 'valor', 'price'])) || 0,
+            categoria: findVal(['categoria', 'category', 'cat']) || 'General',
+            subcategoria: findVal(['subcategoria', 'subcategory', 'subcat']) || null,
             imagen_url: findVal(['imagen', 'imagen_url', 'image', 'image_url']),
             video_url: findVal(['video', 'video_url', 'url_video']),
-            tallas: findVal(['tallas', 'talla', 'sizes', 'size'])
+            tallas: findVal(['tallas', 'talla', 'sizes', 'size']),
+            costo: parseFloat(findVal(['costo', 'cost'])) || 0,
+            precio_por_mayor: parseFloat(findVal(['por mayor', 'mayor', 'wholesale'])) || 0,
+            precio_50_unidades: parseFloat(findVal(['50 unidades', '50unidades', 'unidades 50'])) || 0
           };
         });
         
@@ -367,6 +377,82 @@ export default function Admin() {
     reader.readAsBinaryString(file);
   };
 
+  const handleTextImport = () => {
+    if (!pastedText.trim()) {
+      showToast('Por favor, pega el texto primero', 'error');
+      return;
+    }
+    try {
+      const lines = pastedText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      if (lines.length < 2) {
+        showToast('El texto no contiene suficientes filas (se requiere cabecera y datos)', 'error');
+        return;
+      }
+      
+      const headerLine = lines[0];
+      const separator = headerLine.includes('\t') ? '\t' : ',';
+      
+      const headers = headerLine.split(separator).map(h => h.replace(/^["']|["']$/g, '').trim().toLowerCase());
+      
+      const parsedRows = lines.slice(1).map(line => {
+        let cols: string[] = [];
+        if (separator === ',') {
+          cols = line.split(',');
+        } else {
+          cols = line.split('\t');
+        }
+        
+        cols = cols.map(c => c.replace(/^["']|["']$/g, '').trim());
+        
+        const rowObj: any = {};
+        headers.forEach((header, idx) => {
+          if (idx < cols.length) {
+            rowObj[header] = cols[idx];
+          }
+        });
+        
+        const getFieldVal = (keys: string[]) => {
+          const foundKey = Object.keys(rowObj).find(k => keys.includes(k.toLowerCase().trim()));
+          return foundKey ? rowObj[foundKey] : '';
+        };
+        
+        const desc = getFieldVal(['descripcion', 'description', 'desc']);
+        const ref = getFieldVal(['referencia', 'ref', 'code']);
+        const cat = getFieldVal(['categoria', 'category', 'cat']);
+        
+        const costoVal = parseFloat(getFieldVal(['costo', 'cost'])) || 0;
+        const porMayorVal = parseFloat(getFieldVal(['por mayor', 'mayor', 'wholesale'])) || 0;
+        const detalVal = parseFloat(getFieldVal(['detal', 'precio', 'price', 'valor'])) || 0;
+        const unidades50Val = parseFloat(getFieldVal(['50 unidades', '50unidades', 'unidades 50'])) || 0;
+        
+        const name = desc || `Producto ${ref}`;
+        
+        return {
+          nombre: name,
+          descripcion: desc || name,
+          referencia: ref || '',
+          categoria: cat || 'General',
+          subcategoria: null,
+          costo: costoVal,
+          precio_por_mayor: porMayorVal,
+          precio: detalVal,
+          precio_50_unidades: unidades50Val,
+          imagen_url: '',
+          video_url: null,
+          tallas: ''
+        };
+      });
+      
+      const valid = parsedRows.filter(p => p.nombre || p.referencia);
+      setExcelProducts(valid);
+      showToast(`Se cargaron ${valid.length} productos desde el texto ✓`, 'success');
+      setUploadMethod('excel');
+    } catch (err: any) {
+      console.error(err);
+      showToast('Error al procesar el texto: ' + err.message, 'error');
+    }
+  };
+
   const handleExcelSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (excelProducts.length === 0) return;
@@ -380,6 +466,10 @@ export default function Admin() {
       imagen_url: p.imagen_url || '',
       video_url: p.video_url || null,
       tallas: p.tallas || null,
+      referencia: p.referencia || null,
+      costo: p.costo || null,
+      precio_por_mayor: p.precio_por_mayor || null,
+      precio_50_unidades: p.precio_50_unidades || null,
       tenant_id: getTenantId()
     }));
     const { error } = await supabase.from('productos').insert(newProducts);
@@ -1342,6 +1432,14 @@ export default function Admin() {
                       >
                         Importar Excel (Masivo)
                       </button>
+                      <button 
+                        type="button" 
+                        className={`btn-tab ${uploadMethod === 'texto' ? 'active' : ''}`}
+                        onClick={() => setUploadMethod('texto')}
+                        style={{ border: 'none', background: uploadMethod === 'texto' ? '#ffffff' : 'transparent', color: uploadMethod === 'texto' ? '#0f172a' : '#64748b', padding: '0.4rem 1rem', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', boxShadow: uploadMethod === 'texto' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
+                      >
+                        📋 Copiar y Pegar Texto
+                      </button>
                     </div>
                   </div>
 
@@ -1489,21 +1587,25 @@ export default function Admin() {
                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', textAlign: 'left' }}>
                               <thead>
                                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                                  <th style={{ padding: '0.8rem 1rem' }}>Referencia</th>
                                   <th style={{ padding: '0.8rem 1rem' }}>Nombre</th>
-                                  <th style={{ padding: '0.8rem 1rem' }}>Precio</th>
                                   <th style={{ padding: '0.8rem 1rem' }}>Categoría</th>
-                                  <th style={{ padding: '0.8rem 1rem' }}>Subcategoría</th>
-                                  <th style={{ padding: '0.8rem 1rem' }}>Tallas</th>
+                                  <th style={{ padding: '0.8rem 1rem' }}>Costo</th>
+                                  <th style={{ padding: '0.8rem 1rem' }}>Por Mayor</th>
+                                  <th style={{ padding: '0.8rem 1rem' }}>Detal</th>
+                                  <th style={{ padding: '0.8rem 1rem' }}>50 Unidades</th>
                                 </tr>
                               </thead>
                               <tbody>
                                 {excelProducts.map((p, i) => (
                                   <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                    <td style={{ padding: '0.8rem 1rem', color: '#64748b' }}>{p.referencia || '-'}</td>
                                     <td style={{ padding: '0.8rem 1rem', fontWeight: 600, color: '#0f172a' }}>{p.nombre}</td>
-                                    <td style={{ padding: '0.8rem 1rem', color: '#10b981', fontWeight: 700 }}>${p.precio.toLocaleString()}</td>
                                     <td style={{ padding: '0.8rem 1rem', color: '#64748b' }}>{p.categoria}</td>
-                                    <td style={{ padding: '0.8rem 1rem', color: '#64748b' }}>{p.subcategoria || '-'}</td>
-                                    <td style={{ padding: '0.8rem 1rem', color: '#64748b' }}>{p.tallas || '-'}</td>
+                                    <td style={{ padding: '0.8rem 1rem', color: '#64748b' }}>${(p.costo || 0).toLocaleString()}</td>
+                                    <td style={{ padding: '0.8rem 1rem', color: '#64748b' }}>${(p.precio_por_mayor || 0).toLocaleString()}</td>
+                                    <td style={{ padding: '0.8rem 1rem', color: '#10b981', fontWeight: 700 }}>${(p.precio || 0).toLocaleString()}</td>
+                                    <td style={{ padding: '0.8rem 1rem', color: '#64748b' }}>${(p.precio_50_unidades || 0).toLocaleString()}</td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -1516,6 +1618,49 @@ export default function Admin() {
                           </div>
                         </form>
                       )}
+                    </div>
+                  )}
+
+                  {uploadMethod === 'texto' && (
+                    <div className="panel-body" style={{ padding: '1.25rem' }}>
+                      <div style={{ marginBottom: '1.25rem' }}>
+                        <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.95rem', fontWeight: 700, color: '#0f172a' }}>📋 Importar Productos desde Texto Copiado</h4>
+                        <p style={{ color: '#64748b', fontSize: '0.8rem', margin: 0 }}>
+                          Pega las filas en formato CSV o separado por tabuladores. Incluye la cabecera en la primera línea.
+                        </p>
+                        <p style={{ color: '#475569', fontSize: '0.78rem', fontWeight: 700, marginTop: '0.4rem', fontFamily: 'monospace', background: '#f1f5f9', padding: '0.4rem 0.6rem', borderRadius: '6px', display: 'inline-block' }}>
+                          Formato: Referencia,Categoria,Descripcion,Costo,Por Mayor,Detal,50 Unidades
+                        </p>
+                      </div>
+
+                      <textarea
+                        style={{
+                          width: '100%',
+                          height: '240px',
+                          padding: '1rem',
+                          borderRadius: '12px',
+                          border: '1px solid #cbd5e1',
+                          outline: 'none',
+                          fontSize: '0.82rem',
+                          fontFamily: 'monospace',
+                          marginBottom: '1rem',
+                          resize: 'vertical'
+                        }}
+                        placeholder="Referencia,Categoria,Descripcion,Costo,Por Mayor,Detal,50 Unidades&#10;SHD-001,Short Dama,SHORT TIRA,8047,16500,26500,15500&#10;SHD-002,Short Dama,SHORT TIRA PLUS,10672,21500,31500,20500"
+                        value={pastedText}
+                        onChange={e => setPastedText(e.target.value)}
+                      />
+
+                      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          onClick={handleTextImport}
+                          style={{ padding: '0.65rem 2rem', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 700, cursor: 'pointer' }}
+                        >
+                          📋 Procesar Texto
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
