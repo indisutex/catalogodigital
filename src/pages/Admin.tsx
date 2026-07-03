@@ -2,9 +2,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase, getTenantId, setTenantId } from '../lib/supabase';
 import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
-import type { Producto, Categoria, Subcategoria, Configuracion, Pedido } from '../types';
+import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor } from '../types';
 import './Admin.css';
-import { X, Video, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu } from 'lucide-react';
+import { X, Video, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const SECRET_PIN = '0000';
@@ -31,7 +31,7 @@ const emptyProduct: ProductFormData = {
   tallas: ''
 };
 
-type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes';
+type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores';
 
 type Toast = { message: string; type: 'success' | 'error' } | null;
 
@@ -59,6 +59,10 @@ export default function Admin() {
   const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
   const [clientes, setClientes] = useState<any[]>([]);
   const [clienteSearchQuery, setClienteSearchQuery] = useState('');
+  const [asesores, setAsesores] = useState<Asesor[]>([]);
+  const [nuevoAsesorNombre, setNuevoAsesorNombre] = useState('');
+  const [nuevoAsesorTelefono, setNuevoAsesorTelefono] = useState('');
+  const [asesorSearchQuery, setAsesorSearchQuery] = useState('');
 
   // POS States
   const [posCart, setPosCart] = useState<any[]>([]);
@@ -214,13 +218,14 @@ export default function Admin() {
       const tenant = getTenantId();
 
       // Fetch other data in parallel
-      const [catRes, subcatRes, confRes, pedRes, leadRes, cliRes] = await Promise.all([
+      const [catRes, subcatRes, confRes, pedRes, leadRes, cliRes, aseRes] = await Promise.all([
         supabase.from('categorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
         supabase.from('subcategorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
         supabase.from('configuracion').select('*').eq('tenant_id', tenant).limit(1).single(),
         supabase.from('pedidos').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
         supabase.from('leads').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
-        supabase.from('clientes_exitosos').select('*').eq('tenant_id', tenant).order('total_compras', { ascending: false })
+        supabase.from('clientes_exitosos').select('*').eq('tenant_id', tenant).order('total_compras', { ascending: false }),
+        supabase.from('asesores').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false })
       ]);
 
       if (catRes.data) setCategoriasData(catRes.data);
@@ -228,6 +233,7 @@ export default function Admin() {
       if (pedRes.data) setPedidos(pedRes.data);
       if (leadRes.data) setLeads(leadRes.data);
       if (cliRes.data) setClientes(cliRes.data);
+      if (aseRes && aseRes.data) setAsesores(aseRes.data);
 
       // Fetch products in chunks of 1000 to bypass Supabase defaults
       let allProducts: Producto[] = [];
@@ -940,6 +946,18 @@ export default function Admin() {
     return list;
   }, [clientes, clienteSearchQuery]);
 
+  const filteredAsesores = useMemo(() => {
+    let list = [...asesores];
+    if (asesorSearchQuery.trim()) {
+      const q = asesorSearchQuery.toLowerCase();
+      list = list.filter(a => 
+        (a.nombre || '').toLowerCase().includes(q) ||
+        (a.telefono || '').includes(q)
+      );
+    }
+    return list;
+  }, [asesores, asesorSearchQuery]);
+
   async function handleEliminarDuplicados(nombre: string) {
     try {
       setCleaningDuplicates(true);
@@ -968,6 +986,63 @@ export default function Admin() {
       showToast('Error al eliminar duplicados', 'error');
     } finally {
       setCleaningDuplicates(false);
+    }
+  }
+
+  async function handleCrearAsesor(e: React.FormEvent) {
+    e.preventDefault();
+    if (!nuevoAsesorNombre.trim() || !nuevoAsesorTelefono.trim()) {
+      showToast('Por favor, ingresa el nombre y teléfono del asesor.', 'error');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const cleanPhone = nuevoAsesorTelefono.replace(/\D/g, '');
+      const tenant = getTenantId();
+
+      const { data, error } = await supabase
+        .from('asesores')
+        .insert({
+          nombre: nuevoAsesorNombre.trim(),
+          telefono: cleanPhone,
+          tenant_id: tenant
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setAsesores(prev => [data, ...prev]);
+      setNuevoAsesorNombre('');
+      setNuevoAsesorTelefono('');
+      showToast('Asesor creado exitosamente ✓', 'success');
+    } catch (err: any) {
+      console.error(err);
+      showToast('Error al crear asesor: ' + err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleEliminarAsesor(id: string) {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar este asesor?')) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('asesores')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setAsesores(prev => prev.filter(a => a.id !== id));
+      showToast('Asesor eliminado ✓', 'success');
+    } catch (err: any) {
+      console.error(err);
+      showToast('Error al eliminar asesor: ' + err.message, 'error');
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -1456,12 +1531,14 @@ export default function Admin() {
               {activeTab === 'productos' && '📦 Productos'}
               {activeTab === 'categorias' && '🗂️ Categorías'}
               {activeTab === 'clientes' && '👥 Clientes'}
+              {activeTab === 'asesores' && '👥 Asesores'}
               {activeTab === 'config' && '⚙️ Configuración'}
             </h2>
             <p>
               {activeTab === 'productos' && `${productos.length} productos en total`}
               {activeTab === 'categorias' && `${categoriasData.length} categorías activas`}
               {activeTab === 'clientes' && `${clientes.length} clientes en total`}
+              {activeTab === 'asesores' && `${asesores.length} asesores en tu equipo`}
               {activeTab === 'config' && 'Ajustes globales de tu tienda'}
             </p>
           </div>
@@ -2662,6 +2739,172 @@ export default function Admin() {
                     </tbody>
                   </table>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* ── ASESORES TAB ── */}
+          {activeTab === 'asesores' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              
+              {/* Formulario de Registro */}
+              <div className="admin-panel">
+                <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
+                  <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}><Users size={18} /> Registrar Nuevo Asesor</h3>
+                  <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Crea un enlace del catálogo personalizado para que las comisiones y chats lleguen a este asesor</p>
+                </div>
+                <div className="panel-body">
+                  <form onSubmit={handleCrearAsesor} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', alignItems: 'end' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Nombre del Asesor</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Ej: Carolina Gómez"
+                        value={nuevoAsesorNombre}
+                        onChange={e => setNuevoAsesorNombre(e.target.value)}
+                        style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Número de Celular (WhatsApp)</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Ej: 573123456789"
+                        value={nuevoAsesorTelefono}
+                        onChange={e => setNuevoAsesorTelefono(e.target.value)}
+                        style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }}
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="btn-primary"
+                      disabled={loading}
+                      style={{ padding: '0.65rem', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontWeight: 700 }}
+                    >
+                      <Plus size={16} /> Registrar Asesor
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              {/* Listado de Asesores */}
+              <div className="admin-panel">
+                <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1rem' }}>
+                  <div>
+                    <h3 style={{ margin: 0 }}>👥 Equipo de Asesores Registrados</h3>
+                    <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Copia y comparte los enlaces exclusivos de catálogo de cada asesor</p>
+                  </div>
+                  
+                  {/* Buscador */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f1f5f9', padding: '0.4rem 0.8rem', borderRadius: '10px', border: '1px solid #e2e8f0', minWidth: '280px' }}>
+                    <Search size={16} style={{ color: '#64748b' }} />
+                    <input
+                      type="text"
+                      placeholder="Buscar asesor por nombre..."
+                      value={asesorSearchQuery}
+                      onChange={e => setAsesorSearchQuery(e.target.value)}
+                      style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '0.84rem', width: '100%', color: '#0f172a' }}
+                    />
+                    {asesorSearchQuery && (
+                      <button type="button" onClick={() => setAsesorSearchQuery('')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="panel-body" style={{ overflowX: 'auto' }}>
+                  {filteredAsesores.length === 0 ? (
+                    <div className="empty-state" style={{ padding: '3rem 1rem', textAlign: 'center' }}>
+                      <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>👥</div>
+                      <h4 style={{ color: '#0f172a', margin: '0 0 0.25rem 0' }}>No hay asesores registrados</h4>
+                      <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>
+                        {asesorSearchQuery ? 'Prueba con otro término de búsqueda.' : 'Ingresa los datos arriba para crear tu primer asesor de ventas.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                      <thead>
+                        <tr style={{ borderBottom: '2px solid #f1f5f9', background: '#f8fafc' }}>
+                          <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Asesor</th>
+                          <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Línea WhatsApp</th>
+                          <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Pedidos Asignados</th>
+                          <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'right' }}>Total Ventas</th>
+                          <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Enlace de Catálogo Exclusivo</th>
+                          <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredAsesores.map(a => {
+                          const catalogLink = `${window.location.origin}/${getTenantId()}?ws=${a.telefono}`;
+                          
+                          // Calculate advisor stats from orders database
+                          const advisorOrders = pedidos.filter(p => {
+                            const orderPhone = p.linea_whatsapp?.replace(/\D/g, '');
+                            const advisorPhone = a.telefono?.replace(/\D/g, '');
+                            return orderPhone === advisorPhone;
+                          });
+
+                          const totalVentas = advisorOrders.reduce((sum, p) => sum + (p.total || 0), 0);
+
+                          return (
+                            <tr key={a.id} style={{ borderBottom: '1px solid #f1f5f9' }} className="table-row-hover">
+                              <td style={{ padding: '1rem', fontWeight: 700, color: '#0f172a' }}>{a.nombre}</td>
+                              <td style={{ padding: '1rem' }}>
+                                <a
+                                  href={`https://wa.me/${a.telefono}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{ color: '#10b981', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                                >
+                                  <Phone size={12} /> {a.telefono}
+                                </a>
+                              </td>
+                              <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 600, color: '#475569' }}>
+                                {advisorOrders.length}
+                              </td>
+                              <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 800, color: '#10b981' }}>
+                                ${totalVentas.toLocaleString()}
+                              </td>
+                              <td style={{ padding: '1rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                  <input
+                                    type="text"
+                                    readOnly
+                                    value={catalogLink}
+                                    style={{ padding: '0.35rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.78rem', width: '220px', background: '#f8fafc', color: '#64748b' }}
+                                    onClick={e => (e.target as HTMLInputElement).select()}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(catalogLink);
+                                      showToast('Enlace copiado al portapapeles ✓', 'success');
+                                    }}
+                                    className="btn-secondary"
+                                    style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', whiteSpace: 'nowrap' }}
+                                  >
+                                    <Copy size={12} /> Copiar
+                                  </button>
+                                </div>
+                              </td>
+                              <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleEliminarAsesor(a.id)}
+                                  className="btn-secondary"
+                                  style={{ color: '#ef4444', borderColor: '#fee2e2', background: '#fef2f2', padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}
+                                >
+                                  <Trash2 size={12} /> Eliminar
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -4266,6 +4509,10 @@ function SidebarContent({
         <button className={`nav-item ${activeTab === 'clientes' ? 'active' : ''}`} onClick={() => handleSelectTab('clientes')}>
           <span className="nav-icon"><User size={14} /></span> Clientes
           {activeTab === 'clientes' && <span className="active-dot"></span>}
+        </button>
+        <button className={`nav-item ${activeTab === 'asesores' ? 'active' : ''}`} onClick={() => handleSelectTab('asesores')}>
+          <span className="nav-icon"><Users size={14} /></span> Asesores
+          {activeTab === 'asesores' && <span className="active-dot"></span>}
         </button>
         {getTenantId() !== 'indisutex' && (
           <button className={`nav-item ${activeTab === 'pos' ? 'active' : ''}`} onClick={() => handleSelectTab('pos')}>

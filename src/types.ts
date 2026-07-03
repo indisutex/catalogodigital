@@ -70,3 +70,11 @@ export interface Pedido {
   numero_guia?: string;
   origen?: string;
 }
+
+export interface Asesor {
+  id: string;
+  nombre: string;
+  telefono: string;
+  tenant_id: string;
+  created_at: string;
+}
