@@ -107,17 +107,47 @@ export default function Admin() {
   async function cargarDatos() {
     try {
       const tenant = getTenantId();
-      const [prodRes, catRes, subcatRes, confRes, pedRes] = await Promise.all([
-        supabase.from('productos').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
+
+      // Fetch other data in parallel
+      const [catRes, subcatRes, confRes, pedRes] = await Promise.all([
         supabase.from('categorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
         supabase.from('subcategorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
         supabase.from('configuracion').select('*').eq('tenant_id', tenant).limit(1).single(),
         supabase.from('pedidos').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false })
       ]);
-      if (prodRes.data) setProductos(prodRes.data);
+
       if (catRes.data) setCategoriasData(catRes.data);
       if (subcatRes.data) setSubcategoriasData(subcatRes.data);
       if (pedRes.data) setPedidos(pedRes.data);
+
+      // Fetch products in chunks of 1000 to bypass Supabase defaults
+      let allProducts: Producto[] = [];
+      let from = 0;
+      let to = 999;
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data: chunk, error: prodError } = await supabase
+          .from('productos')
+          .select('*')
+          .eq('tenant_id', tenant)
+          .order('created_at', { ascending: false })
+          .range(from, to);
+
+        if (prodError || !chunk || chunk.length === 0) {
+          hasMore = false;
+        } else {
+          allProducts = [...allProducts, ...chunk];
+          if (chunk.length < 1000) {
+            hasMore = false;
+          } else {
+            from += 1000;
+            to += 1000;
+          }
+        }
+      }
+
+      setProductos(allProducts);
       
       if (confRes.data) {
         setConfiguracion(confRes.data);
