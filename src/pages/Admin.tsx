@@ -31,7 +31,7 @@ const emptyProduct: ProductFormData = {
   tallas: ''
 };
 
-type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos';
+type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes';
 
 type Toast = { message: string; type: 'success' | 'error' } | null;
 
@@ -57,6 +57,8 @@ export default function Admin() {
   const [subcategoriasData, setSubcategoriasData] = useState<Subcategoria[]>([]);
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
+  const [clientes, setClientes] = useState<any[]>([]);
+  const [clienteSearchQuery, setClienteSearchQuery] = useState('');
 
   // POS States
   const [posCart, setPosCart] = useState<any[]>([]);
@@ -212,18 +214,20 @@ export default function Admin() {
       const tenant = getTenantId();
 
       // Fetch other data in parallel
-      const [catRes, subcatRes, confRes, pedRes, leadRes] = await Promise.all([
+      const [catRes, subcatRes, confRes, pedRes, leadRes, cliRes] = await Promise.all([
         supabase.from('categorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
         supabase.from('subcategorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
         supabase.from('configuracion').select('*').eq('tenant_id', tenant).limit(1).single(),
         supabase.from('pedidos').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
-        supabase.from('leads').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false })
+        supabase.from('leads').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
+        supabase.from('clientes_exitosos').select('*').eq('tenant_id', tenant).order('total_compras', { ascending: false })
       ]);
 
       if (catRes.data) setCategoriasData(catRes.data);
       if (subcatRes.data) setSubcategoriasData(subcatRes.data);
       if (pedRes.data) setPedidos(pedRes.data);
       if (leadRes.data) setLeads(leadRes.data);
+      if (cliRes.data) setClientes(cliRes.data);
 
       // Fetch products in chunks of 1000 to bypass Supabase defaults
       let allProducts: Producto[] = [];
@@ -607,6 +611,8 @@ export default function Admin() {
       // 3. Actualizar estado local
       setPedidos(prev => prev.map(p => p.id === ped.id ? { ...p, estado: 'completado', atendido: true } : p));
       setSelectedPedido(prev => prev && prev.id === ped.id ? { ...prev, estado: 'completado', atendido: true } : prev);
+      
+      cargarDatos();
 
       setShowSuccessScreen(true);
     } catch (err: any) {
@@ -921,6 +927,18 @@ export default function Admin() {
   const clientesFiltrados = useMemo(() => {
     return filteredPedidos.filter(p => p.estado === 'completado');
   }, [filteredPedidos]);
+
+  const filteredClientes = useMemo(() => {
+    let list = [...clientes];
+    if (clienteSearchQuery.trim()) {
+      const q = clienteSearchQuery.toLowerCase();
+      list = list.filter(c => 
+        (c.nombre || '').toLowerCase().includes(q) ||
+        (c.telefono || '').includes(q)
+      );
+    }
+    return list;
+  }, [clientes, clienteSearchQuery]);
 
   async function handleEliminarDuplicados(nombre: string) {
     try {
@@ -1437,11 +1455,13 @@ export default function Admin() {
               {activeTab === 'dashboard' && '📊 Dashboard'}
               {activeTab === 'productos' && '📦 Productos'}
               {activeTab === 'categorias' && '🗂️ Categorías'}
+              {activeTab === 'clientes' && '👥 Clientes'}
               {activeTab === 'config' && '⚙️ Configuración'}
             </h2>
             <p>
               {activeTab === 'productos' && `${productos.length} productos en total`}
               {activeTab === 'categorias' && `${categoriasData.length} categorías activas`}
+              {activeTab === 'clientes' && `${clientes.length} clientes en total`}
               {activeTab === 'config' && 'Ajustes globales de tu tienda'}
             </p>
           </div>
@@ -2533,6 +2553,114 @@ export default function Admin() {
                     <div className="loading-dot" />
                     <p style={{ marginTop: '1rem' }}>Cargando datos de integración...</p>
                   </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ── CLIENTES TAB ── */}
+          {activeTab === 'clientes' && (
+            <div className="admin-panel">
+              <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1rem' }}>
+                <div>
+                  <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}><User size={18} /> Base de Clientes (Fidelización)</h3>
+                  <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Visualiza y filtra los clientes registrados por catálogo y POS</p>
+                </div>
+                
+                {/* Search input */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f1f5f9', padding: '0.4rem 0.8rem', borderRadius: '10px', border: '1px solid #e2e8f0', minWidth: '280px' }}>
+                  <Search size={16} style={{ color: '#64748b' }} />
+                  <input
+                    type="text"
+                    placeholder="Buscar por nombre o celular..."
+                    value={clienteSearchQuery}
+                    onChange={e => setClienteSearchQuery(e.target.value)}
+                    style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '0.84rem', width: '100%', color: '#0f172a' }}
+                  />
+                  {clienteSearchQuery && (
+                    <button type="button" onClick={() => setClienteSearchQuery('')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
+                  )}
+                </div>
+              </div>
+
+              <div className="panel-body" style={{ overflowX: 'auto' }}>
+                {filteredClientes.length === 0 ? (
+                  <div className="empty-state" style={{ padding: '3rem 1rem', textAlign: 'center' }}>
+                    <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>👥</div>
+                    <h4 style={{ color: '#0f172a', margin: '0 0 0.25rem 0' }}>No se encontraron clientes</h4>
+                    <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>
+                      {clienteSearchQuery ? 'Prueba con otro término de búsqueda.' : 'Los clientes se registrarán automáticamente cuando realicen pedidos.'}
+                    </p>
+                  </div>
+                ) : (
+                  <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid #f1f5f9', background: '#f8fafc' }}>
+                        <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Cliente</th>
+                        <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Celular</th>
+                        <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Pedidos</th>
+                        <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'right' }}>Total Comprado</th>
+                        <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Origen</th>
+                        <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Última Ciudad / Dirección</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredClientes.map(c => {
+                        // Calculate origin dynamically based on order history
+                        const clientOrders = pedidos.filter(p => p.cliente_telefono?.trim() === c.telefono?.trim());
+                        const posCount = clientOrders.filter(p => p.origen === 'pos').length;
+                        const catalogoCount = clientOrders.filter(p => p.origen !== 'pos').length;
+                        
+                        let origenLabel = '📱 Catálogo';
+                        let origenColor = 'rgba(14, 165, 233, 0.08)';
+                        let origenTextColor = '#0284c7';
+                        
+                        if (posCount > 0 && catalogoCount > 0) {
+                          origenLabel = '💻 POS / 📱 Cat';
+                          origenColor = 'rgba(139, 92, 246, 0.08)';
+                          origenTextColor = '#7c3aed';
+                        } else if (posCount > 0) {
+                          origenLabel = '💻 POS';
+                          origenColor = 'rgba(16, 185, 129, 0.08)';
+                          origenTextColor = '#059669';
+                        }
+
+                        // Last order address & city
+                        const lastOrder = clientOrders[0];
+                        const lastLocation = lastOrder ? `${lastOrder.ciudad || 'POS'} - ${lastOrder.direccion || 'Venta Presencial'}` : 'Sin datos';
+
+                        return (
+                          <tr key={c.id} style={{ borderBottom: '1px solid #f1f5f9' }} className="table-row-hover">
+                            <td style={{ padding: '1rem', fontWeight: 700, color: '#0f172a' }}>{c.nombre || 'Sin Nombre'}</td>
+                            <td style={{ padding: '1rem' }}>
+                              <a
+                                href={`https://wa.me/${c.telefono?.replace(/\D/g, '')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{ color: '#10b981', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                              >
+                                <Phone size={12} /> {c.telefono}
+                              </a>
+                            </td>
+                            <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 600, color: '#475569' }}>
+                              {c.numero_pedidos || 0}
+                            </td>
+                            <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 800, color: '#10b981' }}>
+                              ${(c.total_compras || 0).toLocaleString()}
+                            </td>
+                            <td style={{ padding: '1rem', textAlign: 'center' }}>
+                              <span style={{ display: 'inline-block', padding: '0.2rem 0.5rem', borderRadius: '20px', fontSize: '0.72rem', fontWeight: 700, background: origenColor, color: origenTextColor }}>
+                                {origenLabel}
+                              </span>
+                            </td>
+                            <td style={{ padding: '1rem', fontSize: '0.78rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '250px' }} title={lastLocation}>
+                              {lastLocation}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
                 )}
               </div>
             </div>
@@ -4134,6 +4262,10 @@ function SidebarContent({
         <button className={`nav-item ${activeTab === 'pedidos' ? 'active' : ''}`} onClick={() => handleSelectTab('pedidos')}>
           <span className="nav-icon"><ShoppingBag size={14} /></span> Pedidos
           {activeTab === 'pedidos' && <span className="active-dot"></span>}
+        </button>
+        <button className={`nav-item ${activeTab === 'clientes' ? 'active' : ''}`} onClick={() => handleSelectTab('clientes')}>
+          <span className="nav-icon"><User size={14} /></span> Clientes
+          {activeTab === 'clientes' && <span className="active-dot"></span>}
         </button>
         {getTenantId() !== 'indisutex' && (
           <button className={`nav-item ${activeTab === 'pos' ? 'active' : ''}`} onClick={() => handleSelectTab('pos')}>
