@@ -62,7 +62,12 @@ export default function Admin() {
   const [asesores, setAsesores] = useState<Asesor[]>([]);
   const [nuevoAsesorNombre, setNuevoAsesorNombre] = useState('');
   const [nuevoAsesorTelefono, setNuevoAsesorTelefono] = useState('');
+  const [nuevoAsesorPin, setNuevoAsesorPin] = useState(() => Math.floor(1000 + Math.random() * 9000).toString());
   const [asesorSearchQuery, setAsesorSearchQuery] = useState('');
+  const [editingAsesorId, setEditingAsesorId] = useState<string | null>(null);
+  const [editingAsesorNombre, setEditingAsesorNombre] = useState('');
+  const [editingAsesorTelefono, setEditingAsesorTelefono] = useState('');
+  const [editingAsesorPin, setEditingAsesorPin] = useState('');
 
   // POS States
   const [posCart, setPosCart] = useState<any[]>([]);
@@ -171,6 +176,7 @@ export default function Admin() {
   // Filtros y Ordenamiento para la pestaña de Pedidos
   const [orderFilterStatus, setOrderFilterStatus] = useState<string>('todos');
   const [orderFilterOrigin, setOrderFilterOrigin] = useState<string>('todos');
+  const [orderFilterAsesor, setOrderFilterAsesor] = useState<string>('todos');
   const [orderSearchQuery, setOrderSearchQuery] = useState<string>('');
   const [orderFilterDate, setOrderFilterDate] = useState<string>('');
   const [orderSortBy, setOrderSortBy] = useState<string>('date_desc');
@@ -179,6 +185,16 @@ export default function Admin() {
   const [pedidosViewMode, setPedidosViewMode] = useState<'lista' | 'kanban'>(() => {
     return (localStorage.getItem('admin_pedidos_view_mode') as 'lista' | 'kanban' || 'lista');
   });
+
+  const getAsesorNameByPhone = (phone?: string) => {
+    if (!phone) return 'Sin Asignar';
+    const cleanPhone = phone.replace(/\D/g, '');
+    if (!cleanPhone || cleanPhone === 'pos') return 'POS';
+    const numSinIndicativo = cleanPhone.startsWith('57') ? cleanPhone.substring(2) : cleanPhone;
+    const match = asesores.find(a => a.telefono?.replace(/\D/g, '') === cleanPhone);
+    if (match) return `${match.nombre} (${numSinIndicativo})`;
+    return numSinIndicativo;
+  };
 
   useEffect(() => {
     localStorage.setItem('admin_pedidos_view_mode', pedidosViewMode);
@@ -884,6 +900,14 @@ export default function Admin() {
       });
     }
 
+    if (orderFilterAsesor !== 'todos') {
+      result = result.filter(p => {
+        const orderPhone = p.linea_whatsapp?.replace(/\D/g, '');
+        const filterPhone = orderFilterAsesor.replace(/\D/g, '');
+        return orderPhone === filterPhone;
+      });
+    }
+
     if (orderFilterDate) {
       result = result.filter(p => {
         const d = new Date(p.created_at).toISOString().split('T')[0];
@@ -908,7 +932,7 @@ export default function Admin() {
     });
 
     return result;
-  }, [pedidos, orderSearchQuery, orderFilterStatus, orderFilterOrigin, orderFilterDate, orderSortBy]);
+  }, [pedidos, orderSearchQuery, orderFilterStatus, orderFilterOrigin, orderFilterAsesor, orderFilterDate, orderSortBy]);
 
   const leadsFiltrados = useMemo(() => {
     let temp = [...leads];
@@ -1006,6 +1030,7 @@ export default function Admin() {
         .insert({
           nombre: nuevoAsesorNombre.trim(),
           telefono: cleanPhone,
+          pin: nuevoAsesorPin.trim() || '1234',
           tenant_id: tenant
         })
         .select()
@@ -1016,10 +1041,42 @@ export default function Admin() {
       setAsesores(prev => [data, ...prev]);
       setNuevoAsesorNombre('');
       setNuevoAsesorTelefono('');
+      setNuevoAsesorPin(Math.floor(1000 + Math.random() * 9000).toString());
       showToast('Asesor creado exitosamente ✓', 'success');
     } catch (err: any) {
       console.error(err);
       showToast('Error al crear asesor: ' + err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleGuardarAsesorEdicion(id: string) {
+    if (!editingAsesorNombre.trim() || !editingAsesorTelefono.trim() || !editingAsesorPin.trim()) {
+      showToast('Por favor completa todos los campos del asesor.', 'error');
+      return;
+    }
+    setLoading(true);
+    try {
+      const cleanPhone = editingAsesorTelefono.replace(/\D/g, '');
+      const { error } = await supabase
+        .from('asesores')
+        .update({
+          nombre: editingAsesorNombre.trim(),
+          telefono: cleanPhone,
+          pin: editingAsesorPin.trim()
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setAsesores(prev => prev.map(item => item.id === id ? { ...item, nombre: editingAsesorNombre.trim(), telefono: cleanPhone, pin: editingAsesorPin.trim() } : item));
+      setEditingAsesorId(null);
+      showToast('Cambios guardados ✓', 'success');
+      cargarDatos();
+    } catch (err: any) {
+      console.error(err);
+      showToast('Error al guardar cambios: ' + err.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -3665,6 +3722,17 @@ export default function Admin() {
                         </select>
 
                         <select 
+                          value={orderFilterAsesor} 
+                          onChange={e => setOrderFilterAsesor(e.target.value)}
+                          style={{ padding: '0.55rem 1rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', cursor: 'pointer' }}
+                        >
+                          <option value="todos">Todos los Asesores</option>
+                          {asesores.map(a => (
+                            <option key={a.id} value={a.telefono}>👤 {a.nombre} ({a.telefono})</option>
+                          ))}
+                        </select>
+
+                        <select 
                           value={orderSortBy} 
                           onChange={e => setOrderSortBy(e.target.value)}
                           style={{ padding: '0.55rem 1rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', cursor: 'pointer' }}
@@ -3905,7 +3973,7 @@ export default function Admin() {
                               </td>
                               <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
                                 <span style={{ background: ped.estado === 'completado' ? '#dcfce7' : '#e0f2fe', color: ped.estado === 'completado' ? '#166534' : '#0369a1', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700 }}>
-                                  📞 {ped.linea_whatsapp}
+                                  📞 {getAsesorNameByPhone(ped.linea_whatsapp)}
                                 </span>
                               </td>
                               <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
@@ -4133,7 +4201,7 @@ export default function Admin() {
                   </div>
                   <div>
                     <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase' }}>Línea WhatsApp Asignada</h5>
-                    <p style={{ margin: 0, fontWeight: 700, color: '#0ea5e9' }}>📞 {selectedPedido.linea_whatsapp}</p>
+                    <p style={{ margin: 0, fontWeight: 700, color: '#0ea5e9' }}>📞 {getAsesorNameByPhone(selectedPedido.linea_whatsapp)}</p>
                   </div>
                   <div style={{ gridColumn: 'span 2' }}>
                     <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase' }}>Dirección de Entrega</h5>

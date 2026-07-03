@@ -75,6 +75,7 @@ export interface Asesor {
   id: string;
   nombre: string;
   telefono: string;
+  pin: string;
   tenant_id: string;
   created_at: string;
 }
