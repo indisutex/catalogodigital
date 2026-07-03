@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase, TENANT_ID } from '../lib/supabase';
+import { supabase, getTenantId } from '../lib/supabase';
 import type { Producto } from '../types';
 import { Loader2, Search } from 'lucide-react';
 import './Products.css';
@@ -12,7 +12,7 @@ export default function Products() {
   useEffect(() => {
     async function cargarProductos() {
       try {
-        let query = supabase.from('productos').select('*').eq('tenant_id', TENANT_ID).order('created_at', { ascending: false });
+        let query = supabase.from('productos').select('*').eq('tenant_id', getTenantId()).order('created_at', { ascending: false });
         
         if (filtroCategoria !== 'todos') {
           query = query.eq('categoria', filtroCategoria);

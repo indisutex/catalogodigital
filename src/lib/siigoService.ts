@@ -366,7 +366,7 @@ export class SiigoService {
    * Crea una factura de venta (Invoice) en Siigo Nube para un pedido confirmado
    */
   public static async createSiigoInvoice(
-    tenantId: string,
+    _tenantId: string,
     order: any,
     credentials: SiigoCredentials,
     onProgress: (message: string) => void

@@ -66,23 +66,32 @@ export default function MenuDigital() {
   const [detailProduct, setDetailProduct] = useState<Producto | null>(null);
   const [carouselIdx, setCarouselIdx] = useState(0);
   const [selectedTalla, setSelectedTalla] = useState<string>('');
+  const [selectedEstampado, setSelectedEstampado] = useState<string>('');
   const [selectedCantidad, setSelectedCantidad] = useState(1);
 
   const openDetail = (producto: Producto) => {
     setDetailProduct(producto);
     setCarouselIdx(0);
     setSelectedTalla('');
+    setSelectedEstampado('');
     setSelectedCantidad(1);
   };
 
   const handleAddFromDetail = () => {
     if (!detailProduct) return;
     const tallas = detailProduct.tallas?.split(',').map(t => t.trim()).filter(Boolean) || [];
+    const estampados = detailProduct.estampados?.split(',').map(e => e.trim()).filter(Boolean) || [];
+
     if (tallas.length > 0 && !selectedTalla) {
       alert('Por favor selecciona una talla');
       return;
     }
-    addToCart(detailProduct, selectedTalla || undefined, selectedCantidad);
+    if (estampados.length > 0 && !selectedEstampado) {
+      alert('Por favor selecciona un estampado / temática');
+      return;
+    }
+
+    addToCart(detailProduct, selectedTalla || undefined, selectedEstampado || undefined, selectedCantidad);
     setDetailProduct(null);
   };
   
@@ -233,7 +242,7 @@ export default function MenuDigital() {
     
     mensaje += `*PRODUCTOS:*\n`;
     const mensajeProductos = items.map(item => 
-      `- ${item.cantidad}x ${item.nombre} ${item.talla ? `(Talla: ${item.talla}) ` : ''}- $${(item.precio * item.cantidad).toFixed(2)}`
+      `- ${item.cantidad}x ${item.nombre} ${item.talla ? `(Talla: ${item.talla}) ` : ''}${item.estampado ? `(Estampado: ${item.estampado}) ` : ''}- $${(item.precio * item.cantidad).toFixed(2)}`
     ).join('\n');
     mensaje += mensajeProductos;
     
@@ -674,21 +683,22 @@ export default function MenuDigital() {
                     <p className="empty-cart">Tu carrito está vacío.</p>
                   ) : (
                     items.map(item => (
-                      <div key={`${item.id}-${item.talla || 'none'}`} className="cart-item">
+                      <div key={`${item.id}-${item.talla || 'none'}-${item.estampado || 'none'}`} className="cart-item">
                         <div className="cart-item-img">
                           {item.imagen_url ? <img src={item.imagen_url} alt={item.nombre} /> : <div className="img-placeholder-small"></div>}
                         </div>
                         <div className="cart-item-details">
                           <h4>{item.nombre}</h4>
                           {item.talla && <p style={{fontSize: '0.8rem', color: '#666', margin: '2px 0'}}>Talla: {item.talla}</p>}
+                          {item.estampado && <p style={{fontSize: '0.8rem', color: '#666', margin: '2px 0'}}>Estampado: {item.estampado}</p>}
                           <p className="cart-item-price">${(item.precio * item.cantidad).toLocaleString('es-CO')}</p>
                           <div className="cart-item-qty">
-                            <button onClick={() => updateQuantity(item.id, item.cantidad - 1, item.talla)}>-</button>
+                            <button onClick={() => updateQuantity(item.id, item.cantidad - 1, item.talla, item.estampado)}>-</button>
                             <span>{item.cantidad}</span>
-                            <button onClick={() => updateQuantity(item.id, item.cantidad + 1, item.talla)}>+</button>
+                            <button onClick={() => updateQuantity(item.id, item.cantidad + 1, item.talla, item.estampado)}>+</button>
                           </div>
                         </div>
-                        <button className="cart-item-remove" onClick={() => removeFromCart(item.id, item.talla)}>
+                        <button className="cart-item-remove" onClick={() => removeFromCart(item.id, item.talla, item.estampado)}>
                           <X size={20} />
                         </button>
                       </div>
@@ -773,29 +783,64 @@ export default function MenuDigital() {
                   <p className="detail-desc">{detailProduct.descripcion}</p>
                 )}
 
-                {/* ── TALLAS + CANTIDAD en una fila ── */}
-                <div className="detail-controls-row">
-                  {tallas.length > 0 && (
-                    <div className="detail-tallas">
-                      <p className="detail-section-label">Talla</p>
-                      <div className="tallas-grid">
-                        {tallas.map(t => (
-                          <button
-                            key={t}
-                            className={`talla-chip${selectedTalla === t ? ' active' : ''}`}
-                            onClick={() => setSelectedTalla(t)}
-                          >{t}</button>
-                        ))}
+                {/* ── ESTAMPADOS + TALLAS + CANTIDAD ── */}
+                <div className="detail-controls-row" style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', alignItems: 'stretch' }}>
+                  {(() => {
+                    const estampados = detailProduct.estampados?.split(',').map(e => e.trim()).filter(Boolean) || [];
+                    if (estampados.length === 0) return null;
+                    return (
+                      <div className="detail-tallas" style={{ width: '100%' }}>
+                        <p className="detail-section-label">Estampado / Temática</p>
+                        <div className="tallas-grid" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginTop: '0.3rem' }}>
+                          {estampados.map(est => (
+                            <button
+                              key={est}
+                              type="button"
+                              className={`talla-chip${selectedEstampado === est ? ' active' : ''}`}
+                              onClick={() => setSelectedEstampado(est)}
+                              style={{
+                                padding: '0.4rem 0.8rem',
+                                borderRadius: '8px',
+                                border: '1px solid #cbd5e1',
+                                background: selectedEstampado === est ? 'var(--primary-color, #6366f1)' : 'white',
+                                color: selectedEstampado === est ? 'white' : '#475569',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                fontSize: '0.8rem'
+                              }}
+                            >
+                              {est}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
-                  <div className="detail-cantidad">
-                    <p className="detail-section-label">Cantidad</p>
-                    <div className="cantidad-control">
-                      <button className="qty-btn" onClick={() => setSelectedCantidad(q => Math.max(1, q - 1))}>−</button>
-                      <span className="qty-value">{selectedCantidad}</span>
-                      <button className="qty-btn" onClick={() => setSelectedCantidad(q => q + 1)}>+</button>
+                  <div style={{ display: 'flex', gap: '1rem', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    {tallas.length > 0 && (
+                      <div className="detail-tallas" style={{ flex: 1 }}>
+                        <p className="detail-section-label">Talla</p>
+                        <div className="tallas-grid">
+                          {tallas.map(t => (
+                            <button
+                              key={t}
+                              className={`talla-chip${selectedTalla === t ? ' active' : ''}`}
+                              onClick={() => setSelectedTalla(t)}
+                            >{t}</button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="detail-cantidad" style={{ flexGrow: 0, minWidth: '110px' }}>
+                      <p className="detail-section-label">Cantidad</p>
+                      <div className="cantidad-control">
+                        <button className="qty-btn" onClick={() => setSelectedCantidad(q => Math.max(1, q - 1))}>−</button>
+                        <span className="qty-value">{selectedCantidad}</span>
+                        <button className="qty-btn" onClick={() => setSelectedCantidad(q => q + 1)}>+</button>
+                      </div>
                     </div>
                   </div>
                 </div>

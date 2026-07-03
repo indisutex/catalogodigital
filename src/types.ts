@@ -12,6 +12,10 @@ export interface Producto {
   tenant_id?: string;
   referencia?: string;
   stock?: number;
+  costo?: number;
+  precio_por_mayor?: number;
+  precio_50_unidades?: number;
+  estampados?: string;
   created_at: string;
 }
 
@@ -61,4 +65,5 @@ export interface Pedido {
   created_at: string;
   pantallazo_url?: string;
   atendido?: boolean;
+  estado?: string;
 }

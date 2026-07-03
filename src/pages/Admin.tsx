@@ -40,7 +40,13 @@ export default function Admin() {
     return localStorage.getItem(`admin_auth_${getTenantId()}`) === 'true';
   });
   const [pin, setPin] = useState('');
-  const [activeTab, setActiveTab] = useState<TabType>('productos');
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    return (localStorage.getItem('admin_active_tab') as TabType) || 'productos';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('admin_active_tab', activeTab);
+  }, [activeTab]);
   const [toast, setToast] = useState<Toast>(null);
   
   const [selectedCompany, setSelectedCompany] = useState<string | null>(getTenantId() || null);
@@ -103,6 +109,15 @@ export default function Admin() {
   const [orderFilterDate, setOrderFilterDate] = useState<string>('');
   const [orderSortBy, setOrderSortBy] = useState<string>('date_desc');
 
+  const [leads, setLeads] = useState<any[]>([]);
+  const [pedidosViewMode, setPedidosViewMode] = useState<'lista' | 'kanban'>(() => {
+    return (localStorage.getItem('admin_pedidos_view_mode') as 'lista' | 'kanban' || 'lista');
+  });
+
+  useEffect(() => {
+    localStorage.setItem('admin_pedidos_view_mode', pedidosViewMode);
+  }, [pedidosViewMode]);
+
   useEffect(() => {
     if (configuracion?.nombre_negocio) {
       document.title = `${configuracion.nombre_negocio} - Panel Administrativo`;
@@ -137,16 +152,18 @@ export default function Admin() {
       const tenant = getTenantId();
 
       // Fetch other data in parallel
-      const [catRes, subcatRes, confRes, pedRes] = await Promise.all([
+      const [catRes, subcatRes, confRes, pedRes, leadRes] = await Promise.all([
         supabase.from('categorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
         supabase.from('subcategorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
         supabase.from('configuracion').select('*').eq('tenant_id', tenant).limit(1).single(),
-        supabase.from('pedidos').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false })
+        supabase.from('pedidos').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
+        supabase.from('leads').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false })
       ]);
 
       if (catRes.data) setCategoriasData(catRes.data);
       if (subcatRes.data) setSubcategoriasData(subcatRes.data);
       if (pedRes.data) setPedidos(pedRes.data);
+      if (leadRes.data) setLeads(leadRes.data);
 
       // Fetch products in chunks of 1000 to bypass Supabase defaults
       let allProducts: Producto[] = [];
@@ -383,6 +400,122 @@ export default function Admin() {
       showToast('Producto duplicado ✓');
     } else {
       showToast('Error al duplicar: ' + error.message, 'error');
+    }
+  };
+
+  const filteredPedidos = useMemo(() => {
+    let temp = [...pedidos];
+    if (orderSearchQuery) {
+      const q = orderSearchQuery.toLowerCase();
+      temp = temp.filter(p => 
+        (p.cliente_nombre || '').toLowerCase().includes(q) ||
+        (p.cliente_telefono || '').toLowerCase().includes(q) ||
+        (p.ciudad || '').toLowerCase().includes(q)
+      );
+    }
+    if (orderFilterDate) {
+      temp = temp.filter(p => p.created_at.startsWith(orderFilterDate));
+    }
+    if (orderFilterStatus !== 'todos' && pedidosViewMode === 'lista') {
+      if (orderFilterStatus === 'comprobante') {
+        temp = temp.filter(p => p.pantallazo_url);
+      } else if (orderFilterStatus === 'esperando_pago') {
+        temp = temp.filter(p => !p.pantallazo_url);
+      }
+    }
+    // Sort
+    temp.sort((a, b) => {
+      if (orderSortBy === 'date_desc') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      if (orderSortBy === 'date_asc') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      if (orderSortBy === 'total_desc') return (b.total || 0) - (a.total || 0);
+      if (orderSortBy === 'total_asc') return (a.total || 0) - (b.total || 0);
+      return 0;
+    });
+    return temp;
+  }, [pedidos, orderSearchQuery, orderFilterDate, orderFilterStatus, orderSortBy, pedidosViewMode]);
+
+  const leadsFiltrados = useMemo(() => {
+    let temp = [...leads];
+    if (orderSearchQuery) {
+      const q = orderSearchQuery.toLowerCase();
+      temp = temp.filter(l => 
+        (l.nombre || '').toLowerCase().includes(q) ||
+        (l.telefono || '').toLowerCase().includes(q) ||
+        (l.ciudad || '').toLowerCase().includes(q)
+      );
+    }
+    if (orderFilterDate) {
+      temp = temp.filter(l => l.created_at.startsWith(orderFilterDate));
+    }
+    return temp;
+  }, [leads, orderSearchQuery, orderFilterDate]);
+
+  const interesadosFiltrados = useMemo(() => {
+    return filteredPedidos.filter(p => p.estado === 'pendiente' || p.estado === 'atendido' || !p.estado);
+  }, [filteredPedidos]);
+
+  const clientesFiltrados = useMemo(() => {
+    return filteredPedidos.filter(p => p.estado === 'completado');
+  }, [filteredPedidos]);
+
+  const handleAprobarPago = async (ped: Pedido) => {
+    setLoading(true);
+    try {
+      // 1. Actualizar el pedido en Supabase
+      const { error: errorPed } = await supabase
+        .from('pedidos')
+        .update({ estado: 'completado', atendido: true })
+        .eq('id', ped.id);
+
+      if (errorPed) throw errorPed;
+
+      // 2. Registrar/actualizar en la base de datos de clientes exitosos
+      if (ped.cliente_telefono) {
+        const telLimpio = ped.cliente_telefono.trim();
+        const tenant = ped.tenant_id || getTenantId();
+
+        const { data: extExist, error: errorExist } = await supabase
+          .from('clientes_exitosos')
+          .select('*')
+          .eq('telefono', telLimpio)
+          .eq('tenant_id', tenant)
+          .maybeSingle();
+
+        if (!errorExist) {
+          if (extExist) {
+            await supabase
+              .from('clientes_exitosos')
+              .update({
+                nombre: ped.cliente_nombre || extExist.nombre,
+                total_compras: (extExist.total_compras || 0) + (ped.total || 0),
+                numero_pedidos: (extExist.numero_pedidos || 0) + 1,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', extExist.id);
+          } else {
+            await supabase
+              .from('clientes_exitosos')
+              .insert({
+                nombre: ped.cliente_nombre,
+                telefono: telLimpio,
+                total_compras: ped.total || 0,
+                numero_pedidos: 1,
+                tenant_id: tenant
+              });
+          }
+        }
+      }
+
+      // 3. Actualizar estado local
+      setPedidos(prev => prev.map(p => p.id === ped.id ? { ...p, estado: 'completado', atendido: true } : p));
+      setSelectedPedido(prev => prev && prev.id === ped.id ? { ...prev, estado: 'completado', atendido: true } : prev);
+
+      showToast('Pago verificado y aprobado exitosamente ✓', 'success');
+    } catch (err: any) {
+      console.error(err);
+      showToast('Error al procesar la aprobación: ' + err.message, 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -2174,17 +2307,55 @@ export default function Admin() {
           {/* ── PEDIDOS TAB ── */}
           {activeTab === 'pedidos' && (
             <div className="admin-panel">
-              <div className="panel-header">
+              <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
                   <h3><ShoppingBag size={16} /> Registro de Pedidos</h3>
                   <p>Pedidos recibidos desde el catálogo digital y su asignación de línea</p>
                 </div>
+                
+                {/* Switcher Vista */}
+                <div style={{ display: 'flex', gap: '0.25rem', background: '#f1f5f9', padding: '0.25rem', borderRadius: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setPedidosViewMode('lista')}
+                    style={{
+                      border: 'none',
+                      background: pedidosViewMode === 'lista' ? '#ffffff' : 'transparent',
+                      color: pedidosViewMode === 'lista' ? '#0f172a' : '#64748b',
+                      padding: '0.4rem 1rem',
+                      borderRadius: '6px',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      boxShadow: pedidosViewMode === 'lista' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                    }}
+                  >
+                    📋 Lista
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPedidosViewMode('kanban')}
+                    style={{
+                      border: 'none',
+                      background: pedidosViewMode === 'kanban' ? '#ffffff' : 'transparent',
+                      color: pedidosViewMode === 'kanban' ? '#0f172a' : '#64748b',
+                      padding: '0.4rem 1rem',
+                      borderRadius: '6px',
+                      fontSize: '0.85rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      boxShadow: pedidosViewMode === 'kanban' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                    }}
+                  >
+                    📊 Kanban
+                  </button>
+                </div>
               </div>
               <div className="panel-body">
-                {pedidos.length === 0 ? (
+                {pedidos.length === 0 && leads.length === 0 ? (
                   <div className="empty-state">
                     <div className="es-icon">📋</div>
-                    <p style={{ marginTop: '1rem' }}>No hay pedidos registrados todavía</p>
+                    <p style={{ marginTop: '1rem' }}>No hay pedidos ni leads registrados todavía</p>
                   </div>
                 ) : (
                   <>
@@ -2221,15 +2392,17 @@ export default function Admin() {
                           )}
                         </div>
 
-                        <select 
-                          value={orderFilterStatus} 
-                          onChange={e => setOrderFilterStatus(e.target.value)}
-                          style={{ padding: '0.55rem 1rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', cursor: 'pointer' }}
-                        >
-                          <option value="todos">Todos los Pagos</option>
-                          <option value="comprobante">Con Comprobante</option>
-                          <option value="esperando_pago">Esperando Pago</option>
-                        </select>
+                        {pedidosViewMode === 'lista' && (
+                          <select 
+                            value={orderFilterStatus} 
+                            onChange={e => setOrderFilterStatus(e.target.value)}
+                            style={{ padding: '0.55rem 1rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', cursor: 'pointer' }}
+                          >
+                            <option value="todos">Todos los Pagos</option>
+                            <option value="comprobante">Con Comprobante</option>
+                            <option value="esperando_pago">Esperando Pago</option>
+                          </select>
+                        )}
 
                         <select 
                           value={orderSortBy} 
@@ -2244,90 +2417,279 @@ export default function Admin() {
                       </div>
                     </div>
 
-                    <div style={{ overflowX: 'auto', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', textAlign: 'left' }}>
-                        <thead>
-                          <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b', fontWeight: 600 }}>
-                            <th style={{ padding: '1rem' }}>Fecha</th>
-                            <th style={{ padding: '1rem' }}>Cliente</th>
-                            <th style={{ padding: '1rem' }}>Teléfono</th>
-                            <th style={{ padding: '1rem' }}>Dirección</th>
-                            <th style={{ padding: '1rem' }}>Productos</th>
-                            <th style={{ padding: '1rem' }}>Línea Receptora</th>
-                            <th style={{ padding: '1rem' }}>Estado de Pago</th>
-                            <th style={{ padding: '1rem' }}>Total</th>
-                            <th style={{ padding: '1rem', textAlign: 'center' }}>Acción</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {filteredPedidos.map((ped) => (
-                          <tr key={ped.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                            <td style={{ padding: '1rem', color: '#64748b', verticalAlign: 'middle' }}>
-                              {new Date(ped.created_at).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}
-                            </td>
-                            <td style={{ padding: '1rem', fontWeight: 600, color: '#0f172a', verticalAlign: 'middle' }}>{ped.cliente_nombre}</td>
-                            <td style={{ padding: '1rem', color: '#475569', verticalAlign: 'middle' }}>{ped.cliente_telefono}</td>
-                            <td style={{ padding: '1rem', color: '#475569', verticalAlign: 'middle' }}>{ped.direccion}, {ped.ciudad}</td>
-                            <td style={{ padding: '1rem', color: '#475569', verticalAlign: 'middle' }}>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
-                                {Array.isArray(ped.productos) && ped.productos.map((prod: any, idx: number) => (
-                                  <div key={idx} style={{ background: '#f8fafc', padding: '3px 6px', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '0.78rem' }}>
-                                    <strong>{prod.cantidad}x</strong> {prod.nombre} {prod.talla ? `(${prod.talla})` : ''}
-                                  </div>
-                                ))}
-                              </div>
-                            </td>
-                            <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
-                              <span style={{ background: '#e0f2fe', color: '#0369a1', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700 }}>
-                                📞 {ped.linea_whatsapp}
-                              </span>
-                            </td>
-                            <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
-                              {ped.pantallazo_url ? (
-                                <span style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 600, display: 'inline-block', lineHeight: '1.2' }}>
-                                  ✅ Comprobante subido
-                                </span>
-                              ) : (
-                                <span style={{ background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 600, display: 'inline-block', lineHeight: '1.2' }}>
-                                  ⏳ Pendiente de comprobante
-                                </span>
-                              )}
-                            </td>
-                            <td style={{ padding: '1rem', fontWeight: 700, color: '#10b981', verticalAlign: 'middle' }}>
-                              ${ped.total.toLocaleString()}
-                            </td>
-                            <td style={{ padding: '0.8rem', textAlign: 'center', verticalAlign: 'middle' }}>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'stretch', justifyContent: 'center', maxWidth: '130px', margin: '0 auto' }}>
-                                <button 
-                                  className="btn-secondary" 
-                                  style={{ padding: '0.45rem 0.8rem', fontSize: '0.8rem', borderRadius: '8px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', background: 'white', border: '1px solid #cbd5e1', color: '#475569', cursor: 'pointer', transition: 'background 0.2s', fontWeight: 600 }}
-                                  onClick={() => setSelectedPedido(ped)}
-                                >
-                                  <Eye size={12} /> Ver Detalle
-                                </button>
-                                
-                                {ped.atendido ? (
-                                  <button
-                                    disabled
-                                    style={{ padding: '0.45rem 0.8rem', fontSize: '0.8rem', borderRadius: '8px', background: '#f0fdf4', color: '#15803d', border: '1px solid #bbf7d0', cursor: 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', fontWeight: 700, width: '100%' }}
+                    {pedidosViewMode === 'kanban' ? (
+                      <div className="super-crm-kanban" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem', marginTop: '1rem', alignItems: 'start' }}>
+                        {/* Columna 1: No Interesados (Abandonos) */}
+                        <div className="kanban-column" style={{ background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}>
+                          <div className="kanban-column-header col-red" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #ef4444', paddingBottom: '0.5rem' }}>
+                            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#ef4444' }}>🔴 No Interesados (Abandonos)</h3>
+                            <span className="badge" style={{ background: '#fee2e2', color: '#ef4444', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{leadsFiltrados.length}</span>
+                          </div>
+                          <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
+                            {leadsFiltrados.map((lead) => (
+                              <div key={lead.id} className="kanban-card lead-card" style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '0.85rem', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                                <h4 style={{ margin: '0 0 0.4rem 0', fontSize: '0.9rem', color: '#0f172a', fontWeight: 700 }}>👤 {lead.nombre || 'Borrador Anónimo'}</h4>
+                                <p className="phone" style={{ margin: '0 0 0.25rem 0', fontSize: '0.8rem', color: '#475569' }}>📞 {lead.telefono || 'Sin número'}</p>
+                                <p className="city" style={{ margin: '0 0 0.25rem 0', fontSize: '0.8rem', color: '#475569' }}>📍 {lead.ciudad || 'No especificada'}</p>
+                                <p className="date" style={{ margin: '0 0 0.6rem 0', fontSize: '0.75rem', color: '#64748b' }}>📅 {new Date(lead.created_at).toLocaleDateString('es-CO', { dateStyle: 'short' })}</p>
+                                {lead.telefono && (
+                                  <button 
+                                    className="btn-whatsapp-retarget"
+                                    style={{ width: '100%', padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', border: '1px solid #25D366', background: '#f0fdf4', color: '#166534', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', transition: 'all 0.2s' }}
+                                    onClick={() => {
+                                      const text = `¡Hola ${lead.nombre || ''}! 👋 Vimos que estabas mirando nuestro catálogo de *${configuracion?.nombre_negocio || ''}* y empezaste a llenar tus datos de envío pero no completaste el pedido. ¿Tuviste algún problema o tienes alguna duda con los productos? ¡Escríbenos y con gusto te ayudamos! 😊`;
+                                      window.open(`https://wa.me/57${lead.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(text)}`, '_blank');
+                                    }}
                                   >
-                                    <Check size={12} /> Atendido
-                                  </button>
-                                ) : (
-                                  <button
-                                    style={{ padding: '0.45rem 0.8rem', fontSize: '0.8rem', borderRadius: '8px', background: '#25D366', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', fontWeight: 700, width: '100%', transition: 'background 0.2s' }}
-                                    onClick={() => handleAtenderPedido(ped)}
-                                  >
-                                    <Phone size={12} /> Atender
+                                    💬 WhatsApp Retargeting
                                   </button>
                                 )}
                               </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                            ))}
+                            {leadsFiltrados.length === 0 && (
+                              <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0' }}>No hay carritos abandonados.</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Columna 2: Interesados (Pendiente Pago) */}
+                        <div className="kanban-column" style={{ background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}>
+                          <div className="kanban-column-header col-yellow" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #eab308', paddingBottom: '0.5rem' }}>
+                            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#eab308' }}>🟡 Interesados (Pendiente Pago)</h3>
+                            <span className="badge" style={{ background: '#fef9c3', color: '#eab308', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{interesadosFiltrados.length}</span>
+                          </div>
+                          <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
+                            {interesadosFiltrados.map((ped) => (
+                              <div key={ped.id} className="kanban-card order-card" style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '0.85rem', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                                <h4 style={{ margin: '0 0 0.4rem 0', fontSize: '0.9rem', color: '#0f172a', fontWeight: 700 }}>👤 {ped.cliente_nombre}</h4>
+                                <p className="phone" style={{ margin: '0 0 0.25rem 0', fontSize: '0.8rem', color: '#475569' }}>📞 {ped.cliente_telefono}</p>
+                                <p className="total" style={{ margin: '0 0 0.4rem 0', fontSize: '0.82rem', fontWeight: 700, color: '#0f172a' }}>💰 Total: <span style={{ color: '#10b981' }}>${ped.total.toLocaleString()}</span></p>
+                                
+                                {/* Lista de productos comprados */}
+                                {Array.isArray(ped.productos) && ped.productos.length > 0 && (
+                                  <div className="card-products-summary" style={{ margin: '0.6rem 0', padding: '0.5rem 0.65rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                    <p style={{ margin: '0 0 0.3rem 0', fontSize: '0.72rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📦 Artículos:</p>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                                      {ped.productos.map((prod: any, idx: number) => (
+                                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#334155' }}>
+                                          <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '170px' }} title={prod.nombre}>
+                                            {prod.nombre} {prod.talla ? `(${prod.talla})` : ''} {prod.estampado ? `[${prod.estampado}]` : ''}
+                                          </span>
+                                          <span style={{ color: '#64748b', fontWeight: 700 }}>
+                                            x{prod.cantidad}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                <div className="status" style={{ margin: '0.5rem 0' }}>
+                                  {ped.pantallazo_url ? (
+                                    <span className="status-badge upload-success" style={{ background: '#e0f2fe', color: '#0369a1', border: '1px solid #bae6fd', padding: '0.25rem 0.5rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, display: 'inline-block' }}>✅ Comprobante Subido</span>
+                                  ) : (
+                                    <span className="status-badge upload-wait" style={{ background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', padding: '0.25rem 0.5rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, display: 'inline-block' }}>⏳ Esperando Pago</span>
+                                  )}
+                                </div>
+                                <p className="date" style={{ margin: '0 0 0.6rem 0', fontSize: '0.75rem', color: '#64748b' }}>📅 {new Date(ped.created_at).toLocaleDateString('es-CO', { dateStyle: 'short' })}</p>
+                                
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.5rem' }}>
+                                  <button 
+                                    className="btn-view-detail"
+                                    style={{ width: '100%', padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', color: '#475569', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
+                                    onClick={() => setSelectedPedido(ped)}
+                                  >
+                                    🔍 Ver Detalle
+                                  </button>
+                                  {ped.pantallazo_url ? (
+                                    <button 
+                                      className="btn-primary" 
+                                      style={{ padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', background: '#3b82f6', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 700 }}
+                                      onClick={() => setSelectedPedido(ped)}
+                                    >
+                                      💳 Verificar pago
+                                    </button>
+                                  ) : ped.atendido ? (
+                                    <button 
+                                      disabled
+                                      className="btn-secondary" 
+                                      style={{ padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#64748b', cursor: 'not-allowed', fontWeight: 600 }}
+                                    >
+                                      ⏳ Esperando comprobante
+                                    </button>
+                                  ) : (
+                                    <button 
+                                      className="btn-primary" 
+                                      style={{ padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', background: '#25D366', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 700 }}
+                                      onClick={() => handleAtenderPedido(ped)}
+                                    >
+                                      📞 Atender
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                            {interesadosFiltrados.length === 0 && (
+                              <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0' }}>No hay pedidos pendientes.</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Columna 3: Clientes (Venta Exitosa) */}
+                        <div className="kanban-column" style={{ background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}>
+                          <div className="kanban-column-header col-green" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #22c55e', paddingBottom: '0.5rem' }}>
+                            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#22c55e' }}>🟢 Clientes (Venta Exitosa)</h3>
+                            <span className="badge" style={{ background: '#dcfce7', color: '#22c55e', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{clientesFiltrados.length}</span>
+                          </div>
+                          <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
+                            {clientesFiltrados.map((ped) => (
+                              <div key={ped.id} className="kanban-card client-card" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '0.85rem', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                                <h4 style={{ margin: '0 0 0.4rem 0', fontSize: '0.9rem', color: '#14532d', fontWeight: 700 }}>👤 {ped.cliente_nombre}</h4>
+                                <p className="phone" style={{ margin: '0 0 0.25rem 0', fontSize: '0.8rem', color: '#166534' }}>📞 {ped.cliente_telefono}</p>
+                                <p className="total" style={{ margin: '0 0 0.4rem 0', fontSize: '0.82rem', fontWeight: 700, color: '#14532d' }}>💰 Facturado: <span style={{ color: '#16a34a' }}>${ped.total.toLocaleString()}</span></p>
+
+                                {/* Lista de productos comprados */}
+                                {Array.isArray(ped.productos) && ped.productos.length > 0 && (
+                                  <div className="card-products-summary" style={{ margin: '0.6rem 0', padding: '0.5rem 0.65rem', background: 'white', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                                    <p style={{ margin: '0 0 0.3rem 0', fontSize: '0.72rem', fontWeight: 800, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📦 Artículos:</p>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                                      {ped.productos.map((prod: any, idx: number) => (
+                                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#166534' }}>
+                                          <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '170px' }} title={prod.nombre}>
+                                            {prod.nombre} {prod.talla ? `(${prod.talla})` : ''} {prod.estampado ? `[${prod.estampado}]` : ''}
+                                          </span>
+                                          <span style={{ color: '#166534', fontWeight: 700 }}>
+                                            x{prod.cantidad}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+
+                                <div className="status" style={{ margin: '0.5rem 0' }}>
+                                  <span className="status-badge verified" style={{ background: '#dcfce7', color: '#16a34a', border: '1px solid #86efac', padding: '0.25rem 0.5rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, display: 'inline-block' }}>✓ Pago Verificado</span>
+                                </div>
+                                <p className="date" style={{ margin: '0 0 0.6rem 0', fontSize: '0.75rem', color: '#166534' }}>📅 {new Date(ped.created_at).toLocaleDateString('es-CO', { dateStyle: 'short' })}</p>
+                                <button 
+                                  className="btn-view-detail"
+                                  style={{ width: '100%', padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', border: '1px solid #bbf7d0', background: 'white', color: '#14532d', cursor: 'pointer', fontWeight: 600 }}
+                                  onClick={() => setSelectedPedido(ped)}
+                                >
+                                  🔍 Ver Factura
+                                </button>
+                              </div>
+                            ))}
+                            {clientesFiltrados.length === 0 && (
+                              <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0' }}>No hay ventas exitosas aún.</p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ overflowX: 'auto', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', textAlign: 'left' }}>
+                          <thead>
+                            <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b', fontWeight: 600 }}>
+                              <th style={{ padding: '1rem' }}>Fecha</th>
+                              <th style={{ padding: '1rem' }}>Cliente</th>
+                              <th style={{ padding: '1rem' }}>Teléfono</th>
+                              <th style={{ padding: '1rem' }}>Dirección</th>
+                              <th style={{ padding: '1rem' }}>Productos</th>
+                              <th style={{ padding: '1rem' }}>Línea Receptora</th>
+                              <th style={{ padding: '1rem' }}>Estado de Pago</th>
+                              <th style={{ padding: '1rem' }}>Total</th>
+                              <th style={{ padding: '1rem', textAlign: 'center' }}>Acción</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filteredPedidos.map((ped) => (
+                            <tr key={ped.id} style={{ borderBottom: '1px solid #f1f5f9', background: ped.estado === 'completado' ? '#f0fdf4' : 'transparent' }}>
+                              <td style={{ padding: '1rem', color: ped.estado === 'completado' ? '#166534' : '#64748b', verticalAlign: 'middle' }}>
+                                {new Date(ped.created_at).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}
+                              </td>
+                              <td style={{ padding: '1rem', fontWeight: 600, color: ped.estado === 'completado' ? '#14532d' : '#0f172a', verticalAlign: 'middle' }}>{ped.cliente_nombre}</td>
+                              <td style={{ padding: '1rem', color: ped.estado === 'completado' ? '#166534' : '#475569', verticalAlign: 'middle' }}>{ped.cliente_telefono}</td>
+                              <td style={{ padding: '1rem', color: ped.estado === 'completado' ? '#166534' : '#475569', verticalAlign: 'middle' }}>{ped.direccion}, {ped.ciudad}</td>
+                              <td style={{ padding: '1rem', color: ped.estado === 'completado' ? '#166534' : '#475569', verticalAlign: 'middle' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
+                                  {Array.isArray(ped.productos) && ped.productos.map((prod: any, idx: number) => (
+                                    <div key={idx} style={{ background: ped.estado === 'completado' ? 'white' : '#f8fafc', padding: '3px 6px', borderRadius: '4px', border: ped.estado === 'completado' ? '1px solid #bbf7d0' : '1px solid #e2e8f0', fontSize: '0.78rem', color: ped.estado === 'completado' ? '#14532d' : '#334155' }}>
+                                      <strong>{prod.cantidad}x</strong> {prod.nombre} {prod.talla ? `(${prod.talla})` : ''} {prod.estampado ? `[${prod.estampado}]` : ''}
+                                    </div>
+                                  ))}
+                                </div>
+                              </td>
+                              <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
+                                <span style={{ background: ped.estado === 'completado' ? '#dcfce7' : '#e0f2fe', color: ped.estado === 'completado' ? '#166534' : '#0369a1', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700 }}>
+                                  📞 {ped.linea_whatsapp}
+                                </span>
+                              </td>
+                              <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
+                                {ped.estado === 'completado' ? (
+                                  <span style={{ background: '#dcfce7', color: '#16a34a', border: '1px solid #86efac', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 600, display: 'inline-block', lineHeight: '1.2' }}>
+                                    ✓ Pago Verificado
+                                  </span>
+                                ) : ped.pantallazo_url ? (
+                                  <span style={{ background: '#e0f2fe', color: '#0369a1', border: '1px solid #bae6fd', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 600, display: 'inline-block', lineHeight: '1.2' }}>
+                                    ✅ Comprobante subido
+                                  </span>
+                                ) : (
+                                  <span style={{ background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 600, display: 'inline-block', lineHeight: '1.2' }}>
+                                    ⏳ Pendiente de pago
+                                  </span>
+                                )}
+                              </td>
+                              <td style={{ padding: '1rem', fontWeight: 700, color: ped.estado === 'completado' ? '#16a34a' : '#10b981', verticalAlign: 'middle' }}>
+                                ${ped.total.toLocaleString()}
+                              </td>
+                              <td style={{ padding: '0.8rem', textAlign: 'center', verticalAlign: 'middle' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'stretch', justifyContent: 'center', maxWidth: '130px', margin: '0 auto' }}>
+                                  <button 
+                                    className="btn-secondary" 
+                                    style={{ padding: '0.45rem 0.8rem', fontSize: '0.8rem', borderRadius: '8px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', background: 'white', border: '1px solid #cbd5e1', color: '#475569', cursor: 'pointer', transition: 'background 0.2s', fontWeight: 600 }}
+                                    onClick={() => setSelectedPedido(ped)}
+                                  >
+                                    <Eye size={12} /> Ver Detalle
+                                  </button>
+                                  
+                                  {ped.estado === 'completado' ? (
+                                    <button
+                                      disabled
+                                      style={{ padding: '0.45rem 0.8rem', fontSize: '0.8rem', borderRadius: '8px', background: '#dcfce7', color: '#16a34a', border: '1px solid #86efac', cursor: 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', fontWeight: 700, width: '100%' }}
+                                    >
+                                      <Check size={12} /> Completado
+                                    </button>
+                                  ) : ped.pantallazo_url ? (
+                                    <button
+                                      style={{ padding: '0.45rem 0.8rem', fontSize: '0.8rem', borderRadius: '8px', background: '#3b82f6', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', fontWeight: 700, width: '100%', transition: 'background 0.2s' }}
+                                      onClick={() => setSelectedPedido(ped)}
+                                    >
+                                      <Check size={12} /> Verificar pago
+                                    </button>
+                                  ) : ped.atendido ? (
+                                    <button
+                                      disabled
+                                      style={{ padding: '0.45rem 0.8rem', fontSize: '0.8rem', borderRadius: '8px', background: '#f1f5f9', color: '#64748b', border: '1px solid #cbd5e1', cursor: 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', fontWeight: 700, width: '100%' }}
+                                    >
+                                      <Check size={12} /> Atendido
+                                    </button>
+                                  ) : (
+                                    <button
+                                      style={{ padding: '0.45rem 0.8rem', fontSize: '0.8rem', borderRadius: '8px', background: '#25D366', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', fontWeight: 700, width: '100%', transition: 'background 0.2s' }}
+                                      onClick={() => handleAtenderPedido(ped)}
+                                    >
+                                      <Phone size={12} /> Atender
+                                    </button>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </>
                 )}
               </div>
@@ -2372,7 +2734,7 @@ export default function Admin() {
                     <div>
                       <h5 style={{ margin: 0, color: '#0f172a' }}>{prod.nombre}</h5>
                       <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                        Cantidad: {prod.cantidad} {prod.talla ? ` | Talla: ${prod.talla}` : ''}
+                        Cantidad: {prod.cantidad} {prod.talla ? ` | Talla: ${prod.talla}` : ''} {prod.estampado ? ` | Estampado: ${prod.estampado}` : ''}
                       </span>
                     </div>
                     <span style={{ fontWeight: 700, color: '#0f172a' }}>
@@ -2417,28 +2779,54 @@ export default function Admin() {
             </div>
 
             {/* Botones de acción */}
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem', flexWrap: 'wrap' }}>
-              <button
-                style={{ flex: 1, padding: '0.85rem 1rem', background: '#25D366', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-                onClick={() => {
-                  const num = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
-                  const uploadLink = `${window.location.origin}/pago/${selectedPedido.id}`;
-                  const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: $${selectedPedido.total.toLocaleString()} COP*\n\n💳 *Datos del banco:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\nPara poder completar tu pedido, haz la captura de pantalla de tu pago o de transacción y envíala por este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
-                  window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
-                }}
-              >
-                💳 Cobrar por Nequi/WhatsApp
-              </button>
-              <button
-                style={{ flex: 1, padding: '0.85rem 1rem', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-                onClick={() => {
-                  const num = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
-                  const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋 Tu pedido ha sido *VERIFICADO y DESPACHADO* 🚚\n\nPedido: ${selectedPedido.productos?.map((p: any) => `${p.cantidad}x ${p.nombre}`).join(', ')}\nTotal: $${selectedPedido.total.toLocaleString()} COP\n\n📦 Tu paquete está en camino. ¡Gracias por tu compra!`;
-                  window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
-                }}
-              >
-                🚚 Confirmar Despacho
-              </button>
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem', flexWrap: 'wrap', flexDirection: 'column' }}>
+              {selectedPedido.estado !== 'completado' && (
+                <button
+                  style={{
+                    width: '100%',
+                    padding: '0.85rem 1rem',
+                    background: '#10b981',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    cursor: 'pointer',
+                    fontWeight: 700,
+                    fontSize: '1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem',
+                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)'
+                  }}
+                  onClick={() => handleAprobarPago(selectedPedido)}
+                >
+                  <Check size={18} /> Aprobar y completar pago
+                </button>
+              )}
+              
+              <div style={{ display: 'flex', gap: '0.75rem', width: '100%' }}>
+                <button
+                  style={{ flex: 1, padding: '0.85rem 1rem', background: '#25D366', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                  onClick={() => {
+                    const num = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
+                    const uploadLink = `${window.location.origin}/pago/${selectedPedido.id}`;
+                    const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: $${selectedPedido.total.toLocaleString()} COP*\n\n💳 *Datos del banco:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\nPara poder completar tu pedido, haz la captura de pantalla de tu pago o de transacción y envíala por este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
+                    window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
+                  }}
+                >
+                  💳 Cobrar por Nequi/WhatsApp
+                </button>
+                <button
+                  style={{ flex: 1, padding: '0.85rem 1rem', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                  onClick={() => {
+                    const num = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
+                    const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋 Tu pedido ha sido *VERIFICADO y DESPACHADO* 🚚\n\nPedido: ${selectedPedido.productos?.map((p: any) => `${p.cantidad}x ${p.nombre}`).join(', ')}\nTotal: $${selectedPedido.total.toLocaleString()} COP\n\n📦 Tu paquete está en camino. ¡Gracias por tu compra!`;
+                    window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
+                  }}
+                >
+                  🚚 Confirmar Despacho
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -2458,7 +2846,6 @@ export default function Admin() {
           </div>
         </div>
       )}
-
       {/* MODAL HERRAMIENTAS DE DEPURACIÓN (DUPLICADOS / VACIAR) */}
       {showToolsModal && (
         <div className="modal-overlay" onClick={() => setShowToolsModal(false)}>

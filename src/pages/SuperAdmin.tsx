@@ -24,8 +24,14 @@ export default function SuperAdmin() {
   // Modal de Detalle
   const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
   const [pagoModalUrl, setPagoModalUrl] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'dashboard' | 'crm'>('dashboard');
+  const [viewMode, setViewMode] = useState<'dashboard' | 'crm'>(() => {
+    return (localStorage.getItem('superadmin_view_mode') as 'dashboard' | 'crm') || 'dashboard';
+  });
   const [leads, setLeads] = useState<any[]>([]);
+
+  useEffect(() => {
+    localStorage.setItem('superadmin_view_mode', viewMode);
+  }, [viewMode]);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -98,15 +104,79 @@ export default function SuperAdmin() {
   };
 
   const handleAtenderPedido = async (ped: Pedido) => {
-    const { error } = await supabase.from('pedidos').update({ atendido: true }).eq('id', ped.id);
+    const { error } = await supabase.from('pedidos').update({ atendido: true, estado: 'atendido' }).eq('id', ped.id);
     if (!error) {
-      setPedidos(prev => prev.map(p => p.id === ped.id ? { ...p, atendido: true } : p));
+      setPedidos(prev => prev.map(p => p.id === ped.id ? { ...p, atendido: true, estado: 'atendido' } : p));
       if (selectedPedido && selectedPedido.id === ped.id) {
-        setSelectedPedido(prev => prev ? { ...prev, atendido: true } : null);
+        setSelectedPedido(prev => prev ? { ...prev, atendido: true, estado: 'atendido' } : null);
       }
       showToast('Pedido marcado como atendido ✓');
     } else {
       showToast('Error al actualizar en DB', 'error');
+    }
+  };
+
+  const handleAprobarPago = async (ped: Pedido) => {
+    setLoading(true);
+    try {
+      // 1. Cambiar estado del pedido a completado en la base de datos
+      const { error: errorPedido } = await supabase
+        .from('pedidos')
+        .update({ estado: 'completado', atendido: true })
+        .eq('id', ped.id);
+
+      if (errorPedido) {
+        showToast('Error al completar pedido: ' + errorPedido.message, 'error');
+        return;
+      }
+
+      // 2. Registrar/Actualizar cliente en clientes_exitosos
+      if (ped.cliente_telefono) {
+        const telLimpio = ped.cliente_telefono.trim();
+        const tenant = ped.tenant_id || 'Indisutex';
+
+        const { data: extExist, error: errorExist } = await supabase
+          .from('clientes_exitosos')
+          .select('*')
+          .eq('telefono', telLimpio)
+          .eq('tenant_id', tenant)
+          .maybeSingle();
+
+        if (!errorExist) {
+          if (extExist) {
+            await supabase
+              .from('clientes_exitosos')
+              .update({
+                nombre: ped.cliente_nombre || extExist.nombre,
+                total_compras: (extExist.total_compras || 0) + (ped.total || 0),
+                numero_pedidos: (extExist.numero_pedidos || 0) + 1,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', extExist.id);
+          } else {
+            await supabase
+              .from('clientes_exitosos')
+              .insert({
+                nombre: ped.cliente_nombre,
+                telefono: telLimpio,
+                total_compras: ped.total || 0,
+                numero_pedidos: 1,
+                tenant_id: tenant
+              });
+          }
+        }
+      }
+
+      // 3. Actualizar estado local
+      setPedidos(prev => prev.map(p => p.id === ped.id ? { ...p, estado: 'completado', atendido: true } : p));
+      setSelectedPedido(prev => prev && prev.id === ped.id ? { ...prev, estado: 'completado', atendido: true } : prev);
+
+      showToast('Pago verificado y aprobado exitosamente ✓', 'success');
+    } catch (err: any) {
+      console.error(err);
+      showToast('Error al procesar la aprobación: ' + err.message, 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -206,11 +276,11 @@ export default function SuperAdmin() {
   }, [leads, tenantFilter]);
 
   const interesadosFiltrados = useMemo(() => {
-    return pedidos.filter(p => !p.atendido && (tenantFilter === 'all' || p.tenant_id === tenantFilter));
+    return pedidos.filter(p => (p.estado === 'pendiente' || p.estado === 'atendido' || !p.estado) && (tenantFilter === 'all' || p.tenant_id === tenantFilter));
   }, [pedidos, tenantFilter]);
 
   const clientesFiltrados = useMemo(() => {
-    return pedidos.filter(p => p.atendido && (tenantFilter === 'all' || p.tenant_id === tenantFilter));
+    return pedidos.filter(p => p.estado === 'completado' && (tenantFilter === 'all' || p.tenant_id === tenantFilter));
   }, [pedidos, tenantFilter]);
 
 
@@ -815,33 +885,10 @@ export default function SuperAdmin() {
               </span>
             </div>
 
-            {/* Botón de Atención Maestra */}
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.5rem' }}>
-              {!selectedPedido.atendido ? (
-                <button
-                  style={{ 
-                    flex: 1, 
-                    padding: '0.85rem 1rem', 
-                    background: '#10b981', 
-                    color: 'white', 
-                    border: 'none', 
-                    borderRadius: '12px', 
-                    cursor: 'pointer', 
-                    fontWeight: 700, 
-                    fontSize: '0.95rem', 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    gap: '0.5rem',
-                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)'
-                  }}
-                  onClick={() => handleAtenderPedido(selectedPedido)}
-                >
-                  <CheckCircle size={16} /> Marcar como Atendido
-                </button>
-              ) : (
+            {/* Botón de Atención Maestra y Verificación de Pago */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1.5rem' }}>
+              {selectedPedido.estado === 'completado' ? (
                 <div style={{ 
-                  flex: 1, 
                   padding: '0.85rem 1rem', 
                   background: '#f0fdf4', 
                   color: '#15803d', 
@@ -851,8 +898,81 @@ export default function SuperAdmin() {
                   textAlign: 'center',
                   fontSize: '0.95rem'
                 }}>
-                  ✓ Este pedido ya ha sido atendido
+                  ✓ Pago Aprobado y Completado
                 </div>
+              ) : selectedPedido.pantallazo_url ? (
+                <>
+                  <div style={{ 
+                    padding: '0.6rem 1rem', 
+                    background: '#e0f2fe', 
+                    color: '#0369a1', 
+                    border: '1px solid #bae6fd', 
+                    borderRadius: '10px', 
+                    fontWeight: 700, 
+                    fontSize: '0.82rem',
+                    textAlign: 'center'
+                  }}>
+                    Comprobante de pago subido.
+                  </div>
+                  <button
+                    style={{ 
+                      padding: '0.85rem 1rem', 
+                      background: '#10b981', 
+                      color: 'white', 
+                      border: 'none', 
+                      borderRadius: '12px', 
+                      cursor: 'pointer', 
+                      fontWeight: 700, 
+                      fontSize: '0.95rem', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      gap: '0.5rem',
+                      boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)'
+                    }}
+                    onClick={() => handleAprobarPago(selectedPedido)}
+                  >
+                    <CheckCircle size={16} /> Aprobar y completar pago
+                  </button>
+                </>
+              ) : (
+                <>
+                  {(!selectedPedido.atendido && selectedPedido.estado !== 'atendido') ? (
+                    <button
+                      style={{ 
+                        padding: '0.85rem 1rem', 
+                        background: '#6366f1', 
+                        color: 'white', 
+                        border: 'none', 
+                        borderRadius: '12px', 
+                        cursor: 'pointer', 
+                        fontWeight: 700, 
+                        fontSize: '0.95rem', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        gap: '0.5rem',
+                        boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)'
+                      }}
+                      onClick={() => handleAtenderPedido(selectedPedido)}
+                    >
+                      <CheckCircle size={16} /> Marcar como Atendido
+                    </button>
+                  ) : (
+                    <div style={{ 
+                      padding: '0.85rem 1rem', 
+                      background: '#fffbeb', 
+                      color: '#b45309', 
+                      border: '1px solid #fde68a', 
+                      borderRadius: '12px', 
+                      fontWeight: 700, 
+                      textAlign: 'center',
+                      fontSize: '0.95rem'
+                    }}>
+                      ⏳ Esperando Comprobante de Pago del Cliente
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
