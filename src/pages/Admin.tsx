@@ -13,22 +13,28 @@ type ProductFormData = {
   nombre: string;
   descripcion: string;
   precio: string;
+  precio_por_mayor: string;
+  precio_50_unidades: string;
   categoria: string;
   subcategoria: string;
   imagenes: string[];
   video_url: string;
   tallas: string;
+  estampados: string;
 };
 
 const emptyProduct: ProductFormData = {
   nombre: '',
   descripcion: '',
   precio: '',
+  precio_por_mayor: '',
+  precio_50_unidades: '',
   categoria: '',
   subcategoria: '',
   imagenes: [''],
   video_url: '',
-  tallas: ''
+  tallas: '',
+  estampados: ''
 };
 
 type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores';
@@ -39,9 +45,16 @@ export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return localStorage.getItem(`admin_auth_${getTenantId()}`) === 'true';
   });
+  const [role, setRole] = useState<'admin' | 'asesor'>(() => {
+    return (localStorage.getItem(`admin_role_${getTenantId()}`) as 'admin' | 'asesor') || 'admin';
+  });
+  const [loggedAsesorPhone, setLoggedAsesorPhone] = useState<string | null>(() => {
+    return localStorage.getItem(`admin_asesor_phone_${getTenantId()}`);
+  });
   const [pin, setPin] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>(() => {
-    return (localStorage.getItem('admin_active_tab') as TabType) || 'productos';
+    const defaultTab = (localStorage.getItem(`admin_role_${getTenantId()}`) === 'asesor') ? 'pedidos' : 'productos';
+    return (localStorage.getItem('admin_active_tab') as TabType) || defaultTab;
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -166,7 +179,12 @@ export default function Admin() {
 
   function handleLogout() {
     localStorage.removeItem(`admin_auth_${getTenantId()}`);
+    localStorage.removeItem(`admin_role_${getTenantId()}`);
+    localStorage.removeItem(`admin_asesor_id_${getTenantId()}`);
+    localStorage.removeItem(`admin_asesor_phone_${getTenantId()}`);
     setIsAuthenticated(false);
+    setRole('admin');
+    setLoggedAsesorPhone(null);
     setSelectedCompany(null);
     setPin('');
   }
@@ -300,14 +318,49 @@ export default function Admin() {
     }
   }
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (pin === SECRET_PIN) {
       localStorage.setItem(`admin_auth_${getTenantId()}`, 'true');
+      localStorage.setItem(`admin_role_${getTenantId()}`, 'admin');
+      setRole('admin');
+      setLoggedAsesorPhone(null);
       setIsAuthenticated(true);
-    } else {
-      showToast('PIN incorrecto. Intenta de nuevo.', 'error');
-      setPin('');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const tenant = getTenantId();
+      const { data: advisorMatch, error } = await supabase
+        .from('asesores')
+        .select('*')
+        .eq('tenant_id', tenant)
+        .eq('pin', pin.trim())
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (advisorMatch) {
+        localStorage.setItem(`admin_auth_${getTenantId()}`, 'true');
+        localStorage.setItem(`admin_role_${getTenantId()}`, 'asesor');
+        localStorage.setItem(`admin_asesor_id_${getTenantId()}`, advisorMatch.id);
+        localStorage.setItem(`admin_asesor_phone_${getTenantId()}`, advisorMatch.telefono);
+        setRole('asesor');
+        setLoggedAsesorPhone(advisorMatch.telefono);
+        setIsAuthenticated(true);
+        setActiveTab('pedidos');
+        showToast(`Sesión iniciada como asesor: ${advisorMatch.nombre} ✓`, 'success');
+      } else {
+        showToast('PIN incorrecto o no registrado.', 'error');
+        setPin('');
+      }
+    } catch (err: any) {
+      console.error(err);
+      showToast('Error de autenticación.', 'error');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -377,11 +430,14 @@ export default function Admin() {
       nombre: f.nombre,
       descripcion: f.descripcion,
       precio: parseFloat(f.precio),
+      precio_por_mayor: parseFloat(f.precio_por_mayor) || null,
+      precio_50_unidades: parseFloat(f.precio_50_unidades) || null,
       categoria: f.categoria,
       subcategoria: f.subcategoria || null,
       imagen_url: f.imagenes.find(u => u.trim()) || '',
       video_url: f.video_url || null,
       tallas: f.tallas || null,
+      estampados: f.estampados || null,
       tenant_id: getTenantId()
     }));
     const { error } = await supabase.from('productos').insert(newProducts);
@@ -431,7 +487,8 @@ export default function Admin() {
             tallas: findVal(['tallas', 'talla', 'sizes', 'size']),
             costo: parseFloat(findVal(['costo', 'cost'])) || 0,
             precio_por_mayor: parseFloat(findVal(['por mayor', 'mayor', 'wholesale'])) || 0,
-            precio_50_unidades: parseFloat(findVal(['50 unidades', '50unidades', 'unidades 50'])) || 0
+            precio_50_unidades: parseFloat(findVal(['50 unidades', '50unidades', 'unidades 50'])) || 0,
+            estampados: findVal(['estampados', 'estampado', 'tematica', 'tematicas', 'print', 'prints'])
           };
         });
         
@@ -510,7 +567,8 @@ export default function Admin() {
           precio_50_unidades: unidades50Val,
           imagen_url: '',
           video_url: null,
-          tallas: ''
+          tallas: '',
+          estampados: getFieldVal(['estampados', 'estampado', 'tematica', 'tematicas', 'print', 'prints'])
         };
       });
       
@@ -541,6 +599,7 @@ export default function Admin() {
       costo: p.costo || null,
       precio_por_mayor: p.precio_por_mayor || null,
       precio_50_unidades: p.precio_50_unidades || null,
+      estampados: p.estampados || null,
       tenant_id: getTenantId()
     }));
     const { error } = await supabase.from('productos').insert(newProducts);
@@ -729,12 +788,15 @@ export default function Admin() {
       nombre: editingProduct.nombre,
       descripcion: editingProduct.descripcion,
       precio: editingProduct.precio,
+      precio_por_mayor: editingProduct.precio_por_mayor || null,
+      precio_50_unidades: editingProduct.precio_50_unidades || null,
       categoria: editingProduct.categoria,
       subcategoria: editingProduct.subcategoria || null,
       imagen_url: editingProduct.imagen_url,
       imagenes_extra: editExtraImages.filter(u => u.trim()),
       video_url: editingProduct.video_url,
-      tallas: editingProduct.tallas
+      tallas: editingProduct.tallas,
+      estampados: editingProduct.estampados || null
     }).eq('id', editingProduct.id);
     setLoading(false);
     if (error) showToast('Error al actualizar', 'error');
@@ -900,7 +962,13 @@ export default function Admin() {
       });
     }
 
-    if (orderFilterAsesor !== 'todos') {
+    if (role === 'asesor' && loggedAsesorPhone) {
+      result = result.filter(p => {
+        const orderPhone = p.linea_whatsapp?.replace(/\D/g, '');
+        const advisorPhone = loggedAsesorPhone.replace(/\D/g, '');
+        return orderPhone === advisorPhone;
+      });
+    } else if (orderFilterAsesor !== 'todos') {
       result = result.filter(p => {
         const orderPhone = p.linea_whatsapp?.replace(/\D/g, '');
         const filterPhone = orderFilterAsesor.replace(/\D/g, '');
@@ -932,7 +1000,54 @@ export default function Admin() {
     });
 
     return result;
-  }, [pedidos, orderSearchQuery, orderFilterStatus, orderFilterOrigin, orderFilterAsesor, orderFilterDate, orderSortBy]);
+  }, [pedidos, orderSearchQuery, orderFilterStatus, orderFilterOrigin, orderFilterAsesor, orderFilterDate, orderSortBy, role, loggedAsesorPhone]);
+
+  // Dashboard Calculations
+  const stats = useMemo(() => {
+    // 1. Total Ventas ($ COP de pedidos completados)
+    const completados = pedidos.filter(p => p.estado === 'completado');
+    const totalVentasVal = completados.reduce((sum, p) => sum + (p.total || 0), 0);
+
+    // 2. Pedidos no resueltos (pendientes o atendidos)
+    const noResueltos = pedidos.filter(p => p.estado === 'pendiente' || p.estado === 'atendido' || !p.estado);
+
+    // 3. Ventas por origen (POS vs Catálogo)
+    const posOrders = pedidos.filter(p => p.origen === 'pos');
+    const catalogOrders = pedidos.filter(p => p.origen === 'catalogo' || !p.origen);
+
+    // 4. Pedidos por ciudad (agrupados)
+    const cityCounts: { [city: string]: number } = {};
+    pedidos.forEach(p => {
+      if (p.ciudad) {
+        const c = p.ciudad.trim().toUpperCase();
+        cityCounts[c] = (cityCounts[c] || 0) + 1;
+      }
+    });
+    const sortedCities = Object.entries(cityCounts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    // 5. Línea/Asesor que más ha vendido (completados)
+    const advisorSales: { [phone: string]: number } = {};
+    completados.forEach(p => {
+      const phone = p.linea_whatsapp || 'pos';
+      advisorSales[phone] = (advisorSales[phone] || 0) + p.total;
+    });
+    const bestAdvisor = Object.entries(advisorSales)
+      .map(([phone, total]) => ({ phone, total }))
+      .sort((a, b) => b.total - a.total)[0] || { phone: 'pos', total: 0 };
+
+    return {
+      totalVentasVal,
+      noResueltosCount: noResueltos.length,
+      posCount: posOrders.length,
+      catalogCount: catalogOrders.length,
+      sortedCities,
+      bestAdvisorPhone: bestAdvisor.phone,
+      bestAdvisorTotal: bestAdvisor.total
+    };
+  }, [pedidos]);
 
   const leadsFiltrados = useMemo(() => {
     let temp = [...leads];
@@ -1293,7 +1408,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} />
+          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -1328,19 +1443,33 @@ export default function Admin() {
                       <textarea value={editingProduct.descripcion || ''} onChange={e => setEditingProduct({ ...editingProduct, descripcion: e.target.value })} rows={3} />
                     </div>
                     <div className="form-field">
-                      <label>Precio (COP)</label>
-                      <input required type="number" step="0.01" value={editingProduct.precio} onChange={e => setEditingProduct({ ...editingProduct, precio: parseFloat(e.target.value) })} />
-                    </div>
-                    <div className="form-field">
-                      <label>Categoría</label>
-                      <select value={editingProduct.categoria} onChange={e => setEditingProduct({ ...editingProduct, categoria: e.target.value })}>
-                        {categoriasData.map(c => <option key={c.id} value={c.slug}>{c.nombre}</option>)}
-                      </select>
-                    </div>
-                    <div className="form-field full">
-                      <label>Tallas (separadas por coma)</label>
-                      <input value={editingProduct.tallas || ''} onChange={e => setEditingProduct({ ...editingProduct, tallas: e.target.value })} placeholder="Ej: S, M, L, XL" />
-                    </div>
+                       <label>Precio Detal (COP)</label>
+                       <input required type="number" step="0.01" value={editingProduct.precio} onChange={e => setEditingProduct({ ...editingProduct, precio: parseFloat(e.target.value) })} />
+                     </div>
+                     <div className="form-field">
+                       <label>Precio por Mayor (COP)</label>
+                       <input type="number" step="0.01" value={editingProduct.precio_por_mayor || ''} onChange={e => setEditingProduct({ ...editingProduct, precio_por_mayor: parseFloat(e.target.value) || undefined })} />
+                     </div>
+                     <div className="form-field">
+                       <label>Precio 50 Unidades (COP)</label>
+                       <input type="number" step="0.01" value={editingProduct.precio_50_unidades || ''} onChange={e => setEditingProduct({ ...editingProduct, precio_50_unidades: parseFloat(e.target.value) || undefined })} />
+                     </div>
+                     <div className="form-field">
+                       <label>Categoría</label>
+                       <select value={editingProduct.categoria} onChange={e => setEditingProduct({ ...editingProduct, categoria: e.target.value })}>
+                         {categoriasData.map(c => <option key={c.id} value={c.slug}>{c.nombre}</option>)}
+                       </select>
+                     </div>
+                     <div className="form-field full" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                       <div>
+                         <label>Tallas (separadas por coma)</label>
+                         <input value={editingProduct.tallas || ''} onChange={e => setEditingProduct({ ...editingProduct, tallas: e.target.value })} placeholder="Ej: S, M, L, XL" />
+                       </div>
+                       <div>
+                         <label>Estampados / Temáticas</label>
+                         <input value={editingProduct.estampados || ''} onChange={e => setEditingProduct({ ...editingProduct, estampados: e.target.value })} placeholder="Ej: Dinosaurios, Ositos, Rayas" />
+                       </div>
+                     </div>
                     <div className="form-field full">
                       <label>Foto Principal</label>
                       <div className="img-input-row">
@@ -1413,7 +1542,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} />
+          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -1499,7 +1628,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} />
+          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -1561,6 +1690,7 @@ export default function Admin() {
           configuracion={configuracion} 
           handleLogout={handleLogout} 
           onClose={() => setIsMobileMenuOpen(false)} 
+          role={role}
         />
       </aside>
 
@@ -1706,8 +1836,16 @@ export default function Admin() {
                                 <textarea value={form.descripcion} onChange={e => updateBulkForm(index, 'descripcion', e.target.value)} placeholder="Detalles del producto..." rows={2} />
                               </div>
                               <div className="form-field">
-                                <label>Precio (COP)</label>
+                                <label>Precio Detal (COP)</label>
                                 <input required type="number" step="0.01" value={form.precio} onChange={e => updateBulkForm(index, 'precio', e.target.value)} placeholder="25000" />
+                              </div>
+                              <div className="form-field">
+                                <label>Precio por Mayor (COP)</label>
+                                <input type="number" step="0.01" value={form.precio_por_mayor} onChange={e => updateBulkForm(index, 'precio_por_mayor', e.target.value)} placeholder="20000" />
+                              </div>
+                              <div className="form-field">
+                                <label>Precio 50 Unidades (COP)</label>
+                                <input type="number" step="0.01" value={form.precio_50_unidades} onChange={e => updateBulkForm(index, 'precio_50_unidades', e.target.value)} placeholder="18000" />
                               </div>
                               <div className="form-field">
                                 <label>Categoría</label>
@@ -1716,9 +1854,15 @@ export default function Admin() {
                                   {categoriasData.map(c => <option key={c.id} value={c.slug}>{c.icono} {c.nombre}</option>)}
                                 </select>
                               </div>
-                              <div className="form-field full">
-                                <label>Tallas (separadas por coma, opcional)</label>
-                                <input value={form.tallas} onChange={e => updateBulkForm(index, 'tallas', e.target.value)} placeholder="Ej: 6 Meses, 12 Meses, 18 Meses" />
+                              <div className="form-field full" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <div>
+                                  <label>Tallas (separadas por coma, opcional)</label>
+                                  <input value={form.tallas} onChange={e => updateBulkForm(index, 'tallas', e.target.value)} placeholder="Ej: S, M, L, XL" />
+                                </div>
+                                <div>
+                                  <label>Estampados / Temáticas (opcional)</label>
+                                  <input value={form.estampados} onChange={e => updateBulkForm(index, 'estampados', e.target.value)} placeholder="Ej: Dinosaurios, Ositos, Rayas" />
+                                </div>
                               </div>
                               <div className="form-field full">
                                 <label>🖼️ Imágenes del Producto</label>
@@ -2834,6 +2978,18 @@ export default function Admin() {
                         style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }}
                       />
                     </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>PIN de Acceso (4 dígitos)</label>
+                      <input
+                        type="text"
+                        required
+                        maxLength={6}
+                        placeholder="Ej: 1234"
+                        value={nuevoAsesorPin}
+                        onChange={e => setNuevoAsesorPin(e.target.value)}
+                        style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }}
+                      />
+                    </div>
                     <button
                       type="submit"
                       className="btn-primary"
@@ -2885,8 +3041,9 @@ export default function Admin() {
                         <tr style={{ borderBottom: '2px solid #f1f5f9', background: '#f8fafc' }}>
                           <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Asesor</th>
                           <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Línea WhatsApp</th>
+                          <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>PIN de Acceso</th>
                           <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Pedidos Asignados</th>
-                          <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'right' }}>Total Ventas</th>
+                          <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'right' }}>Total Ventas (Pagados)</th>
                           <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Enlace de Catálogo Exclusivo</th>
                           <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Acciones</th>
                         </tr>
@@ -2902,20 +3059,58 @@ export default function Admin() {
                             return orderPhone === advisorPhone;
                           });
 
-                          const totalVentas = advisorOrders.reduce((sum, p) => sum + (p.total || 0), 0);
+                          // RESTRICT Total Ventas ONLY to verified/completed payments
+                          const completedOrders = advisorOrders.filter(p => p.estado === 'completado');
+                          const totalVentas = completedOrders.reduce((sum, p) => sum + (p.total || 0), 0);
+
+                          const isEditing = editingAsesorId === a.id;
 
                           return (
                             <tr key={a.id} style={{ borderBottom: '1px solid #f1f5f9' }} className="table-row-hover">
-                              <td style={{ padding: '1rem', fontWeight: 700, color: '#0f172a' }}>{a.nombre}</td>
+                              <td style={{ padding: '1rem', fontWeight: 700, color: '#0f172a' }}>
+                                {isEditing ? (
+                                  <input
+                                    type="text"
+                                    value={editingAsesorNombre}
+                                    onChange={e => setEditingAsesorNombre(e.target.value)}
+                                    style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', width: '130px' }}
+                                  />
+                                ) : (
+                                  a.nombre
+                                )}
+                              </td>
                               <td style={{ padding: '1rem' }}>
-                                <a
-                                  href={`https://wa.me/${a.telefono}`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  style={{ color: '#10b981', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
-                                >
-                                  <Phone size={12} /> {a.telefono}
-                                </a>
+                                {isEditing ? (
+                                  <input
+                                    type="text"
+                                    value={editingAsesorTelefono}
+                                    onChange={e => setEditingAsesorTelefono(e.target.value)}
+                                    style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', width: '130px' }}
+                                  />
+                                ) : (
+                                  <a
+                                    href={`https://wa.me/${a.telefono}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ color: '#10b981', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                                  >
+                                    <Phone size={12} /> {a.telefono}
+                                  </a>
+                                )}
+                              </td>
+                              <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                {isEditing ? (
+                                  <input
+                                    type="text"
+                                    value={editingAsesorPin}
+                                    onChange={e => setEditingAsesorPin(e.target.value)}
+                                    style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', width: '70px', textAlign: 'center' }}
+                                  />
+                                ) : (
+                                  <span style={{ fontFamily: 'monospace', fontWeight: 600, color: '#475569', background: '#f1f5f9', padding: '0.2rem 0.5rem', borderRadius: '6px' }}>
+                                    {a.pin || '1234'}
+                                  </span>
+                                )}
                               </td>
                               <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 600, color: '#475569' }}>
                                 {advisorOrders.length}
@@ -2929,7 +3124,7 @@ export default function Admin() {
                                     type="text"
                                     readOnly
                                     value={catalogLink}
-                                    style={{ padding: '0.35rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.78rem', width: '220px', background: '#f8fafc', color: '#64748b' }}
+                                    style={{ padding: '0.35rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.78rem', width: '180px', background: '#f8fafc', color: '#64748b' }}
                                     onClick={e => (e.target as HTMLInputElement).select()}
                                   />
                                   <button
@@ -2946,14 +3141,52 @@ export default function Admin() {
                                 </div>
                               </td>
                               <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                <button
-                                  type="button"
-                                  onClick={() => handleEliminarAsesor(a.id)}
-                                  className="btn-secondary"
-                                  style={{ color: '#ef4444', borderColor: '#fee2e2', background: '#fef2f2', padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}
-                                >
-                                  <Trash2 size={12} /> Eliminar
-                                </button>
+                                <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
+                                  {isEditing ? (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleGuardarAsesorEdicion(a.id)}
+                                        className="btn-primary"
+                                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', fontWeight: 700 }}
+                                      >
+                                        Guardar
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setEditingAsesorId(null)}
+                                        className="btn-secondary"
+                                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}
+                                      >
+                                        Cancelar
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setEditingAsesorId(a.id);
+                                          setEditingAsesorNombre(a.nombre);
+                                          setEditingAsesorTelefono(a.telefono);
+                                          setEditingAsesorPin(a.pin || '1234');
+                                        }}
+                                        className="btn-secondary"
+                                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}
+                                      >
+                                        Editar
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleEliminarAsesor(a.id)}
+                                        className="btn-secondary"
+                                        style={{ color: '#ef4444', borderColor: '#fee2e2', background: '#fef2f2', padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}
+                                      >
+                                        <Trash2 size={12} />
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
                               </td>
                             </tr>
                           );
@@ -2969,32 +3202,106 @@ export default function Admin() {
           {/* ── DASHBOARD TAB ── */}
           {activeTab === 'dashboard' && (
             <>
-              <div className="metrics-row">
-                <div className="metric-card">
-                  <div className="mc-icon">📦</div>
-                  <div className="mc-label">Total Productos</div>
-                  <div className="mc-value">{productos.length}</div>
-                  <div className="mc-sub">en tu catálogo</div>
-                </div>
-                <div className="metric-card">
-                  <div className="mc-icon">🗂️</div>
-                  <div className="mc-label">Categorías</div>
-                  <div className="mc-value">{categoriasData.length}</div>
-                  <div className="mc-sub">activas en tienda</div>
-                </div>
-                <div className="metric-card">
-                  <div className="mc-icon">🎬</div>
-                  <div className="mc-label">Con Video</div>
-                  <div className="mc-value">{productos.filter(p => p.video_url).length}</div>
-                  <div className="mc-sub">productos con video</div>
-                </div>
-                <div className="metric-card">
-                  <div className="mc-icon">👕</div>
-                  <div className="mc-label">Con Tallas</div>
-                  <div className="mc-value">{productos.filter(p => p.tallas).length}</div>
-                  <div className="mc-sub">productos con tallas</div>
-                </div>
-              </div>
+               {/* Fila de Métricas Principales de Ventas */}
+               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
+                 <div className="metric-card" style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', position: 'relative', overflow: 'hidden' }}>
+                   <div style={{ position: 'absolute', right: '-10px', top: '-10px', fontSize: '5rem', opacity: 0.15 }}>💰</div>
+                   <div className="mc-label" style={{ color: 'rgba(255,255,255,0.85)' }}>Total Ventas (Comprobado)</div>
+                   <div className="mc-value" style={{ fontSize: '1.8rem', color: 'white' }}>${stats.totalVentasVal.toLocaleString()} COP</div>
+                   <div className="mc-sub" style={{ color: 'rgba(255,255,255,0.75)' }}>Únicamente pagos verificados</div>
+                 </div>
+
+                 <div className="metric-card" style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', color: 'white', border: 'none', position: 'relative', overflow: 'hidden' }}>
+                   <div style={{ position: 'absolute', right: '-10px', top: '-10px', fontSize: '5rem', opacity: 0.15 }}>⭐</div>
+                   <div className="mc-label" style={{ color: 'rgba(255,255,255,0.85)' }}>Línea / Asesor Estrella</div>
+                   <div className="mc-value" style={{ fontSize: '1.5rem', color: 'white' }}>{getAsesorNameByPhone(stats.bestAdvisorPhone)}</div>
+                   <div className="mc-sub" style={{ color: 'rgba(255,255,255,0.75)' }}>Ventas: ${stats.bestAdvisorTotal.toLocaleString()} COP</div>
+                 </div>
+
+                 <div className="metric-card" style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', border: 'none', position: 'relative', overflow: 'hidden' }}>
+                   <div style={{ position: 'absolute', right: '-10px', top: '-10px', fontSize: '5rem', opacity: 0.15 }}>⏳</div>
+                   <div className="mc-label" style={{ color: 'rgba(255,255,255,0.85)' }}>Pedidos por Atender / Pendientes</div>
+                   <div className="mc-value" style={{ fontSize: '2rem', color: 'white' }}>{stats.noResueltosCount}</div>
+                   <div className="mc-sub" style={{ color: 'rgba(255,255,255,0.75)' }}>Pendientes de pago o revisión</div>
+                 </div>
+
+                 <div className="metric-card" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', position: 'relative', overflow: 'hidden' }}>
+                   <div style={{ position: 'absolute', right: '-10px', top: '-10px', fontSize: '5rem', opacity: 0.15 }}>📦</div>
+                   <div className="mc-label" style={{ color: 'rgba(255,255,255,0.85)' }}>Total Productos</div>
+                   <div className="mc-value" style={{ fontSize: '2rem', color: 'white' }}>{productos.length}</div>
+                   <div className="mc-sub" style={{ color: 'rgba(255,255,255,0.75)' }}>{categoriasData.length} categorías activas</div>
+                 </div>
+               </div>
+
+               {/* Sección de Analítica y Gráficos Visuales */}
+               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
+                 
+                 {/* Tarjeta: Canales de Venta (POS vs Catálogo) */}
+                 <div className="admin-panel" style={{ height: '100%' }}>
+                   <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
+                     <h3 style={{ margin: 0 }}>📊 Canales de Venta</h3>
+                     <p style={{ margin: '0.1rem 0 0 0', color: '#64748b', fontSize: '0.8rem' }}>Distribución de pedidos según su procedencia</p>
+                   </div>
+                   <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                     {/* Canal Catálogo */}
+                     <div>
+                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '0.4rem' }}>
+                         <span>📱 Catálogo Digital</span>
+                         <span>{stats.catalogCount} pedidos ({pedidos.length > 0 ? Math.round((stats.catalogCount / pedidos.length) * 100) : 0}%)</span>
+                       </div>
+                       <div style={{ background: '#f1f5f9', height: '12px', borderRadius: '6px', overflow: 'hidden' }}>
+                         <div style={{ background: '#3b82f6', height: '100%', width: `${pedidos.length > 0 ? (stats.catalogCount / pedidos.length) * 100 : 0}%`, transition: 'width 1s ease-in-out' }}></div>
+                       </div>
+                     </div>
+
+                     {/* Canal POS */}
+                     <div>
+                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '0.4rem' }}>
+                         <span>💻 POS Ventas</span>
+                         <span>{stats.posCount} pedidos ({pedidos.length > 0 ? Math.round((stats.posCount / pedidos.length) * 100) : 0}%)</span>
+                       </div>
+                       <div style={{ background: '#f1f5f9', height: '12px', borderRadius: '6px', overflow: 'hidden' }}>
+                         <div style={{ background: '#10b981', height: '100%', width: `${pedidos.length > 0 ? (stats.posCount / pedidos.length) * 100 : 0}%`, transition: 'width 1s ease-in-out' }}></div>
+                       </div>
+                     </div>
+
+                     {/* Resumen Total */}
+                     <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '10px', fontSize: '0.8rem', color: '#475569', marginTop: 'auto' }}>
+                       ✨ Total pedidos registrados en base de datos: <strong>{pedidos.length}</strong>
+                     </div>
+                   </div>
+                 </div>
+
+                 {/* Tarjeta: Destinos Principales (Ciudades) */}
+                 <div className="admin-panel" style={{ height: '100%' }}>
+                   <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
+                     <h3 style={{ margin: 0 }}>📍 Ciudades con Mayor Demanda</h3>
+                     <p style={{ margin: '0.1rem 0 0 0', color: '#64748b', fontSize: '0.8rem' }}>Top 5 ciudades con más pedidos registrados</p>
+                   </div>
+                   <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                     {stats.sortedCities.length === 0 ? (
+                       <div style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem 0' }}>No hay datos de ciudades registrados todavía</div>
+                     ) : (
+                       stats.sortedCities.map((city, idx) => {
+                         const maxCount = stats.sortedCities[0]?.count || 1;
+                         const pct = Math.round((city.count / maxCount) * 100);
+                         return (
+                           <div key={idx}>
+                             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem', fontWeight: 600, color: '#0f172a', marginBottom: '0.3rem' }}>
+                               <span>{idx + 1}. {city.name}</span>
+                               <span style={{ fontWeight: 800 }}>{city.count} pedidos</span>
+                             </div>
+                             <div style={{ background: '#f1f5f9', height: '8px', borderRadius: '4px', overflow: 'hidden' }}>
+                               <div style={{ background: 'linear-gradient(90deg, #6366f1, #8b5cf6)', height: '100%', width: `${pct}%`, transition: 'width 1s ease-in-out' }}></div>
+                             </div>
+                           </div>
+                         );
+                       })
+                     )}
+                   </div>
+                 </div>
+
+               </div>
 
               <div className="admin-panel">
                 <div className="panel-header">
@@ -3721,16 +4028,18 @@ export default function Admin() {
                           <option value="pos">💻 POS</option>
                         </select>
 
-                        <select 
-                          value={orderFilterAsesor} 
-                          onChange={e => setOrderFilterAsesor(e.target.value)}
-                          style={{ padding: '0.55rem 1rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', cursor: 'pointer' }}
-                        >
-                          <option value="todos">Todos los Asesores</option>
-                          {asesores.map(a => (
-                            <option key={a.id} value={a.telefono}>👤 {a.nombre} ({a.telefono})</option>
-                          ))}
-                        </select>
+                        {role !== 'asesor' && (
+                          <select 
+                            value={orderFilterAsesor} 
+                            onChange={e => setOrderFilterAsesor(e.target.value)}
+                            style={{ padding: '0.55rem 1rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', cursor: 'pointer' }}
+                          >
+                            <option value="todos">Todos los Asesores</option>
+                            {asesores.map(a => (
+                              <option key={a.id} value={a.telefono}>👤 {a.nombre} ({a.telefono})</option>
+                            ))}
+                          </select>
+                        )}
 
                         <select 
                           value={orderSortBy} 
@@ -4502,7 +4811,7 @@ export default function Admin() {
 
 // ── SIDEBAR COMPONENT ──
 function SidebarContent({
-  activeTab, setActiveTab, productos, configuracion, handleLogout, onClose
+  activeTab, setActiveTab, productos, configuracion, handleLogout, onClose, role
 }: {
   activeTab: TabType;
   setActiveTab: (t: TabType) => void;
@@ -4510,6 +4819,7 @@ function SidebarContent({
   configuracion: Configuracion | null;
   handleLogout: () => void;
   onClose?: () => void;
+  role: 'admin' | 'asesor';
 }) {
   const [isOnline, setIsOnline] = useState(window.navigator.onLine);
 
@@ -4558,44 +4868,52 @@ function SidebarContent({
 
       <nav className="sidebar-nav" style={{ paddingTop: '0.5rem' }}>
         <div className="sidebar-nav-label">Navegación</div>
-        <button className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => handleSelectTab('dashboard')}>
-          <span className="nav-icon"><LayoutDashboard size={14} /></span> Dashboard
-          {activeTab === 'dashboard' && <span className="active-dot"></span>}
-        </button>
-         <button className={`nav-item ${activeTab === 'productos' ? 'active' : ''}`} onClick={() => handleSelectTab('productos')}>
-          <span className="nav-icon"><Package size={14} /></span> Productos
-          {activeTab === 'productos' && <span className="active-dot"></span>}
-        </button>
-        <button className={`nav-item ${activeTab === 'categorias' ? 'active' : ''}`} onClick={() => handleSelectTab('categorias')}>
-          <span className="nav-icon"><Tag size={14} /></span> Categorías
-          {activeTab === 'categorias' && <span className="active-dot"></span>}
-        </button>
+        {role !== 'asesor' && (
+          <>
+            <button className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => handleSelectTab('dashboard')}>
+              <span className="nav-icon"><LayoutDashboard size={14} /></span> Dashboard
+              {activeTab === 'dashboard' && <span className="active-dot"></span>}
+            </button>
+             <button className={`nav-item ${activeTab === 'productos' ? 'active' : ''}`} onClick={() => handleSelectTab('productos')}>
+              <span className="nav-icon"><Package size={14} /></span> Productos
+              {activeTab === 'productos' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'categorias' ? 'active' : ''}`} onClick={() => handleSelectTab('categorias')}>
+              <span className="nav-icon"><Tag size={14} /></span> Categorías
+              {activeTab === 'categorias' && <span className="active-dot"></span>}
+            </button>
+          </>
+        )}
         <button className={`nav-item ${activeTab === 'pedidos' ? 'active' : ''}`} onClick={() => handleSelectTab('pedidos')}>
           <span className="nav-icon"><ShoppingBag size={14} /></span> Pedidos
           {activeTab === 'pedidos' && <span className="active-dot"></span>}
         </button>
-        <button className={`nav-item ${activeTab === 'clientes' ? 'active' : ''}`} onClick={() => handleSelectTab('clientes')}>
-          <span className="nav-icon"><User size={14} /></span> Clientes
-          {activeTab === 'clientes' && <span className="active-dot"></span>}
-        </button>
-        <button className={`nav-item ${activeTab === 'asesores' ? 'active' : ''}`} onClick={() => handleSelectTab('asesores')}>
-          <span className="nav-icon"><Users size={14} /></span> Asesores
-          {activeTab === 'asesores' && <span className="active-dot"></span>}
-        </button>
-        {getTenantId() !== 'indisutex' && (
-          <button className={`nav-item ${activeTab === 'pos' ? 'active' : ''}`} onClick={() => handleSelectTab('pos')}>
-            <span className="nav-icon"><Calculator size={14} /></span> POS Ventas
-            {activeTab === 'pos' && <span className="active-dot"></span>}
-          </button>
+        {role !== 'asesor' && (
+          <>
+            <button className={`nav-item ${activeTab === 'clientes' ? 'active' : ''}`} onClick={() => handleSelectTab('clientes')}>
+              <span className="nav-icon"><User size={14} /></span> Clientes
+              {activeTab === 'clientes' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'asesores' ? 'active' : ''}`} onClick={() => handleSelectTab('asesores')}>
+              <span className="nav-icon"><Users size={14} /></span> Asesores
+              {activeTab === 'asesores' && <span className="active-dot"></span>}
+            </button>
+            {getTenantId() !== 'indisutex' && (
+              <button className={`nav-item ${activeTab === 'pos' ? 'active' : ''}`} onClick={() => handleSelectTab('pos')}>
+                <span className="nav-icon"><Calculator size={14} /></span> POS Ventas
+                {activeTab === 'pos' && <span className="active-dot"></span>}
+              </button>
+            )}
+            <button className={`nav-item ${activeTab === 'siigo' ? 'active' : ''}`} onClick={() => handleSelectTab('siigo')}>
+              <span className="nav-icon"><Code size={14} /></span> Desarrollador
+              {activeTab === 'siigo' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'config' ? 'active' : ''}`} onClick={() => handleSelectTab('config')}>
+              <span className="nav-icon"><Settings size={14} /></span> Configuración
+              {activeTab === 'config' && <span className="active-dot"></span>}
+            </button>
+          </>
         )}
-        <button className={`nav-item ${activeTab === 'siigo' ? 'active' : ''}`} onClick={() => handleSelectTab('siigo')}>
-          <span className="nav-icon"><Code size={14} /></span> Desarrollador
-          {activeTab === 'siigo' && <span className="active-dot"></span>}
-        </button>
-        <button className={`nav-item ${activeTab === 'config' ? 'active' : ''}`} onClick={() => handleSelectTab('config')}>
-          <span className="nav-icon"><Settings size={14} /></span> Configuración
-          {activeTab === 'config' && <span className="active-dot"></span>}
-        </button>
       </nav>
 
       <div className="sidebar-storage-stats">
