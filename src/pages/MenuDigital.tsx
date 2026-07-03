@@ -39,8 +39,24 @@ export default function MenuDigital() {
   }, []);
   
   useEffect(() => {
-    if (configuracion?.nombre_negocio) {
-      document.title = configuracion.nombre_negocio;
+    if (configuracion) {
+      if (configuracion.nombre_negocio) {
+        document.title = configuracion.nombre_negocio;
+      } else {
+        document.title = 'Catálogo Digital';
+      }
+      
+      if (configuracion.color_primario) {
+        document.documentElement.style.setProperty('--primary', configuracion.color_primario);
+        document.documentElement.style.setProperty('--primary-color', configuracion.color_primario);
+        const hex = configuracion.color_primario.replace('#', '');
+        if (hex.length === 6) {
+          const r = parseInt(hex.substring(0, 2), 16);
+          const g = parseInt(hex.substring(2, 4), 16);
+          const b = parseInt(hex.substring(4, 6), 16);
+          document.documentElement.style.setProperty('--primary-rgb', `${r}, ${g}, ${b}`);
+        }
+      }
     } else {
       document.title = 'Catálogo Digital';
     }

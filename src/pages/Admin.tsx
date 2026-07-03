@@ -100,6 +100,7 @@ export default function Admin() {
   // Filtros y Ordenamiento para la pestaña de Pedidos
   const [orderFilterStatus, setOrderFilterStatus] = useState<string>('todos');
   const [orderSearchQuery, setOrderSearchQuery] = useState<string>('');
+  const [orderFilterDate, setOrderFilterDate] = useState<string>('');
   const [orderSortBy, setOrderSortBy] = useState<string>('date_desc');
 
   useEffect(() => {
@@ -553,6 +554,53 @@ export default function Admin() {
       }));
   }, [productos]);
 
+  const filteredPedidos = useMemo(() => {
+    let result = [...pedidos];
+
+    if (orderSearchQuery) {
+      const q = orderSearchQuery.toLowerCase().trim();
+      result = result.filter(p => 
+        (p.cliente_nombre || '').toLowerCase().includes(q) ||
+        (p.cliente_telefono || '').toLowerCase().includes(q) ||
+        (p.ciudad || '').toLowerCase().includes(q) ||
+        (p.direccion || '').toLowerCase().includes(q)
+      );
+    }
+
+    if (orderFilterStatus !== 'todos') {
+      if (orderFilterStatus === 'comprobante') {
+        result = result.filter(p => !!p.pantallazo_url);
+      } else if (orderFilterStatus === 'esperando_pago') {
+        result = result.filter(p => !p.pantallazo_url);
+      }
+    }
+
+    if (orderFilterDate) {
+      result = result.filter(p => {
+        const d = new Date(p.created_at).toISOString().split('T')[0];
+        return d === orderFilterDate;
+      });
+    }
+
+    result.sort((a, b) => {
+      if (orderSortBy === 'date_desc') {
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      }
+      if (orderSortBy === 'date_asc') {
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      }
+      if (orderSortBy === 'total_desc') {
+        return b.total - a.total;
+      }
+      if (orderSortBy === 'total_asc') {
+        return a.total - b.total;
+      }
+      return 0;
+    });
+
+    return result;
+  }, [pedidos, orderSearchQuery, orderFilterStatus, orderFilterDate, orderSortBy]);
+
   async function handleEliminarDuplicados(nombre: string) {
     try {
       setCleaningDuplicates(true);
@@ -581,6 +629,37 @@ export default function Admin() {
       showToast('Error al eliminar duplicados', 'error');
     } finally {
       setCleaningDuplicates(false);
+    }
+  }
+
+  async function handleEliminarPorFecha() {
+    if (!deleteDate) return;
+    if (!window.confirm(`¿Estás seguro de que deseas eliminar TODOS los productos creados el día ${deleteDate}? Esta acción no se puede deshacer.`)) return;
+    
+    setLoading(true);
+    try {
+      const startOfDay = `${deleteDate}T00:00:00.000Z`;
+      const endOfDay = `${deleteDate}T23:59:59.999Z`;
+      
+      const { data, error } = await supabase
+        .from('productos')
+        .delete()
+        .eq('tenant_id', getTenantId())
+        .gte('created_at', startOfDay)
+        .lte('created_at', endOfDay)
+        .select();
+        
+      if (error) {
+        showToast('Error al eliminar: ' + error.message, 'error');
+      } else {
+        showToast(`Se eliminaron ${data?.length || 0} productos creados el ${deleteDate} ✓`);
+        cargarDatos();
+        setDeleteDate('');
+      }
+    } catch (err: any) {
+      showToast('Error: ' + err.message, 'error');
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -1599,7 +1678,8 @@ export default function Admin() {
                   <form onSubmit={async (e) => {
                     e.preventDefault();
                     setLoading(true);
-                    const { error } = await supabase.from('configuracion').update({
+                    
+                    const updateData: any = {
                       nombre_negocio: configuracion.nombre_negocio,
                       whatsapp: configuracion.whatsapp,
                       logo_url: configuracion.logo_url,
@@ -1608,10 +1688,25 @@ export default function Admin() {
                       link_ganar_dinero: configuracion.link_ganar_dinero,
                       video_hero_url: configuracion.video_hero_url,
                       color_primario: configuracion.color_primario || '#6366f1'
-                    }).eq('id', configuracion.id);
+                    };
+                    
+                    let { error } = await supabase.from('configuracion').update(updateData).eq('id', configuracion.id);
+                    
+                    if (error && error.message.includes('color_primario')) {
+                      // Reintentar sin color_primario para no bloquear el guardado
+                      delete updateData.color_primario;
+                      const retryRes = await supabase.from('configuracion').update(updateData).eq('id', configuracion.id);
+                      error = retryRes.error;
+                      if (!error) {
+                        showToast('Guardado (sin color). Ejecuta el comando SQL en Supabase para activar el color primario.', 'error');
+                      }
+                    } else if (error) {
+                      showToast('Error: ' + error.message, 'error');
+                    } else {
+                      showToast('Configuración guardada ✓');
+                    }
+                    
                     setLoading(false);
-                    if (error) showToast('Error: ' + error.message, 'error');
-                    else showToast('Configuración guardada ✓');
                   }}>
                     <div className="config-section">
                       <div className="config-section-title">🏪 Datos del Negocio</div>
@@ -1642,21 +1737,17 @@ export default function Admin() {
                             />
                           </div>
                         </div>
-                        <div className="form-field full">
-                          <label>Texto Principal de la Tienda (Hero)</label>
-                          <input value={configuracion.descripcion_hero || ''} onChange={e => setConfiguracion({ ...configuracion, descripcion_hero: e.target.value })} placeholder="TIENDA & BABY" />
-                        </div>
                       </div>
                     </div>
 
                     <div className="config-section" style={{ marginTop: '1.5rem' }}>
                       <div className="config-section-title">🔗 Enlaces Especiales</div>
                       <div className="form-grid">
-                        <div className="form-field full">
+                        <div className="form-field">
                           <label>Enlace para Dropshippers (Opcional, vacío usa WhatsApp)</label>
                           <input type="url" value={configuracion.link_dropshipper || ''} onChange={e => setConfiguracion({ ...configuracion, link_dropshipper: e.target.value })} placeholder="https://..." />
                         </div>
-                        <div className="form-field full">
+                        <div className="form-field">
                           <label>Enlace "Quieres Ganar Dinero?" (Opcional, vacío usa WhatsApp)</label>
                           <input type="url" value={configuracion.link_ganar_dinero || ''} onChange={e => setConfiguracion({ ...configuracion, link_ganar_dinero: e.target.value })} placeholder="https://..." />
                         </div>
@@ -1664,58 +1755,57 @@ export default function Admin() {
                     </div>
 
                     <div className="config-section" style={{ marginTop: '1.5rem' }}>
-                      <div className="config-section-title">🖼️ Logo de la Tienda</div>
-                      <div className="form-field">
-                        <label>URL del Logo</label>
-                        <div className="img-input-row">
-                          {configuracion.logo_url && <img src={configuracion.logo_url} className="img-preview-thumb" alt="Logo" />}
-                          <input type="url" value={configuracion.logo_url || ''} onChange={e => setConfiguracion({ ...configuracion, logo_url: e.target.value })} placeholder="https://..." style={{ flex: 1 }} />
-                          <label className="btn-upload-img" style={{ flexShrink: 0, cursor: 'pointer' }}>
-                            <Upload size={12} /> Subir
-                            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (!file) return;
-                              setLoading(true);
-                              try {
-                                const compFile = await compressImage(file);
-                                const fileName = `logo_${Date.now()}.${compFile.name.split('.').pop()}`;
-                                await supabase.storage.from('archivos').upload(fileName, compFile);
-                                const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
-                                setConfiguracion({ ...configuracion, logo_url: data.publicUrl });
-                                showToast('Logo subido ✓');
-                              } catch { showToast('Error subiendo logo', 'error'); }
-                              setLoading(false);
-                            }} />
-                          </label>
+                      <div className="config-section-title">🖼️ Media del Catálogo</div>
+                      <div className="form-grid">
+                        <div className="form-field">
+                          <label>URL del Logo</label>
+                          <div className="img-input-row">
+                            {configuracion.logo_url && <img src={configuracion.logo_url} className="img-preview-thumb" alt="Logo" />}
+                            <input type="url" value={configuracion.logo_url || ''} onChange={e => setConfiguracion({ ...configuracion, logo_url: e.target.value })} placeholder="https://..." style={{ flex: 1 }} />
+                            <label className="btn-upload-img" style={{ flexShrink: 0, cursor: 'pointer' }}>
+                              <Upload size={12} /> Subir
+                              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                setLoading(true);
+                                try {
+                                  const compFile = await compressImage(file);
+                                  const fileName = `logo_${Date.now()}.${compFile.name.split('.').pop()}`;
+                                  await supabase.storage.from('archivos').upload(fileName, compFile);
+                                  const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
+                                  setConfiguracion({ ...configuracion, logo_url: data.publicUrl });
+                                  showToast('Logo subido ✓');
+                                } catch { showToast('Error subiendo logo', 'error'); }
+                                setLoading(false);
+                              }} />
+                            </label>
+                          </div>
                         </div>
-                      </div>
-                    </div>
 
-                    <div className="config-section" style={{ marginTop: '1.5rem' }}>
-                      <div className="config-section-title">📹 Video de Portada (Hero Section)</div>
-                      <div className="form-field">
-                        <label>Subir Video de Fondo (.mp4 / .webm)</label>
-                        <div className="img-input-row">
-                          {configuracion.video_hero_url && (
-                            <video src={configuracion.video_hero_url} muted style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover', background: '#0f172a' }} />
-                          )}
-                          <input type="url" value={configuracion.video_hero_url || ''} onChange={e => setConfiguracion({ ...configuracion, video_hero_url: e.target.value })} placeholder="https://..." style={{ flex: 1 }} />
-                          <label className="btn-upload-img" style={{ flexShrink: 0, cursor: 'pointer' }}>
-                            <Upload size={12} /> Subir Video
-                            <input type="file" accept="video/*" style={{ display: 'none' }} onChange={async (e) => {
-                              const file = e.target.files?.[0];
-                              if (!file) return;
-                              setLoading(true);
-                              try {
-                                const fileName = `hero_video_${Date.now()}.${file.name.split('.').pop()}`;
-                                await supabase.storage.from('archivos').upload(fileName, file);
-                                const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
-                                setConfiguracion({ ...configuracion, video_hero_url: data.publicUrl });
-                                showToast('Video de portada subido ✓');
-                              } catch { showToast('Error subiendo video', 'error'); }
-                              setLoading(false);
-                            }} />
-                          </label>
+                        <div className="form-field">
+                          <label>Video de Portada (Hero Section)</label>
+                          <div className="img-input-row">
+                            {configuracion.video_hero_url && (
+                              <video src={configuracion.video_hero_url} muted style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover', background: '#0f172a' }} />
+                            )}
+                            <input type="url" value={configuracion.video_hero_url || ''} onChange={e => setConfiguracion({ ...configuracion, video_hero_url: e.target.value })} placeholder="https://..." style={{ flex: 1 }} />
+                            <label className="btn-upload-img" style={{ flexShrink: 0, cursor: 'pointer' }}>
+                              <Upload size={12} /> Subir Video
+                              <input type="file" accept="video/*" style={{ display: 'none' }} onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                setLoading(true);
+                                try {
+                                  const fileName = `hero_video_${Date.now()}.${file.name.split('.').pop()}`;
+                                  await supabase.storage.from('archivos').upload(fileName, file);
+                                  const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
+                                  setConfiguracion({ ...configuracion, video_hero_url: data.publicUrl });
+                                  showToast('Video de portada subido ✓');
+                                } catch { showToast('Error subiendo video', 'error'); }
+                                setLoading(false);
+                              }} />
+                            </label>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -2097,23 +2187,80 @@ export default function Admin() {
                     <p style={{ marginTop: '1rem' }}>No hay pedidos registrados todavía</p>
                   </div>
                 ) : (
-                  <div style={{ overflowX: 'auto', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', textAlign: 'left' }}>
-                      <thead>
-                        <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b', fontWeight: 600 }}>
-                          <th style={{ padding: '1rem' }}>Fecha</th>
-                          <th style={{ padding: '1rem' }}>Cliente</th>
-                          <th style={{ padding: '1rem' }}>Teléfono</th>
-                          <th style={{ padding: '1rem' }}>Dirección</th>
-                          <th style={{ padding: '1rem' }}>Productos</th>
-                          <th style={{ padding: '1rem' }}>Línea Receptora</th>
-                          <th style={{ padding: '1rem' }}>Estado de Pago</th>
-                          <th style={{ padding: '1rem' }}>Total</th>
-                          <th style={{ padding: '1rem', textAlign: 'center' }}>Acción</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {pedidos.map((ped) => (
+                  <>
+                    {/* Barra de Filtros y Búsqueda */}
+                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                      <div className="search-input-container" style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 1, minWidth: '220px' }}>
+                        <span style={{ position: 'absolute', left: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center' }}>
+                          <Search size={15} />
+                        </span>
+                        <input
+                          className="search-bar"
+                          style={{ width: '100%', padding: '0.55rem 1rem 0.55rem 2.25rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', margin: 0 }}
+                          placeholder="Buscar por cliente, teléfono o ciudad..."
+                          value={orderSearchQuery}
+                          onChange={e => setOrderSearchQuery(e.target.value)}
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+                          <input 
+                            type="date"
+                            value={orderFilterDate}
+                            onChange={e => setOrderFilterDate(e.target.value)}
+                            style={{ padding: '0.55rem 0.8rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', cursor: 'pointer' }}
+                          />
+                          {orderFilterDate && (
+                            <button 
+                              onClick={() => setOrderFilterDate('')}
+                              style={{ padding: '0.55rem 0.85rem', borderRadius: '10px', border: '1px solid #fca5a5', background: '#fee2e2', color: '#b91c1c', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}
+                            >
+                              Limpiar
+                            </button>
+                          )}
+                        </div>
+
+                        <select 
+                          value={orderFilterStatus} 
+                          onChange={e => setOrderFilterStatus(e.target.value)}
+                          style={{ padding: '0.55rem 1rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', cursor: 'pointer' }}
+                        >
+                          <option value="todos">Todos los Pagos</option>
+                          <option value="comprobante">Con Comprobante</option>
+                          <option value="esperando_pago">Esperando Pago</option>
+                        </select>
+
+                        <select 
+                          value={orderSortBy} 
+                          onChange={e => setOrderSortBy(e.target.value)}
+                          style={{ padding: '0.55rem 1rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', cursor: 'pointer' }}
+                        >
+                          <option value="date_desc">Más recientes primero</option>
+                          <option value="date_asc">Más antiguos primero</option>
+                          <option value="total_desc">Mayor valor</option>
+                          <option value="total_asc">Menor valor</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div style={{ overflowX: 'auto', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', textAlign: 'left' }}>
+                        <thead>
+                          <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b', fontWeight: 600 }}>
+                            <th style={{ padding: '1rem' }}>Fecha</th>
+                            <th style={{ padding: '1rem' }}>Cliente</th>
+                            <th style={{ padding: '1rem' }}>Teléfono</th>
+                            <th style={{ padding: '1rem' }}>Dirección</th>
+                            <th style={{ padding: '1rem' }}>Productos</th>
+                            <th style={{ padding: '1rem' }}>Línea Receptora</th>
+                            <th style={{ padding: '1rem' }}>Estado de Pago</th>
+                            <th style={{ padding: '1rem' }}>Total</th>
+                            <th style={{ padding: '1rem', textAlign: 'center' }}>Acción</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredPedidos.map((ped) => (
                           <tr key={ped.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                             <td style={{ padding: '1rem', color: '#64748b', verticalAlign: 'middle' }}>
                               {new Date(ped.created_at).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}
@@ -2181,6 +2328,7 @@ export default function Admin() {
                       </tbody>
                     </table>
                   </div>
+                  </>
                 )}
               </div>
             </div>
@@ -2356,6 +2504,31 @@ export default function Admin() {
                 </div>
               </div>
 
+              {/* Sección 3: Eliminar por Fecha de Creación */}
+              <div style={{ background: '#fffbeb', padding: '1.5rem', borderRadius: '12px', border: '1px solid #fef3c7' }}>
+                <h4 style={{ margin: '0 0 0.5rem 0', color: '#b45309', fontWeight: 800, textAlign: 'left' }}>📅 Eliminar Productos por Fecha de Creación</h4>
+                <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: '#78350f', textAlign: 'left' }}>
+                  Esta acción eliminará todos los productos del catálogo que fueron subidos/creados en el día seleccionado. Ideal para deshacer importaciones erróneas.
+                </p>
+
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <input 
+                    type="date" 
+                    value={deleteDate}
+                    onChange={e => setDeleteDate(e.target.value)}
+                    style={{ padding: '0.65rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', background: 'white' }}
+                  />
+                  <button 
+                    className="btn-danger"
+                    disabled={!deleteDate || loading}
+                    onClick={handleEliminarPorFecha}
+                    style={{ padding: '0.65rem 1.25rem', fontSize: '0.85rem', fontWeight: 700, borderRadius: '8px', cursor: 'pointer', background: '#d97706', border: 'none', color: 'white', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                  >
+                    🗑️ Eliminar Productos de esta Fecha
+                  </button>
+                </div>
+              </div>
+
               {/* Sección 2: Vaciar Catálogo */}
               <div style={{ background: '#fef2f2', padding: '1.5rem', borderRadius: '12px', border: '1px solid #fee2e2' }}>
                 <h4 style={{ margin: '0 0 0.5rem 0', color: '#991b1b', fontWeight: 800 }}>🚨 Acción Crítica: Vaciar Catálogo</h4>
@@ -2499,7 +2672,7 @@ function SidebarContent({
           target="_blank" 
           rel="noopener noreferrer"
           className="btn-primary" 
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', width: '100%', padding: '0.8rem', borderRadius: '8px', textDecoration: 'none', background: '#0ea5e9' }}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', width: '100%', padding: '0.8rem', borderRadius: '8px', textDecoration: 'none', background: 'var(--primary-color, #6366f1)' }}
         >
           <Eye size={16} /> Ver Catálogo
         </a>

@@ -716,7 +716,7 @@ body {
   font-family: 'Outfit', sans-serif;
   font-size: 1.1rem;
   font-weight: 800;
-  color: #6366f1;
+  color: var(--primary-color, #6366f1);
   margin: 0;
 }
 
@@ -764,8 +764,8 @@ body {
 .form-group input:focus, 
 .form-group select:focus, 
 .form-group textarea:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08);
+  border-color: var(--primary-color, #6366f1);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb, 99, 102, 241), 0.08);
 }
 
 /* Tables */
@@ -903,8 +903,8 @@ body {
 .form-field input:focus,
 .form-field select:focus,
 .form-field textarea:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.08);
+  border-color: var(--primary-color, #6366f1);
+  box-shadow: 0 0 0 3px rgba(var(--primary-rgb, 99, 102, 241), 0.08);
 }
 
 /* Image Upload Preview and Input Row */
@@ -974,8 +974,8 @@ body {
 }
 
 .company-btn.selected {
-  border-color: #6366f1;
-  background: rgba(99, 102, 241, 0.04);
+  border-color: var(--primary-color, #6366f1);
+  background: rgba(var(--primary-rgb, 99, 102, 241), 0.04);
 }
 
 /* Bulk Forms (Excel/Manual Multi-Add) */
