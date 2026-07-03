@@ -361,4 +361,192 @@ export class SiigoService {
       }
     }
   }
+
+  /**
+   * Crea una factura de venta (Invoice) en Siigo Nube para un pedido confirmado
+   */
+  public static async createSiigoInvoice(
+    tenantId: string,
+    order: any,
+    credentials: SiigoCredentials,
+    onProgress: (message: string) => void
+  ): Promise<any> {
+    onProgress('Autenticando con Siigo Nube...');
+    const token = await this.authenticate(credentials);
+
+    // 1. Obtener Tipo de Documento FV (Factura de Venta) activo
+    onProgress('Consultando tipos de comprobante de venta (FV)...');
+    const docRes = await fetch(`${this.BASE_URL}/document-types?type=FV`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Partner-Id': 'indisutex'
+      }
+    });
+
+    if (!docRes.ok) throw new Error('No se pudieron consultar los tipos de comprobante en Siigo.');
+    const docTypes = await docRes.json();
+    const activeDoc = docTypes.find((d: any) => d.active === true);
+    if (!activeDoc) throw new Error('No se encontró ningún tipo de comprobante FV activo en tu Siigo.');
+    onProgress(`Comprobante FV a usar: ${activeDoc.name} (ID: ${activeDoc.id})`);
+
+    // 2. Obtener vendedor (Vendedor por defecto) activo
+    onProgress('Consultando usuarios/vendedores activos...');
+    const usersRes = await fetch(`${this.BASE_URL}/users`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Partner-Id': 'indisutex'
+      }
+    });
+    
+    let sellerId = 0;
+    if (usersRes.ok) {
+      const users = await usersRes.json();
+      const activeSeller = users.results?.find((u: any) => u.active === true);
+      if (activeSeller) {
+        sellerId = activeSeller.id;
+      }
+    }
+    onProgress(`Vendedor asignado: ID ${sellerId || 'Predeterminado'}`);
+
+    // 3. Obtener métodos de pago activos en Siigo
+    onProgress('Consultando formas de pago habilitadas...');
+    const paymentRes = await fetch(`${this.BASE_URL}/payment-types`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Partner-Id': 'indisutex'
+      }
+    });
+
+    if (!paymentRes.ok) throw new Error('No se pudieron consultar los métodos de pago en Siigo.');
+    const paymentsList = await paymentRes.json();
+    const activePayment = paymentsList.find((p: any) => p.active === true);
+    if (!activePayment) throw new Error('No hay métodos de pago activos en tu Siigo Nube.');
+    onProgress(`Forma de pago asignada: ${activePayment.name} (ID: ${activePayment.id})`);
+
+    // 4. Buscar o crear cliente
+    const rawPhone = (order.cliente_telefono || '').replace(/\D/g, '');
+    const clientIdent = rawPhone || '222222222222'; // fallback a Consumidor Final de Colombia si no hay teléfono
+    onProgress(`Buscando cliente con identificación/cédula: ${clientIdent}...`);
+
+    const customerCheckRes = await fetch(`${this.BASE_URL}/customers?identification=${clientIdent}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Partner-Id': 'indisutex'
+      }
+    });
+
+    let customerExists = false;
+    if (customerCheckRes.ok) {
+      const checkData = await customerCheckRes.json();
+      if (checkData.results && checkData.results.length > 0) {
+        customerExists = true;
+      }
+    }
+
+    if (!customerExists && clientIdent !== '222222222222') {
+      onProgress(`Creando cliente nuevo: ${order.cliente_nombre} en Siigo...`);
+      const createCustRes = await fetch(`${this.BASE_URL}/customers`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Partner-Id': 'indisutex'
+        },
+        body: JSON.stringify({
+          person_type: 'Person',
+          id_type: '13', // Cédula de ciudadanía
+          identification: clientIdent,
+          name: [order.cliente_nombre || 'Cliente Genérico', ''],
+          address: {
+            address: order.direccion || 'Dirección de Entrega',
+            city: {
+              country_code: 'Co',
+              state_code: '76', // Valle
+              city_code: '76001' // Cali
+            }
+          },
+          phones: [{
+            number: clientIdent
+          }],
+          contacts: [{
+            first_name: order.cliente_nombre || 'Cliente',
+            last_name: 'Genérico',
+            email: 'correo@cliente.com'
+          }]
+        })
+      });
+
+      if (!createCustRes.ok) {
+        onProgress('⚠️ No se pudo crear el cliente específico. Se usará Consumidor Final (222222222222).');
+      } else {
+        onProgress(`✅ Cliente creado con éxito.`);
+      }
+    } else {
+      onProgress(`Cliente verificado en Siigo.`);
+    }
+
+    // 5. Estructurar los ítems de la factura
+    const invoiceItems = (order.productos || []).map((p: any) => ({
+      code: p.referencia || '',
+      description: p.nombre || '',
+      quantity: p.cantidad || 1,
+      price: p.precio || 0
+    }));
+
+    if (invoiceItems.length === 0 || invoiceItems.some((item: any) => !item.code)) {
+      throw new Error('El pedido contiene productos sin código de referencia de Siigo.');
+    }
+
+    // 6. Enviar la Factura a Siigo Nube
+    const today = new Date().toISOString().split('T')[0];
+    const invoicePayload = {
+      document: {
+        id: activeDoc.id
+      },
+      date: today,
+      customer: {
+        identification: customerExists ? clientIdent : '222222222222',
+        branch_office: 0
+      },
+      seller: sellerId,
+      items: invoiceItems,
+      payments: [
+        {
+          id: activeDoc.id === activePayment.id ? activePayment.id + 1 : activePayment.id, // Evitar colisión si IDs coinciden
+          id_type: activePayment.id,
+          value: order.total,
+          due_date: today
+        }
+      ]
+    };
+
+    onProgress('Enviando Factura de Venta a Siigo Nube...');
+    const invoiceRes = await fetch(`${this.BASE_URL}/invoices`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Partner-Id': 'indisutex'
+      },
+      body: JSON.stringify(invoicePayload)
+    });
+
+    if (!invoiceRes.ok) {
+      const errData = await invoiceRes.json().catch(() => ({}));
+      const errMsg = errData.message || (errData.errors && errData.errors[0]?.message) || 'Error desconocido al facturar';
+      throw new Error(`Error de Siigo al facturar: ${errMsg}`);
+    }
+
+    const invoiceData = await invoiceRes.json();
+    onProgress(`✅ ¡Factura creada exitosamente en Siigo! Número: ${invoiceData.number}`);
+    return invoiceData;
+  }
 }

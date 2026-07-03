@@ -76,6 +76,48 @@ export default function MenuDigital() {
     direccion: '',
     ciudad: ''
   });
+  const [leadId, setLeadId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!formData.nombre && !formData.telefono) return;
+
+    const delayDebounceFn = setTimeout(async () => {
+      try {
+        const tenant = getTenantId();
+        if (leadId) {
+          await supabase
+            .from('leads')
+            .update({
+              nombre: formData.nombre,
+              telefono: formData.telefono,
+              ciudad: formData.ciudad,
+              estado: 'abandonado'
+            })
+            .eq('id', leadId);
+        } else {
+          const { data, error } = await supabase
+            .from('leads')
+            .insert({
+              nombre: formData.nombre,
+              telefono: formData.telefono,
+              ciudad: formData.ciudad,
+              tenant_id: tenant,
+              estado: 'abandonado'
+            })
+            .select('id')
+            .single();
+
+          if (!error && data) {
+            setLeadId(data.id);
+          }
+        }
+      } catch (err) {
+        console.error('Error saving draft lead:', err);
+      }
+    }, 1500); // 1.5s debounce
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [formData.nombre, formData.telefono, formData.ciudad]);
 
   const { items, addToCart, removeFromCart, updateQuantity, total, clearCart } = useCart();
 
@@ -196,6 +238,11 @@ export default function MenuDigital() {
         linea_whatsapp: numeroWhatsApp,
         tenant_id: getTenantId()
       });
+
+      if (leadId) {
+        await supabase.from('leads').update({ estado: 'completado' }).eq('id', leadId);
+        setLeadId(null);
+      }
     } catch (dbErr) {
       console.error('Error al registrar pedido en base de datos:', dbErr);
     }

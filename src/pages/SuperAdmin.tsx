@@ -24,6 +24,8 @@ export default function SuperAdmin() {
   // Modal de Detalle
   const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
   const [pagoModalUrl, setPagoModalUrl] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'dashboard' | 'crm'>('dashboard');
+  const [leads, setLeads] = useState<any[]>([]);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -50,6 +52,17 @@ export default function SuperAdmin() {
 
       if (dataProductos && !errorProductos) {
         setProductos(dataProductos as Producto[]);
+      }
+
+      // 3. Cargar Leads (CRM - Carts Abandonados)
+      const { data: dataLeads, error: errorLeads } = await supabase
+        .from('leads')
+        .select('*')
+        .eq('estado', 'abandonado')
+        .order('created_at', { ascending: false });
+
+      if (dataLeads && !errorLeads) {
+        setLeads(dataLeads);
       }
     } catch (err) {
       console.error(err);
@@ -187,6 +200,19 @@ export default function SuperAdmin() {
       .slice(0, 5);
   }, [pedidosFiltrados]);
 
+  // --- CRM LEADS FILTERS ---
+  const leadsFiltrados = useMemo(() => {
+    return leads.filter(l => tenantFilter === 'all' || l.tenant_id === tenantFilter);
+  }, [leads, tenantFilter]);
+
+  const interesadosFiltrados = useMemo(() => {
+    return pedidos.filter(p => !p.atendido && (tenantFilter === 'all' || p.tenant_id === tenantFilter));
+  }, [pedidos, tenantFilter]);
+
+  const clientesFiltrados = useMemo(() => {
+    return pedidos.filter(p => p.atendido && (tenantFilter === 'all' || p.tenant_id === tenantFilter));
+  }, [pedidos, tenantFilter]);
+
 
   if (!isAuthenticated) {
     return (
@@ -270,6 +296,47 @@ export default function SuperAdmin() {
         </div>
       </header>
 
+      <div className="super-tabs" style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid #e2e8f0', padding: '0 2rem 1rem 2rem', marginBottom: '1.5rem', marginTop: '1rem' }}>
+        <button 
+          className={`super-tab-btn ${viewMode === 'dashboard' ? 'active' : ''}`}
+          onClick={() => setViewMode('dashboard')}
+          style={{
+            padding: '0.6rem 1.2rem',
+            borderRadius: '8px',
+            border: 'none',
+            fontWeight: 700,
+            cursor: 'pointer',
+            background: viewMode === 'dashboard' ? '#0ea5e9' : 'transparent',
+            color: viewMode === 'dashboard' ? 'white' : '#64748b',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            fontSize: '0.85rem'
+          }}
+        >
+          <Activity size={16} /> Panel de Control
+        </button>
+        <button 
+          className={`super-tab-btn ${viewMode === 'crm' ? 'active' : ''}`}
+          onClick={() => setViewMode('crm')}
+          style={{
+            padding: '0.6rem 1.2rem',
+            borderRadius: '8px',
+            border: 'none',
+            fontWeight: 700,
+            cursor: 'pointer',
+            background: viewMode === 'crm' ? '#0ea5e9' : 'transparent',
+            color: viewMode === 'crm' ? 'white' : '#64748b',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            fontSize: '0.85rem'
+          }}
+        >
+          📊 CRM Kanban
+        </button>
+      </div>
+
       <main className="super-content">
         
         {/* Barra de Filtros */}
@@ -294,193 +361,295 @@ export default function SuperAdmin() {
               </select>
             </div>
           </div>
-          
-          <div style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 500 }}>
-            Mostrando {pedidosFiltrados.length} de {pedidos.length} pedidos
-          </div>
         </div>
 
-        {/* Métricas Globales */}
-        <div className="super-metrics-grid">
-          <div className="super-metric-card">
-            <div className="super-metric-icon blue">
-              <TrendingUp size={24} />
-            </div>
-            <div className="super-metric-content">
-              <h4>Ventas Filtradas</h4>
-              <p className="value">${stats.ventas.toLocaleString()}</p>
-            </div>
-          </div>
-          <div className="super-metric-card">
-            <div className="super-metric-icon purple">
-              <Package size={24} />
-            </div>
-            <div className="super-metric-content">
-              <h4>Pedidos</h4>
-              <p className="value">{stats.total}</p>
-            </div>
-          </div>
-          <div className="super-metric-card">
-            <div className="super-metric-icon green">
-              <CheckCircle size={24} />
-            </div>
-            <div className="super-metric-content">
-              <h4>Tasa de Atención</h4>
-              <p className="value">{stats.tasa}%</p>
-            </div>
-          </div>
-          <div className="super-metric-card">
-            <div className="super-metric-icon orange">
-              <Clock size={24} />
-            </div>
-            <div className="super-metric-content">
-              <h4>En Espera</h4>
-              <p className="value">{stats.pendientes}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Tablas Principales */}
-        <div className="super-panels">
-          
-          {/* Panel Flujo de Pedidos */}
-          <div className="super-panel">
-            <div className="super-panel-header">
-              <h3><Activity size={18} color="#4f46e5" /> Flujo de Pedidos Recientes</h3>
-            </div>
-            <div className="super-panel-body" style={{ padding: 0 }}>
-              <div className="super-table-container">
-                <table className="super-table interactive">
-                  <thead>
-                    <tr>
-                      <th>Fecha</th>
-                      <th>Negocio</th>
-                      <th>Cliente</th>
-                      <th>Total</th>
-                      <th>Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pedidosFiltrados.slice(0, 15).map(ped => (
-                      <tr key={ped.id} onClick={() => setSelectedPedido(ped)}>
-                        <td style={{ color: '#64748b', fontSize: '0.82rem' }}>
-                          {new Date(ped.created_at).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}
-                        </td>
-                        <td>
-                          <span className="badge-tenant">{ped.tenant_id || 'Indisutex'}</span>
-                        </td>
-                        <td style={{ fontWeight: 600 }}>{ped.cliente_nombre}</td>
-                        <td style={{ fontWeight: 700, color: '#0f172a' }}>${ped.total.toLocaleString()}</td>
-                        <td>
-                          <span className={`badge-status ${ped.atendido ? 'atendido' : 'pendiente'}`}>
-                            {ped.atendido ? '✓ Atendido' : '⏳ Espera'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                    {pedidosFiltrados.length === 0 && (
-                      <tr>
-                        <td colSpan={5} style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
-                          No se encontraron pedidos con los filtros aplicados.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+        {viewMode === 'dashboard' ? (
+          <>
+            {/* Métricas Globales */}
+            <div className="super-metrics-grid">
+              <div className="super-metric-card">
+                <div className="super-metric-icon blue">
+                  <TrendingUp size={24} />
+                </div>
+                <div className="super-metric-content">
+                  <h4>Ventas Filtradas</h4>
+                  <p className="value">${stats.ventas.toLocaleString()}</p>
+                </div>
+              </div>
+              <div className="super-metric-card">
+                <div className="super-metric-icon purple">
+                  <Package size={24} />
+                </div>
+                <div className="super-metric-content">
+                  <h4>Pedidos</h4>
+                  <p className="value">{stats.total}</p>
+                </div>
+              </div>
+              <div className="super-metric-card">
+                <div className="super-metric-icon green">
+                  <CheckCircle size={24} />
+                </div>
+                <div className="super-metric-content">
+                  <h4>Tasa de Atención</h4>
+                  <p className="value">{stats.tasa}%</p>
+                </div>
+              </div>
+              <div className="super-metric-card">
+                <div className="super-metric-icon orange">
+                  <Clock size={24} />
+                </div>
+                <div className="super-metric-content">
+                  <h4>En Espera</h4>
+                  <p className="value">{stats.pendientes}</p>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Panel Rendimiento por Negocio */}
-          <div className="super-panel">
-            <div className="super-panel-header">
-              <h3><Building size={18} color="#0ea5e9" /> Rendimiento por Negocio</h3>
-            </div>
-            <div className="super-panel-body" style={{ padding: 0 }}>
-              <div className="super-table-container">
-                <table className="super-table">
-                  <thead>
-                    <tr>
-                      <th>Negocio</th>
-                      <th>Ventas</th>
-                      <th>Catálogo</th>
-                      <th>Tasa Atención</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rendimientoNegocios.map(n => (
-                      <tr key={n.name}>
-                        <td style={{ fontWeight: 600 }}>{n.name}</td>
-                        <td style={{ color: '#059669', fontWeight: 700 }}>${n.total.toLocaleString()}</td>
-                        <td style={{ color: '#475569', fontSize: '0.85rem' }}>{n.productos} referencias</td>
-                        <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: '100px' }}>
-                            <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{n.atencionRate}%</span>
-                            <div style={{ flex: 1 }}>
-                              <div className="progress-container">
-                                <div 
-                                  className="progress-bar" 
-                                  style={{ 
-                                    width: `${n.atencionRate}%`, 
-                                    background: n.atencionRate < 50 ? '#ef4444' : n.atencionRate < 80 ? '#f59e0b' : '#10b981' 
-                                  }} 
-                                />
+            {/* Tablas Principales */}
+            <div className="super-panels">
+              {/* Panel Flujo de Pedidos */}
+              <div className="super-panel">
+                <div className="super-panel-header">
+                  <h3><Activity size={18} color="#4f46e5" /> Flujo de Pedidos Recientes</h3>
+                </div>
+                <div className="super-panel-body" style={{ padding: 0 }}>
+                  <div className="super-table-container">
+                    <table className="super-table interactive">
+                      <thead>
+                        <tr>
+                          <th>Fecha</th>
+                          <th>Negocio</th>
+                          <th>Cliente</th>
+                          <th>Total</th>
+                          <th>Estado</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {pedidosFiltrados.slice(0, 15).map(ped => (
+                          <tr key={ped.id} onClick={() => setSelectedPedido(ped)}>
+                            <td style={{ color: '#64748b', fontSize: '0.82rem' }}>
+                              {new Date(ped.created_at).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}
+                            </td>
+                            <td>
+                              <span className="badge-tenant">{ped.tenant_id || 'Indisutex'}</span>
+                            </td>
+                            <td style={{ fontWeight: 600 }}>{ped.cliente_nombre}</td>
+                            <td style={{ fontWeight: 700, color: '#0f172a' }}>${ped.total.toLocaleString()}</td>
+                            <td>
+                              <span className={`badge-status ${ped.atendido ? 'atendido' : 'pendiente'}`}>
+                                {ped.atendido ? '✓ Atendido' : '⏳ Espera'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                        {pedidosFiltrados.length === 0 && (
+                          <tr>
+                            <td colSpan={5} style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
+                              No se encontraron pedidos con los filtros aplicados.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              {/* Panel Rendimiento por Negocio */}
+              <div className="super-panel">
+                <div className="super-panel-header">
+                  <h3><Building size={18} color="#0ea5e9" /> Rendimiento por Negocio</h3>
+                </div>
+                <div className="super-panel-body" style={{ padding: 0 }}>
+                  <div className="super-table-container">
+                    <table className="super-table">
+                      <thead>
+                        <tr>
+                          <th>Negocio</th>
+                          <th>Ventas</th>
+                          <th>Catálogo</th>
+                          <th>Tasa Atención</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rendimientoNegocios.map(n => (
+                          <tr key={n.name}>
+                            <td style={{ fontWeight: 600 }}>{n.name}</td>
+                            <td style={{ color: '#059669', fontWeight: 700 }}>${n.total.toLocaleString()}</td>
+                            <td style={{ color: '#475569', fontSize: '0.85rem' }}>{n.productos} referencias</td>
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: '100px' }}>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{n.atencionRate}%</span>
+                                <div style={{ flex: 1 }}>
+                                  <div className="progress-container">
+                                    <div 
+                                      className="progress-bar" 
+                                      style={{ 
+                                        width: `${n.atencionRate}%`, 
+                                        background: n.atencionRate < 50 ? '#ef4444' : n.atencionRate < 80 ? '#f59e0b' : '#10b981' 
+                                      }} 
+                                    />
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Estadísticas de Distribución */}
+            <div className="stats-breakdown-grid">
+              {/* Ciudades con mayores ventas */}
+              <div className="super-panel">
+                <div className="super-panel-header">
+                  <h3><MapPin size={16} color="#ef4444" /> Ciudades más Activas</h3>
+                </div>
+                <div className="super-panel-body">
+                  <div className="stats-card-list">
+                    {topCiudades.map(c => (
+                      <div key={c.name} className="stats-item-row">
+                        <span className="stats-item-label">📍 {c.name}</span>
+                        <span className="stats-item-value">{c.count} pedidos (${c.total.toLocaleString()})</span>
+                      </div>
                     ))}
-                  </tbody>
-                </table>
+                    {topCiudades.length === 0 && (
+                      <p style={{ textAlign: 'center', color: '#64748b', fontSize: '0.85rem' }}>No hay registros de ciudades.</p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Líneas de WhatsApp más saturadas */}
+              <div className="super-panel">
+                <div className="super-panel-header">
+                  <h3><MessageCircle size={16} color="#10b981" /> Líneas de Asignación Frecuente</h3>
+                </div>
+                <div className="super-panel-body">
+                  <div className="stats-card-list">
+                    {topLineas.map(l => (
+                      <div key={l.name} className="stats-item-row">
+                        <span className="stats-item-label">📞 {l.name}</span>
+                        <span className="stats-item-value">{l.count} pedidos recibidos</span>
+                      </div>
+                    ))}
+                    {topLineas.length === 0 && (
+                      <p style={{ textAlign: 'center', color: '#64748b', fontSize: '0.85rem' }}>No hay líneas registradas.</p>
+                    )}
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-
-        </div>
-
-        {/* Estadísticas de Distribución */}
-        <div className="stats-breakdown-grid">
-          {/* Ciudades con mayores ventas */}
-          <div className="super-panel">
-            <div className="super-panel-header">
-              <h3><MapPin size={16} color="#ef4444" /> Ciudades más Activas</h3>
-            </div>
-            <div className="super-panel-body">
-              <div className="stats-card-list">
-                {topCiudades.map(c => (
-                  <div key={c.name} className="stats-item-row">
-                    <span className="stats-item-label">📍 {c.name}</span>
-                    <span className="stats-item-value">{c.count} pedidos (${c.total.toLocaleString()})</span>
+          </>
+        ) : (
+          <div className="super-crm-kanban" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', marginTop: '1.5rem' }}>
+            {/* Columna 1: No Interesados (Abandonos) */}
+            <div className="kanban-column" style={{ background: '#f8fafc', borderRadius: '16px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
+              <div className="kanban-column-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '2px solid #ef4444', paddingBottom: '0.5rem' }}>
+                <h3 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 800, color: '#991b1b' }}>🔴 No Interesados (Abandonos)</h3>
+                <span className="badge" style={{ background: '#fee2e2', color: '#991b1b', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700 }}>{leadsFiltrados.length}</span>
+              </div>
+              <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '70vh', overflowY: 'auto' }}>
+                {leadsFiltrados.map((lead) => (
+                  <div key={lead.id} className="kanban-card lead-card" style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1rem', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                    <div className="card-tenant-badge" style={{ background: '#f1f5f9', color: '#475569', fontSize: '0.72rem', fontWeight: 700, padding: '0.15rem 0.4rem', borderRadius: '4px', display: 'inline-block', marginBottom: '0.5rem' }}>{lead.tenant_id?.toUpperCase()}</div>
+                    <h4 style={{ margin: '0 0 0.4rem 0', fontSize: '0.95rem', fontWeight: 700 }}>👤 {lead.nombre || 'Borrador Anónimo'}</h4>
+                    <p style={{ margin: '0 0 0.25rem 0', color: '#475569', fontSize: '0.85rem' }}>📞 {lead.telefono || 'Sin número'}</p>
+                    <p style={{ margin: '0 0 0.25rem 0', color: '#475569', fontSize: '0.85rem' }}>📍 {lead.ciudad || 'No especificada'}</p>
+                    <p style={{ margin: '0 0 0.75rem 0', color: '#94a3b8', fontSize: '0.78rem' }}>📅 {new Date(lead.created_at).toLocaleDateString('es-CO', { dateStyle: 'short' })}</p>
+                    {lead.telefono && (
+                      <button 
+                        className="btn-whatsapp-retarget"
+                        style={{ width: '100%', padding: '0.55rem', background: '#25D366', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
+                        onClick={() => {
+                          const text = `¡Hola ${lead.nombre || ''}! 👋 Vimos que estabas mirando nuestro catálogo de *${lead.tenant_id.toUpperCase()}* y empezaste a llenar tus datos de envío pero no completaste el pedido. ¿Tuviste algún problema o tienes alguna duda con los productos? ¡Escríbenos y con gusto te ayudamos! 😊`;
+                          window.open(`https://wa.me/57${lead.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(text)}`, '_blank');
+                        }}
+                      >
+                        💬 WhatsApp Retargeting
+                      </button>
+                    )}
                   </div>
                 ))}
-                {topCiudades.length === 0 && (
-                  <p style={{ textAlign: 'center', color: '#64748b', fontSize: '0.85rem' }}>No hay registros de ciudades.</p>
+                {leadsFiltrados.length === 0 && (
+                  <p style={{ textAlign: 'center', color: '#64748b', fontSize: '0.85rem', padding: '1rem' }}>No hay carritos abandonados.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Columna 2: Interesados (Por Pagar) */}
+            <div className="kanban-column" style={{ background: '#f8fafc', borderRadius: '16px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
+              <div className="kanban-column-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '2px solid #f59e0b', paddingBottom: '0.5rem' }}>
+                <h3 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 800, color: '#b45309' }}>🟡 Interesados (Pendiente Pago)</h3>
+                <span className="badge" style={{ background: '#fef3c7', color: '#b45309', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700 }}>{interesadosFiltrados.length}</span>
+              </div>
+              <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '70vh', overflowY: 'auto' }}>
+                {interesadosFiltrados.map((ped) => (
+                  <div key={ped.id} className="kanban-card order-card" style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1rem', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                    <div className="card-tenant-badge" style={{ background: '#f1f5f9', color: '#475569', fontSize: '0.72rem', fontWeight: 700, padding: '0.15rem 0.4rem', borderRadius: '4px', display: 'inline-block', marginBottom: '0.5rem' }}>{ped.tenant_id?.toUpperCase()}</div>
+                    <h4 style={{ margin: '0 0 0.4rem 0', fontSize: '0.95rem', fontWeight: 700 }}>👤 {ped.cliente_nombre}</h4>
+                    <p style={{ margin: '0 0 0.25rem 0', color: '#475569', fontSize: '0.85rem' }}>📞 {ped.cliente_telefono}</p>
+                    <p style={{ margin: '0 0 0.5rem 0', color: '#0f172a', fontSize: '0.9rem', fontWeight: 700 }}>💰 Total: <span style={{ color: '#10b981' }}>${ped.total.toLocaleString()}</span></p>
+                    <div className="status" style={{ marginBottom: '0.75rem' }}>
+                      {ped.pantallazo_url ? (
+                        <span className="status-badge upload-success" style={{ background: '#d1fae5', color: '#065f46', fontSize: '0.75rem', fontWeight: 700, padding: '0.25rem 0.5rem', borderRadius: '6px', display: 'inline-block' }}>✅ Comprobante Subido</span>
+                      ) : (
+                        <span className="status-badge upload-wait" style={{ background: '#fffbeb', color: '#92400e', fontSize: '0.75rem', fontWeight: 700, padding: '0.25rem 0.5rem', borderRadius: '6px', display: 'inline-block' }}>⏳ Esperando Pago</span>
+                      )}
+                    </div>
+                    <p style={{ margin: '0 0 0.75rem 0', color: '#94a3b8', fontSize: '0.78rem' }}>📅 {new Date(ped.created_at).toLocaleDateString('es-CO', { dateStyle: 'short' })}</p>
+                    <button 
+                      className="btn-view-detail"
+                      style={{ width: '100%', padding: '0.55rem', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}
+                      onClick={() => setSelectedPedido(ped)}
+                    >
+                      🔍 Verificar Pedido
+                    </button>
+                  </div>
+                ))}
+                {interesadosFiltrados.length === 0 && (
+                  <p style={{ textAlign: 'center', color: '#64748b', fontSize: '0.85rem', padding: '1rem' }}>No hay pedidos pendientes.</p>
+                )}
+              </div>
+            </div>
+
+            {/* Columna 3: Clientes (Exitoso) */}
+            <div className="kanban-column" style={{ background: '#f8fafc', borderRadius: '16px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
+              <div className="kanban-column-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '2px solid #10b981', paddingBottom: '0.5rem' }}>
+                <h3 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 800, color: '#065f46' }}>🟢 Clientes (Venta Exitosa)</h3>
+                <span className="badge" style={{ background: '#d1fae5', color: '#065f46', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700 }}>{clientesFiltrados.length}</span>
+              </div>
+              <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '70vh', overflowY: 'auto' }}>
+                {clientesFiltrados.map((ped) => (
+                  <div key={ped.id} className="kanban-card client-card" style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1rem', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                    <div className="card-tenant-badge" style={{ background: '#f1f5f9', color: '#475569', fontSize: '0.72rem', fontWeight: 700, padding: '0.15rem 0.4rem', borderRadius: '4px', display: 'inline-block', marginBottom: '0.5rem' }}>{ped.tenant_id?.toUpperCase()}</div>
+                    <h4 style={{ margin: '0 0 0.4rem 0', fontSize: '0.95rem', fontWeight: 700 }}>👤 {ped.cliente_nombre}</h4>
+                    <p style={{ margin: '0 0 0.25rem 0', color: '#475569', fontSize: '0.85rem' }}>📞 {ped.cliente_telefono}</p>
+                    <p style={{ margin: '0 0 0.5rem 0', color: '#0f172a', fontSize: '0.9rem', fontWeight: 700 }}>💰 Facturado: <span style={{ color: '#10b981' }}>${ped.total.toLocaleString()}</span></p>
+                    <div className="status" style={{ marginBottom: '0.75rem' }}>
+                      <span className="status-badge verified" style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', fontSize: '0.75rem', fontWeight: 700, padding: '0.25rem 0.5rem', borderRadius: '6px', display: 'inline-block' }}>✓ Pago Verificado</span>
+                    </div>
+                    <p style={{ margin: '0 0 0.75rem 0', color: '#94a3b8', fontSize: '0.78rem' }}>📅 {new Date(ped.created_at).toLocaleDateString('es-CO', { dateStyle: 'short' })}</p>
+                    <button 
+                      className="btn-view-detail"
+                      style={{ width: '100%', padding: '0.55rem', background: '#475569', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}
+                      onClick={() => setSelectedPedido(ped)}
+                    >
+                      🔍 Ver Factura
+                    </button>
+                  </div>
+                ))}
+                {clientesFiltrados.length === 0 && (
+                  <p style={{ textAlign: 'center', color: '#64748b', fontSize: '0.85rem', padding: '1rem' }}>No hay ventas exitosas aún.</p>
                 )}
               </div>
             </div>
           </div>
-
-          {/* Líneas de WhatsApp más saturadas */}
-          <div className="super-panel">
-            <div className="super-panel-header">
-              <h3><MessageCircle size={16} color="#10b981" /> Líneas de Asignación Frecuente</h3>
-            </div>
-            <div className="super-panel-body">
-              <div className="stats-card-list">
-                {topLineas.map(l => (
-                  <div key={l.name} className="stats-item-row">
-                    <span className="stats-item-label">📞 {l.name}</span>
-                    <span className="stats-item-value">{l.count} pedidos recibidos</span>
-                  </div>
-                ))}
-                {topLineas.length === 0 && (
-                  <p style={{ textAlign: 'center', color: '#64748b', fontSize: '0.85rem' }}>No hay líneas registradas.</p>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+        )}
 
       </main>
 

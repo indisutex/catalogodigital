@@ -73,6 +73,10 @@ export default function Admin() {
   const [syncPending, setSyncPending] = useState<{ toCreate: any[]; toUpdate: any[] } | null>(null);
   const [showSyncConfirm, setShowSyncConfirm] = useState(false);
   const [webhookUrl, setWebhookUrl] = useState('');
+  const [showToolsModal, setShowToolsModal] = useState(false);
+  const [wipeConfirmText, setWipeConfirmText] = useState('');
+  const [cleaningDuplicates, setCleaningDuplicates] = useState(false);
+  const [wipingCatalog, setWipingCatalog] = useState(false);
 
   // States for Editing Categories & Subcategories
   const [editingCategory, setEditingCategory] = useState<Categoria | null>(null);
@@ -1160,18 +1164,27 @@ export default function Admin() {
                 /* PRODUCT LIST PANEL */
                 <div className="admin-panel">
                   <div className="panel-header">
-                  <div>
-                    <h3><Package size={16} /> Inventario ({filteredProducts.length})</h3>
-                    <p>Todos los productos publicados en tu tienda</p>
+                    <div>
+                      <h3><Package size={16} /> Inventario ({filteredProducts.length})</h3>
+                      <p>Todos los productos publicados en tu tienda</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                      <button 
+                        className="btn-secondary" 
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', border: '1px solid #fca5a5', color: '#b91c1c', background: '#fee2e2', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer' }}
+                        onClick={() => setShowToolsModal(true)}
+                      >
+                        🔧 Depurar Catálogo
+                      </button>
+                      <input
+                        className="search-bar"
+                        style={{ width: '220px', margin: 0 }}
+                        placeholder="Buscar producto..."
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                      />
+                    </div>
                   </div>
-                  <input
-                    className="search-bar"
-                    style={{ width: '220px' }}
-                    placeholder="Buscar producto..."
-                    value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
-                  />
-                </div>
                 <div className="panel-body">
                   {filteredProducts.length === 0 ? (
                     <div className="empty-state">
