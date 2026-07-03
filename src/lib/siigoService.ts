@@ -46,21 +46,47 @@ export class SiigoService {
     let allProducts: any[] = [];
     let page = 1;
     let hasMore = true;
+    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
     while (hasMore) {
-      const response = await fetch(`${this.BASE_URL}/products?page=${page}&page_size=25`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-          'Partner-Id': 'indisutex'
-        },
-      });
+      let response: Response | null = null;
+      let retries = 3;
 
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        const errMsg = errData.message || (errData.errors && errData.errors[0]?.message) || 'Error 400 de validación en Siigo';
-        throw new Error(`Error de API Siigo: ${errMsg}`);
+      while (retries > 0) {
+        try {
+          response = await fetch(`${this.BASE_URL}/products?page=${page}&page_size=100`, {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+              'Partner-Id': 'indisutex'
+            },
+          });
+
+          if (response.ok) {
+            break;
+          }
+
+          // Si es un error temporal (503, 429) o del servidor, reintentamos con espera
+          if (response.status === 503 || response.status === 429 || response.status >= 500) {
+            retries--;
+            console.warn(`Siigo API respondió con ${response.status}. Reintentando en 2 segundos... (${retries} intentos restantes)`);
+            await sleep(2000);
+          } else {
+            // Si es un error de cliente (400, 401, 403), fallamos inmediatamente
+            break;
+          }
+        } catch (fetchErr) {
+          retries--;
+          if (retries === 0) throw fetchErr;
+          await sleep(2000);
+        }
+      }
+
+      if (!response || !response.ok) {
+        const errData = await response?.json().catch(() => ({})) || {};
+        const errMsg = errData.message || (errData.errors && errData.errors[0]?.message) || `Error ${response?.status || 'desconocido'}`;
+        throw new Error(`Error de API Siigo en página ${page}: ${errMsg}`);
       }
 
       const data = await response.json();
@@ -68,10 +94,12 @@ export class SiigoService {
       allProducts = [...allProducts, ...results];
 
       // Verificar si hay más páginas
-      if (results.length < 25) {
+      if (results.length < 100) {
         hasMore = false;
       } else {
         page++;
+        // Esperar 250ms entre peticiones para respetar los límites de tasa (Rate Limits) de Siigo
+        await sleep(250);
       }
     }
 
@@ -264,12 +292,51 @@ export class SiigoService {
     onProgress('Autenticando con Siigo Nube...');
     const token = await this.authenticate(credentials);
 
+    // 1. Obtener webhooks existentes para evitar duplicados y errores 400
+    onProgress('Obteniendo webhooks activos en Siigo...');
+    const listRes = await fetch(`${this.BASE_URL}/webhooks`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'Partner-Id': 'indisutex'
+      }
+    });
+
+    let existingWebhooks: any[] = [];
+    if (listRes.ok) {
+      existingWebhooks = await listRes.json();
+    }
+
     const topics = [
       'public.siigoapi.products.create',
       'public.siigoapi.products.update'
     ];
 
     for (const topic of topics) {
+      const match = existingWebhooks.find(wh => wh.topic === topic);
+
+      if (match) {
+        if (match.url === webhookUrl) {
+          onProgress(`ℹ️ El evento ${topic} ya está correctamente suscrito a esta URL.`);
+          continue;
+        } else {
+          // Si la URL cambió, eliminamos el webhook anterior
+          onProgress(`🔄 URL diferente detectada para ${topic}. Eliminando webhook antiguo...`);
+          const delRes = await fetch(`${this.BASE_URL}/webhooks/${match.id}`, {
+            method: 'DELETE',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+              'Partner-Id': 'indisutex'
+            }
+          });
+          if (!delRes.ok) {
+            onProgress(`⚠️ No se pudo eliminar el webhook antiguo: ${delRes.statusText}`);
+          }
+        }
+      }
+
       onProgress(`Suscribiendo a evento: ${topic}...`);
       const response = await fetch(`${this.BASE_URL}/webhooks`, {
         method: 'POST',
@@ -288,8 +355,7 @@ export class SiigoService {
       if (!response.ok) {
         const errData = await response.json().catch(() => ({}));
         const errMsg = errData.message || (errData.errors && errData.errors[0]?.message) || `Error al suscribir a ${topic}`;
-        // Si ya está suscrito, a veces Siigo responde con error, pero no pasa nada, continuamos
-        onProgress(`ℹ️ Nota: ${errMsg}`);
+        onProgress(`❌ Error: ${errMsg}`);
       } else {
         onProgress(`✅ Suscripción exitosa a ${topic}`);
       }
