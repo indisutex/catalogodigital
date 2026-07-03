@@ -811,22 +811,22 @@ export default function SuperAdmin() {
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ 
             maxWidth: '600px', 
             width: '100%', 
-            borderRadius: '24px', 
-            padding: '2rem',
+            borderRadius: '20px', 
+            padding: '1.25rem',
             background: '#ffffff',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.1)',
+            boxShadow: '0 20px 40px -12px rgba(0, 0, 0, 0.15)',
             border: '1px solid #e2e8f0',
-            maxHeight: '90vh',
+            maxHeight: '92vh',
             overflowY: 'auto'
           }}>
-            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
+            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
               <h3 style={{ margin: 0, fontWeight: 800, fontSize: '1.2rem', color: '#0f172a' }}>📦 Detalle del Pedido</h3>
               <button onClick={() => setSelectedPedido(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
                 <X size={20} />
               </button>
             </div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
               <div>
                 <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase', fontWeight: 600 }}>Cliente</h5>
                 <p style={{ margin: 0, fontWeight: 700, color: '#0f172a' }}>{selectedPedido.cliente_nombre}</p>
@@ -843,11 +843,11 @@ export default function SuperAdmin() {
               </div>
             </div>
 
-            <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
-              <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', fontWeight: 700, color: '#0f172a' }}>Productos Solicitados</h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '200px', overflowY: 'auto' }}>
+            <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
+              <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>Productos Solicitados</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '130px', overflowY: 'auto' }}>
                 {Array.isArray(selectedPedido.productos) && selectedPedido.productos.map((prod: any, idx: number) => (
-                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '0.5rem 0.75rem', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
                     <div>
                       <h5 style={{ margin: 0, color: '#0f172a', fontWeight: 600 }}>{prod.nombre}</h5>
                       <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
@@ -864,21 +864,21 @@ export default function SuperAdmin() {
 
             {/* Pantallazo de Pago */}
             {selectedPedido.pantallazo_url && (
-              <div style={{ marginTop: '1.5rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
-                <h4 style={{ margin: '0 0 0.75rem', fontSize: '0.9rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}>
+              <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
+                <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.9rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}>
                   💳 Comprobante de Pago (Nequi)
                 </h4>
-                <div onClick={() => setPagoModalUrl(selectedPedido.pantallazo_url)} style={{ cursor: 'pointer' }}>
+                <div onClick={() => setPagoModalUrl(selectedPedido.pantallazo_url || null)} style={{ cursor: 'pointer' }}>
                   <img
                     src={selectedPedido.pantallazo_url}
                     alt="Comprobante Nequi"
-                    style={{ width: '100%', maxHeight: '200px', objectFit: 'contain', borderRadius: '12px', border: '1px solid #e2e8f0' }}
+                    style={{ width: '100%', maxHeight: '120px', objectFit: 'contain', borderRadius: '12px', border: '1px solid #e2e8f0' }}
                   />
                 </div>
               </div>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e2e8f0', marginTop: '1.5rem', paddingTop: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e2e8f0', marginTop: '1rem', paddingTop: '1rem' }}>
               <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a' }}>Total del Pedido:</span>
               <span style={{ fontSize: '1.3rem', fontWeight: 800, color: '#059669' }}>
                 ${selectedPedido.total.toLocaleString()}
@@ -886,10 +886,10 @@ export default function SuperAdmin() {
             </div>
 
             {/* Botón de Atención Maestra y Verificación de Pago */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1.5rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1rem' }}>
               {selectedPedido.estado === 'completado' ? (
                 <div style={{ 
-                  padding: '0.85rem 1rem', 
+                  padding: '0.65rem 1rem', 
                   background: '#f0fdf4', 
                   color: '#15803d', 
                   border: '1px solid #bbf7d0', 
@@ -916,7 +916,7 @@ export default function SuperAdmin() {
                   </div>
                   <button
                     style={{ 
-                      padding: '0.85rem 1rem', 
+                      padding: '0.65rem 1rem', 
                       background: '#10b981', 
                       color: 'white', 
                       border: 'none', 
@@ -940,7 +940,7 @@ export default function SuperAdmin() {
                   {(!selectedPedido.atendido && selectedPedido.estado !== 'atendido') ? (
                     <button
                       style={{ 
-                        padding: '0.85rem 1rem', 
+                        padding: '0.65rem 1rem', 
                         background: '#6366f1', 
                         color: 'white', 
                         border: 'none', 
@@ -960,7 +960,7 @@ export default function SuperAdmin() {
                     </button>
                   ) : (
                     <div style={{ 
-                      padding: '0.85rem 1rem', 
+                      padding: '0.65rem 1rem', 
                       background: '#fffbeb', 
                       color: '#b45309', 
                       border: '1px solid #fde68a', 

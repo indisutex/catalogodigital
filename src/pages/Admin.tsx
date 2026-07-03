@@ -403,60 +403,9 @@ export default function Admin() {
     }
   };
 
-  const filteredPedidos = useMemo(() => {
-    let temp = [...pedidos];
-    if (orderSearchQuery) {
-      const q = orderSearchQuery.toLowerCase();
-      temp = temp.filter(p => 
-        (p.cliente_nombre || '').toLowerCase().includes(q) ||
-        (p.cliente_telefono || '').toLowerCase().includes(q) ||
-        (p.ciudad || '').toLowerCase().includes(q)
-      );
-    }
-    if (orderFilterDate) {
-      temp = temp.filter(p => p.created_at.startsWith(orderFilterDate));
-    }
-    if (orderFilterStatus !== 'todos' && pedidosViewMode === 'lista') {
-      if (orderFilterStatus === 'comprobante') {
-        temp = temp.filter(p => p.pantallazo_url);
-      } else if (orderFilterStatus === 'esperando_pago') {
-        temp = temp.filter(p => !p.pantallazo_url);
-      }
-    }
-    // Sort
-    temp.sort((a, b) => {
-      if (orderSortBy === 'date_desc') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      if (orderSortBy === 'date_asc') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
-      if (orderSortBy === 'total_desc') return (b.total || 0) - (a.total || 0);
-      if (orderSortBy === 'total_asc') return (a.total || 0) - (b.total || 0);
-      return 0;
-    });
-    return temp;
-  }, [pedidos, orderSearchQuery, orderFilterDate, orderFilterStatus, orderSortBy, pedidosViewMode]);
 
-  const leadsFiltrados = useMemo(() => {
-    let temp = [...leads];
-    if (orderSearchQuery) {
-      const q = orderSearchQuery.toLowerCase();
-      temp = temp.filter(l => 
-        (l.nombre || '').toLowerCase().includes(q) ||
-        (l.telefono || '').toLowerCase().includes(q) ||
-        (l.ciudad || '').toLowerCase().includes(q)
-      );
-    }
-    if (orderFilterDate) {
-      temp = temp.filter(l => l.created_at.startsWith(orderFilterDate));
-    }
-    return temp;
-  }, [leads, orderSearchQuery, orderFilterDate]);
 
-  const interesadosFiltrados = useMemo(() => {
-    return filteredPedidos.filter(p => p.estado === 'pendiente' || p.estado === 'atendido' || !p.estado);
-  }, [filteredPedidos]);
 
-  const clientesFiltrados = useMemo(() => {
-    return filteredPedidos.filter(p => p.estado === 'completado');
-  }, [filteredPedidos]);
 
   const handleAprobarPago = async (ped: Pedido) => {
     setLoading(true);
@@ -733,6 +682,30 @@ export default function Admin() {
 
     return result;
   }, [pedidos, orderSearchQuery, orderFilterStatus, orderFilterDate, orderSortBy]);
+
+  const leadsFiltrados = useMemo(() => {
+    let temp = [...leads];
+    if (orderSearchQuery) {
+      const q = orderSearchQuery.toLowerCase();
+      temp = temp.filter(l => 
+        (l.nombre || '').toLowerCase().includes(q) ||
+        (l.telefono || '').toLowerCase().includes(q) ||
+        (l.ciudad || '').toLowerCase().includes(q)
+      );
+    }
+    if (orderFilterDate) {
+      temp = temp.filter(l => l.created_at.startsWith(orderFilterDate));
+    }
+    return temp;
+  }, [leads, orderSearchQuery, orderFilterDate]);
+
+  const interesadosFiltrados = useMemo(() => {
+    return filteredPedidos.filter(p => p.estado === 'pendiente' || p.estado === 'atendido' || !p.estado);
+  }, [filteredPedidos]);
+
+  const clientesFiltrados = useMemo(() => {
+    return filteredPedidos.filter(p => p.estado === 'completado');
+  }, [filteredPedidos]);
 
   async function handleEliminarDuplicados(nombre: string) {
     try {
@@ -2702,15 +2675,15 @@ export default function Admin() {
       {/* MODAL DETALLE PEDIDO */}
       {selectedPedido && (
         <div className="modal-overlay" onClick={() => setSelectedPedido(null)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', width: '100%', borderRadius: '16px', padding: '2rem' }}>
-            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', width: '100%', borderRadius: '16px', padding: '1.25rem', maxHeight: '92vh', overflowY: 'auto' }}>
+            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
               <h3 style={{ margin: 0 }}>📦 Detalle del Pedido</h3>
               <button onClick={() => setSelectedPedido(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
                 <X size={20} />
               </button>
             </div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
               <div>
                 <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase' }}>Cliente</h5>
                 <p style={{ margin: 0, fontWeight: 600, color: '#0f172a' }}>{selectedPedido.cliente_nombre}</p>
@@ -2726,11 +2699,11 @@ export default function Admin() {
               </div>
             </div>
 
-            <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
-              <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem' }}>Productos Solicitados</h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '250px', overflowY: 'auto', paddingRight: '0.5rem' }}>
+            <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
+              <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.95rem' }}>Productos Solicitados</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '130px', overflowY: 'auto', paddingRight: '0.5rem' }}>
                 {Array.isArray(selectedPedido.productos) && selectedPedido.productos.map((prod: any, idx: number) => (
-                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '10px', border: '1px solid #f1f5f9' }}>
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
                     <div>
                       <h5 style={{ margin: 0, color: '#0f172a' }}>{prod.nombre}</h5>
                       <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
@@ -2747,15 +2720,15 @@ export default function Admin() {
 
             {/* Pantallazo Nequi */}
             {selectedPedido.pantallazo_url && (
-              <div style={{ marginTop: '1.5rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
+              <div style={{ marginTop: '1.5rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
                 <h4 style={{ margin: '0 0 0.75rem', fontSize: '0.9rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                   💳 Comprobante de Pago (Nequi)
                 </h4>
-                <div onClick={() => setPagoModalUrl(selectedPedido.pantallazo_url)} style={{ cursor: 'pointer' }}>
+                <div onClick={() => setPagoModalUrl(selectedPedido.pantallazo_url || null)} style={{ cursor: 'pointer' }}>
                   <img
                     src={selectedPedido.pantallazo_url}
                     alt="Comprobante Nequi"
-                    style={{ width: '100%', maxHeight: '260px', objectFit: 'contain', borderRadius: '12px', border: '1px solid #e2e8f0' }}
+                    style={{ width: '100%', maxHeight: '120px', objectFit: 'contain', borderRadius: '12px', border: '1px solid #e2e8f0' }}
                   />
                 </div>
                 <p style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600, marginTop: '0.5rem', textAlign: 'center' }}>
@@ -2764,14 +2737,14 @@ export default function Admin() {
               </div>
             )}
             {!selectedPedido.pantallazo_url && (
-              <div style={{ marginTop: '1.5rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.25rem', textAlign: 'center' }}>
+              <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.75rem', textAlign: 'center' }}>
                 <p style={{ color: '#f59e0b', fontWeight: 600, fontSize: '0.85rem', margin: 0 }}>
                   ⏳ Pendiente de comprobante
                 </p>
               </div>
             )}
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e2e8f0', marginTop: '1.5rem', paddingTop: '1.5rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e2e8f0', marginTop: '1rem', paddingTop: '1rem' }}>
               <span style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>Total del Pedido:</span>
               <span style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10b981' }}>
                 ${selectedPedido.total.toLocaleString()}
@@ -2779,12 +2752,12 @@ export default function Admin() {
             </div>
 
             {/* Botones de acción */}
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1.25rem', flexWrap: 'wrap', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', flexWrap: 'wrap', flexDirection: 'column' }}>
               {selectedPedido.estado !== 'completado' && (
                 <button
                   style={{
                     width: '100%',
-                    padding: '0.85rem 1rem',
+                    padding: '0.65rem 1rem',
                     background: '#10b981',
                     color: 'white',
                     border: 'none',
@@ -2806,7 +2779,7 @@ export default function Admin() {
               
               <div style={{ display: 'flex', gap: '0.75rem', width: '100%' }}>
                 <button
-                  style={{ flex: 1, padding: '0.85rem 1rem', background: '#25D366', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                  style={{ flex: 1, padding: '0.65rem 1rem', background: '#25D366', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                   onClick={() => {
                     const num = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
                     const uploadLink = `${window.location.origin}/pago/${selectedPedido.id}`;
@@ -2817,7 +2790,7 @@ export default function Admin() {
                   💳 Cobrar por Nequi/WhatsApp
                 </button>
                 <button
-                  style={{ flex: 1, padding: '0.85rem 1rem', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                  style={{ flex: 1, padding: '0.65rem 1rem', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                   onClick={() => {
                     const num = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
                     const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋 Tu pedido ha sido *VERIFICADO y DESPACHADO* 🚚\n\nPedido: ${selectedPedido.productos?.map((p: any) => `${p.cantidad}x ${p.nombre}`).join(', ')}\nTotal: $${selectedPedido.total.toLocaleString()} COP\n\n📦 Tu paquete está en camino. ¡Gracias por tu compra!`;
