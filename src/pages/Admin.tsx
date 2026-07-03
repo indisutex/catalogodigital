@@ -4,7 +4,7 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido } from '../types';
 import './Admin.css';
-import { X, Video, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code } from 'lucide-react';
+import { X, Video, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const SECRET_PIN = '0000';
@@ -43,6 +43,7 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState<TabType>(() => {
     return (localStorage.getItem('admin_active_tab') as TabType) || 'productos';
   });
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('admin_active_tab', activeTab);
@@ -1402,14 +1403,35 @@ export default function Admin() {
   return (
     <div className="admin-app">
       {/* SIDEBAR */}
-      <aside className="admin-sidebar">
-        <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} />
+      <aside className={`admin-sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
+        <SidebarContent 
+          activeTab={activeTab} 
+          setActiveTab={setActiveTab} 
+          productos={productos} 
+          configuracion={configuracion} 
+          handleLogout={handleLogout} 
+          onClose={() => setIsMobileMenuOpen(false)} 
+        />
       </aside>
+
+      {isMobileMenuOpen && (
+        <div 
+          className="sidebar-overlay-mobile" 
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
 
       {/* MAIN */}
       <div className="admin-main">
         {/* TOP BAR */}
         <div className="admin-topbar">
+          <button 
+            type="button" 
+            className="mobile-menu-toggle" 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          >
+            {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+          </button>
           <div className="topbar-title">
             <h2>
               {activeTab === 'dashboard' && '📊 Dashboard'}
@@ -2675,7 +2697,7 @@ export default function Admin() {
                 </div>
               ) : (
                 /* MAIN POS SALES SCREEN */
-                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.5rem', alignItems: 'start' }}>
+                <div className="pos-grid-container">
                   
                   {/* LEFT COLUMN: PRODUCT SELECTION */}
                   <div className="admin-panel" style={{ minHeight: '650px' }}>
@@ -3378,7 +3400,7 @@ export default function Admin() {
                                   {ped.pantallazo_url ? (
                                     <button 
                                       className="btn-primary" 
-                                      style={{ padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', background: '#3b82f6', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 700 }}
+                                      style={{ padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', background: configuracion?.color_primario || '#3b82f6', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 700 }}
                                       onClick={() => setSelectedPedido(ped)}
                                     >
                                       💳 Verificar pago
@@ -3552,7 +3574,7 @@ export default function Admin() {
                                     </button>
                                   ) : ped.pantallazo_url ? (
                                     <button
-                                      style={{ padding: '0.45rem 0.8rem', fontSize: '0.8rem', borderRadius: '8px', background: '#3b82f6', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', fontWeight: 700, width: '100%', transition: 'background 0.2s' }}
+                                      style={{ padding: '0.45rem 0.8rem', fontSize: '0.8rem', borderRadius: '8px', background: configuracion?.color_primario || '#3b82f6', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', fontWeight: 700, width: '100%', transition: 'background 0.2s' }}
                                       onClick={() => setSelectedPedido(ped)}
                                     >
                                       <Check size={12} /> Verificar pago
@@ -3898,7 +3920,7 @@ export default function Admin() {
                       💳 Cobrar por Nequi/WhatsApp
                     </button>
                     <button
-                      style={{ flex: 1, padding: '0.65rem 1rem', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                      style={{ flex: 1, padding: '0.65rem 1rem', background: configuracion?.color_primario || '#0ea5e9', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                       onClick={() => {
                         const num = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
                         const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋 Tu pedido ha sido *VERIFICADO y DESPACHADO* 🚚\n\nPedido: ${selectedPedido.productos?.map((p: any) => `${p.cantidad}x ${p.nombre}`).join(', ')}\nTotal: $${selectedPedido.total.toLocaleString()} COP\n\n📦 Tu paquete está en camino. ¡Gracias por tu compra!`;
@@ -4041,13 +4063,14 @@ export default function Admin() {
 
 // ── SIDEBAR COMPONENT ──
 function SidebarContent({
-  activeTab, setActiveTab, productos, configuracion, handleLogout
+  activeTab, setActiveTab, productos, configuracion, handleLogout, onClose
 }: {
   activeTab: TabType;
   setActiveTab: (t: TabType) => void;
   productos: Producto[];
   configuracion: Configuracion | null;
   handleLogout: () => void;
+  onClose?: () => void;
 }) {
   const [isOnline, setIsOnline] = useState(window.navigator.onLine);
 
@@ -4061,6 +4084,12 @@ function SidebarContent({
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  const handleSelectTab = (tab: TabType) => {
+    setActiveTab(tab);
+    if (onClose) onClose();
+  };
+
   return (
     <>
       <div className="sidebar-brand">
@@ -4090,33 +4119,33 @@ function SidebarContent({
 
       <nav className="sidebar-nav" style={{ paddingTop: '0.5rem' }}>
         <div className="sidebar-nav-label">Navegación</div>
-        <button className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => setActiveTab('dashboard')}>
+        <button className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => handleSelectTab('dashboard')}>
           <span className="nav-icon"><LayoutDashboard size={14} /></span> Dashboard
           {activeTab === 'dashboard' && <span className="active-dot"></span>}
         </button>
-         <button className={`nav-item ${activeTab === 'productos' ? 'active' : ''}`} onClick={() => setActiveTab('productos')}>
+         <button className={`nav-item ${activeTab === 'productos' ? 'active' : ''}`} onClick={() => handleSelectTab('productos')}>
           <span className="nav-icon"><Package size={14} /></span> Productos
           {activeTab === 'productos' && <span className="active-dot"></span>}
         </button>
-        <button className={`nav-item ${activeTab === 'categorias' ? 'active' : ''}`} onClick={() => setActiveTab('categorias')}>
+        <button className={`nav-item ${activeTab === 'categorias' ? 'active' : ''}`} onClick={() => handleSelectTab('categorias')}>
           <span className="nav-icon"><Tag size={14} /></span> Categorías
           {activeTab === 'categorias' && <span className="active-dot"></span>}
         </button>
-        <button className={`nav-item ${activeTab === 'pedidos' ? 'active' : ''}`} onClick={() => setActiveTab('pedidos')}>
+        <button className={`nav-item ${activeTab === 'pedidos' ? 'active' : ''}`} onClick={() => handleSelectTab('pedidos')}>
           <span className="nav-icon"><ShoppingBag size={14} /></span> Pedidos
           {activeTab === 'pedidos' && <span className="active-dot"></span>}
         </button>
         {getTenantId() !== 'indisutex' && (
-          <button className={`nav-item ${activeTab === 'pos' ? 'active' : ''}`} onClick={() => setActiveTab('pos')}>
+          <button className={`nav-item ${activeTab === 'pos' ? 'active' : ''}`} onClick={() => handleSelectTab('pos')}>
             <span className="nav-icon"><Calculator size={14} /></span> POS Ventas
             {activeTab === 'pos' && <span className="active-dot"></span>}
           </button>
         )}
-        <button className={`nav-item ${activeTab === 'siigo' ? 'active' : ''}`} onClick={() => setActiveTab('siigo')}>
+        <button className={`nav-item ${activeTab === 'siigo' ? 'active' : ''}`} onClick={() => handleSelectTab('siigo')}>
           <span className="nav-icon"><Code size={14} /></span> Desarrollador
           {activeTab === 'siigo' && <span className="active-dot"></span>}
         </button>
-        <button className={`nav-item ${activeTab === 'config' ? 'active' : ''}`} onClick={() => setActiveTab('config')}>
+        <button className={`nav-item ${activeTab === 'config' ? 'active' : ''}`} onClick={() => handleSelectTab('config')}>
           <span className="nav-icon"><Settings size={14} /></span> Configuración
           {activeTab === 'config' && <span className="active-dot"></span>}
         </button>
