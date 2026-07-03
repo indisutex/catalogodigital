@@ -50,6 +50,7 @@ export interface Configuracion {
   siigo_access_key?: string;
   siigo_sincronizado_at?: string;
   color_primario?: string;
+  envios_99_api_key?: string;
 }
 
 export interface Pedido {

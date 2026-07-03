@@ -4,7 +4,7 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido } from '../types';
 import './Admin.css';
-import { X, Video, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Database, Search, Calculator } from 'lucide-react';
+import { X, Video, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const SECRET_PIN = '0000';
@@ -163,6 +163,7 @@ export default function Admin() {
 
   // Filtros y Ordenamiento para la pestaña de Pedidos
   const [orderFilterStatus, setOrderFilterStatus] = useState<string>('todos');
+  const [orderFilterOrigin, setOrderFilterOrigin] = useState<string>('todos');
   const [orderSearchQuery, setOrderSearchQuery] = useState<string>('');
   const [orderFilterDate, setOrderFilterDate] = useState<string>('');
   const [orderSortBy, setOrderSortBy] = useState<string>('date_desc');
@@ -863,6 +864,13 @@ export default function Admin() {
       }
     }
 
+    if (orderFilterOrigin !== 'todos') {
+      result = result.filter(p => {
+        const o = p.origen || 'catalogo';
+        return o === orderFilterOrigin;
+      });
+    }
+
     if (orderFilterDate) {
       result = result.filter(p => {
         const d = new Date(p.created_at).toISOString().split('T')[0];
@@ -887,7 +895,7 @@ export default function Admin() {
     });
 
     return result;
-  }, [pedidos, orderSearchQuery, orderFilterStatus, orderFilterDate, orderSortBy]);
+  }, [pedidos, orderSearchQuery, orderFilterStatus, orderFilterOrigin, orderFilterDate, orderSortBy]);
 
   const leadsFiltrados = useMemo(() => {
     let temp = [...leads];
@@ -2196,10 +2204,10 @@ export default function Admin() {
           {/* ── SIIGO TAB ── */}
           {activeTab === 'siigo' && (
             <div className="admin-panel">
-              <div className="panel-header">
+              <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1.25rem' }}>
                 <div>
-                  <h3><Database size={16} /> Integración Siigo Nube</h3>
-                  <p>Sincroniza tus productos, precios e inventario automáticamente</p>
+                  <h3><Code size={18} style={{ color: '#6366f1' }} /> Panel del Desarrollador</h3>
+                  <p>Configura las integraciones de API de Siigo Nube y 99 Envíos</p>
                 </div>
               </div>
               <div className="panel-body">
@@ -2210,39 +2218,63 @@ export default function Admin() {
                       setLoading(true);
                       const { error } = await supabase.from('configuracion').update({
                         siigo_username: configuracion.siigo_username,
-                        siigo_access_key: configuracion.siigo_access_key
+                        siigo_access_key: configuracion.siigo_access_key,
+                        envios_99_api_key: configuracion.envios_99_api_key
                       }).eq('id', configuracion.id);
                       setLoading(false);
                       if (error) showToast('Error al guardar credenciales: ' + error.message, 'error');
-                      else showToast('Credenciales de Siigo guardadas ✓');
+                      else showToast('Configuración del desarrollador guardada ✓');
                     }}>
-                      <div className="config-section">
-                        <div className="config-section-title">🔑 Credenciales de la API</div>
-                        <div className="form-grid">
-                          <div className="form-field full">
-                            <label>Usuario (Correo de Siigo Nube)</label>
-                            <input 
-                              type="email" 
-                              required 
-                              value={configuracion.siigo_username || ''} 
-                              onChange={e => setConfiguracion({ ...configuracion, siigo_username: e.target.value })} 
-                              placeholder="ejemplo@correo.com"
-                            />
-                          </div>
-                          <div className="form-field full">
-                            <label>Access Key (Llave de API generada en Siigo)</label>
-                            <input 
-                              type="password" 
-                              required 
-                              value={configuracion.siigo_access_key || ''} 
-                              onChange={e => setConfiguracion({ ...configuracion, siigo_access_key: e.target.value })} 
-                              placeholder="Ingresa tu access key de Siigo"
-                            />
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', alignItems: 'start' }}>
+                        
+                        {/* 99 Envíos integration */}
+                        <div className="config-section" style={{ margin: 0 }}>
+                          <div className="config-section-title">🚚 Integración 99 Envíos</div>
+                          <div className="form-grid">
+                            <div className="form-field full">
+                              <label>API Key / Token de 99 Envíos</label>
+                              <input 
+                                type="password" 
+                                value={configuracion.envios_99_api_key || ''} 
+                                onChange={e => setConfiguracion({ ...configuracion, envios_99_api_key: e.target.value })} 
+                                placeholder="Ingresa tu API Key de 99 Envíos"
+                              />
+                              <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.4rem', lineHeight: '1.4' }}>
+                                Esta llave permite conectar la tienda con el servicio de logística y distribución de 99 Envíos para generar guías de despacho.
+                              </p>
+                            </div>
                           </div>
                         </div>
+
+                        {/* Siigo Nube integration */}
+                        <div className="config-section" style={{ margin: 0 }}>
+                          <div className="config-section-title">🔑 Credenciales Siigo Nube</div>
+                          <div className="form-grid">
+                            <div className="form-field full">
+                              <label>Usuario (Correo de Siigo Nube)</label>
+                              <input 
+                                type="email" 
+                                value={configuracion.siigo_username || ''} 
+                                onChange={e => setConfiguracion({ ...configuracion, siigo_username: e.target.value })} 
+                                placeholder="ejemplo@correo.com"
+                              />
+                            </div>
+                            <div className="form-field full">
+                              <label>Access Key (Llave de API generada en Siigo)</label>
+                              <input 
+                                type="password" 
+                                value={configuracion.siigo_access_key || ''} 
+                                onChange={e => setConfiguracion({ ...configuracion, siigo_access_key: e.target.value })} 
+                                placeholder="Ingresa tu access key de Siigo"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
                       </div>
 
-                      <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                      <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.25rem' }}>
                         <button type="submit" className="btn-secondary" disabled={loading} style={{ padding: '0.6rem 1.5rem' }}>
                           Guardar Credenciales
                         </button>
@@ -2718,6 +2750,10 @@ export default function Admin() {
                             if (posPriceTier === 'por_mayor' && p.precio_por_mayor) activePrice = p.precio_por_mayor;
                             if (posPriceTier === 'precio_50_unidades' && p.precio_50_unidades) activePrice = p.precio_50_unidades;
 
+                            const cartQty = posCart.filter(item => item.id === p.id).reduce((acc, item) => acc + item.cantidad, 0);
+                            const remainingStock = (p.stock || 0) - cartQty;
+                            const hasStockAvailable = remainingStock > 0 && (p.stock || 0) > 0;
+
                             return (
                               <div key={p.id} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'white', position: 'relative' }}>
                                 {/* Image or Placeholder */}
@@ -2743,15 +2779,15 @@ export default function Admin() {
                                   <span style={{ color: '#10b981', fontWeight: 800, fontSize: '0.88rem' }}>
                                     ${activePrice.toLocaleString()}
                                   </span>
-                                  <span style={{ fontSize: '0.7rem', color: p.stock && p.stock > 0 ? '#475569' : '#ef4444', fontWeight: 600 }}>
-                                    Stock: {p.stock || 0}
+                                  <span style={{ fontSize: '0.7rem', color: hasStockAvailable ? '#475569' : '#ef4444', fontWeight: 600 }}>
+                                    Stock: {p.stock || 0} {cartQty > 0 && <span style={{ color: '#4f46e5', fontWeight: 700 }}>({cartQty})</span>}
                                   </span>
                                 </div>
 
                                 {/* Quick add button */}
                                 <button
                                   type="button"
-                                  disabled={!p.stock || p.stock <= 0}
+                                  disabled={!hasStockAvailable}
                                   onClick={() => {
                                     // Helper function to insert directly
                                     // Tallas default
@@ -2780,18 +2816,18 @@ export default function Admin() {
                                     padding: '0.4rem',
                                     borderRadius: '8px',
                                     border: 'none',
-                                    background: p.stock && p.stock > 0 ? '#4f46e5' : '#e2e8f0',
-                                    color: 'white',
+                                    background: hasStockAvailable ? '#4f46e5' : '#e2e8f0',
+                                    color: hasStockAvailable ? 'white' : '#64748b',
                                     fontWeight: 700,
                                     fontSize: '0.78rem',
-                                    cursor: p.stock && p.stock > 0 ? 'pointer' : 'not-allowed',
+                                    cursor: hasStockAvailable ? 'pointer' : 'not-allowed',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     gap: '0.25rem'
                                   }}
                                 >
-                                  {p.stock && p.stock > 0 ? <><Plus size={12} /> Agregar</> : 'Sin Stock'}
+                                  {hasStockAvailable ? <><Plus size={12} /> Agregar</> : ((p.stock || 0) > 0 ? 'Límite alcanzado' : 'Sin Stock')}
                                 </button>
                               </div>
                             );
@@ -3226,6 +3262,16 @@ export default function Admin() {
                         )}
 
                         <select 
+                          value={orderFilterOrigin} 
+                          onChange={e => setOrderFilterOrigin(e.target.value)}
+                          style={{ padding: '0.55rem 1rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', cursor: 'pointer' }}
+                        >
+                          <option value="todos">Todos los Orígenes</option>
+                          <option value="catalogo">📱 Catálogo</option>
+                          <option value="pos">💻 POS</option>
+                        </select>
+
+                        <select 
                           value={orderSortBy} 
                           onChange={e => setOrderSortBy(e.target.value)}
                           style={{ padding: '0.55rem 1rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', cursor: 'pointer' }}
@@ -3282,7 +3328,14 @@ export default function Admin() {
                           <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
                             {interesadosFiltrados.map((ped) => (
                               <div key={ped.id} className="kanban-card order-card" style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '0.85rem', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                                <h4 style={{ margin: '0 0 0.4rem 0', fontSize: '0.9rem', color: '#0f172a', fontWeight: 700 }}>👤 {ped.cliente_nombre}</h4>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0 0 0.4rem 0', flexWrap: 'wrap', gap: '0.25rem' }}>
+                                  <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0f172a', fontWeight: 700 }}>👤 {ped.cliente_nombre}</h4>
+                                  {ped.origen === 'pos' ? (
+                                    <span style={{ fontSize: '0.65rem', background: '#dcfce7', color: '#166534', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>POS</span>
+                                  ) : (
+                                    <span style={{ fontSize: '0.65rem', background: '#e0f2fe', color: '#0369a1', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>Catálogo</span>
+                                  )}
+                                </div>
                                 <p className="phone" style={{ margin: '0 0 0.25rem 0', fontSize: '0.8rem', color: '#475569' }}>📞 {ped.cliente_telefono}</p>
                                 <p className="total" style={{ margin: '0 0 0.4rem 0', fontSize: '0.82rem', fontWeight: 700, color: '#0f172a' }}>💰 Total: <span style={{ color: '#10b981' }}>${ped.total.toLocaleString()}</span></p>
                                 
@@ -3365,7 +3418,14 @@ export default function Admin() {
                           <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
                             {clientesFiltrados.map((ped) => (
                               <div key={ped.id} className="kanban-card client-card" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '0.85rem', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                                <h4 style={{ margin: '0 0 0.4rem 0', fontSize: '0.9rem', color: '#14532d', fontWeight: 700 }}>👤 {ped.cliente_nombre}</h4>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0 0 0.4rem 0', flexWrap: 'wrap', gap: '0.25rem' }}>
+                                  <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#14532d', fontWeight: 700 }}>👤 {ped.cliente_nombre}</h4>
+                                  {ped.origen === 'pos' ? (
+                                    <span style={{ fontSize: '0.65rem', background: '#dcfce7', color: '#166534', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>POS</span>
+                                  ) : (
+                                    <span style={{ fontSize: '0.65rem', background: '#e0f2fe', color: '#0369a1', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>Catálogo</span>
+                                  )}
+                                </div>
                                 <p className="phone" style={{ margin: '0 0 0.25rem 0', fontSize: '0.8rem', color: '#166534' }}>📞 {ped.cliente_telefono}</p>
                                 <p className="total" style={{ margin: '0 0 0.4rem 0', fontSize: '0.82rem', fontWeight: 700, color: '#14532d' }}>💰 Facturado: <span style={{ color: '#16a34a' }}>${ped.total.toLocaleString()}</span></p>
 
@@ -3429,7 +3489,16 @@ export default function Admin() {
                               <td style={{ padding: '1rem', color: ped.estado === 'completado' ? '#166534' : '#64748b', verticalAlign: 'middle' }}>
                                 {new Date(ped.created_at).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}
                               </td>
-                              <td style={{ padding: '1rem', fontWeight: 600, color: ped.estado === 'completado' ? '#14532d' : '#0f172a', verticalAlign: 'middle' }}>{ped.cliente_nombre}</td>
+                              <td style={{ padding: '1rem', fontWeight: 600, color: ped.estado === 'completado' ? '#14532d' : '#0f172a', verticalAlign: 'middle' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                  <span>{ped.cliente_nombre}</span>
+                                  {ped.origen === 'pos' ? (
+                                    <span style={{ fontSize: '0.68rem', background: '#dcfce7', color: '#166534', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>💻 POS</span>
+                                  ) : (
+                                    <span style={{ fontSize: '0.68rem', background: '#e0f2fe', color: '#0369a1', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>📱 Catálogo</span>
+                                  )}
+                                </div>
+                              </td>
                               <td style={{ padding: '1rem', color: ped.estado === 'completado' ? '#166534' : '#475569', verticalAlign: 'middle' }}>{ped.cliente_telefono}</td>
                               <td style={{ padding: '1rem', color: ped.estado === 'completado' ? '#166534' : '#475569', verticalAlign: 'middle' }}>{ped.direccion}, {ped.ciudad}</td>
                               <td style={{ padding: '1rem', color: ped.estado === 'completado' ? '#166534' : '#475569', verticalAlign: 'middle' }}>
@@ -4044,7 +4113,7 @@ function SidebarContent({
           </button>
         )}
         <button className={`nav-item ${activeTab === 'siigo' ? 'active' : ''}`} onClick={() => setActiveTab('siigo')}>
-          <span className="nav-icon"><Database size={14} /></span> Sincronizar Siigo
+          <span className="nav-icon"><Code size={14} /></span> Desarrollador
           {activeTab === 'siigo' && <span className="active-dot"></span>}
         </button>
         <button className={`nav-item ${activeTab === 'config' ? 'active' : ''}`} onClick={() => setActiveTab('config')}>
