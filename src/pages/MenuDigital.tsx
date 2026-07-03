@@ -559,6 +559,37 @@ export default function MenuDigital() {
                 <X size={24} />
               </button>
             </div>
+
+            {/* Shrine Free Shipping Progress Bar */}
+            {items.length > 0 && (
+              <div className="shrine-shipping-bar" style={{ padding: '0.75rem 1.5rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                {(() => {
+                  const limit = 150000; // $150.000 COP
+                  const diff = limit - total;
+                  const pct = Math.min(100, (total / limit) * 100);
+                  return (
+                    <div>
+                      <p style={{ margin: '0 0 0.4rem 0', fontSize: '0.82rem', fontWeight: 700, color: '#334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        {diff > 0 ? (
+                          <>
+                            <span>Te faltan <strong style={{ color: '#0ea5e9' }}>${diff.toLocaleString('es-CO')}</strong> para envío gratis</span>
+                            <span>🚚</span>
+                          </>
+                        ) : (
+                          <>
+                            <span style={{ color: '#10b981' }}>🎉 ¡Felicidades! Tienes Envío Gratis</span>
+                            <span>🚚</span>
+                          </>
+                        )}
+                      </p>
+                      <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${pct}%`, background: pct >= 100 ? '#10b981' : '#0ea5e9', transition: 'width 0.3s ease' }} />
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
             
             {isCheckoutMode ? (
               <form className="checkout-form" onSubmit={handleEnviarPedido}>
@@ -753,6 +784,18 @@ export default function MenuDigital() {
                   </div>
                 </div>
 
+
+                {/* Scarcity & Trust Badges (Shrine inspired) */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', margin: '0.85rem 0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#fef2f2', border: '1px solid #fee2e2', color: '#991b1b', padding: '0.4rem 0.6rem', borderRadius: '8px', fontSize: '0.74rem', fontWeight: 700 }}>
+                    <span>🔥</span>
+                    <span>Quedan muy pocas unidades de esta referencia</span>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#f0fdf4', border: '1px solid #dcfce7', color: '#166534', padding: '0.4rem 0.6rem', borderRadius: '8px', fontSize: '0.74rem', fontWeight: 600 }}>
+                    <span>🛡️</span>
+                    <span>Compra protegida y despachada por WhatsApp</span>
+                  </div>
+                </div>
 
                 {/* ── ADD TO CART ── */}
                 <button className="detail-add-btn" onClick={handleAddFromDetail}>

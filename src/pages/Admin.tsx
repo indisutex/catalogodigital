@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase, getTenantId, setTenantId } from '../lib/supabase';
 import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
@@ -511,6 +511,84 @@ export default function Admin() {
       cargarDatos();
     }
   };
+
+  // --- DUPLICATE CLEANUP & WIPE METHODS ---
+  const getDuplicados = useMemo(() => {
+    const counts: Record<string, Producto[]> = {};
+    productos.forEach(p => {
+      const nameKey = (p.nombre || '').toLowerCase().trim();
+      if (!counts[nameKey]) counts[nameKey] = [];
+      counts[nameKey].push(p);
+    });
+    
+    return Object.entries(counts)
+      .filter(([_, group]) => group.length > 1)
+      .map(([_, group]) => ({
+        nombre: group[0].nombre,
+        count: group.length,
+        items: group
+      }));
+  }, [productos]);
+
+  async function handleEliminarDuplicados(nombre: string) {
+    try {
+      setCleaningDuplicates(true);
+      
+      // Encontrar todos los productos con este nombre
+      const match = productos.filter(p => (p.nombre || '').toLowerCase().trim() === nombre.toLowerCase().trim());
+      if (match.length <= 1) return;
+      
+      // Conservar el primero y borrar el resto
+      const toKeep = match[0];
+      const toDelete = match.slice(1);
+      const deleteIds = toDelete.map(p => p.id);
+      
+      const { error } = await supabase
+        .from('productos')
+        .delete()
+        .in('id', deleteIds);
+        
+      if (error) throw error;
+      
+      // Actualizar estado local
+      setProductos(prev => prev.filter(p => !deleteIds.includes(p.id)));
+      showToast(`Duplicados eliminados. Se conservó 1 versión de "${toKeep.nombre}".`);
+    } catch (err) {
+      console.error(err);
+      showToast('Error al eliminar duplicados', 'error');
+    } finally {
+      setCleaningDuplicates(false);
+    }
+  }
+
+  async function handleVaciarCatalogo() {
+    if (wipeConfirmText !== 'ELIMINAR TODO') {
+      showToast('Por favor escribe ELIMINAR TODO exactamente', 'error');
+      return;
+    }
+    
+    try {
+      setWipingCatalog(true);
+      const tenant = getTenantId();
+      
+      const { error } = await supabase
+        .from('productos')
+        .delete()
+        .eq('tenant_id', tenant);
+        
+      if (error) throw error;
+      
+      setProductos([]);
+      setShowToolsModal(false);
+      setWipeConfirmText('');
+      showToast('El catálogo ha sido vaciado por completo.');
+    } catch (err) {
+      console.error(err);
+      showToast('Error al vaciar el catálogo', 'error');
+    } finally {
+      setWipingCatalog(false);
+    }
+  }
 
   const filteredProducts = productos.filter(p =>
     p.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -1758,7 +1836,7 @@ export default function Admin() {
                               
                               try {
                                 const tenantId = getTenantId() || '';
-                                const result = await SiigoService.applySync(tenantId, syncPending.toCreate, syncPending.toUpdate, addLog);
+                                await SiigoService.applySync(tenantId, syncPending.toCreate, syncPending.toUpdate, addLog);
                                 showToast('¡Sincronización finalizada con éxito! ✓');
                                 setConfiguracion(prev => prev ? { ...prev, siigo_sincronizado_at: new Date().toISOString() } : null);
                                 cargarDatos();
@@ -2160,6 +2238,82 @@ export default function Admin() {
               </button>
             </div>
             <img src={pagoModalUrl} alt="Comprobante" style={{ width: '100%', maxHeight: '70vh', objectFit: 'contain', borderRadius: '8px', border: '1px solid #e2e8f0' }} />
+          </div>
+        </div>
+      )}
+
+      {/* MODAL HERRAMIENTAS DE DEPURACIÓN (DUPLICADOS / VACIAR) */}
+      {showToolsModal && (
+        <div className="modal-overlay" onClick={() => setShowToolsModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '650px', width: '100%', borderRadius: '16px', padding: '2rem', background: 'white', maxHeight: '85vh', overflowY: 'auto' }}>
+            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>🔧 Depuración y Limpieza del Catálogo</h3>
+              <button onClick={() => setShowToolsModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+              
+              {/* Sección 1: Duplicados por Nombre */}
+              <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <h4 style={{ margin: '0 0 0.5rem 0', color: '#0f172a', fontWeight: 700 }}>🔍 Buscar Productos Duplicados</h4>
+                <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: '#475569' }}>
+                  A continuación se listan los productos que tienen el mismo nombre en el catálogo. Puedes borrar los duplicados (se conservará solo el primero de ellos).
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '250px', overflowY: 'auto', paddingRight: '0.5rem' }}>
+                  {getDuplicados.map((dup) => (
+                    <div key={dup.nombre} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', padding: '0.75rem 1rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ textAlign: 'left' }}>
+                        <strong style={{ fontSize: '0.9rem', color: '#0f172a' }}>{dup.nombre}</strong>
+                        <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: '#dc2626', fontWeight: 600 }}>Se repite {dup.count} veces</p>
+                      </div>
+                      <button 
+                        className="btn-secondary" 
+                        disabled={cleaningDuplicates}
+                        style={{ padding: '0.45rem 0.8rem', fontSize: '0.8rem', border: '1px solid #fca5a5', color: '#b91c1c', background: '#fee2e2', borderRadius: '6px', cursor: 'pointer' }}
+                        onClick={() => handleEliminarDuplicados(dup.nombre)}
+                      >
+                        {cleaningDuplicates ? 'Borrando...' : 'Conservar 1 y Borrar'}
+                      </button>
+                    </div>
+                  ))}
+                  {getDuplicados.length === 0 && (
+                    <div style={{ textAlign: 'center', padding: '1.5rem', color: '#16a34a', fontWeight: 600, fontSize: '0.88rem' }}>
+                      🎉 ¡Felicidades! No se encontraron productos duplicados en tu catálogo.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Sección 2: Vaciar Catálogo */}
+              <div style={{ background: '#fef2f2', padding: '1.5rem', borderRadius: '12px', border: '1px solid #fee2e2' }}>
+                <h4 style={{ margin: '0 0 0.5rem 0', color: '#991b1b', fontWeight: 800 }}>🚨 Acción Crítica: Vaciar Catálogo</h4>
+                <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: '#991b1b' }}>
+                  Esta acción eliminará <strong>todos los {productos.length} productos</strong> de tu catálogo digital de forma permanente de Supabase. Esto NO afectará tus productos en Siigo Nube.
+                </p>
+
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <input 
+                    type="text" 
+                    placeholder="Escribe ELIMINAR TODO para confirmar" 
+                    value={wipeConfirmText}
+                    onChange={e => setWipeConfirmText(e.target.value)}
+                    style={{ flex: 1, padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #fca5a5', outline: 'none', fontSize: '0.85rem' }}
+                  />
+                  <button
+                    className="btn-primary"
+                    disabled={wipingCatalog || wipeConfirmText !== 'ELIMINAR TODO'}
+                    style={{ padding: '0.6rem 1.2rem', background: '#dc2626', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem' }}
+                    onClick={handleVaciarCatalogo}
+                  >
+                    {wipingCatalog ? 'Vaciando...' : '⚠️ Vaciar Todo'}
+                  </button>
+                </div>
+              </div>
+
+            </div>
           </div>
         </div>
       )}
