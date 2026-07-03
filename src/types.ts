@@ -45,6 +45,7 @@ export interface Configuracion {
   siigo_username?: string;
   siigo_access_key?: string;
   siigo_sincronizado_at?: string;
+  color_primario?: string;
 }
 
 export interface Pedido {

@@ -4,7 +4,7 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido } from '../types';
 import './Admin.css';
-import { X, Video, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Database } from 'lucide-react';
+import { X, Video, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Database, Search } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const SECRET_PIN = '0000';
@@ -96,11 +96,33 @@ export default function Admin() {
 
   const [pagoModalUrl, setPagoModalUrl] = useState<string | null>(null);
 
+  // Filtros y Ordenamiento para la pestaña de Pedidos
+  const [orderFilterStatus, setOrderFilterStatus] = useState<string>('todos');
+  const [orderSearchQuery, setOrderSearchQuery] = useState<string>('');
+  const [orderSortBy, setOrderSortBy] = useState<string>('date_desc');
+
   useEffect(() => {
     if (configuracion?.nombre_negocio) {
       document.title = `${configuracion.nombre_negocio} - Panel Administrativo`;
     } else {
       document.title = 'Panel Administrativo';
+    }
+
+    if (configuracion?.color_primario) {
+      document.documentElement.style.setProperty('--primary-color', configuracion.color_primario);
+      // Extraer RGB para transparencias rgba()
+      const hex = configuracion.color_primario.replace('#', '');
+      if (hex.length === 6) {
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
+          document.documentElement.style.setProperty('--primary-rgb', `${r}, ${g}, ${b}`);
+        }
+      }
+    } else {
+      document.documentElement.style.setProperty('--primary-color', '#6366f1');
+      document.documentElement.style.setProperty('--primary-rgb', '99, 102, 241');
     }
   }, [configuracion]);
 
@@ -1246,21 +1268,27 @@ export default function Admin() {
                       <h3><Package size={16} /> Inventario ({filteredProducts.length})</h3>
                       <p>Todos los productos publicados en tu tienda</p>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
                       <button 
                         className="btn-secondary" 
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', border: '1px solid #fca5a5', color: '#b91c1c', background: '#fee2e2', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer' }}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', border: '1px solid #fca5a5', color: '#b91c1c', background: '#fee2e2', padding: '0.55rem 1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.82rem', transition: 'all 0.2s' }}
                         onClick={() => setShowToolsModal(true)}
                       >
                         🔧 Depurar Catálogo
                       </button>
-                      <input
-                        className="search-bar"
-                        style={{ width: '220px', margin: 0 }}
-                        placeholder="Buscar producto..."
-                        value={searchQuery}
-                        onChange={e => setSearchQuery(e.target.value)}
-                      />
+                      
+                      <div className="search-input-container" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                        <span style={{ position: 'absolute', left: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center' }}>
+                          <Search size={15} />
+                        </span>
+                        <input
+                          className="search-bar"
+                          style={{ width: '240px', padding: '0.55rem 1rem 0.55rem 2.25rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', transition: 'all 0.2s', margin: 0 }}
+                          placeholder="Buscar producto..."
+                          value={searchQuery}
+                          onChange={e => setSearchQuery(e.target.value)}
+                        />
+                      </div>
                     </div>
                   </div>
                 <div className="panel-body">
@@ -1290,10 +1318,31 @@ export default function Admin() {
                             <p className="p-cat">{p.categoria}</p>
                             <p className="p-price">${p.precio.toLocaleString()}</p>
                           </div>
-                          <div className="product-card-actions">
-                            <button className="btn-edit" onClick={() => { setEditingProduct(p); setEditExtraImages(p.imagenes_extra || []); }}><Pencil size={12} /> Editar</button>
-                            <button className="btn-secondary" onClick={() => handleDuplicate(p)} style={{ fontSize: '0.8rem', padding: '0.4rem 0.6rem', display: 'flex', alignItems: 'center', gap: '0.4rem', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', background: 'white' }}><Copy size={12} /> Duplicar</button>
-                            <button className="btn-danger" onClick={() => handleDelete(p.id)}><Trash2 size={12} /> Borrar</button>
+                          <div className="product-card-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.45rem', padding: '0.65rem 0.9rem', background: '#fafafa', borderTop: '1px solid #f1f5f9' }}>
+                            <button 
+                              className="btn-edit" 
+                              style={{ padding: '0.5rem', borderRadius: '8px', cursor: 'pointer', border: '1px solid #bae6fd', background: '#e0f2fe', color: '#0369a1', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', width: '32px', height: '32px' }}
+                              onClick={() => { setEditingProduct(p); setEditExtraImages(p.imagenes_extra || []); }}
+                              title="Editar Producto"
+                            >
+                              <Pencil size={14} />
+                            </button>
+                            <button 
+                              className="btn-secondary" 
+                              style={{ padding: '0.5rem', borderRadius: '8px', cursor: 'pointer', border: '1px solid #e2e8f0', background: 'white', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', width: '32px', height: '32px' }}
+                              onClick={() => handleDuplicate(p)} 
+                              title="Duplicar Producto"
+                            >
+                              <Copy size={14} />
+                            </button>
+                            <button 
+                              className="btn-danger" 
+                              style={{ padding: '0.5rem', borderRadius: '8px', cursor: 'pointer', border: '1px solid #fca5a5', background: '#fee2e2', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', width: '32px', height: '32px' }}
+                              onClick={() => handleDelete(p.id)}
+                              title="Eliminar Producto"
+                            >
+                              <Trash2 size={14} />
+                            </button>
                           </div>
                         </div>
                       ))}
@@ -1481,7 +1530,7 @@ export default function Admin() {
                                 }}
                               />
                             </label>
-                            <button className="btn-edit" onClick={() => setEditingCategory(c)} style={{ padding: '0.4rem 0.6rem', height: 30, display: 'flex', alignItems: 'center', gap: '0.2rem', borderRadius: 8, background: '#f1f5f9', border: 'none', cursor: 'pointer', fontSize: '0.75rem' }}>
+                            <button className="btn-edit" onClick={() => setEditingCategory(c)}>
                               <Pencil size={11} /> Editar
                             </button>
                             <button className="btn-danger" onClick={async () => {
@@ -1556,7 +1605,8 @@ export default function Admin() {
                       descripcion_hero: configuracion.descripcion_hero,
                       link_dropshipper: configuracion.link_dropshipper,
                       link_ganar_dinero: configuracion.link_ganar_dinero,
-                      video_hero_url: configuracion.video_hero_url
+                      video_hero_url: configuracion.video_hero_url,
+                      color_primario: configuracion.color_primario || '#6366f1'
                     }).eq('id', configuracion.id);
                     setLoading(false);
                     if (error) showToast('Error: ' + error.message, 'error');
@@ -1572,6 +1622,24 @@ export default function Admin() {
                         <div className="form-field">
                           <label>Número WhatsApp (sin +)</label>
                           <input required value={configuracion.whatsapp} onChange={e => setConfiguracion({ ...configuracion, whatsapp: e.target.value })} placeholder="573185637317" />
+                        </div>
+                        <div className="form-field">
+                          <label>Color Temático (Primario)</label>
+                          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <input 
+                              type="color" 
+                              value={configuracion.color_primario || '#6366f1'} 
+                              onChange={e => setConfiguracion({ ...configuracion, color_primario: e.target.value })} 
+                              style={{ width: '46px', height: '40px', padding: '2px', border: '1px solid #cbd5e1', borderRadius: '10px', cursor: 'pointer' }}
+                            />
+                            <input 
+                              type="text" 
+                              value={configuracion.color_primario || '#6366f1'} 
+                              onChange={e => setConfiguracion({ ...configuracion, color_primario: e.target.value })} 
+                              placeholder="#6366f1"
+                              style={{ flex: 1 }}
+                            />
+                          </div>
                         </div>
                         <div className="form-field full">
                           <label>Texto Principal de la Tienda (Hero)</label>
