@@ -66,4 +66,5 @@ export interface Pedido {
   pantallazo_url?: string;
   atendido?: boolean;
   estado?: string;
+  numero_guia?: string;
 }

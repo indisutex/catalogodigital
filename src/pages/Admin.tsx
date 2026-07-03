@@ -56,6 +56,20 @@ export default function Admin() {
   const [subcategoriasData, setSubcategoriasData] = useState<Subcategoria[]>([]);
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
+
+  const [showSuccessScreen, setShowSuccessScreen] = useState<boolean>(false);
+  const [numeroGuia, setNumeroGuia] = useState<string>('');
+  const [loadingGuia, setLoadingGuia] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (selectedPedido) {
+      setNumeroGuia(selectedPedido.numero_guia || '');
+      setShowSuccessScreen(false);
+    } else {
+      setNumeroGuia('');
+      setShowSuccessScreen(false);
+    }
+  }, [selectedPedido]);
   const [subcatNombre, setSubcatNombre] = useState('');
   const [subcatSlug, setSubcatSlug] = useState('');
   const [subcatParentId, setSubcatParentId] = useState('');
@@ -459,12 +473,71 @@ export default function Admin() {
       setPedidos(prev => prev.map(p => p.id === ped.id ? { ...p, estado: 'completado', atendido: true } : p));
       setSelectedPedido(prev => prev && prev.id === ped.id ? { ...prev, estado: 'completado', atendido: true } : prev);
 
-      showToast('Pago verificado y aprobado exitosamente ✓', 'success');
+      setShowSuccessScreen(true);
     } catch (err: any) {
       console.error(err);
       showToast('Error al procesar la aprobación: ' + err.message, 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleGenerarGuia99Envios = async (pedId: string) => {
+    setLoadingGuia(true);
+    try {
+      // Simulate API call to 99 Envios / 99 Minutos
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      const randNum = Math.floor(100000 + Math.random() * 900000);
+      const generatedGuia = `99E-${randNum}`;
+      
+      // Update in Supabase
+      const { error } = await supabase
+        .from('pedidos')
+        .update({ numero_guia: generatedGuia })
+        .eq('id', pedId);
+        
+      if (error) throw error;
+      
+      setNumeroGuia(generatedGuia);
+      
+      // Update local state
+      setPedidos(prev => prev.map(p => p.id === pedId ? { ...p, numero_guia: generatedGuia } : p));
+      setSelectedPedido(prev => prev && prev.id === pedId ? { ...prev, numero_guia: generatedGuia } : prev);
+      
+      showToast('Guía generada con 99 Envíos ✓', 'success');
+    } catch (err: any) {
+      console.error(err);
+      showToast('Error al generar la guía: ' + err.message, 'error');
+    } finally {
+      setLoadingGuia(false);
+    }
+  };
+
+  const handleGuardarGuiaManual = async (pedId: string, manualGuia: string) => {
+    if (!manualGuia.trim()) {
+      showToast('Ingresa un número de guía válido', 'error');
+      return;
+    }
+    setLoadingGuia(true);
+    try {
+      const { error } = await supabase
+        .from('pedidos')
+        .update({ numero_guia: manualGuia.trim() })
+        .eq('id', pedId);
+        
+      if (error) throw error;
+      
+      // Update local state
+      setPedidos(prev => prev.map(p => p.id === pedId ? { ...p, numero_guia: manualGuia.trim() } : p));
+      setSelectedPedido(prev => prev && prev.id === pedId ? { ...prev, numero_guia: manualGuia.trim() } : prev);
+      
+      showToast('Número de guía guardado ✓', 'success');
+    } catch (err: any) {
+      console.error(err);
+      showToast('Error al guardar: ' + err.message, 'error');
+    } finally {
+      setLoadingGuia(false);
     }
   };
 
@@ -2674,138 +2747,329 @@ export default function Admin() {
 
       {/* MODAL DETALLE PEDIDO */}
       {selectedPedido && (
-        <div className="modal-overlay" onClick={() => setSelectedPedido(null)}>
+        <div className="modal-overlay" onClick={() => { setSelectedPedido(null); setShowSuccessScreen(false); }}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', width: '100%', borderRadius: '16px', padding: '1.25rem', maxHeight: '92vh', overflowY: 'auto' }}>
-            <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
-              <h3 style={{ margin: 0 }}>📦 Detalle del Pedido</h3>
-              <button onClick={() => setSelectedPedido(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
-                <X size={20} />
-              </button>
-            </div>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-              <div>
-                <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase' }}>Cliente</h5>
-                <p style={{ margin: 0, fontWeight: 600, color: '#0f172a' }}>{selectedPedido.cliente_nombre}</p>
-                <p style={{ margin: '0.2rem 0 0 0', color: '#475569' }}>{selectedPedido.cliente_telefono}</p>
-              </div>
-              <div>
-                <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase' }}>Línea WhatsApp Asignada</h5>
-                <p style={{ margin: 0, fontWeight: 700, color: '#0ea5e9' }}>📞 {selectedPedido.linea_whatsapp}</p>
-              </div>
-              <div style={{ gridColumn: 'span 2' }}>
-                <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase' }}>Dirección de Entrega</h5>
-                <p style={{ margin: 0, color: '#0f172a' }}>{selectedPedido.direccion}, {selectedPedido.ciudad}</p>
-              </div>
-            </div>
-
-            <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
-              <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.95rem' }}>Productos Solicitados</h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '130px', overflowY: 'auto', paddingRight: '0.5rem' }}>
-                {Array.isArray(selectedPedido.productos) && selectedPedido.productos.map((prod: any, idx: number) => (
-                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
-                    <div>
-                      <h5 style={{ margin: 0, color: '#0f172a' }}>{prod.nombre}</h5>
-                      <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                        Cantidad: {prod.cantidad} {prod.talla ? ` | Talla: ${prod.talla}` : ''} {prod.estampado ? ` | Estampado: ${prod.estampado}` : ''}
-                      </span>
-                    </div>
-                    <span style={{ fontWeight: 700, color: '#0f172a' }}>
-                      ${(prod.precio * prod.cantidad).toLocaleString()}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Pantallazo Nequi */}
-            {selectedPedido.pantallazo_url && (
-              <div style={{ marginTop: '1.5rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
-                <h4 style={{ margin: '0 0 0.75rem', fontSize: '0.9rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  💳 Comprobante de Pago (Nequi)
-                </h4>
-                <div onClick={() => setPagoModalUrl(selectedPedido.pantallazo_url || null)} style={{ cursor: 'pointer' }}>
-                  <img
-                    src={selectedPedido.pantallazo_url}
-                    alt="Comprobante Nequi"
-                    style={{ width: '100%', maxHeight: '120px', objectFit: 'contain', borderRadius: '12px', border: '1px solid #e2e8f0' }}
-                  />
+            {showSuccessScreen ? (
+              <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                <div style={{ 
+                  width: '64px', height: '64px', 
+                  background: '#dcfce7', borderRadius: '50%', 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                  margin: '0 auto 1.25rem auto'
+                }}>
+                  <span style={{ fontSize: '2rem' }}>✅</span>
                 </div>
-                <p style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600, marginTop: '0.5rem', textAlign: 'center' }}>
-                  ✅ Comprobante recibido — Click para ver en pantalla completa
+                <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 800, fontSize: '1.3rem', color: '#14532d' }}>
+                  ¡Pago Aprobado y Completado!
+                </h3>
+                <p style={{ margin: '0 0 1.25rem 0', color: '#475569', fontSize: '0.85rem' }}>
+                  El pedido ha cambiado a estado completado (verde) y el cliente se ha registrado para fidelización.
                 </p>
-              </div>
-            )}
-            {!selectedPedido.pantallazo_url && (
-              <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.75rem', textAlign: 'center' }}>
-                <p style={{ color: '#f59e0b', fontWeight: 600, fontSize: '0.85rem', margin: 0 }}>
-                  ⏳ Pendiente de comprobante
-                </p>
-              </div>
-            )}
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e2e8f0', marginTop: '1rem', paddingTop: '1rem' }}>
-              <span style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>Total del Pedido:</span>
-              <span style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10b981' }}>
-                ${selectedPedido.total.toLocaleString()}
-              </span>
-            </div>
+                {/* Seccion 99 Envios */}
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1rem', marginBottom: '1.25rem', textAlign: 'left' }}>
+                  <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    🚚 Logística (99 Envíos)
+                  </h4>
+                  <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.78rem', color: '#64748b' }}>
+                    Genera la guía automática para despacho o digita la guía manualmente.
+                  </p>
 
-            {/* Botones de acción */}
-            <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', flexWrap: 'wrap', flexDirection: 'column' }}>
-              {selectedPedido.estado !== 'completado' && (
-                <button
-                  style={{
-                    width: '100%',
-                    padding: '0.65rem 1rem',
-                    background: '#10b981',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '12px',
-                    cursor: 'pointer',
-                    fontWeight: 700,
-                    fontSize: '1rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem',
-                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)'
-                  }}
-                  onClick={() => handleAprobarPago(selectedPedido)}
-                >
-                  <Check size={18} /> Aprobar y completar pago
-                </button>
-              )}
-              
-              <div style={{ display: 'flex', gap: '0.75rem', width: '100%' }}>
-                <button
-                  style={{ flex: 1, padding: '0.65rem 1rem', background: '#25D366', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-                  onClick={() => {
-                    const num = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
-                    const uploadLink = `${window.location.origin}/pago/${selectedPedido.id}`;
-                    const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: $${selectedPedido.total.toLocaleString()} COP*\n\n💳 *Datos del banco:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\nPara poder completar tu pedido, haz la captura de pantalla de tu pago o de transacción y envíala por este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
-                    window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
-                  }}
-                >
-                  💳 Cobrar por Nequi/WhatsApp
-                </button>
-                <button
-                  style={{ flex: 1, padding: '0.65rem 1rem', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
-                  onClick={() => {
-                    const num = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
-                    const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋 Tu pedido ha sido *VERIFICADO y DESPACHADO* 🚚\n\nPedido: ${selectedPedido.productos?.map((p: any) => `${p.cantidad}x ${p.nombre}`).join(', ')}\nTotal: $${selectedPedido.total.toLocaleString()} COP\n\n📦 Tu paquete está en camino. ¡Gracias por tu compra!`;
-                    window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
-                  }}
-                >
-                  🚚 Confirmar Despacho
-                </button>
+                  {numeroGuia ? (
+                    <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.6rem 0.8rem', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                      <div>
+                        <span style={{ fontSize: '0.7rem', color: '#166534', fontWeight: 600, display: 'block', textTransform: 'uppercase' }}>Guía Generada</span>
+                        <strong style={{ fontSize: '0.95rem', color: '#14532d' }}>{numeroGuia}</strong>
+                      </div>
+                      <span style={{ fontSize: '0.75rem', background: '#dcfce7', color: '#166534', padding: '0.2rem 0.5rem', borderRadius: '12px', fontWeight: 700 }}>Activa</span>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={loadingGuia}
+                      onClick={() => handleGenerarGuia99Envios(selectedPedido.id)}
+                      style={{
+                        width: '100%',
+                        padding: '0.65rem',
+                        background: '#4f46e5',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '10px',
+                        cursor: 'pointer',
+                        fontWeight: 700,
+                        fontSize: '0.82rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.4rem',
+                        marginBottom: '0.75rem',
+                        opacity: loadingGuia ? 0.7 : 1
+                      }}
+                    >
+                      {loadingGuia ? 'Generando guía...' : '🔌 Generar Guía con 99 Envíos'}
+                    </button>
+                  )}
+
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <input
+                      type="text"
+                      placeholder="Número de guía manual..."
+                      value={numeroGuia}
+                      onChange={e => setNumeroGuia(e.target.value)}
+                      style={{ flex: 1, padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.82rem', outline: 'none' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleGuardarGuiaManual(selectedPedido.id, numeroGuia)}
+                      style={{ padding: '0.5rem 0.85rem', background: '#0f172a', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}
+                    >
+                      Guardar
+                    </button>
+                  </div>
+                </div>
+
+                {/* Botones de Envío / Cerrar */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  <button
+                    type="button"
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      background: '#25D366',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      fontWeight: 700,
+                      fontSize: '0.9rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem'
+                    }}
+                    onClick={() => {
+                      const num = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
+                      const name = selectedPedido.cliente_nombre;
+                      const business = configuracion?.nombre_negocio || 'Indisutex';
+                      const msg = `¡Felicidades ${name}! 🎉 Has hecho una compra exitosa con *${business}*.\n\nTu número de guía de envío es: *${numeroGuia || 'Pendiente'}*\n\n¡Muchas gracias por confiar en nosotros! 😊`;
+                      window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
+                    }}
+                  >
+                    💬 Enviar WhatsApp de Éxito y Guía
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedPedido(null);
+                      setShowSuccessScreen(false);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '0.65rem',
+                      background: 'white',
+                      color: '#64748b',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '10px',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      fontSize: '0.82rem'
+                    }}
+                  >
+                    Cerrar Ventana
+                  </button>
+                </div>
               </div>
-            </div>
+            ) : (
+              <>
+                <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
+                  <h3 style={{ margin: 0 }}>📦 Detalle del Pedido</h3>
+                  <button onClick={() => { setSelectedPedido(null); setShowSuccessScreen(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
+                    <X size={20} />
+                  </button>
+                </div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                  <div>
+                    <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase' }}>Cliente</h5>
+                    <p style={{ margin: 0, fontWeight: 600, color: '#0f172a' }}>{selectedPedido.cliente_nombre}</p>
+                    <p style={{ margin: '0.2rem 0 0 0', color: '#475569' }}>{selectedPedido.cliente_telefono}</p>
+                  </div>
+                  <div>
+                    <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase' }}>Línea WhatsApp Asignada</h5>
+                    <p style={{ margin: 0, fontWeight: 700, color: '#0ea5e9' }}>📞 {selectedPedido.linea_whatsapp}</p>
+                  </div>
+                  <div style={{ gridColumn: 'span 2' }}>
+                    <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase' }}>Dirección de Entrega</h5>
+                    <p style={{ margin: 0, color: '#0f172a' }}>{selectedPedido.direccion}, {selectedPedido.ciudad}</p>
+                  </div>
+                </div>
+
+                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
+                  <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.95rem' }}>Productos Solicitados</h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '130px', overflowY: 'auto', paddingRight: '0.5rem' }}>
+                    {Array.isArray(selectedPedido.productos) && selectedPedido.productos.map((prod: any, idx: number) => (
+                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                        <div>
+                          <h5 style={{ margin: 0, color: '#0f172a' }}>{prod.nombre}</h5>
+                          <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                            Cantidad: {prod.cantidad} {prod.talla ? ` | Talla: ${prod.talla}` : ''} {prod.estampado ? ` | Estampado: ${prod.estampado}` : ''}
+                          </span>
+                        </div>
+                        <span style={{ fontWeight: 700, color: '#0f172a' }}>
+                          ${(prod.precio * prod.cantidad).toLocaleString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Pantallazo Nequi */}
+                {selectedPedido.pantallazo_url && (
+                  <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
+                    <h4 style={{ margin: '0 0 0.75rem', fontSize: '0.9rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      💳 Comprobante de Pago (Nequi)
+                    </h4>
+                    <div onClick={() => setPagoModalUrl(selectedPedido.pantallazo_url || null)} style={{ cursor: 'pointer' }}>
+                      <img
+                        src={selectedPedido.pantallazo_url}
+                        alt="Comprobante Nequi"
+                        style={{ width: '100%', maxHeight: '120px', objectFit: 'contain', borderRadius: '12px', border: '1px solid #e2e8f0' }}
+                      />
+                    </div>
+                    <p style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600, marginTop: '0.5rem', textAlign: 'center' }}>
+                      ✅ Comprobante recibido — Click para ver en pantalla completa
+                    </p>
+                  </div>
+                )}
+                {!selectedPedido.pantallazo_url && (
+                  <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.75rem', textAlign: 'center' }}>
+                    <p style={{ color: '#f59e0b', fontWeight: 600, fontSize: '0.85rem', margin: 0 }}>
+                      ⏳ Pendiente de comprobante
+                    </p>
+                  </div>
+                )}
+
+                {/* Seccion 99 Envios y Guía de Envío (para pedidos completados) */}
+                {selectedPedido.estado === 'completado' && (
+                  <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
+                    <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      🚚 Datos de Envío (99 Envíos)
+                    </h4>
+                    
+                    {numeroGuia ? (
+                      <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.5rem 0.75rem', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                        <div>
+                          <span style={{ fontSize: '0.7rem', color: '#166534', fontWeight: 600, display: 'block', textTransform: 'uppercase' }}>Número de Guía</span>
+                          <strong style={{ fontSize: '0.9rem', color: '#14532d' }}>{numeroGuia}</strong>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const num = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
+                            const name = selectedPedido.cliente_nombre;
+                            const business = configuracion?.nombre_negocio || 'Indisutex';
+                            const msg = `¡Felicidades ${name}! 🎉 Has hecho una compra exitosa con *${business}*.\n\nTu número de guía de envío es: *${numeroGuia}*\n\n¡Muchas gracias por confiar en nosotros! 😊`;
+                            window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
+                          }}
+                          style={{ padding: '0.3rem 0.6rem', background: '#25D366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}
+                        >
+                          💬 Enviar Guía
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                        <button
+                          type="button"
+                          disabled={loadingGuia}
+                          onClick={() => handleGenerarGuia99Envios(selectedPedido.id)}
+                          style={{ flex: 1, padding: '0.5rem', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700 }}
+                        >
+                          {loadingGuia ? 'Generando...' : '🔌 Generar Guía con 99 Envíos'}
+                        </button>
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <input
+                        type="text"
+                        placeholder="Número de guía manual..."
+                        value={numeroGuia}
+                        onChange={e => setNumeroGuia(e.target.value)}
+                        style={{ flex: 1, padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.8rem', outline: 'none' }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleGuardarGuiaManual(selectedPedido.id, numeroGuia)}
+                        style={{ padding: '0.4rem 0.75rem', background: '#0f172a', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                      >
+                        Guardar
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e2e8f0', marginTop: '1rem', paddingTop: '1rem' }}>
+                  <span style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>Total del Pedido:</span>
+                  <span style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10b981' }}>
+                    ${selectedPedido.total.toLocaleString()}
+                  </span>
+                </div>
+
+                {/* Botones de acción */}
+                <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', flexWrap: 'wrap', flexDirection: 'column' }}>
+                  {selectedPedido.estado !== 'completado' && (
+                    <button
+                      style={{
+                        width: '100%',
+                        padding: '0.65rem 1rem',
+                        background: '#10b981',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        fontWeight: 700,
+                        fontSize: '1rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                        boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)'
+                      }}
+                      onClick={() => handleAprobarPago(selectedPedido)}
+                    >
+                      <Check size={18} /> Aprobar y completar pago
+                    </button>
+                  )}
+                  
+                  <div style={{ display: 'flex', gap: '0.75rem', width: '100%' }}>
+                    <button
+                      style={{ flex: 1, padding: '0.65rem 1rem', background: '#25D366', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                      onClick={() => {
+                        const num = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
+                        const uploadLink = `${window.location.origin}/pago/${selectedPedido.id}`;
+                        const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: $${selectedPedido.total.toLocaleString()} COP*\n\n💳 *Datos del banco:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\nPara poder completar tu pedido, haz la captura de pantalla de tu pago o de transacción y envíala por este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
+                        window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
+                      }}
+                    >
+                      💳 Cobrar por Nequi/WhatsApp
+                    </button>
+                    <button
+                      style={{ flex: 1, padding: '0.65rem 1rem', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+                      onClick={() => {
+                        const num = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
+                        const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋 Tu pedido ha sido *VERIFICADO y DESPACHADO* 🚚\n\nPedido: ${selectedPedido.productos?.map((p: any) => `${p.cantidad}x ${p.nombre}`).join(', ')}\nTotal: $${selectedPedido.total.toLocaleString()} COP\n\n📦 Tu paquete está en camino. ¡Gracias por tu compra!`;
+                        window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
+                      }}
+                    >
+                      🚚 Confirmar Despacho
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
-      )}
-
-      {/* MODAL PAGO SREENSHOT */}
+      )}      {/* MODAL PAGO SREENSHOT */}
       {pagoModalUrl && (
         <div className="modal-overlay" onClick={() => setPagoModalUrl(null)}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '460px', width: '100%', borderRadius: '16px', padding: '1.5rem', textAlign: 'center', background: 'white' }}>
