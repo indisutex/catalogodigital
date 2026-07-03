@@ -67,4 +67,5 @@ export interface Pedido {
   atendido?: boolean;
   estado?: string;
   numero_guia?: string;
+  origen?: string;
 }

@@ -4,7 +4,7 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido } from '../types';
 import './Admin.css';
-import { X, Video, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Database, Search } from 'lucide-react';
+import { X, Video, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Database, Search, Calculator } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const SECRET_PIN = '0000';
@@ -31,7 +31,7 @@ const emptyProduct: ProductFormData = {
   tallas: ''
 };
 
-type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo';
+type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos';
 
 type Toast = { message: string; type: 'success' | 'error' } | null;
 
@@ -56,6 +56,49 @@ export default function Admin() {
   const [subcategoriasData, setSubcategoriasData] = useState<Subcategoria[]>([]);
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
+
+  // POS States
+  const [posCart, setPosCart] = useState<any[]>([]);
+  const [posSearchQuery, setPosSearchQuery] = useState('');
+  const [posCategoryFilter, setPosCategoryFilter] = useState('todos');
+  const [posCustomerPhone, setPosCustomerPhone] = useState('');
+  const [posCustomerName, setPosCustomerName] = useState('');
+  const [posCustomerAddress, setPosCustomerAddress] = useState('');
+  const [posCustomerCity, setPosCustomerCity] = useState('');
+  const [posPaymentMethod, setPosPaymentMethod] = useState<'efectivo' | 'transferencia' | 'tarjeta'>('efectivo');
+  const [posPriceTier, setPosPriceTier] = useState<'detal' | 'por_mayor' | 'precio_50_unidades'>('detal');
+  const [posCheckoutSuccess, setPosCheckoutSuccess] = useState(false);
+  const [posLastInvoice, setPosLastInvoice] = useState<any | null>(null);
+
+  useEffect(() => {
+    const lookupCustomer = async () => {
+      if (posCustomerPhone.trim().length >= 7) {
+        const { data, error } = await supabase
+          .from('clientes_exitosos')
+          .select('*')
+          .eq('telefono', posCustomerPhone.trim())
+          .eq('tenant_id', getTenantId())
+          .maybeSingle();
+        if (!error && data) {
+          setPosCustomerName(data.nombre || '');
+          // Find last order of this client to fetch address and city
+          const { data: lastOrder } = await supabase
+            .from('pedidos')
+            .select('direccion, ciudad')
+            .eq('cliente_telefono', posCustomerPhone.trim())
+            .eq('tenant_id', getTenantId())
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (lastOrder) {
+            setPosCustomerAddress(lastOrder.direccion || '');
+            setPosCustomerCity(lastOrder.ciudad || '');
+          }
+        }
+      }
+    };
+    lookupCustomer();
+  }, [posCustomerPhone]);
 
   const [showSuccessScreen, setShowSuccessScreen] = useState<boolean>(false);
   const [numeroGuia, setNumeroGuia] = useState<string>('');
@@ -2495,6 +2538,593 @@ export default function Admin() {
             </>
           )}
 
+          {/* ── POS TAB ── */}
+          {activeTab === 'pos' && (
+            <div className="pos-layout">
+              {posCheckoutSuccess ? (
+                /* SUCCESS RECEIPT SCREEN */
+                <div className="pos-success-screen" style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '24px', padding: '2rem', maxWidth: '560px', margin: '2rem auto', textAlign: 'center', boxShadow: '0 20px 40px -12px rgba(0,0,0,0.1)' }}>
+                  <div style={{ width: '64px', height: '64px', background: '#dcfce7', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem auto' }}>
+                    <span style={{ fontSize: '2rem' }}>✅</span>
+                  </div>
+                  <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 800, fontSize: '1.4rem', color: '#14532d' }}>¡Venta Completada con Éxito!</h3>
+                  <p style={{ margin: '0 0 1.5rem 0', color: '#475569', fontSize: '0.88rem' }}>El inventario ha sido actualizado y la venta se registró en el historial de pedidos.</p>
+
+                  {/* Factura Detalle */}
+                  {posLastInvoice && (
+                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1.25rem', textAlign: 'left', marginBottom: '1.5rem', fontFamily: 'monospace', fontSize: '0.85rem' }}>
+                      <div style={{ borderBottom: '1px dashed #cbd5e1', paddingBottom: '0.75rem', marginBottom: '0.75rem', textAlign: 'center' }}>
+                        <strong style={{ fontSize: '1rem', textTransform: 'uppercase' }}>{configuracion?.nombre_negocio || 'Indisutex'}</strong>
+                        <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.75rem' }}>COMPROBANTE DE VENTA POS</p>
+                        <p style={{ margin: '0.1rem 0 0 0', color: '#64748b', fontSize: '0.72rem' }}>Fecha: {new Date(posLastInvoice.created_at).toLocaleString()}</p>
+                      </div>
+
+                      <div style={{ marginBottom: '0.75rem' }}>
+                        <strong>Cliente:</strong> {posLastInvoice.cliente_nombre}<br />
+                        <strong>Teléfono:</strong> {posLastInvoice.cliente_telefono}<br />
+                        {posLastInvoice.direccion && <><strong>Dirección:</strong> {posLastInvoice.direccion}, {posLastInvoice.ciudad}<br /></>}
+                        <strong>Método de Pago:</strong> {posLastInvoice.metodo_pago.toUpperCase()}<br />
+                      </div>
+
+                      <div style={{ borderTop: '1px dashed #cbd5e1', borderBottom: '1px dashed #cbd5e1', padding: '0.5rem 0', margin: '0.75rem 0' }}>
+                        {posLastInvoice.productos.map((item: any, idx: number) => (
+                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
+                            <span>
+                              {item.cantidad}x {item.nombre} 
+                              {item.talla ? ` (${item.talla})` : ''} 
+                              {item.estampado ? ` [${item.estampado}]` : ''}
+                            </span>
+                            <span>${(item.precio * item.cantidad).toLocaleString()}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '1rem', marginTop: '0.5rem' }}>
+                        <span>TOTAL PAGADO:</span>
+                        <span style={{ color: '#10b981' }}>${posLastInvoice.total.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      style={{
+                        padding: '0.75rem 1rem',
+                        background: '#25D366',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        fontWeight: 700,
+                        fontSize: '0.92rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem'
+                      }}
+                      onClick={() => {
+                        if (!posLastInvoice) return;
+                        const num = posLastInvoice.cliente_telefono.replace(/\D/g, '');
+                        const itemsStr = posLastInvoice.productos.map((i: any) => `- ${i.cantidad}x ${i.nombre} ${i.talla ? `(${i.talla})` : ''}`).join('\n');
+                        const msg = `¡Hola ${posLastInvoice.cliente_nombre}! 👋\\nMuchas gracias por tu compra en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\\n\\n*Detalle de tu compra:*\\n${itemsStr}\\n\\n*Total Pagado: $${posLastInvoice.total.toLocaleString()} COP*\\n*Método de Pago: ${posLastInvoice.metodo_pago.toUpperCase()}*\\n\\n¡Esperamos que disfrutes tus productos! 😊`;
+                        window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
+                      }}
+                    >
+                      💬 Enviar Recibo por WhatsApp
+                    </button>
+                    
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      style={{
+                        padding: '0.7rem 1rem',
+                        background: '#ffffff',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        fontSize: '0.88rem'
+                      }}
+                      onClick={() => {
+                        setPosCart([]);
+                        setPosCustomerPhone('');
+                        setPosCustomerName('');
+                        setPosCustomerAddress('');
+                        setPosCustomerCity('');
+                        setPosCheckoutSuccess(false);
+                        setPosLastInvoice(null);
+                      }}
+                    >
+                      Nueva Venta (Limpiar)
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* MAIN POS SALES SCREEN */
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.5rem', alignItems: 'start' }}>
+                  
+                  {/* LEFT COLUMN: PRODUCT SELECTION */}
+                  <div className="admin-panel" style={{ minHeight: '650px' }}>
+                    <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem' }}>
+                      <div>
+                        <h3 style={{ fontSize: '1.15rem' }}><Calculator size={18} style={{ color: '#4f46e5' }} /> POS Catálogo</h3>
+                        <p style={{ fontSize: '0.8rem' }}>Busca y selecciona los productos del inventario</p>
+                      </div>
+                      
+                      {/* Price Tier Selector */}
+                      <div style={{ display: 'flex', gap: '0.35rem', background: '#f1f5f9', padding: '0.25rem', borderRadius: '8px' }}>
+                        {(['detal', 'por_mayor', 'precio_50_unidades'] as const).map(tier => (
+                          <button
+                            key={tier}
+                            type="button"
+                            onClick={() => setPosPriceTier(tier)}
+                            style={{
+                              border: 'none',
+                              background: posPriceTier === tier ? '#4f46e5' : 'transparent',
+                              color: posPriceTier === tier ? '#ffffff' : '#64748b',
+                              padding: '0.35rem 0.75rem',
+                              borderRadius: '6px',
+                              fontSize: '0.78rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              textTransform: 'capitalize'
+                            }}
+                          >
+                            {tier.replace('_', ' ')}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="panel-body">
+                      {/* Filters bar */}
+                      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                        <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center' }}>
+                          <span style={{ position: 'absolute', left: '10px', color: '#94a3b8', display: 'flex', alignItems: 'center' }}>
+                            <Search size={14} />
+                          </span>
+                          <input
+                            type="text"
+                            placeholder="Buscar producto por nombre o ref..."
+                            value={posSearchQuery}
+                            onChange={e => setPosSearchQuery(e.target.value)}
+                            style={{ width: '100%', padding: '0.45rem 0.8rem 0.45rem 2rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.82rem' }}
+                          />
+                        </div>
+
+                        <select
+                          value={posCategoryFilter}
+                          onChange={e => setPosCategoryFilter(e.target.value)}
+                          style={{ padding: '0.45rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.82rem', background: 'white' }}
+                        >
+                          <option value="todos">Todas las categorías</option>
+                          {categoriasData.map(c => <option key={c.id} value={c.slug}>{c.nombre}</option>)}
+                        </select>
+                      </div>
+
+                      {/* Products Grid */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem', maxHeight: '500px', overflowY: 'auto', paddingRight: '0.25rem' }}>
+                        {productos
+                          .filter(p => {
+                            const matchesSearch = p.nombre.toLowerCase().includes(posSearchQuery.toLowerCase()) || (p.referencia || '').toLowerCase().includes(posSearchQuery.toLowerCase());
+                            const matchesCat = posCategoryFilter === 'todos' || p.categoria === posCategoryFilter;
+                            return matchesSearch && matchesCat;
+                          })
+                          .map(p => {
+                            // Get active price based on tier
+                            let activePrice = p.precio;
+                            if (posPriceTier === 'por_mayor' && p.precio_por_mayor) activePrice = p.precio_por_mayor;
+                            if (posPriceTier === 'precio_50_unidades' && p.precio_50_unidades) activePrice = p.precio_50_unidades;
+
+                            return (
+                              <div key={p.id} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'white', position: 'relative' }}>
+                                {/* Image or Placeholder */}
+                                <div style={{ height: '110px', width: '100%', borderRadius: '8px', background: '#f1f5f9', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  {p.imagen_url ? (
+                                    <img src={p.imagen_url} alt={p.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                  ) : (
+                                    <span style={{ fontSize: '1.5rem' }}>👕</span>
+                                  )}
+                                </div>
+
+                                {p.referencia && (
+                                  <span style={{ background: '#f1f5f9', color: '#475569', fontSize: '0.62rem', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: 800, alignSelf: 'flex-start' }}>
+                                    Ref: {p.referencia}
+                                  </span>
+                                )}
+
+                                <h5 style={{ margin: 0, fontSize: '0.82rem', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={p.nombre}>
+                                  {p.nombre}
+                                </h5>
+
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
+                                  <span style={{ color: '#10b981', fontWeight: 800, fontSize: '0.88rem' }}>
+                                    ${activePrice.toLocaleString()}
+                                  </span>
+                                  <span style={{ fontSize: '0.7rem', color: p.stock && p.stock > 0 ? '#475569' : '#ef4444', fontWeight: 600 }}>
+                                    Stock: {p.stock || 0}
+                                  </span>
+                                </div>
+
+                                {/* Quick add button */}
+                                <button
+                                  type="button"
+                                  disabled={!p.stock || p.stock <= 0}
+                                  onClick={() => {
+                                    // Helper function to insert directly
+                                    // Tallas default
+                                    const defaultTalla = p.tallas ? p.tallas.split(',')[0].trim() : undefined;
+                                    const defaultEstampado = p.estampados ? p.estampados.split(',')[0].trim() : undefined;
+                                    
+                                    setPosCart(prev => {
+                                      const exist = prev.find(item => item.id === p.id && item.talla === defaultTalla && item.estampado === defaultEstampado);
+                                      if (exist) {
+                                        return prev.map(item => (item.id === p.id && item.talla === defaultTalla && item.estampado === defaultEstampado) ? { ...item, cantidad: item.cantidad + 1 } : item);
+                                      } else {
+                                        return [...prev, {
+                                          id: p.id,
+                                          nombre: p.nombre,
+                                          precio: activePrice,
+                                          cantidad: 1,
+                                          talla: defaultTalla,
+                                          estampado: defaultEstampado,
+                                          producto: p
+                                        }];
+                                      }
+                                    });
+                                  }}
+                                  style={{
+                                    width: '100%',
+                                    padding: '0.4rem',
+                                    borderRadius: '8px',
+                                    border: 'none',
+                                    background: p.stock && p.stock > 0 ? '#4f46e5' : '#e2e8f0',
+                                    color: 'white',
+                                    fontWeight: 700,
+                                    fontSize: '0.78rem',
+                                    cursor: p.stock && p.stock > 0 ? 'pointer' : 'not-allowed',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '0.25rem'
+                                  }}
+                                >
+                                  {p.stock && p.stock > 0 ? <><Plus size={12} /> Agregar</> : 'Sin Stock'}
+                                </button>
+                              </div>
+                            );
+                          })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* RIGHT COLUMN: POS SALES CART */}
+                  <div className="admin-panel" style={{ minHeight: '650px', background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
+                    <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem' }}>
+                      <h3 style={{ fontSize: '1.15rem' }}>🛍️ Venta Actual ({posCart.reduce((acc, i) => acc + i.cantidad, 0)} items)</h3>
+                      <p style={{ fontSize: '0.8rem' }}>Carrito de cobro y datos del cliente para despacho</p>
+                    </div>
+
+                    <div className="panel-body" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                      {/* Cart List */}
+                      <div style={{ flex: 1, maxHeight: '220px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.5rem', background: '#f8fafc' }}>
+                        {posCart.length === 0 ? (
+                          <p style={{ textAlign: 'center', color: '#64748b', fontSize: '0.82rem', margin: '3rem 0', fontStyle: 'italic' }}>El carrito del POS está vacío.</p>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            {posCart.map((item, idx) => (
+                              <div key={idx} style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <h6 style={{ margin: 0, fontSize: '0.8rem', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.nombre}</h6>
+                                  
+                                  {/* Selectors for Talla/Estampado if available */}
+                                  <div style={{ display: 'flex', gap: '0.35rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
+                                    {item.producto.tallas && (
+                                      <select
+                                        value={item.talla || ''}
+                                        onChange={e => {
+                                          const val = e.target.value;
+                                          setPosCart(prev => prev.map((it, i) => i === idx ? { ...it, talla: val } : it));
+                                        }}
+                                        style={{ fontSize: '0.7rem', padding: '1px 3px', borderRadius: '4px', border: '1px solid #cbd5e1', background: '#f8fafc' }}
+                                      >
+                                        {item.producto.tallas.split(',').map((t: string) => <option key={t} value={t.trim()}>{t.trim()}</option>)}
+                                      </select>
+                                    )}
+
+                                    {item.producto.estampados && (
+                                      <select
+                                        value={item.estampado || ''}
+                                        onChange={e => {
+                                          const val = e.target.value;
+                                          setPosCart(prev => prev.map((it, i) => i === idx ? { ...it, estampado: val } : it));
+                                        }}
+                                        style={{ fontSize: '0.7rem', padding: '1px 3px', borderRadius: '4px', border: '1px solid #cbd5e1', background: '#f8fafc' }}
+                                      >
+                                        {item.producto.estampados.split(',').map((t: string) => <option key={t} value={t.trim()}>{t.trim()}</option>)}
+                                      </select>
+                                    )}
+                                  </div>
+                                </div>
+
+                                {/* Quantity & Price actions */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', border: '1px solid #cbd5e1', borderRadius: '6px', overflow: 'hidden' }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (item.cantidad > 1) {
+                                          setPosCart(prev => prev.map((it, i) => i === idx ? { ...it, cantidad: it.cantidad - 1 } : it));
+                                        }
+                                      }}
+                                      style={{ border: 'none', background: 'white', padding: '2px 6px', fontSize: '0.75rem', cursor: 'pointer' }}
+                                    >
+                                      -
+                                    </button>
+                                    <span style={{ fontSize: '0.75rem', padding: '0 6px', fontWeight: 'bold' }}>{item.cantidad}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        if (item.cantidad < (item.producto.stock || 0)) {
+                                          setPosCart(prev => prev.map((it, i) => i === idx ? { ...it, cantidad: it.cantidad + 1 } : it));
+                                        }
+                                      }}
+                                      style={{ border: 'none', background: 'white', padding: '2px 6px', fontSize: '0.75rem', cursor: 'pointer' }}
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+
+                                  <div style={{ textAlign: 'right', minWidth: '70px' }}>
+                                    <strong style={{ fontSize: '0.8rem', color: '#0f172a', display: 'block' }}>
+                                      ${(item.precio * item.cantidad).toLocaleString()}
+                                    </strong>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setPosCart(prev => prev.filter((_, i) => i !== idx));
+                                      }}
+                                      style={{ border: 'none', background: 'transparent', color: '#ef4444', fontSize: '0.7rem', padding: 0, cursor: 'pointer', textDecoration: 'underline' }}
+                                    >
+                                      Quitar
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Customer Data */}
+                      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, color: '#334155', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.4rem' }}>
+                          👤 Datos del Cliente (Fidelización)
+                        </h4>
+                        
+                        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '0.5rem' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                            <label style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b' }}>Teléfono celular</label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="Ej: 3122564284"
+                              value={posCustomerPhone}
+                              onChange={e => setPosCustomerPhone(e.target.value)}
+                              style={{ padding: '0.35rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.8rem', outline: 'none' }}
+                            />
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                            <label style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b' }}>Nombre completo</label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="Nombre del cliente"
+                              value={posCustomerName}
+                              onChange={e => setPosCustomerName(e.target.value)}
+                              style={{ padding: '0.35rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.8rem', outline: 'none' }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '0.5rem' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                            <label style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b' }}>Dirección</label>
+                            <input
+                              type="text"
+                              placeholder="Calle, Manzana, Casa..."
+                              value={posCustomerAddress}
+                              onChange={e => setPosCustomerAddress(e.target.value)}
+                              style={{ padding: '0.35rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.8rem', outline: 'none' }}
+                            />
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                            <label style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b' }}>Ciudad</label>
+                            <input
+                              type="text"
+                              placeholder="Ej: Cali"
+                              value={posCustomerCity}
+                              onChange={e => setPosCustomerCity(e.target.value)}
+                              style={{ padding: '0.35rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.8rem', outline: 'none' }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Payment Method Selector */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#334155' }}>Método de Pago:</span>
+                        <div style={{ display: 'flex', gap: '0.35rem' }}>
+                          {(['efectivo', 'transferencia', 'tarjeta'] as const).map(method => (
+                            <button
+                              key={method}
+                              type="button"
+                              onClick={() => setPosPaymentMethod(method)}
+                              style={{
+                                border: '1px solid #cbd5e1',
+                                background: posPaymentMethod === method ? '#0f172a' : 'white',
+                                color: posPaymentMethod === method ? 'white' : '#475569',
+                                padding: '0.3rem 0.6rem',
+                                borderRadius: '6px',
+                                fontSize: '0.75rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                textTransform: 'capitalize'
+                              }}
+                            >
+                              {method === 'transferencia' ? 'Nequi / Transf.' : method}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Totals panel */}
+                      <div style={{ borderTop: '2px dashed #cbd5e1', paddingTop: '1rem', marginTop: 'auto' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                          <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#475569' }}>Total de la Venta:</span>
+                          <span style={{ fontSize: '1.4rem', fontWeight: 800, color: '#10b981' }}>
+                            ${posCart.reduce((acc, i) => acc + (i.precio * i.cantidad), 0).toLocaleString()}
+                          </span>
+                        </div>
+
+                        {/* Confirm/Checkout Action */}
+                        <button
+                          type="button"
+                          disabled={posCart.length === 0 || !posCustomerPhone || !posCustomerName}
+                          onClick={async () => {
+                            setLoading(true);
+                            try {
+                              const totalSale = posCart.reduce((acc, i) => acc + (i.precio * i.cantidad), 0);
+                              const tenant = getTenantId();
+                              
+                              // 1. Deduct Stock in Supabase physical products table
+                              for (const item of posCart) {
+                                const newStock = Math.max(0, (item.producto.stock || 0) - item.cantidad);
+                                const { error: errorStock } = await supabase
+                                  .from('productos')
+                                  .update({ stock: newStock })
+                                  .eq('id', item.id);
+                                if (errorStock) throw errorStock;
+                              }
+
+                              // 2. Insert Pedido in Supabase marked as POS
+                              const serializedProducts = posCart.map(item => ({
+                                id: item.id,
+                                nombre: item.nombre,
+                                cantidad: item.cantidad,
+                                precio: item.precio,
+                                talla: item.talla || null,
+                                estampado: item.estampado || null
+                              }));
+
+                              const { error: errorOrder } = await supabase
+                                .from('pedidos')
+                                .insert({
+                                  cliente_nombre: posCustomerName.trim(),
+                                  cliente_telefono: posCustomerPhone.trim(),
+                                  direccion: posCustomerAddress.trim() || 'Venta Presencial',
+                                  ciudad: posCustomerCity.trim() || 'POS',
+                                  total: totalSale,
+                                  productos: serializedProducts,
+                                  linea_whatsapp: configuracion?.whatsapp || 'POS',
+                                  tenant_id: tenant,
+                                  estado: 'completado',
+                                  atendido: true,
+                                  origen: 'pos'
+                                })
+                                .select('*')
+                                .single();
+
+                              if (errorOrder) throw errorOrder;
+
+                              // 3. Register/Update Customer in clientes_exitosos
+                              const telLimpio = posCustomerPhone.trim();
+                              const { data: extExist, error: errorExist } = await supabase
+                                .from('clientes_exitosos')
+                                .select('*')
+                                .eq('telefono', telLimpio)
+                                .eq('tenant_id', tenant)
+                                .maybeSingle();
+
+                              if (!errorExist) {
+                                if (extExist) {
+                                  await supabase
+                                    .from('clientes_exitosos')
+                                    .update({
+                                      nombre: posCustomerName.trim() || extExist.nombre,
+                                      total_compras: (extExist.total_compras || 0) + totalSale,
+                                      numero_pedidos: (extExist.numero_pedidos || 0) + 1,
+                                      updated_at: new Date().toISOString()
+                                    })
+                                    .eq('id', extExist.id);
+                                } else {
+                                  await supabase
+                                    .from('clientes_exitosos')
+                                    .insert({
+                                      nombre: posCustomerName.trim(),
+                                      telefono: telLimpio,
+                                      total_compras: totalSale,
+                                      numero_pedidos: 1,
+                                      tenant_id: tenant
+                                    });
+                                }
+                              }
+
+                              // 4. Update local states
+                              setPosLastInvoice({
+                                created_at: new Date().toISOString(),
+                                cliente_nombre: posCustomerName.trim(),
+                                cliente_telefono: telLimpio,
+                                direccion: posCustomerAddress.trim(),
+                                ciudad: posCustomerCity.trim(),
+                                total: totalSale,
+                                productos: serializedProducts,
+                                metodo_pago: posPaymentMethod
+                              });
+
+                              setPosCheckoutSuccess(true);
+                              showToast('Venta POS registrada y stock actualizado ✓', 'success');
+                              
+                              // Reload data
+                              cargarDatos();
+                            } catch (err: any) {
+                              console.error(err);
+                              showToast('Error al procesar checkout POS: ' + err.message, 'error');
+                            } finally {
+                              setLoading(false);
+                            }
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '0.75rem',
+                            borderRadius: '12px',
+                            border: 'none',
+                            background: (posCart.length > 0 && posCustomerPhone && posCustomerName) ? '#10b981' : '#cbd5e1',
+                            color: 'white',
+                            fontWeight: 700,
+                            fontSize: '0.95rem',
+                            cursor: (posCart.length > 0 && posCustomerPhone && posCustomerName) ? 'pointer' : 'not-allowed',
+                            boxShadow: (posCart.length > 0 && posCustomerPhone && posCustomerName) ? '0 4px 12px rgba(16, 185, 129, 0.2)' : 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.5rem'
+                          }}
+                        >
+                          💸 Confirmar Venta y Cobro
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              )}
+            </div>
+          )}
+
+
           {/* ── PEDIDOS TAB ── */}
           {activeTab === 'pedidos' && (
             <div className="admin-panel">
@@ -3407,6 +4037,12 @@ function SidebarContent({
           <span className="nav-icon"><ShoppingBag size={14} /></span> Pedidos
           {activeTab === 'pedidos' && <span className="active-dot"></span>}
         </button>
+        {getTenantId() !== 'indisutex' && (
+          <button className={`nav-item ${activeTab === 'pos' ? 'active' : ''}`} onClick={() => setActiveTab('pos')}>
+            <span className="nav-icon"><Calculator size={14} /></span> POS Ventas
+            {activeTab === 'pos' && <span className="active-dot"></span>}
+          </button>
+        )}
         <button className={`nav-item ${activeTab === 'siigo' ? 'active' : ''}`} onClick={() => setActiveTab('siigo')}>
           <span className="nav-icon"><Database size={14} /></span> Sincronizar Siigo
           {activeTab === 'siigo' && <span className="active-dot"></span>}
