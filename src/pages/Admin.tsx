@@ -2703,7 +2703,7 @@ export default function Admin() {
                   <div className="admin-panel" style={{ minHeight: '650px' }}>
                     <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem' }}>
                       <div>
-                        <h3 style={{ fontSize: '1.15rem' }}><Calculator size={18} style={{ color: '#4f46e5' }} /> POS Catálogo</h3>
+                        <h3 style={{ fontSize: '1.15rem' }}><Calculator size={18} style={{ color: configuracion?.color_primario || '#4f46e5' }} /> POS Catálogo</h3>
                         <p style={{ fontSize: '0.8rem' }}>Busca y selecciona los productos del inventario</p>
                       </div>
                       
@@ -2716,7 +2716,7 @@ export default function Admin() {
                             onClick={() => setPosPriceTier(tier)}
                             style={{
                               border: 'none',
-                              background: posPriceTier === tier ? '#4f46e5' : 'transparent',
+                              background: posPriceTier === tier ? (configuracion?.color_primario || '#4f46e5') : 'transparent',
                               color: posPriceTier === tier ? '#ffffff' : '#64748b',
                               padding: '0.35rem 0.75rem',
                               borderRadius: '6px',
@@ -2802,7 +2802,7 @@ export default function Admin() {
                                     ${activePrice.toLocaleString()}
                                   </span>
                                   <span style={{ fontSize: '0.7rem', color: hasStockAvailable ? '#475569' : '#ef4444', fontWeight: 600 }}>
-                                    Stock: {p.stock || 0} {cartQty > 0 && <span style={{ color: '#4f46e5', fontWeight: 700 }}>({cartQty})</span>}
+                                    Stock: {p.stock || 0} {cartQty > 0 && <span style={{ color: configuracion?.color_primario || '#4f46e5', fontWeight: 700 }}>({cartQty})</span>}
                                   </span>
                                 </div>
 
@@ -2838,7 +2838,7 @@ export default function Admin() {
                                     padding: '0.4rem',
                                     borderRadius: '8px',
                                     border: 'none',
-                                    background: hasStockAvailable ? '#4f46e5' : '#e2e8f0',
+                                    background: hasStockAvailable ? (configuracion?.color_primario || '#4f46e5') : '#e2e8f0',
                                     color: hasStockAvailable ? 'white' : '#64748b',
                                     fontWeight: 700,
                                     fontSize: '0.78rem',
@@ -3021,8 +3021,8 @@ export default function Admin() {
                               type="button"
                               onClick={() => setPosPaymentMethod(method)}
                               style={{
-                                border: '1px solid #cbd5e1',
-                                background: posPaymentMethod === method ? '#0f172a' : 'white',
+                                border: posPaymentMethod === method ? `1px solid ${configuracion?.color_primario || '#0f172a'}` : '1px solid #cbd5e1',
+                                background: posPaymentMethod === method ? (configuracion?.color_primario || '#0f172a') : 'white',
                                 color: posPaymentMethod === method ? 'white' : '#475569',
                                 padding: '0.3rem 0.6rem',
                                 borderRadius: '6px',
