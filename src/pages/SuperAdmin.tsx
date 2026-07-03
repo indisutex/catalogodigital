@@ -241,7 +241,7 @@ export default function SuperAdmin() {
   }
 
   return (
-    <div className="superadmin-container">
+    <div className="superadmin-container" style={{ display: 'flex', minHeight: '100vh' }}>
       {/* Toast Alert */}
       {toast && (
         <div style={{
@@ -260,84 +260,118 @@ export default function SuperAdmin() {
         </div>
       )}
 
-      <header className="super-header">
-        <div className="super-header-brand">
-          <Shield size={24} color="#0ea5e9" />
-          <h1>Indisutex</h1>
-          <span>Super Admin</span>
+      {/* SIDEBAR NAVIGATION (Lista de 1 columna a la izquierda) */}
+      <aside className="super-sidebar" style={{ width: '260px', background: '#ffffff', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', height: '100vh', position: 'sticky', top: 0, flexShrink: 0 }}>
+        {/* Brand Header */}
+        <div className="sidebar-brand" style={{ padding: '1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div className="brand-icon" style={{ width: '38px', height: '38px', background: 'linear-gradient(135deg, #6366f1, #0ea5e9)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: '1.1rem' }}>
+            <Shield size={18} />
+          </div>
+          <div className="brand-text">
+            <h2 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>INDISUTEX</h2>
+            <p style={{ fontSize: '0.72rem', color: '#64748b', margin: 0, fontWeight: 500 }}>Super Admin</p>
+          </div>
         </div>
-        <div className="super-header-actions">
+
+        {/* Navigation List (1 columna vertical) */}
+        <div className="sidebar-nav" style={{ padding: '1.25rem', flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+          <p className="sidebar-nav-label" style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: '#94a3b8', margin: '0 0 0.5rem 0', paddingLeft: '0.5rem' }}>Navegación</p>
+          
+          <button 
+            className={`nav-item ${viewMode === 'dashboard' ? 'active' : ''}`}
+            onClick={() => setViewMode('dashboard')}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.75rem', 
+              width: '100%', 
+              padding: '0.75rem 1rem', 
+              background: viewMode === 'dashboard' ? 'rgba(99, 102, 241, 0.08)' : 'transparent', 
+              border: 'none', 
+              borderRadius: '12px', 
+              color: viewMode === 'dashboard' ? '#6366f1' : '#64748b', 
+              fontSize: '0.9rem', 
+              fontWeight: 600, 
+              cursor: 'pointer', 
+              textAlign: 'left',
+              transition: 'all 0.2s'
+            }}
+          >
+            <Activity size={18} /> Panel de Control
+          </button>
+          
+          <button 
+            className={`nav-item ${viewMode === 'crm' ? 'active' : ''}`}
+            onClick={() => setViewMode('crm')}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.75rem', 
+              width: '100%', 
+              padding: '0.75rem 1rem', 
+              background: viewMode === 'crm' ? 'rgba(99, 102, 241, 0.08)' : 'transparent', 
+              border: 'none', 
+              borderRadius: '12px', 
+              color: viewMode === 'crm' ? '#6366f1' : '#64748b', 
+              fontSize: '0.9rem', 
+              fontWeight: 600, 
+              cursor: 'pointer', 
+              textAlign: 'left',
+              transition: 'all 0.2s'
+            }}
+          >
+            📊 CRM Kanban
+          </button>
+        </div>
+
+        {/* Sidebar Footer with Logout & Reload */}
+        <div className="sidebar-footer" style={{ padding: '1.25rem', borderTop: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           <button 
             onClick={cargarDatosGlobales} 
             disabled={loading}
             className="filter-select"
-            style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', width: '100%', padding: '0.6rem', fontSize: '0.8rem', fontWeight: 600, borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer' }}
           >
-            🔄 {loading ? 'Cargando...' : 'Actualizar'}
+            🔄 {loading ? 'Cargando...' : 'Actualizar Datos'}
           </button>
+          
           <button 
             onClick={handleLogout}
             style={{ 
-              background: '#f1f5f9', 
-              border: '1px solid #cbd5e1', 
-              color: '#334155', 
-              padding: '0.5rem 1rem', 
-              borderRadius: '8px', 
+              width: '100%', 
+              padding: '0.6rem', 
+              background: '#fee2e2', 
+              border: '1px solid #fca5a5', 
+              color: '#dc2626', 
+              borderRadius: '10px', 
               cursor: 'pointer', 
+              fontWeight: 700, 
+              fontSize: '0.84rem', 
               display: 'flex', 
               alignItems: 'center', 
+              justifyContent: 'center', 
               gap: '0.5rem',
-              fontWeight: 600,
-              fontSize: '0.85rem'
+              transition: 'all 0.2s'
             }}
           >
             <LogOut size={16} /> Salir
           </button>
         </div>
-      </header>
+      </aside>
 
-      <div className="super-tabs" style={{ display: 'flex', gap: '1rem', borderBottom: '1px solid #e2e8f0', padding: '0 2rem 1rem 2rem', marginBottom: '1.5rem', marginTop: '1rem' }}>
-        <button 
-          className={`super-tab-btn ${viewMode === 'dashboard' ? 'active' : ''}`}
-          onClick={() => setViewMode('dashboard')}
-          style={{
-            padding: '0.6rem 1.2rem',
-            borderRadius: '8px',
-            border: 'none',
-            fontWeight: 700,
-            cursor: 'pointer',
-            background: viewMode === 'dashboard' ? '#0ea5e9' : 'transparent',
-            color: viewMode === 'dashboard' ? 'white' : '#64748b',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            fontSize: '0.85rem'
-          }}
-        >
-          <Activity size={16} /> Panel de Control
-        </button>
-        <button 
-          className={`super-tab-btn ${viewMode === 'crm' ? 'active' : ''}`}
-          onClick={() => setViewMode('crm')}
-          style={{
-            padding: '0.6rem 1.2rem',
-            borderRadius: '8px',
-            border: 'none',
-            fontWeight: 700,
-            cursor: 'pointer',
-            background: viewMode === 'crm' ? '#0ea5e9' : 'transparent',
-            color: viewMode === 'crm' ? 'white' : '#64748b',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            fontSize: '0.85rem'
-          }}
-        >
-          📊 CRM Kanban
-        </button>
-      </div>
+      {/* MAIN CONTAINER */}
+      <div className="super-main" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        {/* Top Header */}
+        <header className="super-header" style={{ height: '64px', background: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '0 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10 }}>
+          <h2 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#0f172a' }}>
+            {viewMode === 'dashboard' ? 'Panel de Analíticas' : 'Tablero CRM Kanban'}
+          </h2>
+          <span style={{ fontSize: '0.75rem', background: '#f1f5f9', padding: '0.25rem 0.5rem', borderRadius: '6px', fontWeight: 700, color: '#64748b' }}>
+            GLOBAL
+          </span>
+        </header>
 
-      <main className="super-content">
+        <main className="super-content">
         
         {/* Barra de Filtros */}
         <div className="super-filters-bar">
@@ -593,6 +627,26 @@ export default function SuperAdmin() {
                     <h4>👤 {ped.cliente_nombre}</h4>
                     <p className="phone">📞 {ped.cliente_telefono}</p>
                     <p className="total">💰 Total: <span>${ped.total.toLocaleString()}</span></p>
+                    
+                    {/* Lista de productos comprados */}
+                    {Array.isArray(ped.productos) && ped.productos.length > 0 && (
+                      <div className="card-products-summary" style={{ margin: '0.6rem 0', padding: '0.5rem 0.65rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <p style={{ margin: '0 0 0.3rem 0', fontSize: '0.72rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📦 Artículos:</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                          {ped.productos.map((prod: any, idx: number) => (
+                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#334155' }}>
+                              <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '170px' }} title={prod.nombre}>
+                                {prod.nombre} {prod.talla ? `(${prod.talla})` : ''}
+                              </span>
+                              <span style={{ color: '#64748b', fontWeight: 700 }}>
+                                x{prod.cantidad}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="status">
                       {ped.pantallazo_url ? (
                         <span className="status-badge upload-success">✅ Comprobante Subido</span>
@@ -628,6 +682,26 @@ export default function SuperAdmin() {
                     <h4>👤 {ped.cliente_nombre}</h4>
                     <p className="phone">📞 {ped.cliente_telefono}</p>
                     <p className="total">💰 Facturado: <span>${ped.total.toLocaleString()}</span></p>
+
+                    {/* Lista de productos comprados */}
+                    {Array.isArray(ped.productos) && ped.productos.length > 0 && (
+                      <div className="card-products-summary" style={{ margin: '0.6rem 0', padding: '0.5rem 0.65rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                        <p style={{ margin: '0 0 0.3rem 0', fontSize: '0.72rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📦 Artículos:</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                          {ped.productos.map((prod: any, idx: number) => (
+                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#334155' }}>
+                              <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '170px' }} title={prod.nombre}>
+                                {prod.nombre} {prod.talla ? `(${prod.talla})` : ''}
+                              </span>
+                              <span style={{ color: '#64748b', fontWeight: 700 }}>
+                                x{prod.cantidad}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="status">
                       <span className="status-badge verified">✓ Pago Verificado</span>
                     </div>
@@ -649,6 +723,7 @@ export default function SuperAdmin() {
         )}
 
       </main>
+      </div>
 
       {/* MODAL DETALLE PEDIDO GLOBAL */}
       {selectedPedido && (

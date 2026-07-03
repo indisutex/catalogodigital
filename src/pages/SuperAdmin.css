@@ -650,3 +650,23 @@
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.4);
 }
+
+/* Sidebar Navigation Styles */
+.super-sidebar {
+  box-shadow: 4px 0 15px rgba(0,0,0,0.01);
+}
+
+.super-sidebar .nav-item {
+  transition: all 0.2s ease;
+}
+
+.super-sidebar .nav-item:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+.super-sidebar .nav-item.active {
+  background: rgba(99, 102, 241, 0.08) !important;
+  color: #6366f1 !important;
+}
+
