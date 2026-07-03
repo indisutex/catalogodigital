@@ -252,4 +252,47 @@ export class SiigoService {
     onProgress('Sincronización finalizada exitosamente.');
     return { imported: importedCount, updated: updatedCount };
   }
+
+  /**
+   * Suscribe la URL de Supabase Edge Function a los eventos de Siigo Nube
+   */
+  public static async registerWebhooks(
+    credentials: SiigoCredentials,
+    webhookUrl: string,
+    onProgress: (message: string) => void
+  ): Promise<void> {
+    onProgress('Autenticando con Siigo Nube...');
+    const token = await this.authenticate(credentials);
+
+    const topics = [
+      'public.siigoapi.products.create',
+      'public.siigoapi.products.update'
+    ];
+
+    for (const topic of topics) {
+      onProgress(`Suscribiendo a evento: ${topic}...`);
+      const response = await fetch(`${this.BASE_URL}/webhooks`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          'Partner-Id': 'indisutex'
+        },
+        body: JSON.stringify({
+          application_id: 'indisutex',
+          url: webhookUrl,
+          topic: topic
+        })
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        const errMsg = errData.message || (errData.errors && errData.errors[0]?.message) || `Error al suscribir a ${topic}`;
+        // Si ya está suscrito, a veces Siigo responde con error, pero no pasa nada, continuamos
+        onProgress(`ℹ️ Nota: ${errMsg}`);
+      } else {
+        onProgress(`✅ Suscripción exitosa a ${topic}`);
+      }
+    }
+  }
 }

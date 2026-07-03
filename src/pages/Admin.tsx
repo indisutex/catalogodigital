@@ -72,6 +72,7 @@ export default function Admin() {
   const [siigoLogs, setSiigoLogs] = useState<string[]>([]);
   const [syncPending, setSyncPending] = useState<{ toCreate: any[]; toUpdate: any[] } | null>(null);
   const [showSyncConfirm, setShowSyncConfirm] = useState(false);
+  const [webhookUrl, setWebhookUrl] = useState('');
 
   // States for Editing Categories & Subcategories
   const [editingCategory, setEditingCategory] = useState<Categoria | null>(null);
@@ -120,6 +121,7 @@ export default function Admin() {
       
       if (confRes.data) {
         setConfiguracion(confRes.data);
+        setWebhookUrl(`https://dowbsbxvxjzjjhyqmyfr.supabase.co/functions/v1/siigo-webhook?tenant=${tenant}`);
       } else {
         // Create default config for this tenant if it doesn't exist
         const tenant = getTenantId();
@@ -1745,6 +1747,59 @@ export default function Admin() {
                           ) : (
                             <span style={{ color: '#64748b' }}>Nunca se ha sincronizado</span>
                           )}
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: '2rem', borderTop: '1px solid #f1f5f9', paddingTop: '1.5rem' }}>
+                        <div style={{ fontWeight: 600, fontSize: '0.95rem', color: '#1e293b', marginBottom: '0.35rem' }}>⚡ Sincronización Automática (Tiempo Real)</div>
+                        <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '0 0 1rem 0' }}>
+                          Activa las notificaciones en tiempo real para que Siigo Nube nos notifique automáticamente cada vez que crees, edites precios o cambies el stock de un producto.
+                        </p>
+                        
+                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                          <div style={{ flex: 1, minWidth: '300px' }}>
+                            <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.35rem' }}>URL del Webhook de Supabase</label>
+                            <input 
+                              type="text" 
+                              value={webhookUrl}
+                              onChange={e => setWebhookUrl(e.target.value)}
+                              placeholder="URL de la Edge Function en Supabase"
+                              style={{ 
+                                width: '100%', 
+                                padding: '0.5rem 0.75rem', 
+                                border: '1px solid #cbd5e1', 
+                                borderRadius: '8px', 
+                                fontSize: '0.85rem' 
+                              }}
+                            />
+                          </div>
+                          <button 
+                            type="button" 
+                            className="btn-primary" 
+                            style={{ padding: '0.55rem 1.5rem', background: '#0284c7', fontSize: '0.85rem' }}
+                            disabled={siigoLoading || !webhookUrl}
+                            onClick={async () => {
+                              setSiigoLoading(true);
+                              setSiigoLogs([]);
+                              const addLog = (msg: string) => setSiigoLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${msg}`]);
+                              
+                              try {
+                                const creds = {
+                                  username: configuracion.siigo_username || '',
+                                  accessKey: configuracion.siigo_access_key || ''
+                                };
+                                await SiigoService.registerWebhooks(creds, webhookUrl, addLog);
+                                showToast('Suscripción a Webhooks completada ✓');
+                              } catch (err: any) {
+                                addLog(`❌ Error: ${err.message}`);
+                                showToast('Error al registrar Webhooks: ' + err.message, 'error');
+                              } finally {
+                                setSiigoLoading(false);
+                              }
+                            }}
+                          >
+                            Activar en Siigo Nube
+                          </button>
                         </div>
                       </div>
 
