@@ -128,7 +128,8 @@ export class SiigoService {
         precioNuevo = sp.prices[0].price_list[0].value || 0;
       }
 
-      const stockNuevo = sp.stock?.total || 0;
+      // En Siigo Nube API V1, el stock viene en la propiedad available_quantity
+      const stockNuevo = sp.available_quantity !== undefined ? sp.available_quantity : 0;
       const groupName = sp.account_group?.name || 'General';
 
       const localMatch = localProdMap.get(ref.toLowerCase().trim());
