@@ -51,6 +51,9 @@ export interface Configuracion {
   siigo_sincronizado_at?: string;
   color_primario?: string;
   envios_99_api_key?: string;
+  google_analytics_id?: string;
+  meta_pixel_id?: string;
+  clarity_project_id?: string;
 }
 
 export interface Pedido {
