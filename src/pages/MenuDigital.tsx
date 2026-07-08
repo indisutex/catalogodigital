@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase, getTenantId } from '../lib/supabase';
 import type { Producto, Categoria, Subcategoria, Configuracion } from '../types';
 import { Loader2, Search, Plus, ShoppingBag, X, ChevronLeft, ChevronRight, ShoppingCart } from 'lucide-react';
-import { useCart } from '../context/CartContext';
+import { useCart, getEffectivePrice } from '../context/CartContext';
 import './MenuDigital.css';
 
 export default function MenuDigital() {
@@ -144,7 +144,7 @@ export default function MenuDigital() {
     return () => clearTimeout(delayDebounceFn);
   }, [formData.nombre, formData.telefono, formData.ciudad]);
 
-  const { items, addToCart, removeFromCart, updateQuantity, total, clearCart } = useCart();
+  const { items, addToCart, removeFromCart, updateQuantity, total, clearCart, buyerType, setBuyerType } = useCart();
 
   useEffect(() => {
     async function cargarDatos() {
@@ -235,18 +235,23 @@ export default function MenuDigital() {
     e.preventDefault();
     
     // Construir el mensaje para WhatsApp
-    let mensaje = `*¡NUEVO PEDIDO!*\n\n`;
-    mensaje += `*Cliente:* ${formData.nombre}\n`;
+    let buyerLabel = '';
+    if (buyerType === 'mayorista') buyerLabel = 'Mayorista';
+    if (buyerType === 'detal') buyerLabel = 'Al detal';
+    if (buyerType === '50_unidades') buyerLabel = '50+ unidades';
+
+    let mensaje = `Hola, mi nombre es ${formData.nombre}.\n`;
+    mensaje += `*Tipo de compra:* ${buyerLabel}\n`;
     mensaje += `*Teléfono:* ${formData.telefono}\n`;
     mensaje += `*Dirección:* ${formData.direccion}, ${formData.ciudad}\n\n`;
     
     mensaje += `*PRODUCTOS:*\n`;
     const mensajeProductos = items.map(item => 
-      `- ${item.cantidad}x ${item.nombre} ${item.talla ? `(Talla: ${item.talla}) ` : ''}${item.estampado ? `(Estampado: ${item.estampado}) ` : ''}- $${(item.precio * item.cantidad).toFixed(2)}`
+      `- ${item.cantidad}x ${item.nombre} ${item.talla ? `(Talla: ${item.talla}) ` : ''}${item.estampado ? `(Estampado: ${item.estampado}) ` : ''}- $${(getEffectivePrice(item, buyerType) * item.cantidad).toLocaleString('es-CO')}`
     ).join('\n');
     mensaje += mensajeProductos;
     
-    mensaje += `\n*TOTAL:* $${total.toFixed(2)}\n\n`;
+    mensaje += `\n*TOTAL:* $${total.toLocaleString('es-CO')}\n\n`;
     mensaje += `Por favor indícame los métodos de pago para confirmar mi compra.`;
 
     const numeroWhatsApp = overrideWhatsApp || configuracion?.whatsapp || '573185637317';
@@ -282,6 +287,24 @@ export default function MenuDigital() {
     clearCart();
     setFormData({ nombre: '', telefono: '', direccion: '', ciudad: '' });
   };
+
+  if (buyerType === null && !cargando && configuracion?.preguntar_tipo_cliente) {
+    return (
+      <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: configuracion?.color_primario || '#10b981', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 9999, color: '#fff', padding: '2rem', textAlign: 'center' }}>
+        <h1 style={{ fontSize: '2rem', marginBottom: '1rem', fontWeight: 800 }}>Bienvenido a {configuracion?.nombre_negocio || 'Nuestro Catálogo'}</h1>
+        <p style={{ marginBottom: '2.5rem', fontSize: '1.2rem', opacity: 0.9 }}>Por favor, selecciona tu tipo de compra para mostrarte los precios correctos:</p>
+        <button onClick={() => setBuyerType('detal')} style={{ padding: '1.2rem 2rem', fontSize: '1.1rem', margin: '0.6rem', width: '100%', maxWidth: '350px', backgroundColor: '#fff', color: configuracion?.color_primario || '#10b981', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', transition: 'transform 0.2s' }}>
+          🛍️ Compras al detal
+        </button>
+        <button onClick={() => setBuyerType('mayorista')} style={{ padding: '1.2rem 2rem', fontSize: '1.1rem', margin: '0.6rem', width: '100%', maxWidth: '350px', backgroundColor: '#fff', color: configuracion?.color_primario || '#10b981', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', transition: 'transform 0.2s' }}>
+          📦 Soy mayorista
+        </button>
+        <button onClick={() => setBuyerType('50_unidades')} style={{ padding: '1.2rem 2rem', fontSize: '1.1rem', margin: '0.6rem', width: '100%', maxWidth: '350px', backgroundColor: '#fff', color: configuracion?.color_primario || '#10b981', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', transition: 'transform 0.2s' }}>
+          🏭 Compras por 50 unidades
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="menu-app-container">
@@ -548,7 +571,7 @@ export default function MenuDigital() {
                 </div>
                 <div className="item-details">
                   <h4>{producto.nombre}</h4>
-                  <p className="item-price">${producto.precio.toLocaleString('es-CO')}</p>
+                  <p className="item-price">${getEffectivePrice(producto, buyerType).toLocaleString('es-CO')}</p>
                 </div>
               </div>
             ))
@@ -691,7 +714,7 @@ export default function MenuDigital() {
                           <h4>{item.nombre}</h4>
                           {item.talla && <p style={{fontSize: '0.8rem', color: '#666', margin: '2px 0'}}>Talla: {item.talla}</p>}
                           {item.estampado && <p style={{fontSize: '0.8rem', color: '#666', margin: '2px 0'}}>Estampado: {item.estampado}</p>}
-                          <p className="cart-item-price">${(item.precio * item.cantidad).toLocaleString('es-CO')}</p>
+                          <p className="cart-item-price">${(getEffectivePrice(item, buyerType) * item.cantidad).toLocaleString('es-CO')}</p>
                           <div className="cart-item-qty">
                             <button onClick={() => updateQuantity(item.id, item.cantidad - 1, item.talla, item.estampado)}>-</button>
                             <span>{item.cantidad}</span>
@@ -777,7 +800,7 @@ export default function MenuDigital() {
               <div className="detail-info">
                 <div className="detail-header-row">
                   <h3 className="detail-name">{detailProduct.nombre}</h3>
-                  <p className="detail-price">${detailProduct.precio.toLocaleString('es-CO')}</p>
+                  <p className="detail-price">${getEffectivePrice(detailProduct, buyerType).toLocaleString('es-CO')}</p>
                 </div>
                 {detailProduct.descripcion && (
                   <p className="detail-desc">{detailProduct.descripcion}</p>
@@ -861,7 +884,7 @@ export default function MenuDigital() {
                 {/* ── ADD TO CART ── */}
                 <button className="detail-add-btn" onClick={handleAddFromDetail}>
                   <ShoppingCart size={18} />
-                  Añadir al carrito · ${(detailProduct.precio * selectedCantidad).toLocaleString('es-CO')}
+                  Añadir al carrito • ${(getEffectivePrice(detailProduct, buyerType) * selectedCantidad).toLocaleString('es-CO')}
                 </button>
               </div>
             </div>

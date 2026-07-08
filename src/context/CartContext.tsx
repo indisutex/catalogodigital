@@ -8,6 +8,18 @@ export interface CartItem extends Producto {
   estampado?: string; // Estampado seleccionado
 }
 
+export type BuyerType = 'detal' | 'mayorista' | '50_unidades' | null;
+
+export const getEffectivePrice = (producto: Producto, buyerType: BuyerType): number => {
+  if (buyerType === 'mayorista' && producto.precio_por_mayor) {
+    return producto.precio_por_mayor;
+  }
+  if (buyerType === '50_unidades' && producto.precio_50_unidades) {
+    return producto.precio_50_unidades;
+  }
+  return producto.precio;
+};
+
 interface CartContextType {
   items: CartItem[];
   addToCart: (producto: Producto, talla?: string, estampado?: string, cantidad?: number) => void;
@@ -15,6 +27,8 @@ interface CartContextType {
   updateQuantity: (id: string, cantidad: number, talla?: string, estampado?: string) => void;
   clearCart: () => void;
   total: number;
+  buyerType: BuyerType;
+  setBuyerType: (type: BuyerType) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -25,9 +39,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [buyerType, setBuyerType] = useState<BuyerType>(() => {
+    const saved = localStorage.getItem('indisutex_buyer_type');
+    return saved ? (saved as BuyerType) : null;
+  });
+
   useEffect(() => {
     localStorage.setItem('indisutex_cart', JSON.stringify(items));
   }, [items]);
+
+  useEffect(() => {
+    if (buyerType) {
+      localStorage.setItem('indisutex_buyer_type', buyerType);
+    } else {
+      localStorage.removeItem('indisutex_buyer_type');
+    }
+  }, [buyerType]);
 
   const addToCart = (producto: Producto, talla?: string, estampado?: string, cantidad: number = 1) => {
     setItems(prevItems => {
@@ -63,10 +90,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = () => setItems([]);
 
-  const total = items.reduce((sum, item) => sum + (item.precio * item.cantidad), 0);
+  const total = items.reduce((sum, item) => sum + (getEffectivePrice(item, buyerType) * item.cantidad), 0);
 
   return (
-    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, total }}>
+    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, total, buyerType, setBuyerType }}>
       {children}
     </CartContext.Provider>
   );

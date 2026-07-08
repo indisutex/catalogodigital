@@ -81,6 +81,8 @@ export default function Admin() {
   const [editingAsesorNombre, setEditingAsesorNombre] = useState('');
   const [editingAsesorTelefono, setEditingAsesorTelefono] = useState('');
   const [editingAsesorPin, setEditingAsesorPin] = useState('');
+  const [nuevoAsesorFotoUrl, setNuevoAsesorFotoUrl] = useState('');
+  const [editingAsesorFotoUrl, setEditingAsesorFotoUrl] = useState('');
 
   // POS States
   const [posCart, setPosCart] = useState<any[]>([]);
@@ -1146,6 +1148,7 @@ export default function Admin() {
           nombre: nuevoAsesorNombre.trim(),
           telefono: cleanPhone,
           pin: nuevoAsesorPin.trim() || '1234',
+          foto_url: nuevoAsesorFotoUrl.trim() || null,
           tenant_id: tenant
         })
         .select()
@@ -1156,6 +1159,7 @@ export default function Admin() {
       setAsesores(prev => [data, ...prev]);
       setNuevoAsesorNombre('');
       setNuevoAsesorTelefono('');
+      setNuevoAsesorFotoUrl('');
       setNuevoAsesorPin(Math.floor(1000 + Math.random() * 9000).toString());
       showToast('Asesor creado exitosamente ✓', 'success');
     } catch (err: any) {
@@ -1179,13 +1183,14 @@ export default function Admin() {
         .update({
           nombre: editingAsesorNombre.trim(),
           telefono: cleanPhone,
-          pin: editingAsesorPin.trim()
+          pin: editingAsesorPin.trim(),
+          foto_url: editingAsesorFotoUrl.trim() || null
         })
         .eq('id', id);
 
       if (error) throw error;
 
-      setAsesores(prev => prev.map(item => item.id === id ? { ...item, nombre: editingAsesorNombre.trim(), telefono: cleanPhone, pin: editingAsesorPin.trim() } : item));
+      setAsesores(prev => prev.map(item => item.id === id ? { ...item, nombre: editingAsesorNombre.trim(), telefono: cleanPhone, pin: editingAsesorPin.trim(), foto_url: editingAsesorFotoUrl.trim() || undefined } : item));
       setEditingAsesorId(null);
       showToast('Cambios guardados ✓', 'success');
       cargarDatos();
@@ -2433,6 +2438,17 @@ export default function Admin() {
                             />
                           </div>
                         </div>
+                        <div className="form-field full">
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', margin: 0 }}>
+                            <input 
+                              type="checkbox" 
+                              checked={configuracion.preguntar_tipo_cliente || false} 
+                              onChange={e => setConfiguracion({ ...configuracion, preguntar_tipo_cliente: e.target.checked })} 
+                              style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer', accentColor: configuracion.color_primario || '#6366f1' }}
+                            />
+                            Mostrar pantalla "¿Qué tipo de cliente eres?" al inicio
+                          </label>
+                        </div>
                       </div>
                     </div>
 
@@ -3017,6 +3033,16 @@ export default function Admin() {
                       />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>URL de Foto (Opcional)</label>
+                      <input
+                        type="url"
+                        placeholder="https://..."
+                        value={nuevoAsesorFotoUrl}
+                        onChange={e => setNuevoAsesorFotoUrl(e.target.value)}
+                        style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                       <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>PIN de Acceso (4 dígitos)</label>
                       <input
                         type="text"
@@ -3106,16 +3132,36 @@ export default function Admin() {
                           return (
                             <tr key={a.id} style={{ borderBottom: '1px solid #f1f5f9' }} className="table-row-hover">
                               <td style={{ padding: '1rem', fontWeight: 700, color: '#0f172a' }}>
-                                {isEditing ? (
-                                  <input
-                                    type="text"
-                                    value={editingAsesorNombre}
-                                    onChange={e => setEditingAsesorNombre(e.target.value)}
-                                    style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', width: '130px' }}
-                                  />
-                                ) : (
-                                  a.nombre
-                                )}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                  {a.foto_url ? (
+                                    <img src={a.foto_url} alt={a.nombre} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
+                                  ) : (
+                                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', color: '#64748b' }}>
+                                      {a.nombre.charAt(0).toUpperCase()}
+                                    </div>
+                                  )}
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                    {isEditing ? (
+                                      <input
+                                        type="text"
+                                        value={editingAsesorNombre}
+                                        onChange={e => setEditingAsesorNombre(e.target.value)}
+                                        style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', width: '130px' }}
+                                      />
+                                    ) : (
+                                      a.nombre
+                                    )}
+                                    {isEditing && (
+                                      <input
+                                        type="url"
+                                        placeholder="URL Foto (Opcional)"
+                                        value={editingAsesorFotoUrl}
+                                        onChange={e => setEditingAsesorFotoUrl(e.target.value)}
+                                        style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.75rem', width: '130px' }}
+                                      />
+                                    )}
+                                  </div>
+                                </div>
                               </td>
                               <td style={{ padding: '1rem' }}>
                                 {isEditing ? (
@@ -3208,6 +3254,7 @@ export default function Admin() {
                                           setEditingAsesorNombre(a.nombre);
                                           setEditingAsesorTelefono(a.telefono);
                                           setEditingAsesorPin(a.pin || '1234');
+                                          setEditingAsesorFotoUrl(a.foto_url || '');
                                         }}
                                         className="btn-secondary"
                                         style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}
@@ -3250,10 +3297,47 @@ export default function Admin() {
                  </div>
 
                  <div className="metric-card" style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', color: 'white', border: 'none', position: 'relative', overflow: 'hidden' }}>
-                   <div style={{ position: 'absolute', right: '-10px', top: '-10px', fontSize: '5rem', opacity: 0.15 }}>⭐</div>
-                   <div className="mc-label" style={{ color: 'rgba(255,255,255,0.85)' }}>Línea / Asesor Estrella</div>
-                   <div className="mc-value" style={{ fontSize: '1.5rem', color: 'white' }}>{getAsesorNameByPhone(stats.bestAdvisorPhone)}</div>
-                   <div className="mc-sub" style={{ color: 'rgba(255,255,255,0.75)' }}>Ventas: ${stats.bestAdvisorTotal.toLocaleString()} COP</div>
+                   <style>{`
+                     .party-particles {
+                       position: absolute;
+                       top: -50%;
+                       left: -50%;
+                       width: 200%;
+                       height: 200%;
+                       background-image: radial-gradient(circle at 50% 50%, #ffeb3b 2%, transparent 3%), radial-gradient(circle at 30% 70%, #ff9800 2%, transparent 3%), radial-gradient(circle at 70% 30%, #e91e63 2%, transparent 3%), radial-gradient(circle at 40% 40%, #00bcd4 2%, transparent 3%), radial-gradient(circle at 80% 80%, #4caf50 2%, transparent 3%);
+                       background-size: 100px 100px;
+                       animation: party-spin 10s linear infinite;
+                       opacity: 0.6;
+                       pointer-events: none;
+                       z-index: 0;
+                     }
+                     @keyframes party-spin {
+                       0% { transform: rotate(0deg) scale(1); }
+                       50% { transform: rotate(180deg) scale(1.2); }
+                       100% { transform: rotate(360deg) scale(1); }
+                     }
+                   `}</style>
+                   {(() => {
+                     const bestAsesorObj = asesores.find(a => a.telefono?.replace(/\D/g, '') === stats.bestAdvisorPhone?.replace(/\D/g, ''));
+                     const hasPhoto = !!bestAsesorObj?.foto_url;
+                     return (
+                       <>
+                         <div style={{ position: 'absolute', right: hasPhoto ? '-10px' : '-10px', top: hasPhoto ? '-10px' : '-10px', opacity: hasPhoto ? 1 : 0.15, zIndex: 0 }}>
+                           {hasPhoto ? (
+                             <img src={bestAsesorObj.foto_url} alt={bestAsesorObj.nombre} style={{ width: '120px', height: '120px', objectFit: 'cover', borderRadius: '50%', border: '4px solid rgba(255,255,255,0.3)', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.2))' }} />
+                           ) : (
+                             <span style={{ fontSize: '5rem' }}>⭐</span>
+                           )}
+                         </div>
+                         {hasPhoto && <div className="party-particles"></div>}
+                       </>
+                     );
+                   })()}
+                   <div style={{ position: 'relative', zIndex: 1 }}>
+                     <div className="mc-label" style={{ color: 'rgba(255,255,255,0.85)' }}>Línea / Asesor Estrella</div>
+                     <div className="mc-value" style={{ fontSize: '1.5rem', color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>{getAsesorNameByPhone(stats.bestAdvisorPhone)}</div>
+                     <div className="mc-sub" style={{ color: 'rgba(255,255,255,0.75)' }}>Ventas: ${stats.bestAdvisorTotal.toLocaleString()} COP</div>
+                   </div>
                  </div>
 
                  <div className="metric-card" style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', border: 'none', position: 'relative', overflow: 'hidden' }}>
@@ -4881,15 +4965,19 @@ function SidebarContent({
   return (
     <>
       <div className="sidebar-brand">
-        <div className="brand-icon" style={configuracion?.logo_url ? { background: 'transparent', padding: 0 } : {}}>
-          {configuracion?.logo_url ? (
+        <div className="brand-icon" style={(role === 'asesor' && currentAsesor?.foto_url) || configuracion?.logo_url ? { background: 'transparent', padding: 0 } : {}}>
+          {role === 'asesor' && currentAsesor?.foto_url ? (
+            <img src={currentAsesor.foto_url} alt="Asesor" style={{ width: '100%', height: '100%', borderRadius: '8px', objectFit: 'cover' }} />
+          ) : configuracion?.logo_url ? (
             <img src={configuracion.logo_url} alt="Logo" style={{ width: '100%', height: '100%', borderRadius: '8px', objectFit: 'cover' }} />
           ) : (
             '🛍️'
           )}
         </div>
         <div className="brand-text">
-          <h2 style={{ textTransform: 'capitalize', fontSize: '1.1rem', color: '#0f172a' }}>{configuracion?.nombre_negocio || 'Catálogo'}</h2>
+          <h2 style={{ textTransform: 'capitalize', fontSize: '1.1rem', color: '#0f172a' }}>
+            {role === 'asesor' && currentAsesor?.nombre ? currentAsesor.nombre : (configuracion?.nombre_negocio || 'Catálogo')}
+          </h2>
           <p style={{ margin: 0 }}>Panel Administrativo</p>
           {role === 'asesor' && currentAsesor ? (
             <a 

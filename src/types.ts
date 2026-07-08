@@ -54,6 +54,7 @@ export interface Configuracion {
   google_analytics_id?: string;
   meta_pixel_id?: string;
   clarity_project_id?: string;
+  preguntar_tipo_cliente?: boolean;
 }
 
 export interface Pedido {
@@ -81,4 +82,5 @@ export interface Asesor {
   pin: string;
   tenant_id: string;
   created_at: string;
+  foto_url?: string;
 }
