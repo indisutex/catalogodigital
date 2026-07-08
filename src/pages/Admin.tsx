@@ -2437,13 +2437,48 @@ export default function Admin() {
                         />
                       </div>
                       <div className="form-field">
-                        <label>URL de Foto</label>
-                        <input 
-                          type="url" 
-                          id="perfil-foto"
-                          defaultValue={asesores.find(a => a.telefono === loggedAsesorPhone)?.foto_url || ''} 
-                          placeholder="https://ejemplo.com/foto.jpg"
-                        />
+                        <label>Foto de Perfil</label>
+                        <div className="img-input-row" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                          {asesores.find(a => a.telefono === loggedAsesorPhone)?.foto_url && (
+                            <img src={asesores.find(a => a.telefono === loggedAsesorPhone)?.foto_url} className="img-preview-thumb" alt="Foto Perfil" style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover' }} />
+                          )}
+                          <input 
+                            type="url" 
+                            id="perfil-foto"
+                            defaultValue={asesores.find(a => a.telefono === loggedAsesorPhone)?.foto_url || ''} 
+                            placeholder="https://ejemplo.com/foto.jpg"
+                            style={{ flex: 1 }}
+                          />
+                          <label className="btn-upload-img" style={{ flexShrink: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.5rem 0.8rem', background: '#f1f5f9', borderRadius: '6px', fontSize: '0.85rem', border: '1px solid #cbd5e1', fontWeight: 600 }}>
+                            <Upload size={14} /> Subir
+                            <input type="file" style={{ display: 'none' }} accept="image/*" onChange={async (e) => {
+                              if (!e.target.files || !e.target.files[0]) return;
+                              try {
+                                showToast('Subiendo foto...', 'success');
+                                const file = e.target.files[0];
+                                const compFile = await compressImage(file);
+                                const fileName = `asesor_${Date.now()}.${compFile.name.split('.').pop()}`;
+                                await supabase.storage.from('archivos').upload(fileName, compFile);
+                                const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
+                                const input = document.getElementById('perfil-foto') as HTMLInputElement;
+                                if (input) input.value = data.publicUrl;
+                                showToast('Foto subida. Recuerda Guardar Perfil ✅', 'success');
+                                
+                                // Actualizar previsualización local
+                                const currentAsesorData = asesores.find(a => a.telefono === loggedAsesorPhone);
+                                if (currentAsesorData) {
+                                  setAsesores(asesores.map(a => 
+                                    a.id === currentAsesorData.id 
+                                      ? { ...a, foto_url: data.publicUrl } 
+                                      : a
+                                  ));
+                                }
+                              } catch {
+                                showToast('Error al subir foto', 'error');
+                              }
+                            }} />
+                          </label>
+                        </div>
                         <small style={{color: '#64748b'}}>Esta foto aparecerá en tu panel y como asesor estrella.</small>
                       </div>
                     </div>
@@ -5060,10 +5095,8 @@ function SidebarContent({
   return (
     <>
       <div className="sidebar-brand">
-        <div className="brand-icon" style={(role === 'asesor' && currentAsesor?.foto_url) || configuracion?.logo_url ? { background: 'transparent', padding: 0 } : {}}>
-          {role === 'asesor' && currentAsesor?.foto_url ? (
-            <img src={currentAsesor.foto_url} alt="Asesor" style={{ width: '100%', height: '100%', borderRadius: '8px', objectFit: 'cover' }} />
-          ) : configuracion?.logo_url ? (
+        <div className="brand-icon" style={configuracion?.logo_url ? { background: 'transparent', padding: 0 } : {}}>
+          {configuracion?.logo_url ? (
             <img src={configuracion.logo_url} alt="Logo" style={{ width: '100%', height: '100%', borderRadius: '8px', objectFit: 'cover' }} />
           ) : (
             '🛍️'
@@ -5071,7 +5104,7 @@ function SidebarContent({
         </div>
         <div className="brand-text">
           <h2 style={{ textTransform: 'capitalize', fontSize: '1.1rem', color: '#0f172a' }}>
-            {role === 'asesor' && currentAsesor?.nombre ? currentAsesor.nombre : (configuracion?.nombre_negocio || 'Catálogo')}
+            {configuracion?.nombre_negocio || 'Catálogo'}
           </h2>
           <p style={{ margin: 0 }}>Panel Administrativo</p>
           {role === 'asesor' && currentAsesor ? (
@@ -5185,8 +5218,12 @@ function SidebarContent({
         
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginTop: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div className="avatar" style={{ background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '50%', border: '1px solid #e2e8f0', color: '#64748b' }}>
-              <User size={18} />
+            <div className="avatar" style={{ background: (role === 'asesor' && currentAsesor?.foto_url) ? 'transparent' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '50%', border: '1px solid #e2e8f0', color: '#64748b', padding: 0, overflow: 'hidden' }}>
+              {role === 'asesor' && currentAsesor?.foto_url ? (
+                <img src={currentAsesor.foto_url} alt="Asesor" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <User size={18} />
+              )}
             </div>
             <div className="user-info">
               <h4 style={{ fontSize: '0.9rem', margin: 0, color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100px' }}>
