@@ -2539,7 +2539,10 @@ export default function Admin() {
                       const { error } = await supabase.from('configuracion').update({
                         siigo_username: configuracion.siigo_username,
                         siigo_access_key: configuracion.siigo_access_key,
-                        envios_99_api_key: configuracion.envios_99_api_key
+                        envios_99_api_key: configuracion.envios_99_api_key,
+                        google_analytics_id: configuracion.google_analytics_id,
+                        meta_pixel_id: configuracion.meta_pixel_id,
+                        clarity_project_id: configuracion.clarity_project_id
                       }).eq('id', configuracion.id);
                       setLoading(false);
                       if (error) showToast('Error al guardar credenciales: ' + error.message, 'error');
@@ -2587,6 +2590,40 @@ export default function Admin() {
                                 value={configuracion.siigo_access_key || ''} 
                                 onChange={e => setConfiguracion({ ...configuracion, siigo_access_key: e.target.value })} 
                                 placeholder="Ingresa tu access key de Siigo"
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Analítica y Tracking */}
+                        <div className="config-section" style={{ margin: 0 }}>
+                          <div className="config-section-title">📊 Analítica y Tracking</div>
+                          <div className="form-grid">
+                            <div className="form-field full">
+                              <label>Google Analytics 4 (Measurement ID)</label>
+                              <input 
+                                type="text" 
+                                value={configuracion.google_analytics_id || ''} 
+                                onChange={e => setConfiguracion({ ...configuracion, google_analytics_id: e.target.value })} 
+                                placeholder="Ej. G-XXXXXXXXXX"
+                              />
+                            </div>
+                            <div className="form-field full">
+                              <label>Meta (Facebook) Pixel ID</label>
+                              <input 
+                                type="text" 
+                                value={configuracion.meta_pixel_id || ''} 
+                                onChange={e => setConfiguracion({ ...configuracion, meta_pixel_id: e.target.value })} 
+                                placeholder="Ej. 123456789012345"
+                              />
+                            </div>
+                            <div className="form-field full">
+                              <label>Microsoft Clarity Project ID</label>
+                              <input 
+                                type="text" 
+                                value={configuracion.clarity_project_id || ''} 
+                                onChange={e => setConfiguracion({ ...configuracion, clarity_project_id: e.target.value })} 
+                                placeholder="Ej. 5abc123xyz"
                               />
                             </div>
                           </div>
