@@ -55,6 +55,8 @@ export interface Configuracion {
   meta_pixel_id?: string;
   clarity_project_id?: string;
   preguntar_tipo_cliente?: boolean;
+  admin_nombre?: string;
+  admin_foto_url?: string;
 }
 
 export interface Pedido {

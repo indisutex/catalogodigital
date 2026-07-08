@@ -2546,7 +2546,9 @@ export default function Admin() {
                       link_dropshipper: configuracion.link_dropshipper,
                       link_ganar_dinero: configuracion.link_ganar_dinero,
                       video_hero_url: configuracion.video_hero_url,
-                      color_primario: configuracion.color_primario || '#6366f1'
+                      color_primario: configuracion.color_primario || '#6366f1',
+                      admin_nombre: configuracion.admin_nombre,
+                      admin_foto_url: configuracion.admin_foto_url
                     };
                     
                     let { error } = await supabase.from('configuracion').update(updateData).eq('id', configuracion.id);
@@ -2606,6 +2608,50 @@ export default function Admin() {
                             />
                             Mostrar pantalla "¿Qué tipo de cliente eres?" al inicio
                           </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="config-section" style={{ marginTop: '1.5rem' }}>
+                      <div className="config-section-title">👤 Perfil del Administrador</div>
+                      <div className="form-grid">
+                        <div className="form-field">
+                          <label>Nombre del Administrador</label>
+                          <input 
+                            value={configuracion.admin_nombre || ''} 
+                            onChange={e => setConfiguracion({ ...configuracion, admin_nombre: e.target.value })} 
+                            placeholder="Ej. Juan Pérez" 
+                          />
+                        </div>
+                        <div className="form-field">
+                          <label>Foto de Perfil (Administrador)</label>
+                          <div className="img-input-row">
+                            {configuracion.admin_foto_url && <img src={configuracion.admin_foto_url} className="img-preview-thumb" alt="Admin" />}
+                            <input 
+                              type="url" 
+                              value={configuracion.admin_foto_url || ''} 
+                              onChange={e => setConfiguracion({ ...configuracion, admin_foto_url: e.target.value })} 
+                              placeholder="https://..." 
+                              style={{ flex: 1 }} 
+                            />
+                            <label className="btn-upload-img" style={{ flexShrink: 0, cursor: 'pointer' }}>
+                              <Upload size={12} /> Subir
+                              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                setLoading(true);
+                                try {
+                                  const compFile = await compressImage(file);
+                                  const fileName = `admin_foto_${Date.now()}.${compFile.name.split('.').pop()}`;
+                                  await supabase.storage.from('archivos').upload(fileName, compFile);
+                                  const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
+                                  setConfiguracion({ ...configuracion, admin_foto_url: data.publicUrl });
+                                  showToast('Foto subida ✓');
+                                } catch { showToast('Error subiendo foto', 'error'); }
+                                setLoading(false);
+                              }} />
+                            </label>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -5267,16 +5313,18 @@ function SidebarContent({
         
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginTop: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div className="avatar" style={{ background: (role === 'asesor' && currentAsesor?.foto_url) ? 'transparent' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '50%', border: '1px solid #e2e8f0', color: '#64748b', padding: 0, overflow: 'hidden' }}>
+            <div className="avatar" style={{ background: (role === 'asesor' && currentAsesor?.foto_url) ? 'transparent' : (role === 'admin' && configuracion?.admin_foto_url) ? 'transparent' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '50%', border: '1px solid #e2e8f0', color: '#64748b', padding: 0, overflow: 'hidden' }}>
               {role === 'asesor' && currentAsesor?.foto_url ? (
                 <img src={currentAsesor.foto_url} alt="Asesor" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (role === 'admin' && configuracion?.admin_foto_url) ? (
+                <img src={configuracion.admin_foto_url} alt="Admin" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
                 <User size={18} />
               )}
             </div>
             <div className="user-info">
               <h4 style={{ fontSize: '0.9rem', margin: 0, color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100px' }}>
-                {role === 'asesor' && currentAsesor ? currentAsesor.nombre : 'Administrador'}
+                {role === 'asesor' && currentAsesor ? currentAsesor.nombre : (configuracion?.admin_nombre || 'Administrador')}
               </h4>
               <p style={{ fontSize: '0.75rem', color: '#10b981', margin: 0 }}>{role === 'asesor' ? 'Asesor' : 'Sesión activa'}</p>
             </div>
