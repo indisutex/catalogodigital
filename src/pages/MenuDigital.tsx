@@ -25,10 +25,15 @@ export default function MenuDigital() {
     const params = new URLSearchParams(window.location.search);
     const wsParam = params.get('ws');
     if (wsParam) {
-      const cleanNum = wsParam.replace(/\D/g, '');
-      if (cleanNum) {
-        setOverrideWhatsApp(cleanNum);
-        sessionStorage.setItem(`ws_override_${getTenantId()}`, cleanNum);
+      if (wsParam === 'clear') {
+        sessionStorage.removeItem(`ws_override_${getTenantId()}`);
+        setOverrideWhatsApp(null);
+      } else {
+        const cleanNum = wsParam.replace(/\D/g, '');
+        if (cleanNum) {
+          setOverrideWhatsApp(cleanNum);
+          sessionStorage.setItem(`ws_override_${getTenantId()}`, cleanNum);
+        }
       }
     } else {
       const savedOverride = sessionStorage.getItem(`ws_override_${getTenantId()}`);
