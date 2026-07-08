@@ -43,7 +43,13 @@ type Toast = { message: string; type: 'success' | 'error' } | null;
 
 // Ejecutar sincrónicamente para evitar parpadeo de color
 try {
-  const tId = getTenantId();
+  let tId = 'indisutex';
+  const pathParts = window.location.pathname.split('/');
+  if (pathParts[1] && pathParts[1] !== 'admin' && pathParts[1] !== 'superadmin' && pathParts[1] !== 'menu') {
+    tId = pathParts[1].toLowerCase().replace(/-/g, '_');
+  } else {
+    tId = localStorage.getItem('tenant_id') || 'saramantha';
+  }
   const cachedColor = localStorage.getItem(`admin_primary_color_${tId}`);
   if (cachedColor) {
     document.documentElement.style.setProperty('--primary-color', cachedColor);
