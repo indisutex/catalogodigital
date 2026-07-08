@@ -41,6 +41,25 @@ type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' |
 
 type Toast = { message: string; type: 'success' | 'error' } | null;
 
+// Ejecutar sincrónicamente para evitar parpadeo de color
+try {
+  const pathParts = window.location.pathname.split('/');
+  const tId = pathParts[1] && pathParts[1] !== 'admin' ? pathParts[1] : 'indisutex';
+  const cachedColor = localStorage.getItem(`admin_primary_color_${tId}`);
+  if (cachedColor) {
+    document.documentElement.style.setProperty('--primary-color', cachedColor);
+    const hex = cachedColor.replace('#', '');
+    if (hex.length === 6) {
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+      if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
+        document.documentElement.style.setProperty('--primary-rgb', `${r}, ${g}, ${b}`);
+      }
+    }
+  }
+} catch (e) {}
+
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return localStorage.getItem(`admin_auth_${getTenantId()}`) === 'true';
@@ -227,21 +246,25 @@ export default function Admin() {
       document.title = 'Panel Administrativo';
     }
 
-    if (configuracion?.color_primario) {
-      document.documentElement.style.setProperty('--primary-color', configuracion.color_primario);
-      // Extraer RGB para transparencias rgba()
-      const hex = configuracion.color_primario.replace('#', '');
-      if (hex.length === 6) {
-        const r = parseInt(hex.substring(0, 2), 16);
-        const g = parseInt(hex.substring(2, 4), 16);
-        const b = parseInt(hex.substring(4, 6), 16);
-        if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
-          document.documentElement.style.setProperty('--primary-rgb', `${r}, ${g}, ${b}`);
+    if (configuracion) {
+      if (configuracion.color_primario) {
+        document.documentElement.style.setProperty('--primary-color', configuracion.color_primario);
+        localStorage.setItem(`admin_primary_color_${getTenantId()}`, configuracion.color_primario);
+        // Extraer RGB para transparencias rgba()
+        const hex = configuracion.color_primario.replace('#', '');
+        if (hex.length === 6) {
+          const r = parseInt(hex.substring(0, 2), 16);
+          const g = parseInt(hex.substring(2, 4), 16);
+          const b = parseInt(hex.substring(4, 6), 16);
+          if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
+            document.documentElement.style.setProperty('--primary-rgb', `${r}, ${g}, ${b}`);
+          }
         }
+      } else {
+        document.documentElement.style.setProperty('--primary-color', '#6366f1');
+        document.documentElement.style.setProperty('--primary-rgb', '99, 102, 241');
+        localStorage.removeItem(`admin_primary_color_${getTenantId()}`);
       }
-    } else {
-      document.documentElement.style.setProperty('--primary-color', '#6366f1');
-      document.documentElement.style.setProperty('--primary-rgb', '99, 102, 241');
     }
   }, [configuracion]);
 

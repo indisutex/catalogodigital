@@ -5,6 +5,26 @@ import { Loader2, Search, Plus, ShoppingBag, X, ChevronLeft, ChevronRight, Shopp
 import { useCart, getEffectivePrice } from '../context/CartContext';
 import './MenuDigital.css';
 
+// Ejecutar sincrónicamente para evitar parpadeo de color
+try {
+  const pathParts = window.location.pathname.split('/');
+  const tId = pathParts[1] && pathParts[1] !== 'admin' ? pathParts[1] : 'indisutex';
+  const cachedColor = localStorage.getItem(`admin_primary_color_${tId}`);
+  if (cachedColor) {
+    document.documentElement.style.setProperty('--primary', cachedColor);
+    document.documentElement.style.setProperty('--primary-color', cachedColor);
+    const hex = cachedColor.replace('#', '');
+    if (hex.length === 6) {
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+      if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
+        document.documentElement.style.setProperty('--primary-rgb', `${r}, ${g}, ${b}`);
+      }
+    }
+  }
+} catch (e) {}
+
 export default function MenuDigital() {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -54,6 +74,7 @@ export default function MenuDigital() {
       if (configuracion.color_primario) {
         document.documentElement.style.setProperty('--primary', configuracion.color_primario);
         document.documentElement.style.setProperty('--primary-color', configuracion.color_primario);
+        localStorage.setItem(`admin_primary_color_${getTenantId()}`, configuracion.color_primario);
         const hex = configuracion.color_primario.replace('#', '');
         if (hex.length === 6) {
           const r = parseInt(hex.substring(0, 2), 16);
