@@ -1408,7 +1408,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} />
+          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'asesor' ? asesores.find(a => a.telefono === loggedAsesorPhone) : null} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -1542,7 +1542,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} />
+          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'asesor' ? asesores.find(a => a.telefono === loggedAsesorPhone) : null} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -1628,7 +1628,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} />
+          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'asesor' ? asesores.find(a => a.telefono === loggedAsesorPhone) : null} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -1691,6 +1691,7 @@ export default function Admin() {
           handleLogout={handleLogout} 
           onClose={() => setIsMobileMenuOpen(false)} 
           role={role}
+          currentAsesor={role === 'asesor' ? asesores.find(a => a.telefono === loggedAsesorPhone) : null}
         />
       </aside>
 
@@ -4848,7 +4849,7 @@ export default function Admin() {
 
 // ── SIDEBAR COMPONENT ──
 function SidebarContent({
-  activeTab, setActiveTab, productos, configuracion, handleLogout, onClose, role
+  activeTab, setActiveTab, productos, configuracion, handleLogout, onClose, role, currentAsesor
 }: {
   activeTab: TabType;
   setActiveTab: (t: TabType) => void;
@@ -4857,6 +4858,7 @@ function SidebarContent({
   handleLogout: () => void;
   onClose?: () => void;
   role: 'admin' | 'asesor';
+  currentAsesor?: any;
 }) {
   const [isOnline, setIsOnline] = useState(window.navigator.onLine);
 
@@ -4889,7 +4891,17 @@ function SidebarContent({
         <div className="brand-text">
           <h2 style={{ textTransform: 'capitalize', fontSize: '1.1rem', color: '#0f172a' }}>{configuracion?.nombre_negocio || 'Catálogo'}</h2>
           <p style={{ margin: 0 }}>Panel Administrativo</p>
-          {configuracion?.whatsapp && (
+          {role === 'asesor' && currentAsesor ? (
+            <a 
+              href={`https://wa.me/${currentAsesor.telefono.replace(/\D/g, '')}`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="sidebar-wa-link"
+              style={{ fontSize: '0.75rem', color: '#10b981', textDecoration: 'none', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.3rem', whiteSpace: 'nowrap' }}
+            >
+              <Phone size={12} style={{ strokeWidth: 2.5 }} /> Línea: {currentAsesor.telefono}
+            </a>
+          ) : configuracion?.whatsapp ? (
             <a 
               href={`https://wa.me/${configuracion.whatsapp.replace(/\D/g, '')}`} 
               target="_blank" 
@@ -4899,7 +4911,7 @@ function SidebarContent({
             >
               <Phone size={12} style={{ strokeWidth: 2.5 }} /> Línea: {configuracion.whatsapp}
             </a>
-          )}
+          ) : null}
         </div>
       </div>
 
@@ -4988,8 +5000,10 @@ function SidebarContent({
               <User size={18} />
             </div>
             <div className="user-info">
-              <h4 style={{ fontSize: '0.9rem', margin: 0, color: '#334155' }}>Administrador</h4>
-              <p style={{ fontSize: '0.75rem', color: '#10b981', margin: 0 }}>Sesión activa</p>
+              <h4 style={{ fontSize: '0.9rem', margin: 0, color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100px' }}>
+                {role === 'asesor' && currentAsesor ? currentAsesor.nombre : 'Administrador'}
+              </h4>
+              <p style={{ fontSize: '0.75rem', color: '#10b981', margin: 0 }}>{role === 'asesor' ? 'Asesor' : 'Sesión activa'}</p>
             </div>
           </div>
           <button 
