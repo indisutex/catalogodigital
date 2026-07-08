@@ -37,7 +37,7 @@ const emptyProduct: ProductFormData = {
   estampados: ''
 };
 
-type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores';
+type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'perfil_asesor';
 
 type Toast = { message: string; type: 'success' | 'error' } | null;
 
@@ -2363,6 +2363,101 @@ export default function Admin() {
                 </>
               )}
             </>
+          )}
+
+          {/* ── PERFIL ASESOR TAB ── */}
+          {activeTab === 'perfil_asesor' && role === 'asesor' && (
+            <div className="admin-panel">
+              <div className="panel-header">
+                <div>
+                  <h3><User size={16} /> Mi Perfil</h3>
+                  <p>Configura tus datos personales</p>
+                </div>
+              </div>
+              <div className="panel-body">
+                {asesores.find(a => a.telefono === loggedAsesorPhone) ? (
+                  <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    try {
+                      setLoading(true);
+                      const currentAsesorData = asesores.find(a => a.telefono === loggedAsesorPhone);
+                      if (!currentAsesorData) return;
+                      const { error } = await supabase
+                        .from('asesores')
+                        .update({
+                          nombre: (document.getElementById('perfil-nombre') as HTMLInputElement).value,
+                          pin: (document.getElementById('perfil-pin') as HTMLInputElement).value,
+                          foto_url: (document.getElementById('perfil-foto') as HTMLInputElement).value,
+                        })
+                        .eq('id', currentAsesorData.id);
+                      if (error) throw error;
+                      showToast('Perfil actualizado correctamente', 'success');
+                      // Update local state
+                      setAsesores(asesores.map(a => 
+                        a.id === currentAsesorData.id 
+                          ? { ...a, 
+                              nombre: (document.getElementById('perfil-nombre') as HTMLInputElement).value,
+                              pin: (document.getElementById('perfil-pin') as HTMLInputElement).value,
+                              foto_url: (document.getElementById('perfil-foto') as HTMLInputElement).value,
+                            } 
+                          : a
+                      ));
+                    } catch (err: any) {
+                      showToast(err.message || 'Error al actualizar', 'error');
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}>
+                    <div className="form-grid">
+                      <div className="form-field">
+                        <label>Tu Nombre</label>
+                        <input 
+                          type="text" 
+                          id="perfil-nombre"
+                          defaultValue={asesores.find(a => a.telefono === loggedAsesorPhone)?.nombre} 
+                          required 
+                        />
+                      </div>
+                      <div className="form-field">
+                        <label>Teléfono (Línea WhatsApp)</label>
+                        <input 
+                          type="text" 
+                          disabled
+                          defaultValue={loggedAsesorPhone || ''} 
+                        />
+                        <small style={{color: '#64748b'}}>El número de teléfono no se puede cambiar aquí.</small>
+                      </div>
+                      <div className="form-field">
+                        <label>PIN de Acceso</label>
+                        <input 
+                          type="text" 
+                          id="perfil-pin"
+                          defaultValue={asesores.find(a => a.telefono === loggedAsesorPhone)?.pin} 
+                          required 
+                        />
+                      </div>
+                      <div className="form-field">
+                        <label>URL de Foto</label>
+                        <input 
+                          type="url" 
+                          id="perfil-foto"
+                          defaultValue={asesores.find(a => a.telefono === loggedAsesorPhone)?.foto_url || ''} 
+                          placeholder="https://ejemplo.com/foto.jpg"
+                        />
+                        <small style={{color: '#64748b'}}>Esta foto aparecerá en tu panel y como asesor estrella.</small>
+                      </div>
+                    </div>
+                    <div className="form-actions" style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+                      <button type="submit" className="btn-primary" disabled={loading}>
+                        {loading ? 'Guardando...' : 'Guardar Perfil'}
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <p>Cargando datos del perfil...</p>
+                )}
+              </div>
+            </div>
           )}
 
           {/* ── CONFIG TAB ── */}
@@ -5025,6 +5120,12 @@ function SidebarContent({
           <span className="nav-icon"><ShoppingBag size={14} /></span> Pedidos
           {activeTab === 'pedidos' && <span className="active-dot"></span>}
         </button>
+        {role === 'asesor' && (
+          <button className={`nav-item ${activeTab === 'perfil_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('perfil_asesor')}>
+            <span className="nav-icon"><Settings size={14} /></span> Mi Perfil
+            {activeTab === 'perfil_asesor' && <span className="active-dot"></span>}
+          </button>
+        )}
         {role !== 'asesor' && (
           <>
             <button className={`nav-item ${activeTab === 'clientes' ? 'active' : ''}`} onClick={() => handleSelectTab('clientes')}>
