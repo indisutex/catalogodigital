@@ -4349,7 +4349,7 @@ export default function Admin() {
                                   <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0f172a', fontWeight: 700 }}>👤 {lead.nombre || 'Borrador Anónimo'}</h4>
                                   {lead.linea_whatsapp && (
                                     <span style={{ fontSize: '0.65rem', background: '#f8fafc', color: '#475569', padding: '2px 6px', borderRadius: '12px', border: '1px solid #cbd5e1', whiteSpace: 'nowrap' }}>
-                                      🎯 {asesores.find(a => a.telefono?.replace(/\D/g, '') === lead.linea_whatsapp?.replace(/\D/g, ''))?.nombre || lead.linea_whatsapp}
+                                      🎯 {getAsesorNameByPhone(lead.linea_whatsapp)}
                                     </span>
                                   )}
                                 </div>
@@ -4390,7 +4390,7 @@ export default function Admin() {
                                   <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                                     {ped.linea_whatsapp && (
                                       <span style={{ fontSize: '0.65rem', background: '#f8fafc', color: '#475569', padding: '1px 5px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
-                                        🎯 {asesores.find(a => a.telefono?.replace(/\D/g, '') === ped.linea_whatsapp?.replace(/\D/g, ''))?.nombre || ped.linea_whatsapp}
+                                        🎯 {getAsesorNameByPhone(ped.linea_whatsapp)}
                                       </span>
                                     )}
                                     {ped.origen === 'pos' ? (
