@@ -43,8 +43,7 @@ type Toast = { message: string; type: 'success' | 'error' } | null;
 
 // Ejecutar sincrónicamente para evitar parpadeo de color
 try {
-  const pathParts = window.location.pathname.split('/');
-  const tId = pathParts[1] && pathParts[1] !== 'admin' ? pathParts[1] : 'indisutex';
+  const tId = getTenantId();
   const cachedColor = localStorage.getItem(`admin_primary_color_${tId}`);
   if (cachedColor) {
     document.documentElement.style.setProperty('--primary-color', cachedColor);
