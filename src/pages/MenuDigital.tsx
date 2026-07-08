@@ -109,6 +109,7 @@ export default function MenuDigital() {
     const delayDebounceFn = setTimeout(async () => {
       try {
         const tenant = getTenantId();
+        const numeroWhatsApp = overrideWhatsApp || configuracion?.whatsapp || '573185637317';
         if (leadId) {
           await supabase
             .from('leads')
@@ -116,7 +117,8 @@ export default function MenuDigital() {
               nombre: formData.nombre,
               telefono: formData.telefono,
               ciudad: formData.ciudad,
-              estado: 'abandonado'
+              estado: 'abandonado',
+              linea_whatsapp: numeroWhatsApp
             })
             .eq('id', leadId);
         } else {
@@ -127,7 +129,8 @@ export default function MenuDigital() {
               telefono: formData.telefono,
               ciudad: formData.ciudad,
               tenant_id: tenant,
-              estado: 'abandonado'
+              estado: 'abandonado',
+              linea_whatsapp: numeroWhatsApp
             })
             .select('id')
             .single();
@@ -142,7 +145,7 @@ export default function MenuDigital() {
     }, 1500); // 1.5s debounce
 
     return () => clearTimeout(delayDebounceFn);
-  }, [formData.nombre, formData.telefono, formData.ciudad]);
+  }, [formData.nombre, formData.telefono, formData.ciudad, overrideWhatsApp, configuracion]);
 
   const { items, addToCart, removeFromCart, updateQuantity, total, clearCart, buyerType, setBuyerType } = useCart();
 

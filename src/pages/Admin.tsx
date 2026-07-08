@@ -4317,7 +4317,14 @@ export default function Admin() {
                           <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
                             {leadsFiltrados.map((lead) => (
                               <div key={lead.id} className="kanban-card lead-card" style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '0.85rem', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                                <h4 style={{ margin: '0 0 0.4rem 0', fontSize: '0.9rem', color: '#0f172a', fontWeight: 700 }}>👤 {lead.nombre || 'Borrador Anónimo'}</h4>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem' }}>
+                                  <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0f172a', fontWeight: 700 }}>👤 {lead.nombre || 'Borrador Anónimo'}</h4>
+                                  {lead.linea_whatsapp && (
+                                    <span style={{ fontSize: '0.65rem', background: '#f8fafc', color: '#475569', padding: '2px 6px', borderRadius: '12px', border: '1px solid #cbd5e1', whiteSpace: 'nowrap' }}>
+                                      🎯 {asesores.find(a => a.telefono?.replace(/\D/g, '') === lead.linea_whatsapp?.replace(/\D/g, ''))?.nombre || lead.linea_whatsapp}
+                                    </span>
+                                  )}
+                                </div>
                                 <p className="phone" style={{ margin: '0 0 0.25rem 0', fontSize: '0.8rem', color: '#475569' }}>📞 {lead.telefono || 'Sin número'}</p>
                                 <p className="city" style={{ margin: '0 0 0.25rem 0', fontSize: '0.8rem', color: '#475569' }}>📍 {lead.ciudad || 'No especificada'}</p>
                                 <p className="date" style={{ margin: '0 0 0.6rem 0', fontSize: '0.75rem', color: '#64748b' }}>📅 {new Date(lead.created_at).toLocaleDateString('es-CO', { dateStyle: 'short' })}</p>
@@ -4352,11 +4359,18 @@ export default function Admin() {
                               <div key={ped.id} className="kanban-card order-card" style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '0.85rem', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0 0 0.4rem 0', flexWrap: 'wrap', gap: '0.25rem' }}>
                                   <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0f172a', fontWeight: 700 }}>👤 {ped.cliente_nombre}</h4>
-                                  {ped.origen === 'pos' ? (
-                                    <span style={{ fontSize: '0.65rem', background: '#dcfce7', color: '#166534', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>POS</span>
-                                  ) : (
-                                    <span style={{ fontSize: '0.65rem', background: '#e0f2fe', color: '#0369a1', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>Catálogo</span>
-                                  )}
+                                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                                    {ped.linea_whatsapp && (
+                                      <span style={{ fontSize: '0.65rem', background: '#f8fafc', color: '#475569', padding: '1px 5px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                                        🎯 {asesores.find(a => a.telefono?.replace(/\D/g, '') === ped.linea_whatsapp?.replace(/\D/g, ''))?.nombre || ped.linea_whatsapp}
+                                      </span>
+                                    )}
+                                    {ped.origen === 'pos' ? (
+                                      <span style={{ fontSize: '0.65rem', background: '#dcfce7', color: '#166534', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>POS</span>
+                                    ) : (
+                                      <span style={{ fontSize: '0.65rem', background: '#e0f2fe', color: '#0369a1', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>Catálogo</span>
+                                    )}
+                                  </div>
                                 </div>
                                 <p className="phone" style={{ margin: '0 0 0.25rem 0', fontSize: '0.8rem', color: '#475569' }}>📞 {ped.cliente_telefono}</p>
                                 <p className="total" style={{ margin: '0 0 0.4rem 0', fontSize: '0.82rem', fontWeight: 700, color: '#0f172a' }}>💰 Total: <span style={{ color: '#10b981' }}>${ped.total.toLocaleString()}</span></p>
@@ -4442,11 +4456,18 @@ export default function Admin() {
                               <div key={ped.id} className="kanban-card client-card" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '0.85rem', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0 0 0.4rem 0', flexWrap: 'wrap', gap: '0.25rem' }}>
                                   <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#14532d', fontWeight: 700 }}>👤 {ped.cliente_nombre}</h4>
-                                  {ped.origen === 'pos' ? (
-                                    <span style={{ fontSize: '0.65rem', background: '#dcfce7', color: '#166534', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>POS</span>
-                                  ) : (
-                                    <span style={{ fontSize: '0.65rem', background: '#e0f2fe', color: '#0369a1', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>Catálogo</span>
-                                  )}
+                                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+                                    {ped.linea_whatsapp && (
+                                      <span style={{ fontSize: '0.65rem', background: '#f8fafc', color: '#475569', padding: '1px 5px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
+                                        🎯 {asesores.find(a => a.telefono?.replace(/\D/g, '') === ped.linea_whatsapp?.replace(/\D/g, ''))?.nombre || ped.linea_whatsapp}
+                                      </span>
+                                    )}
+                                    {ped.origen === 'pos' ? (
+                                      <span style={{ fontSize: '0.65rem', background: '#dcfce7', color: '#166534', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>POS</span>
+                                    ) : (
+                                      <span style={{ fontSize: '0.65rem', background: '#e0f2fe', color: '#0369a1', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>Catálogo</span>
+                                    )}
+                                  </div>
                                 </div>
                                 <p className="phone" style={{ margin: '0 0 0.25rem 0', fontSize: '0.8rem', color: '#166534' }}>📞 {ped.cliente_telefono}</p>
                                 <p className="total" style={{ margin: '0 0 0.4rem 0', fontSize: '0.82rem', fontWeight: 700, color: '#14532d' }}>💰 Facturado: <span style={{ color: '#16a34a' }}>${ped.total.toLocaleString()}</span></p>
