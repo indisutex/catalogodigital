@@ -1117,7 +1117,7 @@ export default function Admin() {
       bestAdvisorPhone: bestAdvisor.phone,
       bestAdvisorTotal: bestAdvisor.total
     };
-  }, [pedidos]);
+  }, [pedidos, asesores]);
 
   const leadsFiltrados = useMemo(() => {
     let temp = [...leads];
@@ -3368,13 +3368,11 @@ export default function Admin() {
                       </thead>
                       <tbody>
                         {filteredAsesores.map(a => {
-                          const catalogLink = `${window.location.origin}/${getTenantId()}?ws=${a.telefono}`;
-                          
                           // Calculate advisor stats from orders database
                           const advisorOrders = pedidos.filter(p => {
                             const orderPhone = p.linea_whatsapp?.replace(/\D/g, '');
-                            const advisorPhone = a.telefono?.replace(/\D/g, '');
-                            return orderPhone === advisorPhone;
+                            const advisorPhones = (a.telefono || '').split(',').map(phone => phone.replace(/\D/g, '')).filter(Boolean);
+                            return orderPhone && advisorPhones.includes(orderPhone);
                           });
 
                           // RESTRICT Total Ventas ONLY to verified/completed payments
