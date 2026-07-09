@@ -4250,6 +4250,7 @@ export default function Admin() {
               </div>
               <div className="panel-body">
                 {configuracion ? (
+                  <>
                   <form onSubmit={async (e) => {
                     e.preventDefault();
                     setLoading(true);
@@ -4491,6 +4492,100 @@ export default function Admin() {
                       </button>
                     </div>
                   </form>
+
+                  {/* ── SECCIÓN PURGE ── */}
+                  <div style={{ marginTop: '2.5rem', borderTop: '2px dashed #e2e8f0', paddingTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                    <div>
+                      <h4 style={{ margin: '0 0 0.25rem 0', fontWeight: 800, color: '#0f172a', fontSize: '1rem' }}>🧹 Purgar Registros</h4>
+                      <p style={{ margin: 0, fontSize: '0.82rem', color: '#64748b' }}>Elimina pedidos, clientes o leads de forma selectiva con filtros opcionales de estado y fecha.</p>
+                    </div>
+
+                    {/* Paso 1: Qué purgar */}
+                    <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
+                      <p style={{ margin: '0 0 0.75rem 0', fontWeight: 700, fontSize: '0.83rem', color: '#374151' }}>1️⃣ ¿Qué deseas purgar?</p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+                        {([
+                          { key: 'pedidos', label: '📦 Pedidos', count: pedidos.length },
+                          { key: 'clientes', label: '👤 Clientes', count: clientes.length },
+                          { key: 'leads', label: '🛒 Leads / Carritos Abandonados', count: leads.length },
+                        ] as { key: 'pedidos' | 'clientes' | 'leads'; label: string; count: number }[]).map(({ key, label, count }) => (
+                          <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', padding: '0.6rem 0.9rem', borderRadius: '8px', border: `2px solid ${purgeTargets[key] ? '#ea580c' : '#e2e8f0'}`, background: purgeTargets[key] ? '#fff7ed' : 'white', transition: 'all 0.15s' }}>
+                            <input type="checkbox" checked={purgeTargets[key]}
+                              onChange={e => { setPurgeTargets(prev => ({ ...prev, [key]: e.target.checked })); setPurgePreview(null); }}
+                              style={{ width: '16px', height: '16px', accentColor: '#ea580c' }} />
+                            <span style={{ fontWeight: 600, fontSize: '0.86rem', color: '#0f172a' }}>{label}</span>
+                            <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: '#64748b', background: '#f1f5f9', padding: '0.1rem 0.5rem', borderRadius: '9999px' }}>{count} registros</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Paso 2: Filtros */}
+                    <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
+                      <p style={{ margin: '0 0 0.75rem 0', fontWeight: 700, fontSize: '0.83rem', color: '#374151' }}>2️⃣ Filtros opcionales <span style={{ fontWeight: 400, color: '#94a3b8' }}>(vacío = todos)</span></p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <div>
+                          <label style={{ fontSize: '0.76rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.3rem' }}>Estado</label>
+                          <select value={purgeEstado} onChange={e => { setPurgeEstado(e.target.value); setPurgePreview(null); }}
+                            style={{ width: '100%', padding: '0.55rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.84rem', outline: 'none' }}>
+                            <option value="todos">Todos los estados</option>
+                            <option value="pendiente">Pendiente</option>
+                            <option value="atendido">Atendido</option>
+                            <option value="completado">Completado</option>
+                            <option value="cancelado">Cancelado</option>
+                            <option value="abandonado">Abandonado (leads)</option>
+                          </select>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                          <div>
+                            <label style={{ fontSize: '0.76rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.3rem' }}>Desde (fecha)</label>
+                            <input type="date" value={purgeDesde} onChange={e => { setPurgeDesde(e.target.value); setPurgePreview(null); }}
+                              style={{ width: '100%', padding: '0.55rem 0.7rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.82rem', outline: 'none', boxSizing: 'border-box' }} />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '0.76rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.3rem' }}>Hasta (fecha)</label>
+                            <input type="date" value={purgeHasta} onChange={e => { setPurgeHasta(e.target.value); setPurgePreview(null); }}
+                              style={{ width: '100%', padding: '0.55rem 0.7rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.82rem', outline: 'none', boxSizing: 'border-box' }} />
+                          </div>
+                        </div>
+                        <button onClick={calcularPurgePreview}
+                          disabled={!purgeTargets.pedidos && !purgeTargets.clientes && !purgeTargets.leads}
+                          style={{ padding: '0.6rem 1rem', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem', opacity: (!purgeTargets.pedidos && !purgeTargets.clientes && !purgeTargets.leads) ? 0.5 : 1, width: 'fit-content' }}>
+                          🔍 Previsualizar cuántos se eliminarán
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Preview */}
+                    {purgePreview && (
+                      <div style={{ background: '#fef9c3', borderRadius: '10px', padding: '1rem 1.25rem', border: '1px solid #fde047', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <p style={{ margin: 0, fontWeight: 700, fontSize: '0.83rem', color: '#713f12' }}>⚠️ Se eliminarán:</p>
+                        {purgeTargets.pedidos && <p style={{ margin: 0, fontSize: '0.82rem', color: '#92400e' }}>• <strong>{purgePreview.pedidos}</strong> pedidos</p>}
+                        {purgeTargets.clientes && <p style={{ margin: 0, fontSize: '0.82rem', color: '#92400e' }}>• <strong>{purgePreview.clientes}</strong> clientes</p>}
+                        {purgeTargets.leads && <p style={{ margin: 0, fontSize: '0.82rem', color: '#92400e' }}>• <strong>{purgePreview.leads}</strong> leads</p>}
+                        <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.79rem', color: '#b45309' }}>Total: <strong>{purgePreview.pedidos + purgePreview.clientes + purgePreview.leads}</strong> registros — acción <strong>irreversible</strong>.</p>
+                      </div>
+                    )}
+
+                    {/* Paso 3: Confirmar */}
+                    <div style={{ background: '#fef2f2', borderRadius: '12px', padding: '1.25rem', border: '1px solid #fee2e2' }}>
+                      <p style={{ margin: '0 0 0.6rem 0', fontWeight: 700, fontSize: '0.83rem', color: '#991b1b' }}>3️⃣ Escribe <strong>PURGAR</strong> para confirmar y ejecutar</p>
+                      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                        <input type="text" placeholder="Escribe PURGAR" value={purgeConfirmText}
+                          onChange={e => setPurgeConfirmText(e.target.value)}
+                          style={{ flex: 1, padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #fca5a5', fontSize: '0.84rem', outline: 'none', minWidth: '150px' }} />
+                        <button onClick={handlePurge}
+                          disabled={purging || purgeConfirmText !== 'PURGAR' || (!purgeTargets.pedidos && !purgeTargets.clientes && !purgeTargets.leads)}
+                          style={{ padding: '0.6rem 1.3rem', background: purging ? '#94a3b8' : '#dc2626', color: 'white', border: 'none', borderRadius: '8px', cursor: purging ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '0.84rem', opacity: (purgeConfirmText !== 'PURGAR' || (!purgeTargets.pedidos && !purgeTargets.clientes && !purgeTargets.leads)) ? 0.5 : 1 }}>
+                          {purging ? '⏳ Purgando...' : '🗑️ Ejecutar Purge'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  </>
+
+
                 ) : (
                   <div className="empty-state">
                     <div className="loading-dot" />
@@ -8018,19 +8113,7 @@ export default function Admin() {
                 </div>
               </div>
 
-              {/* Sección 3: Purgar Pedidos / Clientes / Leads */}
-              <div style={{ background: '#fff7ed', padding: '1.5rem', borderRadius: '12px', border: '1px solid #fed7aa' }}>
-                <h4 style={{ margin: '0 0 0.4rem 0', color: '#9a3412', fontWeight: 800 }}>🧹 Purgar Registros</h4>
-                <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: '#9a3412' }}>
-                  Elimina pedidos, clientes o leads de forma selectiva. Puedes filtrar por estado y rango de fechas antes de purgar.
-                </p>
-                <button
-                  onClick={() => { setShowPurgeModal(true); setPurgePreview(null); setPurgeConfirmText(''); }}
-                  style={{ padding: '0.65rem 1.4rem', background: '#ea580c', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                >
-                  🧹 Abrir Herramienta de Purge
-                </button>
-              </div>
+
 
             </div>
           </div>
