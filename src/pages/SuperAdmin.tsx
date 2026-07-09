@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Pedido, Producto } from '../types';
 import './SuperAdmin.css';
-import { Shield, TrendingUp, Package, Clock, LogOut, Building, CheckCircle, Activity, Filter, X, MessageCircle, MapPin } from 'lucide-react';
+import { Shield, TrendingUp, Package, Clock, LogOut, Building, CheckCircle, Activity, Filter, X, MessageCircle, MapPin, Users } from 'lucide-react';
 
 const SUPER_PIN = '9999';
 
@@ -42,6 +42,7 @@ export default function SuperAdmin() {
     return (localStorage.getItem('superadmin_view_mode') as 'dashboard' | 'crm') || 'dashboard';
   });
   const [leads, setLeads] = useState<any[]>([]);
+  const [asesores, setAsesores] = useState<any[]>([]);
 
   useEffect(() => {
     localStorage.setItem('superadmin_view_mode', viewMode);
@@ -83,6 +84,15 @@ export default function SuperAdmin() {
 
       if (dataLeads && !errorLeads) {
         setLeads(dataLeads);
+      }
+
+      // 4. Cargar Asesores y Mayoristas
+      const { data: dataAsesores, error: errorAsesores } = await supabase
+        .from('asesores')
+        .select('*');
+        
+      if (dataAsesores && !errorAsesores) {
+        setAsesores(dataAsesores);
       }
     } catch (err) {
       console.error(err);
@@ -310,6 +320,58 @@ export default function SuperAdmin() {
       atencionRate: data.count > 0 ? Math.round((data.atendidos / data.count) * 100) : 0
     })).sort((a, b) => b.total - a.total);
   }, [pedidos, productos]);
+
+  // --- RENDIMIENTO ASESORES / MAYORISTAS ---
+  const rendimientoAsesores = useMemo(() => {
+    // Todos son asesores o mayoristas (si tipo es 'mayorista')
+    return asesores.map(usuario => {
+      const uPhones = (usuario.telefono || '').split(',').map((p: string) => p.replace(/\D/g, '')).filter(Boolean);
+      const rol = usuario.tipo === 'mayorista' ? 'mayorista' : 'asesor';
+      
+      // Pedidos asociados a las líneas del asesor
+      const uPedidos = pedidosFiltrados.filter(p => {
+        const op = (p.linea_whatsapp || '').replace(/\D/g, '');
+        return uPhones.includes(op);
+      });
+      
+      // Leads (carritos abandonados) asociados a las líneas del asesor
+      const uLeads = leads.filter(l => {
+        const leadPhone = l.linea_whatsapp?.replace(/\D/g, '');
+        const isAssigned = leadPhone && uPhones.includes(leadPhone);
+        if (!isAssigned) return false;
+        
+        // Match tenant
+        if (tenantFilter !== 'all' && l.tenant_id !== tenantFilter) return false;
+        return true;
+      });
+
+      const totalPedidos = uPedidos.length;
+      const ventasTotales = uPedidos.filter(p => p.estado === 'completado').reduce((acc, curr) => acc + (curr.total || 0), 0);
+      const atendidos = uPedidos.filter(p => p.atendido).length;
+      
+      // La tasa de atención incluye cuántos pedidos de sus leads / pedidos totales ha atendido
+      const baseAtencion = totalPedidos + uLeads.length;
+      const tasaAtencion = baseAtencion > 0 ? Math.round((atendidos / baseAtencion) * 100) : 0;
+
+      // Obtener negocios asignados
+      const negociosSet = new Set<string>();
+      uPedidos.forEach(p => p.tenant_id && negociosSet.add(p.tenant_id));
+      uLeads.forEach(l => l.tenant_id && negociosSet.add(l.tenant_id));
+
+      return {
+        id: usuario.id,
+        nombre: usuario.nombre_completo || usuario.nombre || 'Usuario',
+        rol: rol,
+        negocios: Array.from(negociosSet),
+        pedidos: totalPedidos,
+        atendidos,
+        leads: uLeads.length,
+        ventas: ventasTotales,
+        tasaAtencion
+      };
+    }).sort((a, b) => b.ventas - a.ventas); // Ordenar por ventas descendente
+  }, [asesores, pedidosFiltrados, leads, tenantFilter]);
+
 
   // --- TOP CIUDADES ---
   const topCiudades = useMemo(() => {
@@ -596,33 +658,47 @@ export default function SuperAdmin() {
                         <tr>
                           <th>Fecha</th>
                           <th>Negocio</th>
+                          <th>Asesor</th>
                           <th>Cliente</th>
                           <th>Total</th>
                           <th>Estado</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {pedidosFiltrados.slice(0, 15).map(ped => (
-                          <tr key={ped.id} onClick={() => setSelectedPedido(ped)}>
-                            <td style={{ color: '#64748b', fontSize: '0.82rem' }}>
-                              {new Date(ped.created_at).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}
-                            </td>
-                            <td>
-                              <span className="badge-tenant">{ped.tenant_id || 'Indisutex'}</span>
-                            </td>
-                            <td style={{ fontWeight: 600 }}>{ped.cliente_nombre}</td>
-                            <td style={{ fontWeight: 700, color: '#0f172a' }}>${ped.total.toLocaleString()}</td>
-                            <td>
-                              <span className={`badge-status ${ped.atendido ? 'atendido' : 'pendiente'}`}>
-                                {ped.atendido ? '✓ Atendido' : '⏳ Espera'}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
+                        {pedidosFiltrados.slice(0, 15).map(ped => {
+                          const pedPhone = (ped.linea_whatsapp || '').replace(/\D/g, '');
+                          const matchAsesor = asesores.find(a => {
+                            const uPhones = (a.telefono || '').split(',').map((p: string) => p.replace(/\D/g, '')).filter(Boolean);
+                            return uPhones.includes(pedPhone);
+                          });
+                          const asesorName = matchAsesor ? (matchAsesor.nombre_completo || matchAsesor.nombre || 'Asesor') : 'Sin Asignar';
+                          return (
+                            <tr key={ped.id} onClick={() => setSelectedPedido(ped)}>
+                              <td style={{ color: '#64748b', fontSize: '0.82rem' }}>
+                                {new Date(ped.created_at).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}
+                              </td>
+                              <td>
+                                <span className="badge-tenant">{ped.tenant_id || 'Indisutex'}</span>
+                              </td>
+                              <td>
+                                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#4f46e5', background: '#e0e7ff', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                                  {asesorName}
+                                </span>
+                              </td>
+                              <td style={{ fontWeight: 600 }}>{ped.cliente_nombre}</td>
+                              <td style={{ fontWeight: 700, color: '#0f172a' }}>${ped.total.toLocaleString()}</td>
+                              <td>
+                                <span className={`badge-status ${ped.atendido ? 'atendido' : 'pendiente'}`}>
+                                  {ped.atendido ? '✓ Atendido' : '⏳ Espera'}
+                                </span>
+                              </td>
+                            </tr>
+                          );
+                        })}
                         {pedidosFiltrados.length === 0 && (
                           <tr>
-                            <td colSpan={5} style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
-                              No se encontraron pedidos con los filtros aplicados.
+                            <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>
+                              No hay pedidos recientes.
                             </td>
                           </tr>
                         )}
@@ -675,6 +751,80 @@ export default function SuperAdmin() {
                       </tbody>
                     </table>
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Panel Rendimiento por Asesor y Mayorista */}
+            <div className="super-panel" style={{ marginTop: '2rem' }}>
+              <div className="super-panel-header">
+                <h3><Users size={18} color="#8b5cf6" /> Rendimiento por Asesor y Mayorista</h3>
+              </div>
+              <div className="super-panel-body" style={{ padding: 0 }}>
+                <div className="super-table-container">
+                  <table className="super-table">
+                    <thead>
+                      <tr>
+                        <th>Usuario</th>
+                        <th>Rol</th>
+                        <th>Negocios Asignados</th>
+                        <th>Ventas</th>
+                        <th>Pedidos Atendidos</th>
+                        <th>Tasa Atención</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rendimientoAsesores.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>No hay asesores ni mayoristas registrados o con actividad.</td>
+                        </tr>
+                      ) : (
+                        rendimientoAsesores.map(a => (
+                          <tr key={a.id}>
+                            <td style={{ fontWeight: 600 }}>{a.nombre}</td>
+                            <td>
+                              <span style={{ 
+                                background: a.rol === 'mayorista' ? '#f3e8ff' : '#e0e7ff', 
+                                color: a.rol === 'mayorista' ? '#7e22ce' : '#4338ca', 
+                                padding: '0.2rem 0.5rem', 
+                                borderRadius: '6px', 
+                                fontSize: '0.8rem', 
+                                fontWeight: 700,
+                                textTransform: 'capitalize'
+                              }}>
+                                {a.rol}
+                              </span>
+                            </td>
+                            <td>
+                              <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
+                                {a.negocios.length > 0 ? a.negocios.map(n => (
+                                  <span key={n} style={{ fontSize: '0.75rem', background: '#f1f5f9', color: '#475569', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>{n}</span>
+                                )) : <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Ninguno</span>}
+                              </div>
+                            </td>
+                            <td style={{ color: '#059669', fontWeight: 700 }}>${a.ventas.toLocaleString()}</td>
+                            <td style={{ color: '#475569', fontSize: '0.85rem' }}>{a.atendidos} de {a.pedidos + a.leads} leads</td>
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: '100px' }}>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>{a.tasaAtencion}%</span>
+                                <div style={{ flex: 1 }}>
+                                  <div className="progress-container">
+                                    <div 
+                                      className="progress-bar" 
+                                      style={{ 
+                                        width: `${a.tasaAtencion}%`, 
+                                        background: a.tasaAtencion < 50 ? '#ef4444' : a.tasaAtencion < 80 ? '#f59e0b' : '#10b981' 
+                                      }} 
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
