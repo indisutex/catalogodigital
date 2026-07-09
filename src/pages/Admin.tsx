@@ -63,7 +63,7 @@ const emptyProduct: ProductFormData = {
   stock: 0
 };
 
-type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor' | 'material_apoyo' | 'material_asesor' | 'productos_asesor';
+type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor' | 'material_apoyo' | 'material_asesor' | 'productos_asesor' | 'productos_mayorista';
 
 type Toast = { message: string; type: 'success' | 'error' } | null;
 
@@ -107,7 +107,7 @@ export default function Admin() {
     const defaultTab = (userRole === 'asesor') ? 'pedidos' : (userRole === 'mayorista' ? 'resumen_asesor' : 'productos');
     const saved = localStorage.getItem('admin_active_tab') as string;
     if (saved === 'perfil_admin' || saved === 'perfil_admin_tab') return 'dashboard';
-    const allowedTabs: string[] = ['dashboard', 'productos', 'categorias', 'pedidos', 'clientes', 'asesores', 'mayoristas', 'pos', 'siigo', 'config', 'perfil_asesor', 'resumen_asesor', 'notificaciones_asesor', 'material_apoyo', 'material_asesor', 'productos_asesor'];
+    const allowedTabs: string[] = ['dashboard', 'productos', 'categorias', 'pedidos', 'clientes', 'asesores', 'mayoristas', 'pos', 'siigo', 'config', 'perfil_asesor', 'resumen_asesor', 'notificaciones_asesor', 'material_apoyo', 'material_asesor', 'productos_asesor', 'productos_mayorista'];
     if (saved && !allowedTabs.includes(saved)) return defaultTab as TabType;
     return (saved as TabType) || (defaultTab as TabType);
   });
@@ -4303,13 +4303,57 @@ export default function Admin() {
 
 
           
-          {/* ── PRODUCTOS ASESOR / MAYORISTA TAB ── */}
+          {/* ── PRODUCTOS ASESOR TAB ── */}
           {activeTab === 'productos_asesor' && (
             <div className="admin-panel">
               <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
                 <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Package size={18} /> Productos</h3>
                 <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>
-                  {role === 'mayorista' ? 'Configura tu porcentaje de ganancia general o precios especiales por producto.' : 'Visualiza los productos disponibles en el catálogo de la empresa.'}
+                  Visualiza los productos disponibles en el catálogo de la empresa.
+                </p>
+              </div>
+              <div className="panel-body">
+                <div className="products-grid">
+                  {productos.map(p => (
+                    <div key={p.id} className="product-card">
+                      <div className="product-card-img">
+                        {p.imagen_url ? <img src={p.imagen_url} alt={p.nombre} /> : <div style={{width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', background:'#f1f5f9'}}><Package size={24} color="#94a3b8" /></div>}
+                      </div>
+                      <div className="product-card-body">
+                        <h4>{p.nombre}</h4>
+                        <p className="p-cat" style={{ fontSize: '0.75rem', color: '#64748b' }}>{p.referencia}</p>
+                        
+                        <div style={{ marginTop: '0.8rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                             <small style={{ color: '#64748b' }}>Detal:</small>
+                             <strong style={{ color: '#0f172a' }}>${p.precio?.toLocaleString()}</strong>
+                           </div>
+                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                             <small style={{ color: '#64748b' }}>Mayor:</small>
+                             <strong>{p.precio_por_mayor ? `${p.precio_por_mayor.toLocaleString()}` : '-'}</strong>
+                           </div>
+                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                             <small style={{ color: '#64748b' }}>50 Unid:</small>
+                             <strong>{p.precio_50_unidades ? `${p.precio_50_unidades.toLocaleString()}` : '-'}</strong>
+                           </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+
+
+          {/* ── PRODUCTOS MAYORISTA TAB ── */}
+          {activeTab === 'productos_mayorista' && (
+            <div className="admin-panel">
+              <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
+                <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Package size={18} /> Productos</h3>
+                <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>
+                  Configura tu porcentaje de ganancia general o precios especiales por producto.
                 </p>
               </div>
               <div className="panel-body">
@@ -4457,6 +4501,8 @@ export default function Admin() {
               </div>
             </div>
           )}
+
+
 
 {/* ── MATERIAL DE APOYO ASESOR / MAYORISTA TAB ── */}
           {activeTab === 'material_asesor' && (
@@ -8741,9 +8787,9 @@ function SidebarContent({
               <span className="nav-icon"><Home size={14} /></span> Mi Negocio
               {activeTab === 'resumen_asesor' && <span className="active-dot"></span>}
             </button>
-            <button className={`nav-item ${activeTab === 'productos_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('productos_asesor')}>
+            <button className={`nav-item ${activeTab === 'productos_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('productos_mayorista')}>
               <span className="nav-icon"><Package size={14} /></span> Productos
-              {activeTab === 'productos_asesor' && <span className="active-dot"></span>}
+              {activeTab === 'productos_mayorista' && <span className="active-dot"></span>}
             </button>
             <button className={`nav-item ${activeTab === 'pedidos' ? 'active' : ''}`} onClick={() => handleSelectTab('pedidos')}>
               <span className="nav-icon"><ShoppingBag size={14} /></span> Pedidos
