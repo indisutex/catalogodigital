@@ -4307,6 +4307,9 @@ export default function Admin() {
                         <div className="form-field">
                           <label>Video del Banner (Hero - Vertical)</label>
                           <div className="img-input-row" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            {configuracion.video_hero_url && (
+                              <video src={configuracion.video_hero_url} style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover', background: '#000' }} muted playsInline />
+                            )}
                             <input 
                               type="text" 
                               value={configuracion.video_hero_url || ''} 
