@@ -100,12 +100,12 @@ export default function Admin() {
   const [clienteSearchQuery, setClienteSearchQuery] = useState('');
   const [asesores, setAsesores] = useState<Asesor[]>([]);
   const [nuevoAsesorNombre, setNuevoAsesorNombre] = useState('');
-  const [nuevoAsesorTelefono, setNuevoAsesorTelefono] = useState('');
+  const [nuevoAsesorTelefonos, setNuevoAsesorTelefonos] = useState<string[]>(['']);
   const [nuevoAsesorPin, setNuevoAsesorPin] = useState(() => Math.floor(1000 + Math.random() * 9000).toString());
   const [asesorSearchQuery, setAsesorSearchQuery] = useState('');
   const [editingAsesorId, setEditingAsesorId] = useState<string | null>(null);
   const [editingAsesorNombre, setEditingAsesorNombre] = useState('');
-  const [editingAsesorTelefono, setEditingAsesorTelefono] = useState('');
+  const [editingAsesorTelefonos, setEditingAsesorTelefonos] = useState<string[]>(['']);
   const [editingAsesorPin, setEditingAsesorPin] = useState('');
   const [nuevoAsesorFotoUrl, setNuevoAsesorFotoUrl] = useState('');
   const [editingAsesorFotoUrl, setEditingAsesorFotoUrl] = useState('');
@@ -234,11 +234,18 @@ export default function Admin() {
 
   const getAsesorNameByPhone = (phone?: string) => {
     if (!phone) return 'Sin Asignar';
-    const cleanPhone = phone.replace(/\D/g, '');
-    if (!cleanPhone || cleanPhone === 'pos') return 'POS';
-    const numSinIndicativo = cleanPhone.startsWith('57') ? cleanPhone.substring(2) : cleanPhone;
-    const match = asesores.find(a => a.telefono?.replace(/\D/g, '') === cleanPhone);
-    if (match) return `${match.nombre} (${numSinIndicativo})`;
+    const cleanInput = phone.trim();
+    if (cleanInput === 'pos' || cleanInput.replace(/\D/g, '') === 'pos') return 'POS';
+    
+    const firstPhone = cleanInput.split(',')[0].replace(/\D/g, '');
+    const numSinIndicativo = firstPhone.startsWith('57') ? firstPhone.substring(2) : firstPhone;
+    
+    const match = asesores.find(a => {
+      const phones = (a.telefono || '').split(',').map(p => p.replace(/\D/g, '')).filter(Boolean);
+      return phones.some(p => cleanInput.split(',').map(cp => cp.replace(/\D/g, '')).includes(p));
+    });
+    
+    if (match) return match.nombre;
     return numSinIndicativo;
   };
 
@@ -1003,14 +1010,14 @@ export default function Admin() {
     if (role === 'asesor' && loggedAsesorPhone) {
       result = result.filter(p => {
         const orderPhone = p.linea_whatsapp?.replace(/\D/g, '');
-        const advisorPhone = loggedAsesorPhone.replace(/\D/g, '');
-        return orderPhone === advisorPhone;
+        const advisorPhones = loggedAsesorPhone.split(',').map(phone => phone.replace(/\D/g, '')).filter(Boolean);
+        return orderPhone && advisorPhones.includes(orderPhone);
       });
     } else if (orderFilterAsesor !== 'todos') {
       result = result.filter(p => {
         const orderPhone = p.linea_whatsapp?.replace(/\D/g, '');
-        const filterPhone = orderFilterAsesor.replace(/\D/g, '');
-        return orderPhone === filterPhone;
+        const filterPhones = orderFilterAsesor.split(',').map(phone => phone.replace(/\D/g, '')).filter(Boolean);
+        return orderPhone && filterPhones.includes(orderPhone);
       });
     }
 
@@ -1067,14 +1074,39 @@ export default function Admin() {
       .slice(0, 5);
 
     // 5. Línea/Asesor que más ha vendido (completados)
-    const advisorSales: { [phone: string]: number } = {};
+    const advisorSales: { [advisorIdOrPos: string]: { name: string; total: number; phone: string } } = {};
     completados.forEach(p => {
       const phone = p.linea_whatsapp || 'pos';
-      advisorSales[phone] = (advisorSales[phone] || 0) + p.total;
+      const cleanPhone = phone.replace(/\D/g, '');
+      if (cleanPhone === 'pos' || !cleanPhone) {
+        advisorSales['pos'] = {
+          name: 'POS',
+          total: (advisorSales['pos']?.total || 0) + p.total,
+          phone: 'pos'
+        };
+      } else {
+        const match = asesores.find(a => {
+          const phones = (a.telefono || '').split(',').map(ph => ph.replace(/\D/g, '')).filter(Boolean);
+          return phones.includes(cleanPhone);
+        });
+        if (match) {
+          advisorSales[match.id] = {
+            name: match.nombre,
+            total: (advisorSales[match.id]?.total || 0) + p.total,
+            phone: match.telefono
+          };
+        } else {
+          advisorSales[phone] = {
+            name: phone,
+            total: (advisorSales[phone]?.total || 0) + p.total,
+            phone: phone
+          };
+        }
+      }
     });
     const bestAdvisor = Object.entries(advisorSales)
-      .map(([phone, total]) => ({ phone, total }))
-      .sort((a, b) => b.total - a.total)[0] || { phone: 'pos', total: 0 };
+      .map(([id, info]) => ({ id, ...info }))
+      .sort((a, b) => b.total - a.total)[0] || { id: 'pos', name: 'POS', total: 0, phone: 'pos' };
 
     return {
       totalVentasVal,
@@ -1168,14 +1200,15 @@ export default function Admin() {
 
   async function handleCrearAsesor(e: React.FormEvent) {
     e.preventDefault();
-    if (!nuevoAsesorNombre.trim() || !nuevoAsesorTelefono.trim()) {
-      showToast('Por favor, ingresa el nombre y teléfono del asesor.', 'error');
+    const activeTelefonos = nuevoAsesorTelefonos.map(t => t.trim()).filter(Boolean);
+    if (!nuevoAsesorNombre.trim() || activeTelefonos.length === 0) {
+      showToast('Por favor, ingresa el nombre y al menos un teléfono para el asesor.', 'error');
       return;
     }
 
     setLoading(true);
     try {
-      const cleanPhone = nuevoAsesorTelefono.replace(/\D/g, '');
+      const cleanPhone = activeTelefonos.map(num => num.replace(/\D/g, '')).filter(Boolean).join(',');
       const tenant = getTenantId();
 
       const { data, error } = await supabase
@@ -1194,7 +1227,7 @@ export default function Admin() {
 
       setAsesores(prev => [data, ...prev]);
       setNuevoAsesorNombre('');
-      setNuevoAsesorTelefono('');
+      setNuevoAsesorTelefonos(['']);
       setNuevoAsesorFotoUrl('');
       setNuevoAsesorPin(Math.floor(1000 + Math.random() * 9000).toString());
       showToast('Asesor creado exitosamente ✓', 'success');
@@ -1207,13 +1240,14 @@ export default function Admin() {
   }
 
   async function handleGuardarAsesorEdicion(id: string) {
-    if (!editingAsesorNombre.trim() || !editingAsesorTelefono.trim() || !editingAsesorPin.trim()) {
-      showToast('Por favor completa todos los campos del asesor.', 'error');
+    const activeTelefonos = editingAsesorTelefonos.map(t => t.trim()).filter(Boolean);
+    if (!editingAsesorNombre.trim() || activeTelefonos.length === 0 || !editingAsesorPin.trim()) {
+      showToast('Por favor completa todos los campos del asesor y agrega al menos un teléfono.', 'error');
       return;
     }
     setLoading(true);
     try {
-      const cleanPhone = editingAsesorTelefono.replace(/\D/g, '');
+      const cleanPhone = activeTelefonos.map(num => num.replace(/\D/g, '')).filter(Boolean).join(',');
       const { error } = await supabase
         .from('asesores')
         .update({
@@ -3213,16 +3247,44 @@ export default function Admin() {
                         style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }}
                       />
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Número de Celular (WhatsApp)</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Ej: 573123456789"
-                        value={nuevoAsesorTelefono}
-                        onChange={e => setNuevoAsesorTelefono(e.target.value)}
-                        style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }}
-                      />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', minWidth: '220px' }}>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Números de WhatsApp</label>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {nuevoAsesorTelefonos.map((tel, idx) => (
+                          <div key={idx} style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+                            <input
+                              type="text"
+                              required
+                              placeholder="Ej: 573123456789"
+                              value={tel}
+                              onChange={e => {
+                                const newTels = [...nuevoAsesorTelefonos];
+                                newTels[idx] = e.target.value;
+                                setNuevoAsesorTelefonos(newTels);
+                              }}
+                              style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none', flex: 1 }}
+                            />
+                            {nuevoAsesorTelefonos.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setNuevoAsesorTelefonos(nuevoAsesorTelefonos.filter((_, i) => i !== idx));
+                                }}
+                                style={{ background: '#fee2e2', border: '1px solid #fca5a5', color: '#ef4444', padding: '0.6rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setNuevoAsesorTelefonos([...nuevoAsesorTelefonos, ''])}
+                        style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', marginTop: '0.25rem', padding: '0.2rem 0' }}
+                      >
+                        + Añadir más líneas
+                      </button>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                       <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>URL de Foto (Opcional)</label>
@@ -3357,21 +3419,53 @@ export default function Admin() {
                               </td>
                               <td style={{ padding: '1rem' }}>
                                 {isEditing ? (
-                                  <input
-                                    type="text"
-                                    value={editingAsesorTelefono}
-                                    onChange={e => setEditingAsesorTelefono(e.target.value)}
-                                    style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', width: '130px' }}
-                                  />
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                                    {editingAsesorTelefonos.map((tel, idx) => (
+                                      <div key={idx} style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                                        <input
+                                          type="text"
+                                          value={tel}
+                                          onChange={e => {
+                                            const newTels = [...editingAsesorTelefonos];
+                                            newTels[idx] = e.target.value;
+                                            setEditingAsesorTelefonos(newTels);
+                                          }}
+                                          placeholder="Ej: 57312"
+                                          style={{ padding: '0.25rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', width: '110px' }}
+                                        />
+                                        {editingAsesorTelefonos.length > 1 && (
+                                          <button
+                                            type="button"
+                                            onClick={() => setEditingAsesorTelefonos(editingAsesorTelefonos.filter((_, i) => i !== idx))}
+                                            style={{ background: '#fee2e2', border: 'none', color: '#ef4444', borderRadius: '4px', cursor: 'pointer', padding: '0.25rem' }}
+                                          >
+                                            ✕
+                                          </button>
+                                        )}
+                                      </div>
+                                    ))}
+                                    <button
+                                      type="button"
+                                      onClick={() => setEditingAsesorTelefonos([...editingAsesorTelefonos, ''])}
+                                      style={{ background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', alignSelf: 'flex-start' }}
+                                    >
+                                      + Añadir línea
+                                    </button>
+                                  </div>
                                 ) : (
-                                  <a
-                                    href={`https://wa.me/${a.telefono}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    style={{ color: '#10b981', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
-                                  >
-                                    <Phone size={12} /> {a.telefono}
-                                  </a>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                                    {(a.telefono || '').split(',').map(p => p.trim()).filter(Boolean).map((phone, idx) => (
+                                      <a
+                                        key={idx}
+                                        href={`https://wa.me/${phone}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{ color: '#10b981', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem' }}
+                                      >
+                                        <Phone size={12} /> {phone}
+                                      </a>
+                                    ))}
+                                  </div>
                                 )}
                               </td>
                               <td style={{ padding: '1rem', textAlign: 'center' }}>
@@ -3395,25 +3489,33 @@ export default function Admin() {
                                 ${totalVentas.toLocaleString()}
                               </td>
                               <td style={{ padding: '1rem' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                  <input
-                                    type="text"
-                                    readOnly
-                                    value={catalogLink}
-                                    style={{ padding: '0.35rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.78rem', width: '180px', background: '#f8fafc', color: '#64748b' }}
-                                    onClick={e => (e.target as HTMLInputElement).select()}
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      navigator.clipboard.writeText(catalogLink);
-                                      showToast('Enlace copiado al portapapeles ✓', 'success');
-                                    }}
-                                    className="btn-secondary"
-                                    style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', whiteSpace: 'nowrap' }}
-                                  >
-                                    <Copy size={12} /> Copiar
-                                  </button>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                                  {(a.telefono || '').split(',').map(p => p.trim()).filter(Boolean).map((phone, idx) => {
+                                    const link = `${window.location.origin}/${getTenantId()}?ws=${phone}`;
+                                    return (
+                                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, minWidth: '90px' }}>{phone}:</span>
+                                        <input
+                                          type="text"
+                                          readOnly
+                                          value={link}
+                                          style={{ padding: '0.25rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.75rem', width: '150px', background: '#f8fafc', color: '#64748b' }}
+                                          onClick={e => (e.target as HTMLInputElement).select()}
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            navigator.clipboard.writeText(link);
+                                            showToast(`Enlace (${phone}) copiado ✓`, 'success');
+                                          }}
+                                          className="btn-secondary"
+                                          style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center', gap: '0.2rem', whiteSpace: 'nowrap' }}
+                                        >
+                                          <Copy size={10} /> Copiar
+                                        </button>
+                                      </div>
+                                    );
+                                  })}
                                 </div>
                               </td>
                               <td style={{ padding: '1rem', textAlign: 'center' }}>
@@ -3444,7 +3546,7 @@ export default function Admin() {
                                         onClick={() => {
                                           setEditingAsesorId(a.id);
                                           setEditingAsesorNombre(a.nombre);
-                                          setEditingAsesorTelefono(a.telefono);
+                                          setEditingAsesorTelefonos((a.telefono || '').split(',').map(t => t.trim()).filter(Boolean));
                                           setEditingAsesorPin(a.pin || '1234');
                                           setEditingAsesorFotoUrl(a.foto_url || '');
                                         }}
