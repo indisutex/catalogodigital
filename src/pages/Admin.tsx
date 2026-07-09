@@ -4,7 +4,7 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor } from '../types';
 import './Admin.css';
-import { X, Video, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const SECRET_PIN = '0000';
@@ -21,6 +21,7 @@ type ProductFormData = {
   video_url: string;
   tallas: string;
   estampados: string;
+  stock: number;
 };
 
 const emptyProduct: ProductFormData = {
@@ -34,10 +35,11 @@ const emptyProduct: ProductFormData = {
   imagenes: [''],
   video_url: '',
   tallas: '',
-  estampados: ''
+  estampados: '',
+  stock: 0
 };
 
-type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'perfil_asesor';
+type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'perfil_asesor' | 'perfil_admin';
 
 type Toast = { message: string; type: 'success' | 'error' } | null;
 
@@ -343,7 +345,7 @@ export default function Admin() {
         const { data: newConf } = await supabase.from('configuracion').insert([defaultConfig]).select().single();
         if (newConf) setConfiguracion(newConf);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error cargando datos:', err);
     }
   }
@@ -394,7 +396,7 @@ export default function Admin() {
     }
   };
 
-  const updateBulkForm = (index: number, field: keyof ProductFormData, value: string) => {
+  const updateBulkForm = (index: number, field: keyof ProductFormData, value: string | number) => {
     const newForms = [...bulkForms];
     newForms[index] = { ...newForms[index], [field]: value };
     setBulkForms(newForms);
@@ -468,6 +470,7 @@ export default function Admin() {
       video_url: f.video_url || null,
       tallas: f.tallas || null,
       estampados: f.estampados || null,
+      stock: f.stock || 0,
       tenant_id: getTenantId()
     }));
     const { error } = await supabase.from('productos').insert(newProducts);
@@ -518,14 +521,15 @@ export default function Admin() {
             costo: parseFloat(findVal(['costo', 'cost'])) || 0,
             precio_por_mayor: parseFloat(findVal(['por mayor', 'mayor', 'wholesale'])) || 0,
             precio_50_unidades: parseFloat(findVal(['50 unidades', '50unidades', 'unidades 50'])) || 0,
-            estampados: findVal(['estampados', 'estampado', 'tematica', 'tematicas', 'print', 'prints'])
+            estampados: findVal(['estampados', 'estampado', 'tematica', 'tematicas', 'print', 'prints']),
+            stock: parseInt(findVal(['stock', 'cantidad', 'qty'])) || 0
           };
         });
         
         const valid = mapped.filter(p => p.nombre);
         setExcelProducts(valid);
         showToast(`Se cargaron ${valid.length} productos del Excel ✓`);
-      } catch (err) {
+      } catch (err: any) {
         showToast('Error leyendo el archivo Excel', 'error');
         console.error(err);
       } finally {
@@ -582,6 +586,7 @@ export default function Admin() {
         const porMayorVal = parseFloat(getFieldVal(['por mayor', 'mayor', 'wholesale'])) || 0;
         const detalVal = parseFloat(getFieldVal(['detal', 'precio', 'price', 'valor'])) || 0;
         const unidades50Val = parseFloat(getFieldVal(['50 unidades', '50unidades', 'unidades 50'])) || 0;
+        const stockVal = parseInt(getFieldVal(['stock', 'cantidad', 'qty'])) || 0;
         
         const name = desc || `Producto ${ref}`;
         
@@ -595,6 +600,7 @@ export default function Admin() {
           precio_por_mayor: porMayorVal,
           precio: detalVal,
           precio_50_unidades: unidades50Val,
+          stock: stockVal,
           imagen_url: '',
           video_url: null,
           tallas: '',
@@ -629,6 +635,7 @@ export default function Admin() {
       costo: p.costo || null,
       precio_por_mayor: p.precio_por_mayor || null,
       precio_50_unidades: p.precio_50_unidades || null,
+      stock: p.stock || 0,
       estampados: p.estampados || null,
       tenant_id: getTenantId()
     }));
@@ -826,7 +833,8 @@ export default function Admin() {
       imagenes_extra: editExtraImages.filter(u => u.trim()),
       video_url: editingProduct.video_url,
       tallas: editingProduct.tallas,
-      estampados: editingProduct.estampados || null
+      estampados: editingProduct.estampados || null,
+      stock: editingProduct.stock
     }).eq('id', editingProduct.id);
     setLoading(false);
     if (error) showToast('Error al actualizar', 'error');
@@ -1018,7 +1026,7 @@ export default function Admin() {
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       }
       if (orderSortBy === 'date_asc') {
-        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        return new Date(a.created_at).getTime() - new Date(a.created_at).getTime();
       }
       if (orderSortBy === 'total_desc') {
         return b.total - a.total;
@@ -1150,7 +1158,7 @@ export default function Admin() {
       // Actualizar estado local
       setProductos(prev => prev.filter(p => !deleteIds.includes(p.id)));
       showToast(`Duplicados eliminados. Se conservó 1 versión de "${toKeep.nombre}".`);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       showToast('Error al eliminar duplicados', 'error');
     } finally {
@@ -1303,7 +1311,7 @@ export default function Admin() {
       setShowToolsModal(false);
       setWipeConfirmText('');
       showToast('El catálogo ha sido vaciado por completo.');
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       showToast('Error al vaciar el catálogo', 'error');
     } finally {
@@ -1488,6 +1496,10 @@ export default function Admin() {
                        <input type="number" step="0.01" value={editingProduct.precio_50_unidades || ''} onChange={e => setEditingProduct({ ...editingProduct, precio_50_unidades: parseFloat(e.target.value) || undefined })} />
                      </div>
                      <div className="form-field">
+                       <label>Stock (Cantidad en inventario)</label>
+                       <input type="number" min="0" value={editingProduct.stock || 0} onChange={e => setEditingProduct({ ...editingProduct, stock: parseInt(e.target.value) || 0 })} />
+                     </div>
+                     <div className="form-field">
                        <label>Categoría</label>
                        <select value={editingProduct.categoria} onChange={e => setEditingProduct({ ...editingProduct, categoria: e.target.value })}>
                          {categoriasData.map(c => <option key={c.id} value={c.slug}>{c.nombre}</option>)}
@@ -1554,11 +1566,6 @@ export default function Admin() {
                           finally { setEditUploadingIdx(null); }
                         }} />
                       </div>
-                    </div>
-
-                    <div className="form-field full">
-                      <label>URL de Video (Opcional)</label>
-                      <input value={editingProduct.video_url || ''} onChange={e => setEditingProduct({ ...editingProduct, video_url: e.target.value })} placeholder="https://..." />
                     </div>
                   </div>
                 </form>
@@ -1882,6 +1889,10 @@ export default function Admin() {
                                 <input type="number" step="0.01" value={form.precio_50_unidades} onChange={e => updateBulkForm(index, 'precio_50_unidades', e.target.value)} placeholder="18000" />
                               </div>
                               <div className="form-field">
+                                <label>Stock (Cantidad en inventario)</label>
+                                <input type="number" min="0" value={form.stock || 0} onChange={e => updateBulkForm(index, 'stock', parseInt(e.target.value) || 0)} placeholder="Ej: 100" />
+                              </div>
+                              <div className="form-field">
                                 <label>Categoría</label>
                                 <select value={form.categoria} onChange={e => updateBulkForm(index, 'categoria', e.target.value)}>
                                   <option value="">Seleccionar...</option>
@@ -1952,10 +1963,6 @@ export default function Admin() {
                                   </button>
                                 </div>
                               </div>
-                              <div className="form-field full">
-                                <label>URL de Video (Opcional)</label>
-                                <input value={form.video_url} onChange={e => updateBulkForm(index, 'video_url', e.target.value)} placeholder="https://..." />
-                              </div>
                             </div>
                           </div>
                         ))}
@@ -1972,7 +1979,7 @@ export default function Admin() {
                         <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
                         <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b', fontSize: '1.1rem' }}>Selecciona tu archivo Excel (.xlsx, .xls, .csv)</h4>
                         <p style={{ margin: '0 0 1.5rem 0', color: '#64748b', fontSize: '0.85rem', maxWidth: '500px', marginLeft: 'auto', marginRight: 'auto', lineHeight: '1.4' }}>
-                          Las columnas se detectan automáticamente de forma inteligente. Asegúrate de incluir encabezados claros como: <strong>Nombre, Descripción, Precio, Categoría, Subcategoría, Imagen, Video, Tallas</strong>.
+                          Las columnas se detectan automáticamente de forma inteligente. Asegúrate de incluir encabezados claros como: <strong>Nombre, Descripción, Precio, Categoría, Subcategoría, Imagen, Tallas</strong>.
                         </p>
                         <label className="btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.7rem 1.8rem', borderRadius: '8px', fontSize: '0.9rem' }}>
                           <Upload size={14} /> Seleccionar Archivo Excel
@@ -2116,11 +2123,6 @@ export default function Admin() {
                         <div key={p.id} className="product-card">
                           <div className="product-card-img">
                             {p.imagen_url ? <img src={p.imagen_url} alt={p.nombre} /> : '🖼️'}
-                            {p.video_url && (
-                              <div style={{ position: 'absolute', top: 8, right: 8 }}>
-                                <span className="badge badge-purple"><Video size={10} /> Video</span>
-                              </div>
-                            )}
                           </div>
                           <div className="product-card-body">
                             <h4>{p.nombre}</h4>
@@ -2523,7 +2525,97 @@ export default function Admin() {
             </div>
           )}
 
+
+          {/* ── PERFIL ADMIN TAB ── */}
+          {activeTab === 'perfil_admin' && (
+            <div className="admin-panel">
+              <div className="panel-header">
+                <div>
+                  <h3><User size={16} /> Mi Perfil (Administrador)</h3>
+                  <p>Configura tus datos personales</p>
+                </div>
+              </div>
+              <div className="panel-body">
+                {configuracion ? (
+                  <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    setLoading(true);
+                    
+                    const updateData = {
+                      admin_nombre: configuracion.admin_nombre,
+                      admin_foto_url: configuracion.admin_foto_url
+                    };
+                    
+                    const { error } = await supabase.from('configuracion').update(updateData).eq('id', configuracion.id);
+                    
+                    if (error) {
+                      showToast('Error: ' + error.message, 'error');
+                    } else {
+                      showToast('Perfil guardado ✓');
+                    }
+                    
+                    setLoading(false);
+                  }}>
+                    <div className="config-section">
+                      <div className="form-grid">
+                        <div className="form-field">
+                          <label>Nombre del Administrador</label>
+                          <input 
+                            value={configuracion.admin_nombre || ''} 
+                            onChange={e => setConfiguracion({ ...configuracion, admin_nombre: e.target.value })} 
+                            placeholder="Ej. Juan Pérez" 
+                          />
+                        </div>
+                        <div className="form-field">
+                          <label>Foto de Perfil</label>
+                          <div className="img-input-row">
+                            {configuracion.admin_foto_url && <img src={configuracion.admin_foto_url} className="img-preview-thumb" alt="Admin" />}
+                            <input 
+                              type="url" 
+                              value={configuracion.admin_foto_url || ''} 
+                              onChange={e => setConfiguracion({ ...configuracion, admin_foto_url: e.target.value })} 
+                              placeholder="https://..." 
+                              style={{ flex: 1 }} 
+                            />
+                            <label className="btn-upload-img" style={{ flexShrink: 0, cursor: 'pointer' }}>
+                              <Upload size={12} /> Subir
+                              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                setLoading(true);
+                                try {
+                                  const compFile = await compressImage(file);
+                                  const fileName = `admin_foto_${Date.now()}.${compFile.name.split('.').pop()}`;
+                                  await supabase.storage.from('archivos').upload(fileName, compFile);
+                                  const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
+                                  setConfiguracion({ ...configuracion, admin_foto_url: data.publicUrl });
+                                  showToast('Foto subida ✓');
+                                } catch { showToast('Error subiendo foto', 'error'); }
+                                setLoading(false);
+                              }} />
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="form-actions" style={{ marginTop: '1.5rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+                      <button type="submit" className="btn-primary" disabled={loading} style={{ padding: '0.6rem 2rem' }}>
+                        {loading ? 'Guardando...' : 'Guardar Perfil'}
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="empty-state">
+                    <div className="loading-dot" />
+                    <p style={{ marginTop: '1rem' }}>Cargando perfil...</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* ── CONFIG TAB ── */}
+
           {activeTab === 'config' && (
             <div className="admin-panel">
               <div className="panel-header">
@@ -2612,120 +2704,6 @@ export default function Admin() {
                       </div>
                     </div>
 
-                    <div className="config-section" style={{ marginTop: '1.5rem' }}>
-                      <div className="config-section-title">👤 Perfil del Administrador</div>
-                      <div className="form-grid">
-                        <div className="form-field">
-                          <label>Nombre del Administrador</label>
-                          <input 
-                            value={configuracion.admin_nombre || ''} 
-                            onChange={e => setConfiguracion({ ...configuracion, admin_nombre: e.target.value })} 
-                            placeholder="Ej. Juan Pérez" 
-                          />
-                        </div>
-                        <div className="form-field">
-                          <label>Foto de Perfil (Administrador)</label>
-                          <div className="img-input-row">
-                            {configuracion.admin_foto_url && <img src={configuracion.admin_foto_url} className="img-preview-thumb" alt="Admin" />}
-                            <input 
-                              type="url" 
-                              value={configuracion.admin_foto_url || ''} 
-                              onChange={e => setConfiguracion({ ...configuracion, admin_foto_url: e.target.value })} 
-                              placeholder="https://..." 
-                              style={{ flex: 1 }} 
-                            />
-                            <label className="btn-upload-img" style={{ flexShrink: 0, cursor: 'pointer' }}>
-                              <Upload size={12} /> Subir
-                              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
-                                const file = e.target.files?.[0];
-                                if (!file) return;
-                                setLoading(true);
-                                try {
-                                  const compFile = await compressImage(file);
-                                  const fileName = `admin_foto_${Date.now()}.${compFile.name.split('.').pop()}`;
-                                  await supabase.storage.from('archivos').upload(fileName, compFile);
-                                  const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
-                                  setConfiguracion({ ...configuracion, admin_foto_url: data.publicUrl });
-                                  showToast('Foto subida ✓');
-                                } catch { showToast('Error subiendo foto', 'error'); }
-                                setLoading(false);
-                              }} />
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="config-section" style={{ marginTop: '1.5rem' }}>
-                      <div className="config-section-title">🔗 Enlaces Especiales</div>
-                      <div className="form-grid">
-                        <div className="form-field">
-                          <label>Enlace para Dropshippers (Opcional, vacío usa WhatsApp)</label>
-                          <input type="url" value={configuracion.link_dropshipper || ''} onChange={e => setConfiguracion({ ...configuracion, link_dropshipper: e.target.value })} placeholder="https://..." />
-                        </div>
-                        <div className="form-field">
-                          <label>Enlace "Quieres Ganar Dinero?" (Opcional, vacío usa WhatsApp)</label>
-                          <input type="url" value={configuracion.link_ganar_dinero || ''} onChange={e => setConfiguracion({ ...configuracion, link_ganar_dinero: e.target.value })} placeholder="https://..." />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="config-section" style={{ marginTop: '1.5rem' }}>
-                      <div className="config-section-title">🖼️ Media del Catálogo</div>
-                      <div className="form-grid">
-                        <div className="form-field">
-                          <label>URL del Logo</label>
-                          <div className="img-input-row">
-                            {configuracion.logo_url && <img src={configuracion.logo_url} className="img-preview-thumb" alt="Logo" />}
-                            <input type="url" value={configuracion.logo_url || ''} onChange={e => setConfiguracion({ ...configuracion, logo_url: e.target.value })} placeholder="https://..." style={{ flex: 1 }} />
-                            <label className="btn-upload-img" style={{ flexShrink: 0, cursor: 'pointer' }}>
-                              <Upload size={12} /> Subir
-                              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
-                                const file = e.target.files?.[0];
-                                if (!file) return;
-                                setLoading(true);
-                                try {
-                                  const compFile = await compressImage(file);
-                                  const fileName = `logo_${Date.now()}.${compFile.name.split('.').pop()}`;
-                                  await supabase.storage.from('archivos').upload(fileName, compFile);
-                                  const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
-                                  setConfiguracion({ ...configuracion, logo_url: data.publicUrl });
-                                  showToast('Logo subido ✓');
-                                } catch { showToast('Error subiendo logo', 'error'); }
-                                setLoading(false);
-                              }} />
-                            </label>
-                          </div>
-                        </div>
-
-                        <div className="form-field">
-                          <label>Video de Portada (Hero Section)</label>
-                          <div className="img-input-row">
-                            {configuracion.video_hero_url && (
-                              <video src={configuracion.video_hero_url} muted style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover', background: '#0f172a' }} />
-                            )}
-                            <input type="url" value={configuracion.video_hero_url || ''} onChange={e => setConfiguracion({ ...configuracion, video_hero_url: e.target.value })} placeholder="https://..." style={{ flex: 1 }} />
-                            <label className="btn-upload-img" style={{ flexShrink: 0, cursor: 'pointer' }}>
-                              <Upload size={12} /> Subir Video
-                              <input type="file" accept="video/*" style={{ display: 'none' }} onChange={async (e) => {
-                                const file = e.target.files?.[0];
-                                if (!file) return;
-                                setLoading(true);
-                                try {
-                                  const fileName = `hero_video_${Date.now()}.${file.name.split('.').pop()}`;
-                                  await supabase.storage.from('archivos').upload(fileName, file);
-                                  const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
-                                  setConfiguracion({ ...configuracion, video_hero_url: data.publicUrl });
-                                  showToast('Video de portada subido ✓');
-                                } catch { showToast('Error subiendo video', 'error'); }
-                                setLoading(false);
-                              }} />
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
                     <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
                       <button type="submit" className="btn-primary" disabled={loading} style={{ padding: '0.7rem 2rem' }}>
                         <Check size={14} /> {loading ? 'Guardando...' : 'Guardar Configuración'}
@@ -2742,6 +2720,7 @@ export default function Admin() {
             </div>
           )}
 
+          ﻿          ﻿          
           {/* ── SIIGO TAB ── */}
           {activeTab === 'siigo' && (
             <div className="admin-panel">
@@ -2772,327 +2751,336 @@ export default function Admin() {
                       
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', alignItems: 'start' }}>
                         
-                        {/* 99 Envíos integration */}
-                        <div className="config-section" style={{ margin: 0 }}>
-                          <div className="config-section-title">🚚 Integración 99 Envíos</div>
-                          <div className="form-grid">
-                            <div className="form-field full">
-                              <label>API Key / Token de 99 Envíos</label>
-                              <input 
-                                type="password" 
-                                value={configuracion.envios_99_api_key || ''} 
-                                onChange={e => setConfiguracion({ ...configuracion, envios_99_api_key: e.target.value })} 
-                                placeholder="Ingresa tu API Key de 99 Envíos"
-                              />
-                              <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.4rem', lineHeight: '1.4' }}>
-                                Esta llave permite conectar la tienda con el servicio de logística y distribución de 99 Envíos para generar guías de despacho.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Siigo Nube integration */}
-                        <div className="config-section" style={{ margin: 0 }}>
-                          <div className="config-section-title">🔑 Credenciales Siigo Nube</div>
-                          <div className="form-grid">
-                            <div className="form-field full">
-                              <label>Usuario (Correo de Siigo Nube)</label>
-                              <input 
-                                type="email" 
-                                value={configuracion.siigo_username || ''} 
-                                onChange={e => setConfiguracion({ ...configuracion, siigo_username: e.target.value })} 
-                                placeholder="ejemplo@correo.com"
-                              />
-                            </div>
-                            <div className="form-field full">
-                              <label>Access Key (Llave de API generada en Siigo)</label>
-                              <input 
-                                type="password" 
-                                value={configuracion.siigo_access_key || ''} 
-                                onChange={e => setConfiguracion({ ...configuracion, siigo_access_key: e.target.value })} 
-                                placeholder="Ingresa tu access key de Siigo"
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Analítica y Tracking */}
-                        <div className="config-section" style={{ margin: 0 }}>
-                          <div className="config-section-title">📊 Analítica y Tracking</div>
-                          <div className="form-grid">
-                            <div className="form-field full">
-                              <label>Google Analytics 4 (Measurement ID)</label>
-                              <input 
-                                type="text" 
-                                value={configuracion.google_analytics_id || ''} 
-                                onChange={e => setConfiguracion({ ...configuracion, google_analytics_id: e.target.value })} 
-                                placeholder="Ej. G-XXXXXXXXXX"
-                              />
-                            </div>
-                            <div className="form-field full">
-                              <label>Meta (Facebook) Pixel ID</label>
-                              <input 
-                                type="text" 
-                                value={configuracion.meta_pixel_id || ''} 
-                                onChange={e => setConfiguracion({ ...configuracion, meta_pixel_id: e.target.value })} 
-                                placeholder="Ej. 123456789012345"
-                              />
-                            </div>
-                            <div className="form-field full">
-                              <label>Microsoft Clarity Project ID</label>
-                              <input 
-                                type="text" 
-                                value={configuracion.clarity_project_id || ''} 
-                                onChange={e => setConfiguracion({ ...configuracion, clarity_project_id: e.target.value })} 
-                                placeholder="Ej. 5abc123xyz"
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                      </div>
-
-                      <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.25rem' }}>
-                        <button type="submit" className="btn-secondary" disabled={loading} style={{ padding: '0.6rem 1.5rem' }}>
-                          Guardar Credenciales
-                        </button>
-
-                        <button 
-                          type="button" 
-                          className="btn-primary" 
-                          style={{ padding: '0.6rem 1.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}
-                          disabled={siigoLoading || !configuracion.siigo_username || !configuracion.siigo_access_key}
-                          onClick={async () => {
-                            setSiigoLoading(true);
-                            setSiigoLogs([]);
-                            const addLog = (msg: string) => setSiigoLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${msg}`]);
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                          
+                          {/* SIIGO COMPLETO */}
+                          <div style={{ border: '1px solid #cbd5e1', borderRadius: '12px', padding: '1.5rem', background: '#ffffff', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
+                            <h4 style={{ margin: '0 0 1.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.15rem', color: '#0369a1', fontWeight: 800 }}>
+                              ☁️ Integración Completa con Siigo Nube
+                            </h4>
                             
-                            try {
-                              const creds = {
-                                username: configuracion.siigo_username || '',
-                                accessKey: configuracion.siigo_access_key || ''
-                              };
-                              const tenantId = getTenantId() || '';
-                              
-                              const result = await SiigoService.fetchAndCompare(tenantId, creds, addLog);
-                              setSyncPending(result);
-                              setShowSyncConfirm(true);
-                              addLog(`Comparación completada. Esperando confirmación para aplicar cambios...`);
-                            } catch (err: any) {
-                              addLog(`❌ Error: ${err.message}`);
-                              showToast('Error al conectar con Siigo: ' + err.message, 'error');
-                            } finally {
-                              setSiigoLoading(false);
-                            }
-                          }}
-                        >
-                          <RefreshCw size={14} style={{ animation: siigoLoading ? 'spin 1s linear infinite' : 'none' }} /> {siigoLoading ? 'Conectando...' : 'Sincronizar Catálogo'}
-                        </button>
-                      </div>
-                    </form>
-
-                    {/* Modal/Caja de Confirmación de Sincronización */}
-                    {showSyncConfirm && syncPending && (
-                      <div style={{
-                        marginTop: '2rem',
-                        padding: '1.5rem',
-                        background: '#f8fafc',
-                        border: '1px solid #bfdbfe',
-                        borderRadius: '16px',
-                        boxShadow: '0 4px 12px rgba(14, 165, 233, 0.05)'
-                      }}>
-                        <h4 style={{ margin: '0 0 0.5rem 0', color: '#0369a1', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          📢 Resumen de Cambios Detectados en Siigo Nube
-                        </h4>
-                        <p style={{ margin: '0 0 1.5rem 0', fontSize: '0.85rem', color: '#475569' }}>
-                          Por favor confirma si deseas aplicar los siguientes cambios de categorías, productos e inventarios en tu Catálogo Digital:
-                        </p>
-
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
-                          {/* Nuevos */}
-                          <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                            <h5 style={{ margin: '0 0 0.75rem 0', color: '#16a34a', fontWeight: 700 }}>
-                              🆕 Productos Nuevos para Crear ({syncPending.toCreate.length})
-                            </h5>
-                            <div style={{ maxHeight: '150px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                              {syncPending.toCreate.map((p, i) => (
-                                <div key={i} style={{ fontSize: '0.78rem', padding: '0.4rem', background: '#f0fdf4', borderRadius: '6px', border: '1px solid #bbf7d0' }}>
-                                  <strong>Ref: {p.referencia}</strong> - {p.nombre} (${p.precio.toLocaleString()} COP | Stock: {p.stock})
-                                </div>
-                              ))}
-                              {syncPending.toCreate.length === 0 && (
-                                <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>Ningún producto nuevo detectado.</p>
-                              )}
+                            {/* Credenciales */}
+                            <div className="form-grid" style={{ marginBottom: '1.5rem' }}>
+                              <div className="form-field full">
+                                <label>Usuario (Correo de Siigo Nube)</label>
+                                <input 
+                                  type="email" 
+                                  value={configuracion.siigo_username || ''} 
+                                  onChange={e => setConfiguracion({ ...configuracion, siigo_username: e.target.value })} 
+                                  placeholder="ejemplo@correo.com"
+                                />
+                              </div>
+                              <div className="form-field full">
+                                <label>Access Key (Llave de API generada en Siigo)</label>
+                                <input 
+                                  type="password" 
+                                  value={configuracion.siigo_access_key || ''} 
+                                  onChange={e => setConfiguracion({ ...configuracion, siigo_access_key: e.target.value })} 
+                                  placeholder="Ingresa tu access key de Siigo"
+                                />
+                              </div>
                             </div>
-                          </div>
+                            
+                            {/* Botón Sincronizar y Estado */}
+                            <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap', borderTop: '1px solid #f1f5f9', paddingTop: '1.5rem' }}>
+                              <button 
+                                type="button" 
+                                className="btn-primary" 
+                                style={{ padding: '0.6rem 1.5rem', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: '#0284c7' }}
+                                disabled={siigoLoading || !configuracion.siigo_username || !configuracion.siigo_access_key}
+                                onClick={async () => {
+                                  setSiigoLoading(true);
+                                  setSiigoLogs([]);
+                                  const addLog = (msg: string) => setSiigoLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${msg}`]);
+                                  
+                                  try {
+                                    const creds = {
+                                      username: configuracion.siigo_username || '',
+                                      accessKey: configuracion.siigo_access_key || ''
+                                    };
+                                    const tenantId = getTenantId() || '';
+                                    
+                                    const result = await SiigoService.fetchAndCompare(tenantId, creds, addLog);
+                                    setSyncPending(result);
+                                    setShowSyncConfirm(true);
+                                    addLog(`Comparación completada. Esperando confirmación para aplicar cambios...`);
+                                  } catch (err: any) {
+                                    addLog(`❌ Error: ${err.message}`);
+                                    showToast('Error al conectar con Siigo: ' + err.message, 'error');
+                                  } finally {
+                                    setSiigoLoading(false);
+                                  }
+                                }}
+                              >
+                                <RefreshCw size={14} style={{ animation: siigoLoading ? 'spin 1s linear infinite' : 'none' }} /> {siigoLoading ? 'Conectando...' : 'Sincronizar Catálogo Ahora'}
+                              </button>
+                              
+                              <div style={{ fontSize: '0.9rem', color: '#475569' }}>
+                                <strong>Última Sincronización Exitosa:</strong>{' '}
+                                {configuracion.siigo_sincronizado_at ? (
+                                  <span style={{ color: '#059669', fontWeight: 600 }}>
+                                    {new Date(configuracion.siigo_sincronizado_at).toLocaleString()}
+                                  </span>
+                                ) : (
+                                  <span style={{ color: '#64748b' }}>Nunca se ha sincronizado</span>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Webhooks / Sincronización Automática */}
+                            <div style={{ marginTop: '2rem', borderTop: '1px solid #f1f5f9', paddingTop: '1.5rem' }}>
+                              <div style={{ fontWeight: 600, fontSize: '0.95rem', color: '#1e293b', marginBottom: '0.35rem' }}>⚡ Sincronización Automática (Tiempo Real)</div>
+                              <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '0 0 1rem 0' }}>
+                                Activa las notificaciones en tiempo real para que Siigo Nube nos notifique automáticamente cada vez que crees, edites precios o cambies el stock de un producto.
+                              </p>
+                              
+                              <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                                <div style={{ flex: 1, minWidth: '300px' }}>
+                                  <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.35rem' }}>URL del Webhook de Supabase</label>
+                                  <input 
+                                    type="text" 
+                                    value={webhookUrl}
+                                    onChange={e => setWebhookUrl(e.target.value)}
+                                    placeholder="URL de la Edge Function en Supabase"
+                                    style={{ 
+                                      width: '100%', 
+                                      padding: '0.5rem 0.75rem', 
+                                      border: '1px solid #cbd5e1', 
+                                      borderRadius: '8px', 
+                                      fontSize: '0.85rem' 
+                                    }}
+                                  />
+                                </div>
+                                <button 
+                                  type="button" 
+                                  className="btn-primary" 
+                                  style={{ padding: '0.55rem 1.5rem', background: '#0284c7', fontSize: '0.85rem' }}
+                                  disabled={siigoLoading || !webhookUrl}
+                                  onClick={async () => {
+                                    setSiigoLoading(true);
+                                    setSiigoLogs([]);
+                                    const addLog = (msg: string) => setSiigoLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${msg}`]);
+                                    
+                                    try {
+                                      const creds = {
+                                        username: configuracion.siigo_username || '',
+                                        accessKey: configuracion.siigo_access_key || ''
+                                      };
+                                      await SiigoService.registerWebhooks(creds, webhookUrl, addLog);
+                                      showToast('Suscripción a Webhooks completada ✓');
+                                    } catch (err: any) {
+                                      addLog(`❌ Error: ${err.message}`);
+                                      showToast('Error al registrar Webhooks: ' + err.message, 'error');
+                                    } finally {
+                                      setSiigoLoading(false);
+                                    }
+                                  }}
+                                >
+                                  Activar en Siigo Nube
+                                </button>
+                              </div>
+                            </div>
+                            
+                            {/* LOGS */}
+                            {siigoLogs.length > 0 && (
+                              <div style={{ marginTop: '1.5rem' }}>
+                                <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.5rem' }}>Registro de Actividad (Logs):</label>
+                                <div style={{ 
+                                  background: '#0f172a', 
+                                  color: '#38bdf8', 
+                                  fontFamily: 'monospace', 
+                                  padding: '1rem', 
+                                  borderRadius: '8px', 
+                                  fontSize: '0.8rem', 
+                                  maxHeight: '200px', 
+                                  overflowY: 'auto',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '0.35rem'
+                                }}>
+                                  {siigoLogs.map((log, i) => (
+                                    <div key={i}>{log}</div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
 
-                          {/* Actualizaciones */}
-                          <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                            <h5 style={{ margin: '0 0 0.75rem 0', color: '#2563eb', fontWeight: 700 }}>
-                              🔄 Productos para Actualizar ({syncPending.toUpdate.length})
-                            </h5>
-                            <div style={{ maxHeight: '150px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                              {syncPending.toUpdate.map((p, i) => (
-                                <div key={i} style={{ fontSize: '0.78rem', padding: '0.4rem', background: '#eff6ff', borderRadius: '6px', border: '1px solid #bfdbfe' }}>
-                                  <strong>Ref: {p.referencia}</strong> - {p.nombre}
-                                  <div style={{ color: '#475569', marginTop: '0.2rem', display: 'flex', gap: '1rem' }}>
-                                    <span>Precio: ${p.precioViejo.toLocaleString()} ➔ <strong>${p.precioNuevo.toLocaleString()}</strong></span>
-                                    <span>Stock: {p.stockViejo} ➔ <strong>{p.stockNuevo}</strong></span>
+                            {/* Modal de confirmación de sincronización */}
+                            {showSyncConfirm && syncPending && (
+                              <div style={{
+                                marginTop: '2rem',
+                                padding: '1.5rem',
+                                background: '#f8fafc',
+                                border: '1px solid #bfdbfe',
+                                borderRadius: '16px',
+                                boxShadow: '0 4px 12px rgba(14, 165, 233, 0.05)'
+                              }}>
+                                <h4 style={{ margin: '0 0 0.5rem 0', color: '#0369a1', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                  📢 Resumen de Cambios Detectados en Siigo Nube
+                                </h4>
+                                <p style={{ margin: '0 0 1.5rem 0', fontSize: '0.85rem', color: '#475569' }}>
+                                  Por favor confirma si deseas aplicar los siguientes cambios de categorías, productos e inventarios en tu Catálogo Digital:
+                                </p>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                                  <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                                    <h5 style={{ margin: '0 0 0.75rem 0', color: '#16a34a', fontWeight: 700 }}>
+                                      🆕 Productos Nuevos para Crear ({syncPending.toCreate.length})
+                                    </h5>
+                                    <div style={{ maxHeight: '150px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                      {syncPending.toCreate.map((p, i) => (
+                                        <div key={i} style={{ fontSize: '0.78rem', padding: '0.4rem', background: '#f0fdf4', borderRadius: '6px', border: '1px solid #bbf7d0' }}>
+                                          <strong>Ref: {p.referencia}</strong> - {p.nombre} (${p.precio.toLocaleString()} COP | Stock: {p.stock})
+                                        </div>
+                                      ))}
+                                      {syncPending.toCreate.length === 0 && (
+                                        <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>Ningún producto nuevo detectado.</p>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                                    <h5 style={{ margin: '0 0 0.75rem 0', color: '#2563eb', fontWeight: 700 }}>
+                                      🔄 Productos para Actualizar ({syncPending.toUpdate.length})
+                                    </h5>
+                                    <div style={{ maxHeight: '150px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                      {syncPending.toUpdate.map((p, i) => (
+                                        <div key={i} style={{ fontSize: '0.78rem', padding: '0.4rem', background: '#eff6ff', borderRadius: '6px', border: '1px solid #bfdbfe' }}>
+                                          <strong>Ref: {p.referencia}</strong> - {p.nombre}
+                                          <div style={{ color: '#475569', marginTop: '0.2rem', display: 'flex', gap: '1rem' }}>
+                                            <span>Precio: ${p.precioViejo.toLocaleString()} ➔ <strong>${p.precioNuevo.toLocaleString()}</strong></span>
+                                            <span>Stock: {p.stockViejo} ➔ <strong>{p.stockNuevo}</strong></span>
+                                          </div>
+                                        </div>
+                                      ))}
+                                      {syncPending.toUpdate.length === 0 && (
+                                        <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>Ningún cambio de precio o stock detectado en productos existentes.</p>
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
-                              ))}
-                              {syncPending.toUpdate.length === 0 && (
-                                <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>Ningún cambio de precio o stock detectado en productos existentes.</p>
-                              )}
+
+                                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
+                                  <button 
+                                    type="button" 
+                                    className="btn-secondary" 
+                                    disabled={siigoLoading}
+                                    style={{ padding: '0.5rem 1.5rem' }}
+                                    onClick={() => {
+                                      setShowSyncConfirm(false);
+                                      setSyncPending(null);
+                                    }}
+                                  >
+                                    Descartar Sincronización
+                                  </button>
+                                  <button 
+                                    type="button" 
+                                    className="btn-primary" 
+                                    disabled={siigoLoading || (syncPending.toCreate.length === 0 && syncPending.toUpdate.length === 0)}
+                                    style={{ padding: '0.5rem 1.5rem', background: '#16a34a' }}
+                                    onClick={async () => {
+                                      setSiigoLoading(true);
+                                      const addLog = (msg: string) => setSiigoLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${msg}`]);
+                                      
+                                      try {
+                                        const tenantId = getTenantId() || '';
+                                        await SiigoService.applySync(tenantId, syncPending.toCreate, syncPending.toUpdate, addLog);
+                                        showToast('¡Sincronización finalizada con éxito! ✓');
+                                        setConfiguracion(prev => prev ? { ...prev, siigo_sincronizado_at: new Date().toISOString() } : null);
+                                        cargarDatos();
+                                        setShowSyncConfirm(false);
+                                        setSyncPending(null);
+                                      } catch (err: any) {
+                                        addLog(`❌ Error aplicando cambios: ${err.message}`);
+                                        showToast('Error al guardar datos de Siigo', 'error');
+                                      } finally {
+                                        setSiigoLoading(false);
+                                      }
+                                    }}
+                                  >
+                                    {siigoLoading ? 'Aplicando...' : 'Confirmar e Importar'}
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', alignItems: 'start' }}>
+                            
+                            {/* 99 Envíos integration */}
+                            <div className="config-section" style={{ margin: 0 }}>
+                              <div className="config-section-title">🚚 Integración 99 Envíos</div>
+                              <div className="form-grid">
+                                <div className="form-field full">
+                                  <label>API Key / Token de 99 Envíos</label>
+                                  <input 
+                                    type="password" 
+                                    value={configuracion.envios_99_api_key || ''} 
+                                    onChange={e => setConfiguracion({ ...configuracion, envios_99_api_key: e.target.value })} 
+                                    placeholder="Ingresa tu API Key de 99 Envíos"
+                                  />
+                                  <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.4rem', lineHeight: '1.4' }}>
+                                    Esta llave permite conectar la tienda con el servicio de logística y distribución de 99 Envíos para generar guías de despacho.
+                                  </p>
+                                </div>
+                              </div>
                             </div>
+
+                            {/* Analítica y Tracking */}
+                            <div className="config-section" style={{ margin: 0 }}>
+                              <div className="config-section-title">📊 Analítica y Tracking</div>
+                              <div className="form-grid">
+                                <div className="form-field full">
+                                  <label>Google Analytics 4 (Measurement ID)</label>
+                                  <input 
+                                    type="text" 
+                                    value={configuracion.google_analytics_id || ''} 
+                                    onChange={e => setConfiguracion({ ...configuracion, google_analytics_id: e.target.value })} 
+                                    placeholder="Ej. G-XXXXXXXXXX"
+                                  />
+                                </div>
+                                <div className="form-field full">
+                                  <label>Meta (Facebook) Pixel ID</label>
+                                  <input 
+                                    type="text" 
+                                    value={configuracion.meta_pixel_id || ''} 
+                                    onChange={e => setConfiguracion({ ...configuracion, meta_pixel_id: e.target.value })} 
+                                    placeholder="Ej. 123456789012345"
+                                  />
+                                </div>
+                                <div className="form-field full">
+                                  <label>Microsoft Clarity Project ID</label>
+                                  <input 
+                                    type="text" 
+                                    value={configuracion.clarity_project_id || ''} 
+                                    onChange={e => setConfiguracion({ ...configuracion, clarity_project_id: e.target.value })} 
+                                    placeholder="Ej. 5abc123xyz"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                          </div>
+                          
+                          <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'center', borderTop: '1px solid #e2e8f0', paddingTop: '2rem' }}>
+                            <button type="submit" className="btn-secondary" disabled={loading} style={{ padding: '0.8rem 3rem', fontSize: '1rem', background: '#10b981', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 600 }}>
+                              Guardar Todas las Credenciales
+                            </button>
                           </div>
                         </div>
-
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem' }}>
-                          <button 
-                            type="button" 
-                            className="btn-secondary" 
-                            disabled={siigoLoading}
-                            style={{ padding: '0.5rem 1.5rem' }}
-                            onClick={() => {
-                              setShowSyncConfirm(false);
-                              setSyncPending(null);
-                            }}
-                          >
-                            Descartar Sincronización
-                          </button>
-                          <button 
-                            type="button" 
-                            className="btn-primary" 
-                            disabled={siigoLoading || (syncPending.toCreate.length === 0 && syncPending.toUpdate.length === 0)}
-                            style={{ padding: '0.5rem 1.5rem', background: '#16a34a' }}
-                            onClick={async () => {
-                              setSiigoLoading(true);
-                              const addLog = (msg: string) => setSiigoLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${msg}`]);
-                              
-                              try {
-                                const tenantId = getTenantId() || '';
-                                await SiigoService.applySync(tenantId, syncPending.toCreate, syncPending.toUpdate, addLog);
-                                showToast('¡Sincronización finalizada con éxito! ✓');
-                                setConfiguracion(prev => prev ? { ...prev, siigo_sincronizado_at: new Date().toISOString() } : null);
-                                cargarDatos();
-                                setShowSyncConfirm(false);
-                                setSyncPending(null);
-                              } catch (err: any) {
-                                addLog(`❌ Error aplicando cambios: ${err.message}`);
-                                showToast('Error al guardar datos de Siigo', 'error');
-                              } finally {
-                                setSiigoLoading(false);
-                              }
-                            }}
-                          >
-                            {siigoLoading ? 'Aplicando...' : 'Confirmar e Importar'}
-                          </button>
-                        </div>
                       </div>
-                    )}
-
-                    <div className="config-section" style={{ marginTop: '2rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
-                      <div className="config-section-title">📊 Estado de Sincronización</div>
-                      <div style={{ fontSize: '0.9rem', color: '#475569', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        <div>
-                          <strong>Última Sincronización Exitosa:</strong>{' '}
-                          {configuracion.siigo_sincronizado_at ? (
-                            <span style={{ color: '#059669', fontWeight: 600 }}>
-                              {new Date(configuracion.siigo_sincronizado_at).toLocaleString()}
-                            </span>
-                          ) : (
-                            <span style={{ color: '#64748b' }}>Nunca se ha sincronizado</span>
-                          )}
-                        </div>
-                      </div>
-
-                      <div style={{ marginTop: '2rem', borderTop: '1px solid #f1f5f9', paddingTop: '1.5rem' }}>
-                        <div style={{ fontWeight: 600, fontSize: '0.95rem', color: '#1e293b', marginBottom: '0.35rem' }}>⚡ Sincronización Automática (Tiempo Real)</div>
-                        <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '0 0 1rem 0' }}>
-                          Activa las notificaciones en tiempo real para que Siigo Nube nos notifique automáticamente cada vez que crees, edites precios o cambies el stock de un producto.
-                        </p>
-                        
-                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                          <div style={{ flex: 1, minWidth: '300px' }}>
-                            <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.35rem' }}>URL del Webhook de Supabase</label>
-                            <input 
-                              type="text" 
-                              value={webhookUrl}
-                              onChange={e => setWebhookUrl(e.target.value)}
-                              placeholder="URL de la Edge Function en Supabase"
-                              style={{ 
-                                width: '100%', 
-                                padding: '0.5rem 0.75rem', 
-                                border: '1px solid #cbd5e1', 
-                                borderRadius: '8px', 
-                                fontSize: '0.85rem' 
-                              }}
-                            />
-                          </div>
-                          <button 
-                            type="button" 
-                            className="btn-primary" 
-                            style={{ padding: '0.55rem 1.5rem', background: '#0284c7', fontSize: '0.85rem' }}
-                            disabled={siigoLoading || !webhookUrl}
-                            onClick={async () => {
-                              setSiigoLoading(true);
-                              setSiigoLogs([]);
-                              const addLog = (msg: string) => setSiigoLogs(prev => [...prev, `${new Date().toLocaleTimeString()}: ${msg}`]);
-                              
-                              try {
-                                const creds = {
-                                  username: configuracion.siigo_username || '',
-                                  accessKey: configuracion.siigo_access_key || ''
-                                };
-                                await SiigoService.registerWebhooks(creds, webhookUrl, addLog);
-                                showToast('Suscripción a Webhooks completada ✓');
-                              } catch (err: any) {
-                                addLog(`❌ Error: ${err.message}`);
-                                showToast('Error al registrar Webhooks: ' + err.message, 'error');
-                              } finally {
-                                setSiigoLoading(false);
-                              }
-                            }}
-                          >
-                            Activar en Siigo Nube
-                          </button>
-                        </div>
-                      </div>
-
-                      {siigoLogs.length > 0 && (
-                        <div style={{ marginTop: '1.5rem' }}>
-                          <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.5rem' }}>Registro de Actividad (Logs):</label>
-                          <div style={{ 
-                            background: '#0f172a', 
-                            color: '#38bdf8', 
-                            fontFamily: 'monospace', 
-                            padding: '1rem', 
-                            borderRadius: '8px', 
-                            fontSize: '0.8rem', 
-                            maxHeight: '200px', 
-                            overflowY: 'auto',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '0.35rem'
-                          }}>
-                            {siigoLogs.map((log, i) => (
-                              <div key={i}>{log}</div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    </form>
                   </div>
                 ) : (
                   <div className="empty-state">
                     <div className="loading-dot" />
-                    <p style={{ marginTop: '1rem' }}>Cargando datos de integración...</p>
+                    <p style={{ marginTop: '1rem' }}>Cargando configuración...</p>
                   </div>
                 )}
               </div>
             </div>
           )}
+
 
           {/* ── CLIENTES TAB ── */}
           {activeTab === 'clientes' && (

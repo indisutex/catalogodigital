@@ -470,8 +470,27 @@ export default function MenuDigital() {
       </div>
 
       <div className="menu-app-body">
-        <div className="explore-header">
+        <div className="explore-header" style={{ position: 'relative' }}>
           <h2>EXPLORAR CATÁLOGO DIGITAL</h2>
+          {configuracion?.preguntar_tipo_cliente && buyerType && (
+            <button
+              onClick={() => setBuyerType(null)}
+              style={{
+                position: 'absolute',
+                top: '-25px',
+                right: '0',
+                background: 'none',
+                border: 'none',
+                color: configuracion?.color_primario || '#10b981',
+                fontSize: '0.75rem',
+                textDecoration: 'underline',
+                cursor: 'pointer',
+                padding: '0'
+              }}
+            >
+              Cambiar tipo de compra ({buyerType === 'detal' ? 'Detal' : buyerType === 'mayorista' ? 'Mayorista' : '50 Unds'})
+            </button>
+          )}
           <button
             className="search-icon-btn"
             onClick={() => { setSearchVisible(v => !v); if (searchVisible) setBusqueda(''); }}

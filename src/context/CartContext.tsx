@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { Producto } from '../types';
+import { getTenantId } from '../lib/supabase';
 
 export interface CartItem extends Producto {
   cantidad: number;
@@ -35,24 +36,28 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>(() => {
-    const saved = localStorage.getItem('indisutex_cart');
+    const tenantId = getTenantId() || 'saramantha';
+    const saved = localStorage.getItem(`indisutex_cart_${tenantId}`);
     return saved ? JSON.parse(saved) : [];
   });
 
   const [buyerType, setBuyerType] = useState<BuyerType>(() => {
-    const saved = localStorage.getItem('indisutex_buyer_type');
+    const tenantId = getTenantId() || 'saramantha';
+    const saved = localStorage.getItem(`indisutex_buyer_type_${tenantId}`);
     return saved ? (saved as BuyerType) : null;
   });
 
   useEffect(() => {
-    localStorage.setItem('indisutex_cart', JSON.stringify(items));
+    const tenantId = getTenantId() || 'saramantha';
+    localStorage.setItem(`indisutex_cart_${tenantId}`, JSON.stringify(items));
   }, [items]);
 
   useEffect(() => {
+    const tenantId = getTenantId() || 'saramantha';
     if (buyerType) {
-      localStorage.setItem('indisutex_buyer_type', buyerType);
+      localStorage.setItem(`indisutex_buyer_type_${tenantId}`, buyerType);
     } else {
-      localStorage.removeItem('indisutex_buyer_type');
+      localStorage.removeItem(`indisutex_buyer_type_${tenantId}`);
     }
   }, [buyerType]);
 
