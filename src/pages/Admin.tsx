@@ -4369,8 +4369,7 @@ export default function Admin() {
                         let overrideVal = '';
                         
                         if (role === 'mayorista' && currentMayorista) {
-                          const markup = currentMayorista.porcentaje_ganancia || 0;
-                          const overrides = currentMayorista.ajustes_productos || {};
+                                                    const overrides = currentMayorista.ajustes_productos || {};
                           
                           if (overrides[p.id]) {
                             
