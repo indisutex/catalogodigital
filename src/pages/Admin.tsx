@@ -278,6 +278,7 @@ export default function Admin() {
       return phones.some(p => cleanInput.split(',').map(cp => cp.replace(/\D/g, '')).includes(p));
     });
 
+    const lineaDisplay = cleanInput.split(',').map(p => p.trim()).filter(Boolean)[0] || cleanInput;
     return (
       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', verticalAlign: 'middle' }}>
         {match?.foto_url ? (
@@ -292,7 +293,10 @@ export default function Admin() {
             {name.charAt(0).toUpperCase()}
           </span>
         )}
-        <span style={{ fontSize: '0.9rem', color: '#0f172a', fontWeight: 700 }}>{name}</span>
+        <span style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          <span style={{ fontSize: '0.9rem', color: '#0f172a', fontWeight: 700, lineHeight: 1.2 }}>{name}</span>
+          <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 500, lineHeight: 1 }}>📲 {lineaDisplay}</span>
+        </span>
       </span>
     );
   };
@@ -4101,7 +4105,7 @@ export default function Admin() {
                          <span>{stats.catalogCount} pedidos ({pedidos.length > 0 ? Math.round((stats.catalogCount / pedidos.length) * 100) : 0}%)</span>
                        </div>
                        <div style={{ background: '#f1f5f9', height: '12px', borderRadius: '6px', overflow: 'hidden' }}>
-                         <div style={{ background: '#3b82f6', height: '100%', width: `${pedidos.length > 0 ? (stats.catalogCount / pedidos.length) * 100 : 0}%`, transition: 'width 1s ease-in-out' }}></div>
+                         <div style={{ background: 'linear-gradient(90deg, var(--primary-color,#6366f1), rgba(var(--primary-rgb,99,102,241),0.7))', height: '100%', width: `${pedidos.length > 0 ? (stats.catalogCount / pedidos.length) * 100 : 0}%`, transition: 'width 1s ease-in-out' }}></div>
                        </div>
                      </div>
 
@@ -4112,7 +4116,7 @@ export default function Admin() {
                          <span>{stats.posCount} pedidos ({pedidos.length > 0 ? Math.round((stats.posCount / pedidos.length) * 100) : 0}%)</span>
                        </div>
                        <div style={{ background: '#f1f5f9', height: '12px', borderRadius: '6px', overflow: 'hidden' }}>
-                         <div style={{ background: '#10b981', height: '100%', width: `${pedidos.length > 0 ? (stats.posCount / pedidos.length) * 100 : 0}%`, transition: 'width 1s ease-in-out' }}></div>
+                         <div style={{ background: 'linear-gradient(90deg, rgba(var(--primary-rgb,99,102,241),0.6), rgba(var(--primary-rgb,99,102,241),0.35))', height: '100%', width: `${pedidos.length > 0 ? (stats.posCount / pedidos.length) * 100 : 0}%`, transition: 'width 1s ease-in-out' }}></div>
                        </div>
                      </div>
 
@@ -4143,7 +4147,7 @@ export default function Admin() {
                                <span style={{ fontWeight: 800 }}>{city.count} pedidos</span>
                              </div>
                              <div style={{ background: '#f1f5f9', height: '8px', borderRadius: '4px', overflow: 'hidden' }}>
-                               <div style={{ background: 'linear-gradient(90deg, #6366f1, #8b5cf6)', height: '100%', width: `${pct}%`, transition: 'width 1s ease-in-out' }}></div>
+                               <div style={{ background: 'linear-gradient(90deg, var(--primary-color,#6366f1), rgba(var(--primary-rgb,99,102,241),0.6))', height: '100%', width: `${pct}%`, transition: 'width 1s ease-in-out' }}></div>
                              </div>
                            </div>
                          );
@@ -4918,11 +4922,7 @@ export default function Admin() {
                               <div key={lead.id} className="kanban-card lead-card" style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '0.85rem', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem' }}>
                                   <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0f172a', fontWeight: 700 }}>👤 {lead.nombre || 'Borrador Anónimo'}</h4>
-                                  {lead.linea_whatsapp && (
-                                    <span style={{ fontSize: '0.65rem', background: '#f8fafc', color: '#475569', padding: '2px 6px', borderRadius: '12px', border: '1px solid #cbd5e1', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center' }}>
-                                      🎯 {renderAsesorBadge(lead.linea_whatsapp)}
-                                    </span>
-                                  )}
+                                  {lead.linea_whatsapp && renderAsesorBadge(lead.linea_whatsapp)}
                                 </div>
                                 <p className="phone" style={{ margin: '0 0 0.25rem 0', fontSize: '0.8rem', color: '#475569' }}>📞 {lead.telefono || 'Sin número'}</p>
                                 <p className="city" style={{ margin: '0 0 0.25rem 0', fontSize: '0.8rem', color: '#475569' }}>📍 {lead.ciudad || 'No especificada'}</p>
@@ -4959,11 +4959,7 @@ export default function Admin() {
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0 0 0.4rem 0', flexWrap: 'wrap', gap: '0.25rem' }}>
                                   <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0f172a', fontWeight: 700 }}>👤 {ped.cliente_nombre}</h4>
                                   <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                                    {ped.linea_whatsapp && (
-                                      <span style={{ fontSize: '0.65rem', background: '#f8fafc', color: '#475569', padding: '1px 5px', borderRadius: '4px', border: '1px solid #cbd5e1', display: 'inline-flex', alignItems: 'center' }}>
-                                        🎯 {renderAsesorBadge(ped.linea_whatsapp)}
-                                      </span>
-                                    )}
+                                    {ped.linea_whatsapp && renderAsesorBadge(ped.linea_whatsapp)}
                                     {ped.origen === 'pos' ? (
                                       <span style={{ fontSize: '0.65rem', background: '#dcfce7', color: '#166534', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>POS</span>
                                     ) : (
@@ -5056,11 +5052,7 @@ export default function Admin() {
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0 0 0.4rem 0', flexWrap: 'wrap', gap: '0.25rem' }}>
                                   <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#14532d', fontWeight: 700 }}>👤 {ped.cliente_nombre}</h4>
                                   <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                                    {ped.linea_whatsapp && (
-                                      <span style={{ fontSize: '0.65rem', background: '#f8fafc', color: '#475569', padding: '1px 5px', borderRadius: '4px', border: '1px solid #cbd5e1', display: 'inline-flex', alignItems: 'center' }}>
-                                        🎯 {renderAsesorBadge(ped.linea_whatsapp)}
-                                      </span>
-                                    )}
+                                    {ped.linea_whatsapp && renderAsesorBadge(ped.linea_whatsapp)}
                                     {ped.origen === 'pos' ? (
                                       <span style={{ fontSize: '0.65rem', background: '#dcfce7', color: '#166534', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>POS</span>
                                     ) : (
