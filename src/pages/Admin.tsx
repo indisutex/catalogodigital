@@ -3787,7 +3787,7 @@ export default function Admin() {
                     </summary>
                     <div style={{ padding: '1.5rem', background: 'white', borderTop: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                       {/* Daily specific advisor advise */}
-                      {(() => {
+                      {stats && (() => {
                         const bestDay = stats.bestDay as { day: number; name: string; count: number };
                         const bestHour = stats.bestHour as [string, number];
                         const aLeads = stats.aLeads;
