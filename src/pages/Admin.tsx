@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase, getTenantId, setTenantId } from '../lib/supabase';
 import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
-import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor } from '../types';
+import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista } from '../types';
 import './Admin.css';
 import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
@@ -128,6 +128,7 @@ export default function Admin() {
   const [clientes, setClientes] = useState<any[]>([]);
   const [clienteSearchQuery, setClienteSearchQuery] = useState('');
   const [asesores, setAsesores] = useState<Asesor[]>([]);
+  const [mayoristas, setMayoristas] = useState<Mayorista[]>([]);
   const [materiales, setMateriales] = useState<any[]>([]);
   const [materialFilter, setMaterialFilter] = useState<string>('todos');
   const [showNotificationsPopover, setShowNotificationsPopover] = useState(false);
@@ -150,8 +151,14 @@ export default function Admin() {
   });
 
   const currentAsesor = useMemo(() => {
-    return (role === 'asesor' || role === 'mayorista') ? asesores.find(a => a.id === localStorage.getItem(`admin_asesor_id_${getTenantId()}`)) : null;
+    if (role === 'asesor') return asesores.find(a => a.id === localStorage.getItem(`admin_asesor_id_${getTenantId()}`)) ?? null;
+    return null;
   }, [role, asesores]);
+
+  const currentMayorista = useMemo(() => {
+    if (role === 'mayorista') return mayoristas.find(m => m.id === localStorage.getItem(`admin_asesor_id_${getTenantId()}`)) ?? null;
+    return null;
+  }, [role, mayoristas]);
 
   const getMotivationalPhrase = (asesorId: string) => {
     const phrases = [
@@ -171,7 +178,7 @@ export default function Admin() {
     return phrases[seed];
   };
 
-  const getAdvisorNotifications = (asesor: Asesor, stats: any) => {
+  const getAdvisorNotifications = (asesor: Asesor | Mayorista, stats: any, isMayorista = false) => {
     const list: any[] = [];
     const now = Date.now();
 
@@ -250,7 +257,7 @@ export default function Admin() {
     }
 
     // 4. Notificación de recompra para mayoristas (sin pedido en +15 días)
-    if (asesor.tipo === 'mayorista') {
+    if (isMayorista) {
       const aPhones = (asesor.telefono || '').split(',').map((p: string) => p.replace(/\D/g, '')).filter(Boolean);
       const misOrdenes = pedidos.filter(p => {
         const op = (p.linea_whatsapp || '').replace(/\D/g, '');
@@ -554,7 +561,7 @@ export default function Admin() {
       const tenant = getTenantId();
 
       // Fetch other data in parallel
-      const [catRes, subcatRes, confRes, pedRes, leadRes, cliRes, aseRes, matRes] = await Promise.all([
+      const [catRes, subcatRes, confRes, pedRes, leadRes, cliRes, aseRes, matRes, mayRes] = await Promise.all([
         supabase.from('categorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
         supabase.from('subcategorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
         supabase.from('configuracion').select('*').eq('tenant_id', tenant).limit(1).single(),
@@ -562,7 +569,8 @@ export default function Admin() {
         supabase.from('leads').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
         supabase.from('clientes_exitosos').select('*').eq('tenant_id', tenant).order('total_compras', { ascending: false }),
         supabase.from('asesores').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
-        supabase.from('material_apoyo').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false })
+        supabase.from('material_apoyo').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
+        supabase.from('mayoristas').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false })
       ]);
 
       if (catRes.data) setCategoriasData(catRes.data);
@@ -572,6 +580,7 @@ export default function Admin() {
       if (cliRes.data) setClientes(cliRes.data);
       if (aseRes && aseRes.data) setAsesores(aseRes.data);
       if (matRes && matRes.data) setMateriales(matRes.data);
+      if (mayRes && mayRes.data) setMayoristas(mayRes.data);
 
       // Fetch products in chunks of 1000 to bypass Supabase defaults
       let allProducts: Producto[] = [];
@@ -647,20 +656,40 @@ export default function Admin() {
       if (error) throw error;
 
       if (advisorMatch) {
+        // Encontrado en tabla asesores
         localStorage.setItem(`admin_auth_${getTenantId()}`, 'true');
-        const userRole = advisorMatch.tipo === 'mayorista' ? 'mayorista' : 'asesor';
-        localStorage.setItem(`admin_role_${getTenantId()}`, userRole);
+        localStorage.setItem(`admin_role_${getTenantId()}`, 'asesor');
         localStorage.setItem(`admin_asesor_id_${getTenantId()}`, advisorMatch.id);
         localStorage.setItem(`admin_asesor_phone_${getTenantId()}`, advisorMatch.telefono);
-        setRole(userRole);
+        setRole('asesor');
         setLoggedAsesorPhone(advisorMatch.telefono);
         setIsAuthenticated(true);
-        const defaultTab = userRole === 'mayorista' ? 'resumen_asesor' : 'pedidos';
-        setActiveTab(defaultTab);
-        showToast(`Sesión iniciada como ${userRole === 'mayorista' ? 'mayorista' : 'asesor'}: ${advisorMatch.nombre} ✓`, 'success');
+        setActiveTab('pedidos');
+        showToast(`Sesión iniciada como asesor: ${advisorMatch.nombre} ✓`, 'success');
       } else {
-        showToast('PIN incorrecto o no registrado.', 'error');
-        setPin('');
+        // Buscar en tabla mayoristas (independiente)
+        const { data: mayoristaMatch, error: mayError } = await supabase
+          .from('mayoristas')
+          .select('*')
+          .eq('tenant_id', tenant)
+          .eq('pin', pin.trim())
+          .limit(1)
+          .maybeSingle();
+        if (mayError) throw mayError;
+        if (mayoristaMatch) {
+          localStorage.setItem(`admin_auth_${getTenantId()}`, 'true');
+          localStorage.setItem(`admin_role_${getTenantId()}`, 'mayorista');
+          localStorage.setItem(`admin_asesor_id_${getTenantId()}`, mayoristaMatch.id);
+          localStorage.setItem(`admin_asesor_phone_${getTenantId()}`, mayoristaMatch.telefono);
+          setRole('mayorista');
+          setLoggedAsesorPhone(mayoristaMatch.telefono);
+          setIsAuthenticated(true);
+          setActiveTab('resumen_asesor');
+          showToast(`Sesión iniciada como mayorista: ${mayoristaMatch.nombre} ✓`, 'success');
+        } else {
+          showToast('PIN incorrecto o no registrado.', 'error');
+          setPin('');
+        }
       }
     } catch (err: any) {
       console.error(err);
@@ -1426,30 +1455,29 @@ export default function Admin() {
       const phone = p.linea_whatsapp || 'pos';
       const cleanPhone = phone.replace(/\D/g, '');
       if (cleanPhone !== 'pos' && cleanPhone) {
-        const match = asesores.find(a => {
+        const matchedAsesor = asesores.find(a => {
           const phones = (a.telefono || '').split(',').map(ph => ph.replace(/\D/g, '')).filter(Boolean);
           return phones.includes(cleanPhone);
         });
-        if (match) {
-          if (match.tipo === 'mayorista') {
-            if (!mayoristasSales[match.id]) {
-              mayoristasSales[match.id] = { total: 0, ordersCount: 0 };
-            }
-            mayoristasSales[match.id].total += p.total || 0;
-            mayoristasSales[match.id].ordersCount += 1;
-          } else {
-            if (!asesoresSales[match.id]) {
-              asesoresSales[match.id] = { total: 0, ordersCount: 0 };
-            }
-            asesoresSales[match.id].total += p.total || 0;
-            asesoresSales[match.id].ordersCount += 1;
+        if (matchedAsesor) {
+          if (!asesoresSales[matchedAsesor.id]) asesoresSales[matchedAsesor.id] = { total: 0, ordersCount: 0 };
+          asesoresSales[matchedAsesor.id].total += p.total || 0;
+          asesoresSales[matchedAsesor.id].ordersCount += 1;
+        } else {
+          const matchedMayorista = mayoristas.find(m => {
+            const phones = (m.telefono || '').split(',').map(ph => ph.replace(/\D/g, '')).filter(Boolean);
+            return phones.includes(cleanPhone);
+          });
+          if (matchedMayorista) {
+            if (!mayoristasSales[matchedMayorista.id]) mayoristasSales[matchedMayorista.id] = { total: 0, ordersCount: 0 };
+            mayoristasSales[matchedMayorista.id].total += p.total || 0;
+            mayoristasSales[matchedMayorista.id].ordersCount += 1;
           }
         }
       }
     });
 
     const asesoresRanking = asesores
-      .filter(a => a.tipo === 'asesor' || !a.tipo)
       .map(a => {
         const saleInfo = asesoresSales[a.id] || { total: 0, ordersCount: 0 };
         return {
@@ -1463,8 +1491,7 @@ export default function Admin() {
       })
       .sort((a, b) => b.total - a.total);
 
-    const mayoristasRanking = asesores
-      .filter(a => a.tipo === 'mayorista')
+    const mayoristasRanking = mayoristas
       .map(m => {
         const saleInfo = mayoristasSales[m.id] || { total: 0, ordersCount: 0 };
         return {
@@ -1907,17 +1934,23 @@ export default function Admin() {
   }, [clientes, clienteSearchQuery]);
 
   const activeNotifications = useMemo(() => {
-    if (role !== 'asesor' || !currentAsesor) return [];
-    const advStats = getAdvisorStats(currentAsesor);
-    return getAdvisorNotifications(currentAsesor, advStats);
-  }, [role, currentAsesor, leads, pedidos]);
+    if (role === 'asesor' && currentAsesor) {
+      const advStats = getAdvisorStats(currentAsesor);
+      return getAdvisorNotifications(currentAsesor, advStats, false);
+    }
+    if (role === 'mayorista' && currentMayorista) {
+      const advStats = getAdvisorStats(currentMayorista);
+      return getAdvisorNotifications(currentMayorista, advStats, true);
+    }
+    return [];
+  }, [role, currentAsesor, currentMayorista, leads, pedidos]);
 
   const activeNotificationsCount = activeNotifications.length;
 
   const [viewingAdvisorAlerts, setViewingAdvisorAlerts] = useState<{ advisor: any; alerts: any[] } | null>(null);
 
   const filteredAsesores = useMemo(() => {
-    let list = asesores.filter(a => a.tipo === 'asesor' || !a.tipo);
+    let list = asesores; // asesores table only contains asesores
     if (asesorSearchQuery.trim()) {
       const q = asesorSearchQuery.toLowerCase();
       list = list.filter(a => 
@@ -1927,6 +1960,18 @@ export default function Admin() {
     }
     return list;
   }, [asesores, asesorSearchQuery]);
+
+  const filteredMayoristas = useMemo(() => {
+    let list = mayoristas;
+    if (mayoristaBuscador.trim()) {
+      const q = mayoristaBuscador.toLowerCase();
+      list = list.filter(m =>
+        (m.nombre || '').toLowerCase().includes(q) ||
+        (m.telefono || '').includes(q)
+      );
+    }
+    return list;
+  }, [mayoristas, mayoristaBuscador]);
 
   async function handleEliminarDuplicados(nombre: string) {
     try {
@@ -2108,6 +2153,25 @@ export default function Admin() {
     } catch (err: any) {
       console.error(err);
       showToast('Error al eliminar asesor: ' + err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleEliminarMayorista(id: string) {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar este mayorista?')) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('mayoristas')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+      setMayoristas(prev => prev.filter(m => m.id !== id));
+      showToast('Mayorista eliminado ✓', 'success');
+    } catch (err: any) {
+      console.error(err);
+      showToast('Error al eliminar mayorista: ' + err.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -2779,8 +2843,8 @@ export default function Admin() {
                   {activeTab === 'productos' && `${productos.length} productos en total`}
                   {activeTab === 'categorias' && `${categoriasData.length} categorías activas`}
                   {activeTab === 'clientes' && `${clientes.length} clientes en total`}
-                  {activeTab === 'asesores' && `${asesores.filter(a => a.tipo === 'asesor' || !a.tipo).length} asesores en tu equipo`}
-                  {activeTab === 'mayoristas' && `${asesores.filter(a => a.tipo === 'mayorista').length} mayoristas en tu equipo`}
+                  {activeTab === 'asesores' && `${asesores.length} asesores en tu equipo`}
+                  {activeTab === 'mayoristas' && `${mayoristas.length} mayoristas en tu equipo`}
                   {activeTab === 'config' && 'Ajustes globales de tu tienda'}
                 </p>
               </div>
@@ -3645,7 +3709,7 @@ export default function Admin() {
                   {/* 🏆 RANKING GAMIFICADO DE MAYORISTAS */}
                   {(() => {
                     const mPhones2 = (currentAsesorData.telefono || '').split(',').map((ph: string) => ph.trim().replace(/\D/g, '')).filter(Boolean);
-                    const allMayoristas = asesores.filter(a => a.tipo === 'mayorista');
+                    const allMayoristas = mayoristas;
                     const rankingData = allMayoristas.map(m => {
                       const mPs = (m.telefono || '').split(',').map((ph: string) => ph.replace(/\D/g, '')).filter(Boolean);
                       const total = pedidos
@@ -5710,14 +5774,9 @@ export default function Admin() {
           )}
 
           {/* ── MAYORISTAS TAB ── */}
+          {/* ── MAYORISTAS TAB ── */}
           {activeTab === 'mayoristas' && (() => {
-            const mayoristas = asesores.filter(a => a.tipo === 'mayorista');
-            const filteredMayoristas = mayoristaBuscador.trim()
-              ? mayoristas.filter(m =>
-                  (m.nombre || '').toLowerCase().includes(mayoristaBuscador.toLowerCase()) ||
-                  (m.telefono || '').includes(mayoristaBuscador)
-                )
-              : mayoristas;
+            // filteredMayoristas proviene del useMemo superior
 
             async function handleCrearMayorista(e: React.FormEvent) {
               e.preventDefault();
@@ -5728,16 +5787,15 @@ export default function Admin() {
               setLoading(true);
               try {
                 const cleanPhone = tels.map(n => n.replace(/\D/g, '')).filter(Boolean).join(',');
-                const { data, error } = await supabase.from('asesores').insert({
+                const { data, error } = await supabase.from('mayoristas').insert({
                   nombre: nuevoMayoristaNombre.trim(),
                   telefono: cleanPhone,
                   pin: nuevoMayoristaPin.trim() || '1234',
                   foto_url: nuevoMayoristaFotoUrl.trim() || null,
-                  tipo: 'mayorista',
                   tenant_id: getTenantId()
                 }).select().single();
                 if (error) throw error;
-                setAsesores(prev => [data, ...prev]);
+                setMayoristas(prev => [data, ...prev]);
                 setNuevoMayoristaNombre(''); setNuevoMayoristaTelefonos(['']); setNuevoMayoristaFotoUrl('');
                 setNuevoMayoristaPin(Math.floor(1000 + Math.random() * 9000).toString());
                 showToast('Mayorista registrado ✓', 'success');
@@ -5752,14 +5810,14 @@ export default function Admin() {
               }
               const cleanPhone = tels.map(n => n.replace(/\D/g, '')).filter(Boolean).join(',');
               try {
-                const { error } = await supabase.from('asesores').update({
+                const { error } = await supabase.from('mayoristas').update({
                   nombre: editingMayoristaNombre.trim(),
                   telefono: cleanPhone,
                   pin: editingMayoristaPin.trim(),
                   foto_url: editingMayoristaFotoUrl.trim() || null
                 }).eq('id', id);
                 if (error) throw error;
-                setAsesores(prev => prev.map(a => a.id === id ? { ...a, nombre: editingMayoristaNombre.trim(), telefono: cleanPhone, pin: editingMayoristaPin.trim(), foto_url: editingMayoristaFotoUrl.trim() || undefined } : a));
+                setMayoristas(prev => prev.map(m => m.id === id ? { ...m, nombre: editingMayoristaNombre.trim(), telefono: cleanPhone, pin: editingMayoristaPin.trim(), foto_url: editingMayoristaFotoUrl.trim() || undefined } : m));
                 setEditingMayoristaId(null);
                 showToast('Mayorista actualizado ✓', 'success');
               } catch (err: any) { showToast('Error: ' + err.message, 'error'); }
@@ -5925,7 +5983,7 @@ export default function Admin() {
                                 <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 800, color: '#10b981' }}>${totalCompras.toLocaleString()}</td>
                                 {(() => {
                                   const stats = getAdvisorStats(m);
-                                  const notifications = getAdvisorNotifications(m, stats);
+                                  const notifications = getAdvisorNotifications(m, stats, true);
                                   const alerts = notifications.filter(n => n.type === 'danger' || n.type === 'warning' || n.type === 'info');
                                   
                                   return (
@@ -6031,7 +6089,7 @@ export default function Admin() {
                                           setEditingMayoristaPin(m.pin || '1234');
                                           setEditingMayoristaFotoUrl(m.foto_url || '');
                                         }} className="btn-secondary" style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}>Editar</button>
-                                        <button type="button" onClick={() => handleEliminarAsesor(m.id)} className="btn-secondary"
+                                        <button type="button" onClick={() => handleEliminarMayorista(m.id)} className="btn-secondary"
                                           style={{ color: '#ef4444', borderColor: '#fee2e2', background: '#fef2f2', padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}><Trash2 size={12} /></button>
                                       </>
                                     )}

@@ -11,14 +11,17 @@ export interface CartItem extends Producto {
 
 export type BuyerType = 'detal' | 'mayorista' | '50_unidades' | null;
 
-export const getEffectivePrice = (producto: Producto, buyerType: BuyerType): number => {
+export const getEffectivePrice = (producto: Producto, buyerType: BuyerType, markup: number = 0): number => {
+  let price = producto.precio;
   if (buyerType === 'mayorista' && producto.precio_por_mayor) {
-    return producto.precio_por_mayor;
+    price = producto.precio_por_mayor;
+  } else if (buyerType === '50_unidades' && producto.precio_50_unidades) {
+    price = producto.precio_50_unidades;
   }
-  if (buyerType === '50_unidades' && producto.precio_50_unidades) {
-    return producto.precio_50_unidades;
+  if (markup > 0) {
+    return Math.round(price * (1 + markup / 100));
   }
-  return producto.precio;
+  return price;
 };
 
 interface CartContextType {
@@ -30,6 +33,8 @@ interface CartContextType {
   total: number;
   buyerType: BuyerType;
   setBuyerType: (type: BuyerType) => void;
+  markupPorcentaje: number;
+  setMarkupPorcentaje: (val: number) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -47,6 +52,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return saved ? (saved as BuyerType) : null;
   });
 
+  const [markupPorcentaje, setMarkupPorcentaje] = useState<number>(() => {
+    const tenantId = getTenantId() || 'saramantha';
+    const saved = sessionStorage.getItem(`indisutex_markup_${tenantId}`);
+    return saved ? Number(saved) : 0;
+  });
+
   useEffect(() => {
     const tenantId = getTenantId() || 'saramantha';
     localStorage.setItem(`indisutex_cart_${tenantId}`, JSON.stringify(items));
@@ -60,6 +71,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem(`indisutex_buyer_type_${tenantId}`);
     }
   }, [buyerType]);
+
+  useEffect(() => {
+    const tenantId = getTenantId() || 'saramantha';
+    sessionStorage.setItem(`indisutex_markup_${tenantId}`, String(markupPorcentaje));
+  }, [markupPorcentaje]);
 
   const addToCart = (producto: Producto, talla?: string, estampado?: string, cantidad: number = 1) => {
     setItems(prevItems => {
@@ -95,10 +111,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = () => setItems([]);
 
-  const total = items.reduce((sum, item) => sum + (getEffectivePrice(item, buyerType) * item.cantidad), 0);
+  const total = items.reduce((sum, item) => sum + (getEffectivePrice(item, buyerType, markupPorcentaje) * item.cantidad), 0);
 
   return (
-    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, total, buyerType, setBuyerType }}>
+    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, total, buyerType, setBuyerType, markupPorcentaje, setMarkupPorcentaje }}>
       {children}
     </CartContext.Provider>
   );

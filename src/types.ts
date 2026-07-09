@@ -84,6 +84,18 @@ export interface Asesor {
   pin: string;
   tenant_id: string;
   created_at: string;
-  foto_url?: string;
-  tipo?: string;
+  foto_url?: string | null;
+  ajustes_productos?: any;
 }
+
+export interface Mayorista {
+  id: string;
+  nombre: string;
+  telefono: string;
+  pin: string;
+  tenant_id: string;
+  created_at: string;
+  foto_url?: string | null;
+  porcentaje_ganancia?: number;
+}
+
