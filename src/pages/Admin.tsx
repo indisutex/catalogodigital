@@ -4188,7 +4188,7 @@ export default function Admin() {
                         <input 
                           type="text" 
                           id="perfil-nombre"
-                          defaultValue={asesores.find(a => a.telefono === loggedAsesorPhone)?.nombre} 
+                          defaultValue={currentAsesorData.nombre} 
                           required 
                         />
                       </div>
@@ -4207,7 +4207,7 @@ export default function Admin() {
                           type="text" 
                           id="perfil-pin"
                           disabled
-                          defaultValue={asesores.find(a => a.telefono === loggedAsesorPhone)?.pin} 
+                          defaultValue={currentAsesorData.pin} 
                           required 
                         />
                         <small style={{color: '#64748b'}}>Solo el administrador puede cambiar tu PIN de acceso.</small>
@@ -4215,13 +4215,13 @@ export default function Admin() {
                       <div className="form-field">
                         <label>Foto de Perfil</label>
                         <div className="img-input-row" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                          {asesores.find(a => a.telefono === loggedAsesorPhone)?.foto_url && (
-                            <img src={asesores.find(a => a.telefono === loggedAsesorPhone)?.foto_url ?? ''} className="img-preview-thumb" alt="Foto Perfil" style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover' }} />
+                          {currentAsesorData.foto_url && (
+                            <img src={currentAsesorData.foto_url ?? ''} className="img-preview-thumb" alt="Foto Perfil" style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover' }} />
                           )}
                           <input 
                             type="url" 
                             id="perfil-foto"
-                            defaultValue={asesores.find(a => a.telefono === loggedAsesorPhone)?.foto_url || ''} 
+                            defaultValue={currentAsesorData.foto_url || ''} 
                             placeholder="https://ejemplo.com/foto.jpg"
                             style={{ flex: 1 }}
                           />
@@ -4241,13 +4241,13 @@ export default function Admin() {
                                 showToast('Foto subida. Recuerda Guardar Perfil ✅', 'success');
                                 
                                 // Actualizar previsualización local
-                                const currentAsesorData = asesores.find(a => a.telefono === loggedAsesorPhone);
+                                // currentAsesorData ya existe en el scope exterior
                                 if (currentAsesorData) {
-                                  setAsesores(asesores.map(a => 
-                                    a.id === currentAsesorData.id 
-                                      ? { ...a, foto_url: data.publicUrl } 
-                                      : a
-                                  ));
+                                  if (role === 'mayorista') {
+                                    setMayoristas(mayoristas.map(m => m.id === currentAsesorData.id ? { ...m, foto_url: data.publicUrl } : m));
+                                  } else {
+                                    setAsesores(asesores.map(a => a.id === currentAsesorData.id ? { ...a, foto_url: data.publicUrl } : a));
+                                  }
                                 }
                               } catch {
                                 showToast('Error al subir foto', 'error');
@@ -4357,109 +4357,103 @@ export default function Admin() {
                 )
                 )}
 
-                <div className="data-table-container">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th>Producto</th>
-                        <th>Precio Detal</th>
-                        <th>Al por Mayor</th>
-                        <th>50 Unid.</th>
-                        {role === 'mayorista' && <th>Precio Detal Final</th>}
-                        {role === 'mayorista' && <th>Precio Especial</th>}
-                      </tr>
-                    </thead>
-                    <tbody>
+                <div className="products-grid">
                       {productos.map(p => {
                         let hasOverride = false;
                         let overrideVal = '';
-                        
                         if (role === 'mayorista' && currentMayorista) {
-                                                    const overrides = currentMayorista.ajustes_productos || {};
-                          
+                          const overrides = currentMayorista.ajustes_productos || {};
                           if (overrides[p.id]) {
-                            
                             hasOverride = true;
                             overrideVal = overrides[p.id];
                           }
                         }
-
+                        
                         return (
-                          <tr key={p.id}>
-                            <td>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                {p.imagen_url ? (
-                                  <img src={p.imagen_url} alt={p.nombre} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '8px' }} />
-                                ) : (
-                                  <div style={{ width: '40px', height: '40px', background: '#e2e8f0', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <Package size={20} color="#94a3b8" />
-                                  </div>
-                                )}
-                                <div>
-                                  <div style={{ fontWeight: 600 }}>{p.nombre}</div>
-                                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{p.referencia}</div>
-                                </div>
-                              </div>
-                            </td>
-                            <td>${p.precio?.toLocaleString()}</td>
-                            <td style={{ color: '#64748b' }}>{p.precio_por_mayor ? `${p.precio_por_mayor.toLocaleString()}` : '-'}</td>
-                            <td style={{ color: '#64748b' }}>{p.precio_50_unidades ? `${p.precio_50_unidades.toLocaleString()}` : '-'}</td>
-                            {role === 'mayorista' && (
-                              <td style={{ fontWeight: hasOverride ? 'normal' : 'bold', color: hasOverride ? '#94a3b8' : '#10b981', textDecoration: hasOverride ? 'line-through' : 'none' }}>
-                                ${Math.round(p.precio * (1 + (currentMayorista?.porcentaje_ganancia || 0) / 100)).toLocaleString()}
-                              </td>
-                            )}
-                            {role === 'mayorista' && (
-                              <td>
-                                {!currentMayorista ? (
-                                  <span style={{color: 'red', fontSize: '0.8rem'}}>Requiere login</span>
-                                ) : (
-                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                  <input 
-                                    type="number" 
-                                    placeholder="Ej: 50000"
-                                    defaultValue={overrideVal}
-                                    id={`override-${p.id}`}
-                                    style={{ width: '100px', padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                                  />
-                                  <button 
-                                    className="btn-secondary"
-                                    style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem' }}
-                                    onClick={async () => {
-                                      try {
-                                        setLoading(true);
-                                        const inputVal = (document.getElementById(`override-${p.id}`) as HTMLInputElement).value;
-                                        const currentOverrides = { ...(currentMayorista.ajustes_productos || {}) };
-                                        
-                                        if (!inputVal) {
-                                          delete currentOverrides[p.id];
-                                        } else {
-                                          currentOverrides[p.id] = Number(inputVal);
-                                        }
-                                        
-                                        const { error } = await supabase.from('mayoristas').update({ ajustes_productos: currentOverrides }).eq('id', currentMayorista.id);
-                                        if (error) throw error;
-                                        showToast(!inputVal ? 'Precio especial removido' : 'Precio especial guardado', 'success');
-                                        setMayoristas(mayoristas.map(m => m.id === currentMayorista.id ? { ...m, ajustes_productos: currentOverrides } : m));
-                                      } catch(e: any) {
-                                        showToast(e.message || 'Error al actualizar', 'error');
-                                      } finally {
-                                        setLoading(false);
-                                      }
-                                    }}
-                                  >
-                                    Guardar
-                                  </button>
-                                </div>
-                                )}
-                              </td>
-                            )}
-                          </tr>
+                        <div key={p.id} className="product-card">
+                          <div className="product-card-img">
+                            {p.imagen_url ? <img src={p.imagen_url} alt={p.nombre} /> : <div style={{width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', background:'#f1f5f9'}}><Package size={24} color="#94a3b8" /></div>}
+                          </div>
+                          <div className="product-card-body">
+                            <h4>{p.nombre}</h4>
+                            <p className="p-cat" style={{ fontSize: '0.75rem', color: '#64748b' }}>{p.referencia}</p>
+                            
+                            <div style={{ marginTop: '0.8rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                 <small style={{ color: '#64748b' }}>Detal:</small>
+                                 <strong style={{ color: '#0f172a' }}>${p.precio?.toLocaleString()}</strong>
+                               </div>
+                               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                 <small style={{ color: '#64748b' }}>Mayor:</small>
+                                 <strong>{p.precio_por_mayor ? `${p.precio_por_mayor.toLocaleString()}` : '-'}</strong>
+                               </div>
+                               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                 <small style={{ color: '#64748b' }}>50 Unid:</small>
+                                 <strong>{p.precio_50_unidades ? `${p.precio_50_unidades.toLocaleString()}` : '-'}</strong>
+                               </div>
+                               
+                               {role === 'mayorista' && currentMayorista && (
+                                 <div style={{ borderTop: '1px dashed #cbd5e1', margin: '0.5rem 0 0 0', paddingTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                   <small style={{ color: '#64748b', fontWeight: 600 }}>Tu Precio Final:</small>
+                                   <strong style={{ color: hasOverride ? '#94a3b8' : '#10b981', textDecoration: hasOverride ? 'line-through' : 'none' }}>
+                                     ${Math.round(p.precio * (1 + (currentMayorista?.porcentaje_ganancia || 0) / 100)).toLocaleString()}
+                                   </strong>
+                                 </div>
+                               )}
+                            </div>
+                          </div>
+                          
+                          {role === 'mayorista' && currentMayorista && (
+                            <div className="product-card-actions" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '0.75rem 0.9rem', background: '#fafafa', borderTop: '1px solid #f1f5f9' }}>
+                               <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569' }}>Fijar Precio Especial Manual:</label>
+                               <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                 <input 
+                                   type="number" 
+                                   placeholder="Ej: 50000"
+                                   defaultValue={overrideVal}
+                                   id={`override-${p.id}`}
+                                   style={{ flex: 1, padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.85rem' }}
+                                 />
+                                 <button 
+                                   className="btn-secondary"
+                                   style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem' }}
+                                   onClick={async () => {
+                                     try {
+                                       setLoading(true);
+                                       const inputVal = (document.getElementById(`override-${p.id}`) as HTMLInputElement).value;
+                                       const currentOverrides = { ...(currentMayorista.ajustes_productos || {}) };
+                                       
+                                       if (!inputVal) {
+                                         delete currentOverrides[p.id];
+                                       } else {
+                                         currentOverrides[p.id] = Number(inputVal);
+                                       }
+                                       
+                                       const { error } = await supabase.from('mayoristas').update({ ajustes_productos: currentOverrides }).eq('id', currentMayorista.id);
+                                       if (error) throw error;
+                                       showToast(!inputVal ? 'Precio especial removido' : 'Precio especial guardado', 'success');
+                                       setMayoristas(mayoristas.map(m => m.id === currentMayorista.id ? { ...m, ajustes_productos: currentOverrides } : m));
+                                     } catch(e: any) {
+                                       showToast(e.message || 'Error al actualizar', 'error');
+                                     } finally {
+                                       setLoading(false);
+                                     }
+                                   }}
+                                 >
+                                   Guardar
+                                 </button>
+                               </div>
+                               {hasOverride && (
+                                 <div style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: 600, marginTop: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                    <Check size={12} /> Aplicando precio de: ${Number(overrideVal).toLocaleString()}
+                                 </div>
+                               )}
+                            </div>
+                          )}
+                        </div>
                         );
                       })}
-                    </tbody>
-                  </table>
-                </div>
+                    </div>
               </div>
             </div>
           )}
@@ -8747,6 +8741,10 @@ function SidebarContent({
               <span className="nav-icon"><Home size={14} /></span> Mi Negocio
               {activeTab === 'resumen_asesor' && <span className="active-dot"></span>}
             </button>
+            <button className={`nav-item ${activeTab === 'productos_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('productos_asesor')}>
+              <span className="nav-icon"><Package size={14} /></span> Productos
+              {activeTab === 'productos_asesor' && <span className="active-dot"></span>}
+            </button>
             <button className={`nav-item ${activeTab === 'pedidos' ? 'active' : ''}`} onClick={() => handleSelectTab('pedidos')}>
               <span className="nav-icon"><ShoppingBag size={14} /></span> Pedidos
               {activeTab === 'pedidos' && <span className="active-dot"></span>}
@@ -8769,10 +8767,6 @@ function SidebarContent({
             <button className={`nav-item ${activeTab === 'material_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('material_asesor')}>
               <span className="nav-icon"><Upload size={14} /></span> Material de Venta
               {activeTab === 'material_asesor' && <span className="active-dot"></span>}
-            </button>
-            <button className={`nav-item ${activeTab === 'productos_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('productos_asesor')}>
-              <span className="nav-icon"><Package size={14} /></span> Mis Productos
-              {activeTab === 'productos_asesor' && <span className="active-dot"></span>}
             </button>
             <button className={`nav-item ${activeTab === 'perfil_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('perfil_asesor')}>
               <span className="nav-icon"><Settings size={14} /></span> Mi Perfil
