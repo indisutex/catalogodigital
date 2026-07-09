@@ -22,13 +22,20 @@ export const getEffectivePrice = (producto: Producto, buyerType: BuyerType, mark
   // Si hay ajustes específicos para este producto
   if (ajustesProductos && ajustesProductos[producto.id]) {
     const setting = ajustesProductos[producto.id];
-    if (setting.precio_personalizado !== undefined && setting.precio_personalizado !== null && Number(setting.precio_personalizado) > 0) {
-      return Number(setting.precio_personalizado);
-    }
-    if (setting.porcentaje_personalizado !== undefined && setting.porcentaje_personalizado !== null) {
-      const customMarkup = Number(setting.porcentaje_personalizado);
-      if (customMarkup > 0) {
-        return Math.round(price * (1 + customMarkup / 100));
+    if (setting !== null && typeof setting === 'object') {
+      if (setting.precio_personalizado !== undefined && setting.precio_personalizado !== null && Number(setting.precio_personalizado) > 0) {
+        return Number(setting.precio_personalizado);
+      }
+      if (setting.porcentaje_personalizado !== undefined && setting.porcentaje_personalizado !== null) {
+        const customMarkup = Number(setting.porcentaje_personalizado);
+        if (customMarkup > 0) {
+          return Math.round(price * (1 + customMarkup / 100));
+        }
+      }
+    } else if (typeof setting === 'number' || typeof setting === 'string') {
+      const customPrice = Number(setting);
+      if (customPrice > 0) {
+        return customPrice;
       }
     }
   }

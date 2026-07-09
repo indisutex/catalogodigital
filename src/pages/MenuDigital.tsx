@@ -81,10 +81,16 @@ export default function MenuDigital() {
           .select('id, telefono, porcentaje_ganancia, ajustes_productos')
           .eq('tenant_id', tenant);
 
+        const cleanQuery = phone.replace(/\D/g, '');
+        const normQuery = cleanQuery.length === 12 && cleanQuery.startsWith('57') ? cleanQuery.substring(2) : cleanQuery;
+
         if (asesoresData) {
           const match = asesoresData.find(a => {
-            const phones = (a.telefono || '').split(',').map((p: string) => p.replace(/\D/g, '')).filter(Boolean);
-            return phones.includes(phone);
+            const phones = (a.telefono || '').split(',').map((p: string) => {
+              const clean = p.replace(/\D/g, '');
+              return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
+            }).filter(Boolean);
+            return phones.includes(normQuery);
           });
           if (match) {
             setMarkupPorcentaje(Number((match as any).porcentaje_ganancia) || 0);
@@ -101,8 +107,11 @@ export default function MenuDigital() {
 
         if (mayoristasData) {
           const match = mayoristasData.find(m => {
-            const phones = (m.telefono || '').split(',').map((p: string) => p.replace(/\D/g, '')).filter(Boolean);
-            return phones.includes(phone);
+            const phones = (m.telefono || '').split(',').map((p: string) => {
+              const clean = p.replace(/\D/g, '');
+              return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
+            }).filter(Boolean);
+            return phones.includes(normQuery);
           });
           if (match) {
             setMarkupPorcentaje(Number((match as any).porcentaje_ganancia) || 0);
