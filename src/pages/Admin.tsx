@@ -4307,8 +4307,11 @@ export default function Admin() {
                         <div className="form-field">
                           <label>Video del Banner (Hero - Vertical)</label>
                           <div className="img-input-row" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                            {configuracion.video_hero_url && (
+                            {configuracion.video_hero_url && !configuracion.video_hero_url.toLowerCase().endsWith('.mov') && (
                               <video src={configuracion.video_hero_url} style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover', background: '#000' }} muted playsInline />
+                            )}
+                            {configuracion.video_hero_url && configuracion.video_hero_url.toLowerCase().endsWith('.mov') && (
+                              <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#fef2f2', border: '1px solid #fca5a5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', flexShrink: 0 }}>⚠️</div>
                             )}
                             <input 
                               type="text" 
@@ -4328,13 +4331,20 @@ export default function Admin() {
                                   await supabase.storage.from('archivos').upload(fileName, file);
                                   const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
                                   setConfiguracion({ ...configuracion, video_hero_url: data.publicUrl });
-                                  showToast('Video subido V');
+                                  showToast('Video subido ✓');
                                 } catch { showToast('Error subiendo video', 'error'); }
                                 setLoading(false);
                               }} />
                             </label>
                           </div>
-                          <span style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.25rem' }}>* Sube tu video preferiblemente en formato .mp4 (Los videos en .mov o de iPhone pueden verse en negro en algunos navegadores)</span>
+                          {configuracion.video_hero_url?.toLowerCase().endsWith('.mov') ? (
+                            <div style={{ marginTop: '0.4rem', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '8px', padding: '0.5rem 0.75rem', fontSize: '0.75rem', color: '#b91c1c', lineHeight: 1.6 }}>
+                              ⚠️ <strong>El video está en formato .mov</strong> — Este formato <strong>no funciona en Chrome, Firefox ni Edge</strong> (solo en Safari/iPhone). El banner aparecerá negro para la mayoría de clientes.<br />
+                              👉 <strong>Solución:</strong> Conviértelo gratis en <a href="https://cloudconvert.com/mov-to-mp4" target="_blank" rel="noreferrer" style={{ color: '#dc2626', fontWeight: 700 }}>cloudconvert.com</a> y vuelve a subirlo aquí como .mp4
+                            </div>
+                          ) : (
+                            <span style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.25rem' }}>* Sube tu video en formato .mp4 para que funcione en todos los dispositivos</span>
+                          )}
                         </div>
 
                         {/* Descripción Hero */}

@@ -48,6 +48,28 @@ export default function MenuDigital() {
   const [heroMuted, setHeroMuted] = useState(true);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
 
+  // Auto-unmute on first user interaction (browsers block autoplay with sound)
+  useEffect(() => {
+    const unmuteOnInteraction = () => {
+      if (heroVideoRef.current && heroVideoRef.current.muted) {
+        heroVideoRef.current.muted = false;
+        setHeroMuted(false);
+      }
+      // Remove listeners after first interaction
+      document.removeEventListener('click', unmuteOnInteraction);
+      document.removeEventListener('touchstart', unmuteOnInteraction);
+      document.removeEventListener('keydown', unmuteOnInteraction);
+    };
+    document.addEventListener('click', unmuteOnInteraction);
+    document.addEventListener('touchstart', unmuteOnInteraction);
+    document.addEventListener('keydown', unmuteOnInteraction);
+    return () => {
+      document.removeEventListener('click', unmuteOnInteraction);
+      document.removeEventListener('touchstart', unmuteOnInteraction);
+      document.removeEventListener('keydown', unmuteOnInteraction);
+    };
+  }, []);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const wsParam = params.get('ws');

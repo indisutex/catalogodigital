@@ -891,7 +891,7 @@
 .menu-app-header.has-video .hero-background-video {
   position: relative;
   width: 100%;
-  height: clamp(380px, 130vw, 520px); /* Shorter than before, scales with screen width for portrait videos */
+  height: clamp(440px, 145vw, 640px); /* Taller banner, scales with screen width for portrait videos */
   object-fit: cover;
   object-position: 50% 20%;
   display: block;
