@@ -80,7 +80,11 @@ export default function Admin() {
   const [pin, setPin] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>(() => {
     const defaultTab = (localStorage.getItem(`admin_role_${getTenantId()}`) === 'asesor') ? 'pedidos' : 'productos';
-    return (localStorage.getItem('admin_active_tab') as TabType) || defaultTab;
+    const saved = localStorage.getItem('admin_active_tab') as string;
+    if (saved === 'perfil_admin' || saved === 'perfil_admin_tab') return 'dashboard';
+    const allowedTabs: string[] = ['dashboard', 'productos', 'categorias', 'pedidos', 'clientes', 'asesores', 'pos', 'siigo', 'config', 'perfil_asesor'];
+    if (saved && !allowedTabs.includes(saved)) return defaultTab;
+    return (saved as TabType) || defaultTab;
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -1379,7 +1383,10 @@ export default function Admin() {
     if (!isAuthenticated) {
       supabase.from('configuracion').select('tenant_id, nombre_negocio, logo_url')
         .then(({ data, error }) => {
-          if (data && !error) setDbCompanies(data);
+          if (data && !error) {
+            setDbCompanies(data);
+            setImageErrors({});
+          }
         });
     }
   }, [isAuthenticated]);
@@ -3476,15 +3483,6 @@ export default function Admin() {
                                     ) : (
                                       a.nombre
                                     )}
-                                    {isEditing && (
-                                      <input
-                                        type="url"
-                                        placeholder="URL Foto (Opcional)"
-                                        value={editingAsesorFotoUrl}
-                                        onChange={e => setEditingAsesorFotoUrl(e.target.value)}
-                                        style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.75rem', width: '130px' }}
-                                      />
-                                    )}
                                   </div>
                                 </div>
                               </td>
@@ -3654,14 +3652,14 @@ export default function Admin() {
             <>
                {/* Fila de Métricas Principales de Ventas */}
                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
-                 <div className="metric-card" style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', position: 'relative', overflow: 'hidden' }}>
+                 <div className="metric-card" style={{ background: 'linear-gradient(135deg, var(--primary-color, #6366f1), rgba(var(--primary-rgb, 99, 102, 241), 0.75))', color: 'white', border: 'none', position: 'relative', overflow: 'hidden' }}>
                    <div style={{ position: 'absolute', right: '-10px', top: '-10px', fontSize: '5rem', opacity: 0.15 }}>💰</div>
                    <div className="mc-label" style={{ color: 'rgba(255,255,255,0.85)' }}>Total Ventas (Comprobado)</div>
                    <div className="mc-value" style={{ fontSize: '1.8rem', color: 'white' }}>${stats.totalVentasVal.toLocaleString()} COP</div>
                    <div className="mc-sub" style={{ color: 'rgba(255,255,255,0.75)' }}>Únicamente pagos verificados</div>
                  </div>
 
-                 <div className="metric-card" style={{ background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)', color: 'white', border: 'none', position: 'relative', overflow: 'hidden' }}>
+                 <div className="metric-card" style={{ background: 'linear-gradient(135deg, rgba(var(--primary-rgb, 99, 102, 241), 0.85), rgba(var(--primary-rgb, 99, 102, 241), 0.6))', color: 'white', border: 'none', position: 'relative', overflow: 'hidden' }}>
                    <style>{`
                      .party-particles {
                        position: absolute;
@@ -3719,14 +3717,14 @@ export default function Admin() {
                    </div>
                  </div>
 
-                 <div className="metric-card" style={{ background: 'linear-gradient(135deg, #ef4444, #dc2626)', color: 'white', border: 'none', position: 'relative', overflow: 'hidden' }}>
+                 <div className="metric-card" style={{ background: 'linear-gradient(135deg, rgba(var(--primary-rgb, 99, 102, 241), 0.7), rgba(var(--primary-rgb, 99, 102, 241), 0.45))', color: 'white', border: 'none', position: 'relative', overflow: 'hidden' }}>
                    <div style={{ position: 'absolute', right: '-10px', top: '-10px', fontSize: '5rem', opacity: 0.15 }}>⏳</div>
                    <div className="mc-label" style={{ color: 'rgba(255,255,255,0.85)' }}>Pedidos por Atender / Pendientes</div>
                    <div className="mc-value" style={{ fontSize: '2rem', color: 'white' }}>{stats.noResueltosCount}</div>
                    <div className="mc-sub" style={{ color: 'rgba(255,255,255,0.75)' }}>Pendientes de pago o revisión</div>
                  </div>
 
-                 <div className="metric-card" style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', border: 'none', position: 'relative', overflow: 'hidden' }}>
+                 <div className="metric-card" style={{ background: 'linear-gradient(135deg, rgba(var(--primary-rgb, 99, 102, 241), 0.55), rgba(var(--primary-rgb, 99, 102, 241), 0.3))', color: 'white', border: 'none', position: 'relative', overflow: 'hidden' }}>
                    <div style={{ position: 'absolute', right: '-10px', top: '-10px', fontSize: '5rem', opacity: 0.15 }}>📦</div>
                    <div className="mc-label" style={{ color: 'rgba(255,255,255,0.85)' }}>Total Productos</div>
                    <div className="mc-value" style={{ fontSize: '2rem', color: 'white' }}>{productos.length}</div>

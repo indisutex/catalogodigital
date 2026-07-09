@@ -255,14 +255,17 @@ body {
 }
 
 .nav-item:hover {
-  background: #f1f5f9;
+  background: #f8fafc;
   color: #0f172a;
+  transform: translateX(4px);
 }
 
 .nav-item.active {
-  background: rgba(var(--primary-rgb, 99, 102, 241), 0.08);
+  background: linear-gradient(135deg, rgba(var(--primary-rgb, 99, 102, 241), 0.08) 0%, rgba(var(--primary-rgb, 99, 102, 241), 0.02) 100%);
   color: var(--primary-color, #6366f1);
   font-weight: 700;
+  border-left: 3px solid var(--primary-color, #6366f1);
+  border-radius: 0 12px 12px 0;
 }
 
 .nav-item.active .nav-icon {
@@ -273,7 +276,7 @@ body {
   color: #94a3b8;
   display: flex;
   align-items: center;
-  transition: color 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .active-dot {
@@ -560,21 +563,21 @@ body {
 }
 
 .metric-card {
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: linear-gradient(145deg, #ffffff 0%, #fdfdfd 100%);
+  border: 1px solid rgba(226, 232, 240, 0.8);
   border-radius: 20px;
   padding: 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  transition: all 0.2s;
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.01);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 30px -10px rgba(0,0,0,0.04), 0 1px 3px rgba(0,0,0,0.02);
 }
 
 .metric-card:hover { 
-  border-color: #cbd5e1; 
-  transform: translateY(-2px);
-  box-shadow: 0 10px 15px -3px rgba(0,0,0,0.03); 
+  border-color: rgba(var(--primary-rgb, 99, 102, 241), 0.25); 
+  transform: translateY(-4px);
+  box-shadow: 0 20px 40px -15px rgba(var(--primary-rgb, 99, 102, 241), 0.12), 0 2px 8px rgba(0,0,0,0.04); 
 }
 
 .metric-card .mc-label {
@@ -777,28 +780,29 @@ body {
 
 .admin-table th {
   background: #f8fafc;
-  color: #475569;
-  font-size: 0.74rem;
+  color: #64748b;
+  font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
+  letter-spacing: 1px;
   font-weight: 800;
-  padding: 1rem 1.25rem;
-  border-bottom: 2px solid #e2e8f0;
+  padding: 1.1rem 1.5rem;
+  border-bottom: 2px solid #f1f5f9;
 }
 
 .admin-table td {
-  padding: 1.1rem 1.25rem;
-  border-bottom: 1px solid #e2e8f0;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid #f1f5f9;
   font-size: 0.88rem;
   color: #334155;
 }
 
 .admin-table tbody tr {
-  transition: all 0.15s ease;
+  transition: all 0.2s ease;
 }
 
 .admin-table tbody tr:hover {
   background: #f8fafc;
+  cursor: pointer;
 }
 
 /* Toast */
@@ -1169,18 +1173,18 @@ body {
 
 .kanban-card {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid rgba(226, 232, 240, 0.8);
   border-radius: 16px;
   padding: 1.25rem;
-  transition: all 0.25s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.01);
 }
 
 .kanban-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
-  border-color: #cbd5e1;
+  transform: translateY(-4px);
+  box-shadow: 0 16px 24px -8px rgba(0, 0, 0, 0.06), 0 4px 8px rgba(0, 0, 0, 0.02);
+  border-color: rgba(var(--primary-rgb, 99, 102, 241), 0.2);
 }
 
 .kanban-card h4 {
