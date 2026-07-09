@@ -8564,7 +8564,7 @@ function SidebarContent({
               {activeTab === 'resumen_asesor' && <span className="active-dot"></span>}
             </button>
             <button className={`nav-item ${activeTab === 'pedidos' ? 'active' : ''}`} onClick={() => handleSelectTab('pedidos')}>
-              <span className="nav-icon"><ShoppingBag size={14} /></span> Mis Clientes
+              <span className="nav-icon"><ShoppingBag size={14} /></span> Pedidos
               {activeTab === 'pedidos' && <span className="active-dot"></span>}
             </button>
             <button
