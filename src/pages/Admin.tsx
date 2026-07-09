@@ -4313,7 +4313,12 @@ export default function Admin() {
                 </p>
               </div>
               <div className="panel-body">
-                {role === 'mayorista' && currentMayorista && (
+                {role === 'mayorista' && (
+                  !currentMayorista ? (
+                    <div style={{ marginBottom: '2rem', padding: '1.5rem', background: '#fee2e2', borderRadius: '12px', color: '#991b1b' }}>
+                      <strong>Error de Sesión:</strong> No se pudo cargar tu perfil de mayorista. Por favor, cierra sesión e ingresa nuevamente.
+                    </div>
+                  ) : (
                   <div style={{ marginBottom: '2rem', padding: '1.5rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                     <h4 style={{ margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#0f172a' }}>Ganancia Global</h4>
                     <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
@@ -4349,6 +4354,7 @@ export default function Admin() {
                       </button>
                     </div>
                   </div>
+                )
                 )}
 
                 <div className="data-table-container">
@@ -4403,8 +4409,11 @@ export default function Admin() {
                                 ${Math.round(p.precio * (1 + (currentMayorista?.porcentaje_ganancia || 0) / 100)).toLocaleString()}
                               </td>
                             )}
-                            {role === 'mayorista' && currentMayorista && (
+                            {role === 'mayorista' && (
                               <td>
+                                {!currentMayorista ? (
+                                  <span style={{color: 'red', fontSize: '0.8rem'}}>Requiere login</span>
+                                ) : (
                                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                                   <input 
                                     type="number" 
@@ -4442,6 +4451,7 @@ export default function Admin() {
                                     Guardar
                                   </button>
                                 </div>
+                                )}
                               </td>
                             )}
                           </tr>
