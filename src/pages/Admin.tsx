@@ -4,7 +4,7 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2 } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const SECRET_PIN = '0000';
@@ -63,7 +63,7 @@ const emptyProduct: ProductFormData = {
   stock: 0
 };
 
-type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor' | 'material_apoyo' | 'material_asesor' | 'productos_asesor' | 'productos_mayorista';
+type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor' | 'material_apoyo' | 'material_asesor' | 'productos_asesor' | 'productos_mayorista' | 'ranking_mayorista';
 
 type Toast = { message: string; type: 'success' | 'error' } | null;
 
@@ -107,7 +107,7 @@ export default function Admin() {
     const defaultTab = (userRole === 'asesor') ? 'pedidos' : (userRole === 'mayorista' ? 'resumen_asesor' : 'productos');
     const saved = localStorage.getItem('admin_active_tab') as string;
     if (saved === 'perfil_admin' || saved === 'perfil_admin_tab') return 'dashboard';
-    const allowedTabs: string[] = ['dashboard', 'productos', 'categorias', 'pedidos', 'clientes', 'asesores', 'mayoristas', 'pos', 'siigo', 'config', 'perfil_asesor', 'resumen_asesor', 'notificaciones_asesor', 'material_apoyo', 'material_asesor', 'productos_asesor', 'productos_mayorista'];
+    const allowedTabs: string[] = ['dashboard', 'productos', 'categorias', 'pedidos', 'clientes', 'asesores', 'mayoristas', 'pos', 'siigo', 'config', 'perfil_asesor', 'resumen_asesor', 'notificaciones_asesor', 'material_apoyo', 'material_asesor', 'productos_asesor', 'productos_mayorista', 'ranking_mayorista'];
     if (saved && !allowedTabs.includes(saved)) return defaultTab as TabType;
     return (saved as TabType) || (defaultTab as TabType);
   });
@@ -2503,7 +2503,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={currentAsesor} activeNotificationsCount={activeNotificationsCount} />
+          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor} activeNotificationsCount={activeNotificationsCount} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -2636,7 +2636,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={currentAsesor} activeNotificationsCount={activeNotificationsCount} />
+          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor} activeNotificationsCount={activeNotificationsCount} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -2722,7 +2722,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={currentAsesor} activeNotificationsCount={activeNotificationsCount} />
+          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor} activeNotificationsCount={activeNotificationsCount} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -2786,7 +2786,7 @@ export default function Admin() {
           handleLogout={handleLogout} 
           onClose={() => setIsMobileMenuOpen(false)} 
           role={role}
-          currentAsesor={currentAsesor}
+          currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor}
           activeNotificationsCount={activeNotificationsCount}
         />
       </aside>
@@ -3708,73 +3708,6 @@ export default function Admin() {
                     </div>
                   </div>
 
-                  {/* 2-Column Grid Layout for Ranking and Consolidated Products */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
-                    {/* 🏆 RANKING GAMIFICADO DE MAYORISTAS */}
-                  {(() => {
-                    const mPhones2 = (currentAsesorData.telefono || '').split(',').map((ph: string) => ph.trim().replace(/\D/g, '')).filter(Boolean);
-                    const allMayoristas = mayoristas;
-                    const rankingData = allMayoristas.map(m => {
-                      const mPs = (m.telefono || '').split(',').map((ph: string) => ph.replace(/\D/g, '')).filter(Boolean);
-                      const total = pedidos
-                        .filter(p => p.estado === 'completado' && mPs.includes((p.linea_whatsapp || '').replace(/\D/g, '')))
-                        .reduce((s, p) => s + (p.total || 0), 0);
-                      return { id: m.id, nombre: m.nombre, total, foto_url: m.foto_url, isMe: mPs.some(ph => mPhones2.includes(ph)) };
-                    }).sort((a, b) => b.total - a.total);
-                    const myPos = rankingData.findIndex(r => r.isMe);
-                    const myData = rankingData[myPos];
-                    const leader = rankingData[0];
-                    const gapToLeader = myData && leader && !myData.isMe ? leader.total - myData.total : 0;
-                    const medals = ['🥇','🥈','🥉'];
-                    return (
-                      <div className="admin-panel" style={{ borderRadius: '20px', padding: '1.5rem 1.75rem', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', color: 'white', border: 'none' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
-                          <span style={{ fontSize: '1.8rem' }}>🏆</span>
-                          <div>
-                            <h3 style={{ margin: 0, fontWeight: 800, fontSize: '1.1rem', color: 'white' }}>Ranking de Mayoristas</h3>
-                            <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8' }}>Compras completadas — actualizado en tiempo real</p>
-                          </div>
-                          {myPos >= 0 && (
-                            <div style={{ marginLeft: 'auto', textAlign: 'center', background: 'rgba(255,255,255,0.1)', borderRadius: '12px', padding: '0.5rem 1rem' }}>
-                              <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#fbbf24' }}>{medals[myPos] || `#${myPos + 1}`}</div>
-                              <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Tu posición</div>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Mi barra de progreso vs líder */}
-                        {myData && gapToLeader > 0 && (
-                          <div style={{ background: 'rgba(255,255,255,0.07)', borderRadius: '10px', padding: '0.9rem 1rem', marginBottom: '1.25rem' }}>
-                            <p style={{ margin: '0 0 0.4rem 0', fontSize: '0.8rem', color: '#94a3b8' }}>Para ser #1 te faltan</p>
-                            <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#fbbf24' }}>${gapToLeader.toLocaleString()} COP</p>
-                            <div style={{ marginTop: '0.5rem', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '9999px', overflow: 'hidden' }}>
-                              <div style={{ height: '100%', width: `${leader.total > 0 ? Math.min(100, (myData.total / leader.total) * 100) : 0}%`, background: 'linear-gradient(90deg, #fbbf24, #f59e0b)', borderRadius: '9999px', transition: 'width 1s ease' }} />
-                            </div>
-                            <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.72rem', color: '#64748b' }}>{leader.total > 0 ? Math.round((myData.total / leader.total) * 100) : 0}% del líder ({leader.nombre})</p>
-                          </div>
-                        )}
-                        {myData && myPos === 0 && (
-                          <div style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.5)', borderRadius: '10px', padding: '0.9rem 1rem', marginBottom: '1.25rem', textAlign: 'center' }}>
-                            <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: '#fbbf24' }}>🥇 ¡Eres el #1 este período! Mantén el liderazgo 🔥</p>
-                          </div>
-                        )}
-
-                        {/* Lista top 5 */}
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                          {rankingData.slice(0, 5).map((r, idx) => (
-                            <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.65rem 0.9rem', borderRadius: '10px', background: r.isMe ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)', border: r.isMe ? '1px solid rgba(99,102,241,0.5)' : '1px solid transparent' }}>
-                              <span style={{ fontSize: '1.1rem', minWidth: '28px', textAlign: 'center' }}>{medals[idx] || `#${idx + 1}`}</span>
-                              {r.foto_url ? <img src={r.foto_url} alt={r.nombre} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} /> : <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#334155', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>👤</div>}
-                              <span style={{ fontWeight: r.isMe ? 800 : 600, color: r.isMe ? '#a5b4fc' : 'white', fontSize: '0.88rem', flex: 1 }}>{r.nombre}{r.isMe ? ' (Tú)' : ''}</span>
-                              <span style={{ fontWeight: 700, color: '#94a3b8', fontSize: '0.82rem' }}>${r.total.toLocaleString()}</span>
-                            </div>
-                          ))}
-                          {rankingData.length === 0 && <p style={{ color: '#64748b', fontSize: '0.85rem', textAlign: 'center', margin: '1rem 0' }}>Aún no hay datos de compras registradas.</p>}
-                        </div>
-                      </div>
-                    );
-                  })()}
-
                   {/* Consolidator panel */}
                   <div className="admin-panel">
                     <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
@@ -3847,7 +3780,6 @@ export default function Admin() {
                         </div>
                       )}
                     </div>
-                  </div>
                   </div>
                 </div>
               );
@@ -4313,7 +4245,7 @@ export default function Admin() {
                 </p>
               </div>
               <div className="panel-body">
-                <div className="products-grid">
+                <div className="products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.5rem', width: '100%' }}>
                   {productos.map(p => (
                     <div key={p.id} className="product-card">
                       <div className="product-card-img">
@@ -4401,7 +4333,7 @@ export default function Admin() {
                 )
                 )}
 
-                <div className="products-grid">
+                <div className="products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.5rem', width: '100%' }}>
                       {productos.map(p => {
                         let hasOverride = false;
                         let overrideVal = '';
@@ -4501,6 +4433,167 @@ export default function Admin() {
               </div>
             </div>
           )}
+
+
+
+          {/* ── RANKING MAYORISTA TAB ── */}
+          {activeTab === 'ranking_mayorista' && (role === 'asesor' || role === 'mayorista') && (() => {
+            const currentAsesorData = role === 'mayorista'
+              ? mayoristas.find(m => m.telefono === loggedAsesorPhone) || asesores.find(a => a.telefono === loggedAsesorPhone)
+              : asesores.find(a => a.telefono === loggedAsesorPhone);
+            if (!currentAsesorData) return <p style={{ color: '#64748b', padding: '2rem', textAlign: 'center' }}>Cargando ranking...</p>;
+
+            const mPhones2 = (currentAsesorData.telefono || '').split(',').map((ph: string) => ph.trim().replace(/\D/g, '')).filter(Boolean);
+            const allMayoristas = mayoristas;
+            const rankingData = allMayoristas.map(m => {
+              const mPs = (m.telefono || '').split(',').map((ph: string) => ph.replace(/\D/g, '')).filter(Boolean);
+              const total = pedidos
+                .filter(p => p.estado === 'completado' && mPs.includes((p.linea_whatsapp || '').replace(/\D/g, '')))
+                .reduce((s, p) => s + (p.total || 0), 0);
+              return { id: m.id, nombre: m.nombre, total, foto_url: m.foto_url, isMe: mPs.some(ph => mPhones2.includes(ph)) };
+            }).sort((a, b) => b.total - a.total);
+
+            const myPos = rankingData.findIndex(r => r.isMe);
+            const myData = rankingData[myPos];
+            const myTotal = myData ? myData.total : 0;
+            const myPoints = Math.round(myTotal / 1000);
+            
+            const leader = rankingData[0];
+            const gapToLeader = myData && leader && !myData.isMe ? leader.total - myData.total : 0;
+            const medals = ['🥇','🥈','🥉'];
+
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', textAlign: 'left' }}>
+                {/* Cabecera del Ranking */}
+                <div className="admin-panel" style={{ borderRadius: '20px', padding: '1.5rem 1.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                    <div style={{ background: 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)', width: '56px', height: '56px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', boxShadow: '0 8px 16px rgba(217, 119, 6, 0.2)' }}>
+                      🏆
+                    </div>
+                    <div>
+                      <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, color: '#0f172a' }}>Ranking de Mayoristas</h2>
+                      <p style={{ margin: '0.15rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Gamificación y puntaje en base a compras completadas</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Métricas de Gamificación del Usuario */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.25rem' }}>
+                  {/* Card 1: Puntos */}
+                  <div className="metric-card" style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)', color: 'white', border: 'none' }}>
+                    <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.85, fontWeight: 700 }}>Tus Puntos de Crecimiento</span>
+                    <h2 style={{ margin: '0.2rem 0', fontSize: '2rem', fontWeight: 800, color: 'white', fontFamily: 'Outfit' }}>
+                      {myPoints.toLocaleString()} <span style={{ fontSize: '1rem', fontWeight: 600 }}>pts</span>
+                    </h2>
+                    <span style={{ fontSize: '0.72rem', opacity: 0.8 }}>1 punto por cada $1,000 COP en compras completadas</span>
+                  </div>
+
+                  {/* Card 2: Posición */}
+                  <div className="metric-card" style={{ background: 'linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)', color: 'white', border: 'none' }}>
+                    <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.85, fontWeight: 700 }}>Tu Posición Global</span>
+                    <h2 style={{ margin: '0.2rem 0', fontSize: '2rem', fontWeight: 800, color: 'white', fontFamily: 'Outfit' }}>
+                      {myPos >= 0 ? `${medals[myPos] || ''} #${myPos + 1}` : 'Sin posición'}
+                    </h2>
+                    <span style={{ fontSize: '0.72rem', opacity: 0.8 }}>De {rankingData.length} mayoristas registrados</span>
+                  </div>
+
+                  {/* Card 3: Compras */}
+                  <div className="metric-card" style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white', border: 'none' }}>
+                    <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.85, fontWeight: 700 }}>Total Compras</span>
+                    <h2 style={{ margin: '0.2rem 0', fontSize: '1.8rem', fontWeight: 800, color: 'white', fontFamily: 'Outfit' }}>
+                      ${myTotal.toLocaleString()} <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>COP</span>
+                    </h2>
+                    <span style={{ fontSize: '0.72rem', opacity: 0.8 }}>Solo pedidos completados con éxito</span>
+                  </div>
+                </div>
+
+                {/* Contenido Principal: Leaderboard y Gamificación */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
+                  
+                  {/* Columna Izquierda: Leaderboard completo */}
+                  <div className="admin-panel" style={{ borderRadius: '20px', padding: '1.5rem 1.75rem' }}>
+                    <h3 style={{ margin: '0 0 1.25rem 0', fontWeight: 800, fontSize: '1.1rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      🏆 Tabla de Clasificación
+                    </h3>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {rankingData.map((r, idx) => (
+                        <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderRadius: '12px', background: r.isMe ? 'rgba(99,102,241,0.1)' : 'rgba(248,250,252,0.8)', border: r.isMe ? '1px solid rgba(99,102,241,0.3)' : '1px solid #e2e8f0' }}>
+                          <span style={{ fontSize: '1.2rem', minWidth: '32px', fontWeight: 800, textAlign: 'center', color: idx < 3 ? '#d97706' : '#64748b' }}>
+                            {medals[idx] || `#${idx + 1}`}
+                          </span>
+                          {r.foto_url ? (
+                            <img src={r.foto_url} alt={r.nombre} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }} />
+                          ) : (
+                            <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', color: '#475569', fontWeight: 700 }}>
+                              {r.nombre.charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <span style={{ fontWeight: r.isMe ? 800 : 600, color: r.isMe ? '#4f46e5' : '#0f172a', fontSize: '0.9rem', flex: 1 }}>
+                            {r.nombre}{r.isMe ? ' (Tú)' : ''}
+                          </span>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                            <span style={{ fontWeight: 800, color: '#0f172a', fontSize: '0.9rem' }}>
+                              {Math.round(r.total / 1000).toLocaleString()} pts
+                            </span>
+                            <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                              ${r.total.toLocaleString()} COP
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                      {rankingData.length === 0 && (
+                        <p style={{ color: '#64748b', fontSize: '0.85rem', textAlign: 'center', margin: '1rem 0' }}>
+                          Aún no hay datos de compras registradas.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Columna Derecha: Estado de Motivación y Reglas */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    {/* Tarjeta de Progreso y Motivación */}
+                    <div className="admin-panel" style={{ borderRadius: '20px', padding: '1.5rem 1.75rem', background: '#fafafa', border: '1px solid #e2e8f0' }}>
+                      <h3 style={{ margin: '0 0 1rem 0', fontWeight: 800, fontSize: '1.1rem', color: '#0f172a' }}>🎯 Progreso de Medalla</h3>
+                      
+                      {myData && gapToLeader > 0 && (
+                        <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          <p style={{ margin: 0, fontSize: '0.82rem', color: '#64748b' }}>Para alcanzar al líder del ranking te faltan:</p>
+                          <p style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, color: '#4f46e5' }}>
+                            ${gapToLeader.toLocaleString()} COP
+                          </p>
+                          <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '9999px', overflow: 'hidden', marginTop: '0.5rem' }}>
+                            <div style={{ height: '100%', width: `${leader.total > 0 ? Math.min(100, (myData.total / leader.total) * 100) : 0}%`, background: 'linear-gradient(90deg, #4f46e5, #0ea5e9)', borderRadius: '9999px', transition: 'width 1s ease' }} />
+                          </div>
+                          <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.74rem', color: '#475569', fontWeight: 600 }}>
+                            {leader.total > 0 ? Math.round((myData.total / leader.total) * 100) : 0}% del puntaje de {leader.nombre}
+                          </p>
+                        </div>
+                      )}
+
+                      {myData && myPos === 0 && (
+                        <div style={{ background: '#dcfce7', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '1rem', textAlign: 'center' }}>
+                          <p style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#15803d' }}>👑 ¡Eres el Líder Actual!</p>
+                          <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', color: '#166534' }}>
+                            Has alcanzado la medalla de oro. Sigue subiendo stock y apoyando a tus clientes para mantener la corona.
+                          </p>
+                        </div>
+                      )}
+
+                      <div style={{ marginTop: '1.25rem' }}>
+                        <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.88rem', color: '#334155', fontWeight: 700 }}>💡 ¿Cómo sumar más puntos?</h4>
+                        <ul style={{ margin: 0, paddingLeft: '1.25rem', fontSize: '0.82rem', color: '#475569', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                          <li><strong>Comparte tu catálogo:</strong> Envía tu link a más clientes para aumentar tus pedidos.</li>
+                          <li><strong>Cierra compras:</strong> Solo las compras que pases a estado <strong>"completado"</strong> en el panel suman puntos al ranking.</li>
+                          <li><strong>Sube stock de alta demanda:</strong> Revisa el panel de apoyo y consolidador para saber qué productos prefieren tus clientes.</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                  
+                </div>
+              </div>
+            );
+          })()}
 
 
 
@@ -8787,7 +8880,7 @@ function SidebarContent({
               <span className="nav-icon"><Home size={14} /></span> Mi Negocio
               {activeTab === 'resumen_asesor' && <span className="active-dot"></span>}
             </button>
-            <button className={`nav-item ${activeTab === 'productos_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('productos_mayorista')}>
+            <button className={`nav-item ${activeTab === 'productos_mayorista' ? 'active' : ''}`} onClick={() => handleSelectTab('productos_mayorista')}>
               <span className="nav-icon"><Package size={14} /></span> Productos
               {activeTab === 'productos_mayorista' && <span className="active-dot"></span>}
             </button>
@@ -8809,6 +8902,10 @@ function SidebarContent({
                 </span>
               )}
               {activeTab === 'notificaciones_asesor' && activeNotificationsCount === 0 && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'ranking_mayorista' ? 'active' : ''}`} onClick={() => handleSelectTab('ranking_mayorista')}>
+              <span className="nav-icon"><Trophy size={14} /></span> Ranking
+              {activeTab === 'ranking_mayorista' && <span className="active-dot"></span>}
             </button>
             <button className={`nav-item ${activeTab === 'material_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('material_asesor')}>
               <span className="nav-icon"><Upload size={14} /></span> Material de Venta
