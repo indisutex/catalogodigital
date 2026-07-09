@@ -4307,7 +4307,7 @@ export default function Admin() {
           {activeTab === 'productos_asesor' && (
             <div className="admin-panel">
               <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
-                <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Package size={18} /> {role === 'mayorista' ? 'Mis Precios y Productos' : 'Catálogo de Productos'}</h3>
+                <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Package size={18} /> Productos</h3>
                 <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>
                   {role === 'mayorista' ? 'Configura tu porcentaje de ganancia general o precios especiales por producto.' : 'Visualiza los productos disponibles en el catálogo de la empresa.'}
                 </p>
