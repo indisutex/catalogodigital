@@ -1132,8 +1132,21 @@ export default function Admin() {
     if (orderFilterDate) {
       temp = temp.filter(l => l.created_at.startsWith(orderFilterDate));
     }
+    if (role === 'asesor' && loggedAsesorPhone) {
+      temp = temp.filter(l => {
+        const leadPhone = l.linea_whatsapp?.replace(/\D/g, '');
+        const advisorPhones = loggedAsesorPhone.split(',').map(phone => phone.replace(/\D/g, '')).filter(Boolean);
+        return leadPhone && advisorPhones.includes(leadPhone);
+      });
+    } else if (orderFilterAsesor !== 'todos') {
+      temp = temp.filter(l => {
+        const leadPhone = l.linea_whatsapp?.replace(/\D/g, '');
+        const filterPhones = orderFilterAsesor.split(',').map(phone => phone.replace(/\D/g, '')).filter(Boolean);
+        return leadPhone && filterPhones.includes(leadPhone);
+      });
+    }
     return temp;
-  }, [leads, orderSearchQuery, orderFilterDate]);
+  }, [leads, orderSearchQuery, orderFilterDate, role, loggedAsesorPhone, orderFilterAsesor]);
 
   const interesadosFiltrados = useMemo(() => {
     return filteredPedidos.filter(p => p.estado === 'pendiente' || p.estado === 'atendido' || !p.estado);
@@ -1483,7 +1496,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'asesor' ? asesores.find(a => a.telefono === loggedAsesorPhone) : null} />
+          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'asesor' ? asesores.find(a => a.id === localStorage.getItem(`admin_asesor_id_${getTenantId()}`)) : null} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -1616,7 +1629,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'asesor' ? asesores.find(a => a.telefono === loggedAsesorPhone) : null} />
+          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'asesor' ? asesores.find(a => a.id === localStorage.getItem(`admin_asesor_id_${getTenantId()}`)) : null} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -1702,7 +1715,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'asesor' ? asesores.find(a => a.telefono === loggedAsesorPhone) : null} />
+          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'asesor' ? asesores.find(a => a.id === localStorage.getItem(`admin_asesor_id_${getTenantId()}`)) : null} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -1765,7 +1778,7 @@ export default function Admin() {
           handleLogout={handleLogout} 
           onClose={() => setIsMobileMenuOpen(false)} 
           role={role}
-          currentAsesor={role === 'asesor' ? asesores.find(a => a.telefono === loggedAsesorPhone) : null}
+          currentAsesor={role === 'asesor' ? asesores.find(a => a.id === localStorage.getItem(`admin_asesor_id_${getTenantId()}`)) : null}
         />
       </aside>
 
@@ -3235,7 +3248,7 @@ export default function Admin() {
                   <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Crea un enlace del catálogo personalizado para que las comisiones y chats lleguen a este asesor</p>
                 </div>
                 <div className="panel-body">
-                  <form onSubmit={handleCrearAsesor} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', alignItems: 'end' }}>
+                  <form onSubmit={handleCrearAsesor} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', alignItems: 'start' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                       <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Nombre del Asesor</label>
                       <input
@@ -3255,7 +3268,7 @@ export default function Admin() {
                             <input
                               type="text"
                               required
-                              placeholder="Ej: 573123456789"
+                              placeholder="Ej: 3123456789"
                               value={tel}
                               onChange={e => {
                                 const newTels = [...nuevoAsesorTelefonos];
@@ -3287,16 +3300,6 @@ export default function Admin() {
                       </button>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>URL de Foto (Opcional)</label>
-                      <input
-                        type="url"
-                        placeholder="https://..."
-                        value={nuevoAsesorFotoUrl}
-                        onChange={e => setNuevoAsesorFotoUrl(e.target.value)}
-                        style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                       <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>PIN de Acceso (4 dígitos)</label>
                       <input
                         type="text"
@@ -3308,14 +3311,17 @@ export default function Admin() {
                         style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }}
                       />
                     </div>
-                    <button
-                      type="submit"
-                      className="btn-primary"
-                      disabled={loading}
-                      style={{ padding: '0.65rem', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontWeight: 700 }}
-                    >
-                      <Plus size={16} /> Registrar Asesor
-                    </button>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'transparent', userSelect: 'none' }}>Spacer</div>
+                      <button
+                        type="submit"
+                        className="btn-primary"
+                        disabled={loading}
+                        style={{ padding: '0.62rem', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontWeight: 700, height: '43px' }}
+                      >
+                        <Plus size={16} /> Registrar Asesor
+                      </button>
+                    </div>
                   </form>
                 </div>
               </div>
@@ -3386,9 +3392,9 @@ export default function Admin() {
                               <td style={{ padding: '1rem', fontWeight: 700, color: '#0f172a' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                                   {a.foto_url ? (
-                                    <img src={a.foto_url} alt={a.nombre} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
+                                    <img src={a.foto_url} alt={a.nombre} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '1px solid #e2e8f0' }} />
                                   ) : (
-                                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', color: '#64748b' }}>
+                                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 'bold', color: '#64748b' }}>
                                       {a.nombre.charAt(0).toUpperCase()}
                                     </div>
                                   )}
@@ -3428,7 +3434,7 @@ export default function Admin() {
                                             newTels[idx] = e.target.value;
                                             setEditingAsesorTelefonos(newTels);
                                           }}
-                                          placeholder="Ej: 57312"
+                                          placeholder="Ej: 3123456789"
                                           style={{ padding: '0.25rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', width: '110px' }}
                                         />
                                         {editingAsesorTelefonos.length > 1 && (
@@ -3608,17 +3614,31 @@ export default function Admin() {
                        50% { transform: rotate(180deg) scale(1.2); }
                        100% { transform: rotate(360deg) scale(1); }
                      }
+                     @keyframes float-party {
+                       0% { transform: translateY(0px) rotate(0deg); }
+                       50% { transform: translateY(-5px) rotate(3deg); }
+                       100% { transform: translateY(0px) rotate(0deg); }
+                     }
                    `}</style>
                    {(() => {
-                     const bestAsesorObj = asesores.find(a => a.telefono?.replace(/\D/g, '') === stats.bestAdvisorPhone?.replace(/\D/g, ''));
+                     const bestAsesorObj = asesores.find(a => {
+                       const phones = (a.telefono || '').split(',').map(p => p.replace(/\D/g, '')).filter(Boolean);
+                       const bestPhones = (stats.bestAdvisorPhone || '').split(',').map(p => p.replace(/\D/g, '')).filter(Boolean);
+                       return phones.some(p => bestPhones.includes(p));
+                     });
+                     const hasAdvisor = !!bestAsesorObj;
                      const hasPhoto = !!bestAsesorObj?.foto_url;
                      return (
                        <>
-                         <div style={{ position: 'absolute', right: hasPhoto ? '-10px' : '-10px', top: hasPhoto ? '-10px' : '-10px', opacity: hasPhoto ? 1 : 0.15, zIndex: 0 }}>
+                         <div style={{ position: 'absolute', right: '15px', top: '15px', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                            {hasPhoto ? (
-                             <img src={bestAsesorObj.foto_url} alt={bestAsesorObj.nombre} style={{ width: '120px', height: '120px', objectFit: 'cover', borderRadius: '50%', border: '4px solid rgba(255,255,255,0.3)', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.2))' }} />
+                             <img src={bestAsesorObj.foto_url} alt={bestAsesorObj.nombre} style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '50%', border: '4px solid rgba(255,255,255,0.4)', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.2))', animation: 'float-party 3s ease-in-out infinite' }} />
+                           ) : hasAdvisor ? (
+                             <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, #ec4899, #8b5cf6)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 800, border: '4px solid rgba(255,255,255,0.4)', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.2))', animation: 'float-party 3s ease-in-out infinite' }}>
+                               {bestAsesorObj.nombre.charAt(0).toUpperCase()}
+                             </div>
                            ) : (
-                             <span style={{ fontSize: '5rem' }}>⭐</span>
+                             <span style={{ fontSize: '4rem', opacity: 0.25, marginRight: '10px' }}>⭐</span>
                            )}
                          </div>
                          {hasPhoto && <div className="party-particles"></div>}
@@ -5291,15 +5311,20 @@ function SidebarContent({
           </h2>
           <p style={{ margin: 0 }}>Panel Administrativo</p>
           {role === 'asesor' && currentAsesor ? (
-            <a 
-              href={`https://wa.me/${currentAsesor.telefono.replace(/\D/g, '')}`} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="sidebar-wa-link"
-              style={{ fontSize: '0.75rem', color: '#10b981', textDecoration: 'none', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.3rem', whiteSpace: 'nowrap' }}
-            >
-              <Phone size={12} style={{ strokeWidth: 2.5 }} /> Línea: {currentAsesor.telefono}
-            </a>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.3rem' }}>
+              {(currentAsesor.telefono || '').split(',').map((p: string) => p.trim()).filter(Boolean).map((phone: string, idx: number) => (
+                <a 
+                  key={idx}
+                  href={`https://wa.me/${phone.replace(/\D/g, '')}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="sidebar-wa-link"
+                  style={{ fontSize: '0.73rem', color: '#10b981', textDecoration: 'none', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}
+                >
+                  <Phone size={11} style={{ strokeWidth: 2.5 }} /> Línea: {phone}
+                </a>
+              ))}
+            </div>
           ) : configuracion?.whatsapp ? (
             <a 
               href={`https://wa.me/${configuracion.whatsapp.replace(/\D/g, '')}`} 
@@ -5401,17 +5426,17 @@ function SidebarContent({
         
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginTop: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div className="avatar" style={{ background: (role === 'asesor' && currentAsesor?.foto_url) ? 'transparent' : (role === 'admin' && configuracion?.admin_foto_url) ? 'transparent' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '50%', border: '1px solid #e2e8f0', color: '#64748b', padding: 0, overflow: 'hidden' }}>
+            <div className="avatar" style={{ background: (role === 'asesor' && currentAsesor?.foto_url) ? 'transparent' : (role === 'admin' && configuracion?.admin_foto_url) ? 'transparent' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', borderRadius: '50%', border: '1px solid #e2e8f0', color: '#64748b', padding: 0, overflow: 'hidden' }}>
               {role === 'asesor' && currentAsesor?.foto_url ? (
                 <img src={currentAsesor.foto_url} alt="Asesor" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (role === 'admin' && configuracion?.admin_foto_url) ? (
                 <img src={configuracion.admin_foto_url} alt="Admin" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
-                <User size={18} />
+                <User size={24} />
               )}
             </div>
             <div className="user-info">
-              <h4 style={{ fontSize: '0.9rem', margin: 0, color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100px' }}>
+              <h4 style={{ fontSize: '0.9rem', margin: 0, color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '160px' }}>
                 {role === 'asesor' && currentAsesor ? currentAsesor.nombre : (configuracion?.admin_nombre || 'Administrador')}
               </h4>
               <p style={{ fontSize: '0.75rem', color: '#10b981', margin: 0 }}>{role === 'asesor' ? 'Asesor' : 'Sesión activa'}</p>
