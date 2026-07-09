@@ -249,6 +249,47 @@ export default function Admin() {
       });
     }
 
+    // 4. Notificación de recompra para mayoristas (sin pedido en +15 días)
+    if (asesor.tipo === 'mayorista') {
+      const aPhones = (asesor.telefono || '').split(',').map((p: string) => p.replace(/\D/g, '')).filter(Boolean);
+      const misOrdenes = pedidos.filter(p => {
+        const op = (p.linea_whatsapp || '').replace(/\D/g, '');
+        return aPhones.includes(op);
+      });
+      if (misOrdenes.length === 0) {
+        list.push({
+          id: 'mayorista-sin-pedidos',
+          type: 'warning',
+          title: '🛒 ¡Es hora de reponer stock!',
+          message: 'Aún no has realizado ningún pedido. Comparte tu catálogo con clientes y empieza a generar ventas. ¡Tu primer pedido está a un paso!',
+          actionTab: 'resumen_asesor',
+          time: new Date().toISOString()
+        });
+      } else {
+        const lastOrder = misOrdenes.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+        const diasSinComprar = Math.floor((now - new Date(lastOrder.created_at).getTime()) / (1000 * 60 * 60 * 24));
+        if (diasSinComprar >= 15) {
+          list.push({
+            id: 'mayorista-recompra',
+            type: 'warning',
+            title: `🔄 ¡Llevas ${diasSinComprar} días sin reponer stock!`,
+            message: `Tu último pedido fue el ${new Date(lastOrder.created_at).toLocaleDateString()}. Tus clientes pueden estar esperando nuevas referencias. ¡Renueva tu inventario hoy!`,
+            actionTab: 'resumen_asesor',
+            time: new Date().toISOString()
+          });
+        } else if (diasSinComprar >= 7) {
+          list.push({
+            id: 'mayorista-recompra-pronto',
+            type: 'info',
+            title: `📦 Han pasado ${diasSinComprar} días desde tu último pedido`,
+            message: 'Esta semana es un buen momento para revisar qué referencias se están agotando en tu inventario.',
+            actionTab: 'resumen_asesor',
+            time: new Date().toISOString()
+          });
+        }
+      }
+    }
+
     return list.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
   };
   const [nuevoAsesorNombre, setNuevoAsesorNombre] = useState('');
@@ -2155,7 +2196,7 @@ export default function Admin() {
         pCount = count || 0;
       }
       if (purgeTargets.clientes) {
-        let q = supabase.from('clientes').select('id', { count: 'exact', head: true }).eq('tenant_id', tenant);
+        let q = supabase.from('clientes_exitosos').select('id', { count: 'exact', head: true }).eq('tenant_id', tenant);
         if (purgeDesde) q = q.gte('created_at', purgeDesde);
         if (purgeHasta) q = q.lte('created_at', purgeHasta + 'T23:59:59');
         const { count } = await q;
@@ -2207,7 +2248,7 @@ export default function Admin() {
       }
 
       if (purgeTargets.clientes) {
-        let q = supabase.from('clientes').delete().eq('tenant_id', tenant);
+        let q = supabase.from('clientes_exitosos').delete().eq('tenant_id', tenant);
         if (purgeDesde) q = q.gte('created_at', purgeDesde);
         if (purgeHasta) q = q.lte('created_at', purgeHasta + 'T23:59:59');
         const { error, count } = await q;
@@ -3601,6 +3642,71 @@ export default function Admin() {
                     </div>
                   </div>
 
+                  {/* 🏆 RANKING GAMIFICADO DE MAYORISTAS */}
+                  {(() => {
+                    const mPhones2 = (currentAsesorData.telefono || '').split(',').map((ph: string) => ph.trim().replace(/\D/g, '')).filter(Boolean);
+                    const allMayoristas = asesores.filter(a => a.tipo === 'mayorista');
+                    const rankingData = allMayoristas.map(m => {
+                      const mPs = (m.telefono || '').split(',').map((ph: string) => ph.replace(/\D/g, '')).filter(Boolean);
+                      const total = pedidos
+                        .filter(p => p.estado === 'completado' && mPs.includes((p.linea_whatsapp || '').replace(/\D/g, '')))
+                        .reduce((s, p) => s + (p.total || 0), 0);
+                      return { id: m.id, nombre: m.nombre, total, foto_url: m.foto_url, isMe: mPs.some(ph => mPhones2.includes(ph)) };
+                    }).sort((a, b) => b.total - a.total);
+                    const myPos = rankingData.findIndex(r => r.isMe);
+                    const myData = rankingData[myPos];
+                    const leader = rankingData[0];
+                    const gapToLeader = myData && leader && !myData.isMe ? leader.total - myData.total : 0;
+                    const medals = ['🥇','🥈','🥉'];
+                    return (
+                      <div className="admin-panel" style={{ borderRadius: '20px', padding: '1.5rem 1.75rem', background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', color: 'white', border: 'none' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                          <span style={{ fontSize: '1.8rem' }}>🏆</span>
+                          <div>
+                            <h3 style={{ margin: 0, fontWeight: 800, fontSize: '1.1rem', color: 'white' }}>Ranking de Mayoristas</h3>
+                            <p style={{ margin: 0, fontSize: '0.8rem', color: '#94a3b8' }}>Compras completadas — actualizado en tiempo real</p>
+                          </div>
+                          {myPos >= 0 && (
+                            <div style={{ marginLeft: 'auto', textAlign: 'center', background: 'rgba(255,255,255,0.1)', borderRadius: '12px', padding: '0.5rem 1rem' }}>
+                              <div style={{ fontSize: '1.5rem', fontWeight: 900, color: '#fbbf24' }}>{medals[myPos] || `#${myPos + 1}`}</div>
+                              <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Tu posición</div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Mi barra de progreso vs líder */}
+                        {myData && gapToLeader > 0 && (
+                          <div style={{ background: 'rgba(255,255,255,0.07)', borderRadius: '10px', padding: '0.9rem 1rem', marginBottom: '1.25rem' }}>
+                            <p style={{ margin: '0 0 0.4rem 0', fontSize: '0.8rem', color: '#94a3b8' }}>Para ser #1 te faltan</p>
+                            <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#fbbf24' }}>${gapToLeader.toLocaleString()} COP</p>
+                            <div style={{ marginTop: '0.5rem', height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '9999px', overflow: 'hidden' }}>
+                              <div style={{ height: '100%', width: `${leader.total > 0 ? Math.min(100, (myData.total / leader.total) * 100) : 0}%`, background: 'linear-gradient(90deg, #fbbf24, #f59e0b)', borderRadius: '9999px', transition: 'width 1s ease' }} />
+                            </div>
+                            <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.72rem', color: '#64748b' }}>{leader.total > 0 ? Math.round((myData.total / leader.total) * 100) : 0}% del líder ({leader.nombre})</p>
+                          </div>
+                        )}
+                        {myData && myPos === 0 && (
+                          <div style={{ background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.4)', borderRadius: '10px', padding: '0.9rem 1rem', marginBottom: '1.25rem', textAlign: 'center' }}>
+                            <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: '#fbbf24' }}>🥇 ¡Eres el #1 este período! Mantén el liderazgo 🔥</p>
+                          </div>
+                        )}
+
+                        {/* Lista top 5 */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          {rankingData.slice(0, 5).map((r, idx) => (
+                            <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.65rem 0.9rem', borderRadius: '10px', background: r.isMe ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.05)', border: r.isMe ? '1px solid rgba(251,191,36,0.5)' : '1px solid transparent' }}>
+                              <span style={{ fontSize: '1.1rem', minWidth: '28px', textAlign: 'center' }}>{medals[idx] || `#${idx + 1}`}</span>
+                              {r.foto_url ? <img src={r.foto_url} alt={r.nombre} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} /> : <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#334155', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>👤</div>}
+                              <span style={{ fontWeight: r.isMe ? 800 : 600, color: r.isMe ? '#fbbf24' : 'white', fontSize: '0.88rem', flex: 1 }}>{r.nombre}{r.isMe ? ' (Tú)' : ''}</span>
+                              <span style={{ fontWeight: 700, color: '#94a3b8', fontSize: '0.82rem' }}>${r.total.toLocaleString()}</span>
+                            </div>
+                          ))}
+                          {rankingData.length === 0 && <p style={{ color: '#64748b', fontSize: '0.85rem', textAlign: 'center', margin: '1rem 0' }}>Aún no hay datos de compras registradas.</p>}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
                   {/* Consolidator panel */}
                   <div className="admin-panel">
                     <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
@@ -4493,94 +4599,19 @@ export default function Admin() {
                     </div>
                   </form>
 
-                  {/* ── SECCIÓN PURGE ── */}
-                  <div style={{ marginTop: '2.5rem', borderTop: '2px dashed #e2e8f0', paddingTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                    <div>
-                      <h4 style={{ margin: '0 0 0.25rem 0', fontWeight: 800, color: '#0f172a', fontSize: '1rem' }}>🧹 Purgar Registros</h4>
-                      <p style={{ margin: 0, fontSize: '0.82rem', color: '#64748b' }}>Elimina pedidos, clientes o leads de forma selectiva con filtros opcionales de estado y fecha.</p>
+                  {/* ── BOTÓN PURGE ── */}
+                  <div style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '2px dashed #e2e8f0', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                    <div style={{ flex: 1 }}>
+                      <h4 style={{ margin: '0 0 0.2rem 0', fontWeight: 800, color: '#0f172a', fontSize: '0.95rem' }}>🧹 Purgar Registros</h4>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>Elimina pedidos, clientes o leads de forma definitiva.</p>
                     </div>
-
-                    {/* Paso 1: Qué purgar */}
-                    <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
-                      <p style={{ margin: '0 0 0.75rem 0', fontWeight: 700, fontSize: '0.83rem', color: '#374151' }}>1️⃣ ¿Qué deseas purgar?</p>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
-                        {([
-                          { key: 'pedidos', label: '📦 Pedidos', count: pedidos.length },
-                          { key: 'clientes', label: '👤 Clientes', count: clientes.length },
-                          { key: 'leads', label: '🛒 Leads / Carritos Abandonados', count: leads.length },
-                        ] as { key: 'pedidos' | 'clientes' | 'leads'; label: string; count: number }[]).map(({ key, label, count }) => (
-                          <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', padding: '0.6rem 0.9rem', borderRadius: '8px', border: `2px solid ${purgeTargets[key] ? '#ea580c' : '#e2e8f0'}`, background: purgeTargets[key] ? '#fff7ed' : 'white', transition: 'all 0.15s' }}>
-                            <input type="checkbox" checked={purgeTargets[key]}
-                              onChange={e => { setPurgeTargets(prev => ({ ...prev, [key]: e.target.checked })); setPurgePreview(null); }}
-                              style={{ width: '16px', height: '16px', accentColor: '#ea580c' }} />
-                            <span style={{ fontWeight: 600, fontSize: '0.86rem', color: '#0f172a' }}>{label}</span>
-                            <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: '#64748b', background: '#f1f5f9', padding: '0.1rem 0.5rem', borderRadius: '9999px' }}>{count} registros</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Paso 2: Filtros */}
-                    <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
-                      <p style={{ margin: '0 0 0.75rem 0', fontWeight: 700, fontSize: '0.83rem', color: '#374151' }}>2️⃣ Filtros opcionales <span style={{ fontWeight: 400, color: '#94a3b8' }}>(vacío = todos)</span></p>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        <div>
-                          <label style={{ fontSize: '0.76rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.3rem' }}>Estado</label>
-                          <select value={purgeEstado} onChange={e => { setPurgeEstado(e.target.value); setPurgePreview(null); }}
-                            style={{ width: '100%', padding: '0.55rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.84rem', outline: 'none' }}>
-                            <option value="todos">Todos los estados</option>
-                            <option value="pendiente">Pendiente</option>
-                            <option value="atendido">Atendido</option>
-                            <option value="completado">Completado</option>
-                            <option value="cancelado">Cancelado</option>
-                            <option value="abandonado">Abandonado (leads)</option>
-                          </select>
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                          <div>
-                            <label style={{ fontSize: '0.76rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.3rem' }}>Desde (fecha)</label>
-                            <input type="date" value={purgeDesde} onChange={e => { setPurgeDesde(e.target.value); setPurgePreview(null); }}
-                              style={{ width: '100%', padding: '0.55rem 0.7rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.82rem', outline: 'none', boxSizing: 'border-box' }} />
-                          </div>
-                          <div>
-                            <label style={{ fontSize: '0.76rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.3rem' }}>Hasta (fecha)</label>
-                            <input type="date" value={purgeHasta} onChange={e => { setPurgeHasta(e.target.value); setPurgePreview(null); }}
-                              style={{ width: '100%', padding: '0.55rem 0.7rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.82rem', outline: 'none', boxSizing: 'border-box' }} />
-                          </div>
-                        </div>
-                        <button onClick={calcularPurgePreview}
-                          disabled={!purgeTargets.pedidos && !purgeTargets.clientes && !purgeTargets.leads}
-                          style={{ padding: '0.6rem 1rem', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem', opacity: (!purgeTargets.pedidos && !purgeTargets.clientes && !purgeTargets.leads) ? 0.5 : 1, width: 'fit-content' }}>
-                          🔍 Previsualizar cuántos se eliminarán
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Preview */}
-                    {purgePreview && (
-                      <div style={{ background: '#fef9c3', borderRadius: '10px', padding: '1rem 1.25rem', border: '1px solid #fde047', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                        <p style={{ margin: 0, fontWeight: 700, fontSize: '0.83rem', color: '#713f12' }}>⚠️ Se eliminarán:</p>
-                        {purgeTargets.pedidos && <p style={{ margin: 0, fontSize: '0.82rem', color: '#92400e' }}>• <strong>{purgePreview.pedidos}</strong> pedidos</p>}
-                        {purgeTargets.clientes && <p style={{ margin: 0, fontSize: '0.82rem', color: '#92400e' }}>• <strong>{purgePreview.clientes}</strong> clientes</p>}
-                        {purgeTargets.leads && <p style={{ margin: 0, fontSize: '0.82rem', color: '#92400e' }}>• <strong>{purgePreview.leads}</strong> leads</p>}
-                        <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.79rem', color: '#b45309' }}>Total: <strong>{purgePreview.pedidos + purgePreview.clientes + purgePreview.leads}</strong> registros — acción <strong>irreversible</strong>.</p>
-                      </div>
-                    )}
-
-                    {/* Paso 3: Confirmar */}
-                    <div style={{ background: '#fef2f2', borderRadius: '12px', padding: '1.25rem', border: '1px solid #fee2e2' }}>
-                      <p style={{ margin: '0 0 0.6rem 0', fontWeight: 700, fontSize: '0.83rem', color: '#991b1b' }}>3️⃣ Escribe <strong>PURGAR</strong> para confirmar y ejecutar</p>
-                      <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                        <input type="text" placeholder="Escribe PURGAR" value={purgeConfirmText}
-                          onChange={e => setPurgeConfirmText(e.target.value)}
-                          style={{ flex: 1, padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #fca5a5', fontSize: '0.84rem', outline: 'none', minWidth: '150px' }} />
-                        <button onClick={handlePurge}
-                          disabled={purging || purgeConfirmText !== 'PURGAR' || (!purgeTargets.pedidos && !purgeTargets.clientes && !purgeTargets.leads)}
-                          style={{ padding: '0.6rem 1.3rem', background: purging ? '#94a3b8' : '#dc2626', color: 'white', border: 'none', borderRadius: '8px', cursor: purging ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '0.84rem', opacity: (purgeConfirmText !== 'PURGAR' || (!purgeTargets.pedidos && !purgeTargets.clientes && !purgeTargets.leads)) ? 0.5 : 1 }}>
-                          {purging ? '⏳ Purgando...' : '🗑️ Ejecutar Purge'}
-                        </button>
-                      </div>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => { setPurgeTargets({ pedidos: false, clientes: false, leads: false }); setPurgeConfirmText(''); setShowPurgeModal(true); }}
+                      style={{ padding: '0.65rem 1.4rem', background: '#ef4444', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', whiteSpace: 'nowrap' }}
+                    >
+                      🧹 Purgar Registros
+                    </button>
                   </div>
 
                   </>
@@ -8434,7 +8465,9 @@ function SidebarContent({
           <h2 style={{ textTransform: 'capitalize', fontSize: '1.1rem', color: '#0f172a' }}>
             {configuracion?.nombre_negocio || 'Catálogo'}
           </h2>
-          <p style={{ margin: 0 }}>Panel Administrativo</p>
+          <p style={{ margin: 0 }}>
+            {role === 'mayorista' ? 'Panel Mayorista' : role === 'asesor' ? 'Panel de Asesor' : 'Panel Administrativo'}
+          </p>
           {(role === 'asesor' || role === 'mayorista') && currentAsesor ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.3rem' }}>
               {(currentAsesor.telefono || '').split(',').map((p: string) => p.trim()).filter(Boolean).map((phone: string, idx: number) => (
@@ -8466,7 +8499,41 @@ function SidebarContent({
 
       <nav className="sidebar-nav" style={{ paddingTop: '0.5rem' }}>
         <div className="sidebar-nav-label">Navegación</div>
-        {(role === 'asesor' || role === 'mayorista') ? (
+        {role === 'mayorista' ? (
+          <>
+            <button className={`nav-item ${activeTab === 'resumen_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('resumen_asesor')}>
+              <span className="nav-icon"><Home size={14} /></span> Mi Negocio
+              {activeTab === 'resumen_asesor' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'pedidos' ? 'active' : ''}`} onClick={() => handleSelectTab('pedidos')}>
+              <span className="nav-icon"><ShoppingBag size={14} /></span> Mis Clientes
+              {activeTab === 'pedidos' && <span className="active-dot"></span>}
+            </button>
+            <button
+              className={`nav-item ${activeTab === 'notificaciones_asesor' ? 'active' : ''}`}
+              onClick={() => handleSelectTab('notificaciones_asesor')}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingRight: '0.75rem' }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span className="nav-icon"><Bell size={14} /></span> Alertas
+              </span>
+              {activeNotificationsCount > 0 && (
+                <span style={{ background: '#ef4444', color: 'white', fontSize: '0.7rem', padding: '1px 6px', borderRadius: '10px', fontWeight: 800 }}>
+                  {activeNotificationsCount}
+                </span>
+              )}
+              {activeTab === 'notificaciones_asesor' && activeNotificationsCount === 0 && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'material_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('material_asesor')}>
+              <span className="nav-icon"><Upload size={14} /></span> Material de Venta
+              {activeTab === 'material_asesor' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'perfil_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('perfil_asesor')}>
+              <span className="nav-icon"><Settings size={14} /></span> Mi Perfil
+              {activeTab === 'perfil_asesor' && <span className="active-dot"></span>}
+            </button>
+          </>
+        ) : role === 'asesor' ? (
           <>
             <button className={`nav-item ${activeTab === 'resumen_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('resumen_asesor')}>
               <span className="nav-icon"><LayoutDashboard size={14} /></span> Resumen
@@ -8476,8 +8543,8 @@ function SidebarContent({
               <span className="nav-icon"><ShoppingBag size={14} /></span> Pedidos
               {activeTab === 'pedidos' && <span className="active-dot"></span>}
             </button>
-            <button 
-              className={`nav-item ${activeTab === 'notificaciones_asesor' ? 'active' : ''}`} 
+            <button
+              className={`nav-item ${activeTab === 'notificaciones_asesor' ? 'active' : ''}`}
               onClick={() => handleSelectTab('notificaciones_asesor')}
               style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingRight: '0.75rem' }}
             >
