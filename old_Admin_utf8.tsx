@@ -1,10 +1,10 @@
-import { useState, useEffect, useMemo } from 'react';
+﻿import { useState, useEffect, useMemo } from 'react';
 import { supabase, getTenantId, setTenantId } from '../lib/supabase';
 import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2 } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const SECRET_PIN = '0000';
@@ -20,15 +20,6 @@ const getGoogleDriveEmbedUrl = (url: string) => {
   const folderMatch = url.match(/\/folders\/([^/?]+)/);
   if (folderMatch && folderMatch[1]) {
     return `https://drive.google.com/embeddedfolderview?id=${folderMatch[1]}#grid`;
-  }
-  return url;
-};
-
-const getGoogleDriveDownloadUrl = (url: string) => {
-  if (!url) return '';
-  const fileMatch = url.match(/\/file\/d\/([^/]+)/);
-  if (fileMatch && fileMatch[1]) {
-    return `https://drive.google.com/uc?export=download&id=${fileMatch[1]}`;
   }
   return url;
 };
@@ -67,7 +58,7 @@ type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' |
 
 type Toast = { message: string; type: 'success' | 'error' } | null;
 
-// Ejecutar sincrónicamente para evitar parpadeo de color
+// Ejecutar sincr├│nicamente para evitar parpadeo de color
 try {
   let tId = 'indisutex';
   const pathParts = window.location.pathname.split('/');
@@ -129,14 +120,10 @@ export default function Admin() {
   const [clienteSearchQuery, setClienteSearchQuery] = useState('');
   const [asesores, setAsesores] = useState<Asesor[]>([]);
   const [materiales, setMateriales] = useState<any[]>([]);
-  const [materialFilter, setMaterialFilter] = useState<string>('todos');
-  const [showNotificationsPopover, setShowNotificationsPopover] = useState(false);
   const [nuevoMaterialTitulo, setNuevoMaterialTitulo] = useState('');
   const [nuevoMaterialDesc, setNuevoMaterialDesc] = useState('');
   const [nuevoMaterialTipo, setNuevoMaterialTipo] = useState<'video' | 'imagen' | 'documento'>('video');
   const [nuevoMaterialUrl, setNuevoMaterialUrl] = useState('');
-  const [nuevoMaterialCampana, setNuevoMaterialCampana] = useState('');
-  const [campanaFilter, setCampanaFilter] = useState<string>('todas');
 
   const currentAsesor = useMemo(() => {
     return (role === 'asesor' || role === 'mayorista') ? asesores.find(a => a.id === localStorage.getItem(`admin_asesor_id_${getTenantId()}`)) : null;
@@ -144,16 +131,16 @@ export default function Admin() {
 
   const getMotivationalPhrase = (asesorId: string) => {
     const phrases = [
-      "¡Cada cliente es una oportunidad para alcanzar tus metas! ¡A darlo todo hoy! 🚀",
-      "¡El éxito llega a quienes se atreven a actuar! ¡Haz que hoy cuente! 💎",
-      "¡Tu energía y entusiasmo son tus mejores herramientas de venta! ✨",
-      "¡La persistencia rompe barreras! Hoy conquistarás nuevas ventas. 🏆",
-      "¡La excelencia no es un acto, es un hábito! ¡A brillar hoy! 🌟",
-      "¡Enfócate en aportar valor y las ventas llegarán solas! 💪",
-      "¡Cada 'no' te acerca un paso más al próximo 'sí'! ¡Sigue adelante! 🎯",
-      "¡Hoy es el día perfecto para superar tus límites! ¡Vamos equipo! 🔥",
-      "¡El camino al éxito es tomar acción masiva y decidida! ⚖️",
-      "¡Haz que cada cliente viva una experiencia única hoy! 👑"
+      "┬íCada cliente es una oportunidad para alcanzar tus metas! ┬íA darlo todo hoy! ­ƒÜÇ",
+      "┬íEl ├®xito llega a quienes se atreven a actuar! ┬íHaz que hoy cuente! ­ƒÆÄ",
+      "┬íTu energ├¡a y entusiasmo son tus mejores herramientas de venta! Ô£¿",
+      "┬íLa persistencia rompe barreras! Hoy conquistar├ís nuevas ventas. ­ƒÅå",
+      "┬íLa excelencia no es un acto, es un h├íbito! ┬íA brillar hoy! ­ƒîƒ",
+      "┬íEnf├│cate en aportar valor y las ventas llegar├ín solas! ­ƒÆ¬",
+      "┬íCada 'no' te acerca un paso m├ís al pr├│ximo 's├¡'! ┬íSigue adelante! ­ƒÄ»",
+      "┬íHoy es el d├¡a perfecto para superar tus l├¡mites! ┬íVamos equipo! ­ƒöÑ",
+      "┬íEl camino al ├®xito es tomar acci├│n masiva y decidida! ÔÜû´©Å",
+      "┬íHaz que cada cliente viva una experiencia ├║nica hoy! ­ƒææ"
     ];
     const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
     const seed = (dayOfYear + String(asesorId).charCodeAt(0)) % phrases.length;
@@ -178,8 +165,8 @@ export default function Admin() {
         list.push({
           id: `lead-${l.id}`,
           type: 'warning',
-          title: '⚠️ Demora en Carrito Abandonado',
-          message: `Llevas ${elapsedMins} minutos sin atender al cliente "${l.nombre || 'Anónimo'}". ¡Recupéralo antes de que se enfríe!`,
+          title: 'ÔÜá´©Å Demora en Carrito Abandonado',
+          message: `Llevas ${elapsedMins} minutos sin atender al cliente "${l.nombre || 'An├│nimo'}". ┬íRecup├®ralo antes de que se enfr├¡e!`,
           actionTab: 'pedidos',
           time: l.created_at
         });
@@ -200,8 +187,8 @@ export default function Admin() {
         list.push({
           id: `order-atender-${o.id}`,
           type: 'danger',
-          title: '📞 Cliente Esperando Atención',
-          message: `El cliente "${o.cliente_nombre}" realizó un pedido hace ${elapsedMins} minutos y aún no ha sido atendido.`,
+          title: '­ƒô× Cliente Esperando Atenci├│n',
+          message: `El cliente "${o.cliente_nombre}" realiz├│ un pedido hace ${elapsedMins} minutos y a├║n no ha sido atendido.`,
           actionTab: 'pedidos',
           time: o.created_at
         });
@@ -209,8 +196,8 @@ export default function Admin() {
         list.push({
           id: `order-espera-${o.id}`,
           type: 'info',
-          title: '⏳ Esperando Comprobante',
-          message: `Hace ${elapsedMins} minutos atendiste a "${o.cliente_nombre}", pero no ha subido comprobante. Escríbele para ofrecerle otro medio de pago.`,
+          title: 'ÔÅ│ Esperando Comprobante',
+          message: `Hace ${elapsedMins} minutos atendiste a "${o.cliente_nombre}", pero no ha subido comprobante. Escr├¡bele para ofrecerle otro medio de pago.`,
           actionTab: 'pedidos',
           time: o.created_at
         });
@@ -222,8 +209,8 @@ export default function Admin() {
       list.push({
         id: 'motivate-sales-today',
         type: 'motivate',
-        title: '💪 ¡Motívate hoy!',
-        message: 'Aún no registras comisiones hoy. ¡El día no ha terminado! Envía un mensaje amable a tus carritos abandonados y activa tus ventas.',
+        title: '­ƒÆ¬ ┬íMot├¡vate hoy!',
+        message: 'A├║n no registras comisiones hoy. ┬íEl d├¡a no ha terminado! Env├¡a un mensaje amable a tus carritos abandonados y activa tus ventas.',
         actionTab: 'pedidos',
         time: new Date().toISOString()
       });
@@ -231,8 +218,8 @@ export default function Admin() {
       list.push({
         id: 'congrats-sales-today',
         type: 'success',
-        title: '🎉 ¡Vas por excelente camino!',
-        message: `¡Hoy has ganado $${stats.comisionHoy.toLocaleString()} en comisiones! Sigue así y rompe tu récord diario.`,
+        title: '­ƒÄë ┬íVas por excelente camino!',
+        message: `┬íHoy has ganado $${stats.comisionHoy.toLocaleString()} en comisiones! Sigue as├¡ y rompe tu r├®cord diario.`,
         actionTab: 'pedidos',
         time: new Date().toISOString()
       });
@@ -372,7 +359,7 @@ export default function Admin() {
 
   const [pagoModalUrl, setPagoModalUrl] = useState<string | null>(null);
 
-  // Filtros y Ordenamiento para la pestaña de Pedidos
+  // Filtros y Ordenamiento para la pesta├▒a de Pedidos
   const [orderFilterStatus, setOrderFilterStatus] = useState<string>('todos');
   const [orderFilterOrigin, setOrderFilterOrigin] = useState<string>('todos');
   const [orderFilterAsesor, setOrderFilterAsesor] = useState<string>('todos');
@@ -417,10 +404,10 @@ export default function Admin() {
   };
 
   const renderAsesorBadge = (phone?: string, origen?: string) => {
-    if (!phone) return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', color: '#64748b' }}>👤 Sin Asignar</span>;
+    if (!phone) return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', color: '#64748b' }}>­ƒæñ Sin Asignar</span>;
     const cleanInput = phone.trim();
     if (cleanInput === 'pos' || cleanInput.replace(/\D/g, '') === 'pos') {
-      return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', color: '#166534', fontWeight: 700 }}>💻 POS</span>;
+      return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', color: '#166534', fontWeight: 700 }}>­ƒÆ╗ POS</span>;
     }
     
     const name = getAsesorNameByPhone(phone);
@@ -447,12 +434,12 @@ export default function Admin() {
         )}
         <span style={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'flex-start' }}>
           <span style={{ fontSize: '0.9rem', color: '#0f172a', fontWeight: 700, lineHeight: 1.2 }}>{name}</span>
-          <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 500, lineHeight: 1 }}>📲 {lineaDisplay}</span>
+          <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 500, lineHeight: 1 }}>­ƒô▓ {lineaDisplay}</span>
           {origen && (
             origen === 'pos' ? (
               <span style={{ fontSize: '0.65rem', background: '#dcfce7', color: '#166534', padding: '1px 5px', borderRadius: '4px', fontWeight: 700, marginTop: '2px', display: 'inline-block' }}>POS</span>
             ) : (
-              <span style={{ fontSize: '0.65rem', background: '#e0f2fe', color: '#0369a1', padding: '1px 5px', borderRadius: '4px', fontWeight: 700, marginTop: '2px', display: 'inline-block' }}>Catálogo</span>
+              <span style={{ fontSize: '0.65rem', background: '#e0f2fe', color: '#0369a1', padding: '1px 5px', borderRadius: '4px', fontWeight: 700, marginTop: '2px', display: 'inline-block' }}>Cat├ílogo</span>
             )
           )}
         </span>
@@ -559,7 +546,7 @@ export default function Admin() {
         const defaultConfig = {
           nombre_negocio: tenant,
           whatsapp: '573185637317',
-          descripcion_hero: 'CATÁLOGO DIGITAL',
+          descripcion_hero: 'CAT├üLOGO DIGITAL',
           tenant_id: tenant
         };
         const { data: newConf } = await supabase.from('configuracion').insert([defaultConfig]).select().single();
@@ -605,14 +592,14 @@ export default function Admin() {
         setIsAuthenticated(true);
         const defaultTab = userRole === 'mayorista' ? 'resumen_asesor' : 'pedidos';
         setActiveTab(defaultTab);
-        showToast(`Sesión iniciada como ${userRole === 'mayorista' ? 'mayorista' : 'asesor'}: ${advisorMatch.nombre} ✓`, 'success');
+        showToast(`Sesi├│n iniciada como ${userRole === 'mayorista' ? 'mayorista' : 'asesor'}: ${advisorMatch.nombre} Ô£ô`, 'success');
       } else {
         showToast('PIN incorrecto o no registrado.', 'error');
         setPin('');
       }
     } catch (err: any) {
       console.error(err);
-      showToast('Error de autenticación.', 'error');
+      showToast('Error de autenticaci├│n.', 'error');
     } finally {
       setLoading(false);
     }
@@ -638,14 +625,14 @@ export default function Admin() {
         const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
         uploadedUrls.push(data.publicUrl);
       }
-      // Insertar las URLs subidas a partir de la posición imgIndex
+      // Insertar las URLs subidas a partir de la posici├│n imgIndex
       const newForms = [...bulkForms];
       const newImagenes = [...newForms[formIndex].imagenes];
       newImagenes.splice(imgIndex, 1, ...uploadedUrls);
-      // Agregar filas extra si se subieron más de una imagen
+      // Agregar filas extra si se subieron m├ís de una imagen
       newForms[formIndex] = { ...newForms[formIndex], imagenes: newImagenes };
       setBulkForms(newForms);
-      showToast(`${uploadedUrls.length} foto(s) subida(s) ✓`);
+      showToast(`${uploadedUrls.length} foto(s) subida(s) Ô£ô`);
     } catch {
       showToast('Error al subir foto(s)', 'error');
     } finally {
@@ -700,7 +687,7 @@ export default function Admin() {
     if (error) {
       showToast('Error al guardar: ' + error.message, 'error');
     } else {
-      showToast(`${validForms.length} producto(s) guardado(s) exitosamente ✓`);
+      showToast(`${validForms.length} producto(s) guardado(s) exitosamente Ô£ô`);
       setBulkForms([{ ...emptyProduct }]);
       setIsAddingProduct(false);
       cargarDatos();
@@ -750,7 +737,7 @@ export default function Admin() {
         
         const valid = mapped.filter(p => p.nombre);
         setExcelProducts(valid);
-        showToast(`Se cargaron ${valid.length} productos del Excel ✓`);
+        showToast(`Se cargaron ${valid.length} productos del Excel Ô£ô`);
       } catch (err: any) {
         showToast('Error leyendo el archivo Excel', 'error');
         console.error(err);
@@ -832,7 +819,7 @@ export default function Admin() {
       
       const valid = parsedRows.filter(p => p.nombre || p.referencia);
       setExcelProducts(valid);
-      showToast(`Se cargaron ${valid.length} productos desde el texto ✓`, 'success');
+      showToast(`Se cargaron ${valid.length} productos desde el texto Ô£ô`, 'success');
       setUploadMethod('excel');
     } catch (err: any) {
       console.error(err);
@@ -866,7 +853,7 @@ export default function Admin() {
     if (error) {
       showToast('Error al guardar: ' + error.message, 'error');
     } else {
-      showToast(`${excelProducts.length} productos guardados exitosamente ✓`);
+      showToast(`${excelProducts.length} productos guardados exitosamente Ô£ô`);
       setExcelProducts([]);
       setIsAddingProduct(false);
       cargarDatos();
@@ -874,7 +861,7 @@ export default function Admin() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!window.confirm('¿Eliminar este producto?')) return;
+    if (!window.confirm('┬┐Eliminar este producto?')) return;
     const { error } = await supabase.from('productos').delete().eq('id', id);
     if (!error) { cargarDatos(); showToast('Producto eliminado'); }
     else showToast('Error al eliminar', 'error');
@@ -890,7 +877,7 @@ export default function Admin() {
     setLoading(false);
     if (!error) {
       cargarDatos();
-      showToast('Producto duplicado ✓');
+      showToast('Producto duplicado Ô£ô');
     } else {
       showToast('Error al duplicar: ' + error.message, 'error');
     }
@@ -957,7 +944,7 @@ export default function Admin() {
       setShowSuccessScreen(true);
     } catch (err: any) {
       console.error(err);
-      showToast('Error al procesar la aprobación: ' + err.message, 'error');
+      showToast('Error al procesar la aprobaci├│n: ' + err.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -986,10 +973,10 @@ export default function Admin() {
       setPedidos(prev => prev.map(p => p.id === pedId ? { ...p, numero_guia: generatedGuia } : p));
       setSelectedPedido(prev => prev && prev.id === pedId ? { ...prev, numero_guia: generatedGuia } : prev);
       
-      showToast('Guía generada con 99 Envíos ✓', 'success');
+      showToast('Gu├¡a generada con 99 Env├¡os Ô£ô', 'success');
     } catch (err: any) {
       console.error(err);
-      showToast('Error al generar la guía: ' + err.message, 'error');
+      showToast('Error al generar la gu├¡a: ' + err.message, 'error');
     } finally {
       setLoadingGuia(false);
     }
@@ -997,7 +984,7 @@ export default function Admin() {
 
   const handleGuardarGuiaManual = async (pedId: string, manualGuia: string) => {
     if (!manualGuia.trim()) {
-      showToast('Ingresa un número de guía válido', 'error');
+      showToast('Ingresa un n├║mero de gu├¡a v├ílido', 'error');
       return;
     }
     setLoadingGuia(true);
@@ -1013,7 +1000,7 @@ export default function Admin() {
       setPedidos(prev => prev.map(p => p.id === pedId ? { ...p, numero_guia: manualGuia.trim() } : p));
       setSelectedPedido(prev => prev && prev.id === pedId ? { ...prev, numero_guia: manualGuia.trim() } : prev);
       
-      showToast('Número de guía guardado ✓', 'success');
+      showToast('N├║mero de gu├¡a guardado Ô£ô', 'success');
     } catch (err: any) {
       console.error(err);
       showToast('Error al guardar: ' + err.message, 'error');
@@ -1026,14 +1013,14 @@ export default function Admin() {
     // 1. Abrir WhatsApp con cobro y enlace
     const num = (ped.cliente_telefono || '').replace(/\D/g, '');
     const uploadLink = `${window.location.origin}/pago/${ped.id}`;
-    const msg = `¡Hola ${ped.cliente_nombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: $${ped.total.toLocaleString()} COP*\n\n💳 *Datos del banco:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\nPara poder completar tu pedido, haz la captura de pantalla de tu pago o de transacción y envíala por este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
+    const msg = `┬íHola ${ped.cliente_nombre}! ­ƒæï\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: $${ped.total.toLocaleString()} COP*\n\n­ƒÆ│ *Datos del banco:*\nN├║mero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\nPara poder completar tu pedido, haz la captura de pantalla de tu pago o de transacci├│n y env├¡ala por este enlace:\n${uploadLink}\n\n┬íTu pedido ser├í despachado en cuanto verifiquemos el pago! ­ƒÜÇ`;
     window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
 
     // 2. Marcar en Base de Datos como atendido
     const { error } = await supabase.from('pedidos').update({ atendido: true }).eq('id', ped.id);
     if (!error) {
       setPedidos(prev => prev.map(p => p.id === ped.id ? { ...p, atendido: true } : p));
-      showToast('Pedido marcado como atendido ✓');
+      showToast('Pedido marcado como atendido Ô£ô');
     } else {
       showToast('Error al marcar como atendido en DB', 'error');
     }
@@ -1051,7 +1038,7 @@ export default function Admin() {
       if (error) throw error;
       
       setLeads(prev => prev.map(l => l.id === leadId ? { ...l, retargeting_estado: status, retargeted_by: userLabel } : l));
-      showToast(`Lead marcado como ${status} ✓`, 'success');
+      showToast(`Lead marcado como ${status} Ô£ô`, 'success');
     } catch (err: any) {
       console.error(err);
       showToast('Error al actualizar lead: ' + err.message, 'error');
@@ -1079,7 +1066,7 @@ export default function Admin() {
     }).eq('id', editingProduct.id);
     setLoading(false);
     if (error) showToast('Error al actualizar', 'error');
-    else { showToast('Producto actualizado ✓'); setEditingProduct(null); cargarDatos(); }
+    else { showToast('Producto actualizado Ô£ô'); setEditingProduct(null); cargarDatos(); }
   };
 
   const handleEditMainImgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1093,7 +1080,7 @@ export default function Admin() {
       if (uploadError) throw uploadError;
       const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
       setEditingProduct({ ...editingProduct, imagen_url: data.publicUrl });
-      showToast('Foto principal actualizada ✓');
+      showToast('Foto principal actualizada Ô£ô');
     } catch { showToast('Error al subir foto', 'error'); }
     finally { setLoading(false); }
   };
@@ -1117,7 +1104,7 @@ export default function Admin() {
         next.splice(idx, 1, ...uploadedUrls);
         return next;
       });
-      showToast(`${uploadedUrls.length} foto(s) extra subida(s) ✓`);
+      showToast(`${uploadedUrls.length} foto(s) extra subida(s) Ô£ô`);
     } catch { showToast('Error al subir foto extra', 'error'); }
     finally { setEditUploadingIdx(null); }
   };
@@ -1125,7 +1112,7 @@ export default function Admin() {
   const handleCreateSubcategory = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!subcatNombre.trim() || !subcatParentId) {
-      showToast('Completa el nombre y selecciona la categoría padre', 'error');
+      showToast('Completa el nombre y selecciona la categor├¡a padre', 'error');
       return;
     }
     setLoading(true);
@@ -1140,16 +1127,16 @@ export default function Admin() {
       setSubcatNombre('');
       setSubcatSlug('');
       cargarDatos();
-      showToast('Subcategoría creada ✓');
+      showToast('Subcategor├¡a creada Ô£ô');
     }
   };
 
   const handleDeleteSubcategory = async (id: string) => {
-    if (!window.confirm('¿Eliminar esta subcategoría?')) return;
+    if (!window.confirm('┬┐Eliminar esta subcategor├¡a?')) return;
     const { error } = await supabase.from('subcategorias').delete().eq('id', id);
     if (!error) {
       cargarDatos();
-      showToast('Subcategoría eliminada');
+      showToast('Subcategor├¡a eliminada');
     } else {
       showToast('Error al eliminar', 'error');
     }
@@ -1170,7 +1157,7 @@ export default function Admin() {
     if (error) {
       showToast('Error al actualizar: ' + error.message, 'error');
     } else {
-      showToast('Categoría actualizada ✓');
+      showToast('Categor├¡a actualizada Ô£ô');
       setEditingCategory(null);
       cargarDatos();
     }
@@ -1189,7 +1176,7 @@ export default function Admin() {
     if (error) {
       showToast('Error al actualizar: ' + error.message, 'error');
     } else {
-      showToast('Subcategoría actualizada ✓');
+      showToast('Subcategor├¡a actualizada Ô£ô');
       setEditingSubcategory(null);
       cargarDatos();
     }
@@ -1241,7 +1228,7 @@ export default function Admin() {
       });
     }
 
-    if ((role === 'asesor' || role === 'mayorista') && loggedAsesorPhone) {
+    if (role === 'asesor' && loggedAsesorPhone) {
       result = result.filter(p => {
         const orderPhone = p.linea_whatsapp?.replace(/\D/g, '');
         const advisorPhones = loggedAsesorPhone.split(',').map(phone => phone.replace(/\D/g, '')).filter(Boolean);
@@ -1290,7 +1277,7 @@ export default function Admin() {
     // 2. Pedidos no resueltos (pendientes o atendidos)
     const noResueltos = pedidos.filter(p => p.estado === 'pendiente' || p.estado === 'atendido' || !p.estado);
 
-    // 3. Ventas por origen (POS vs Catálogo)
+    // 3. Ventas por origen (POS vs Cat├ílogo)
     const posOrders = pedidos.filter(p => p.origen === 'pos');
     const catalogOrders = pedidos.filter(p => p.origen === 'catalogo' || !p.origen);
 
@@ -1307,7 +1294,7 @@ export default function Admin() {
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
-    // 5. Línea/Asesor que más ha vendido (completados)
+    // 5. L├¡nea/Asesor que m├ís ha vendido (completados)
     const advisorSales: { [advisorIdOrPos: string]: { name: string; total: number; phone: string } } = {};
     completados.forEach(p => {
       const phone = p.linea_whatsapp || 'pos';
@@ -1342,7 +1329,7 @@ export default function Admin() {
       .map(([id, info]) => ({ id, ...info }))
       .sort((a, b) => b.total - a.total)[0] || { id: 'pos', name: 'POS', total: 0, phone: 'pos' };
 
-    // 6. Mejor hora del día
+    // 6. Mejor hora del d├¡a
     const hourCounts: Record<number, number> = {};
     for (let i = 0; i < 24; i++) hourCounts[i] = 0;
     completados.forEach(p => { const h = new Date(p.created_at).getHours(); hourCounts[h] = (hourCounts[h] || 0) + 1; });
@@ -1353,8 +1340,8 @@ export default function Admin() {
       '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM', '10:00 PM', '11:00 PM'
     ];
 
-    // 7. Mejor día de la semana
-    const dayNames = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    // 7. Mejor d├¡a de la semana
+    const dayNames = ['Domingo','Lunes','Martes','Mi├®rcoles','Jueves','Viernes','S├íbado'];
     const dayCounts: Record<number, number> = {0:0,1:0,2:0,3:0,4:0,5:0,6:0};
     completados.forEach(p => { const d = new Date(p.created_at).getDay(); dayCounts[d] = (dayCounts[d] || 0) + 1; });
     const bestDayEntry = Object.entries(dayCounts).sort((a, b) => Number(b[1]) - Number(a[1]))[0];
@@ -1366,7 +1353,7 @@ export default function Admin() {
       .sort((a, b) => b.total - a.total)
       .slice(0, 5);
 
-    // 8a. Desempeño separado de Asesores y Mayoristas
+    // 8a. Desempe├▒o separado de Asesores y Mayoristas
     const asesoresSales: { [id: string]: { total: number; ordersCount: number } } = {};
     const mayoristasSales: { [id: string]: { total: number; ordersCount: number } } = {};
 
@@ -1426,7 +1413,7 @@ export default function Admin() {
       })
       .sort((a, b) => b.total - a.total);
 
-    // 8b. Productos más vendidos (completados)
+    // 8b. Productos m├ís vendidos (completados)
     const productSales: { [prodIdOrName: string]: { id: string; nombre: string; cantidad: number; total: number; imagen_url?: string } } = {};
     completados.forEach(p => {
       if (Array.isArray(p.productos)) {
@@ -1454,18 +1441,18 @@ export default function Admin() {
       .sort((a, b) => b.cantidad - a.cantidad)
       .slice(0, 5);
 
-    // 9. Consejo del día (rotativo por fecha)
+    // 9. Consejo del d├¡a (rotativo por fecha)
     const allTips = [
-      { icon: '📱', text: 'Responde en menos de 5 minutos: los clientes que reciben respuesta rápida compran 3x más.' },
-      { icon: '📸', text: 'Comparte 3 fotos del producto desde diferentes ángulos. Las imágenes claras reducen las dudas y aumentan el cierre.' },
-      { icon: '⭐', text: 'Pide a cada cliente satisfecho que te recomiende con un conocido. El voz a voz es tu mejor publicidad.' },
-      { icon: '🎁', text: 'Ofrece un pequeño regalo o envío gratis por encima de cierto monto para aumentar el ticket promedio.' },
-      { icon: '📅', text: `Las ventas pico son los ${bestDay.count > 0 ? bestDay.name : 'fines de semana'}. Planifica más stock and asesoras disponibles ese día.` },
-      { icon: '⏰', text: `La hora de oro es a las ${bestHour.count > 0 ? hourLabels[bestHour.hour] : 'tarde'}. Programa tus publicaciones en redes en ese horario.` },
-      { icon: '💬', text: 'Un seguimiento después de 24h a los carros abandonados recupera hasta un 20% de ventas perdidas.' },
-      { icon: '📊', text: 'Revisa tu analítica semanal. Los datos te dicen qué productos y asesoras funcionan mejor.' },
-      { icon: '📦', text: 'Mantén tu catálogo actualizado. Los productos sin stock generan frustración y pérdida de clientes.' },
-      { icon: '📝', text: 'Personaliza el mensaje de WhatsApp. Un saludo con el nombre del cliente aumenta la tasa de respuesta.' },
+      { icon: '­ƒô▒', text: 'Responde en menos de 5 minutos: los clientes que reciben respuesta r├ípida compran 3x m├ís.' },
+      { icon: '­ƒô©', text: 'Comparte 3 fotos del producto desde diferentes ├íngulos. Las im├ígenes claras reducen las dudas y aumentan el cierre.' },
+      { icon: 'Ô¡É', text: 'Pide a cada cliente satisfecho que te recomiende con un conocido. El voz a voz es tu mejor publicidad.' },
+      { icon: '­ƒÄü', text: 'Ofrece un peque├▒o regalo o env├¡o gratis por encima de cierto monto para aumentar el ticket promedio.' },
+      { icon: '­ƒôà', text: `Las ventas pico son los ${bestDay.count > 0 ? bestDay.name : 'fines de semana'}. Planifica m├ís stock and asesoras disponibles ese d├¡a.` },
+      { icon: 'ÔÅ░', text: `La hora de oro es a las ${bestHour.count > 0 ? hourLabels[bestHour.hour] : 'tarde'}. Programa tus publicaciones en redes en ese horario.` },
+      { icon: '­ƒÆ¼', text: 'Un seguimiento despu├®s de 24h a los carros abandonados recupera hasta un 20% de ventas perdidas.' },
+      { icon: '­ƒôè', text: 'Revisa tu anal├¡tica semanal. Los datos te dicen qu├® productos y asesoras funcionan mejor.' },
+      { icon: '­ƒôª', text: 'Mant├®n tu cat├ílogo actualizado. Los productos sin stock generan frustraci├│n y p├®rdida de clientes.' },
+      { icon: '­ƒôØ', text: 'Personaliza el mensaje de WhatsApp. Un saludo con el nombre del cliente aumenta la tasa de respuesta.' },
     ];
     const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
     const todayTips = Array.from({ length: 8 }, (_, i) => allTips[(dayOfYear + i) % allTips.length]);
@@ -1522,7 +1509,7 @@ export default function Admin() {
     const maxHoraCount = Math.max(1, ...Object.values(horasMap));
     const bestHour = (Object.entries(horasMap) as [string, number][]).reduce((best, [h, c]) => c > best[1] ? [h, c] : best, ['0', 0]);
 
-    const dayNames = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    const dayNames = ['Domingo','Lunes','Martes','Mi├®rcoles','Jueves','Viernes','S├íbado'];
     const dayCounts: Record<number, number> = {0:0,1:0,2:0,3:0,4:0,5:0,6:0};
     aCompletados.forEach(p => { const d = new Date(p.created_at).getDay(); dayCounts[d] = (dayCounts[d] || 0) + 1; });
     const bestDayEntry = (Object.entries(dayCounts) as [string, number][]).sort((a, b) => Number(b[1]) - Number(a[1]))[0];
@@ -1596,8 +1583,8 @@ export default function Admin() {
 
     const primaryColor = configuracion?.color_primario || '#6366f1';
     const orderOfWeek = [1, 2, 3, 4, 5, 6, 0]; // Lun, Mar, Mie, Jue, Vie, Sab, Dom
-    const shortDayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-    const dayNames = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    const shortDayNames = ['Dom', 'Lun', 'Mar', 'Mi├®', 'Jue', 'Vie', 'S├íb'];
+    const dayNames = ['Domingo','Lunes','Martes','Mi├®rcoles','Jueves','Viernes','S├íbado'];
 
     const horaLabels = [
       '12:00 AM', '1:00 AM', '2:00 AM', '3:00 AM', '4:00 AM', '5:00 AM', '6:00 AM', '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM',
@@ -1609,10 +1596,10 @@ export default function Admin() {
         {/* KPI Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem' }}>
           {[
-            { label: 'Ventas Completadas', value: aCompletados.length, icon: '✅', color: '#10b981', sub: `$${totalVentas.toLocaleString()} total` },
-            { label: 'Pendientes de Pago', value: aPendientes.length, icon: '⏳', color: '#eab308', sub: 'Esperando comprobante' },
-            { label: 'Abandonos', value: aLeads.length, icon: '🔴', color: '#ef4444', sub: 'Borradores / no interesados' },
-            { label: 'Ticket Promedio', value: `$${ticketProm.toLocaleString()}`, icon: '💰', color: primaryColor, sub: 'Por venta completada' },
+            { label: 'Ventas Completadas', value: aCompletados.length, icon: 'Ô£à', color: '#10b981', sub: `$${totalVentas.toLocaleString()} total` },
+            { label: 'Pendientes de Pago', value: aPendientes.length, icon: 'ÔÅ│', color: '#eab308', sub: 'Esperando comprobante' },
+            { label: 'Abandonos', value: aLeads.length, icon: '­ƒö┤', color: '#ef4444', sub: 'Borradores / no interesados' },
+            { label: 'Ticket Promedio', value: `$${ticketProm.toLocaleString()}`, icon: '­ƒÆ░', color: primaryColor, sub: 'Por venta completada' },
           ].map((kpi, i) => (
             <div key={i} style={{ background: '#f8fafc', borderRadius: '14px', padding: '1rem', border: `2px solid ${kpi.color}22`, position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', right: '-8px', top: '-8px', fontSize: '3rem', opacity: 0.1 }}>{kpi.icon}</div>
@@ -1628,10 +1615,10 @@ export default function Admin() {
           
           {/* Horario de Mayor Venta */}
           <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
-            <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>⏰ Horario de Mayor Venta</h4>
+            <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>ÔÅ░ Horario de Mayor Venta</h4>
             <p style={{ margin: '0 0 1rem 0', color: '#64748b', fontSize: '0.8rem' }}>
               {aCompletados.length > 0 ? (
-                <>Pico máximo: <strong>{horaLabels[Number(bestHour[0])]}</strong> ({bestHour[1]} {bestHour[1] === 1 ? 'venta' : 'ventas'})</>
+                <>Pico m├íximo: <strong>{horaLabels[Number(bestHour[0])]}</strong> ({bestHour[1]} {bestHour[1] === 1 ? 'venta' : 'ventas'})</>
               ) : (
                 'Sin datos suficientes'
               )}
@@ -1657,12 +1644,12 @@ export default function Admin() {
             </div>
           </div>
 
-          {/* Ventas por Día de la Semana */}
+          {/* Ventas por D├¡a de la Semana */}
           <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
-            <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>📅 Ventas por Día de la Semana</h4>
+            <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>­ƒôà Ventas por D├¡a de la Semana</h4>
             <p style={{ margin: '0 0 1rem 0', color: '#64748b', fontSize: '0.8rem' }}>
               {aCompletados.length > 0 && bestDay.count > 0 ? (
-                <>Día más fuerte: <strong>{bestDay.name}</strong> ({bestDay.count} {bestDay.count === 1 ? 'venta' : 'ventas'})</>
+                <>D├¡a m├ís fuerte: <strong>{bestDay.name}</strong> ({bestDay.count} {bestDay.count === 1 ? 'venta' : 'ventas'})</>
               ) : (
                 'Sin datos suficientes'
               )}
@@ -1699,12 +1686,12 @@ export default function Admin() {
         {/* Row for Products and Months */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
           
-          {/* Productos Más Vendidos */}
+          {/* Productos M├ís Vendidos */}
           <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
-            <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>🛍️ Productos Más Vendidos</h4>
+            <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>­ƒøì´©Å Productos M├ís Vendidos</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {topSellingProducts.length === 0 ? (
-                <p style={{ color: '#94a3b8', fontSize: '0.85rem', textAlign: 'center', margin: '2rem 0' }}>Sin productos vendidos todavía</p>
+                <p style={{ color: '#94a3b8', fontSize: '0.85rem', textAlign: 'center', margin: '2rem 0' }}>Sin productos vendidos todav├¡a</p>
               ) : (
                 topSellingProducts.map((prod: any, idx: number) => (
                   <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.4rem 0.5rem', background: 'white', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
@@ -1712,7 +1699,7 @@ export default function Admin() {
                       {prod.imagen_url ? (
                         <img src={prod.imagen_url} alt={prod.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
-                        <span style={{ fontSize: '1rem' }}>👕</span>
+                        <span style={{ fontSize: '1rem' }}>­ƒæò</span>
                       )}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -1732,10 +1719,10 @@ export default function Admin() {
             </div>
           </div>
 
-          {/* Histórico 6 meses / Distribución Pedidos */}
+          {/* Hist├│rico 6 meses / Distribuci├│n Pedidos */}
           <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr', gap: '1rem' }}>
             <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
-              <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>📈 Ventas Últimos 6 Meses</h4>
+              <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>­ƒôê Ventas ├Ültimos 6 Meses</h4>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '60px' }}>
                 {monthEntries.map(([key, count]: any, idx: number) => {
                   const pct = (count / maxMonthCount) * 100;
@@ -1755,7 +1742,7 @@ export default function Admin() {
             </div>
 
             <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '1rem 1.25rem', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>🥧 Distribución de Pedidos</h4>
+              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>­ƒÑº Distribuci├│n de Pedidos</h4>
               {aPedidos.length === 0 ? (
                 <p style={{ color: '#94a3b8', fontSize: '0.8rem', textAlign: 'center', margin: 0 }}>Sin pedidos</p>
               ) : (() => {
@@ -1818,7 +1805,7 @@ export default function Admin() {
     if (orderFilterDate) {
       temp = temp.filter(l => l.created_at.startsWith(orderFilterDate));
     }
-    if ((role === 'asesor' || role === 'mayorista') && loggedAsesorPhone) {
+    if (role === 'asesor' && loggedAsesorPhone) {
       temp = temp.filter(l => {
         const leadPhone = l.linea_whatsapp?.replace(/\D/g, '');
         const advisorPhones = loggedAsesorPhone.split(',').map(phone => phone.replace(/\D/g, '')).filter(Boolean);
@@ -1898,7 +1885,7 @@ export default function Admin() {
       
       // Actualizar estado local
       setProductos(prev => prev.filter(p => !deleteIds.includes(p.id)));
-      showToast(`Duplicados eliminados. Se conservó 1 versión de "${toKeep.nombre}".`);
+      showToast(`Duplicados eliminados. Se conserv├│ 1 versi├│n de "${toKeep.nombre}".`);
     } catch (err: any) {
       console.error(err);
       showToast('Error al eliminar duplicados', 'error');
@@ -1910,7 +1897,7 @@ export default function Admin() {
   async function handleCrearMaterial(e: React.FormEvent) {
     e.preventDefault();
     if (!nuevoMaterialTitulo.trim() || !nuevoMaterialUrl.trim()) {
-      showToast('Título y archivo son obligatorios.', 'error');
+      showToast('T├¡tulo y archivo son obligatorios.', 'error');
       return;
     }
     setLoading(true);
@@ -1923,8 +1910,7 @@ export default function Admin() {
           titulo: nuevoMaterialTitulo.trim(),
           descripcion: nuevoMaterialDesc.trim() || null,
           tipo: nuevoMaterialTipo,
-          url: nuevoMaterialUrl,
-          campana: nuevoMaterialCampana.trim() || null
+          url: nuevoMaterialUrl
         })
         .select()
         .single();
@@ -1935,8 +1921,7 @@ export default function Admin() {
       setNuevoMaterialTitulo('');
       setNuevoMaterialDesc('');
       setNuevoMaterialUrl('');
-      setNuevoMaterialCampana('');
-      showToast('Material de apoyo agregado ✓', 'success');
+      showToast('Material de apoyo agregado Ô£ô', 'success');
     } catch (err: any) {
       console.error(err);
       showToast('Error registrando material: ' + err.message, 'error');
@@ -1946,7 +1931,7 @@ export default function Admin() {
   }
 
   async function handleEliminarMaterial(id: string) {
-    if (!window.confirm('¿Seguro que deseas eliminar este material de apoyo?')) return;
+    if (!window.confirm('┬┐Seguro que deseas eliminar este material de apoyo?')) return;
     setLoading(true);
     try {
       const { error } = await supabase
@@ -1957,7 +1942,7 @@ export default function Admin() {
       if (error) throw error;
 
       setMateriales(materiales.filter(m => m.id !== id));
-      showToast('Material de apoyo eliminado ✓', 'success');
+      showToast('Material de apoyo eliminado Ô£ô', 'success');
     } catch (err: any) {
       console.error(err);
       showToast('Error eliminando material: ' + err.message, 'error');
@@ -1970,7 +1955,7 @@ export default function Admin() {
     e.preventDefault();
     const activeTelefonos = nuevoAsesorTelefonos.map(t => t.trim()).filter(Boolean);
     if (!nuevoAsesorNombre.trim() || activeTelefonos.length === 0) {
-      showToast('Por favor, ingresa el nombre y al menos un teléfono para el asesor.', 'error');
+      showToast('Por favor, ingresa el nombre y al menos un tel├®fono para el asesor.', 'error');
       return;
     }
 
@@ -1998,7 +1983,7 @@ export default function Admin() {
       setNuevoAsesorTelefonos(['']);
       setNuevoAsesorFotoUrl('');
       setNuevoAsesorPin(Math.floor(1000 + Math.random() * 9000).toString());
-      showToast('Asesor creado exitosamente ✓', 'success');
+      showToast('Asesor creado exitosamente Ô£ô', 'success');
     } catch (err: any) {
       console.error(err);
       showToast('Error al crear asesor: ' + err.message, 'error');
@@ -2010,7 +1995,7 @@ export default function Admin() {
   async function handleGuardarAsesorEdicion(id: string) {
     const activeTelefonos = editingAsesorTelefonos.map(t => t.trim()).filter(Boolean);
     if (!editingAsesorNombre.trim() || activeTelefonos.length === 0 || !editingAsesorPin.trim()) {
-      showToast('Por favor completa todos los campos del asesor y agrega al menos un teléfono.', 'error');
+      showToast('Por favor completa todos los campos del asesor y agrega al menos un tel├®fono.', 'error');
       return;
     }
     setLoading(true);
@@ -2030,7 +2015,7 @@ export default function Admin() {
 
       setAsesores(prev => prev.map(item => item.id === id ? { ...item, nombre: editingAsesorNombre.trim(), telefono: cleanPhone, pin: editingAsesorPin.trim(), foto_url: editingAsesorFotoUrl.trim() || undefined } : item));
       setEditingAsesorId(null);
-      showToast('Cambios guardados ✓', 'success');
+      showToast('Cambios guardados Ô£ô', 'success');
       cargarDatos();
     } catch (err: any) {
       console.error(err);
@@ -2041,7 +2026,7 @@ export default function Admin() {
   }
 
   async function handleEliminarAsesor(id: string) {
-    if (!window.confirm('¿Estás seguro de que deseas eliminar este asesor?')) return;
+    if (!window.confirm('┬┐Est├ís seguro de que deseas eliminar este asesor?')) return;
     setLoading(true);
     try {
       const { error } = await supabase
@@ -2052,7 +2037,7 @@ export default function Admin() {
       if (error) throw error;
 
       setAsesores(prev => prev.filter(a => a.id !== id));
-      showToast('Asesor eliminado ✓', 'success');
+      showToast('Asesor eliminado Ô£ô', 'success');
     } catch (err: any) {
       console.error(err);
       showToast('Error al eliminar asesor: ' + err.message, 'error');
@@ -2063,7 +2048,7 @@ export default function Admin() {
 
   async function handleEliminarPorFecha() {
     if (!deleteDate) return;
-    if (!window.confirm(`¿Estás seguro de que deseas eliminar TODOS los productos creados el día ${deleteDate}? Esta acción no se puede deshacer.`)) return;
+    if (!window.confirm(`┬┐Est├ís seguro de que deseas eliminar TODOS los productos creados el d├¡a ${deleteDate}? Esta acci├│n no se puede deshacer.`)) return;
     
     setLoading(true);
     try {
@@ -2081,7 +2066,7 @@ export default function Admin() {
       if (error) {
         showToast('Error al eliminar: ' + error.message, 'error');
       } else {
-        showToast(`Se eliminaron ${data?.length || 0} productos creados el ${deleteDate} ✓`);
+        showToast(`Se eliminaron ${data?.length || 0} productos creados el ${deleteDate} Ô£ô`);
         cargarDatos();
         setDeleteDate('');
       }
@@ -2112,10 +2097,10 @@ export default function Admin() {
       setProductos([]);
       setShowToolsModal(false);
       setWipeConfirmText('');
-      showToast('El catálogo ha sido vaciado por completo.');
+      showToast('El cat├ílogo ha sido vaciado por completo.');
     } catch (err: any) {
       console.error(err);
-      showToast('Error al vaciar el catálogo', 'error');
+      showToast('Error al vaciar el cat├ílogo', 'error');
     } finally {
       setWipingCatalog(false);
     }
@@ -2126,7 +2111,7 @@ export default function Admin() {
     p.categoria.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // ── LOGIN SCREEN ──
+  // ÔöÇÔöÇ LOGIN SCREEN ÔöÇÔöÇ
   const [dbCompanies, setDbCompanies] = useState<any[]>([]);
   const [imageErrors, setImageErrors] = useState<Record<string, boolean>>({});
   
@@ -2147,7 +2132,7 @@ export default function Admin() {
       { id: 'saramantha', name: 'Saramantha', logo: '/saramantha-logo.jpg' }, 
       { id: 'sublimados_majestic', name: 'Sublimados Majestic', logo: '/sublimados-logo.jpg' },
       { id: 'pijamas_lucerito', name: 'Pijamas Lucerito', logo: '/lucerito-logo.jpg' },
-      { id: 'sueno_de_reina', name: 'Sueño de Reina', logo: '/sueno-de-reina-logo.jpg' },
+      { id: 'sueno_de_reina', name: 'Sue├▒o de Reina', logo: '/sueno-de-reina-logo.jpg' },
     ];
     
     // Mezclar las bases con las de la base de datos
@@ -2179,7 +2164,7 @@ export default function Admin() {
               )}
             </div>
             <h1>Indisutex Admin</h1>
-            <p>Selecciona tu empresa para gestionar el catálogo</p>
+            <p>Selecciona tu empresa para gestionar el cat├ílogo</p>
           </div>
           
           {!selectedCompany ? (
@@ -2215,33 +2200,6 @@ export default function Admin() {
                   </button>
                 ))}
               </div>
-              <div style={{ marginTop: '1.5rem' }}>
-                <button 
-                  className="company-btn"
-                  onClick={() => {
-                    window.location.href = '/superadmin';
-                  }}
-                  style={{
-                    width: '100%',
-                    background: 'linear-gradient(135deg, #0f172a, #1e293b)',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '12px', 
-                    padding: '1.25rem',
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    gap: '0.8rem', 
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    fontWeight: 800,
-                    fontSize: '1rem',
-                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
-                  }}
-                >
-                  <Building2 size={20} style={{ color: '#38bdf8' }} /> Administrar Superior (Indisutex)
-                </button>
-              </div>
             </div>
           ) : (
             <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -2265,7 +2223,7 @@ export default function Admin() {
         </div>
         {toast && (
           <div className={`admin-toast ${toast.type}`}>
-            <span>{toast.type === 'error' ? '❌' : '✅'}</span>
+            <span>{toast.type === 'error' ? 'ÔØî' : 'Ô£à'}</span>
             <span>{toast.message}</span>
           </div>
         )}
@@ -2273,9 +2231,9 @@ export default function Admin() {
     );
   }
 
-  // ── EDIT PRODUCT MODAL ──
+  // ÔöÇÔöÇ EDIT PRODUCT MODAL ÔöÇÔöÇ
   // Sync editExtraImages when editingProduct changes
-  // (handled via setEditingProduct call site – pre-populate below at click)
+  // (handled via setEditingProduct call site ÔÇô pre-populate below at click)
 
   if (editingProduct) {
     return (
@@ -2286,7 +2244,7 @@ export default function Admin() {
         <div className="admin-main">
           <div className="admin-topbar">
             <div className="topbar-title">
-              <h2>✏️ Editando Producto</h2>
+              <h2>Ô£Å´©Å Editando Producto</h2>
               <p>{editingProduct.nombre}</p>
             </div>
             <div className="topbar-actions">
@@ -2312,7 +2270,7 @@ export default function Admin() {
                       <input required value={editingProduct.nombre} onChange={e => setEditingProduct({ ...editingProduct, nombre: e.target.value })} />
                     </div>
                     <div className="form-field full">
-                      <label>Descripción</label>
+                      <label>Descripci├│n</label>
                       <textarea value={editingProduct.descripcion || ''} onChange={e => setEditingProduct({ ...editingProduct, descripcion: e.target.value })} rows={3} />
                     </div>
                     <div className="form-field">
@@ -2332,7 +2290,7 @@ export default function Admin() {
                        <input type="number" min="0" value={editingProduct.stock || 0} onChange={e => setEditingProduct({ ...editingProduct, stock: parseInt(e.target.value) || 0 })} />
                      </div>
                      <div className="form-field">
-                       <label>Categoría</label>
+                       <label>Categor├¡a</label>
                        <select value={editingProduct.categoria} onChange={e => setEditingProduct({ ...editingProduct, categoria: e.target.value })}>
                          {categoriasData.map(c => <option key={c.id} value={c.slug}>{c.nombre}</option>)}
                        </select>
@@ -2343,7 +2301,7 @@ export default function Admin() {
                          <input value={editingProduct.tallas || ''} onChange={e => setEditingProduct({ ...editingProduct, tallas: e.target.value })} placeholder="Ej: S, M, L, XL" />
                        </div>
                        <div>
-                         <label>Estampados / Temáticas</label>
+                         <label>Estampados / Tem├íticas</label>
                          <input value={editingProduct.estampados || ''} onChange={e => setEditingProduct({ ...editingProduct, estampados: e.target.value })} placeholder="Ej: Dinosaurios, Ositos, Rayas" />
                        </div>
                      </div>
@@ -2359,22 +2317,22 @@ export default function Admin() {
                       <input id="edit-main-img-upload" type="file" accept="image/*" style={{ display: 'none' }} onChange={handleEditMainImgUpload} />
                     </div>
 
-                    {/* ── FOTOS EXTRA ── */}
+                    {/* ÔöÇÔöÇ FOTOS EXTRA ÔöÇÔöÇ */}
                     <div className="form-field full">
-                      <label>📸 Fotos Adicionales del Producto</label>
+                      <label>­ƒô© Fotos Adicionales del Producto</label>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '0.5rem' }}>
                         {editExtraImages.map((url, idx) => (
                           <div key={idx} style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '0.3rem', alignItems: 'center' }}>
                             {url && <img src={url} alt="" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 8, border: '2px solid #e2e8f0' }} />}
-                            {!url && <div style={{ width: 80, height: 80, background: '#f1f5f9', borderRadius: 8, border: '2px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>📷</div>}
+                            {!url && <div style={{ width: 80, height: 80, background: '#f1f5f9', borderRadius: 8, border: '2px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>­ƒôÀ</div>}
                             <label htmlFor={`edit-extra-${idx}`} style={{ cursor: 'pointer', fontSize: '0.7rem', color: '#0ea5e9', fontWeight: 600 }}>
-                              {editUploadingIdx === idx ? '...' : '📤 Cambiar'}
+                              {editUploadingIdx === idx ? '...' : '­ƒôñ Cambiar'}
                             </label>
                             <input id={`edit-extra-${idx}`} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleEditExtraUpload(e, idx)} />
-                            <button type="button" onClick={() => setEditExtraImages(prev => prev.filter((_, i) => i !== idx))} style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: '#ef4444', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                            <button type="button" onClick={() => setEditExtraImages(prev => prev.filter((_, i) => i !== idx))} style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: '#ef4444', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Ô£ò</button>
                           </div>
                         ))}
-                        {/* Botón agregar foto extra */}
+                        {/* Bot├│n agregar foto extra */}
                         <label htmlFor="edit-extra-new" style={{ width: 80, height: 80, background: '#f0fdf4', border: '2px dashed #22c55e', borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.65rem', color: '#16a34a', fontWeight: 700, gap: '0.2rem' }}>
                           <span style={{ fontSize: '1.4rem' }}>+</span> Agregar foto
                         </label>
@@ -2393,7 +2351,7 @@ export default function Admin() {
                               urls.push(data.publicUrl);
                             }
                             setEditExtraImages(prev => [...prev, ...urls]);
-                            showToast(`${urls.length} foto(s) agregada(s) ✓`);
+                            showToast(`${urls.length} foto(s) agregada(s) Ô£ô`);
                           } catch { showToast('Error al subir foto(s)', 'error'); }
                           finally { setEditUploadingIdx(null); }
                         }} />
@@ -2409,7 +2367,7 @@ export default function Admin() {
     );
   }
 
-  // ── EDIT CATEGORY MODAL ──
+  // ÔöÇÔöÇ EDIT CATEGORY MODAL ÔöÇÔöÇ
   if (editingCategory) {
     return (
       <div className="admin-app">
@@ -2419,7 +2377,7 @@ export default function Admin() {
         <div className="admin-main">
           <div className="admin-topbar">
             <div className="topbar-title">
-              <h2>✏️ Editando Categoría</h2>
+              <h2>Ô£Å´©Å Editando Categor├¡a</h2>
               <p>{editingCategory.nombre}</p>
             </div>
             <div className="topbar-actions">
@@ -2433,7 +2391,7 @@ export default function Admin() {
             <div className="admin-panel">
               <div className="panel-header">
                 <div>
-                  <h3><Pencil size={16} /> Editar Categoría</h3>
+                  <h3><Pencil size={16} /> Editar Categor├¡a</h3>
                   <p>Modifica los datos y guarda</p>
                 </div>
               </div>
@@ -2441,7 +2399,7 @@ export default function Admin() {
                 <form id="edit-category-form" onSubmit={handleUpdateCategory}>
                   <div className="form-grid">
                     <div className="form-field full">
-                      <label>Nombre de la Categoría</label>
+                      <label>Nombre de la Categor├¡a</label>
                       <input required value={editingCategory.nombre} onChange={e => setEditingCategory({ ...editingCategory, nombre: e.target.value })} />
                     </div>
                     <div className="form-field">
@@ -2449,7 +2407,7 @@ export default function Admin() {
                       <input required value={editingCategory.slug} onChange={e => setEditingCategory({ ...editingCategory, slug: e.target.value })} />
                     </div>
                     <div className="form-field">
-                      <label>Ícono (Emoji)</label>
+                      <label>├ìcono (Emoji)</label>
                       <input value={editingCategory.icono || ''} onChange={e => setEditingCategory({ ...editingCategory, icono: e.target.value })} />
                     </div>
                     <div className="form-field">
@@ -2475,7 +2433,7 @@ export default function Admin() {
                               if (upErr) throw upErr;
                               const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
                               setEditingCategory({ ...editingCategory, imagen_url: data.publicUrl });
-                              showToast('Imagen cargada ✓');
+                              showToast('Imagen cargada Ô£ô');
                             } catch (err: any) {
                               showToast(`Error al subir imagen: ${err.message || err}`, 'error');
                             } finally {
@@ -2495,7 +2453,7 @@ export default function Admin() {
     );
   }
 
-  // ── EDIT SUBCATEGORY MODAL ──
+  // ÔöÇÔöÇ EDIT SUBCATEGORY MODAL ÔöÇÔöÇ
   if (editingSubcategory) {
     return (
       <div className="admin-app">
@@ -2505,7 +2463,7 @@ export default function Admin() {
         <div className="admin-main">
           <div className="admin-topbar">
             <div className="topbar-title">
-              <h2>✏️ Editando Subcategoría</h2>
+              <h2>Ô£Å´©Å Editando Subcategor├¡a</h2>
               <p>{editingSubcategory.nombre}</p>
             </div>
             <div className="topbar-actions">
@@ -2519,7 +2477,7 @@ export default function Admin() {
             <div className="admin-panel">
               <div className="panel-header">
                 <div>
-                  <h3><Pencil size={16} /> Editar Subcategoría</h3>
+                  <h3><Pencil size={16} /> Editar Subcategor├¡a</h3>
                   <p>Modifica los datos y guarda</p>
                 </div>
               </div>
@@ -2527,7 +2485,7 @@ export default function Admin() {
                 <form id="edit-subcategory-form" onSubmit={handleUpdateSubcategory}>
                   <div className="form-grid">
                     <div className="form-field full">
-                      <label>Nombre de la Subcategoría</label>
+                      <label>Nombre de la Subcategor├¡a</label>
                       <input required value={editingSubcategory.nombre} onChange={e => setEditingSubcategory({ ...editingSubcategory, nombre: e.target.value })} />
                     </div>
                     <div className="form-field">
@@ -2535,7 +2493,7 @@ export default function Admin() {
                       <input required value={editingSubcategory.slug} onChange={e => setEditingSubcategory({ ...editingSubcategory, slug: e.target.value })} />
                     </div>
                     <div className="form-field">
-                      <label>Categoría Padre</label>
+                      <label>Categor├¡a Padre</label>
                       <select value={editingSubcategory.categoria_id} onChange={e => setEditingSubcategory({ ...editingSubcategory, categoria_id: e.target.value })}>
                         {categoriasData.map(c => <option key={c.id} value={c.id}>{c.nombre}</option>)}
                       </select>
@@ -2550,17 +2508,7 @@ export default function Admin() {
     );
   }
 
-  const uniqueCampanas = useMemo(() => {
-    const campanas = materiales.map(m => m.campana).filter(Boolean);
-    return Array.from(new Set(campanas));
-  }, [materiales]);
-
-  const filteredMateriales = materiales.filter(m => {
-    const typeMatch = materialFilter === 'todos' || m.tipo === materialFilter;
-    const campanaMatch = campanaFilter === 'todas' || m.campana === campanaFilter;
-    return typeMatch && campanaMatch;
-  });
-  // ── MAIN DASHBOARD ──
+  // ÔöÇÔöÇ MAIN DASHBOARD ÔöÇÔöÇ
   return (
     <div className="admin-app">
       {/* SIDEBAR */}
@@ -2611,24 +2559,24 @@ export default function Admin() {
                     {currentAsesor.nombre}
                   </h2>
                   <p style={{ margin: '0.05rem 0 0 0', fontSize: '0.74rem', color: configuracion?.color_primario || '#6366f1', fontWeight: 700, fontStyle: 'normal', fontFamily: 'Nunito, sans-serif' }}>
-                    ✨ {getMotivationalPhrase(currentAsesor.id)}
+                    Ô£¿ {getMotivationalPhrase(currentAsesor.id)}
                   </p>
                 </div>
               </>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
                 <h2 style={{ margin: 0 }}>
-                  {activeTab === 'dashboard' && '📊 Dashboard'}
-                  {activeTab === 'productos' && '📦 Productos'}
-                  {activeTab === 'categorias' && '🗂️ Categorías'}
-                  {activeTab === 'clientes' && '👥 Clientes'}
-                  {activeTab === 'asesores' && '👥 Asesores'}
-                  {activeTab === 'mayoristas' && '👥 Mayoristas'}
-                  {activeTab === 'config' && '⚙️ Configuración'}
+                  {activeTab === 'dashboard' && '­ƒôè Dashboard'}
+                  {activeTab === 'productos' && '­ƒôª Productos'}
+                  {activeTab === 'categorias' && '­ƒùé´©Å Categor├¡as'}
+                  {activeTab === 'clientes' && '­ƒæÑ Clientes'}
+                  {activeTab === 'asesores' && '­ƒæÑ Asesores'}
+                  {activeTab === 'mayoristas' && '­ƒæÑ Mayoristas'}
+                  {activeTab === 'config' && 'ÔÜÖ´©Å Configuraci├│n'}
                 </h2>
                 <p style={{ margin: '0.15rem 0 0 0' }}>
                   {activeTab === 'productos' && `${productos.length} productos en total`}
-                  {activeTab === 'categorias' && `${categoriasData.length} categorías activas`}
+                  {activeTab === 'categorias' && `${categoriasData.length} categor├¡as activas`}
                   {activeTab === 'clientes' && `${clientes.length} clientes en total`}
                   {activeTab === 'asesores' && `${asesores.filter(a => a.tipo === 'asesor' || !a.tipo).length} asesores en tu equipo`}
                   {activeTab === 'mayoristas' && `${asesores.filter(a => a.tipo === 'mayorista').length} mayoristas en tu equipo`}
@@ -2657,146 +2605,60 @@ export default function Admin() {
               ) : (
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                   <button className="btn-primary" onClick={() => setIsAddingCategory(true)}>
-                    <Plus size={14} /> Nueva Categoría
+                    <Plus size={14} /> Nueva Categor├¡a
                   </button>
                   <button className="btn-primary" onClick={() => setIsAddingSubcategory(true)} style={{ background: '#10b981' }}>
-                    <Plus size={14} /> Nueva Subcategoría
+                    <Plus size={14} /> Nueva Subcategor├¡a
                   </button>
                 </div>
               )
             )}
             {role === 'asesor' && (
-              <div style={{ position: 'relative' }}>
-                <button
-                  type="button"
-                  className="btn-secondary"
-                  onClick={() => setShowNotificationsPopover(!showNotificationsPopover)}
-                  style={{
-                    display: 'inline-flex',
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setActiveTab('notificaciones_asesor')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '0.55rem',
+                  borderRadius: '10px',
+                  border: activeTab === 'notificaciones_asesor' ? '1px solid #fee2e2' : '1px solid #cbd5e1',
+                  cursor: 'pointer',
+                  background: activeTab === 'notificaciones_asesor' ? '#fee2e2' : 'white',
+                  color: activeTab === 'notificaciones_asesor' ? '#ef4444' : '#475569',
+                  position: 'relative',
+                  transition: 'all 0.2s',
+                  width: '38px',
+                  height: '38px',
+                  flexShrink: 0
+                }}
+                title="Notificaciones y Alertas"
+              >
+                <Bell size={18} className={activeNotificationsCount > 0 ? 'pulse-bell' : ''} style={{ color: activeNotificationsCount > 0 ? '#ef4444' : 'inherit' }} />
+                {activeNotificationsCount > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: '-6px',
+                    right: '-6px',
+                    background: '#ef4444',
+                    color: 'white',
+                    fontSize: '0.65rem',
+                    padding: '2px 5px',
+                    borderRadius: '50%',
+                    fontWeight: 800,
+                    border: '2px solid white',
+                    display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    padding: '0.55rem',
-                    borderRadius: '10px',
-                    border: showNotificationsPopover ? '1px solid #fee2e2' : '1px solid #cbd5e1',
-                    cursor: 'pointer',
-                    background: showNotificationsPopover ? '#fee2e2' : 'white',
-                    color: showNotificationsPopover ? '#ef4444' : '#475569',
-                    position: 'relative',
-                    transition: 'all 0.2s',
-                    width: '38px',
-                    height: '38px',
-                    flexShrink: 0
-                  }}
-                  title="Notificaciones y Alertas"
-                >
-                  <Bell size={18} className={activeNotificationsCount > 0 ? 'pulse-bell' : ''} style={{ color: activeNotificationsCount > 0 ? '#ef4444' : 'inherit' }} />
-                  {activeNotificationsCount > 0 && (
-                    <span style={{
-                      position: 'absolute',
-                      top: '-6px',
-                      right: '-6px',
-                      background: '#ef4444',
-                      color: 'white',
-                      fontSize: '0.65rem',
-                      padding: '2px 5px',
-                      borderRadius: '50%',
-                      fontWeight: 800,
-                      border: '2px solid white',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      minWidth: '18px',
-                      height: '18px'
-                    }}>
-                      {activeNotificationsCount}
-                    </span>
-                  )}
-                </button>
-                
-                {showNotificationsPopover && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '120%',
-                    right: 0,
-                    width: '320px',
-                    background: 'white',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '16px',
-                    boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)',
-                    zIndex: 1000,
-                    overflow: 'hidden',
-                    display: 'flex',
-                    flexDirection: 'column'
+                    minWidth: '18px',
+                    height: '18px'
                   }}>
-                    <div style={{ padding: '1rem', borderBottom: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>Notificaciones</h4>
-                      <button onClick={() => setShowNotificationsPopover(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b' }}>
-                        <X size={16} />
-                      </button>
-                    </div>
-                    <div style={{ maxHeight: '350px', overflowY: 'auto', padding: '0.5rem' }}>
-                      {activeNotifications.length === 0 ? (
-                        <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#64748b' }}>
-                          <p style={{ margin: '0 0 0.5rem 0', fontSize: '2rem' }}>🎉</p>
-                          <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700 }}>¡Estás al día!</p>
-                        </div>
-                      ) : (
-                        activeNotifications.map((notif: any) => {
-                          const isDanger = notif.type === 'danger';
-                          const isWarning = notif.type === 'warning';
-                          const isSuccess = notif.type === 'success';
-                          const primaryColor = configuracion?.color_primario || '#6366f1';
-                          
-                          return (
-                            <div key={notif.id} style={{
-                              padding: '0.75rem',
-                              borderBottom: '1px solid #f1f5f9',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '0.5rem',
-                              background: isDanger ? '#fef2f2' : isWarning ? '#fffbeb' : 'transparent',
-                              borderRadius: '8px',
-                              marginBottom: '0.25rem'
-                            }}>
-                              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
-                                <span style={{ fontSize: '1.1rem' }}>
-                                  {isDanger ? '🔴' : isWarning ? '🟡' : isSuccess ? '🟢' : '🔵'}
-                                </span>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
-                                  <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 800, color: '#0f172a' }}>{notif.title}</h4>
-                                  <p style={{ margin: 0, fontSize: '0.78rem', color: '#475569', lineHeight: 1.3 }}>{notif.message}</p>
-                                </div>
-                              </div>
-                              {notif.actionTab && (
-                                <button
-                                  onClick={() => {
-                                    setActiveTab(notif.actionTab);
-                                    setShowNotificationsPopover(false);
-                                  }}
-                                  style={{
-                                    background: isDanger ? '#ef4444' : isWarning ? '#f59e0b' : primaryColor,
-                                    color: 'white',
-                                    border: 'none',
-                                    padding: '0.35rem 0.75rem',
-                                    borderRadius: '6px',
-                                    fontSize: '0.75rem',
-                                    fontWeight: 700,
-                                    cursor: 'pointer',
-                                    alignSelf: 'flex-start',
-                                    marginLeft: '1.6rem'
-                                  }}
-                                >
-                                  Ir a atender
-                                </button>
-                              )}
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  </div>
+                    {activeNotificationsCount}
+                  </span>
                 )}
-              </div>
+              </button>
             )}
             <button 
               type="button"
@@ -2813,7 +2675,7 @@ export default function Admin() {
 
         <div className="admin-content">
 
-          {/* ── PRODUCTS TAB ── */}
+          {/* ÔöÇÔöÇ PRODUCTS TAB ÔöÇÔöÇ */}
           {activeTab === 'productos' && (
             <>
               {isAddingProduct ? (
@@ -2821,7 +2683,7 @@ export default function Admin() {
                   <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
                     <div>
                       <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}><Package size={18} /> Agregar Productos</h3>
-                      <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Selecciona tu método preferido para subir productos</p>
+                      <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Selecciona tu m├®todo preferido para subir productos</p>
                     </div>
                     <div style={{ display: 'flex', background: '#f1f5f9', padding: '0.25rem', borderRadius: '8px', gap: '0.25rem' }}>
                       <button 
@@ -2846,7 +2708,7 @@ export default function Admin() {
                         onClick={() => setUploadMethod('texto')}
                         style={{ border: 'none', background: uploadMethod === 'texto' ? '#ffffff' : 'transparent', color: uploadMethod === 'texto' ? '#0f172a' : '#64748b', padding: '0.4rem 1rem', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer', boxShadow: uploadMethod === 'texto' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none' }}
                       >
-                        📋 Copiar y Pegar Texto
+                        ­ƒôï Copiar y Pegar Texto
                       </button>
                     </div>
                   </div>
@@ -2855,7 +2717,7 @@ export default function Admin() {
                     <div className="panel-body">
                       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
                         <button className="btn-secondary" onClick={() => setBulkForms([...bulkForms, { ...emptyProduct }])}>
-                          <Plus size={14} /> Añadir fila
+                          <Plus size={14} /> A├▒adir fila
                         </button>
                       </div>
                       <form onSubmit={handleBulkSubmit}>
@@ -2883,7 +2745,7 @@ export default function Admin() {
                                 <input required value={form.nombre} onChange={e => updateBulkForm(index, 'nombre', e.target.value)} placeholder="Ej: Mameluco Oso Polar 0-3 Meses" />
                               </div>
                               <div className="form-field full">
-                                <label>Descripción</label>
+                                <label>Descripci├│n</label>
                                 <textarea value={form.descripcion} onChange={e => updateBulkForm(index, 'descripcion', e.target.value)} placeholder="Detalles del producto..." rows={2} />
                               </div>
                               <div className="form-field">
@@ -2903,7 +2765,7 @@ export default function Admin() {
                                 <input type="number" min="0" value={form.stock || 0} onChange={e => updateBulkForm(index, 'stock', parseInt(e.target.value) || 0)} placeholder="Ej: 100" />
                               </div>
                               <div className="form-field">
-                                <label>Categoría</label>
+                                <label>Categor├¡a</label>
                                 <select value={form.categoria} onChange={e => updateBulkForm(index, 'categoria', e.target.value)}>
                                   <option value="">Seleccionar...</option>
                                   {categoriasData.map(c => <option key={c.id} value={c.slug}>{c.icono} {c.nombre}</option>)}
@@ -2915,12 +2777,12 @@ export default function Admin() {
                                   <input value={form.tallas} onChange={e => updateBulkForm(index, 'tallas', e.target.value)} placeholder="Ej: S, M, L, XL" />
                                 </div>
                                 <div>
-                                  <label>Estampados / Temáticas (opcional)</label>
+                                  <label>Estampados / Tem├íticas (opcional)</label>
                                   <input value={form.estampados} onChange={e => updateBulkForm(index, 'estampados', e.target.value)} placeholder="Ej: Dinosaurios, Ositos, Rayas" />
                                 </div>
                               </div>
                               <div className="form-field full">
-                                <label>🖼️ Imágenes del Producto</label>
+                                <label>­ƒû╝´©Å Im├ígenes del Producto</label>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                   {form.imagenes.map((imgUrl, imgIdx) => (
                                     <div key={imgIdx} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', background: '#f8fafc', borderRadius: '12px', padding: '0.8rem', border: '1px solid #e2e8f0', minHeight: '170px' }}>
@@ -2933,7 +2795,7 @@ export default function Admin() {
                                         />
                                       ) : (
                                         <div style={{ width: 160, height: 160, borderRadius: 10, flexShrink: 0, background: '#e2e8f0', border: '2px dashed #94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.4rem', color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600 }}>
-                                          <span style={{ fontSize: '2rem' }}>🖼️</span>
+                                          <span style={{ fontSize: '2rem' }}>­ƒû╝´©Å</span>
                                           <span>Sin imagen</span>
                                         </div>
                                       )}
@@ -2949,7 +2811,7 @@ export default function Admin() {
                                             <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={e => handleFileUpload(e, index, imgIdx)} />
                                           </label>
                                           {imgIdx === 0 && (
-                                            <span style={{ fontSize: '0.7rem', color: '#0ea5e9', fontWeight: 700, alignSelf: 'center', background: 'rgba(14,165,233,0.1)', padding: '0.2rem 0.6rem', borderRadius: 6 }}>★ Principal</span>
+                                            <span style={{ fontSize: '0.7rem', color: '#0ea5e9', fontWeight: 700, alignSelf: 'center', background: 'rgba(14,165,233,0.1)', padding: '0.2rem 0.6rem', borderRadius: 6 }}>Ôÿà Principal</span>
                                           )}
                                         </div>
                                       </div>
@@ -2986,10 +2848,10 @@ export default function Admin() {
                   ) : (
                     <div className="panel-body">
                       <div style={{ background: '#f8fafc', padding: '3rem 2rem', border: '2px dashed #cbd5e1', borderRadius: '16px', textAlign: 'center', marginBottom: '2rem' }}>
-                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📊</div>
+                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>­ƒôè</div>
                         <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e293b', fontSize: '1.1rem' }}>Selecciona tu archivo Excel (.xlsx, .xls, .csv)</h4>
                         <p style={{ margin: '0 0 1.5rem 0', color: '#64748b', fontSize: '0.85rem', maxWidth: '500px', marginLeft: 'auto', marginRight: 'auto', lineHeight: '1.4' }}>
-                          Las columnas se detectan automáticamente de forma inteligente. Asegúrate de incluir encabezados claros como: <strong>Nombre, Descripción, Precio, Categoría, Subcategoría, Imagen, Tallas</strong>.
+                          Las columnas se detectan autom├íticamente de forma inteligente. Aseg├║rate de incluir encabezados claros como: <strong>Nombre, Descripci├│n, Precio, Categor├¡a, Subcategor├¡a, Imagen, Tallas</strong>.
                         </p>
                         <label className="btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.7rem 1.8rem', borderRadius: '8px', fontSize: '0.9rem' }}>
                           <Upload size={14} /> Seleccionar Archivo Excel
@@ -3002,7 +2864,7 @@ export default function Admin() {
                           <div className="panel-header" style={{ borderBottom: 'none', padding: 0, marginBottom: '1rem' }}>
                             <div>
                               <h4 style={{ margin: 0, fontSize: '1rem' }}>Vista Previa de Productos ({excelProducts.length})</h4>
-                              <p style={{ color: '#64748b', fontSize: '0.8rem', margin: '0.2rem 0 0 0' }}>Revisa la información antes de importarla en tu base de datos</p>
+                              <p style={{ color: '#64748b', fontSize: '0.8rem', margin: '0.2rem 0 0 0' }}>Revisa la informaci├│n antes de importarla en tu base de datos</p>
                             </div>
                           </div>
                           <div style={{ overflowX: 'auto', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', marginBottom: '1.5rem' }}>
@@ -3011,7 +2873,7 @@ export default function Admin() {
                                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                                   <th style={{ padding: '0.8rem 1rem' }}>Referencia</th>
                                   <th style={{ padding: '0.8rem 1rem' }}>Nombre</th>
-                                  <th style={{ padding: '0.8rem 1rem' }}>Categoría</th>
+                                  <th style={{ padding: '0.8rem 1rem' }}>Categor├¡a</th>
                                   <th style={{ padding: '0.8rem 1rem' }}>Costo</th>
                                   <th style={{ padding: '0.8rem 1rem' }}>Por Mayor</th>
                                   <th style={{ padding: '0.8rem 1rem' }}>Detal</th>
@@ -3046,9 +2908,9 @@ export default function Admin() {
                   {uploadMethod === 'texto' && (
                     <div className="panel-body" style={{ padding: '1.25rem' }}>
                       <div style={{ marginBottom: '1.25rem' }}>
-                        <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.95rem', fontWeight: 700, color: '#0f172a' }}>📋 Importar Productos desde Texto Copiado</h4>
+                        <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.95rem', fontWeight: 700, color: '#0f172a' }}>­ƒôï Importar Productos desde Texto Copiado</h4>
                         <p style={{ color: '#64748b', fontSize: '0.8rem', margin: 0 }}>
-                          Pega las filas en formato CSV o separado por tabuladores. Incluye la cabecera en la primera línea.
+                          Pega las filas en formato CSV o separado por tabuladores. Incluye la cabecera en la primera l├¡nea.
                         </p>
                         <p style={{ color: '#475569', fontSize: '0.78rem', fontWeight: 700, marginTop: '0.4rem', fontFamily: 'monospace', background: '#f1f5f9', padding: '0.4rem 0.6rem', borderRadius: '6px', display: 'inline-block' }}>
                           Formato: Referencia,Categoria,Descripcion,Costo,Por Mayor,Detal,50 Unidades
@@ -3080,7 +2942,7 @@ export default function Admin() {
                           onClick={handleTextImport}
                           style={{ padding: '0.65rem 2rem', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 700, cursor: 'pointer' }}
                         >
-                          📋 Procesar Texto
+                          ­ƒôï Procesar Texto
                         </button>
                       </div>
                     </div>
@@ -3100,7 +2962,7 @@ export default function Admin() {
                         style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', border: '1px solid #fca5a5', color: '#b91c1c', background: '#fee2e2', padding: '0.55rem 1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.82rem', transition: 'all 0.2s' }}
                         onClick={() => setShowToolsModal(true)}
                       >
-                        🔧 Depurar Catálogo
+                        ­ƒöº Depurar Cat├ílogo
                       </button>
                       
                       <div className="search-input-container" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -3120,9 +2982,9 @@ export default function Admin() {
                 <div className="panel-body">
                   {filteredProducts.length === 0 ? (
                     <div className="empty-state">
-                      <div className="es-icon">📦</div>
-                      <h4>No hay productos aún</h4>
-                      <p>Aún no tienes ningún producto en tu inventario.</p>
+                      <div className="es-icon">­ƒôª</div>
+                      <h4>No hay productos a├║n</h4>
+                      <p>A├║n no tienes ning├║n producto en tu inventario.</p>
                       <button className="btn-primary" onClick={() => setIsAddingProduct(true)} style={{ marginTop: '1rem' }}>
                         + Agregar Primer Producto
                       </button>
@@ -3132,7 +2994,7 @@ export default function Admin() {
                       {filteredProducts.map(p => (
                         <div key={p.id} className="product-card">
                           <div className="product-card-img">
-                            {p.imagen_url ? <img src={p.imagen_url} alt={p.nombre} /> : '🖼️'}
+                            {p.imagen_url ? <img src={p.imagen_url} alt={p.nombre} /> : '­ƒû╝´©Å'}
                           </div>
                           <div className="product-card-body">
                             <h4>{p.nombre}</h4>
@@ -3175,15 +3037,15 @@ export default function Admin() {
             </>
           )}
 
-          {/* ── CATEGORIES TAB ── */}
+          {/* ÔöÇÔöÇ CATEGORIES TAB ÔöÇÔöÇ */}
           {activeTab === 'categorias' && (
             <>
               {isAddingCategory && (
                 <div className="admin-panel">
                   <div className="panel-header">
                     <div>
-                      <h3><Tag size={16} /> Crear Nueva Categoría</h3>
-                      <p>Agrega una categoría al catálogo de tu negocio</p>
+                      <h3><Tag size={16} /> Crear Nueva Categor├¡a</h3>
+                      <p>Agrega una categor├¡a al cat├ílogo de tu negocio</p>
                     </div>
                   </div>
                   <div className="panel-body">
@@ -3198,20 +3060,20 @@ export default function Admin() {
                       const { error } = await supabase.from('categorias').insert([{ nombre, slug, icono, color, tenant_id: getTenantId() }]);
                       setLoading(false);
                       if (error) showToast('Error: ' + error.message, 'error');
-                      else { form.reset(); cargarDatos(); setIsAddingCategory(false); showToast('Categoría creada ✓'); }
+                      else { form.reset(); cargarDatos(); setIsAddingCategory(false); showToast('Categor├¡a creada Ô£ô'); }
                     }}>
                       <div className="form-grid" style={{ marginBottom: '1.5rem' }}>
                         <div className="form-field">
-                          <label>Nombre de la Categoría</label>
-                          <input required name="nombre" placeholder="Ej: Ropa de Bebés" />
+                          <label>Nombre de la Categor├¡a</label>
+                          <input required name="nombre" placeholder="Ej: Ropa de Beb├®s" />
                         </div>
                         <div className="form-field">
                           <label>Slug (identificador)</label>
-                          <input name="slug" placeholder="Ej: bebe (auto si vacío)" />
+                          <input name="slug" placeholder="Ej: bebe (auto si vac├¡o)" />
                         </div>
                         <div className="form-field">
-                          <label>Ícono (Emoji)</label>
-                          <input name="icono" placeholder="👶" />
+                          <label>├ìcono (Emoji)</label>
+                          <input name="icono" placeholder="­ƒæÂ" />
                         </div>
                         <div className="form-field">
                           <label>Color de Fondo</label>
@@ -3219,7 +3081,7 @@ export default function Admin() {
                         </div>
                       </div>
                       <button type="submit" className="btn-primary" disabled={loading}>
-                        <Plus size={14} /> {loading ? 'Creando...' : 'Crear Categoría'}
+                        <Plus size={14} /> {loading ? 'Creando...' : 'Crear Categor├¡a'}
                       </button>
                     </form>
                   </div>
@@ -3230,8 +3092,8 @@ export default function Admin() {
                 <div className="admin-panel">
                   <div className="panel-header">
                     <div>
-                      <h3><Tag size={16} /> Crear Nueva Subcategoría</h3>
-                      <p>Agrega una subcategoría a una de tus categorías</p>
+                      <h3><Tag size={16} /> Crear Nueva Subcategor├¡a</h3>
+                      <p>Agrega una subcategor├¡a a una de tus categor├¡as</p>
                     </div>
                   </div>
                   <div className="panel-body">
@@ -3242,25 +3104,25 @@ export default function Admin() {
                     }}>
                       <div className="form-grid" style={{ marginBottom: '1.5rem' }}>
                         <div className="form-field">
-                          <label>Categoría Padre *</label>
+                          <label>Categor├¡a Padre *</label>
                           <select value={subcatParentId} onChange={e => setSubcatParentId(e.target.value)} required>
-                            <option value="">-- Seleccionar categoría --</option>
+                            <option value="">-- Seleccionar categor├¡a --</option>
                             {categoriasData.map(c => (
                               <option key={c.id} value={c.id}>{c.icono} {c.nombre}</option>
                             ))}
                           </select>
                         </div>
                         <div className="form-field">
-                          <label>Nombre de la Subcategoría *</label>
+                          <label>Nombre de la Subcategor├¡a *</label>
                           <input required value={subcatNombre} onChange={e => setSubcatNombre(e.target.value)} placeholder="Ej: Pijamas" />
                         </div>
                         <div className="form-field">
-                          <label>Slug (auto si vacío)</label>
+                          <label>Slug (auto si vac├¡o)</label>
                           <input value={subcatSlug} onChange={e => setSubcatSlug(e.target.value)} placeholder="Ej: pijamas" />
                         </div>
                       </div>
                       <button type="submit" className="btn-primary" disabled={loading}>
-                        <Plus size={14} /> {loading ? 'Creando...' : 'Crear Subcategoría'}
+                        <Plus size={14} /> {loading ? 'Creando...' : 'Crear Subcategor├¡a'}
                       </button>
                     </form>
                   </div>
@@ -3272,15 +3134,15 @@ export default function Admin() {
                   <div className="admin-panel">
                     <div className="panel-header">
                       <div>
-                        <h3><Tag size={16} /> Categorías y Subcategorías</h3>
-                        <p>Visualiza y administra la estructura del catálogo</p>
+                        <h3><Tag size={16} /> Categor├¡as y Subcategor├¡as</h3>
+                        <p>Visualiza y administra la estructura del cat├ílogo</p>
                       </div>
                     </div>
                     <div className="panel-body">
                       {categoriasData.length === 0 ? (
                         <div className="empty-state">
-                          <div className="es-icon">🗂️</div>
-                          <h4>Sin categorías</h4>
+                          <div className="es-icon">­ƒùé´©Å</div>
+                          <h4>Sin categor├¡as</h4>
                           <p>Usa los botones de arriba para empezar</p>
                         </div>
                       ) : (
@@ -3298,9 +3160,9 @@ export default function Admin() {
                             )}
                             <div className="cat-row-info">
                               <h4>{c.nombre}</h4>
-                              <p>/{c.slug} · {productos.filter(p => p.categoria === c.slug || p.categoria === c.nombre).length} productos</p>
+                              <p>/{c.slug} ┬À {productos.filter(p => p.categoria === c.slug || p.categoria === c.nombre).length} productos</p>
                             </div>
-                            {/* Botón subir imagen de categoría */}
+                            {/* Bot├│n subir imagen de categor├¡a */}
                             <label
                               title="Subir imagen"
                               style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: '50%', background: '#f0f0f0', border: '1px solid #ddd' }}
@@ -3326,7 +3188,7 @@ export default function Admin() {
                                       return;
                                     }
 
-                                    // PASO 2: obtener URL pública
+                                    // PASO 2: obtener URL p├║blica
                                     const { data: urlData } = supabase.storage
                                       .from('archivos')
                                       .getPublicUrl(fileName);
@@ -3342,7 +3204,7 @@ export default function Admin() {
                                     }
 
                                     await cargarDatos();
-                                    showToast('Imagen de categoría actualizada ✓');
+                                    showToast('Imagen de categor├¡a actualizada Ô£ô');
                                   } catch (err: any) {
                                     showToast(`Error inesperado: ${err?.message || err}`, 'error');
                                   } finally {
@@ -3355,10 +3217,10 @@ export default function Admin() {
                               <Pencil size={11} /> Editar
                             </button>
                             <button className="btn-danger" onClick={async () => {
-                              if (!window.confirm('¿Eliminar categoría?')) return;
+                              if (!window.confirm('┬┐Eliminar categor├¡a?')) return;
                               await supabase.from('categorias').delete().eq('id', c.id);
                               cargarDatos();
-                              showToast('Categoría eliminada');
+                              showToast('Categor├¡a eliminada');
                             }}>
                               <Trash2 size={12} />
                             </button>
@@ -3367,13 +3229,13 @@ export default function Admin() {
                       )}
 
                       <hr className="divider" style={{ margin: '2rem 0 1.5rem' }} />
-                      <p style={{ fontSize: '0.78rem', color: '#555', marginBottom: '1rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Subcategorías Activas</p>
+                      <p style={{ fontSize: '0.78rem', color: '#555', marginBottom: '1rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Subcategor├¡as Activas</p>
                       <div className="category-list">
                         {subcategoriasData.length === 0 ? (
                           <div className="empty-state">
-                            <div className="es-icon">📂</div>
-                            <h4>Sin subcategorías</h4>
-                            <p>Usa los botones de arriba para agregar subcategorías</p>
+                            <div className="es-icon">­ƒôé</div>
+                            <h4>Sin subcategor├¡as</h4>
+                            <p>Usa los botones de arriba para agregar subcategor├¡as</p>
                           </div>
                         ) : (
                           subcategoriasData.map(s => {
@@ -3381,11 +3243,11 @@ export default function Admin() {
                             return (
                               <div key={s.id} className="category-row">
                                 <div className="cat-color-dot" style={{ background: parentCat?.color || '#888' }}>
-                                  {parentCat?.icono || '📂'}
+                                  {parentCat?.icono || '­ƒôé'}
                                 </div>
                                 <div className="cat-row-info">
                                   <h4>{s.nombre}</h4>
-                                  <p>/{s.slug} · en {parentCat?.nombre || 'Categoría eliminada'}</p>
+                                  <p>/{s.slug} ┬À en {parentCat?.nombre || 'Categor├¡a eliminada'}</p>
                                 </div>
                                 <button className="btn-edit" onClick={() => setEditingSubcategory(s)} style={{ padding: '0.4rem 0.6rem', height: 30, display: 'flex', alignItems: 'center', gap: '0.2rem', borderRadius: 8, background: '#f1f5f9', border: 'none', cursor: 'pointer', fontSize: '0.75rem' }}>
                                   <Pencil size={11} /> Editar
@@ -3405,7 +3267,7 @@ export default function Admin() {
             </>
           )}
 
-          {/* ── RESUMEN ASESOR TAB ── */}
+          {/* ÔöÇÔöÇ RESUMEN ASESOR TAB ÔöÇÔöÇ */}
           {activeTab === 'resumen_asesor' && (role === 'asesor' || role === 'mayorista') && (() => {
             const currentAsesorData = asesores.find(a => a.telefono === loggedAsesorPhone);
             if (!currentAsesorData) return <p style={{ color: '#64748b', padding: '2rem', textAlign: 'center' }}>Cargando datos del asesor...</p>;
@@ -3425,12 +3287,12 @@ export default function Admin() {
                 try {
                   const items = Array.isArray(o.productos) ? o.productos : JSON.parse(o.productos || '[]');
                   items.forEach((item: any) => {
-                    const key = `${item.nombre || item.title}_${item.size || 'Única'}`;
+                    const key = `${item.nombre || item.title}_${item.size || '├Ünica'}`;
                     const price = item.precio_por_mayor || item.precio || 0;
                     if (!requestedProductsMap[key]) {
                       requestedProductsMap[key] = {
                         name: item.nombre || item.title,
-                        size: item.size || 'Única',
+                        size: item.size || '├Ünica',
                         count: 0,
                         image: item.imagen || item.image || '',
                         price: price
@@ -3450,27 +3312,27 @@ export default function Admin() {
               const handleSolicitarWhatsApp = (type: 'consolidado' | 'cliente') => {
                 let msg = `*SOLICITUD DE PEDIDO MAYORISTA - ${currentAsesorData.nombre}*\n`;
                 msg += `Fecha: ${new Date().toLocaleDateString()}\n`;
-                msg += `Total artículos: ${totalItemsCount}\n\n`;
+                msg += `Total art├¡culos: ${totalItemsCount}\n\n`;
 
                 if (type === 'consolidado') {
-                  msg += `*RESUMEN CONSOLIDADO DE ARTÍCULOS:*\n`;
+                  msg += `*RESUMEN CONSOLIDADO DE ART├ìCULOS:*\n`;
                   consolidatedProductsList.forEach(p => {
-                    msg += `• ${p.name} (Talla: ${p.size}) x${p.count} unds\n`;
+                    msg += `ÔÇó ${p.name} (Talla: ${p.size}) x${p.count} unds\n`;
                   });
                 } else {
                   msg += `*DETALLE DE PEDIDOS POR CLIENTE:*\n`;
                   mOrders.forEach((o, index) => {
-                    msg += `\n_${index + 1}. Cliente: ${o.cliente_nombre || 'N/A'} (Línea: ${o.linea_whatsapp || 'N/A'})_\n`;
+                    msg += `\n_${index + 1}. Cliente: ${o.cliente_nombre || 'N/A'} (L├¡nea: ${o.linea_whatsapp || 'N/A'})_\n`;
                     try {
                       const items = Array.isArray(o.productos) ? o.productos : JSON.parse(o.productos || '[]');
                       items.forEach((item: any) => {
-                        msg += `  - ${item.nombre || item.title} (Talla: ${item.size || 'Única'}) x${item.cantidad || 1} unds\n`;
+                        msg += `  - ${item.nombre || item.title} (Talla: ${item.size || '├Ünica'}) x${item.cantidad || 1} unds\n`;
                       });
                     } catch {}
                   });
                 }
 
-                msg += `\nFavor preparar despacho a nombre de ${currentAsesorData.nombre}. ¡Muchas gracias!`;
+                msg += `\nFavor preparar despacho a nombre de ${currentAsesorData.nombre}. ┬íMuchas gracias!`;
 
                 const adminPhone = configuracion?.whatsapp?.replace(/\D/g, '') || '';
                 const waUrl = `https://wa.me/${adminPhone}?text=${encodeURIComponent(msg)}`;
@@ -3479,17 +3341,28 @@ export default function Admin() {
 
               return (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                  {/* Premium Dashboard stats */}
-                  <div className="admin-panel" style={{ borderRadius: '20px', padding: '1.5rem 1.75rem' }}>
-                    <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', textAlign: 'left' }}>
-                      <span style={{ fontSize: '1.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📊</span>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left' }}>
-                        <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#0f172a', textAlign: 'left' }}>Mi Resumen de Ventas</h2>
-                        <p style={{ margin: '0.15rem 0 0 0', color: '#64748b', fontSize: '0.85rem', textAlign: 'left' }}>Visualiza tus métricas, mejores horarios y productos vendidos</p>
+                  {/* Dashboard stats cards */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
+                    <div style={{ background: 'white', padding: '1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0', textAlign: 'left', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                      <span style={{ fontSize: '2rem' }}>­ƒôª</span>
+                      <div style={{ textAlign: 'left' }}>
+                        <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Total Pedidos</span>
+                        <h3 style={{ margin: '0.2rem 0 0 0', fontSize: '1.5rem', fontWeight: 800, color: '#0f172a' }}>{mOrders.length}</h3>
                       </div>
                     </div>
-                    <div className="panel-body">
-                      {renderAdvisorStatsView(advStats)}
+                    <div style={{ background: 'white', padding: '1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0', textAlign: 'left', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                      <span style={{ fontSize: '2rem' }}>­ƒæò</span>
+                      <div style={{ textAlign: 'left' }}>
+                        <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Art├¡culos Solicitados</span>
+                        <h3 style={{ margin: '0.2rem 0 0 0', fontSize: '1.5rem', fontWeight: 800, color: '#0ea5e9' }}>{totalItemsCount}</h3>
+                      </div>
+                    </div>
+                    <div style={{ background: 'white', padding: '1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0', textAlign: 'left', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                      <span style={{ fontSize: '2rem' }}>­ƒÆ░</span>
+                      <div style={{ textAlign: 'left' }}>
+                        <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Ventas Totales</span>
+                        <h3 style={{ margin: '0.2rem 0 0 0', fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>${advStats.totalVentas.toLocaleString()}</h3>
+                      </div>
                     </div>
                   </div>
 
@@ -3497,8 +3370,8 @@ export default function Admin() {
                   <div className="admin-panel">
                     <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                       <div style={{ textAlign: 'left' }}>
-                        <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>👕 Productos Solicitados por Clientes</h3>
-                        <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Consolida los productos que te han pedido tus clientes para solicitárselos a Indisutex.</p>
+                        <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>­ƒæò Productos Solicitados por Clientes</h3>
+                        <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Consolida los productos que te han pedido tus clientes para solicit├írselos a Indisutex.</p>
                       </div>
                       
                       {consolidatedProductsList.length > 0 && (
@@ -3509,7 +3382,7 @@ export default function Admin() {
                             className="btn-primary" 
                             style={{ background: '#0ea5e9', display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: 700, padding: '0.55rem 1rem', fontSize: '0.82rem', border: 'none', borderRadius: '8px', cursor: 'pointer', color: 'white' }}
                           >
-                            📲 Solicitud Consolidada
+                            ­ƒô▓ Solicitud Consolidada
                           </button>
                           <button 
                             type="button" 
@@ -3517,7 +3390,7 @@ export default function Admin() {
                             className="btn-primary" 
                             style={{ background: '#10b981', display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: 700, padding: '0.55rem 1rem', fontSize: '0.82rem', border: 'none', borderRadius: '8px', cursor: 'pointer', color: 'white' }}
                           >
-                            📲 Solicitud por Clientes
+                            ­ƒô▓ Solicitud por Clientes
                           </button>
                         </div>
                       )}
@@ -3525,9 +3398,9 @@ export default function Admin() {
                     <div className="panel-body">
                       {consolidatedProductsList.length === 0 ? (
                         <div style={{ padding: '3rem 1rem', textAlign: 'center', color: '#64748b' }}>
-                          <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>👕</div>
+                          <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>­ƒæò</div>
                           <h4 style={{ margin: '0 0 0.25rem 0', color: '#0f172a' }}>No hay solicitudes de clientes</h4>
-                          <p style={{ margin: 0, fontSize: '0.85rem' }}>Comparte tu enlace de catálogo mayorista para comenzar a recibir pedidos de tus clientes.</p>
+                          <p style={{ margin: 0, fontSize: '0.85rem' }}>Comparte tu enlace de cat├ílogo mayorista para comenzar a recibir pedidos de tus clientes.</p>
                         </div>
                       ) : (
                         <div style={{ overflowX: 'auto' }}>
@@ -3547,7 +3420,7 @@ export default function Admin() {
                                       {item.image ? (
                                         <img src={item.image} alt={item.name} style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover', border: '1px solid #e2e8f0' }} />
                                       ) : (
-                                        <div style={{ width: '40px', height: '40px', borderRadius: '6px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>👕</div>
+                                        <div style={{ width: '40px', height: '40px', borderRadius: '6px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>­ƒæò</div>
                                       )}
                                       <span>{item.name}</span>
                                     </div>
@@ -3573,10 +3446,10 @@ export default function Admin() {
             return (
               <div className="admin-panel" style={{ borderRadius: '20px', padding: '1.5rem 1.75rem' }}>
                 <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', textAlign: 'left' }}>
-                  <span style={{ fontSize: '1.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📊</span>
+                  <span style={{ fontSize: '1.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>­ƒôè</span>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left' }}>
                     <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#0f172a', textAlign: 'left' }}>Mi Resumen de Ventas</h2>
-                    <p style={{ margin: '0.15rem 0 0 0', color: '#64748b', fontSize: '0.85rem', textAlign: 'left' }}>Visualiza tus métricas, mejores horarios y productos vendidos</p>
+                    <p style={{ margin: '0.15rem 0 0 0', color: '#64748b', fontSize: '0.85rem', textAlign: 'left' }}>Visualiza tus m├®tricas, mejores horarios y productos vendidos</p>
                   </div>
                 </div>
                 <div className="panel-body">
@@ -3586,8 +3459,8 @@ export default function Admin() {
             );
           })()}
 
-          {/* ── NOTIFICACIONES ASESOR TAB ── */}
-          {activeTab === 'notificaciones_asesor' && (role === 'asesor' || role === 'mayorista') && (() => {
+           {/* ÔöÇÔöÇ NOTIFICACIONES ASESOR TAB ÔöÇÔöÇ */}
+          {activeTab === 'notificaciones_asesor' && role === 'asesor' && (() => {
             const currentAsesorData = asesores.find(a => a.telefono === loggedAsesorPhone);
             if (!currentAsesorData) return <p style={{ color: '#64748b', padding: '2rem', textAlign: 'center' }}>Cargando notificaciones...</p>;
             
@@ -3656,8 +3529,8 @@ export default function Admin() {
                     <h3 style={{ margin: '0 0 0.25rem 0', fontSize: '1rem', fontWeight: 800, color: '#1e293b', textAlign: 'left' }}>Alertas Activas ({activeNotifications.length})</h3>
                     {activeNotifications.length === 0 ? (
                       <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '2.5rem 2rem', textAlign: 'center', color: '#64748b' }}>
-                        <p style={{ margin: '0 0 0.5rem 0', fontSize: '2rem' }}>🎉</p>
-                        <p style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, color: '#475569' }}>¡Estás al día!</p>
+                        <p style={{ margin: '0 0 0.5rem 0', fontSize: '2rem' }}>­ƒÄë</p>
+                        <p style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, color: '#475569' }}>┬íEst├ís al d├¡a!</p>
                         <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>No tienes tareas ni alertas pendientes de respuesta en este momento.</p>
                       </div>
                     ) : (
@@ -3704,18 +3577,18 @@ export default function Admin() {
                               pointerEvents: 'none',
                               userSelect: 'none'
                             }}>
-                              {isDanger ? '🚨' : isWarning ? '⏳' : isSuccess ? '🎉' : '🔔'}
+                              {isDanger ? '­ƒÜ¿' : isWarning ? 'ÔÅ│' : isSuccess ? '­ƒÄë' : '­ƒöö'}
                             </div>
 
                             <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'flex-start', flex: 1, zIndex: 1 }}>
                               <span style={{ fontSize: '1.3rem', marginTop: '0.1rem' }}>
-                                {isDanger ? '🔴' : isWarning ? '🟡' : isSuccess ? '🟢' : '🔵'}
+                                {isDanger ? '­ƒö┤' : isWarning ? '­ƒƒí' : isSuccess ? '­ƒƒó' : '­ƒöÁ'}
                               </span>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
                                 <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, color: '#0f172a' }}>{notif.title}</h4>
                                 <p style={{ margin: 0, fontSize: '0.82rem', color: '#334155', lineHeight: 1.45, fontWeight: 500 }}>{notif.message}</p>
                                 <span style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.25rem', fontWeight: 600 }}>
-                                  ⏰ {new Date(notif.time).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                                  ÔÅ░ {new Date(notif.time).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                               </div>
                             </div>
@@ -3746,7 +3619,7 @@ export default function Admin() {
                                   e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.06)';
                                 }}
                               >
-                                Ir a atender →
+                                Ir a atender ÔåÆ
                               </button>
                             )}
                           </div>
@@ -3780,8 +3653,8 @@ export default function Admin() {
                         userSelect: 'none' 
                       }}
                     >
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>💡 Consejos de Venta & Metas Diarias</span>
-                      <span style={{ fontSize: '0.85rem', color: '#64748b' }}>▼</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>­ƒÆí Consejos de Venta & Metas Diarias</span>
+                      <span style={{ fontSize: '0.85rem', color: '#64748b' }}>Ôû╝</span>
                     </summary>
                     <div style={{ padding: '1.5rem', background: 'white', borderTop: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                       {/* Daily specific advisor advise */}
@@ -3796,34 +3669,34 @@ export default function Admin() {
                           '12:00 AM', '1:00 AM', '2:00 AM', '3:00 AM', '4:00 AM', '5:00 AM', '6:00 AM', '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM',
                           '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM', '10:00 PM', '11:00 PM'
                         ];
-                        const topProdName = topSellingProducts.length > 0 ? topSellingProducts[0].nombre : 'ninguno aún';
+                        const topProdName = topSellingProducts.length > 0 ? topSellingProducts[0].nombre : 'ninguno a├║n';
                         const topProdQty = topSellingProducts.length > 0 ? topSellingProducts[0].cantidad : 0;
 
                         return (
                           <>
                             {dayOfWeek === 1 && (
                               <div style={{ background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', border: '1.5px solid #bfdbfe', borderRadius: '12px', padding: '1.1rem 1.25rem', textAlign: 'left', position: 'relative' }}>
-                                <div style={{ position: 'absolute', right: '15px', top: '10px', fontSize: '2.5rem', opacity: 0.15 }}>📊</div>
-                                <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e40af', fontWeight: 800, fontSize: '0.92rem' }}>📊 Resumen de Ventas de la Semana</h4>
+                                <div style={{ position: 'absolute', right: '15px', top: '10px', fontSize: '2.5rem', opacity: 0.15 }}>­ƒôè</div>
+                                <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e40af', fontWeight: 800, fontSize: '0.92rem' }}>­ƒôè Resumen de Ventas de la Semana</h4>
                                 <p style={{ margin: 0, fontSize: '0.84rem', color: '#1e3a8a', lineHeight: 1.5, fontWeight: 500 }}>
-                                  Tu mejor día histórico de ventas es el <strong>{bestDay.count > 0 ? bestDay.name : 'fin de semana'}</strong> con <strong>{bestDay.count} pedidos</strong>. Aprovecha para publicar contenido y pautar en esos días.
+                                  Tu mejor d├¡a hist├│rico de ventas es el <strong>{bestDay.count > 0 ? bestDay.name : 'fin de semana'}</strong> con <strong>{bestDay.count} pedidos</strong>. Aprovecha para publicar contenido y pautar en esos d├¡as.
                                 </p>
                               </div>
                             )}
 
                             <div style={{ background: 'linear-gradient(135deg, #fffbeb, #fef3c7)', border: '1.5px solid #fde68a', borderRadius: '12px', padding: '1.1rem 1.25rem', textAlign: 'left', position: 'relative' }}>
-                              <div style={{ position: 'absolute', right: '15px', top: '10px', fontSize: '2.5rem', opacity: 0.15 }}>🎯</div>
-                              <h4 style={{ margin: '0 0 0.4rem 0', color: '#b45309', fontWeight: 800, fontSize: '0.92rem' }}>🎯 Meta para hoy ({['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][dayOfWeek]})</h4>
+                              <div style={{ position: 'absolute', right: '15px', top: '10px', fontSize: '2.5rem', opacity: 0.15 }}>­ƒÄ»</div>
+                              <h4 style={{ margin: '0 0 0.4rem 0', color: '#b45309', fontWeight: 800, fontSize: '0.92rem' }}>­ƒÄ» Meta para hoy ({['Domingo', 'Lunes', 'Martes', 'Mi├®rcoles', 'Jueves', 'Viernes', 'S├íbado'][dayOfWeek]})</h4>
                               <p style={{ margin: 0, fontSize: '0.84rem', color: '#78350f', lineHeight: 1.5, fontWeight: 500 }}>
                                 {(() => {
                                   switch (dayOfWeek) {
                                     case 0: return 'Planifica tu semana y define tus metas de comisiones.';
-                                    case 1: return `Contacta a tus ${aLeads.length} carritos abandonados. ¡Recupera ventas perdidas hoy!`;
+                                    case 1: return `Contacta a tus ${aLeads.length} carritos abandonados. ┬íRecupera ventas perdidas hoy!`;
                                     case 2: return 'Haz seguimiento a clientes con estados "Pendiente de Pago".';
                                     case 3: return 'Saluda a tus clientes usando su nombre para aumentar la confianza.';
-                                    case 4: return `Ofrece el artículo de alta demanda: "${topProdName}" (${topProdQty} vendidos) como recomendación.`;
-                                    case 5: return `Tu pico máximo de ventas suele ser a las ${bestHour && Number(bestHour[1]) > 0 ? `${horaLabels[Number(bestHour[0])]}` : 'las tardes'}. Mantente alerta.`;
-                                    case 6: return 'Responde al instante: Las respuestas rápidas multiplican por 3 el cierre de ventas.';
+                                    case 4: return `Ofrece el art├¡culo de alta demanda: "${topProdName}" (${topProdQty} vendidos) como recomendaci├│n.`;
+                                    case 5: return `Tu pico m├íximo de ventas suele ser a las ${bestHour && Number(bestHour[1]) > 0 ? `${horaLabels[Number(bestHour[0])]}` : 'las tardes'}. Mantente alerta.`;
+                                    case 6: return 'Responde al instante: Las respuestas r├ípidas multiplican por 3 el cierre de ventas.';
                                     default: return 'Actualiza tu stock y verifica las comisiones acumuladas.';
                                   }
                                 })()}
@@ -3839,8 +3712,7 @@ export default function Admin() {
             );
           })()}
 
-
-          {/* ── PERFIL ASESOR TAB ── */}
+          {/* ÔöÇÔöÇ PERFIL ASESOR TAB ÔöÇÔöÇ */}
           {activeTab === 'perfil_asesor' && (role === 'asesor' || role === 'mayorista') && (
             <div className="admin-panel">
               <div className="panel-header">
@@ -3892,13 +3764,13 @@ export default function Admin() {
                         />
                       </div>
                       <div className="form-field">
-                        <label>Teléfono (Línea WhatsApp)</label>
+                        <label>Tel├®fono (L├¡nea WhatsApp)</label>
                         <input 
                           type="text" 
                           disabled
                           defaultValue={loggedAsesorPhone || ''} 
                         />
-                        <small style={{color: '#64748b'}}>El número de teléfono no se puede cambiar aquí.</small>
+                        <small style={{color: '#64748b'}}>El n├║mero de tel├®fono no se puede cambiar aqu├¡.</small>
                       </div>
                       <div className="form-field">
                         <label>PIN de Acceso</label>
@@ -3937,9 +3809,9 @@ export default function Admin() {
                                 const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
                                 const input = document.getElementById('perfil-foto') as HTMLInputElement;
                                 if (input) input.value = data.publicUrl;
-                                showToast('Foto subida. Recuerda Guardar Perfil ✅', 'success');
+                                showToast('Foto subida. Recuerda Guardar Perfil Ô£à', 'success');
                                 
-                                // Actualizar previsualización local
+                                // Actualizar previsualizaci├│n local
                                 const currentAsesorData = asesores.find(a => a.telefono === loggedAsesorPhone);
                                 if (currentAsesorData) {
                                   setAsesores(asesores.map(a => 
@@ -3954,17 +3826,17 @@ export default function Admin() {
                             }} />
                           </label>
                         </div>
-                        <small style={{color: '#64748b'}}>Esta foto aparecerá en tu panel y como asesor estrella.</small>
+                        <small style={{color: '#64748b'}}>Esta foto aparecer├í en tu panel y como asesor estrella.</small>
                       </div>
                       <div className="form-field full" style={{ marginTop: '1.5rem', background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                        <label style={{ fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem', display: 'block' }}>🔗 Tus Enlaces de Venta Personalizados</label>
-                        <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 1rem 0' }}>Usa estos enlaces para compartirlos con tus clientes. Cuando compren a través de ellos, las ventas se te asignarán automáticamente.</p>
+                        <label style={{ fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem', display: 'block' }}>­ƒöù Tus Enlaces de Venta Personalizados</label>
+                        <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 1rem 0' }}>Usa estos enlaces para compartirlos con tus clientes. Cuando compren a trav├®s de ellos, las ventas se te asignar├ín autom├íticamente.</p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                           {(loggedAsesorPhone || '').split(',').map(p => p.trim()).filter(Boolean).map((phone, idx) => {
                             const link = `${window.location.origin}/${getTenantId()}?ws=${phone.replace(/\D/g, '')}${role === 'mayorista' ? '&tipo=mayorista' : ''}`;
                             return (
                               <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'white', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-                                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', whiteSpace: 'nowrap' }}>Línea {phone}:</span>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', whiteSpace: 'nowrap' }}>L├¡nea {phone}:</span>
                                 <input 
                                   readOnly 
                                   value={link} 
@@ -3977,7 +3849,7 @@ export default function Admin() {
                                   style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', borderRadius: '6px', cursor: 'pointer', border: '1px solid #cbd5e1', background: 'white' }}
                                   onClick={() => {
                                     navigator.clipboard.writeText(link);
-                                    showToast('Enlace copiado al portapapeles ✅', 'success');
+                                    showToast('Enlace copiado al portapapeles Ô£à', 'success');
                                   }}
                                 >
                                   Copiar
@@ -4002,7 +3874,7 @@ export default function Admin() {
           )}
 
 
-          {/* ── MATERIAL DE APOYO ASESOR / MAYORISTA TAB ── */}
+          {/* ÔöÇÔöÇ MATERIAL DE APOYO ASESOR / MAYORISTA TAB ÔöÇÔöÇ */}
           {activeTab === 'material_asesor' && (
             <div className="admin-panel">
               <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
@@ -4010,35 +3882,15 @@ export default function Admin() {
                 <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Visualiza, comparte y descarga los recursos de Google Drive provistos por el negocio</p>
               </div>
               <div className="panel-body">
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-                  <button type="button" className={materialFilter === 'todos' ? 'btn-primary' : 'btn-secondary'} onClick={() => setMaterialFilter('todos')} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '20px' }}>Todos</button>
-                  <button type="button" className={materialFilter === 'video' ? 'btn-primary' : 'btn-secondary'} onClick={() => setMaterialFilter('video')} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '20px' }}>🎥 Videos</button>
-                  <button type="button" className={materialFilter === 'imagen' ? 'btn-primary' : 'btn-secondary'} onClick={() => setMaterialFilter('imagen')} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '20px' }}>🖼️ Imágenes</button>
-                  <button type="button" className={materialFilter === 'documento' ? 'btn-primary' : 'btn-secondary'} onClick={() => setMaterialFilter('documento')} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '20px' }}>📄 Documentos</button>
-                  <button type="button" className={materialFilter === 'carpeta' ? 'btn-primary' : 'btn-secondary'} onClick={() => setMaterialFilter('carpeta')} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '20px' }}>📁 Carpetas</button>
-                  
-                  {uniqueCampanas.length > 0 && (
-                    <select
-                      value={campanaFilter}
-                      onChange={e => setCampanaFilter(e.target.value)}
-                      style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '20px', border: '1px solid #cbd5e1', outline: 'none', background: 'white', cursor: 'pointer', fontWeight: 600, color: campanaFilter !== 'todas' ? '#ec4899' : '#475569', marginLeft: 'auto' }}
-                    >
-                      <option value="todas">🎯 Todas las Campañas</option>
-                      {uniqueCampanas.map(c => (
-                        <option key={c as string} value={c as string}>🌟 {c as string}</option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-                {filteredMateriales.length === 0 ? (
+                {materiales.length === 0 ? (
                   <div style={{ padding: '3rem 1rem', textAlign: 'center', color: '#64748b' }}>
-                    <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📁</div>
+                    <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>­ƒôü</div>
                     <h4 style={{ margin: '0 0 0.25rem 0', color: '#0f172a' }}>No hay material de apoyo disponible</h4>
-                    <p style={{ margin: 0, fontSize: '0.85rem' }}>No se encontraron recursos con los filtros seleccionados.</p>
+                    <p style={{ margin: 0, fontSize: '0.85rem' }}>El administrador a├║n no ha registrado recursos de Google Drive.</p>
                   </div>
                 ) : (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
-                    {filteredMateriales.map((m) => {
+                    {materiales.map((m) => {
                       const embedUrl = getGoogleDriveEmbedUrl(m.url);
                       return (
                         <div key={m.id} style={{ border: '1px solid #e2e8f0', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
@@ -4055,7 +3907,7 @@ export default function Admin() {
                               ></iframe>
                             ) : (
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8', fontSize: '2rem' }}>
-                                {m.tipo === 'video' ? '🎥' : m.tipo === 'imagen' ? '🖼️' : '📄'}
+                                {m.tipo === 'video' ? '­ƒÄÑ' : m.tipo === 'imagen' ? '­ƒû╝´©Å' : '­ƒôä'}
                               </div>
                             )}
                           </div>
@@ -4072,13 +3924,8 @@ export default function Admin() {
                                 fontWeight: 800,
                                 textTransform: 'uppercase'
                               }}>
-                                {m.tipo === 'video' ? '🎥 Video' : m.tipo === 'imagen' ? '🖼️ Imagen' : m.tipo === 'carpeta' ? '📁 Carpeta' : '📄 PDF/Doc'}
+                                {m.tipo === 'video' ? '­ƒÄÑ Video' : m.tipo === 'imagen' ? '­ƒû╝´©Å Imagen' : m.tipo === 'carpeta' ? '­ƒôü Carpeta' : '­ƒôä PDF/Doc'}
                               </span>
-                              {m.campana && (
-                                <span style={{ fontSize: '0.68rem', background: '#fce7f3', color: '#db2777', padding: '0.2rem 0.55rem', borderRadius: '20px', fontWeight: 800 }}>
-                                  🌟 {m.campana}
-                                </span>
-                              )}
                             </div>
                             <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0f172a', fontWeight: 800 }}>{m.titulo}</h4>
                             {m.descripcion && <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b', lineHeight: 1.4 }}>{m.descripcion}</p>}
@@ -4094,22 +3941,11 @@ export default function Admin() {
                               >
                                 <Eye size={12} /> Abrir Drive
                               </a>
-                              {m.tipo !== 'carpeta' && (
-                                <a
-                                  href={getGoogleDriveDownloadUrl(m.url)}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="btn-secondary"
-                                  style={{ flex: 1, textDecoration: 'none', padding: '0.45rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', color: '#0ea5e9', borderColor: '#e0f2fe', background: '#f0f9ff', fontWeight: 700 }}
-                                >
-                                  <Download size={12} /> Descargar
-                                </a>
-                              )}
                               <button
                                 type="button"
                                 onClick={() => {
                                   navigator.clipboard.writeText(m.url);
-                                  showToast('Enlace de recurso copiado ✓', 'success');
+                                  showToast('Enlace de recurso copiado Ô£ô', 'success');
                                 }}
                                 className="btn-primary"
                                 style={{ flex: 1.2, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.45rem', borderRadius: '8px', background: 'var(--primary-color, #6366f1)', color: 'white', border: 'none', fontWeight: 700, cursor: 'pointer' }}
@@ -4130,14 +3966,14 @@ export default function Admin() {
 
 
 
-          {/* ── CONFIG TAB ── */}
+          {/* ÔöÇÔöÇ CONFIG TAB ÔöÇÔöÇ */}
 
           {activeTab === 'config' && (
             <div className="admin-panel">
               <div className="panel-header">
                 <div>
-                  <h3><Settings size={16} /> Configuración Global</h3>
-                  <p>Personaliza tu tienda al máximo</p>
+                  <h3><Settings size={16} /> Configuraci├│n Global</h3>
+                  <p>Personaliza tu tienda al m├íximo</p>
                 </div>
               </div>
               <div className="panel-body">
@@ -4173,20 +4009,20 @@ export default function Admin() {
                     } else if (error) {
                       showToast('Error: ' + error.message, 'error');
                     } else {
-                      showToast('Configuración guardada ✓');
+                      showToast('Configuraci├│n guardada Ô£ô');
                     }
                     
                     setLoading(false);
                   }}>
                     <div className="config-section">
-                      <div className="config-section-title">👤 Perfil del Administrador</div>
+                      <div className="config-section-title">­ƒæñ Perfil del Administrador</div>
                       <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
                         <div className="form-field">
                           <label>Nombre del Administrador</label>
                           <input 
                             value={configuracion.admin_nombre || ''} 
                             onChange={e => setConfiguracion({ ...configuracion, admin_nombre: e.target.value })} 
-                            placeholder="Ej. Juan Pérez" 
+                            placeholder="Ej. Juan P├®rez" 
                           />
                         </div>
                         <div className="form-field">
@@ -4212,7 +4048,7 @@ export default function Admin() {
                                   await supabase.storage.from('archivos').upload(fileName, compFile);
                                   const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
                                   setConfiguracion({ ...configuracion, admin_foto_url: data.publicUrl });
-                                  showToast('Foto subida ✓');
+                                  showToast('Foto subida Ô£ô');
                                 } catch { showToast('Error subiendo foto', 'error'); }
                                 setLoading(false);
                               }} />
@@ -4223,18 +4059,18 @@ export default function Admin() {
                     </div>
 
                     <div className="config-section" style={{ marginTop: '1.5rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
-                      <div className="config-section-title">🏪 Datos del Negocio</div>
+                      <div className="config-section-title">­ƒÅ¬ Datos del Negocio</div>
                       <div className="form-grid">
                         <div className="form-field">
                           <label>Nombre del Negocio</label>
                           <input required value={configuracion.nombre_negocio} onChange={e => setConfiguracion({ ...configuracion, nombre_negocio: e.target.value })} />
                         </div>
                         <div className="form-field">
-                          <label>Número WhatsApp (sin +)</label>
+                          <label>N├║mero WhatsApp (sin +)</label>
                           <input required value={configuracion.whatsapp} onChange={e => setConfiguracion({ ...configuracion, whatsapp: e.target.value })} placeholder="573185637317" />
                         </div>
                         <div className="form-field">
-                          <label>Color Temático (Primario)</label>
+                          <label>Color Tem├ítico (Primario)</label>
                           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                             <input 
                               type="color" 
@@ -4259,14 +4095,14 @@ export default function Admin() {
                               onChange={e => setConfiguracion({ ...configuracion, preguntar_tipo_cliente: e.target.checked })} 
                               style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer', accentColor: configuracion.color_primario || '#6366f1' }}
                             />
-                            Mostrar pantalla "¿Qué tipo de cliente eres?" al inicio
+                            Mostrar pantalla "┬┐Qu├® tipo de cliente eres?" al inicio
                           </label>
                         </div>
                       </div>
                     </div>
 
                     <div className="config-section" style={{ marginTop: '1.5rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
-                      <div className="config-section-title">✨ Personalización del Catálogo</div>
+                      <div className="config-section-title">Ô£¿ Personalizaci├│n del Cat├ílogo</div>
                       <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
                         
                         {/* Logo del Negocio */}
@@ -4293,7 +4129,7 @@ export default function Admin() {
                                   await supabase.storage.from('archivos').upload(fileName, compFile);
                                   const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
                                   setConfiguracion({ ...configuracion, logo_url: data.publicUrl });
-                                  showToast('Logo subido ✓');
+                                  showToast('Logo subido Ô£ô');
                                 } catch { showToast('Error subiendo logo', 'error'); }
                                 setLoading(false);
                               }} />
@@ -4323,7 +4159,7 @@ export default function Admin() {
                                   await supabase.storage.from('archivos').upload(fileName, file);
                                   const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
                                   setConfiguracion({ ...configuracion, video_hero_url: data.publicUrl });
-                                  showToast('Video subido ✓');
+                                  showToast('Video subido Ô£ô');
                                 } catch { showToast('Error subiendo video', 'error'); }
                                 setLoading(false);
                               }} />
@@ -4331,9 +4167,9 @@ export default function Admin() {
                           </div>
                         </div>
 
-                        {/* Descripción Hero */}
+                        {/* Descripci├│n Hero */}
                         <div className="form-field full">
-                          <label>Descripción del Banner (Hero)</label>
+                          <label>Descripci├│n del Banner (Hero)</label>
                           <input 
                             value={configuracion.descripcion_hero || ''} 
                             onChange={e => setConfiguracion({ ...configuracion, descripcion_hero: e.target.value })} 
@@ -4365,28 +4201,28 @@ export default function Admin() {
 
                     <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
                       <button type="submit" className="btn-primary" disabled={loading} style={{ padding: '0.7rem 2rem' }}>
-                        <Check size={14} /> {loading ? 'Guardando...' : 'Guardar Configuración'}
+                        <Check size={14} /> {loading ? 'Guardando...' : 'Guardar Configuraci├│n'}
                       </button>
                     </div>
                   </form>
                 ) : (
                   <div className="empty-state">
                     <div className="loading-dot" />
-                    <p style={{ marginTop: '1rem' }}>Cargando configuración...</p>
+                    <p style={{ marginTop: '1rem' }}>Cargando configuraci├│n...</p>
                   </div>
                 )}
               </div>
             </div>
           )}
 
-          ﻿          ﻿          
-          {/* ── SIIGO TAB ── */}
+          ´╗┐          ´╗┐          
+          {/* ÔöÇÔöÇ SIIGO TAB ÔöÇÔöÇ */}
           {activeTab === 'siigo' && (
             <div className="admin-panel">
               <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1.25rem' }}>
                 <div>
                   <h3><Code size={18} style={{ color: '#6366f1' }} /> Panel del Desarrollador</h3>
-                  <p>Configura las integraciones de API de Siigo Nube y 99 Envíos</p>
+                  <p>Configura las integraciones de API de Siigo Nube y 99 Env├¡os</p>
                 </div>
               </div>
               <div className="panel-body">
@@ -4405,7 +4241,7 @@ export default function Admin() {
                       }).eq('id', configuracion.id);
                       setLoading(false);
                       if (error) showToast('Error al guardar credenciales: ' + error.message, 'error');
-                      else showToast('Configuración del desarrollador guardada ✓');
+                      else showToast('Configuraci├│n del desarrollador guardada Ô£ô');
                     }}>
                       
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', alignItems: 'start' }}>
@@ -4415,7 +4251,7 @@ export default function Admin() {
                           {/* SIIGO COMPLETO */}
                           <div style={{ border: '1px solid #cbd5e1', borderRadius: '12px', padding: '1.5rem', background: '#ffffff', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)' }}>
                             <h4 style={{ margin: '0 0 1.25rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.15rem', color: '#0369a1', fontWeight: 800 }}>
-                              ☁️ Integración Completa con Siigo Nube
+                              Ôÿü´©Å Integraci├│n Completa con Siigo Nube
                             </h4>
                             
                             {/* Credenciales */}
@@ -4440,7 +4276,7 @@ export default function Admin() {
                               </div>
                             </div>
                             
-                            {/* Botón Sincronizar y Estado */}
+                            {/* Bot├│n Sincronizar y Estado */}
                             <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap', borderTop: '1px solid #f1f5f9', paddingTop: '1.5rem' }}>
                               <button 
                                 type="button" 
@@ -4462,20 +4298,20 @@ export default function Admin() {
                                     const result = await SiigoService.fetchAndCompare(tenantId, creds, addLog);
                                     setSyncPending(result);
                                     setShowSyncConfirm(true);
-                                    addLog(`Comparación completada. Esperando confirmación para aplicar cambios...`);
+                                    addLog(`Comparaci├│n completada. Esperando confirmaci├│n para aplicar cambios...`);
                                   } catch (err: any) {
-                                    addLog(`❌ Error: ${err.message}`);
+                                    addLog(`ÔØî Error: ${err.message}`);
                                     showToast('Error al conectar con Siigo: ' + err.message, 'error');
                                   } finally {
                                     setSiigoLoading(false);
                                   }
                                 }}
                               >
-                                <RefreshCw size={14} style={{ animation: siigoLoading ? 'spin 1s linear infinite' : 'none' }} /> {siigoLoading ? 'Conectando...' : 'Sincronizar Catálogo Ahora'}
+                                <RefreshCw size={14} style={{ animation: siigoLoading ? 'spin 1s linear infinite' : 'none' }} /> {siigoLoading ? 'Conectando...' : 'Sincronizar Cat├ílogo Ahora'}
                               </button>
                               
                               <div style={{ fontSize: '0.9rem', color: '#475569' }}>
-                                <strong>Última Sincronización Exitosa:</strong>{' '}
+                                <strong>├Ültima Sincronizaci├│n Exitosa:</strong>{' '}
                                 {configuracion.siigo_sincronizado_at ? (
                                   <span style={{ color: '#059669', fontWeight: 600 }}>
                                     {new Date(configuracion.siigo_sincronizado_at).toLocaleString()}
@@ -4486,11 +4322,11 @@ export default function Admin() {
                               </div>
                             </div>
                             
-                            {/* Webhooks / Sincronización Automática */}
+                            {/* Webhooks / Sincronizaci├│n Autom├ítica */}
                             <div style={{ marginTop: '2rem', borderTop: '1px solid #f1f5f9', paddingTop: '1.5rem' }}>
-                              <div style={{ fontWeight: 600, fontSize: '0.95rem', color: '#1e293b', marginBottom: '0.35rem' }}>⚡ Sincronización Automática (Tiempo Real)</div>
+                              <div style={{ fontWeight: 600, fontSize: '0.95rem', color: '#1e293b', marginBottom: '0.35rem' }}>ÔÜí Sincronizaci├│n Autom├ítica (Tiempo Real)</div>
                               <p style={{ fontSize: '0.82rem', color: '#64748b', margin: '0 0 1rem 0' }}>
-                                Activa las notificaciones en tiempo real para que Siigo Nube nos notifique automáticamente cada vez que crees, edites precios o cambies el stock de un producto.
+                                Activa las notificaciones en tiempo real para que Siigo Nube nos notifique autom├íticamente cada vez que crees, edites precios o cambies el stock de un producto.
                               </p>
                               
                               <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
@@ -4526,9 +4362,9 @@ export default function Admin() {
                                         accessKey: configuracion.siigo_access_key || ''
                                       };
                                       await SiigoService.registerWebhooks(creds, webhookUrl, addLog);
-                                      showToast('Suscripción a Webhooks completada ✓');
+                                      showToast('Suscripci├│n a Webhooks completada Ô£ô');
                                     } catch (err: any) {
-                                      addLog(`❌ Error: ${err.message}`);
+                                      addLog(`ÔØî Error: ${err.message}`);
                                       showToast('Error al registrar Webhooks: ' + err.message, 'error');
                                     } finally {
                                       setSiigoLoading(false);
@@ -4564,7 +4400,7 @@ export default function Admin() {
                               </div>
                             )}
 
-                            {/* Modal de confirmación de sincronización */}
+                            {/* Modal de confirmaci├│n de sincronizaci├│n */}
                             {showSyncConfirm && syncPending && (
                               <div style={{
                                 marginTop: '2rem',
@@ -4575,16 +4411,16 @@ export default function Admin() {
                                 boxShadow: '0 4px 12px rgba(14, 165, 233, 0.05)'
                               }}>
                                 <h4 style={{ margin: '0 0 0.5rem 0', color: '#0369a1', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                  📢 Resumen de Cambios Detectados en Siigo Nube
+                                  ­ƒôó Resumen de Cambios Detectados en Siigo Nube
                                 </h4>
                                 <p style={{ margin: '0 0 1.5rem 0', fontSize: '0.85rem', color: '#475569' }}>
-                                  Por favor confirma si deseas aplicar los siguientes cambios de categorías, productos e inventarios en tu Catálogo Digital:
+                                  Por favor confirma si deseas aplicar los siguientes cambios de categor├¡as, productos e inventarios en tu Cat├ílogo Digital:
                                 </p>
 
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                                   <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                                     <h5 style={{ margin: '0 0 0.75rem 0', color: '#16a34a', fontWeight: 700 }}>
-                                      🆕 Productos Nuevos para Crear ({syncPending.toCreate.length})
+                                      ­ƒåò Productos Nuevos para Crear ({syncPending.toCreate.length})
                                     </h5>
                                     <div style={{ maxHeight: '150px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                       {syncPending.toCreate.map((p, i) => (
@@ -4593,27 +4429,27 @@ export default function Admin() {
                                         </div>
                                       ))}
                                       {syncPending.toCreate.length === 0 && (
-                                        <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>Ningún producto nuevo detectado.</p>
+                                        <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>Ning├║n producto nuevo detectado.</p>
                                       )}
                                     </div>
                                   </div>
 
                                   <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                                     <h5 style={{ margin: '0 0 0.75rem 0', color: '#2563eb', fontWeight: 700 }}>
-                                      🔄 Productos para Actualizar ({syncPending.toUpdate.length})
+                                      ­ƒöä Productos para Actualizar ({syncPending.toUpdate.length})
                                     </h5>
                                     <div style={{ maxHeight: '150px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                       {syncPending.toUpdate.map((p, i) => (
                                         <div key={i} style={{ fontSize: '0.78rem', padding: '0.4rem', background: '#eff6ff', borderRadius: '6px', border: '1px solid #bfdbfe' }}>
                                           <strong>Ref: {p.referencia}</strong> - {p.nombre}
                                           <div style={{ color: '#475569', marginTop: '0.2rem', display: 'flex', gap: '1rem' }}>
-                                            <span>Precio: ${p.precioViejo.toLocaleString()} ➔ <strong>${p.precioNuevo.toLocaleString()}</strong></span>
-                                            <span>Stock: {p.stockViejo} ➔ <strong>{p.stockNuevo}</strong></span>
+                                            <span>Precio: ${p.precioViejo.toLocaleString()} Ô×ö <strong>${p.precioNuevo.toLocaleString()}</strong></span>
+                                            <span>Stock: {p.stockViejo} Ô×ö <strong>{p.stockNuevo}</strong></span>
                                           </div>
                                         </div>
                                       ))}
                                       {syncPending.toUpdate.length === 0 && (
-                                        <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>Ningún cambio de precio o stock detectado en productos existentes.</p>
+                                        <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0 }}>Ning├║n cambio de precio o stock detectado en productos existentes.</p>
                                       )}
                                     </div>
                                   </div>
@@ -4630,7 +4466,7 @@ export default function Admin() {
                                       setSyncPending(null);
                                     }}
                                   >
-                                    Descartar Sincronización
+                                    Descartar Sincronizaci├│n
                                   </button>
                                   <button 
                                     type="button" 
@@ -4644,13 +4480,13 @@ export default function Admin() {
                                       try {
                                         const tenantId = getTenantId() || '';
                                         await SiigoService.applySync(tenantId, syncPending.toCreate, syncPending.toUpdate, addLog);
-                                        showToast('¡Sincronización finalizada con éxito! ✓');
+                                        showToast('┬íSincronizaci├│n finalizada con ├®xito! Ô£ô');
                                         setConfiguracion(prev => prev ? { ...prev, siigo_sincronizado_at: new Date().toISOString() } : null);
                                         cargarDatos();
                                         setShowSyncConfirm(false);
                                         setSyncPending(null);
                                       } catch (err: any) {
-                                        addLog(`❌ Error aplicando cambios: ${err.message}`);
+                                        addLog(`ÔØî Error aplicando cambios: ${err.message}`);
                                         showToast('Error al guardar datos de Siigo', 'error');
                                       } finally {
                                         setSiigoLoading(false);
@@ -4666,28 +4502,28 @@ export default function Admin() {
                           
                           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', alignItems: 'start' }}>
                             
-                            {/* 99 Envíos integration */}
+                            {/* 99 Env├¡os integration */}
                             <div className="config-section" style={{ margin: 0 }}>
-                              <div className="config-section-title">🚚 Integración 99 Envíos</div>
+                              <div className="config-section-title">­ƒÜÜ Integraci├│n 99 Env├¡os</div>
                               <div className="form-grid">
                                 <div className="form-field full">
-                                  <label>API Key / Token de 99 Envíos</label>
+                                  <label>API Key / Token de 99 Env├¡os</label>
                                   <input 
                                     type="password" 
                                     value={configuracion.envios_99_api_key || ''} 
                                     onChange={e => setConfiguracion({ ...configuracion, envios_99_api_key: e.target.value })} 
-                                    placeholder="Ingresa tu API Key de 99 Envíos"
+                                    placeholder="Ingresa tu API Key de 99 Env├¡os"
                                   />
                                   <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.4rem', lineHeight: '1.4' }}>
-                                    Esta llave permite conectar la tienda con el servicio de logística y distribución de 99 Envíos para generar guías de despacho.
+                                    Esta llave permite conectar la tienda con el servicio de log├¡stica y distribuci├│n de 99 Env├¡os para generar gu├¡as de despacho.
                                   </p>
                                 </div>
                               </div>
                             </div>
 
-                            {/* Analítica y Tracking */}
+                            {/* Anal├¡tica y Tracking */}
                             <div className="config-section" style={{ margin: 0 }}>
-                              <div className="config-section-title">📊 Analítica y Tracking</div>
+                              <div className="config-section-title">­ƒôè Anal├¡tica y Tracking</div>
                               <div className="form-grid">
                                 <div className="form-field full">
                                   <label>Google Analytics 4 (Measurement ID)</label>
@@ -4733,52 +4569,42 @@ export default function Admin() {
                 ) : (
                   <div className="empty-state">
                     <div className="loading-dot" />
-                    <p style={{ marginTop: '1rem' }}>Cargando configuración...</p>
+                    <p style={{ marginTop: '1rem' }}>Cargando configuraci├│n...</p>
                   </div>
                 )}
               </div>
             </div>
           )}
 
-          {/* ── MATERIAL DE APOYO ADMIN TAB ── */}
+          {/* ÔöÇÔöÇ MATERIAL DE APOYO ADMIN TAB ÔöÇÔöÇ */}
           {activeTab === 'material_apoyo' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               {/* Formulario de Subida/Registro */}
               <div className="admin-panel">
                 <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
                   <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}><Upload size={18} /> Registrar Recurso en Google Drive</h3>
-                  <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Agrega carpetas, imágenes o videos compartidos desde Google Drive para el equipo</p>
+                  <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Agrega carpetas, im├ígenes o videos compartidos desde Google Drive para el equipo</p>
                 </div>
                 <div className="panel-body">
                   <form onSubmit={handleCrearMaterial} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', alignItems: 'start' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Título del Recurso</label>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>T├¡tulo del Recurso</label>
                       <input
                         type="text"
                         required
-                        placeholder="Ej: Video Campaña Colección Invierno"
+                        placeholder="Ej: Video Campa├▒a Colecci├│n Invierno"
                         value={nuevoMaterialTitulo}
                         onChange={e => setNuevoMaterialTitulo(e.target.value)}
                         style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }}
                       />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Descripción (Opcional)</label>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Descripci├│n (Opcional)</label>
                       <input
                         type="text"
                         placeholder="Ej: Video para estados de WhatsApp"
                         value={nuevoMaterialDesc}
                         onChange={e => setNuevoMaterialDesc(e.target.value)}
-                        style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Campaña (Opcional)</label>
-                      <input
-                        type="text"
-                        placeholder="Ej: Navidad, Día del Padre"
-                        value={nuevoMaterialCampana}
-                        onChange={e => setNuevoMaterialCampana(e.target.value)}
                         style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }}
                       />
                     </div>
@@ -4789,10 +4615,10 @@ export default function Admin() {
                         onChange={e => setNuevoMaterialTipo(e.target.value as any)}
                         style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none', background: 'white' }}
                       >
-                        <option value="video">🎥 Video (Google Drive)</option>
-                        <option value="imagen">🖼️ Imagen / Catálogo (Google Drive)</option>
-                        <option value="documento">📄 Documento / PDF (Google Drive)</option>
-                        <option value="carpeta">📁 Carpeta Completa (Google Drive)</option>
+                        <option value="video">­ƒÄÑ Video (Google Drive)</option>
+                        <option value="imagen">­ƒû╝´©Å Imagen / Cat├ílogo (Google Drive)</option>
+                        <option value="documento">­ƒôä Documento / PDF (Google Drive)</option>
+                        <option value="carpeta">­ƒôü Carpeta Completa (Google Drive)</option>
                       </select>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
@@ -4824,39 +4650,19 @@ export default function Admin() {
               {/* Listado de Material de Apoyo */}
               <div className="admin-panel">
                 <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
-                  <h3 style={{ margin: 0 }}>📁 Recursos y Material de Apoyo</h3>
+                  <h3 style={{ margin: 0 }}>­ƒôü Recursos y Material de Apoyo</h3>
                   <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Listado de materiales de apoyo activos para el equipo de ventas</p>
                 </div>
                 <div className="panel-body">
-                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
-                    <button type="button" className={materialFilter === 'todos' ? 'btn-primary' : 'btn-secondary'} onClick={() => setMaterialFilter('todos')} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '20px' }}>Todos</button>
-                    <button type="button" className={materialFilter === 'video' ? 'btn-primary' : 'btn-secondary'} onClick={() => setMaterialFilter('video')} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '20px' }}>🎥 Videos</button>
-                    <button type="button" className={materialFilter === 'imagen' ? 'btn-primary' : 'btn-secondary'} onClick={() => setMaterialFilter('imagen')} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '20px' }}>🖼️ Imágenes</button>
-                    <button type="button" className={materialFilter === 'documento' ? 'btn-primary' : 'btn-secondary'} onClick={() => setMaterialFilter('documento')} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '20px' }}>📄 Documentos</button>
-                    <button type="button" className={materialFilter === 'carpeta' ? 'btn-primary' : 'btn-secondary'} onClick={() => setMaterialFilter('carpeta')} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '20px' }}>📁 Carpetas</button>
-
-                    {uniqueCampanas.length > 0 && (
-                      <select
-                        value={campanaFilter}
-                        onChange={e => setCampanaFilter(e.target.value)}
-                        style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '20px', border: '1px solid #cbd5e1', outline: 'none', background: 'white', cursor: 'pointer', fontWeight: 600, color: campanaFilter !== 'todas' ? '#ec4899' : '#475569', marginLeft: 'auto' }}
-                      >
-                        <option value="todas">🎯 Todas las Campañas</option>
-                        {uniqueCampanas.map(c => (
-                          <option key={c as string} value={c as string}>🌟 {c as string}</option>
-                        ))}
-                      </select>
-                    )}
-                  </div>
-                  {filteredMateriales.length === 0 ? (
+                  {materiales.length === 0 ? (
                     <div style={{ padding: '3rem 1rem', textAlign: 'center', color: '#64748b' }}>
-                      <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📁</div>
+                      <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>­ƒôü</div>
                       <h4 style={{ margin: '0 0 0.25rem 0', color: '#0f172a' }}>No hay material de apoyo</h4>
-                      <p style={{ margin: 0, fontSize: '0.85rem' }}>No se encontraron recursos con los filtros seleccionados.</p>
+                      <p style={{ margin: 0, fontSize: '0.85rem' }}>Registra enlaces de Google Drive arriba para que tus vendedores los utilicen.</p>
                     </div>
                   ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
-                      {filteredMateriales.map((m) => {
+                      {materiales.map((m) => {
                         const embedUrl = getGoogleDriveEmbedUrl(m.url);
                         return (
                           <div key={m.id} style={{ border: '1px solid #e2e8f0', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
@@ -4873,7 +4679,7 @@ export default function Admin() {
                                 ></iframe>
                               ) : (
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8', fontSize: '2rem' }}>
-                                  {m.tipo === 'video' ? '🎥' : m.tipo === 'imagen' ? '🖼️' : '📄'}
+                                  {m.tipo === 'video' ? '­ƒÄÑ' : m.tipo === 'imagen' ? '­ƒû╝´©Å' : '­ƒôä'}
                                 </div>
                               )}
                             </div>
@@ -4890,49 +4696,34 @@ export default function Admin() {
                                   fontWeight: 800,
                                   textTransform: 'uppercase'
                                 }}>
-                                  {m.tipo === 'video' ? '🎥 Video' : m.tipo === 'imagen' ? '🖼️ Imagen' : m.tipo === 'carpeta' ? '📁 Carpeta' : '📄 PDF/Doc'}
+                                  {m.tipo === 'video' ? '­ƒÄÑ Video' : m.tipo === 'imagen' ? '­ƒû╝´©Å Imagen' : m.tipo === 'carpeta' ? '­ƒôü Carpeta' : '­ƒôä PDF/Doc'}
                                 </span>
-                                {m.campana && (
-                                  <span style={{ fontSize: '0.68rem', background: '#fce7f3', color: '#db2777', padding: '0.2rem 0.55rem', borderRadius: '20px', fontWeight: 800 }}>
-                                    🌟 {m.campana}
-                                  </span>
-                                )}
                               </div>
                               <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0f172a', fontWeight: 800 }}>{m.titulo}</h4>
                               {m.descripcion && <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b', lineHeight: 1.4 }}>{m.descripcion}</p>}
                               
                               {/* Action buttons */}
-                              <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto', paddingTop: '0.75rem', borderTop: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
+                              <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto', paddingTop: '0.75rem', borderTop: '1px solid #f1f5f9' }}>
                                 <a
                                   href={m.url}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="btn-secondary"
-                                  style={{ flex: 1, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.45rem', minWidth: '90px' }}
+                                  style={{ flex: 1, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.45rem' }}
                                 >
                                   <Eye size={12} /> Abrir Drive
                                 </a>
-                                {m.tipo !== 'carpeta' && (
-                                  <a
-                                    href={getGoogleDriveDownloadUrl(m.url)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="btn-secondary"
-                                    style={{ flex: 1, textDecoration: 'none', padding: '0.45rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', color: '#0ea5e9', borderColor: '#e0f2fe', background: '#f0f9ff', fontWeight: 700, minWidth: '90px' }}
-                                  >
-                                    <Download size={12} /> Descargar
-                                  </a>
-                                )}
                                 <button
                                   type="button"
                                   onClick={() => {
                                     navigator.clipboard.writeText(m.url);
-                                    showToast('Enlace de recurso copiado ✓', 'success');
+                                    showToast('Enlace de recurso copiado Ô£ô', 'success');
                                   }}
                                   className="btn-secondary"
-                                  style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.45rem', minWidth: '90px' }}
+                                  style={{ padding: '0.45rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                                  title="Copiar Enlace para Compartir"
                                 >
-                                  <Copy size={12} /> Copiar
+                                  <Copy size={12} />
                                 </button>
                                 <button
                                   type="button"
@@ -4956,13 +4747,13 @@ export default function Admin() {
           )}
 
 
-          {/* ── CLIENTES TAB ── */}
+          {/* ÔöÇÔöÇ CLIENTES TAB ÔöÇÔöÇ */}
           {activeTab === 'clientes' && (
             <div className="admin-panel">
               <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1rem' }}>
                 <div>
-                  <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}><User size={18} /> Base de Clientes (Fidelización)</h3>
-                  <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Visualiza y filtra los clientes registrados por catálogo y POS</p>
+                  <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}><User size={18} /> Base de Clientes (Fidelizaci├│n)</h3>
+                  <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Visualiza y filtra los clientes registrados por cat├ílogo y POS</p>
                 </div>
                 
                 {/* Search input */}
@@ -4976,7 +4767,7 @@ export default function Admin() {
                     style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '0.84rem', width: '100%', color: '#0f172a' }}
                   />
                   {clienteSearchQuery && (
-                    <button type="button" onClick={() => setClienteSearchQuery('')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
+                    <button type="button" onClick={() => setClienteSearchQuery('')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontWeight: 'bold' }}>Ô£ò</button>
                   )}
                 </div>
               </div>
@@ -4984,10 +4775,10 @@ export default function Admin() {
               <div className="panel-body" style={{ overflowX: 'auto' }}>
                 {filteredClientes.length === 0 ? (
                   <div className="empty-state" style={{ padding: '3rem 1rem', textAlign: 'center' }}>
-                    <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>👥</div>
+                    <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>­ƒæÑ</div>
                     <h4 style={{ color: '#0f172a', margin: '0 0 0.25rem 0' }}>No se encontraron clientes</h4>
                     <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>
-                      {clienteSearchQuery ? 'Prueba con otro término de búsqueda.' : 'Los clientes se registrarán automáticamente cuando realicen pedidos.'}
+                      {clienteSearchQuery ? 'Prueba con otro t├®rmino de b├║squeda.' : 'Los clientes se registrar├ín autom├íticamente cuando realicen pedidos.'}
                     </p>
                   </div>
                 ) : (
@@ -4999,7 +4790,7 @@ export default function Admin() {
                         <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Pedidos</th>
                         <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'right' }}>Total Comprado</th>
                         <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Origen</th>
-                        <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Última Ciudad / Dirección</th>
+                        <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>├Ültima Ciudad / Direcci├│n</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -5009,16 +4800,16 @@ export default function Admin() {
                         const posCount = clientOrders.filter(p => p.origen === 'pos').length;
                         const catalogoCount = clientOrders.filter(p => p.origen !== 'pos').length;
                         
-                        let origenLabel = '📱 Catálogo';
+                        let origenLabel = '­ƒô▒ Cat├ílogo';
                         let origenColor = 'rgba(14, 165, 233, 0.08)';
                         let origenTextColor = '#0284c7';
                         
                         if (posCount > 0 && catalogoCount > 0) {
-                          origenLabel = '💻 POS / 📱 Cat';
+                          origenLabel = '­ƒÆ╗ POS / ­ƒô▒ Cat';
                           origenColor = 'rgba(139, 92, 246, 0.08)';
                           origenTextColor = '#7c3aed';
                         } else if (posCount > 0) {
-                          origenLabel = '💻 POS';
+                          origenLabel = '­ƒÆ╗ POS';
                           origenColor = 'rgba(16, 185, 129, 0.08)';
                           origenTextColor = '#059669';
                         }
@@ -5064,7 +4855,7 @@ export default function Admin() {
             </div>
           )}
 
-          {/* ── ASESORES TAB ── */}
+          {/* ÔöÇÔöÇ ASESORES TAB ÔöÇÔöÇ */}
           {activeTab === 'asesores' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               
@@ -5072,7 +4863,7 @@ export default function Admin() {
               <div className="admin-panel">
                 <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
                   <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}><Users size={18} /> Registrar Nuevo Asesor</h3>
-                  <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Crea un enlace del catálogo personalizado para que las comisiones y chats lleguen a este asesor</p>
+                  <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Crea un enlace del cat├ílogo personalizado para que las comisiones y chats lleguen a este asesor</p>
                 </div>
                 <div className="panel-body">
                   <form onSubmit={handleCrearAsesor} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', alignItems: 'start' }}>
@@ -5081,14 +4872,14 @@ export default function Admin() {
                       <input
                         type="text"
                         required
-                        placeholder="Ej: Carolina Gómez"
+                        placeholder="Ej: Carolina G├│mez"
                         value={nuevoAsesorNombre}
                         onChange={e => setNuevoAsesorNombre(e.target.value)}
                         style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }}
                       />
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', minWidth: '220px' }}>
-                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Números de WhatsApp</label>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>N├║meros de WhatsApp</label>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                         {nuevoAsesorTelefonos.map((tel, idx) => (
                           <div key={idx} style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
@@ -5112,7 +4903,7 @@ export default function Admin() {
                                 }}
                                 style={{ background: '#fee2e2', border: '1px solid #fca5a5', color: '#ef4444', padding: '0.6rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
                               >
-                                ✕
+                                Ô£ò
                               </button>
                             )}
                           </div>
@@ -5123,11 +4914,11 @@ export default function Admin() {
                         onClick={() => setNuevoAsesorTelefonos([...nuevoAsesorTelefonos, ''])}
                         style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', marginTop: '0.25rem', padding: '0.2rem 0' }}
                       >
-                        + Añadir más líneas
+                        + A├▒adir m├ís l├¡neas
                       </button>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>PIN de Acceso (4 dígitos)</label>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>PIN de Acceso (4 d├¡gitos)</label>
                       <input
                         type="text"
                         required
@@ -5157,8 +4948,8 @@ export default function Admin() {
               <div className="admin-panel">
                 <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1rem' }}>
                   <div>
-                    <h3 style={{ margin: 0 }}>👥 Equipo de Asesores Registrados</h3>
-                    <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Copia y comparte los enlaces exclusivos de catálogo de cada asesor</p>
+                    <h3 style={{ margin: 0 }}>­ƒæÑ Equipo de Asesores Registrados</h3>
+                    <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Copia y comparte los enlaces exclusivos de cat├ílogo de cada asesor</p>
                   </div>
                   
                   {/* Buscador */}
@@ -5172,7 +4963,7 @@ export default function Admin() {
                       style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '0.84rem', width: '100%', color: '#0f172a' }}
                     />
                     {asesorSearchQuery && (
-                      <button type="button" onClick={() => setAsesorSearchQuery('')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
+                      <button type="button" onClick={() => setAsesorSearchQuery('')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontWeight: 'bold' }}>Ô£ò</button>
                     )}
                   </div>
                 </div>
@@ -5180,10 +4971,10 @@ export default function Admin() {
                 <div className="panel-body" style={{ overflowX: 'auto' }}>
                   {filteredAsesores.length === 0 ? (
                     <div className="empty-state" style={{ padding: '3rem 1rem', textAlign: 'center' }}>
-                      <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>👥</div>
+                      <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>­ƒæÑ</div>
                       <h4 style={{ color: '#0f172a', margin: '0 0 0.25rem 0' }}>No hay asesores registrados</h4>
                       <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>
-                        {asesorSearchQuery ? 'Prueba con otro término de búsqueda.' : 'Ingresa los datos arriba para crear tu primer asesor de ventas.'}
+                        {asesorSearchQuery ? 'Prueba con otro t├®rmino de b├║squeda.' : 'Ingresa los datos arriba para crear tu primer asesor de ventas.'}
                       </p>
                     </div>
                   ) : (
@@ -5191,12 +4982,12 @@ export default function Admin() {
                       <thead>
                         <tr style={{ borderBottom: '2px solid #f1f5f9', background: '#f8fafc' }}>
                           <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Asesor</th>
-                          <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Línea WhatsApp</th>
+                          <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>L├¡nea WhatsApp</th>
                           <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>PIN de Acceso</th>
                           <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Pedidos Asignados</th>
                           <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'right' }}>Total Ventas (Pagados)</th>
                           <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Alertas</th>
-                          <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Enlace de Catálogo Exclusivo</th>
+                          <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Enlace de Cat├ílogo Exclusivo</th>
                           <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Acciones</th>
                         </tr>
                       </thead>
@@ -5262,7 +5053,7 @@ export default function Admin() {
                                             onClick={() => setEditingAsesorTelefonos(editingAsesorTelefonos.filter((_, i) => i !== idx))}
                                             style={{ background: '#fee2e2', border: 'none', color: '#ef4444', borderRadius: '4px', cursor: 'pointer', padding: '0.25rem' }}
                                           >
-                                            ✕
+                                            Ô£ò
                                           </button>
                                         )}
                                       </div>
@@ -5272,7 +5063,7 @@ export default function Admin() {
                                       onClick={() => setEditingAsesorTelefonos([...editingAsesorTelefonos, ''])}
                                       style={{ background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', alignSelf: 'flex-start' }}
                                     >
-                                      + Añadir línea
+                                      + A├▒adir l├¡nea
                                     </button>
                                   </div>
                                 ) : (
@@ -5320,7 +5111,7 @@ export default function Admin() {
                                   <td style={{ padding: '1rem', textAlign: 'center' }}>
                                     {alerts.length === 0 ? (
                                       <span style={{ fontSize: '0.78rem', color: '#10b981', background: '#dcfce7', padding: '0.2rem 0.55rem', borderRadius: '20px', fontWeight: 700 }}>
-                                        ✅ Al día
+                                        Ô£à Al d├¡a
                                       </span>
                                     ) : (
                                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'center' }}>
@@ -5341,7 +5132,7 @@ export default function Admin() {
                                           onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
                                           title="Haga clic para ver el detalle de las alertas"
                                         >
-                                          ⚠️ {alerts.length} {alerts.length === 1 ? 'Alerta' : 'Alertas'}
+                                          ÔÜá´©Å {alerts.length} {alerts.length === 1 ? 'Alerta' : 'Alertas'}
                                         </span>
                                       </div>
                                     )}
@@ -5372,15 +5163,15 @@ export default function Admin() {
                                           }}
                                           onMouseEnter={e => { e.currentTarget.style.color = '#10b981'; e.currentTarget.style.textDecorationColor = '#10b981'; }}
                                           onMouseLeave={e => { e.currentTarget.style.color = '#1e1b4b'; e.currentTarget.style.textDecorationColor = '#cbd5e1'; }}
-                                          title="Click para ver catálogo de este asesor"
+                                          title="Click para ver cat├ílogo de este asesor"
                                         >
-                                          📲 {phone}
+                                          ­ƒô▓ {phone}
                                         </a>
                                         <button
                                           type="button"
                                           onClick={() => {
                                             navigator.clipboard.writeText(link);
-                                            showToast(`Enlace (${phone}) copiado ✓`, 'success');
+                                            showToast(`Enlace (${phone}) copiado Ô£ô`, 'success');
                                           }}
                                           className="btn-secondary"
                                           style={{ padding: '0.15rem 0.4rem', fontSize: '0.65rem', display: 'inline-flex', alignItems: 'center', gap: '0.2rem', whiteSpace: 'nowrap' }}
@@ -5420,7 +5211,7 @@ export default function Admin() {
                                         onClick={() => setSelectedAsesorAnalytics(a)}
                                         className="btn-secondary"
                                         style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', color: 'var(--primary-color,#6366f1)', borderColor: 'var(--primary-color,#6366f1)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontWeight: 600 }}
-                                        title="Ver analítica del asesor"
+                                        title="Ver anal├¡tica del asesor"
                                       >
                                         <LayoutDashboard size={12} /> Resumen
                                       </button>
@@ -5461,7 +5252,7 @@ export default function Admin() {
             </div>
           )}
 
-          {/* ── MAYORISTAS TAB ── */}
+          {/* ÔöÇÔöÇ MAYORISTAS TAB ÔöÇÔöÇ */}
           {activeTab === 'mayoristas' && (() => {
             const mayoristas = asesores.filter(a => a.tipo === 'mayorista');
             const filteredMayoristas = mayoristaBuscador.trim()
@@ -5475,7 +5266,7 @@ export default function Admin() {
               e.preventDefault();
               const tels = nuevoMayoristaTelefonos.map(t => t.trim()).filter(Boolean);
               if (!nuevoMayoristaNombre.trim() || tels.length === 0) {
-                showToast('Ingresa nombre y al menos un teléfono.', 'error'); return;
+                showToast('Ingresa nombre y al menos un tel├®fono.', 'error'); return;
               }
               setLoading(true);
               try {
@@ -5492,7 +5283,7 @@ export default function Admin() {
                 setAsesores(prev => [data, ...prev]);
                 setNuevoMayoristaNombre(''); setNuevoMayoristaTelefonos(['']); setNuevoMayoristaFotoUrl('');
                 setNuevoMayoristaPin(Math.floor(1000 + Math.random() * 9000).toString());
-                showToast('Mayorista registrado ✓', 'success');
+                showToast('Mayorista registrado Ô£ô', 'success');
               } catch (err: any) { showToast('Error: ' + err.message, 'error'); }
               finally { setLoading(false); }
             }
@@ -5500,7 +5291,7 @@ export default function Admin() {
             async function handleGuardarMayorista(id: string) {
               const tels = editingMayoristaTelefonos.map(t => t.trim()).filter(Boolean);
               if (!editingMayoristaNombre.trim() || tels.length === 0) {
-                showToast('Nombre y teléfono requeridos.', 'error'); return;
+                showToast('Nombre y tel├®fono requeridos.', 'error'); return;
               }
               const cleanPhone = tels.map(n => n.replace(/\D/g, '')).filter(Boolean).join(',');
               try {
@@ -5513,7 +5304,7 @@ export default function Admin() {
                 if (error) throw error;
                 setAsesores(prev => prev.map(a => a.id === id ? { ...a, nombre: editingMayoristaNombre.trim(), telefono: cleanPhone, pin: editingMayoristaPin.trim(), foto_url: editingMayoristaFotoUrl.trim() || undefined } : a));
                 setEditingMayoristaId(null);
-                showToast('Mayorista actualizado ✓', 'success');
+                showToast('Mayorista actualizado Ô£ô', 'success');
               } catch (err: any) { showToast('Error: ' + err.message, 'error'); }
             }
 
@@ -5526,19 +5317,19 @@ export default function Admin() {
                       <Users size={18} /> Registrar Nuevo Mayorista
                     </h3>
                     <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>
-                      Crea un acceso de catálogo con precios mayoristas para este cliente especial
+                      Crea un acceso de cat├ílogo con precios mayoristas para este cliente especial
                     </p>
                   </div>
                   <div className="panel-body">
                     <form onSubmit={handleCrearMayorista} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', alignItems: 'start' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                         <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Nombre del Mayorista</label>
-                        <input type="text" required placeholder="Ej: Distribuidora López" value={nuevoMayoristaNombre}
+                        <input type="text" required placeholder="Ej: Distribuidora L├│pez" value={nuevoMayoristaNombre}
                           onChange={e => setNuevoMayoristaNombre(e.target.value)}
                           style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }} />
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                        <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Números de WhatsApp</label>
+                        <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>N├║meros de WhatsApp</label>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                           {nuevoMayoristaTelefonos.map((tel, idx) => (
                             <div key={idx} style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
@@ -5547,16 +5338,16 @@ export default function Admin() {
                                 style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none', flex: 1 }} />
                               {nuevoMayoristaTelefonos.length > 1 && (
                                 <button type="button" onClick={() => setNuevoMayoristaTelefonos(nuevoMayoristaTelefonos.filter((_, i) => i !== idx))}
-                                  style={{ background: '#fee2e2', border: '1px solid #fca5a5', color: '#ef4444', padding: '0.6rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
+                                  style={{ background: '#fee2e2', border: '1px solid #fca5a5', color: '#ef4444', padding: '0.6rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Ô£ò</button>
                               )}
                             </div>
                           ))}
                         </div>
                         <button type="button" onClick={() => setNuevoMayoristaTelefonos([...nuevoMayoristaTelefonos, ''])}
-                          style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', marginTop: '0.25rem', padding: '0.2rem 0' }}>+ Añadir más líneas</button>
+                          style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', marginTop: '0.25rem', padding: '0.2rem 0' }}>+ A├▒adir m├ís l├¡neas</button>
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                        <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>PIN de Acceso (4 dígitos)</label>
+                        <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>PIN de Acceso (4 d├¡gitos)</label>
                         <input type="text" required maxLength={6} placeholder="Ej: 4321" value={nuevoMayoristaPin}
                           onChange={e => setNuevoMayoristaPin(e.target.value)}
                           style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }} />
@@ -5576,24 +5367,24 @@ export default function Admin() {
                 <div className="admin-panel">
                   <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1rem' }}>
                     <div>
-                      <h3 style={{ margin: 0 }}>📦 Mayoristas Registrados</h3>
-                      <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Clientes con acceso a precios y catálogo mayorista</p>
+                      <h3 style={{ margin: 0 }}>­ƒôª Mayoristas Registrados</h3>
+                      <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Clientes con acceso a precios y cat├ílogo mayorista</p>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f1f5f9', padding: '0.4rem 0.8rem', borderRadius: '10px', border: '1px solid #e2e8f0', minWidth: '260px' }}>
                       <Search size={16} style={{ color: '#64748b' }} />
                       <input type="text" placeholder="Buscar mayorista..." value={mayoristaBuscador}
                         onChange={e => setMayoristaBuscador(e.target.value)}
                         style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '0.84rem', width: '100%', color: '#0f172a' }} />
-                      {mayoristaBuscador && <button type="button" onClick={() => setMayoristaBuscador('')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>}
+                      {mayoristaBuscador && <button type="button" onClick={() => setMayoristaBuscador('')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontWeight: 'bold' }}>Ô£ò</button>}
                     </div>
                   </div>
                   <div className="panel-body" style={{ overflowX: 'auto' }}>
                     {filteredMayoristas.length === 0 ? (
                       <div className="empty-state" style={{ padding: '3rem 1rem', textAlign: 'center' }}>
-                        <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📦</div>
+                        <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>­ƒôª</div>
                         <h4 style={{ color: '#0f172a', margin: '0 0 0.25rem 0' }}>No hay mayoristas registrados</h4>
                         <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>
-                          {mayoristaBuscador ? 'Prueba con otro término.' : 'Usa el formulario de arriba para agregar tu primer mayorista.'}
+                          {mayoristaBuscador ? 'Prueba con otro t├®rmino.' : 'Usa el formulario de arriba para agregar tu primer mayorista.'}
                         </p>
                       </div>
                     ) : (
@@ -5601,12 +5392,12 @@ export default function Admin() {
                         <thead>
                           <tr style={{ borderBottom: '2px solid #f1f5f9', background: '#f8fafc' }}>
                             <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Mayorista</th>
-                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Línea WhatsApp</th>
+                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>L├¡nea WhatsApp</th>
                             <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>PIN de Acceso</th>
                             <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Pedidos</th>
                             <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'right' }}>Total Ventas (Pagados)</th>
                             <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Alertas</th>
-                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Enlace de Catálogo Exclusivo</th>
+                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Enlace de Cat├ílogo Exclusivo</th>
                             <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Acciones</th>
                           </tr>
                         </thead>
@@ -5647,12 +5438,12 @@ export default function Admin() {
                                             placeholder="3123456789" style={{ padding: '0.25rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', width: '110px' }} />
                                           {editingMayoristaTelefonos.length > 1 && (
                                             <button type="button" onClick={() => setEditingMayoristaTelefonos(editingMayoristaTelefonos.filter((_, i) => i !== idx))}
-                                              style={{ background: '#fee2e2', border: 'none', color: '#ef4444', borderRadius: '4px', cursor: 'pointer', padding: '0.25rem' }}>✕</button>
+                                              style={{ background: '#fee2e2', border: 'none', color: '#ef4444', borderRadius: '4px', cursor: 'pointer', padding: '0.25rem' }}>Ô£ò</button>
                                           )}
                                         </div>
                                       ))}
                                       <button type="button" onClick={() => setEditingMayoristaTelefonos([...editingMayoristaTelefonos, ''])}
-                                        style={{ background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', alignSelf: 'flex-start' }}>+ Añadir línea</button>
+                                        style={{ background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', alignSelf: 'flex-start' }}>+ A├▒adir l├¡nea</button>
                                     </div>
                                   ) : (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
@@ -5684,7 +5475,7 @@ export default function Admin() {
                                     <td style={{ padding: '1rem', textAlign: 'center' }}>
                                       {alerts.length === 0 ? (
                                         <span style={{ fontSize: '0.78rem', color: '#10b981', background: '#dcfce7', padding: '0.2rem 0.55rem', borderRadius: '20px', fontWeight: 700 }}>
-                                          ✅ Al día
+                                          Ô£à Al d├¡a
                                         </span>
                                       ) : (
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'center' }}>
@@ -5705,7 +5496,7 @@ export default function Admin() {
                                             onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
                                             title="Haga clic para ver el detalle de las alertas"
                                           >
-                                            ⚠️ {alerts.length} {alerts.length === 1 ? 'Alerta' : 'Alertas'}
+                                            ÔÜá´©Å {alerts.length} {alerts.length === 1 ? 'Alerta' : 'Alertas'}
                                           </span>
                                         </div>
                                       )}
@@ -5736,15 +5527,15 @@ export default function Admin() {
                                             }}
                                             onMouseEnter={e => { e.currentTarget.style.color = '#0ea5e9'; e.currentTarget.style.textDecorationColor = '#0ea5e9'; }}
                                             onMouseLeave={e => { e.currentTarget.style.color = '#1e1b4b'; e.currentTarget.style.textDecorationColor = '#cbd5e1'; }}
-                                            title="Click para ver catálogo de este mayorista"
+                                            title="Click para ver cat├ílogo de este mayorista"
                                           >
-                                            📲 {phone}
+                                            ­ƒô▓ {phone}
                                           </a>
                                           <button
                                             type="button"
                                             onClick={() => {
                                               navigator.clipboard.writeText(link);
-                                              showToast(`Enlace mayorista copiado ✓`, 'success');
+                                              showToast(`Enlace mayorista copiado Ô£ô`, 'success');
                                             }}
                                             className="btn-secondary"
                                             style={{ padding: '0.15rem 0.4rem', fontSize: '0.65rem', display: 'inline-flex', alignItems: 'center', gap: '0.2rem', whiteSpace: 'nowrap' }}
@@ -5772,7 +5563,7 @@ export default function Admin() {
                                           onClick={() => setSelectedAsesorAnalytics(m)}
                                           className="btn-secondary"
                                           style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', color: 'var(--primary-color,#6366f1)', borderColor: 'var(--primary-color,#6366f1)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontWeight: 600 }}
-                                          title="Ver analítica del mayorista"
+                                          title="Ver anal├¡tica del mayorista"
                                         >
                                           <LayoutDashboard size={12} /> Resumen
                                         </button>
@@ -5801,16 +5592,16 @@ export default function Admin() {
             );
           })()}
 
-          {/* ── DASHBOARD TAB ── */}
+          {/* ÔöÇÔöÇ DASHBOARD TAB ÔöÇÔöÇ */}
           {activeTab === 'dashboard' && (
             <>
-               {/* Fila de Métricas Principales de Ventas */}
+               {/* Fila de M├®tricas Principales de Ventas */}
                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
                  <div className="metric-card" style={{ background: 'linear-gradient(135deg, var(--primary-color, #6366f1), rgba(var(--primary-rgb, 99, 102, 241), 0.75))', color: 'white', border: 'none', position: 'relative', overflow: 'hidden' }}>
-                   <div style={{ position: 'absolute', right: '-10px', top: '-10px', fontSize: '5rem', opacity: 0.15 }}>💰</div>
+                   <div style={{ position: 'absolute', right: '-10px', top: '-10px', fontSize: '5rem', opacity: 0.15 }}>­ƒÆ░</div>
                    <div className="mc-label" style={{ color: 'rgba(255,255,255,0.85)' }}>Total Ventas (Comprobado)</div>
                    <div className="mc-value" style={{ fontSize: '1.8rem', color: 'white' }}>${stats.totalVentasVal.toLocaleString()} COP</div>
-                   <div className="mc-sub" style={{ color: 'rgba(255,255,255,0.75)' }}>Únicamente pagos verificados</div>
+                   <div className="mc-sub" style={{ color: 'rgba(255,255,255,0.75)' }}>├Ünicamente pagos verificados</div>
                  </div>
 
                  <div className="metric-card" style={{ background: 'linear-gradient(135deg, rgba(var(--primary-rgb, 99, 102, 241), 0.85), rgba(var(--primary-rgb, 99, 102, 241), 0.6))', color: 'white', border: 'none', position: 'relative', overflow: 'hidden' }}>
@@ -5857,7 +5648,7 @@ export default function Admin() {
                                {bestAsesorObj.nombre.charAt(0).toUpperCase()}
                              </div>
                            ) : (
-                             <span style={{ fontSize: '4rem', opacity: 0.25, marginRight: '10px' }}>⭐</span>
+                             <span style={{ fontSize: '4rem', opacity: 0.25, marginRight: '10px' }}>Ô¡É</span>
                            )}
                          </div>
                          {hasPhoto && <div className="party-particles"></div>}
@@ -5865,41 +5656,41 @@ export default function Admin() {
                      );
                    })()}
                    <div style={{ position: 'relative', zIndex: 1 }}>
-                     <div className="mc-label" style={{ color: 'rgba(255,255,255,0.85)' }}>Línea / Asesor Estrella</div>
+                     <div className="mc-label" style={{ color: 'rgba(255,255,255,0.85)' }}>L├¡nea / Asesor Estrella</div>
                      <div className="mc-value" style={{ fontSize: '1.5rem', color: 'white', textShadow: '0 2px 4px rgba(0,0,0,0.3)' }}>{getAsesorNameByPhone(stats.bestAdvisorPhone)}</div>
                      <div className="mc-sub" style={{ color: 'rgba(255,255,255,0.75)' }}>Ventas: ${stats.bestAdvisorTotal.toLocaleString()} COP</div>
                    </div>
                  </div>
 
                  <div className="metric-card" style={{ background: 'linear-gradient(135deg, rgba(var(--primary-rgb, 99, 102, 241), 0.7), rgba(var(--primary-rgb, 99, 102, 241), 0.45))', color: 'white', border: 'none', position: 'relative', overflow: 'hidden' }}>
-                   <div style={{ position: 'absolute', right: '-10px', top: '-10px', fontSize: '5rem', opacity: 0.15 }}>⏳</div>
+                   <div style={{ position: 'absolute', right: '-10px', top: '-10px', fontSize: '5rem', opacity: 0.15 }}>ÔÅ│</div>
                    <div className="mc-label" style={{ color: 'rgba(255,255,255,0.85)' }}>Pedidos por Atender / Pendientes</div>
                    <div className="mc-value" style={{ fontSize: '2rem', color: 'white' }}>{stats.noResueltosCount}</div>
-                   <div className="mc-sub" style={{ color: 'rgba(255,255,255,0.75)' }}>Pendientes de pago o revisión</div>
+                   <div className="mc-sub" style={{ color: 'rgba(255,255,255,0.75)' }}>Pendientes de pago o revisi├│n</div>
                  </div>
 
                  <div className="metric-card" style={{ background: 'linear-gradient(135deg, rgba(var(--primary-rgb, 99, 102, 241), 0.55), rgba(var(--primary-rgb, 99, 102, 241), 0.3))', color: 'white', border: 'none', position: 'relative', overflow: 'hidden' }}>
-                   <div style={{ position: 'absolute', right: '-10px', top: '-10px', fontSize: '5rem', opacity: 0.15 }}>📦</div>
+                   <div style={{ position: 'absolute', right: '-10px', top: '-10px', fontSize: '5rem', opacity: 0.15 }}>­ƒôª</div>
                    <div className="mc-label" style={{ color: 'rgba(255,255,255,0.85)' }}>Total Productos</div>
                    <div className="mc-value" style={{ fontSize: '2rem', color: 'white' }}>{productos.length}</div>
-                   <div className="mc-sub" style={{ color: 'rgba(255,255,255,0.75)' }}>{categoriasData.length} categorías activas</div>
+                   <div className="mc-sub" style={{ color: 'rgba(255,255,255,0.75)' }}>{categoriasData.length} categor├¡as activas</div>
                  </div>
                </div>
 
-               {/* Sección de Analítica y Gráficos Visuales */}
+               {/* Secci├│n de Anal├¡tica y Gr├íficos Visuales */}
                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
                  
-                 {/* Tarjeta: Canales de Venta (POS vs Catálogo) */}
+                 {/* Tarjeta: Canales de Venta (POS vs Cat├ílogo) */}
                  <div className="admin-panel" style={{ height: '100%' }}>
                    <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
-                     <h3 style={{ margin: 0 }}>📊 Canales de Venta</h3>
-                     <p style={{ margin: '0.1rem 0 0 0', color: '#64748b', fontSize: '0.8rem' }}>Distribución de pedidos según su procedencia</p>
+                     <h3 style={{ margin: 0 }}>­ƒôè Canales de Venta</h3>
+                     <p style={{ margin: '0.1rem 0 0 0', color: '#64748b', fontSize: '0.8rem' }}>Distribuci├│n de pedidos seg├║n su procedencia</p>
                    </div>
                    <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                     {/* Canal Catálogo */}
+                     {/* Canal Cat├ílogo */}
                      <div>
                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '0.4rem' }}>
-                         <span>📱 Catálogo Digital</span>
+                         <span>­ƒô▒ Cat├ílogo Digital</span>
                          <span>{stats.catalogCount} pedidos ({pedidos.length > 0 ? Math.round((stats.catalogCount / pedidos.length) * 100) : 0}%)</span>
                        </div>
                        <div style={{ background: '#f1f5f9', height: '12px', borderRadius: '6px', overflow: 'hidden' }}>
@@ -5910,7 +5701,7 @@ export default function Admin() {
                      {/* Canal POS */}
                      <div>
                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '0.4rem' }}>
-                         <span>💻 POS Ventas</span>
+                         <span>­ƒÆ╗ POS Ventas</span>
                          <span>{stats.posCount} pedidos ({pedidos.length > 0 ? Math.round((stats.posCount / pedidos.length) * 100) : 0}%)</span>
                        </div>
                        <div style={{ background: '#f1f5f9', height: '12px', borderRadius: '6px', overflow: 'hidden' }}>
@@ -5920,7 +5711,7 @@ export default function Admin() {
 
                      {/* Resumen Total */}
                      <div style={{ background: '#f8fafc', padding: '0.75rem', borderRadius: '10px', fontSize: '0.8rem', color: '#475569', marginTop: 'auto' }}>
-                       ✨ Total pedidos registrados en base de datos: <strong>{pedidos.length}</strong>
+                       Ô£¿ Total pedidos registrados en base de datos: <strong>{pedidos.length}</strong>
                      </div>
                    </div>
                  </div>
@@ -5928,12 +5719,12 @@ export default function Admin() {
                  {/* Tarjeta: Destinos Principales (Ciudades) */}
                  <div className="admin-panel" style={{ height: '100%' }}>
                    <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
-                     <h3 style={{ margin: 0 }}>📍 Ciudades con Mayor Demanda</h3>
-                     <p style={{ margin: '0.1rem 0 0 0', color: '#64748b', fontSize: '0.8rem' }}>Top 5 ciudades con más pedidos registrados</p>
+                     <h3 style={{ margin: 0 }}>­ƒôì Ciudades con Mayor Demanda</h3>
+                     <p style={{ margin: '0.1rem 0 0 0', color: '#64748b', fontSize: '0.8rem' }}>Top 5 ciudades con m├ís pedidos registrados</p>
                    </div>
                    <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                      {stats.sortedCities.length === 0 ? (
-                       <div style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem 0' }}>No hay datos de ciudades registrados todavía</div>
+                       <div style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem 0' }}>No hay datos de ciudades registrados todav├¡a</div>
                      ) : (
                        stats.sortedCities.map((city, idx) => {
                          const maxCount = stats.sortedCities[0]?.count || 1;
@@ -5954,15 +5745,15 @@ export default function Admin() {
                    </div>
                  </div>
 
-                 {/* Tarjeta: Productos Más Vendidos */}
+                 {/* Tarjeta: Productos M├ís Vendidos */}
                  <div className="admin-panel" style={{ height: '100%' }}>
                    <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
-                     <h3 style={{ margin: 0 }}>🛍️ Productos Más Vendidos</h3>
-                     <p style={{ margin: '0.1rem 0 0 0', color: '#64748b', fontSize: '0.8rem' }}>Top 5 artículos más vendidos por unidades</p>
+                     <h3 style={{ margin: 0 }}>­ƒøì´©Å Productos M├ís Vendidos</h3>
+                     <p style={{ margin: '0.1rem 0 0 0', color: '#64748b', fontSize: '0.8rem' }}>Top 5 art├¡culos m├ís vendidos por unidades</p>
                    </div>
                    <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
                      {stats.topSellingProducts.length === 0 ? (
-                       <div style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem 0' }}>No hay datos de productos vendidos todavía</div>
+                       <div style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem 0' }}>No hay datos de productos vendidos todav├¡a</div>
                      ) : (
                        stats.topSellingProducts.map((prod, idx) => (
                          <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.4rem 0.5rem', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
@@ -5970,7 +5761,7 @@ export default function Admin() {
                              {prod.imagen_url ? (
                                <img src={prod.imagen_url} alt={prod.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                              ) : (
-                               <span style={{ fontSize: '1.2rem' }}>👕</span>
+                               <span style={{ fontSize: '1.2rem' }}>­ƒæò</span>
                              )}
                            </div>
                            <div style={{ flex: 1, minWidth: 0 }}>
@@ -5992,18 +5783,18 @@ export default function Admin() {
 
                </div>
 
-               {/* Fila: Horario y Días de Mayor Venta */}
+               {/* Fila: Horario y D├¡as de Mayor Venta */}
                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
                  
                  {/* Tarjeta: Horario de Mayor Venta */}
                  <div className="admin-panel">
                    <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
-                     <h3 style={{ margin: 0 }}>⏰ Horario de Mayor Venta</h3>
+                     <h3 style={{ margin: 0 }}>ÔÅ░ Horario de Mayor Venta</h3>
                      <p style={{ margin: '0.1rem 0 0 0', color: '#64748b', fontSize: '0.8rem' }}>
                        {pedidos.filter(p => p.estado === 'completado').length > 0 && stats.bestHour.count > 0 ? (
                          <>Hora pico: <strong>{stats.hourLabels[stats.bestHour.hour]}</strong> ({stats.bestHour.count} {stats.bestHour.count === 1 ? 'venta' : 'ventas'})</>
                        ) : (
-                         'Distribución de ventas por hora del día'
+                         'Distribuci├│n de ventas por hora del d├¡a'
                        )}
                      </p>
                    </div>
@@ -6037,15 +5828,15 @@ export default function Admin() {
                    </div>
                  </div>
 
-                 {/* Tarjeta: Días de Mayor Venta */}
+                 {/* Tarjeta: D├¡as de Mayor Venta */}
                  <div className="admin-panel">
                    <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
-                     <h3 style={{ margin: 0 }}>📅 Ventas por Día de la Semana</h3>
+                     <h3 style={{ margin: 0 }}>­ƒôà Ventas por D├¡a de la Semana</h3>
                      <p style={{ margin: '0.1rem 0 0 0', color: '#64748b', fontSize: '0.8rem' }}>
                        {pedidos.filter(p => p.estado === 'completado').length > 0 && stats.bestDay.count > 0 ? (
-                         <>Día más fuerte: <strong>{stats.bestDay.name}</strong> ({stats.bestDay.count} {stats.bestDay.count === 1 ? 'venta' : 'ventas'})</>
+                         <>D├¡a m├ís fuerte: <strong>{stats.bestDay.name}</strong> ({stats.bestDay.count} {stats.bestDay.count === 1 ? 'venta' : 'ventas'})</>
                        ) : (
-                         'Distribución de ventas según el día de la semana'
+                         'Distribuci├│n de ventas seg├║n el d├¡a de la semana'
                        )}
                      </p>
                    </div>
@@ -6053,7 +5844,7 @@ export default function Admin() {
                      {(() => {
                        const maxCount = Math.max(1, ...Object.values(stats.dayCounts));
                        const orderOfWeek = [1, 2, 3, 4, 5, 6, 0]; // Lun, Mar, Mie, Jue, Vie, Sab, Dom
-                       const shortDayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+                       const shortDayNames = ['Dom', 'Lun', 'Mar', 'Mi├®', 'Jue', 'Vie', 'S├íb'];
                        return (
                          <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', height: '100px', marginTop: '1.5rem', padding: '0 0.5rem' }}>
                            {orderOfWeek.map((dayIdx) => {
@@ -6090,12 +5881,12 @@ export default function Admin() {
                  {/* Tarjeta: Rendimiento de Asesores */}
                  <div className="admin-panel">
                    <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
-                     <h3 style={{ margin: 0 }}>👥 Rendimiento de Asesores</h3>
-                     <p style={{ margin: '0.1rem 0 0 0', color: '#64748b', fontSize: '0.8rem' }}>Ventas acumuladas de tus asesores de catálogo</p>
+                     <h3 style={{ margin: 0 }}>­ƒæÑ Rendimiento de Asesores</h3>
+                     <p style={{ margin: '0.1rem 0 0 0', color: '#64748b', fontSize: '0.8rem' }}>Ventas acumuladas de tus asesores de cat├ílogo</p>
                    </div>
                    <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '320px', overflowY: 'auto' }}>
                      {stats.asesoresRanking.length === 0 ? (
-                       <div style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem 0' }}>No hay asesores registrados todavía</div>
+                       <div style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem 0' }}>No hay asesores registrados todav├¡a</div>
                      ) : (
                        stats.asesoresRanking.map((a, idx) => (
                          <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0.75rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
@@ -6130,12 +5921,12 @@ export default function Admin() {
                  {/* Tarjeta: Rendimiento de Mayoristas */}
                  <div className="admin-panel">
                    <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
-                     <h3 style={{ margin: 0 }}>👑 Clientes Mayoristas</h3>
+                     <h3 style={{ margin: 0 }}>­ƒææ Clientes Mayoristas</h3>
                      <p style={{ margin: '0.1rem 0 0 0', color: '#64748b', fontSize: '0.8rem' }}>Compras acumuladas de tus clientes mayoristas</p>
                    </div>
                    <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '320px', overflowY: 'auto' }}>
                      {stats.mayoristasRanking.length === 0 ? (
-                       <div style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem 0' }}>No hay mayoristas registrados todavía</div>
+                       <div style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem 0' }}>No hay mayoristas registrados todav├¡a</div>
                      ) : (
                        stats.mayoristasRanking.map((m, idx) => (
                          <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0.75rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
@@ -6171,14 +5962,14 @@ export default function Admin() {
 
               <div className="admin-panel">
                 <div className="panel-header">
-                  <h3>📋 Últimos Productos</h3>
+                  <h3>­ƒôï ├Ültimos Productos</h3>
                 </div>
                 <div className="panel-body">
                   <div className="products-grid">
                     {productos.slice(0, 8).map(p => (
                       <div key={p.id} className="product-card">
                         <div className="product-card-img">
-                          {p.imagen_url ? <img src={p.imagen_url} alt={p.nombre} /> : '🖼️'}
+                          {p.imagen_url ? <img src={p.imagen_url} alt={p.nombre} /> : '­ƒû╝´©Å'}
                         </div>
                         <div className="product-card-body">
                           <h4>{p.nombre}</h4>
@@ -6193,17 +5984,17 @@ export default function Admin() {
             </>
           )}
 
-          {/* ── POS TAB ── */}
+          {/* ÔöÇÔöÇ POS TAB ÔöÇÔöÇ */}
           {activeTab === 'pos' && (
             <div className="pos-layout">
               {posCheckoutSuccess ? (
                 /* SUCCESS RECEIPT SCREEN */
                 <div className="pos-success-screen" style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '24px', padding: '2rem', maxWidth: '560px', margin: '2rem auto', textAlign: 'center', boxShadow: '0 20px 40px -12px rgba(0,0,0,0.1)' }}>
                   <div style={{ width: '64px', height: '64px', background: '#dcfce7', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem auto' }}>
-                    <span style={{ fontSize: '2rem' }}>✅</span>
+                    <span style={{ fontSize: '2rem' }}>Ô£à</span>
                   </div>
-                  <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 800, fontSize: '1.4rem', color: '#14532d' }}>¡Venta Completada con Éxito!</h3>
-                  <p style={{ margin: '0 0 1.5rem 0', color: '#475569', fontSize: '0.88rem' }}>El inventario ha sido actualizado y la venta se registró en el historial de pedidos.</p>
+                  <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 800, fontSize: '1.4rem', color: '#14532d' }}>┬íVenta Completada con ├ëxito!</h3>
+                  <p style={{ margin: '0 0 1.5rem 0', color: '#475569', fontSize: '0.88rem' }}>El inventario ha sido actualizado y la venta se registr├│ en el historial de pedidos.</p>
 
                   {/* Factura Detalle */}
                   {posLastInvoice && (
@@ -6216,9 +6007,9 @@ export default function Admin() {
 
                       <div style={{ marginBottom: '0.75rem' }}>
                         <strong>Cliente:</strong> {posLastInvoice.cliente_nombre}<br />
-                        <strong>Teléfono:</strong> {posLastInvoice.cliente_telefono}<br />
-                        {posLastInvoice.direccion && <><strong>Dirección:</strong> {posLastInvoice.direccion}, {posLastInvoice.ciudad}<br /></>}
-                        <strong>Método de Pago:</strong> {posLastInvoice.metodo_pago.toUpperCase()}<br />
+                        <strong>Tel├®fono:</strong> {posLastInvoice.cliente_telefono}<br />
+                        {posLastInvoice.direccion && <><strong>Direcci├│n:</strong> {posLastInvoice.direccion}, {posLastInvoice.ciudad}<br /></>}
+                        <strong>M├®todo de Pago:</strong> {posLastInvoice.metodo_pago.toUpperCase()}<br />
                       </div>
 
                       <div style={{ borderTop: '1px dashed #cbd5e1', borderBottom: '1px dashed #cbd5e1', padding: '0.5rem 0', margin: '0.75rem 0' }}>
@@ -6263,11 +6054,11 @@ export default function Admin() {
                         if (!posLastInvoice) return;
                         const num = posLastInvoice.cliente_telefono.replace(/\D/g, '');
                         const itemsStr = posLastInvoice.productos.map((i: any) => `- ${i.cantidad}x ${i.nombre} ${i.talla ? `(${i.talla})` : ''}`).join('\n');
-                        const msg = `¡Hola ${posLastInvoice.cliente_nombre}! 👋\\nMuchas gracias por tu compra en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\\n\\n*Detalle de tu compra:*\\n${itemsStr}\\n\\n*Total Pagado: $${posLastInvoice.total.toLocaleString()} COP*\\n*Método de Pago: ${posLastInvoice.metodo_pago.toUpperCase()}*\\n\\n¡Esperamos que disfrutes tus productos! 😊`;
+                        const msg = `┬íHola ${posLastInvoice.cliente_nombre}! ­ƒæï\\nMuchas gracias por tu compra en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\\n\\n*Detalle de tu compra:*\\n${itemsStr}\\n\\n*Total Pagado: $${posLastInvoice.total.toLocaleString()} COP*\\n*M├®todo de Pago: ${posLastInvoice.metodo_pago.toUpperCase()}*\\n\\n┬íEsperamos que disfrutes tus productos! ­ƒÿè`;
                         window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
                       }}
                     >
-                      💬 Enviar Recibo por WhatsApp
+                      ­ƒÆ¼ Enviar Recibo por WhatsApp
                     </button>
                     
                     <button
@@ -6304,7 +6095,7 @@ export default function Admin() {
                   <div className="admin-panel" style={{ minHeight: '650px' }}>
                     <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem' }}>
                       <div>
-                        <h3 style={{ fontSize: '1.15rem' }}><Calculator size={18} style={{ color: configuracion?.color_primario || '#4f46e5' }} /> POS Catálogo</h3>
+                        <h3 style={{ fontSize: '1.15rem' }}><Calculator size={18} style={{ color: configuracion?.color_primario || '#4f46e5' }} /> POS Cat├ílogo</h3>
                         <p style={{ fontSize: '0.8rem' }}>Busca y selecciona los productos del inventario</p>
                       </div>
                       
@@ -6354,7 +6145,7 @@ export default function Admin() {
                           onChange={e => setPosCategoryFilter(e.target.value)}
                           style={{ padding: '0.45rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.82rem', background: 'white' }}
                         >
-                          <option value="todos">Todas las categorías</option>
+                          <option value="todos">Todas las categor├¡as</option>
                           {categoriasData.map(c => <option key={c.id} value={c.slug}>{c.nombre}</option>)}
                         </select>
                       </div>
@@ -6384,7 +6175,7 @@ export default function Admin() {
                                   {p.imagen_url ? (
                                     <img src={p.imagen_url} alt={p.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                   ) : (
-                                    <span style={{ fontSize: '1.5rem' }}>👕</span>
+                                    <span style={{ fontSize: '1.5rem' }}>­ƒæò</span>
                                   )}
                                 </div>
 
@@ -6450,7 +6241,7 @@ export default function Admin() {
                                     gap: '0.25rem'
                                   }}
                                 >
-                                  {hasStockAvailable ? <><Plus size={12} /> Agregar</> : ((p.stock || 0) > 0 ? 'Límite alcanzado' : 'Sin Stock')}
+                                  {hasStockAvailable ? <><Plus size={12} /> Agregar</> : ((p.stock || 0) > 0 ? 'L├¡mite alcanzado' : 'Sin Stock')}
                                 </button>
                               </div>
                             );
@@ -6462,7 +6253,7 @@ export default function Admin() {
                   {/* RIGHT COLUMN: POS SALES CART */}
                   <div className="admin-panel" style={{ minHeight: '650px', background: '#ffffff', display: 'flex', flexDirection: 'column' }}>
                     <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem' }}>
-                      <h3 style={{ fontSize: '1.15rem' }}>🛍️ Venta Actual ({posCart.reduce((acc, i) => acc + i.cantidad, 0)} items)</h3>
+                      <h3 style={{ fontSize: '1.15rem' }}>­ƒøì´©Å Venta Actual ({posCart.reduce((acc, i) => acc + i.cantidad, 0)} items)</h3>
                       <p style={{ fontSize: '0.8rem' }}>Carrito de cobro y datos del cliente para despacho</p>
                     </div>
 
@@ -6470,7 +6261,7 @@ export default function Admin() {
                       {/* Cart List */}
                       <div style={{ flex: 1, maxHeight: '220px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.5rem', background: '#f8fafc' }}>
                         {posCart.length === 0 ? (
-                          <p style={{ textAlign: 'center', color: '#64748b', fontSize: '0.82rem', margin: '3rem 0', fontStyle: 'italic' }}>El carrito del POS está vacío.</p>
+                          <p style={{ textAlign: 'center', color: '#64748b', fontSize: '0.82rem', margin: '3rem 0', fontStyle: 'italic' }}>El carrito del POS est├í vac├¡o.</p>
                         ) : (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                             {posCart.map((item, idx) => (
@@ -6560,12 +6351,12 @@ export default function Admin() {
                       {/* Customer Data */}
                       <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                         <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, color: '#334155', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.4rem' }}>
-                          👤 Datos del Cliente (Fidelización)
+                          ­ƒæñ Datos del Cliente (Fidelizaci├│n)
                         </h4>
                         
                         <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '0.5rem' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                            <label style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b' }}>Teléfono celular</label>
+                            <label style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b' }}>Tel├®fono celular</label>
                             <input
                               type="text"
                               required
@@ -6590,7 +6381,7 @@ export default function Admin() {
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '0.5rem' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                            <label style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b' }}>Dirección</label>
+                            <label style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b' }}>Direcci├│n</label>
                             <input
                               type="text"
                               placeholder="Calle, Manzana, Casa..."
@@ -6614,7 +6405,7 @@ export default function Admin() {
 
                       {/* Payment Method Selector */}
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#334155' }}>Método de Pago:</span>
+                        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#334155' }}>M├®todo de Pago:</span>
                         <div style={{ display: 'flex', gap: '0.35rem' }}>
                           {(['efectivo', 'transferencia', 'tarjeta'] as const).map(method => (
                             <button
@@ -6744,7 +6535,7 @@ export default function Admin() {
                               });
 
                               setPosCheckoutSuccess(true);
-                              showToast('Venta POS registrada y stock actualizado ✓', 'success');
+                              showToast('Venta POS registrada y stock actualizado Ô£ô', 'success');
                               
                               // Reload data
                               cargarDatos();
@@ -6772,7 +6563,7 @@ export default function Admin() {
                             gap: '0.5rem'
                           }}
                         >
-                          💸 Confirmar Venta y Cobro
+                          ­ƒÆ© Confirmar Venta y Cobro
                         </button>
                       </div>
                     </div>
@@ -6784,13 +6575,13 @@ export default function Admin() {
           )}
 
 
-          {/* ── PEDIDOS TAB ── */}
+          {/* ÔöÇÔöÇ PEDIDOS TAB ÔöÇÔöÇ */}
           {activeTab === 'pedidos' && (
             <div className="admin-panel">
               <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
                   <h3><ShoppingBag size={16} /> Registro de Pedidos</h3>
-                  <p>Pedidos recibidos desde el catálogo digital y su asignación de línea</p>
+                  <p>Pedidos recibidos desde el cat├ílogo digital y su asignaci├│n de l├¡nea</p>
                 </div>
                 
                 {/* Switcher Vista */}
@@ -6810,7 +6601,7 @@ export default function Admin() {
                       boxShadow: pedidosViewMode === 'lista' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
                     }}
                   >
-                    📋 Lista
+                    ­ƒôï Lista
                   </button>
                   <button
                     type="button"
@@ -6827,19 +6618,19 @@ export default function Admin() {
                       boxShadow: pedidosViewMode === 'kanban' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
                     }}
                   >
-                    📊 Kanban
+                    ­ƒôè Kanban
                   </button>
                 </div>
               </div>
               <div className="panel-body">
                 {pedidos.length === 0 && leads.length === 0 ? (
                   <div className="empty-state">
-                    <div className="es-icon">📋</div>
-                    <p style={{ marginTop: '1rem' }}>No hay pedidos ni leads registrados todavía</p>
+                    <div className="es-icon">­ƒôï</div>
+                    <p style={{ marginTop: '1rem' }}>No hay pedidos ni leads registrados todav├¡a</p>
                   </div>
                 ) : (
                   <>
-                    {/* Barra de Filtros y Búsqueda */}
+                    {/* Barra de Filtros y B├║squeda */}
                     <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                       <div className="search-input-container" style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 1, minWidth: '220px' }}>
                         <span style={{ position: 'absolute', left: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center' }}>
@@ -6848,7 +6639,7 @@ export default function Admin() {
                         <input
                           className="search-bar"
                           style={{ width: '100%', padding: '0.55rem 1rem 0.55rem 2.25rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', margin: 0 }}
-                          placeholder="Buscar por cliente, teléfono o ciudad..."
+                          placeholder="Buscar por cliente, tel├®fono o ciudad..."
                           value={orderSearchQuery}
                           onChange={e => setOrderSearchQuery(e.target.value)}
                         />
@@ -6889,12 +6680,12 @@ export default function Admin() {
                           onChange={e => setOrderFilterOrigin(e.target.value)}
                           style={{ padding: '0.55rem 1rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', cursor: 'pointer' }}
                         >
-                          <option value="todos">Todos los Orígenes</option>
-                          <option value="catalogo">📱 Catálogo</option>
-                          <option value="pos">💻 POS</option>
+                          <option value="todos">Todos los Or├¡genes</option>
+                          <option value="catalogo">­ƒô▒ Cat├ílogo</option>
+                          <option value="pos">­ƒÆ╗ POS</option>
                         </select>
 
-                        {role === 'admin' && (
+                        {role !== 'asesor' && (
                           <select 
                             value={orderFilterAsesor} 
                             onChange={e => setOrderFilterAsesor(e.target.value)}
@@ -6902,7 +6693,7 @@ export default function Admin() {
                           >
                             <option value="todos">Todos los Asesores</option>
                             {asesores.map(a => (
-                              <option key={a.id} value={a.telefono}>👤 {a.nombre} ({a.telefono})</option>
+                              <option key={a.id} value={a.telefono}>­ƒæñ {a.nombre} ({a.telefono})</option>
                             ))}
                           </select>
                         )}
@@ -6912,8 +6703,8 @@ export default function Admin() {
                           onChange={e => setOrderSortBy(e.target.value)}
                           style={{ padding: '0.55rem 1rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', cursor: 'pointer' }}
                         >
-                          <option value="date_desc">Más recientes primero</option>
-                          <option value="date_asc">Más antiguos primero</option>
+                          <option value="date_desc">M├ís recientes primero</option>
+                          <option value="date_asc">M├ís antiguos primero</option>
                           <option value="total_desc">Mayor valor</option>
                           <option value="total_asc">Menor valor</option>
                         </select>
@@ -6925,7 +6716,7 @@ export default function Admin() {
                         {/* Columna 1: No Interesados (Abandonos) */}
                         <div className="kanban-column" style={{ background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}>
                           <div className="kanban-column-header col-red" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #ef4444', paddingBottom: '0.5rem' }}>
-                            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#ef4444' }}>🔴 No Interesados (Abandonos)</h3>
+                            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#ef4444' }}>­ƒö┤ No Interesados (Abandonos)</h3>
                             <span className="badge" style={{ background: '#fee2e2', color: '#ef4444', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{leadsFiltrados.length}</span>
                           </div>
                           <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
@@ -6954,7 +6745,7 @@ export default function Admin() {
                               
                               if (elapsedMins >= 0) {
                                 if (elapsedMins < 120) {
-                                  timeLabel = `🔥 Caliente (${elapsedMins}m atrás)`;
+                                  timeLabel = `­ƒöÑ Caliente (${elapsedMins}m atr├ís)`;
                                   isHot = true;
                                 } else if (elapsedMins < 60) {
                                   timeLabel = `Hace ${elapsedMins}m`;
@@ -6964,7 +6755,7 @@ export default function Admin() {
                                     timeLabel = `Hace ${elapsedHours} ${elapsedHours === 1 ? 'hora' : 'horas'}`;
                                   } else {
                                     const elapsedDays = Math.floor(elapsedHours / 24);
-                                    timeLabel = `Hace ${elapsedDays} ${elapsedDays === 1 ? 'día' : 'días'}`;
+                                    timeLabel = `Hace ${elapsedDays} ${elapsedDays === 1 ? 'd├¡a' : 'd├¡as'}`;
                                   }
                                 }
                               }
@@ -6976,7 +6767,7 @@ export default function Admin() {
                                     {/* Left Column: Customer details */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', textAlign: 'left' }}>
                                       <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0f172a', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
-                                        <span>👤 {lead.nombre || 'Borrador Anónimo'}</span>
+                                        <span>­ƒæñ {lead.nombre || 'Borrador An├│nimo'}</span>
                                         <span 
                                           className={`badge ${isHot ? 'lead-hot-badge' : ''}`} 
                                           style={isHot ? { 
@@ -6999,10 +6790,10 @@ export default function Admin() {
                                           {timeLabel}
                                         </span>
                                       </h4>
-                                      <p style={{ margin: 0, fontSize: '0.78rem', color: '#475569' }}>📞 {lead.telefono || 'Sin número'}</p>
-                                      <p style={{ margin: 0, fontSize: '0.78rem', color: '#475569' }}>📍 {lead.ciudad || 'No especificada'}</p>
+                                      <p style={{ margin: 0, fontSize: '0.78rem', color: '#475569' }}>­ƒô× {lead.telefono || 'Sin n├║mero'}</p>
+                                      <p style={{ margin: 0, fontSize: '0.78rem', color: '#475569' }}>­ƒôì {lead.ciudad || 'No especificada'}</p>
                                       {lead.total > 0 && (
-                                        <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 800, color: '#0f172a' }}>💰 <span style={{ color: '#10b981' }}>${lead.total.toLocaleString()}</span></p>
+                                        <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 800, color: '#0f172a' }}>­ƒÆ░ <span style={{ color: '#10b981' }}>${lead.total.toLocaleString()}</span></p>
                                       )}
                                     </div>
 
@@ -7018,7 +6809,7 @@ export default function Admin() {
                                     if (parsedProds.length > 0) {
                                       return (
                                         <div className="card-products-summary" style={{ margin: '0 0 0.75rem 0', padding: '0.5rem 0.65rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'left' }}>
-                                          <p style={{ margin: 0, marginBottom: '0.3rem', fontSize: '0.7rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>🛒 Carrito:</p>
+                                          <p style={{ margin: 0, marginBottom: '0.3rem', fontSize: '0.7rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>­ƒøÆ Carrito:</p>
                                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
                                             {parsedProds.map((prod: any, idx: number) => (
                                               <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.76rem', color: '#334155' }}>
@@ -7035,7 +6826,7 @@ export default function Admin() {
                                       return (
                                         <div className="card-products-summary" style={{ margin: '0 0 0.75rem 0', padding: '0.5rem 0.65rem', background: '#fffbeb', borderRadius: '8px', border: '1.5px dashed #fcd34d', textAlign: 'left' }}>
                                           <p style={{ margin: 0, fontSize: '0.74rem', color: '#b45309', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                            <span>⚠️</span> <span>Sin productos registrados en el carrito</span>
+                                            <span>ÔÜá´©Å</span> <span>Sin productos registrados en el carrito</span>
                                           </p>
                                         </div>
                                       );
@@ -7053,7 +6844,7 @@ export default function Admin() {
                                       background: lead.retargeting_estado === 'contactado' ? '#e0f2fe' : lead.retargeting_estado === 'recuperado' ? '#dcfce7' : lead.retargeting_estado === 'descartado' ? '#fee2e2' : '#f1f5f9',
                                       color: lead.retargeting_estado === 'contactado' ? '#0369a1' : lead.retargeting_estado === 'recuperado' ? '#15803d' : lead.retargeting_estado === 'descartado' ? '#b91c1c' : '#475569'
                                     }}>
-                                      {lead.retargeting_estado === 'contactado' ? '💬 Contactado' : lead.retargeting_estado === 'recuperado' ? '🎉 Recuperado' : lead.retargeting_estado === 'descartado' ? '✕ Descartado' : '⏳ Pendiente'}
+                                      {lead.retargeting_estado === 'contactado' ? '­ƒÆ¼ Contactado' : lead.retargeting_estado === 'recuperado' ? '­ƒÄë Recuperado' : lead.retargeting_estado === 'descartado' ? 'Ô£ò Descartado' : 'ÔÅ│ Pendiente'}
                                     </span>
                                     <select
                                       value={lead.retargeting_estado || 'pendiente'}
@@ -7061,9 +6852,9 @@ export default function Admin() {
                                       style={{ fontSize: '0.72rem', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.1rem 0.3rem', outline: 'none', cursor: 'pointer', background: 'white' }}
                                     >
                                       <option value="pendiente">Pendiente</option>
-                                      <option value="contactado">💬 Contactado</option>
-                                      <option value="recuperado">🎉 Recuperado</option>
-                                      <option value="descartado">✕ Descartado</option>
+                                      <option value="contactado">­ƒÆ¼ Contactado</option>
+                                      <option value="recuperado">­ƒÄë Recuperado</option>
+                                      <option value="descartado">Ô£ò Descartado</option>
                                     </select>
                                   </div>
                                   {lead.retargeted_by && (
@@ -7099,11 +6890,11 @@ export default function Admin() {
                                         const prodNames = Array.isArray(lead.productos) && lead.productos.length > 0
                                           ? lead.productos.map((p: any) => `${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ')
                                           : '';
-                                        const text = `¡Hola ${lead.nombre || ''}! 👋 Vimos que estás interesado en: ${prodNames ? `*${prodNames}*` : 'nuestros productos'}. ¿Tienes alguna duda o te ayudamos a completar tu pedido? Escríbenos y con gusto te colaboramos. 😊`;
+                                        const text = `┬íHola ${lead.nombre || ''}! ­ƒæï Vimos que est├ís interesado en: ${prodNames ? `*${prodNames}*` : 'nuestros productos'}. ┬┐Tienes alguna duda o te ayudamos a completar tu pedido? Escr├¡benos y con gusto te colaboramos. ­ƒÿè`;
                                         window.open(`https://wa.me/57${lead.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(text)}`, '_blank');
                                       }}
                                     >
-                                      💬 Recuperar venta
+                                      ­ƒÆ¼ Recuperar venta
                                     </button>
                                   )}
 
@@ -7115,20 +6906,20 @@ export default function Admin() {
 
                                     const templates = [
                                       {
-                                        name: '🏷️ Cupón 10% Off',
-                                        text: `¡Hola ${lead.nombre || ''}! 👋 Notamos que dejaste algunos artículos en tu carrito ${prodNames ? `(*${prodNames}*)` : ''}. ¡Queremos ayudarte a tenerlos! Si completas tu pedido en las próximas 2 horas, te regalamos un *10% de descuento* extra usando el cupón *RECOVERY10*. Escríbenos si deseas aplicarlo 🚀`
+                                        name: '­ƒÅÀ´©Å Cup├│n 10% Off',
+                                        text: `┬íHola ${lead.nombre || ''}! ­ƒæï Notamos que dejaste algunos art├¡culos en tu carrito ${prodNames ? `(*${prodNames}*)` : ''}. ┬íQueremos ayudarte a tenerlos! Si completas tu pedido en las pr├│ximas 2 horas, te regalamos un *10% de descuento* extra usando el cup├│n *RECOVERY10*. Escr├¡benos si deseas aplicarlo ­ƒÜÇ`
                                       },
                                       {
-                                        name: '🚚 Envío Gratis hoy',
-                                        text: `¡Hola ${lead.nombre || ''}! 👋 Queremos obsequiarte el *envío gratis* para tu compra de ${prodNames ? `*${prodNames}*` : 'nuestro catálogo'}. ¿Te ayudamos a registrar el pedido? Escríbenos y te lo despachamos de inmediato. 😊`
+                                        name: '­ƒÜÜ Env├¡o Gratis hoy',
+                                        text: `┬íHola ${lead.nombre || ''}! ­ƒæï Queremos obsequiarte el *env├¡o gratis* para tu compra de ${prodNames ? `*${prodNames}*` : 'nuestro cat├ílogo'}. ┬┐Te ayudamos a registrar el pedido? Escr├¡benos y te lo despachamos de inmediato. ­ƒÿè`
                                       }
                                     ];
 
                                     return (
                                       <details style={{ marginTop: '0.3rem', border: '1px solid #cbd5e1', borderRadius: '8px', overflow: 'hidden' }}>
                                         <summary style={{ padding: '0.4rem 0.6rem', fontSize: '0.72rem', fontWeight: 700, color: '#475569', background: '#f8fafc', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', userSelect: 'none' }}>
-                                          <span>🚀 Otras Estrategias</span>
-                                          <span style={{ fontSize: '0.6rem', color: '#94a3b8' }}>▼</span>
+                                          <span>­ƒÜÇ Otras Estrategias</span>
+                                          <span style={{ fontSize: '0.6rem', color: '#94a3b8' }}>Ôû╝</span>
                                         </summary>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', padding: '0.5rem', background: 'white', borderTop: '1px solid #cbd5e1', textAlign: 'left' }}>
                                           {templates.map((tpl, i) => (
@@ -7156,7 +6947,7 @@ export default function Admin() {
                                               }}
                                             >
                                               <span>{tpl.name}</span>
-                                              <span style={{ fontSize: '0.8rem' }}>💬</span>
+                                              <span style={{ fontSize: '0.8rem' }}>­ƒÆ¼</span>
                                             </button>
                                           ))}
                                         </div>
@@ -7175,7 +6966,7 @@ export default function Admin() {
                         {/* Columna 2: Interesados (Pendiente Pago) */}
                         <div className="kanban-column" style={{ background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}>
                           <div className="kanban-column-header col-yellow" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #eab308', paddingBottom: '0.5rem' }}>
-                            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#eab308' }}>🟡 Interesados (Pendiente Pago)</h3>
+                            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#eab308' }}>­ƒƒí Interesados (Pendiente Pago)</h3>
                             <span className="badge" style={{ background: '#fef9c3', color: '#eab308', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{interesadosFiltrados.length}</span>
                           </div>
                           <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
@@ -7186,18 +6977,18 @@ export default function Admin() {
                                   <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: '0.75rem', marginBottom: '0.75rem', borderBottom: '1px dashed #f1f5f9', paddingBottom: '0.75rem' }}>
                                     {/* Left Column: Customer & Order info */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', textAlign: 'left' }}>
-                                      <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0f172a', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>👤 {ped.cliente_nombre}</h4>
-                                      <p style={{ margin: 0, fontSize: '0.78rem', color: '#475569' }}>📞 {ped.cliente_telefono}</p>
-                                      <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 800, color: '#0f172a' }}>💰 <span style={{ color: '#10b981' }}>${ped.total.toLocaleString()}</span></p>
+                                      <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0f172a', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>­ƒæñ {ped.cliente_nombre}</h4>
+                                      <p style={{ margin: 0, fontSize: '0.78rem', color: '#475569' }}>­ƒô× {ped.cliente_telefono}</p>
+                                      <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 800, color: '#0f172a' }}>­ƒÆ░ <span style={{ color: '#10b981' }}>${ped.total.toLocaleString()}</span></p>
                                       
                                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
                                         {ped.pantallazo_url ? (
-                                          <span style={{ fontSize: '0.68rem', background: '#e0f2fe', color: '#0369a1', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>✅ Pago</span>
+                                          <span style={{ fontSize: '0.68rem', background: '#e0f2fe', color: '#0369a1', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>Ô£à Pago</span>
                                         ) : (
-                                          <span style={{ fontSize: '0.68rem', background: '#fffbeb', color: '#b45309', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>⏳ Pago en Espera</span>
+                                          <span style={{ fontSize: '0.68rem', background: '#fffbeb', color: '#b45309', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>ÔÅ│ Espera</span>
                                         )}
                                         <span style={{ fontSize: '0.68rem', background: '#f1f5f9', color: '#475569', padding: '2px 6px', borderRadius: '6px', fontWeight: 600 }}>
-                                          📅 {new Date(ped.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'numeric', year: '2-digit' })}
+                                          ­ƒôà {new Date(ped.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'numeric', year: '2-digit' })}
                                         </span>
                                       </div>
                                     </div>
@@ -7211,7 +7002,7 @@ export default function Admin() {
                                   {/* Full Width Section: Products summary */}
                                   {Array.isArray(ped.productos) && ped.productos.length > 0 && (
                                     <div className="card-products-summary" style={{ margin: '0 0 0.75rem 0', padding: '0.5rem 0.65rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'left' }}>
-                                      <p style={{ margin: '0 0 0.3rem 0', fontSize: '0.7rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📦 Artículos:</p>
+                                      <p style={{ margin: '0 0 0.3rem 0', fontSize: '0.7rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>­ƒôª Art├¡culos:</p>
                                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
                                         {ped.productos.map((prod: any, idx: number) => (
                                           <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#334155' }}>
@@ -7234,7 +7025,7 @@ export default function Admin() {
                                       style={{ width: '100%', padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', color: '#475569', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
                                       onClick={() => setSelectedPedido(ped)}
                                     >
-                                      🔍 Ver Detalle
+                                      ­ƒöì Ver Detalle
                                     </button>
                                     {ped.pantallazo_url ? (
                                       <button 
@@ -7242,7 +7033,7 @@ export default function Admin() {
                                         style={{ padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', background: configuracion?.color_primario || '#3b82f6', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 700 }}
                                         onClick={() => setSelectedPedido(ped)}
                                       >
-                                        💳 Verificar pago
+                                        ­ƒÆ│ Verificar pago
                                       </button>
                                     ) : ped.atendido ? (
                                       <button 
@@ -7250,7 +7041,7 @@ export default function Admin() {
                                         className="btn-secondary" 
                                         style={{ padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#64748b', cursor: 'not-allowed', fontWeight: 600 }}
                                       >
-                                        ⏳ Esperando comprobante
+                                        ÔÅ│ Esperando comprobante
                                       </button>
                                     ) : (
                                       <button 
@@ -7258,7 +7049,7 @@ export default function Admin() {
                                         style={{ padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', background: '#25D366', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 700 }}
                                         onClick={() => handleAtenderPedido(ped)}
                                       >
-                                        📞 Atender
+                                        ­ƒô× Atender
                                       </button>
                                     )}
                                   </div>
@@ -7274,7 +7065,7 @@ export default function Admin() {
                         {/* Columna 3: Clientes (Venta Exitosa) */}
                         <div className="kanban-column" style={{ background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}>
                           <div className="kanban-column-header col-green" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #22c55e', paddingBottom: '0.5rem' }}>
-                            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#22c55e' }}>🟢 Clientes (Venta Exitosa)</h3>
+                            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#22c55e' }}>­ƒƒó Clientes (Venta Exitosa)</h3>
                             <span className="badge" style={{ background: '#dcfce7', color: '#22c55e', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{clientesFiltrados.length}</span>
                           </div>
                           <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
@@ -7285,14 +7076,14 @@ export default function Admin() {
                                   <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: '0.75rem', marginBottom: '0.75rem', borderBottom: '1px dashed #bbf7d0', paddingBottom: '0.75rem' }}>
                                     {/* Left Column: Customer & Order info */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', textAlign: 'left' }}>
-                                      <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#14532d', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>👤 {ped.cliente_nombre}</h4>
-                                      <p style={{ margin: 0, fontSize: '0.78rem', color: '#166534' }}>📞 {ped.cliente_telefono}</p>
-                                      <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 800, color: '#14532d' }}>💰 <span style={{ color: '#16a34a' }}>${ped.total.toLocaleString()}</span></p>
+                                      <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#14532d', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>­ƒæñ {ped.cliente_nombre}</h4>
+                                      <p style={{ margin: 0, fontSize: '0.78rem', color: '#166534' }}>­ƒô× {ped.cliente_telefono}</p>
+                                      <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 800, color: '#14532d' }}>­ƒÆ░ <span style={{ color: '#16a34a' }}>${ped.total.toLocaleString()}</span></p>
                                       
                                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
-                                        <span style={{ fontSize: '0.68rem', background: '#dcfce7', color: '#166534', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>✓ Pago Verificado</span>
+                                        <span style={{ fontSize: '0.68rem', background: '#dcfce7', color: '#166534', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>Ô£ô Verificado</span>
                                         <span style={{ fontSize: '0.68rem', background: '#e8f5e9', color: '#2e7d32', padding: '2px 6px', borderRadius: '6px', fontWeight: 600 }}>
-                                          📅 {new Date(ped.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'numeric', year: '2-digit' })}
+                                          ­ƒôà {new Date(ped.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'numeric', year: '2-digit' })}
                                         </span>
                                       </div>
                                     </div>
@@ -7306,7 +7097,7 @@ export default function Admin() {
                                   {/* Full Width Section: Products summary */}
                                   {Array.isArray(ped.productos) && ped.productos.length > 0 && (
                                     <div className="card-products-summary" style={{ margin: '0 0 0.75rem 0', padding: '0.5rem 0.65rem', background: 'white', borderRadius: '8px', border: '1px solid #bbf7d0', textAlign: 'left' }}>
-                                      <p style={{ margin: '0 0 0.3rem 0', fontSize: '0.7rem', fontWeight: 800, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📦 Artículos:</p>
+                                      <p style={{ margin: '0 0 0.3rem 0', fontSize: '0.7rem', fontWeight: 800, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.5px' }}>­ƒôª Art├¡culos:</p>
                                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
                                         {ped.productos.map((prod: any, idx: number) => (
                                           <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#166534' }}>
@@ -7327,13 +7118,13 @@ export default function Admin() {
                                     style={{ width: '100%', padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', border: '1px solid #bbf7d0', background: 'white', color: '#14532d', cursor: 'pointer', fontWeight: 600 }}
                                     onClick={() => setSelectedPedido(ped)}
                                   >
-                                    🔍 Ver Factura
+                                    ­ƒöì Ver Factura
                                   </button>
                                 </div>
                               );
                             })}
                             {clientesFiltrados.length === 0 && (
-                              <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0' }}>No hay ventas exitosas aún.</p>
+                              <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0' }}>No hay ventas exitosas a├║n.</p>
                             )}
                           </div>
                         </div>
@@ -7345,13 +7136,13 @@ export default function Admin() {
                             <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b', fontWeight: 600 }}>
                               <th style={{ padding: '1rem' }}>Fecha</th>
                               <th style={{ padding: '1rem' }}>Cliente</th>
-                              <th style={{ padding: '1rem' }}>Teléfono</th>
-                              <th style={{ padding: '1rem' }}>Dirección</th>
+                              <th style={{ padding: '1rem' }}>Tel├®fono</th>
+                              <th style={{ padding: '1rem' }}>Direcci├│n</th>
                               <th style={{ padding: '1rem' }}>Productos</th>
-                              <th style={{ padding: '1rem' }}>Línea Receptora</th>
+                              <th style={{ padding: '1rem' }}>L├¡nea Receptora</th>
                               <th style={{ padding: '1rem' }}>Estado de Pago</th>
                               <th style={{ padding: '1rem' }}>Total</th>
-                              <th style={{ padding: '1rem', textAlign: 'center' }}>Acción</th>
+                              <th style={{ padding: '1rem', textAlign: 'center' }}>Acci├│n</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -7364,9 +7155,9 @@ export default function Admin() {
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                                   <span>{ped.cliente_nombre}</span>
                                   {ped.origen === 'pos' ? (
-                                    <span style={{ fontSize: '0.68rem', background: '#dcfce7', color: '#166534', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>💻 POS</span>
+                                    <span style={{ fontSize: '0.68rem', background: '#dcfce7', color: '#166534', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>­ƒÆ╗ POS</span>
                                   ) : (
-                                    <span style={{ fontSize: '0.68rem', background: '#e0f2fe', color: '#0369a1', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>📱 Catálogo</span>
+                                    <span style={{ fontSize: '0.68rem', background: '#e0f2fe', color: '#0369a1', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>­ƒô▒ Cat├ílogo</span>
                                   )}
                                 </div>
                               </td>
@@ -7383,21 +7174,21 @@ export default function Admin() {
                               </td>
                               <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
                                 <span style={{ background: ped.estado === 'completado' ? '#dcfce7' : '#e0f2fe', color: ped.estado === 'completado' ? '#166534' : '#0369a1', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700 }}>
-                                  📞 {getAsesorNameByPhone(ped.linea_whatsapp)}
+                                  ­ƒô× {getAsesorNameByPhone(ped.linea_whatsapp)}
                                 </span>
                               </td>
                               <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
                                 {ped.estado === 'completado' ? (
                                   <span style={{ background: '#dcfce7', color: '#16a34a', border: '1px solid #86efac', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 600, display: 'inline-block', lineHeight: '1.2' }}>
-                                    ✓ Pago Verificado
+                                    Ô£ô Pago Verificado
                                   </span>
                                 ) : ped.pantallazo_url ? (
                                   <span style={{ background: '#e0f2fe', color: '#0369a1', border: '1px solid #bae6fd', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 600, display: 'inline-block', lineHeight: '1.2' }}>
-                                    ✅ Comprobante subido
+                                    Ô£à Comprobante subido
                                   </span>
                                 ) : (
                                   <span style={{ background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 600, display: 'inline-block', lineHeight: '1.2' }}>
-                                    ⏳ Pendiente de pago
+                                    ÔÅ│ Pendiente de pago
                                   </span>
                                 )}
                               </td>
@@ -7472,28 +7263,28 @@ export default function Admin() {
                   display: 'flex', alignItems: 'center', justifyContent: 'center', 
                   margin: '0 auto 1.25rem auto'
                 }}>
-                  <span style={{ fontSize: '2rem' }}>✅</span>
+                  <span style={{ fontSize: '2rem' }}>Ô£à</span>
                 </div>
                 <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 800, fontSize: '1.3rem', color: '#14532d' }}>
-                  ¡Pago Aprobado y Completado!
+                  ┬íPago Aprobado y Completado!
                 </h3>
                 <p style={{ margin: '0 0 1.25rem 0', color: '#475569', fontSize: '0.85rem' }}>
-                  El pedido ha cambiado a estado completado (verde) y el cliente se ha registrado para fidelización.
+                  El pedido ha cambiado a estado completado (verde) y el cliente se ha registrado para fidelizaci├│n.
                 </p>
 
                 {/* Seccion 99 Envios */}
                 <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1rem', marginBottom: '1.25rem', textAlign: 'left' }}>
                   <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                    🚚 Logística (99 Envíos)
+                    ­ƒÜÜ Log├¡stica (99 Env├¡os)
                   </h4>
                   <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.78rem', color: '#64748b' }}>
-                    Genera la guía automática para despacho o digita la guía manualmente.
+                    Genera la gu├¡a autom├ítica para despacho o digita la gu├¡a manualmente.
                   </p>
 
                   {numeroGuia ? (
                     <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.6rem 0.8rem', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
                       <div>
-                        <span style={{ fontSize: '0.7rem', color: '#166534', fontWeight: 600, display: 'block', textTransform: 'uppercase' }}>Guía Generada</span>
+                        <span style={{ fontSize: '0.7rem', color: '#166534', fontWeight: 600, display: 'block', textTransform: 'uppercase' }}>Gu├¡a Generada</span>
                         <strong style={{ fontSize: '0.95rem', color: '#14532d' }}>{numeroGuia}</strong>
                       </div>
                       <span style={{ fontSize: '0.75rem', background: '#dcfce7', color: '#166534', padding: '0.2rem 0.5rem', borderRadius: '12px', fontWeight: 700 }}>Activa</span>
@@ -7521,14 +7312,14 @@ export default function Admin() {
                         opacity: loadingGuia ? 0.7 : 1
                       }}
                     >
-                      {loadingGuia ? 'Generando guía...' : '🔌 Generar Guía con 99 Envíos'}
+                      {loadingGuia ? 'Generando gu├¡a...' : '­ƒöî Generar Gu├¡a con 99 Env├¡os'}
                     </button>
                   )}
 
                   <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                     <input
                       type="text"
-                      placeholder="Número de guía manual..."
+                      placeholder="N├║mero de gu├¡a manual..."
                       value={numeroGuia}
                       onChange={e => setNumeroGuia(e.target.value)}
                       style={{ flex: 1, padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.82rem', outline: 'none' }}
@@ -7543,7 +7334,7 @@ export default function Admin() {
                   </div>
                 </div>
 
-                {/* Botones de Envío / Cerrar */}
+                {/* Botones de Env├¡o / Cerrar */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                   <button
                     type="button"
@@ -7566,11 +7357,11 @@ export default function Admin() {
                       const num = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
                       const name = selectedPedido.cliente_nombre;
                       const business = configuracion?.nombre_negocio || 'Indisutex';
-                      const msg = `¡Felicidades ${name}! 🎉 Has hecho una compra exitosa con *${business}*.\n\nTu número de guía de envío es: *${numeroGuia || 'Pendiente'}*\n\n¡Muchas gracias por confiar en nosotros! 😊`;
+                      const msg = `┬íFelicidades ${name}! ­ƒÄë Has hecho una compra exitosa con *${business}*.\n\nTu n├║mero de gu├¡a de env├¡o es: *${numeroGuia || 'Pendiente'}*\n\n┬íMuchas gracias por confiar en nosotros! ­ƒÿè`;
                       window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
                     }}
                   >
-                    💬 Enviar WhatsApp de Éxito y Guía
+                    ­ƒÆ¼ Enviar WhatsApp de ├ëxito y Gu├¡a
                   </button>
                   <button
                     type="button"
@@ -7597,7 +7388,7 @@ export default function Admin() {
             ) : (
               <>
                 <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
-                  <h3 style={{ margin: 0 }}>📦 Detalle del Pedido</h3>
+                  <h3 style={{ margin: 0 }}>­ƒôª Detalle del Pedido</h3>
                   <button onClick={() => { setSelectedPedido(null); setShowSuccessScreen(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
                     <X size={20} />
                   </button>
@@ -7610,13 +7401,13 @@ export default function Admin() {
                     <p style={{ margin: '0.2rem 0 0 0', color: '#475569' }}>{selectedPedido.cliente_telefono}</p>
                   </div>
                   <div>
-                    <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase' }}>Línea WhatsApp Asignada</h5>
+                    <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase' }}>L├¡nea WhatsApp Asignada</h5>
                     <div style={{ display: 'flex', alignItems: 'center', marginTop: '0.2rem' }}>
                       {renderAsesorBadge(selectedPedido.linea_whatsapp, selectedPedido.origen)}
                     </div>
                   </div>
                   <div style={{ gridColumn: 'span 2' }}>
-                    <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase' }}>Dirección de Entrega</h5>
+                    <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase' }}>Direcci├│n de Entrega</h5>
                     <p style={{ margin: 0, color: '#0f172a' }}>{selectedPedido.direccion}, {selectedPedido.ciudad}</p>
                   </div>
                 </div>
@@ -7644,7 +7435,7 @@ export default function Admin() {
                 {selectedPedido.pantallazo_url && (
                   <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
                     <h4 style={{ margin: '0 0 0.75rem', fontSize: '0.9rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                      💳 Comprobante de Pago (Nequi)
+                      ­ƒÆ│ Comprobante de Pago (Nequi)
                     </h4>
                     <div onClick={() => setPagoModalUrl(selectedPedido.pantallazo_url || null)} style={{ cursor: 'pointer' }}>
                       <img
@@ -7654,29 +7445,29 @@ export default function Admin() {
                       />
                     </div>
                     <p style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600, marginTop: '0.5rem', textAlign: 'center' }}>
-                      ✅ Comprobante recibido — Click para ver en pantalla completa
+                      Ô£à Comprobante recibido ÔÇö Click para ver en pantalla completa
                     </p>
                   </div>
                 )}
                 {!selectedPedido.pantallazo_url && (
                   <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.75rem', textAlign: 'center' }}>
                     <p style={{ color: '#f59e0b', fontWeight: 600, fontSize: '0.85rem', margin: 0 }}>
-                      ⏳ Pendiente de comprobante
+                      ÔÅ│ Pendiente de comprobante
                     </p>
                   </div>
                 )}
 
-                {/* Seccion 99 Envios y Guía de Envío (para pedidos completados) */}
+                {/* Seccion 99 Envios y Gu├¡a de Env├¡o (para pedidos completados) */}
                 {selectedPedido.estado === 'completado' && (
                   <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
                     <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                      🚚 Datos de Envío (99 Envíos)
+                      ­ƒÜÜ Datos de Env├¡o (99 Env├¡os)
                     </h4>
                     
                     {numeroGuia ? (
                       <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.5rem 0.75rem', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                         <div>
-                          <span style={{ fontSize: '0.7rem', color: '#166534', fontWeight: 600, display: 'block', textTransform: 'uppercase' }}>Número de Guía</span>
+                          <span style={{ fontSize: '0.7rem', color: '#166534', fontWeight: 600, display: 'block', textTransform: 'uppercase' }}>N├║mero de Gu├¡a</span>
                           <strong style={{ fontSize: '0.9rem', color: '#14532d' }}>{numeroGuia}</strong>
                         </div>
                         <button
@@ -7685,12 +7476,12 @@ export default function Admin() {
                             const num = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
                             const name = selectedPedido.cliente_nombre;
                             const business = configuracion?.nombre_negocio || 'Indisutex';
-                            const msg = `¡Felicidades ${name}! 🎉 Has hecho una compra exitosa con *${business}*.\n\nTu número de guía de envío es: *${numeroGuia}*\n\n¡Muchas gracias por confiar en nosotros! 😊`;
+                            const msg = `┬íFelicidades ${name}! ­ƒÄë Has hecho una compra exitosa con *${business}*.\n\nTu n├║mero de gu├¡a de env├¡o es: *${numeroGuia}*\n\n┬íMuchas gracias por confiar en nosotros! ­ƒÿè`;
                             window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
                           }}
                           style={{ padding: '0.3rem 0.6rem', background: '#25D366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}
                         >
-                          💬 Enviar Guía
+                          ­ƒÆ¼ Enviar Gu├¡a
                         </button>
                       </div>
                     ) : (
@@ -7701,7 +7492,7 @@ export default function Admin() {
                           onClick={() => handleGenerarGuia99Envios(selectedPedido.id)}
                           style={{ flex: 1, padding: '0.5rem', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700 }}
                         >
-                          {loadingGuia ? 'Generando...' : '🔌 Generar Guía con 99 Envíos'}
+                          {loadingGuia ? 'Generando...' : '­ƒöî Generar Gu├¡a con 99 Env├¡os'}
                         </button>
                       </div>
                     )}
@@ -7709,7 +7500,7 @@ export default function Admin() {
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                       <input
                         type="text"
-                        placeholder="Número de guía manual..."
+                        placeholder="N├║mero de gu├¡a manual..."
                         value={numeroGuia}
                         onChange={e => setNumeroGuia(e.target.value)}
                         style={{ flex: 1, padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.8rem', outline: 'none' }}
@@ -7732,7 +7523,7 @@ export default function Admin() {
                   </span>
                 </div>
 
-                {/* Botones de acción */}
+                {/* Botones de acci├│n */}
                 <div style={{ display: 'flex', gap: '0.75rem', marginTop: '1rem', flexWrap: 'wrap', flexDirection: 'column' }}>
                   {selectedPedido.estado !== 'completado' && (
                     <button
@@ -7764,21 +7555,21 @@ export default function Admin() {
                       onClick={() => {
                         const num = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
                         const uploadLink = `${window.location.origin}/pago/${selectedPedido.id}`;
-                        const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: $${selectedPedido.total.toLocaleString()} COP*\n\n💳 *Datos del banco:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\nPara poder completar tu pedido, haz la captura de pantalla de tu pago o de transacción y envíala por este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
+                        const msg = `┬íHola ${selectedPedido.cliente_nombre}! ­ƒæï\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: $${selectedPedido.total.toLocaleString()} COP*\n\n­ƒÆ│ *Datos del banco:*\nN├║mero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\nPara poder completar tu pedido, haz la captura de pantalla de tu pago o de transacci├│n y env├¡ala por este enlace:\n${uploadLink}\n\n┬íTu pedido ser├í despachado en cuanto verifiquemos el pago! ­ƒÜÇ`;
                         window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
                       }}
                     >
-                      💳 Cobrar por Nequi/WhatsApp
+                      ­ƒÆ│ Cobrar por Nequi/WhatsApp
                     </button>
                     <button
                       style={{ flex: 1, padding: '0.65rem 1rem', background: configuracion?.color_primario || '#0ea5e9', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                       onClick={() => {
                         const num = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
-                        const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋 Tu pedido ha sido *VERIFICADO y DESPACHADO* 🚚\n\nPedido: ${selectedPedido.productos?.map((p: any) => `${p.cantidad}x ${p.nombre}`).join(', ')}\nTotal: $${selectedPedido.total.toLocaleString()} COP\n\n📦 Tu paquete está en camino. ¡Gracias por tu compra!`;
+                        const msg = `┬íHola ${selectedPedido.cliente_nombre}! ­ƒæï Tu pedido ha sido *VERIFICADO y DESPACHADO* ­ƒÜÜ\n\nPedido: ${selectedPedido.productos?.map((p: any) => `${p.cantidad}x ${p.nombre}`).join(', ')}\nTotal: $${selectedPedido.total.toLocaleString()} COP\n\n­ƒôª Tu paquete est├í en camino. ┬íGracias por tu compra!`;
                         window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
                       }}
                     >
-                      🚚 Confirmar Despacho
+                      ­ƒÜÜ Confirmar Despacho
                     </button>
                   </div>
                 </div>
@@ -7791,7 +7582,7 @@ export default function Admin() {
         <div className="modal-overlay" onClick={() => setPagoModalUrl(null)}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '460px', width: '100%', borderRadius: '16px', padding: '1.5rem', textAlign: 'center', background: 'white' }}>
             <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1.25rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>💳 Comprobante de Pago</h3>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>­ƒÆ│ Comprobante de Pago</h3>
               <button onClick={() => setPagoModalUrl(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <X size={20} />
               </button>
@@ -7800,12 +7591,12 @@ export default function Admin() {
           </div>
         </div>
       )}
-      {/* MODAL HERRAMIENTAS DE DEPURACIÓN (DUPLICADOS / VACIAR) */}
+      {/* MODAL HERRAMIENTAS DE DEPURACI├ôN (DUPLICADOS / VACIAR) */}
       {showToolsModal && (
         <div className="modal-overlay" onClick={() => setShowToolsModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '650px', width: '100%', borderRadius: '16px', padding: '2rem', background: 'white', maxHeight: '85vh', overflowY: 'auto' }}>
             <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem' }}>
-              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>🔧 Depuración y Limpieza del Catálogo</h3>
+              <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>­ƒöº Depuraci├│n y Limpieza del Cat├ílogo</h3>
               <button onClick={() => setShowToolsModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <X size={20} />
               </button>
@@ -7813,11 +7604,11 @@ export default function Admin() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
               
-              {/* Sección 1: Duplicados por Nombre */}
+              {/* Secci├│n 1: Duplicados por Nombre */}
               <div style={{ background: '#f8fafc', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                <h4 style={{ margin: '0 0 0.5rem 0', color: '#0f172a', fontWeight: 700 }}>🔍 Buscar Productos Duplicados</h4>
+                <h4 style={{ margin: '0 0 0.5rem 0', color: '#0f172a', fontWeight: 700 }}>­ƒöì Buscar Productos Duplicados</h4>
                 <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: '#475569' }}>
-                  A continuación se listan los productos que tienen el mismo nombre en el catálogo. Puedes borrar los duplicados (se conservará solo el primero de ellos).
+                  A continuaci├│n se listan los productos que tienen el mismo nombre en el cat├ílogo. Puedes borrar los duplicados (se conservar├í solo el primero de ellos).
                 </p>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '250px', overflowY: 'auto', paddingRight: '0.5rem' }}>
@@ -7839,17 +7630,17 @@ export default function Admin() {
                   ))}
                   {getDuplicados.length === 0 && (
                     <div style={{ textAlign: 'center', padding: '1.5rem', color: '#16a34a', fontWeight: 600, fontSize: '0.88rem' }}>
-                      🎉 ¡Felicidades! No se encontraron productos duplicados en tu catálogo.
+                      ­ƒÄë ┬íFelicidades! No se encontraron productos duplicados en tu cat├ílogo.
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Sección 3: Eliminar por Fecha de Creación */}
+              {/* Secci├│n 3: Eliminar por Fecha de Creaci├│n */}
               <div style={{ background: '#fffbeb', padding: '1.5rem', borderRadius: '12px', border: '1px solid #fef3c7' }}>
-                <h4 style={{ margin: '0 0 0.5rem 0', color: '#b45309', fontWeight: 800, textAlign: 'left' }}>📅 Eliminar Productos por Fecha de Creación</h4>
+                <h4 style={{ margin: '0 0 0.5rem 0', color: '#b45309', fontWeight: 800, textAlign: 'left' }}>­ƒôà Eliminar Productos por Fecha de Creaci├│n</h4>
                 <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: '#78350f', textAlign: 'left' }}>
-                  Esta acción eliminará todos los productos del catálogo que fueron subidos/creados en el día seleccionado. Ideal para deshacer importaciones erróneas.
+                  Esta acci├│n eliminar├í todos los productos del cat├ílogo que fueron subidos/creados en el d├¡a seleccionado. Ideal para deshacer importaciones err├│neas.
                 </p>
 
                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -7865,16 +7656,16 @@ export default function Admin() {
                     onClick={handleEliminarPorFecha}
                     style={{ padding: '0.65rem 1.25rem', fontSize: '0.85rem', fontWeight: 700, borderRadius: '8px', cursor: 'pointer', background: '#d97706', border: 'none', color: 'white', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
                   >
-                    🗑️ Eliminar Productos de esta Fecha
+                    ­ƒùæ´©Å Eliminar Productos de esta Fecha
                   </button>
                 </div>
               </div>
 
-              {/* Sección 2: Vaciar Catálogo */}
+              {/* Secci├│n 2: Vaciar Cat├ílogo */}
               <div style={{ background: '#fef2f2', padding: '1.5rem', borderRadius: '12px', border: '1px solid #fee2e2' }}>
-                <h4 style={{ margin: '0 0 0.5rem 0', color: '#991b1b', fontWeight: 800 }}>🚨 Acción Crítica: Vaciar Catálogo</h4>
+                <h4 style={{ margin: '0 0 0.5rem 0', color: '#991b1b', fontWeight: 800 }}>­ƒÜ¿ Acci├│n Cr├¡tica: Vaciar Cat├ílogo</h4>
                 <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: '#991b1b' }}>
-                  Esta acción eliminará <strong>todos los {productos.length} productos</strong> de tu catálogo digital de forma permanente de Supabase. Esto NO afectará tus productos en Siigo Nube.
+                  Esta acci├│n eliminar├í <strong>todos los {productos.length} productos</strong> de tu cat├ílogo digital de forma permanente de Supabase. Esto NO afectar├í tus productos en Siigo Nube.
                 </p>
 
                 <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -7891,7 +7682,7 @@ export default function Admin() {
                     style={{ padding: '0.6rem 1.2rem', background: '#dc2626', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem' }}
                     onClick={handleVaciarCatalogo}
                   >
-                    {wipingCatalog ? 'Vaciando...' : '⚠️ Vaciar Todo'}
+                    {wipingCatalog ? 'Vaciando...' : 'ÔÜá´©Å Vaciar Todo'}
                   </button>
                 </div>
               </div>
@@ -7904,7 +7695,7 @@ export default function Admin() {
       {/* TOAST */}
       {toast && (
         <div className={`admin-toast ${toast.type}`}>
-          <span>{toast.type === 'error' ? '❌' : '✅'}</span>
+          <span>{toast.type === 'error' ? 'ÔØî' : 'Ô£à'}</span>
           <span>{toast.message}</span>
         </div>
       )}
@@ -7935,17 +7726,17 @@ export default function Admin() {
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#b91c1c', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                🔔 Tienes {criticalCount} pendientes
+                ­ƒöö Tienes {criticalCount} pendientes
               </span>
               <button 
                 onClick={() => localStorage.setItem(key, 'true')} 
                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', color: '#94a3b8', padding: 0 }}
               >
-                ×
+                ├ù
               </button>
             </div>
             <p style={{ margin: 0, fontSize: '0.78rem', color: '#475569', lineHeight: 1.4 }}>
-              Hay carritos abandonados o pedidos esperando atención. ¡Atiéndelos rápido para no perder la venta!
+              Hay carritos abandonados o pedidos esperando atenci├│n. ┬íAti├®ndelos r├ípido para no perder la venta!
             </p>
             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
               <button 
@@ -7991,7 +7782,7 @@ export default function Admin() {
         );
       })()}
 
-      {/* MODAL ANALÍTICA ASESOR */}
+      {/* MODAL ANAL├ìTICA ASESOR */}
       {selectedAsesorAnalytics && (() => {
         const a = selectedAsesorAnalytics;
         const primaryColor = configuracion?.color_primario || '#6366f1';
@@ -8008,11 +7799,11 @@ export default function Admin() {
                   </div>
                 )}
                 <div style={{ flex: 1 }}>
-                  <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>📊 Analítica — {a.nombre}</h2>
-                  <p style={{ margin: '0.2rem 0 0 0', opacity: 0.85, fontSize: '0.88rem' }}>📲 {(a.telefono || '').split(',').join(' · ')}</p>
+                  <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>­ƒôè Anal├¡tica ÔÇö {a.nombre}</h2>
+                  <p style={{ margin: '0.2rem 0 0 0', opacity: 0.85, fontSize: '0.88rem' }}>­ƒô▓ {(a.telefono || '').split(',').join(' ┬À ')}</p>
                 </div>
                 <button onClick={() => setSelectedAsesorAnalytics(null)}
-                  style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                  style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Ô£ò</button>
               </div>
               <div style={{ padding: '1.75rem' }}>
                 {renderAdvisorStatsView(getAdvisorStats(a))}
@@ -8030,7 +7821,7 @@ export default function Admin() {
             <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px', width: '100%', borderRadius: '16px', padding: '1.5rem', background: 'white' }}>
               <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1.25rem' }}>
                 <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                  ⚠️ Alertas Activas — {advisor.nombre}
+                  ÔÜá´©Å Alertas Activas ÔÇö {advisor.nombre}
                 </h3>
                 <button onClick={() => setViewingAdvisorAlerts(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <X size={20} />
@@ -8070,7 +7861,7 @@ export default function Admin() {
   );
 }
 
-// ── SIDEBAR COMPONENT ──
+// ÔöÇÔöÇ SIDEBAR COMPONENT ÔöÇÔöÇ
 function SidebarContent({
   activeTab, setActiveTab, productos, configuracion, handleLogout, onClose, role, currentAsesor, activeNotificationsCount = 0
 }: {
@@ -8096,12 +7887,12 @@ function SidebarContent({
           {configuracion?.logo_url ? (
             <img src={configuracion.logo_url} alt="Logo" style={{ width: '100%', height: '100%', borderRadius: '8px', objectFit: 'cover' }} />
           ) : (
-            '🛍️'
+            '­ƒøì´©Å'
           )}
         </div>
         <div className="brand-text">
           <h2 style={{ textTransform: 'capitalize', fontSize: '1.1rem', color: '#0f172a' }}>
-            {configuracion?.nombre_negocio || 'Catálogo'}
+            {configuracion?.nombre_negocio || 'Cat├ílogo'}
           </h2>
           <p style={{ margin: 0 }}>Panel Administrativo</p>
           {(role === 'asesor' || role === 'mayorista') && currentAsesor ? (
@@ -8115,7 +7906,7 @@ function SidebarContent({
                   className="sidebar-wa-link"
                   style={{ fontSize: '0.73rem', color: '#10b981', textDecoration: 'none', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}
                 >
-                  <Phone size={11} style={{ strokeWidth: 2.5 }} /> Línea: {phone}
+                  <Phone size={11} style={{ strokeWidth: 2.5 }} /> L├¡nea: {phone}
                 </a>
               ))}
             </div>
@@ -8127,14 +7918,14 @@ function SidebarContent({
               className="sidebar-wa-link"
               style={{ fontSize: '0.75rem', color: '#10b981', textDecoration: 'none', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.3rem', whiteSpace: 'nowrap' }}
             >
-              <Phone size={12} style={{ strokeWidth: 2.5 }} /> Línea: {configuracion.whatsapp}
+              <Phone size={12} style={{ strokeWidth: 2.5 }} /> L├¡nea: {configuracion.whatsapp}
             </a>
           ) : null}
         </div>
       </div>
 
       <nav className="sidebar-nav" style={{ paddingTop: '0.5rem' }}>
-        <div className="sidebar-nav-label">Navegación</div>
+        <div className="sidebar-nav-label">Navegaci├│n</div>
         {(role === 'asesor' || role === 'mayorista') ? (
           <>
             <button className={`nav-item ${activeTab === 'resumen_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('resumen_asesor')}>
@@ -8184,7 +7975,7 @@ function SidebarContent({
               {activeTab === 'productos' && <span className="active-dot"></span>}
             </button>
             <button className={`nav-item ${activeTab === 'categorias' ? 'active' : ''}`} onClick={() => handleSelectTab('categorias')}>
-              <span className="nav-icon"><Tag size={14} /></span> Categorías
+              <span className="nav-icon"><Tag size={14} /></span> Categor├¡as
               {activeTab === 'categorias' && <span className="active-dot"></span>}
             </button>
             <button className={`nav-item ${activeTab === 'pedidos' ? 'active' : ''}`} onClick={() => handleSelectTab('pedidos')}>
@@ -8212,7 +8003,7 @@ function SidebarContent({
               {activeTab === 'material_apoyo' && <span className="active-dot"></span>}
             </button>
             <button className={`nav-item ${activeTab === 'config' ? 'active' : ''}`} onClick={() => handleSelectTab('config')}>
-              <span className="nav-icon"><Settings size={14} /></span> Configuración
+              <span className="nav-icon"><Settings size={14} /></span> Configuraci├│n
               {activeTab === 'config' && <span className="active-dot"></span>}
             </button>
           </>
@@ -8223,7 +8014,7 @@ function SidebarContent({
         <div className="sidebar-storage-stats">
           <div className="storage-text">
             <strong>{productos.length} Productos</strong>
-            <span>límite sugerido 500</span>
+            <span>l├¡mite sugerido 500</span>
           </div>
           <div className="storage-bar">
             <div className="storage-progress" style={{ width: `${Math.min((productos.length / 500) * 100, 100)}%` }}></div>
@@ -8241,7 +8032,7 @@ function SidebarContent({
           className="btn-primary" 
           style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', width: '100%', padding: '0.8rem', borderRadius: '8px', textDecoration: 'none', background: 'var(--primary-color, #6366f1)' }}
         >
-          <Eye size={16} /> Ver Catálogo
+          <Eye size={16} /> Ver Cat├ílogo
         </a>
         
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginTop: '0.5rem' }}>
@@ -8260,14 +8051,14 @@ function SidebarContent({
                 {(role === 'asesor' || role === 'mayorista') && currentAsesor ? currentAsesor.nombre : (configuracion?.admin_nombre || 'Administrador')}
               </h4>
               <p style={{ fontSize: '0.75rem', color: role === 'mayorista' ? '#0ea5e9' : '#10b981', margin: 0 }}>
-                {role === 'asesor' ? 'Asesor' : role === 'mayorista' ? 'Mayorista' : 'Sesión activa'}
+                {role === 'asesor' ? 'Asesor' : role === 'mayorista' ? 'Mayorista' : 'Sesi├│n activa'}
               </p>
             </div>
           </div>
           <button 
             onClick={handleLogout}
             style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '0.6rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
-            title="Cerrar sesión"
+            title="Cerrar sesi├│n"
             onMouseEnter={(e) => e.currentTarget.style.background = '#fecaca'}
             onMouseLeave={(e) => e.currentTarget.style.background = '#fee2e2'}
           >
