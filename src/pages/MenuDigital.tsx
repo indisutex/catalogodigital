@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase, getTenantId } from '../lib/supabase';
 import type { Producto, Categoria, Subcategoria, Configuracion } from '../types';
-import { Loader2, Search, Plus, ShoppingBag, X, ChevronLeft, ChevronRight, ShoppingCart } from 'lucide-react';
+import { Loader2, Search, Plus, ShoppingBag, X, ChevronLeft, ChevronRight, ShoppingCart, Volume2, VolumeX } from 'lucide-react';
 import { useCart, getEffectivePrice } from '../context/CartContext';
 import './MenuDigital.css';
 
@@ -45,6 +45,8 @@ export default function MenuDigital() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isCheckoutMode, setIsCheckoutMode] = useState(false);
   const [overrideWhatsApp, setOverrideWhatsApp] = useState<string | null>(null);
+  const [heroMuted, setHeroMuted] = useState(true);
+  const heroVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -348,15 +350,49 @@ export default function MenuDigital() {
     <div className="menu-app-container">
       <div className={`menu-app-header ${configuracion?.video_hero_url ? 'has-video' : ''}`} style={{ position: 'relative' }}>
         {configuracion?.video_hero_url && (
-          <video 
-            src={configuracion.video_hero_url} 
-            autoPlay 
-            loop 
-            muted 
-            playsInline 
-            className="hero-background-video"
-            ref={el => { if (el) el.play().catch(() => {}); }}
-          />
+          <>
+            <video 
+              src={configuracion.video_hero_url} 
+              autoPlay 
+              loop 
+              muted={heroMuted}
+              playsInline 
+              className="hero-background-video"
+              ref={heroVideoRef}
+              onCanPlay={el => { const v = (el.target as HTMLVideoElement); v.muted = heroMuted; v.play().catch(() => {}); }}
+            />
+            <button
+              onClick={() => {
+                const newMuted = !heroMuted;
+                setHeroMuted(newMuted);
+                if (heroVideoRef.current) {
+                  heroVideoRef.current.muted = newMuted;
+                  if (!newMuted) heroVideoRef.current.play().catch(() => {});
+                }
+              }}
+              style={{
+                position: 'absolute',
+                bottom: '3.8rem',
+                right: '0.75rem',
+                zIndex: 30,
+                background: 'rgba(0,0,0,0.45)',
+                border: 'none',
+                borderRadius: '50%',
+                width: '36px',
+                height: '36px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                backdropFilter: 'blur(4px)',
+                color: '#fff',
+                transition: 'background 0.2s'
+              }}
+              title={heroMuted ? 'Activar sonido' : 'Silenciar'}
+            >
+              {heroMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+            </button>
+          </>
         )}
         <div className="header-bottom-bar" style={{
           position: 'absolute',
@@ -377,7 +413,7 @@ export default function MenuDigital() {
             rel="noopener noreferrer"
             className="special-header-btn"
             style={{ 
-              background: '#f36b8e', 
+              background: configuracion?.color_primario || '#f36b8e', 
               color: '#ffffff', 
               padding: '0.3rem 0.75rem', 
               borderRadius: '20px', 
@@ -390,7 +426,7 @@ export default function MenuDigital() {
               alignItems: 'center', 
               gap: '0.25rem', 
               border: 'none',
-              boxShadow: '0 4px 10px rgba(243, 107, 142, 0.35)',
+              boxShadow: '0 4px 10px rgba(0, 0, 0, 0.3)',
               pointerEvents: 'auto'
             }}
           >
@@ -404,7 +440,7 @@ export default function MenuDigital() {
             rel="noopener noreferrer"
             className="ganar-dinero-pulse special-header-btn"
             style={{ 
-              background: '#f36b8e', 
+              background: configuracion?.color_primario || '#f36b8e', 
               color: '#ffffff', 
               padding: '0.3rem 0.75rem', 
               borderRadius: '20px', 
@@ -417,7 +453,7 @@ export default function MenuDigital() {
               alignItems: 'center', 
               gap: '0.25rem', 
               border: 'none',
-              boxShadow: '0 4px 10px rgba(243, 107, 142, 0.35)',
+              boxShadow: '0 4px 10px rgba(0, 0, 0, 0.3)',
               pointerEvents: 'auto'
             }}
           >

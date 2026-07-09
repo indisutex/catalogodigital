@@ -4319,7 +4319,7 @@ export default function Admin() {
                             />
                             <label className="btn-upload-img" style={{ flexShrink: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.55rem 0.85rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600 }}>
                               <Upload size={12} /> Subir
-                              <input type="file" accept="video/*" style={{ display: 'none' }} onChange={async (e) => {
+                              <input type="file" accept="video/mp4,video/webm" style={{ display: 'none' }} onChange={async (e) => {
                                 const file = e.target.files?.[0];
                                 if (!file) return;
                                 setLoading(true);
@@ -4328,12 +4328,13 @@ export default function Admin() {
                                   await supabase.storage.from('archivos').upload(fileName, file);
                                   const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
                                   setConfiguracion({ ...configuracion, video_hero_url: data.publicUrl });
-                                  showToast('Video subido ✓');
+                                  showToast('Video subido V');
                                 } catch { showToast('Error subiendo video', 'error'); }
                                 setLoading(false);
                               }} />
                             </label>
                           </div>
+                          <span style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.25rem' }}>* Sube tu video preferiblemente en formato .mp4 (Los videos en .mov o de iPhone pueden verse en negro en algunos navegadores)</span>
                         </div>
 
                         {/* Descripción Hero */}
