@@ -2132,6 +2132,112 @@ export default function Admin() {
     }
   }
 
+  // --- PURGE PEDIDOS / CLIENTES ---
+  const [showPurgeModal, setShowPurgeModal] = useState(false);
+  const [purgeTargets, setPurgeTargets] = useState<{ pedidos: boolean; clientes: boolean; leads: boolean }>({ pedidos: false, clientes: false, leads: false });
+  const [purgeEstado, setPurgeEstado] = useState<string>('todos');
+  const [purgeDesde, setPurgeDesde] = useState('');
+  const [purgeHasta, setPurgeHasta] = useState('');
+  const [purgeConfirmText, setPurgeConfirmText] = useState('');
+  const [purging, setPurging] = useState(false);
+  const [purgePreview, setPurgePreview] = useState<{ pedidos: number; clientes: number; leads: number } | null>(null);
+
+  async function calcularPurgePreview() {
+    const tenant = getTenantId();
+    let pCount = 0, cCount = 0, lCount = 0;
+    try {
+      if (purgeTargets.pedidos) {
+        let q = supabase.from('pedidos').select('id', { count: 'exact', head: true }).eq('tenant_id', tenant);
+        if (purgeEstado !== 'todos') q = q.eq('estado', purgeEstado);
+        if (purgeDesde) q = q.gte('created_at', purgeDesde);
+        if (purgeHasta) q = q.lte('created_at', purgeHasta + 'T23:59:59');
+        const { count } = await q;
+        pCount = count || 0;
+      }
+      if (purgeTargets.clientes) {
+        let q = supabase.from('clientes').select('id', { count: 'exact', head: true }).eq('tenant_id', tenant);
+        if (purgeDesde) q = q.gte('created_at', purgeDesde);
+        if (purgeHasta) q = q.lte('created_at', purgeHasta + 'T23:59:59');
+        const { count } = await q;
+        cCount = count || 0;
+      }
+      if (purgeTargets.leads) {
+        let q = supabase.from('leads').select('id', { count: 'exact', head: true }).eq('tenant_id', tenant);
+        if (purgeEstado !== 'todos') q = q.eq('estado', purgeEstado);
+        if (purgeDesde) q = q.gte('created_at', purgeDesde);
+        if (purgeHasta) q = q.lte('created_at', purgeHasta + 'T23:59:59');
+        const { count } = await q;
+        lCount = count || 0;
+      }
+      setPurgePreview({ pedidos: pCount, clientes: cCount, leads: lCount });
+    } catch (err: any) {
+      showToast('Error calculando preview: ' + err.message, 'error');
+    }
+  }
+
+  async function handlePurge() {
+    if (purgeConfirmText !== 'PURGAR') {
+      showToast('Escribe PURGAR exactamente para confirmar', 'error');
+      return;
+    }
+    if (!purgeTargets.pedidos && !purgeTargets.clientes && !purgeTargets.leads) {
+      showToast('Selecciona al menos una tabla a limpiar', 'error');
+      return;
+    }
+    try {
+      setPurging(true);
+      const tenant = getTenantId();
+      let totalEliminados = 0;
+
+      if (purgeTargets.pedidos) {
+        let q = supabase.from('pedidos').delete().eq('tenant_id', tenant);
+        if (purgeEstado !== 'todos') q = q.eq('estado', purgeEstado);
+        if (purgeDesde) q = q.gte('created_at', purgeDesde);
+        if (purgeHasta) q = q.lte('created_at', purgeHasta + 'T23:59:59');
+        const { error, count } = await q;
+        if (error) throw error;
+        totalEliminados += count || 0;
+        setPedidos(prev => {
+          let filtered = prev;
+          if (purgeEstado !== 'todos') filtered = filtered.filter(p => p.estado !== purgeEstado);
+          if (purgeDesde) filtered = filtered.filter(p => p.created_at >= purgeDesde);
+          if (purgeHasta) filtered = filtered.filter(p => p.created_at <= purgeHasta + 'T23:59:59');
+          return filtered;
+        });
+      }
+
+      if (purgeTargets.clientes) {
+        let q = supabase.from('clientes').delete().eq('tenant_id', tenant);
+        if (purgeDesde) q = q.gte('created_at', purgeDesde);
+        if (purgeHasta) q = q.lte('created_at', purgeHasta + 'T23:59:59');
+        const { error, count } = await q;
+        if (error) throw error;
+        totalEliminados += count || 0;
+        setClientes([]);
+      }
+
+      if (purgeTargets.leads) {
+        let q = supabase.from('leads').delete().eq('tenant_id', tenant);
+        if (purgeEstado !== 'todos') q = q.eq('estado', purgeEstado);
+        if (purgeDesde) q = q.gte('created_at', purgeDesde);
+        if (purgeHasta) q = q.lte('created_at', purgeHasta + 'T23:59:59');
+        const { error, count } = await q;
+        if (error) throw error;
+        totalEliminados += count || 0;
+      }
+
+      showToast(`✅ Purge completado — ${totalEliminados} registros eliminados`);
+      setPurgeConfirmText('');
+      setPurgePreview(null);
+      setShowPurgeModal(false);
+      cargarDatos();
+    } catch (err: any) {
+      showToast('Error en purge: ' + err.message, 'error');
+    } finally {
+      setPurging(false);
+    }
+  }
+
   const filteredProducts = productos.filter(p =>
     p.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.categoria.toLowerCase().includes(searchQuery.toLowerCase())
@@ -7912,6 +8018,132 @@ export default function Admin() {
                 </div>
               </div>
 
+              {/* Sección 3: Purgar Pedidos / Clientes / Leads */}
+              <div style={{ background: '#fff7ed', padding: '1.5rem', borderRadius: '12px', border: '1px solid #fed7aa' }}>
+                <h4 style={{ margin: '0 0 0.4rem 0', color: '#9a3412', fontWeight: 800 }}>🧹 Purgar Registros</h4>
+                <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: '#9a3412' }}>
+                  Elimina pedidos, clientes o leads de forma selectiva. Puedes filtrar por estado y rango de fechas antes de purgar.
+                </p>
+                <button
+                  onClick={() => { setShowPurgeModal(true); setPurgePreview(null); setPurgeConfirmText(''); }}
+                  style={{ padding: '0.65rem 1.4rem', background: '#ea580c', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                >
+                  🧹 Abrir Herramienta de Purge
+                </button>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL PURGE ── */}
+      {showPurgeModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+          <div style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '520px', padding: '2rem', boxShadow: '0 25px 50px rgba(0,0,0,0.25)', display: 'flex', flexDirection: 'column', gap: '1.25rem', maxHeight: '90vh', overflowY: 'auto' }}>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <h3 style={{ margin: 0, fontWeight: 800, color: '#0f172a', fontSize: '1.15rem' }}>🧹 Purgar Registros</h3>
+                <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.82rem' }}>Selecciona qué eliminar y aplica filtros opcionales</p>
+              </div>
+              <button onClick={() => setShowPurgeModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', fontSize: '1.4rem', lineHeight: 1 }}>×</button>
+            </div>
+
+            {/* Paso 1: Qué purgar */}
+            <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
+              <p style={{ margin: '0 0 0.75rem 0', fontWeight: 700, fontSize: '0.85rem', color: '#374151' }}>1️⃣ ¿Qué deseas purgar?</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                {([
+                  { key: 'pedidos', label: '📦 Pedidos', count: pedidos.length },
+                  { key: 'clientes', label: '👤 Clientes', count: clientes.length },
+                  { key: 'leads', label: '🛒 Leads / Carritos Abandonados', count: leads.length },
+                ] as { key: 'pedidos' | 'clientes' | 'leads'; label: string; count: number }[]).map(({ key, label, count }) => (
+                  <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', padding: '0.65rem 0.9rem', borderRadius: '8px', border: `2px solid ${purgeTargets[key] ? '#ea580c' : '#e2e8f0'}`, background: purgeTargets[key] ? '#fff7ed' : 'white', transition: 'all 0.15s' }}>
+                    <input
+                      type="checkbox"
+                      checked={purgeTargets[key]}
+                      onChange={e => { setPurgeTargets(prev => ({ ...prev, [key]: e.target.checked })); setPurgePreview(null); }}
+                      style={{ width: '16px', height: '16px', accentColor: '#ea580c' }}
+                    />
+                    <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#0f172a' }}>{label}</span>
+                    <span style={{ marginLeft: 'auto', fontSize: '0.78rem', color: '#64748b', background: '#f1f5f9', padding: '0.1rem 0.5rem', borderRadius: '9999px' }}>{count} registros</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Paso 2: Filtros */}
+            <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
+              <p style={{ margin: '0 0 0.75rem 0', fontWeight: 700, fontSize: '0.85rem', color: '#374151' }}>2️⃣ Filtros opcionales (dejar vacío = todos)</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.3rem' }}>Estado</label>
+                  <select
+                    value={purgeEstado}
+                    onChange={e => { setPurgeEstado(e.target.value); setPurgePreview(null); }}
+                    style={{ width: '100%', padding: '0.55rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none' }}
+                  >
+                    <option value="todos">Todos los estados</option>
+                    <option value="pendiente">Pendiente</option>
+                    <option value="atendido">Atendido</option>
+                    <option value="completado">Completado</option>
+                    <option value="cancelado">Cancelado</option>
+                    <option value="abandonado">Abandonado (leads)</option>
+                  </select>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.3rem' }}>Desde (fecha)</label>
+                    <input type="date" value={purgeDesde} onChange={e => { setPurgeDesde(e.target.value); setPurgePreview(null); }}
+                      style={{ width: '100%', padding: '0.55rem 0.7rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.83rem', outline: 'none', boxSizing: 'border-box' }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.3rem' }}>Hasta (fecha)</label>
+                    <input type="date" value={purgeHasta} onChange={e => { setPurgeHasta(e.target.value); setPurgePreview(null); }}
+                      style={{ width: '100%', padding: '0.55rem 0.7rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.83rem', outline: 'none', boxSizing: 'border-box' }} />
+                  </div>
+                </div>
+                <button
+                  onClick={calcularPurgePreview}
+                  disabled={!purgeTargets.pedidos && !purgeTargets.clientes && !purgeTargets.leads}
+                  style={{ padding: '0.6rem 1rem', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '0.83rem', opacity: (!purgeTargets.pedidos && !purgeTargets.clientes && !purgeTargets.leads) ? 0.5 : 1 }}
+                >
+                  🔍 Previsualizar cuántos se eliminarán
+                </button>
+              </div>
+            </div>
+
+            {/* Preview */}
+            {purgePreview && (
+              <div style={{ background: '#fef9c3', borderRadius: '12px', padding: '1rem 1.25rem', border: '1px solid #fde047', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: '0.85rem', color: '#713f12' }}>⚠️ Se eliminarán:</p>
+                {purgeTargets.pedidos && <p style={{ margin: 0, fontSize: '0.83rem', color: '#92400e' }}>• <strong>{purgePreview.pedidos}</strong> pedidos</p>}
+                {purgeTargets.clientes && <p style={{ margin: 0, fontSize: '0.83rem', color: '#92400e' }}>• <strong>{purgePreview.clientes}</strong> clientes</p>}
+                {purgeTargets.leads && <p style={{ margin: 0, fontSize: '0.83rem', color: '#92400e' }}>• <strong>{purgePreview.leads}</strong> leads</p>}
+                <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', color: '#b45309' }}>Total: <strong>{purgePreview.pedidos + purgePreview.clientes + purgePreview.leads}</strong> registros — Esta acción es <strong>irreversible</strong>.</p>
+              </div>
+            )}
+
+            {/* Paso 3: Confirmar */}
+            <div style={{ background: '#fef2f2', borderRadius: '12px', padding: '1.25rem', border: '1px solid #fee2e2' }}>
+              <p style={{ margin: '0 0 0.75rem 0', fontWeight: 700, fontSize: '0.85rem', color: '#991b1b' }}>3️⃣ Confirmar — Escribe <strong>PURGAR</strong> para habilitar</p>
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <input
+                  type="text"
+                  placeholder="Escribe PURGAR"
+                  value={purgeConfirmText}
+                  onChange={e => setPurgeConfirmText(e.target.value)}
+                  style={{ flex: 1, padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #fca5a5', fontSize: '0.85rem', outline: 'none', minWidth: '160px' }}
+                />
+                <button
+                  onClick={handlePurge}
+                  disabled={purging || purgeConfirmText !== 'PURGAR' || (!purgeTargets.pedidos && !purgeTargets.clientes && !purgeTargets.leads)}
+                  style={{ padding: '0.6rem 1.3rem', background: purging ? '#94a3b8' : '#dc2626', color: 'white', border: 'none', borderRadius: '8px', cursor: purging ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '0.85rem', opacity: (purgeConfirmText !== 'PURGAR' || (!purgeTargets.pedidos && !purgeTargets.clientes && !purgeTargets.leads)) ? 0.5 : 1 }}
+                >
+                  {purging ? '⏳ Purgando...' : '🗑️ Ejecutar Purge'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
