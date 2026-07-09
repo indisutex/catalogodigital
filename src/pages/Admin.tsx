@@ -39,7 +39,7 @@ const emptyProduct: ProductFormData = {
   stock: 0
 };
 
-type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor';
+type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor';
 
 type Toast = { message: string; type: 'success' | 'error' } | null;
 
@@ -82,7 +82,7 @@ export default function Admin() {
     const defaultTab = (localStorage.getItem(`admin_role_${getTenantId()}`) === 'asesor') ? 'pedidos' : 'productos';
     const saved = localStorage.getItem('admin_active_tab') as string;
     if (saved === 'perfil_admin' || saved === 'perfil_admin_tab') return 'dashboard';
-    const allowedTabs: string[] = ['dashboard', 'productos', 'categorias', 'pedidos', 'clientes', 'asesores', 'mayoristas', 'pos', 'siigo', 'config', 'perfil_asesor'];
+    const allowedTabs: string[] = ['dashboard', 'productos', 'categorias', 'pedidos', 'clientes', 'asesores', 'mayoristas', 'pos', 'siigo', 'config', 'perfil_asesor', 'resumen_asesor'];
     if (saved && !allowedTabs.includes(saved)) return defaultTab;
     return (saved as TabType) || defaultTab;
   });
@@ -1167,7 +1167,10 @@ export default function Admin() {
     completados.forEach(p => { const h = new Date(p.created_at).getHours(); hourCounts[h] = (hourCounts[h] || 0) + 1; });
     const bestHourEntry = Object.entries(hourCounts).sort((a, b) => Number(b[1]) - Number(a[1]))[0];
     const bestHour = { hour: Number(bestHourEntry[0]), count: Number(bestHourEntry[1]) };
-    const hourLabels = ['12am','1am','2am','3am','4am','5am','6am','7am','8am','9am','10am','11am','12pm','1pm','2pm','3pm','4pm','5pm','6pm','7pm','8pm','9pm','10pm','11pm'];
+    const hourLabels = [
+      '12:00 AM', '1:00 AM', '2:00 AM', '3:00 AM', '4:00 AM', '5:00 AM', '6:00 AM', '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM',
+      '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM', '10:00 PM', '11:00 PM'
+    ];
 
     // 7. Mejor día de la semana
     const dayNames = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
@@ -1182,14 +1185,102 @@ export default function Admin() {
       .sort((a, b) => b.total - a.total)
       .slice(0, 5);
 
+    // 8a. Desempeño separado de Asesores y Mayoristas
+    const asesoresSales: { [id: string]: { total: number; ordersCount: number } } = {};
+    const mayoristasSales: { [id: string]: { total: number; ordersCount: number } } = {};
+
+    completados.forEach(p => {
+      const phone = p.linea_whatsapp || 'pos';
+      const cleanPhone = phone.replace(/\D/g, '');
+      if (cleanPhone !== 'pos' && cleanPhone) {
+        const match = asesores.find(a => {
+          const phones = (a.telefono || '').split(',').map(ph => ph.replace(/\D/g, '')).filter(Boolean);
+          return phones.includes(cleanPhone);
+        });
+        if (match) {
+          if (match.tipo === 'mayorista') {
+            if (!mayoristasSales[match.id]) {
+              mayoristasSales[match.id] = { total: 0, ordersCount: 0 };
+            }
+            mayoristasSales[match.id].total += p.total || 0;
+            mayoristasSales[match.id].ordersCount += 1;
+          } else {
+            if (!asesoresSales[match.id]) {
+              asesoresSales[match.id] = { total: 0, ordersCount: 0 };
+            }
+            asesoresSales[match.id].total += p.total || 0;
+            asesoresSales[match.id].ordersCount += 1;
+          }
+        }
+      }
+    });
+
+    const asesoresRanking = asesores
+      .filter(a => a.tipo === 'asesor' || !a.tipo)
+      .map(a => {
+        const saleInfo = asesoresSales[a.id] || { total: 0, ordersCount: 0 };
+        return {
+          id: a.id,
+          nombre: a.nombre,
+          foto_url: a.foto_url,
+          telefono: a.telefono,
+          total: saleInfo.total,
+          ordersCount: saleInfo.ordersCount
+        };
+      })
+      .sort((a, b) => b.total - a.total);
+
+    const mayoristasRanking = asesores
+      .filter(a => a.tipo === 'mayorista')
+      .map(m => {
+        const saleInfo = mayoristasSales[m.id] || { total: 0, ordersCount: 0 };
+        return {
+          id: m.id,
+          nombre: m.nombre,
+          foto_url: m.foto_url,
+          telefono: m.telefono,
+          total: saleInfo.total,
+          ordersCount: saleInfo.ordersCount
+        };
+      })
+      .sort((a, b) => b.total - a.total);
+
+    // 8b. Productos más vendidos (completados)
+    const productSales: { [prodIdOrName: string]: { id: string; nombre: string; cantidad: number; total: number; imagen_url?: string } } = {};
+    completados.forEach(p => {
+      if (Array.isArray(p.productos)) {
+        p.productos.forEach((prod: any) => {
+          const key = prod.id || prod.nombre;
+          if (key) {
+            if (!productSales[key]) {
+              const fullProdObj = productos.find(pr => pr.id === prod.id || pr.nombre === prod.nombre);
+              productSales[key] = {
+                id: prod.id || '',
+                nombre: prod.nombre,
+                cantidad: 0,
+                total: 0,
+                imagen_url: fullProdObj?.imagen_url || ''
+              };
+            }
+            productSales[key].cantidad += (prod.cantidad || 1);
+            productSales[key].total += (prod.cantidad || 1) * (prod.precio || 0);
+          }
+        });
+      }
+    });
+
+    const topSellingProducts = Object.values(productSales)
+      .sort((a, b) => b.cantidad - a.cantidad)
+      .slice(0, 5);
+
     // 9. Consejo del día (rotativo por fecha)
     const allTips = [
       { icon: '📱', text: 'Responde en menos de 5 minutos: los clientes que reciben respuesta rápida compran 3x más.' },
       { icon: '📸', text: 'Comparte 3 fotos del producto desde diferentes ángulos. Las imágenes claras reducen las dudas y aumentan el cierre.' },
       { icon: '⭐', text: 'Pide a cada cliente satisfecho que te recomiende con un conocido. El voz a voz es tu mejor publicidad.' },
       { icon: '🎁', text: 'Ofrece un pequeño regalo o envío gratis por encima de cierto monto para aumentar el ticket promedio.' },
-      { icon: '📅', text: `Las ventas pico son los ${bestDay.count > 0 ? bestDay.name : 'fines de semana'}. Planifica más stock y asesoras disponibles ese día.` },
-      { icon: '⏰', text: `La hora de oro es ${bestHour.count > 0 ? hourLabels[bestHour.hour] : 'la tarde'}. Programa tus publicaciones en redes en ese horario.` },
+      { icon: '📅', text: `Las ventas pico son los ${bestDay.count > 0 ? bestDay.name : 'fines de semana'}. Planifica más stock and asesoras disponibles ese día.` },
+      { icon: '⏰', text: `La hora de oro es a las ${bestHour.count > 0 ? hourLabels[bestHour.hour] : 'tarde'}. Programa tus publicaciones en redes en ese horario.` },
       { icon: '💬', text: 'Un seguimiento después de 24h a los carros abandonados recupera hasta un 20% de ventas perdidas.' },
       { icon: '📊', text: 'Revisa tu analítica semanal. Los datos te dicen qué productos y asesoras funcionan mejor.' },
       { icon: '📦', text: 'Mantén tu catálogo actualizado. Los productos sin stock generan frustración y pérdida de clientes.' },
@@ -1214,8 +1305,306 @@ export default function Admin() {
       hourCounts,
       dayCounts,
       dayNames,
+      asesoresRanking,
+      mayoristasRanking,
+      topSellingProducts,
     };
-  }, [pedidos, asesores]);
+  }, [pedidos, asesores, productos]);
+
+  const getAdvisorStats = (a: any) => {
+    if (!a) return null;
+    const aPhones = (a.telefono || '').split(',').map((p: string) => p.replace(/\D/g, '')).filter(Boolean);
+    const aPedidos = pedidos.filter(p => {
+      const op = (p.linea_whatsapp || '').replace(/\D/g, '');
+      return aPhones.includes(op);
+    });
+    const aLeads = aPedidos.filter(p => p.estado === 'abandonado' || p.estado === 'borrador');
+    const aCompletados = aPedidos.filter(p => p.estado === 'completado');
+    const aPendientes = aPedidos.filter(p => p.estado === 'pendiente' || p.estado === 'interesado');
+    const totalVentas = aCompletados.reduce((s, p) => s + (p.total || 0), 0);
+    const ticketProm = aCompletados.length > 0 ? Math.round(totalVentas / aCompletados.length) : 0;
+
+    const horasMap: Record<number, number> = {};
+    for (let i = 0; i < 24; i++) horasMap[i] = 0;
+    aCompletados.forEach(p => { const h = new Date(p.created_at).getHours(); horasMap[h] = (horasMap[h] || 0) + 1; });
+    const maxHoraCount = Math.max(1, ...Object.values(horasMap));
+    const bestHour = (Object.entries(horasMap) as [string, number][]).reduce((best, [h, c]) => c > best[1] ? [h, c] : best, ['0', 0]);
+
+    const dayNames = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    const dayCounts: Record<number, number> = {0:0,1:0,2:0,3:0,4:0,5:0,6:0};
+    aCompletados.forEach(p => { const d = new Date(p.created_at).getDay(); dayCounts[d] = (dayCounts[d] || 0) + 1; });
+    const bestDayEntry = (Object.entries(dayCounts) as [string, number][]).sort((a, b) => Number(b[1]) - Number(a[1]))[0];
+    const bestDay = { day: Number(bestDayEntry[0]), name: dayNames[Number(bestDayEntry[0])], count: Number(bestDayEntry[1]) };
+
+    const productSales: { [prodIdOrName: string]: { id: string; nombre: string; cantidad: number; total: number; imagen_url?: string } } = {};
+    aCompletados.forEach(p => {
+      if (Array.isArray(p.productos)) {
+        p.productos.forEach((prod: any) => {
+          const key = prod.id || prod.nombre;
+          if (key) {
+            if (!productSales[key]) {
+              const fullProdObj = productos.find(pr => pr.id === prod.id || pr.nombre === prod.nombre);
+              productSales[key] = {
+                id: prod.id || '',
+                nombre: prod.nombre,
+                cantidad: 0,
+                total: 0,
+                imagen_url: fullProdObj?.imagen_url || ''
+              };
+            }
+            productSales[key].cantidad += (prod.cantidad || 1);
+            productSales[key].total += (prod.cantidad || 1) * (prod.precio || 0);
+          }
+        });
+      }
+    });
+    const topSellingProducts = Object.values(productSales)
+      .sort((a, b) => b.cantidad - a.cantidad)
+      .slice(0, 5);
+
+    const monthsMap: Record<string, number> = {};
+    const now = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      monthsMap[`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`] = 0;
+    }
+    aCompletados.forEach(p => {
+      const d = new Date(p.created_at);
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+      if (key in monthsMap) monthsMap[key] = (monthsMap[key] || 0) + 1;
+    });
+    const monthEntries = Object.entries(monthsMap);
+    const maxMonthCount = Math.max(1, ...monthEntries.map(([, c]) => c));
+
+    return {
+      aPedidos,
+      aLeads,
+      aCompletados,
+      aPendientes,
+      totalVentas,
+      ticketProm,
+      horasMap,
+      maxHoraCount,
+      bestHour,
+      dayCounts,
+      bestDay,
+      topSellingProducts,
+      monthEntries,
+      maxMonthCount
+    };
+  };
+
+  const renderAdvisorStatsView = (advStats: any) => {
+    if (!advStats) return null;
+    const {
+      aPedidos, aLeads, aCompletados, aPendientes, totalVentas, ticketProm,
+      horasMap, maxHoraCount, bestHour, dayCounts, bestDay, topSellingProducts,
+      monthEntries, maxMonthCount
+    } = advStats;
+
+    const primaryColor = configuracion?.color_primario || '#6366f1';
+    const orderOfWeek = [1, 2, 3, 4, 5, 6, 0]; // Lun, Mar, Mie, Jue, Vie, Sab, Dom
+    const shortDayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+    const dayNames = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+
+    const horaLabels = [
+      '12:00 AM', '1:00 AM', '2:00 AM', '3:00 AM', '4:00 AM', '5:00 AM', '6:00 AM', '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM',
+      '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM', '10:00 PM', '11:00 PM'
+    ];
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        {/* KPI Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem' }}>
+          {[
+            { label: 'Ventas Completadas', value: aCompletados.length, icon: '✅', color: '#10b981', sub: `$${totalVentas.toLocaleString()} total` },
+            { label: 'Pendientes de Pago', value: aPendientes.length, icon: '⏳', color: '#eab308', sub: 'Esperando comprobante' },
+            { label: 'Abandonos', value: aLeads.length, icon: '🔴', color: '#ef4444', sub: 'Borradores / no interesados' },
+            { label: 'Ticket Promedio', value: `$${ticketProm.toLocaleString()}`, icon: '💰', color: primaryColor, sub: 'Por venta completada' },
+          ].map((kpi, i) => (
+            <div key={i} style={{ background: '#f8fafc', borderRadius: '14px', padding: '1rem', border: `2px solid ${kpi.color}22`, position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', right: '-8px', top: '-8px', fontSize: '3rem', opacity: 0.1 }}>{kpi.icon}</div>
+              <div style={{ fontSize: '0.73rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.4rem' }}>{kpi.label}</div>
+              <div style={{ fontSize: '1.7rem', fontWeight: 800, color: kpi.color, lineHeight: 1 }}>{kpi.value}</div>
+              <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.3rem' }}>{kpi.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Row for Hourly and Weekly charts */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+          
+          {/* Horario de Mayor Venta */}
+          <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
+            <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>⏰ Horario de Mayor Venta</h4>
+            <p style={{ margin: '0 0 1rem 0', color: '#64748b', fontSize: '0.8rem' }}>
+              {aCompletados.length > 0 ? (
+                <>Pico máximo: <strong>{horaLabels[Number(bestHour[0])]}</strong> ({bestHour[1]} {bestHour[1] === 1 ? 'venta' : 'ventas'})</>
+              ) : (
+                'Sin datos suficientes'
+              )}
+            </p>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '90px', marginTop: '1.2rem' }}>
+              {(Object.entries(horasMap) as [string, number][]).map(([h, count]) => {
+                const pct = (count / maxHoraCount) * 100;
+                const isWarm = Number(h) >= 8 && Number(h) <= 20;
+                const isBest = Number(h) === Number(bestHour[0]) && count > 0;
+                return (
+                  <div key={h} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, minWidth: '11px' }} title={`${horaLabels[Number(h)]}: ${count} ${count === 1 ? 'venta' : 'ventas'}`}>
+                    <div style={{ width: '100%', background: '#e2e8f0', borderRadius: '3px 3px 0 0', height: '70px', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
+                      <div style={{ width: '100%', height: `${pct}%`, background: isBest ? 'linear-gradient(180deg,#fbbf24,#f59e0b)' : isWarm ? `${primaryColor}bb` : `${primaryColor}44`, borderRadius: '3px 3px 0 0', transition: 'height 0.8s ease' }} />
+                    </div>
+                    {Number(h) % 4 === 0 && (
+                      <span style={{ fontSize: '0.55rem', color: '#94a3b8', marginTop: '2px', fontWeight: 600 }}>
+                        {Number(h) === 0 ? '12 AM' : Number(h) === 12 ? '12 PM' : Number(h) > 12 ? `${Number(h) - 12} PM` : `${h} AM`}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Ventas por Día de la Semana */}
+          <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
+            <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>📅 Ventas por Día de la Semana</h4>
+            <p style={{ margin: '0 0 1rem 0', color: '#64748b', fontSize: '0.8rem' }}>
+              {aCompletados.length > 0 && bestDay.count > 0 ? (
+                <>Día más fuerte: <strong>{bestDay.name}</strong> ({bestDay.count} {bestDay.count === 1 ? 'venta' : 'ventas'})</>
+              ) : (
+                'Sin datos suficientes'
+              )}
+            </p>
+            {(() => {
+              const maxDayCount = Math.max(1, ...Object.values(dayCounts) as number[]);
+              return (
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: '10px', height: '90px', marginTop: '1.2rem', padding: '0 0.5rem' }}>
+                  {orderOfWeek.map((dayIdx) => {
+                    const count = dayCounts[dayIdx] || 0;
+                    const pct = (count / maxDayCount) * 100;
+                    const isBest = dayIdx === bestDay.day && count > 0;
+                    return (
+                      <div key={dayIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }} title={`${dayNames[dayIdx]}: ${count} ${count === 1 ? 'venta' : 'ventas'}`}>
+                        <span style={{ fontSize: '0.65rem', fontWeight: 700, color: isBest ? '#f59e0b' : '#475569', marginBottom: '2px' }}>
+                          {count > 0 ? count : ''}
+                        </span>
+                        <div style={{ width: '100%', background: '#e2e8f0', borderRadius: '4px 4px 0 0', height: '55px', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
+                          <div style={{ width: '100%', height: `${pct}%`, background: isBest ? 'linear-gradient(180deg,#fbbf24,#f59e0b)' : `${primaryColor}cc`, borderRadius: '4px 4px 0 0', transition: 'height 0.8s ease' }} />
+                        </div>
+                        <span style={{ fontSize: '0.7rem', color: isBest ? '#f59e0b' : '#64748b', marginTop: '4px', fontWeight: 600 }}>
+                          {shortDayNames[dayIdx]}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+          </div>
+
+        </div>
+
+        {/* Row for Products and Months */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+          
+          {/* Productos Más Vendidos */}
+          <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
+            <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>🛍️ Productos Más Vendidos</h4>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              {topSellingProducts.length === 0 ? (
+                <p style={{ color: '#94a3b8', fontSize: '0.85rem', textAlign: 'center', margin: '2rem 0' }}>Sin productos vendidos todavía</p>
+              ) : (
+                topSellingProducts.map((prod: any, idx: number) => (
+                  <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.4rem 0.5rem', background: 'white', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '6px', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                      {prod.imagen_url ? (
+                        <img src={prod.imagen_url} alt={prod.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <span style={{ fontSize: '1rem' }}>👕</span>
+                      )}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h4 style={{ margin: 0, fontSize: '0.8rem', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{prod.nombre}</h4>
+                      <p style={{ margin: '0.1rem 0 0 0', fontSize: '0.72rem', color: '#64748b' }}>
+                        Total: <strong>${prod.total.toLocaleString()} COP</strong>
+                      </p>
+                    </div>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <span style={{ display: 'inline-block', padding: '0.15rem 0.5rem', background: '#dcfce7', color: '#15803d', borderRadius: '20px', fontSize: '0.7rem', fontWeight: 800 }}>
+                        {prod.cantidad} {prod.cantidad === 1 ? 'ud' : 'uds'}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Histórico 6 meses / Distribución Pedidos */}
+          <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr', gap: '1rem' }}>
+            <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
+              <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>📈 Ventas Últimos 6 Meses</h4>
+              <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '60px' }}>
+                {monthEntries.map(([key, count]: any, idx: number) => {
+                  const pct = (count / maxMonthCount) * 100;
+                  const mo = parseInt(key.split('-')[1]) - 1;
+                  const monthNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+                  return (
+                    <div key={key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
+                      <span style={{ fontSize: '0.65rem', color: '#0f172a', fontWeight: 700 }}>{count > 0 ? count : ''}</span>
+                      <div style={{ width: '100%', background: '#e2e8f0', borderRadius: '4px 4px 0 0', height: '40px', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
+                        <div style={{ width: '100%', height: `${pct}%`, background: `linear-gradient(180deg,${primaryColor},${primaryColor}88)`, borderRadius: '4px 4px 0 0', transition: `height ${0.4 + idx * 0.1}s ease` }} />
+                      </div>
+                      <span style={{ fontSize: '0.6rem', color: '#64748b' }}>{monthNames[mo]}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '1rem 1.25rem', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>🥧 Distribución de Pedidos</h4>
+              {aPedidos.length === 0 ? (
+                <p style={{ color: '#94a3b8', fontSize: '0.8rem', textAlign: 'center', margin: 0 }}>Sin pedidos</p>
+              ) : (() => {
+                const total = aPedidos.length;
+                const segs = [
+                  { label: 'Completados', count: aCompletados.length, color: '#10b981' },
+                  { label: 'Pendientes', count: aPendientes.length, color: '#eab308' },
+                  { label: 'Abandonos', count: aLeads.length, color: '#ef4444' },
+                ];
+                const r = 26, cx = 35, cy = 30, stroke = 10;
+                let offset = 0;
+                const circ = 2 * Math.PI * r;
+                return (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                    <svg width="70" height="60" viewBox="0 0 70 60">
+                      {segs.map((seg, i) => {
+                        const dash = (seg.count / total) * circ;
+                        const rotate = (offset / total) * 360 - 90;
+                        offset += seg.count;
+                        return <circle key={i} cx={cx} cy={cy} r={r} fill="none" stroke={seg.color} strokeWidth={stroke} strokeDasharray={`${dash} ${circ - dash}`} transform={`rotate(${rotate} ${cx} ${cy})`} />;
+                      })}
+                      <text x={cx} y={cy + 1} textAnchor="middle" dominantBaseline="middle" style={{ fontSize: '10px', fontWeight: 800, fill: '#0f172a' }}>{total}</text>
+                    </svg>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                      {segs.map((seg, i) => (
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: seg.color }} />
+                          <span style={{ fontSize: '0.72rem', color: '#475569', fontWeight: 600 }}>{seg.label}: <strong style={{ color: '#0f172a' }}>{seg.count}</strong></span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+
+        </div>
+      </div>
+    );
+  };
 
   const leadsFiltrados = useMemo(() => {
     let temp = leads.filter(l => {
@@ -2562,6 +2951,33 @@ export default function Admin() {
             </>
           )}
 
+          {/* ── RESUMEN ASESOR TAB ── */}
+          {activeTab === 'resumen_asesor' && role === 'asesor' && (() => {
+            const currentAsesorData = asesores.find(a => a.telefono === loggedAsesorPhone);
+            if (!currentAsesorData) return <p style={{ color: '#64748b', padding: '2rem', textAlign: 'center' }}>Cargando datos del asesor...</p>;
+            const advStats = getAdvisorStats(currentAsesorData);
+            return (
+              <div className="admin-panel" style={{ borderRadius: '20px', padding: '1.5rem 1.75rem' }}>
+                <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                  {currentAsesorData.foto_url ? (
+                    <img src={currentAsesorData.foto_url} alt={currentAsesorData.nombre} style={{ width: '56px', height: '56px', borderRadius: '50%', objectFit: 'cover', border: '3px solid rgba(0,0,0,0.05)' }} />
+                  ) : (
+                    <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 800, color: '#475569' }}>
+                      {currentAsesorData.nombre.charAt(0)}
+                    </div>
+                  )}
+                  <div>
+                    <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#0f172a' }}>📊 Mi Resumen de Ventas</h2>
+                    <p style={{ margin: '0.15rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Visualiza tus métricas, mejores horarios y productos vendidos</p>
+                  </div>
+                </div>
+                <div className="panel-body">
+                  {renderAdvisorStatsView(advStats)}
+                </div>
+              </div>
+            );
+          })()}
+
           {/* ── PERFIL ASESOR TAB ── */}
           {activeTab === 'perfil_asesor' && role === 'asesor' && (
             <div className="admin-panel">
@@ -3753,10 +4169,10 @@ export default function Admin() {
                                         type="button"
                                         onClick={() => setSelectedAsesorAnalytics(a)}
                                         className="btn-secondary"
-                                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', color: 'var(--primary-color,#6366f1)', borderColor: 'var(--primary-color,#6366f1)' }}
+                                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', color: 'var(--primary-color,#6366f1)', borderColor: 'var(--primary-color,#6366f1)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontWeight: 600 }}
                                         title="Ver analítica del asesor"
                                       >
-                                        📊
+                                        <LayoutDashboard size={12} /> Resumen
                                       </button>
                                       <button
                                         type="button"
@@ -4212,6 +4628,219 @@ export default function Admin() {
                            </div>
                          );
                        })
+                     )}
+                   </div>
+                 </div>
+
+                 {/* Tarjeta: Productos Más Vendidos */}
+                 <div className="admin-panel" style={{ height: '100%' }}>
+                   <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
+                     <h3 style={{ margin: 0 }}>🛍️ Productos Más Vendidos</h3>
+                     <p style={{ margin: '0.1rem 0 0 0', color: '#64748b', fontSize: '0.8rem' }}>Top 5 artículos más vendidos por unidades</p>
+                   </div>
+                   <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                     {stats.topSellingProducts.length === 0 ? (
+                       <div style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem 0' }}>No hay datos de productos vendidos todavía</div>
+                     ) : (
+                       stats.topSellingProducts.map((prod, idx) => (
+                         <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.4rem 0.5rem', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                           <div style={{ width: '42px', height: '42px', borderRadius: '8px', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                             {prod.imagen_url ? (
+                               <img src={prod.imagen_url} alt={prod.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                             ) : (
+                               <span style={{ fontSize: '1.2rem' }}>👕</span>
+                             )}
+                           </div>
+                           <div style={{ flex: 1, minWidth: 0 }}>
+                             <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{prod.nombre}</h4>
+                             <p style={{ margin: '0.1rem 0 0 0', fontSize: '0.75rem', color: '#64748b' }}>
+                               Total: <strong>${prod.total.toLocaleString()} COP</strong>
+                             </p>
+                           </div>
+                           <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                             <span style={{ display: 'inline-block', padding: '0.2rem 0.6rem', background: '#dcfce7', color: '#15803d', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 800 }}>
+                               {prod.cantidad} {prod.cantidad === 1 ? 'ud' : 'uds'}
+                             </span>
+                           </div>
+                         </div>
+                       ))
+                     )}
+                   </div>
+                 </div>
+
+               </div>
+
+               {/* Fila: Horario y Días de Mayor Venta */}
+               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
+                 
+                 {/* Tarjeta: Horario de Mayor Venta */}
+                 <div className="admin-panel">
+                   <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
+                     <h3 style={{ margin: 0 }}>⏰ Horario de Mayor Venta</h3>
+                     <p style={{ margin: '0.1rem 0 0 0', color: '#64748b', fontSize: '0.8rem' }}>
+                       {pedidos.filter(p => p.estado === 'completado').length > 0 && stats.bestHour.count > 0 ? (
+                         <>Hora pico: <strong>{stats.hourLabels[stats.bestHour.hour]}</strong> ({stats.bestHour.count} {stats.bestHour.count === 1 ? 'venta' : 'ventas'})</>
+                       ) : (
+                         'Distribución de ventas por hora del día'
+                       )}
+                     </p>
+                   </div>
+                   <div className="panel-body">
+                     {(() => {
+                       const maxCount = Math.max(1, ...Object.values(stats.hourCounts));
+                       return (
+                         <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '100px', marginTop: '1.5rem' }}>
+                           {Object.entries(stats.hourCounts).map(([h, count]) => {
+                             const pct = (count / maxCount) * 100;
+                             const isWarm = Number(h) >= 8 && Number(h) <= 20;
+                             const isBest = Number(h) === stats.bestHour.hour && count > 0;
+                             const primaryColor = configuracion?.color_primario || '#6366f1';
+                             const label = stats.hourLabels[Number(h)];
+                             return (
+                               <div key={h} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, minWidth: '12px' }} title={`${label}: ${count} ${count === 1 ? 'venta' : 'ventas'}`}>
+                                 <div style={{ width: '100%', background: '#e2e8f0', borderRadius: '3px 3px 0 0', height: '80px', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
+                                   <div style={{ width: '100%', height: `${pct}%`, background: isBest ? 'linear-gradient(180deg,#fbbf24,#f59e0b)' : isWarm ? `${primaryColor}bb` : `${primaryColor}44`, borderRadius: '3px 3px 0 0', transition: 'height 0.8s ease' }} />
+                                 </div>
+                                 {Number(h) % 4 === 0 && (
+                                   <span style={{ fontSize: '0.55rem', color: '#94a3b8', marginTop: '4px', fontWeight: 600, transform: 'scale(0.9)', whiteSpace: 'nowrap' }}>
+                                     {Number(h) === 0 ? '12 AM' : Number(h) === 12 ? '12 PM' : Number(h) > 12 ? `${Number(h) - 12} PM` : `${h} AM`}
+                                   </span>
+                                 )}
+                               </div>
+                             );
+                           })}
+                         </div>
+                       );
+                     })()}
+                   </div>
+                 </div>
+
+                 {/* Tarjeta: Días de Mayor Venta */}
+                 <div className="admin-panel">
+                   <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
+                     <h3 style={{ margin: 0 }}>📅 Ventas por Día de la Semana</h3>
+                     <p style={{ margin: '0.1rem 0 0 0', color: '#64748b', fontSize: '0.8rem' }}>
+                       {pedidos.filter(p => p.estado === 'completado').length > 0 && stats.bestDay.count > 0 ? (
+                         <>Día más fuerte: <strong>{stats.bestDay.name}</strong> ({stats.bestDay.count} {stats.bestDay.count === 1 ? 'venta' : 'ventas'})</>
+                       ) : (
+                         'Distribución de ventas según el día de la semana'
+                       )}
+                     </p>
+                   </div>
+                   <div className="panel-body">
+                     {(() => {
+                       const maxCount = Math.max(1, ...Object.values(stats.dayCounts));
+                       const orderOfWeek = [1, 2, 3, 4, 5, 6, 0]; // Lun, Mar, Mie, Jue, Vie, Sab, Dom
+                       const shortDayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+                       return (
+                         <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', height: '100px', marginTop: '1.5rem', padding: '0 0.5rem' }}>
+                           {orderOfWeek.map((dayIdx) => {
+                             const count = stats.dayCounts[dayIdx] || 0;
+                             const pct = (count / maxCount) * 100;
+                             const isBest = dayIdx === stats.bestDay.day && count > 0;
+                             const primaryColor = configuracion?.color_primario || '#6366f1';
+                             const label = stats.dayNames[dayIdx];
+                             return (
+                               <div key={dayIdx} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1 }} title={`${label}: ${count} ${count === 1 ? 'venta' : 'ventas'}`}>
+                                 <span style={{ fontSize: '0.7rem', fontWeight: 700, color: isBest ? '#f59e0b' : '#475569', marginBottom: '4px' }}>
+                                   {count > 0 ? count : ''}
+                                 </span>
+                                 <div style={{ width: '100%', background: '#e2e8f0', borderRadius: '4px 4px 0 0', height: '65px', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
+                                   <div style={{ width: '100%', height: `${pct}%`, background: isBest ? 'linear-gradient(180deg,#fbbf24,#f59e0b)' : `${primaryColor}cc`, borderRadius: '4px 4px 0 0', transition: 'height 0.8s ease' }} />
+                                 </div>
+                                 <span style={{ fontSize: '0.75rem', color: isBest ? '#f59e0b' : '#64748b', marginTop: '4px', fontWeight: 600 }}>
+                                   {shortDayNames[dayIdx]}
+                                 </span>
+                               </div>
+                             );
+                           })}
+                         </div>
+                       );
+                     })()}
+                   </div>
+                 </div>
+
+               </div>
+
+               {/* Fila: Rendimiento de Asesores y Mayoristas */}
+               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem', marginBottom: '1.5rem' }}>
+                 
+                 {/* Tarjeta: Rendimiento de Asesores */}
+                 <div className="admin-panel">
+                   <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
+                     <h3 style={{ margin: 0 }}>👥 Rendimiento de Asesores</h3>
+                     <p style={{ margin: '0.1rem 0 0 0', color: '#64748b', fontSize: '0.8rem' }}>Ventas acumuladas de tus asesores de catálogo</p>
+                   </div>
+                   <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '320px', overflowY: 'auto' }}>
+                     {stats.asesoresRanking.length === 0 ? (
+                       <div style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem 0' }}>No hay asesores registrados todavía</div>
+                     ) : (
+                       stats.asesoresRanking.map((a, idx) => (
+                         <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0.75rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                           <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#94a3b8', width: '20px', textAlign: 'center' }}>
+                             #{idx + 1}
+                           </div>
+                           <div style={{ width: '36px', height: '36px', borderRadius: '50%', overflow: 'hidden', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                             {a.foto_url ? (
+                               <img src={a.foto_url} alt={a.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                             ) : (
+                               <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#475569' }}>{a.nombre.charAt(0).toUpperCase()}</span>
+                             )}
+                           </div>
+                           <div style={{ flex: 1, minWidth: 0 }}>
+                             <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, color: '#0f172a' }}>{a.nombre}</h4>
+                             <p style={{ margin: '0.1rem 0 0 0', fontSize: '0.75rem', color: '#64748b' }}>
+                               {a.ordersCount} {a.ordersCount === 1 ? 'pedido completado' : 'pedidos completados'}
+                             </p>
+                           </div>
+                           <div style={{ textAlign: 'right' }}>
+                             <span style={{ display: 'block', fontSize: '0.88rem', fontWeight: 800, color: configuracion?.color_primario || '#6366f1' }}>
+                               ${a.total.toLocaleString()}
+                             </span>
+                             <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>COP</span>
+                           </div>
+                         </div>
+                       ))
+                     )}
+                   </div>
+                 </div>
+
+                 {/* Tarjeta: Rendimiento de Mayoristas */}
+                 <div className="admin-panel">
+                   <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
+                     <h3 style={{ margin: 0 }}>👑 Clientes Mayoristas</h3>
+                     <p style={{ margin: '0.1rem 0 0 0', color: '#64748b', fontSize: '0.8rem' }}>Compras acumuladas de tus clientes mayoristas</p>
+                   </div>
+                   <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '320px', overflowY: 'auto' }}>
+                     {stats.mayoristasRanking.length === 0 ? (
+                       <div style={{ textAlign: 'center', color: '#94a3b8', padding: '2rem 0' }}>No hay mayoristas registrados todavía</div>
+                     ) : (
+                       stats.mayoristasRanking.map((m, idx) => (
+                         <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0.75rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                           <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#94a3b8', width: '20px', textAlign: 'center' }}>
+                             #{idx + 1}
+                           </div>
+                           <div style={{ width: '36px', height: '36px', borderRadius: '50%', overflow: 'hidden', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                             {m.foto_url ? (
+                               <img src={m.foto_url} alt={m.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                             ) : (
+                               <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0ea5e9' }}>{m.nombre.charAt(0).toUpperCase()}</span>
+                             )}
+                           </div>
+                           <div style={{ flex: 1, minWidth: 0 }}>
+                             <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, color: '#0f172a' }}>{m.nombre}</h4>
+                             <p style={{ margin: '0.1rem 0 0 0', fontSize: '0.75rem', color: '#64748b' }}>
+                               {m.ordersCount} {m.ordersCount === 1 ? 'compra completada' : 'compras completadas'}
+                             </p>
+                           </div>
+                           <div style={{ textAlign: 'right' }}>
+                             <span style={{ display: 'block', fontSize: '0.88rem', fontWeight: 800, color: '#0ea5e9' }}>
+                               ${m.total.toLocaleString()}
+                             </span>
+                             <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>COP</span>
+                           </div>
+                         </div>
+                       ))
                      )}
                    </div>
                  </div>
@@ -5733,36 +6362,6 @@ export default function Admin() {
       {/* MODAL ANALÍTICA ASESOR */}
       {selectedAsesorAnalytics && (() => {
         const a = selectedAsesorAnalytics;
-        const aPhones = (a.telefono || '').split(',').map((p: string) => p.replace(/\D/g, '')).filter(Boolean);
-        const aPedidos = pedidos.filter(p => {
-          const op = (p.linea_whatsapp || '').replace(/\D/g, '');
-          return aPhones.includes(op);
-        });
-        const aLeads = aPedidos.filter(p => p.estado === 'abandonado' || p.estado === 'borrador');
-        const aCompletados = aPedidos.filter(p => p.estado === 'completado');
-        const aPendientes = aPedidos.filter(p => p.estado === 'pendiente' || p.estado === 'interesado');
-        const totalVentas = aCompletados.reduce((s, p) => s + (p.total || 0), 0);
-        const ticketProm = aCompletados.length > 0 ? Math.round(totalVentas / aCompletados.length) : 0;
-        const horasMap: Record<number, number> = {};
-        for (let i = 0; i < 24; i++) horasMap[i] = 0;
-        aCompletados.forEach(p => { const h = new Date(p.created_at).getHours(); horasMap[h] = (horasMap[h] || 0) + 1; });
-        const maxHoraCount = Math.max(1, ...Object.values(horasMap));
-        const horaLabels = ['12am','1','2','3','4','5','6','7am','8','9','10','11','12pm','1','2','3','4','5','6','7pm','8','9','10','11'];
-        const bestHour = Object.entries(horasMap).reduce((best, [h, c]) => c > best[1] ? [h, c] : best, ['0', 0]);
-        const monthsMap: Record<string, number> = {};
-        const now = new Date();
-        for (let i = 5; i >= 0; i--) {
-          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-          monthsMap[`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`] = 0;
-        }
-        aCompletados.forEach(p => {
-          const d = new Date(p.created_at);
-          const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-          if (key in monthsMap) monthsMap[key] = (monthsMap[key] || 0) + 1;
-        });
-        const monthEntries = Object.entries(monthsMap);
-        const maxMonthCount = Math.max(1, ...monthEntries.map(([, c]) => c));
-        const monthNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
         const primaryColor = configuracion?.color_primario || '#6366f1';
         return (
           <div className="modal-overlay" onClick={() => setSelectedAsesorAnalytics(null)} style={{ zIndex: 1100 }}>
@@ -5783,119 +6382,8 @@ export default function Admin() {
                 <button onClick={() => setSelectedAsesorAnalytics(null)}
                   style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
               </div>
-              <div style={{ padding: '1.5rem 1.75rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem' }}>
-                  {[
-                    { label: 'Ventas Completadas', value: aCompletados.length, icon: '✅', color: '#10b981', sub: `$${totalVentas.toLocaleString()} total` },
-                    { label: 'Pendientes de Pago', value: aPendientes.length, icon: '⏳', color: '#eab308', sub: 'Esperando comprobante' },
-                    { label: 'Abandonos', value: aLeads.length, icon: '🔴', color: '#ef4444', sub: 'Borradores / no interesados' },
-                    { label: 'Ticket Promedio', value: `$${ticketProm.toLocaleString()}`, icon: '💰', color: primaryColor, sub: 'Por venta completada' },
-                  ].map((kpi, i) => (
-                    <div key={i} style={{ background: '#f8fafc', borderRadius: '14px', padding: '1rem', border: `2px solid ${kpi.color}22`, position: 'relative', overflow: 'hidden' }}>
-                      <div style={{ position: 'absolute', right: '-8px', top: '-8px', fontSize: '3rem', opacity: 0.1 }}>{kpi.icon}</div>
-                      <div style={{ fontSize: '0.73rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.4rem' }}>{kpi.label}</div>
-                      <div style={{ fontSize: '1.7rem', fontWeight: 800, color: kpi.color, lineHeight: 1 }}>{kpi.value}</div>
-                      <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.3rem' }}>{kpi.sub}</div>
-                    </div>
-                  ))}
-                </div>
-                <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
-                  <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>⏰ Horario de Mayor Venta</h4>
-                  <p style={{ margin: '0 0 1rem 0', color: '#64748b', fontSize: '0.8rem' }}>
-                    {aCompletados.length > 0 ? `Pico máximo: ${horaLabels[Number(bestHour[0])]} (${bestHour[1]} ventas)` : 'Sin datos suficientes'}
-                  </p>
-                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '80px' }}>
-                    {Object.entries(horasMap).map(([h, count]) => {
-                      const pct = (count / maxHoraCount) * 100;
-                      const isWarm = Number(h) >= 8 && Number(h) <= 20;
-                      const isBest = Number(h) === Number(bestHour[0]) && count > 0;
-                      return (
-                        <div key={h} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, minWidth: '18px' }} title={`${horaLabels[Number(h)]}: ${count} ventas`}>
-                          <div style={{ width: '100%', background: '#e2e8f0', borderRadius: '3px 3px 0 0', height: '64px', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
-                            <div style={{ width: '100%', height: `${pct}%`, background: isBest ? 'linear-gradient(180deg,#fbbf24,#f59e0b)' : isWarm ? `${primaryColor}bb` : `${primaryColor}44`, borderRadius: '3px 3px 0 0', transition: 'height 0.8s ease' }} />
-                          </div>
-                          {Number(h) % 4 === 0 && <span style={{ fontSize: '0.5rem', color: '#94a3b8', marginTop: '2px' }}>{horaLabels[Number(h)]}</span>}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
-                    <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>📈 Ventas Últimos 6 Meses</h4>
-                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '100px' }}>
-                      {monthEntries.map(([key, count], idx) => {
-                        const pct = (count / maxMonthCount) * 100;
-                        const mo = parseInt(key.split('-')[1]) - 1;
-                        return (
-                          <div key={key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                            <span style={{ fontSize: '0.7rem', color: '#0f172a', fontWeight: 700 }}>{count > 0 ? count : ''}</span>
-                            <div style={{ width: '100%', background: '#e2e8f0', borderRadius: '6px 6px 0 0', height: '72px', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
-                              <div style={{ width: '100%', height: `${pct}%`, background: `linear-gradient(180deg,${primaryColor},${primaryColor}88)`, borderRadius: '6px 6px 0 0', transition: `height ${0.4 + idx * 0.1}s ease` }} />
-                            </div>
-                            <span style={{ fontSize: '0.65rem', color: '#64748b' }}>{monthNames[mo]}</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                  <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
-                    <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>🥧 Distribución de Pedidos</h4>
-                    {aPedidos.length === 0 ? (
-                      <p style={{ color: '#94a3b8', fontSize: '0.85rem', textAlign: 'center', marginTop: '2rem' }}>Sin pedidos registrados</p>
-                    ) : (() => {
-                      const total = aPedidos.length;
-                      const segs = [
-                        { label: 'Completados', count: aCompletados.length, color: '#10b981' },
-                        { label: 'Pendientes', count: aPendientes.length, color: '#eab308' },
-                        { label: 'Abandonos', count: aLeads.length, color: '#ef4444' },
-                      ];
-                      const r = 40, cx = 60, cy = 55, stroke = 18;
-                      let offset = 0;
-                      const circ = 2 * Math.PI * r;
-                      return (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                          <svg width="120" height="110" viewBox="0 0 120 110">
-                            {segs.map((seg, i) => {
-                              const dash = (seg.count / total) * circ;
-                              const rotate = (offset / total) * 360 - 90;
-                              offset += seg.count;
-                              return <circle key={i} cx={cx} cy={cy} r={r} fill="none" stroke={seg.color} strokeWidth={stroke} strokeDasharray={`${dash} ${circ - dash}`} transform={`rotate(${rotate} ${cx} ${cy})`} />;
-                            })}
-                            <text x={cx} y={cy + 2} textAnchor="middle" dominantBaseline="middle" style={{ fontSize: '14px', fontWeight: 800, fill: '#0f172a' }}>{total}</text>
-                            <text x={cx} y={cy + 16} textAnchor="middle" style={{ fontSize: '8px', fill: '#64748b' }}>pedidos</text>
-                          </svg>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            {segs.map((seg, i) => (
-                              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: seg.color }} />
-                                <span style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 600 }}>{seg.label}: <strong style={{ color: '#0f172a' }}>{seg.count}</strong></span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
-                </div>
-                {aCompletados.length > 0 && (
-                  <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
-                    <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>🕐 Últimas Ventas</h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '200px', overflowY: 'auto' }}>
-                      {[...aCompletados].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 8).map((p, i) => (
-                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                          <div>
-                            <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0f172a' }}>{p.cliente_nombre || 'Cliente'}</span>
-                            <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: '0.5rem' }}>
-                              {new Date(p.created_at).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' })} · {new Date(p.created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          </div>
-                          <span style={{ fontWeight: 800, color: '#10b981', fontSize: '0.88rem' }}>${(p.total || 0).toLocaleString()}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+              <div style={{ padding: '1.75rem' }}>
+                {renderAdvisorStatsView(getAdvisorStats(a))}
               </div>
             </div>
           </div>
@@ -5969,13 +6457,28 @@ function SidebarContent({
 
       <nav className="sidebar-nav" style={{ paddingTop: '0.5rem' }}>
         <div className="sidebar-nav-label">Navegación</div>
-        {role !== 'asesor' && (
+        {role === 'asesor' ? (
+          <>
+            <button className={`nav-item ${activeTab === 'resumen_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('resumen_asesor')}>
+              <span className="nav-icon"><LayoutDashboard size={14} /></span> Resumen
+              {activeTab === 'resumen_asesor' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'pedidos' ? 'active' : ''}`} onClick={() => handleSelectTab('pedidos')}>
+              <span className="nav-icon"><ShoppingBag size={14} /></span> Pedidos
+              {activeTab === 'pedidos' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'perfil_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('perfil_asesor')}>
+              <span className="nav-icon"><Settings size={14} /></span> Mi Perfil
+              {activeTab === 'perfil_asesor' && <span className="active-dot"></span>}
+            </button>
+          </>
+        ) : (
           <>
             <button className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => handleSelectTab('dashboard')}>
               <span className="nav-icon"><LayoutDashboard size={14} /></span> Dashboard
               {activeTab === 'dashboard' && <span className="active-dot"></span>}
             </button>
-             <button className={`nav-item ${activeTab === 'productos' ? 'active' : ''}`} onClick={() => handleSelectTab('productos')}>
+            <button className={`nav-item ${activeTab === 'productos' ? 'active' : ''}`} onClick={() => handleSelectTab('productos')}>
               <span className="nav-icon"><Package size={14} /></span> Productos
               {activeTab === 'productos' && <span className="active-dot"></span>}
             </button>
@@ -5983,17 +6486,11 @@ function SidebarContent({
               <span className="nav-icon"><Tag size={14} /></span> Categorías
               {activeTab === 'categorias' && <span className="active-dot"></span>}
             </button>
+            <button className={`nav-item ${activeTab === 'pedidos' ? 'active' : ''}`} onClick={() => handleSelectTab('pedidos')}>
+              <span className="nav-icon"><ShoppingBag size={14} /></span> Pedidos
+              {activeTab === 'pedidos' && <span className="active-dot"></span>}
+            </button>
           </>
-        )}
-        <button className={`nav-item ${activeTab === 'pedidos' ? 'active' : ''}`} onClick={() => handleSelectTab('pedidos')}>
-          <span className="nav-icon"><ShoppingBag size={14} /></span> Pedidos
-          {activeTab === 'pedidos' && <span className="active-dot"></span>}
-        </button>
-        {role === 'asesor' && (
-          <button className={`nav-item ${activeTab === 'perfil_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('perfil_asesor')}>
-            <span className="nav-icon"><Settings size={14} /></span> Mi Perfil
-            {activeTab === 'perfil_asesor' && <span className="active-dot"></span>}
-          </button>
         )}
         {role !== 'asesor' && (
           <>
