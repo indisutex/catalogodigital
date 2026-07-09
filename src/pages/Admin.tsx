@@ -4,7 +4,7 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const SECRET_PIN = '0000';
@@ -20,6 +20,15 @@ const getGoogleDriveEmbedUrl = (url: string) => {
   const folderMatch = url.match(/\/folders\/([^/?]+)/);
   if (folderMatch && folderMatch[1]) {
     return `https://drive.google.com/embeddedfolderview?id=${folderMatch[1]}#grid`;
+  }
+  return url;
+};
+
+const getGoogleDriveDownloadUrl = (url: string) => {
+  if (!url) return '';
+  const fileMatch = url.match(/\/file\/d\/([^/]+)/);
+  if (fileMatch && fileMatch[1]) {
+    return `https://drive.google.com/uc?export=download&id=${fileMatch[1]}`;
   }
   return url;
 };
@@ -120,6 +129,8 @@ export default function Admin() {
   const [clienteSearchQuery, setClienteSearchQuery] = useState('');
   const [asesores, setAsesores] = useState<Asesor[]>([]);
   const [materiales, setMateriales] = useState<any[]>([]);
+  const [materialFilter, setMaterialFilter] = useState<string>('todos');
+  const [showNotificationsPopover, setShowNotificationsPopover] = useState(false);
   const [nuevoMaterialTitulo, setNuevoMaterialTitulo] = useState('');
   const [nuevoMaterialDesc, setNuevoMaterialDesc] = useState('');
   const [nuevoMaterialTipo, setNuevoMaterialTipo] = useState<'video' | 'imagen' | 'documento'>('video');
@@ -2508,6 +2519,8 @@ export default function Admin() {
     );
   }
 
+  const filteredMateriales = materiales.filter(m => materialFilter === 'todos' || m.tipo === materialFilter);
+
   // ── MAIN DASHBOARD ──
   return (
     <div className="admin-app">
@@ -2614,51 +2627,137 @@ export default function Admin() {
               )
             )}
             {role === 'asesor' && (
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={() => setActiveTab('notificaciones_asesor')}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '0.55rem',
-                  borderRadius: '10px',
-                  border: activeTab === 'notificaciones_asesor' ? '1px solid #fee2e2' : '1px solid #cbd5e1',
-                  cursor: 'pointer',
-                  background: activeTab === 'notificaciones_asesor' ? '#fee2e2' : 'white',
-                  color: activeTab === 'notificaciones_asesor' ? '#ef4444' : '#475569',
-                  position: 'relative',
-                  transition: 'all 0.2s',
-                  width: '38px',
-                  height: '38px',
-                  flexShrink: 0
-                }}
-                title="Notificaciones y Alertas"
-              >
-                <Bell size={18} className={activeNotificationsCount > 0 ? 'pulse-bell' : ''} style={{ color: activeNotificationsCount > 0 ? '#ef4444' : 'inherit' }} />
-                {activeNotificationsCount > 0 && (
-                  <span style={{
-                    position: 'absolute',
-                    top: '-6px',
-                    right: '-6px',
-                    background: '#ef4444',
-                    color: 'white',
-                    fontSize: '0.65rem',
-                    padding: '2px 5px',
-                    borderRadius: '50%',
-                    fontWeight: 800,
-                    border: '2px solid white',
-                    display: 'flex',
+              <div style={{ position: 'relative' }}>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  onClick={() => setShowNotificationsPopover(!showNotificationsPopover)}
+                  style={{
+                    display: 'inline-flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    minWidth: '18px',
-                    height: '18px'
+                    padding: '0.55rem',
+                    borderRadius: '10px',
+                    border: showNotificationsPopover ? '1px solid #fee2e2' : '1px solid #cbd5e1',
+                    cursor: 'pointer',
+                    background: showNotificationsPopover ? '#fee2e2' : 'white',
+                    color: showNotificationsPopover ? '#ef4444' : '#475569',
+                    position: 'relative',
+                    transition: 'all 0.2s',
+                    width: '38px',
+                    height: '38px',
+                    flexShrink: 0
+                  }}
+                  title="Notificaciones y Alertas"
+                >
+                  <Bell size={18} className={activeNotificationsCount > 0 ? 'pulse-bell' : ''} style={{ color: activeNotificationsCount > 0 ? '#ef4444' : 'inherit' }} />
+                  {activeNotificationsCount > 0 && (
+                    <span style={{
+                      position: 'absolute',
+                      top: '-6px',
+                      right: '-6px',
+                      background: '#ef4444',
+                      color: 'white',
+                      fontSize: '0.65rem',
+                      padding: '2px 5px',
+                      borderRadius: '50%',
+                      fontWeight: 800,
+                      border: '2px solid white',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      minWidth: '18px',
+                      height: '18px'
+                    }}>
+                      {activeNotificationsCount}
+                    </span>
+                  )}
+                </button>
+                
+                {showNotificationsPopover && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '120%',
+                    right: 0,
+                    width: '320px',
+                    background: 'white',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '16px',
+                    boxShadow: '0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)',
+                    zIndex: 1000,
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column'
                   }}>
-                    {activeNotificationsCount}
-                  </span>
+                    <div style={{ padding: '1rem', borderBottom: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>Notificaciones</h4>
+                      <button onClick={() => setShowNotificationsPopover(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                        <X size={16} />
+                      </button>
+                    </div>
+                    <div style={{ maxHeight: '350px', overflowY: 'auto', padding: '0.5rem' }}>
+                      {activeNotifications.length === 0 ? (
+                        <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#64748b' }}>
+                          <p style={{ margin: '0 0 0.5rem 0', fontSize: '2rem' }}>🎉</p>
+                          <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700 }}>¡Estás al día!</p>
+                        </div>
+                      ) : (
+                        activeNotifications.map((notif: any) => {
+                          const isDanger = notif.type === 'danger';
+                          const isWarning = notif.type === 'warning';
+                          const isSuccess = notif.type === 'success';
+                          const primaryColor = configuracion?.color_primario || '#6366f1';
+                          
+                          return (
+                            <div key={notif.id} style={{
+                              padding: '0.75rem',
+                              borderBottom: '1px solid #f1f5f9',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '0.5rem',
+                              background: isDanger ? '#fef2f2' : isWarning ? '#fffbeb' : 'transparent',
+                              borderRadius: '8px',
+                              marginBottom: '0.25rem'
+                            }}>
+                              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
+                                <span style={{ fontSize: '1.1rem' }}>
+                                  {isDanger ? '🔴' : isWarning ? '🟡' : isSuccess ? '🟢' : '🔵'}
+                                </span>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
+                                  <h4 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 800, color: '#0f172a' }}>{notif.title}</h4>
+                                  <p style={{ margin: 0, fontSize: '0.78rem', color: '#475569', lineHeight: 1.3 }}>{notif.message}</p>
+                                </div>
+                              </div>
+                              {notif.actionTab && (
+                                <button
+                                  onClick={() => {
+                                    setActiveTab(notif.actionTab);
+                                    setShowNotificationsPopover(false);
+                                  }}
+                                  style={{
+                                    background: isDanger ? '#ef4444' : isWarning ? '#f59e0b' : primaryColor,
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '0.35rem 0.75rem',
+                                    borderRadius: '6px',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    alignSelf: 'flex-start',
+                                    marginLeft: '1.6rem'
+                                  }}
+                                >
+                                  Ir a atender
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
                 )}
-              </button>
+              </div>
             )}
             <button 
               type="button"
@@ -3459,259 +3558,6 @@ export default function Admin() {
             );
           })()}
 
-           {/* ── NOTIFICACIONES ASESOR TAB ── */}
-          {activeTab === 'notificaciones_asesor' && role === 'asesor' && (() => {
-            const currentAsesorData = asesores.find(a => a.telefono === loggedAsesorPhone);
-            if (!currentAsesorData) return <p style={{ color: '#64748b', padding: '2rem', textAlign: 'center' }}>Cargando notificaciones...</p>;
-            
-            const stats = getAdvisorStats(currentAsesorData);
-            const primaryColor = configuracion?.color_primario || '#6366f1';
-
-            return (
-              <div className="admin-panel" style={{ borderRadius: '20px', padding: '1.5rem 1.75rem' }}>
-                <style>{`
-                  @keyframes alertPulseDanger {
-                    0% {
-                      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
-                      border-color: rgba(239, 68, 68, 0.7);
-                    }
-                    50% {
-                      box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
-                      border-color: rgba(239, 68, 68, 0.3);
-                    }
-                    100% {
-                      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
-                      border-color: rgba(239, 68, 68, 0.7);
-                    }
-                  }
-                  @keyframes alertPulseWarning {
-                    0% {
-                      box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
-                      border-color: rgba(245, 158, 11, 0.7);
-                    }
-                    50% {
-                      box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
-                      border-color: rgba(245, 158, 11, 0.3);
-                    }
-                    100% {
-                      box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
-                      border-color: rgba(245, 158, 11, 0.7);
-                    }
-                  }
-                  .alert-card-danger {
-                    animation: alertPulseDanger 2s infinite ease-in-out;
-                  }
-                  .alert-card-warning {
-                    animation: alertPulseWarning 2s infinite ease-in-out;
-                  }
-                  .notif-hover {
-                    transition: all 0.25s ease-in-out;
-                  }
-                  .notif-hover:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 8px 16px -3px rgba(0, 0, 0, 0.06), 0 3px 6px -2px rgba(0, 0, 0, 0.03);
-                  }
-                `}</style>
-
-                <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', textAlign: 'left' }}>
-                  <div style={{ background: '#fee2e2', padding: '0.5rem', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Lightbulb size={24} style={{ color: '#ef4444' }} />
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left' }}>
-                    <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#0f172a', textAlign: 'left' }}>Centro de Notificaciones y Alertas</h2>
-                    <p style={{ margin: '0.15rem 0 0 0', color: '#64748b', fontSize: '0.85rem', textAlign: 'left' }}>Alertas de tiempo de respuesta y recordatorios de retargeting</p>
-                  </div>
-                </div>
-
-                <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                  {/* Notifications list */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                    <h3 style={{ margin: '0 0 0.25rem 0', fontSize: '1rem', fontWeight: 800, color: '#1e293b', textAlign: 'left' }}>Alertas Activas ({activeNotifications.length})</h3>
-                    {activeNotifications.length === 0 ? (
-                      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '2.5rem 2rem', textAlign: 'center', color: '#64748b' }}>
-                        <p style={{ margin: '0 0 0.5rem 0', fontSize: '2rem' }}>🎉</p>
-                        <p style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, color: '#475569' }}>¡Estás al día!</p>
-                        <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>No tienes tareas ni alertas pendientes de respuesta en este momento.</p>
-                      </div>
-                    ) : (
-                      activeNotifications.map((notif: any) => {
-                        const isDanger = notif.type === 'danger';
-                        const isWarning = notif.type === 'warning';
-                        const isSuccess = notif.type === 'success';
-
-                        let cardClass = "notif-hover ";
-                        if (isDanger) cardClass += "alert-card-danger";
-                        else if (isWarning) cardClass += "alert-card-warning";
-
-                        return (
-                          <div 
-                            key={notif.id}
-                            className={cardClass}
-                            style={{
-                              background: isDanger 
-                                ? 'linear-gradient(135deg, #fff5f5, #fef2f2)' 
-                                : isWarning 
-                                  ? 'linear-gradient(135deg, #fffbeb, #fffcf0)' 
-                                  : isSuccess 
-                                    ? 'linear-gradient(135deg, #f0fdf4, #dcfce7)' 
-                                    : 'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
-                              border: `1.5px solid ${isDanger ? '#f87171' : isWarning ? '#fbbf24' : isSuccess ? '#4ade80' : '#60a5fa'}`,
-                              borderRadius: '16px',
-                              padding: '1.1rem 1.25rem',
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              gap: '1rem',
-                              textAlign: 'left',
-                              position: 'relative',
-                              overflow: 'hidden'
-                            }}
-                          >
-                            {/* Decorative background symbol */}
-                            <div style={{
-                              position: 'absolute',
-                              right: '-10px',
-                              top: '-10px',
-                              fontSize: '4.5rem',
-                              opacity: 0.05,
-                              pointerEvents: 'none',
-                              userSelect: 'none'
-                            }}>
-                              {isDanger ? '🚨' : isWarning ? '⏳' : isSuccess ? '🎉' : '🔔'}
-                            </div>
-
-                            <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'flex-start', flex: 1, zIndex: 1 }}>
-                              <span style={{ fontSize: '1.3rem', marginTop: '0.1rem' }}>
-                                {isDanger ? '🔴' : isWarning ? '🟡' : isSuccess ? '🟢' : '🔵'}
-                              </span>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                                <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, color: '#0f172a' }}>{notif.title}</h4>
-                                <p style={{ margin: 0, fontSize: '0.82rem', color: '#334155', lineHeight: 1.45, fontWeight: 500 }}>{notif.message}</p>
-                                <span style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.25rem', fontWeight: 600 }}>
-                                  ⏰ {new Date(notif.time).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                              </div>
-                            </div>
-
-                            {notif.actionTab && (
-                              <button
-                                onClick={() => setActiveTab(notif.actionTab)}
-                                style={{
-                                  background: isDanger ? '#ef4444' : isWarning ? '#f59e0b' : primaryColor,
-                                  color: 'white',
-                                  border: 'none',
-                                  padding: '0.5rem 1rem',
-                                  borderRadius: '10px',
-                                  fontSize: '0.8rem',
-                                  fontWeight: 800,
-                                  cursor: 'pointer',
-                                  whiteSpace: 'nowrap',
-                                  boxShadow: '0 4px 6px -1px rgba(0,0,0,0.06)',
-                                  transition: 'all 0.2s',
-                                  zIndex: 1
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.transform = 'translateY(-1px)';
-                                  e.currentTarget.style.boxShadow = '0 6px 8px -1px rgba(0,0,0,0.1)';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.transform = 'none';
-                                  e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.06)';
-                                }}
-                              >
-                                Ir a atender →
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-
-                  {/* Collapsible Sales Tips */}
-                  <details 
-                    style={{ 
-                      border: '1.5px solid #cbd5e1', 
-                      borderRadius: '16px', 
-                      overflow: 'hidden',
-                      marginTop: '0.75rem',
-                      background: '#f8fafc',
-                      boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)'
-                    }}
-                  >
-                    <summary 
-                      style={{ 
-                        padding: '1.1rem 1.4rem', 
-                        fontSize: '0.96rem', 
-                        fontWeight: 800, 
-                        color: '#1e293b', 
-                        background: '#f1f5f9', 
-                        cursor: 'pointer', 
-                        display: 'flex', 
-                        justifyContent: 'space-between', 
-                        alignItems: 'center', 
-                        userSelect: 'none' 
-                      }}
-                    >
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>💡 Consejos de Venta & Metas Diarias</span>
-                      <span style={{ fontSize: '0.85rem', color: '#64748b' }}>▼</span>
-                    </summary>
-                    <div style={{ padding: '1.5rem', background: 'white', borderTop: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                      {/* Daily specific advisor advise */}
-                      {(() => {
-                        const bestDay = stats.bestDay as { day: number; name: string; count: number };
-                        const bestHour = stats.bestHour as [string, number];
-                        const aLeads = stats.aLeads;
-                        const topSellingProducts = stats.topSellingProducts;
-                        const today = new Date();
-                        const dayOfWeek = today.getDay();
-                        const horaLabels = [
-                          '12:00 AM', '1:00 AM', '2:00 AM', '3:00 AM', '4:00 AM', '5:00 AM', '6:00 AM', '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM',
-                          '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM', '10:00 PM', '11:00 PM'
-                        ];
-                        const topProdName = topSellingProducts.length > 0 ? topSellingProducts[0].nombre : 'ninguno aún';
-                        const topProdQty = topSellingProducts.length > 0 ? topSellingProducts[0].cantidad : 0;
-
-                        return (
-                          <>
-                            {dayOfWeek === 1 && (
-                              <div style={{ background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', border: '1.5px solid #bfdbfe', borderRadius: '12px', padding: '1.1rem 1.25rem', textAlign: 'left', position: 'relative' }}>
-                                <div style={{ position: 'absolute', right: '15px', top: '10px', fontSize: '2.5rem', opacity: 0.15 }}>📊</div>
-                                <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e40af', fontWeight: 800, fontSize: '0.92rem' }}>📊 Resumen de Ventas de la Semana</h4>
-                                <p style={{ margin: 0, fontSize: '0.84rem', color: '#1e3a8a', lineHeight: 1.5, fontWeight: 500 }}>
-                                  Tu mejor día histórico de ventas es el <strong>{bestDay.count > 0 ? bestDay.name : 'fin de semana'}</strong> con <strong>{bestDay.count} pedidos</strong>. Aprovecha para publicar contenido y pautar en esos días.
-                                </p>
-                              </div>
-                            )}
-
-                            <div style={{ background: 'linear-gradient(135deg, #fffbeb, #fef3c7)', border: '1.5px solid #fde68a', borderRadius: '12px', padding: '1.1rem 1.25rem', textAlign: 'left', position: 'relative' }}>
-                              <div style={{ position: 'absolute', right: '15px', top: '10px', fontSize: '2.5rem', opacity: 0.15 }}>🎯</div>
-                              <h4 style={{ margin: '0 0 0.4rem 0', color: '#b45309', fontWeight: 800, fontSize: '0.92rem' }}>🎯 Meta para hoy ({['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][dayOfWeek]})</h4>
-                              <p style={{ margin: 0, fontSize: '0.84rem', color: '#78350f', lineHeight: 1.5, fontWeight: 500 }}>
-                                {(() => {
-                                  switch (dayOfWeek) {
-                                    case 0: return 'Planifica tu semana y define tus metas de comisiones.';
-                                    case 1: return `Contacta a tus ${aLeads.length} carritos abandonados. ¡Recupera ventas perdidas hoy!`;
-                                    case 2: return 'Haz seguimiento a clientes con estados "Pendiente de Pago".';
-                                    case 3: return 'Saluda a tus clientes usando su nombre para aumentar la confianza.';
-                                    case 4: return `Ofrece el artículo de alta demanda: "${topProdName}" (${topProdQty} vendidos) como recomendación.`;
-                                    case 5: return `Tu pico máximo de ventas suele ser a las ${bestHour && Number(bestHour[1]) > 0 ? `${horaLabels[Number(bestHour[0])]}` : 'las tardes'}. Mantente alerta.`;
-                                    case 6: return 'Responde al instante: Las respuestas rápidas multiplican por 3 el cierre de ventas.';
-                                    default: return 'Actualiza tu stock y verifica las comisiones acumuladas.';
-                                  }
-                                })()}
-                              </p>
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
-                  </details>
-                </div>
-              </div>
-            );
-          })()}
-
           {/* ── PERFIL ASESOR TAB ── */}
           {activeTab === 'perfil_asesor' && (role === 'asesor' || role === 'mayorista') && (
             <div className="admin-panel">
@@ -3882,15 +3728,22 @@ export default function Admin() {
                 <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Visualiza, comparte y descarga los recursos de Google Drive provistos por el negocio</p>
               </div>
               <div className="panel-body">
-                {materiales.length === 0 ? (
+                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+                  <button type="button" className={materialFilter === 'todos' ? 'btn-primary' : 'btn-secondary'} onClick={() => setMaterialFilter('todos')} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '20px' }}>Todos</button>
+                  <button type="button" className={materialFilter === 'video' ? 'btn-primary' : 'btn-secondary'} onClick={() => setMaterialFilter('video')} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '20px' }}>🎥 Videos</button>
+                  <button type="button" className={materialFilter === 'imagen' ? 'btn-primary' : 'btn-secondary'} onClick={() => setMaterialFilter('imagen')} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '20px' }}>🖼️ Imágenes</button>
+                  <button type="button" className={materialFilter === 'documento' ? 'btn-primary' : 'btn-secondary'} onClick={() => setMaterialFilter('documento')} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '20px' }}>📄 Documentos</button>
+                  <button type="button" className={materialFilter === 'carpeta' ? 'btn-primary' : 'btn-secondary'} onClick={() => setMaterialFilter('carpeta')} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '20px' }}>📁 Carpetas</button>
+                </div>
+                {filteredMateriales.length === 0 ? (
                   <div style={{ padding: '3rem 1rem', textAlign: 'center', color: '#64748b' }}>
                     <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📁</div>
                     <h4 style={{ margin: '0 0 0.25rem 0', color: '#0f172a' }}>No hay material de apoyo disponible</h4>
-                    <p style={{ margin: 0, fontSize: '0.85rem' }}>El administrador aún no ha registrado recursos de Google Drive.</p>
+                    <p style={{ margin: 0, fontSize: '0.85rem' }}>No se encontraron recursos con los filtros seleccionados.</p>
                   </div>
                 ) : (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
-                    {materiales.map((m) => {
+                    {filteredMateriales.map((m) => {
                       const embedUrl = getGoogleDriveEmbedUrl(m.url);
                       return (
                         <div key={m.id} style={{ border: '1px solid #e2e8f0', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
@@ -3941,6 +3794,18 @@ export default function Admin() {
                               >
                                 <Eye size={12} /> Abrir Drive
                               </a>
+                              {m.tipo !== 'carpeta' && (
+                                <a
+                                  href={getGoogleDriveDownloadUrl(m.url)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="btn-secondary"
+                                  style={{ padding: '0.45rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#0ea5e9', borderColor: '#e0f2fe', background: '#f0f9ff' }}
+                                  title="Descargar Recurso"
+                                >
+                                  <Download size={12} />
+                                </a>
+                              )}
                               <button
                                 type="button"
                                 onClick={() => {
@@ -4654,15 +4519,22 @@ export default function Admin() {
                   <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Listado de materiales de apoyo activos para el equipo de ventas</p>
                 </div>
                 <div className="panel-body">
-                  {materiales.length === 0 ? (
+                  <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+                    <button type="button" className={materialFilter === 'todos' ? 'btn-primary' : 'btn-secondary'} onClick={() => setMaterialFilter('todos')} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '20px' }}>Todos</button>
+                    <button type="button" className={materialFilter === 'video' ? 'btn-primary' : 'btn-secondary'} onClick={() => setMaterialFilter('video')} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '20px' }}>🎥 Videos</button>
+                    <button type="button" className={materialFilter === 'imagen' ? 'btn-primary' : 'btn-secondary'} onClick={() => setMaterialFilter('imagen')} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '20px' }}>🖼️ Imágenes</button>
+                    <button type="button" className={materialFilter === 'documento' ? 'btn-primary' : 'btn-secondary'} onClick={() => setMaterialFilter('documento')} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '20px' }}>📄 Documentos</button>
+                    <button type="button" className={materialFilter === 'carpeta' ? 'btn-primary' : 'btn-secondary'} onClick={() => setMaterialFilter('carpeta')} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '20px' }}>📁 Carpetas</button>
+                  </div>
+                  {filteredMateriales.length === 0 ? (
                     <div style={{ padding: '3rem 1rem', textAlign: 'center', color: '#64748b' }}>
                       <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📁</div>
                       <h4 style={{ margin: '0 0 0.25rem 0', color: '#0f172a' }}>No hay material de apoyo</h4>
-                      <p style={{ margin: 0, fontSize: '0.85rem' }}>Registra enlaces de Google Drive arriba para que tus vendedores los utilicen.</p>
+                      <p style={{ margin: 0, fontSize: '0.85rem' }}>No se encontraron recursos con los filtros seleccionados.</p>
                     </div>
                   ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
-                      {materiales.map((m) => {
+                      {filteredMateriales.map((m) => {
                         const embedUrl = getGoogleDriveEmbedUrl(m.url);
                         return (
                           <div key={m.id} style={{ border: '1px solid #e2e8f0', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
@@ -4713,6 +4585,18 @@ export default function Admin() {
                                 >
                                   <Eye size={12} /> Abrir Drive
                                 </a>
+                                {m.tipo !== 'carpeta' && (
+                                  <a
+                                    href={getGoogleDriveDownloadUrl(m.url)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="btn-secondary"
+                                    style={{ padding: '0.45rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', color: '#0ea5e9', borderColor: '#e0f2fe', background: '#f0f9ff' }}
+                                    title="Descargar Recurso"
+                                  >
+                                    <Download size={12} />
+                                  </a>
+                                )}
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -6985,7 +6869,7 @@ export default function Admin() {
                                         {ped.pantallazo_url ? (
                                           <span style={{ fontSize: '0.68rem', background: '#e0f2fe', color: '#0369a1', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>✅ Pago</span>
                                         ) : (
-                                          <span style={{ fontSize: '0.68rem', background: '#fffbeb', color: '#b45309', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>⏳ Espera</span>
+                                          <span style={{ fontSize: '0.68rem', background: '#fffbeb', color: '#b45309', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>⏳ Pago en Espera</span>
                                         )}
                                         <span style={{ fontSize: '0.68rem', background: '#f1f5f9', color: '#475569', padding: '2px 6px', borderRadius: '6px', fontWeight: 600 }}>
                                           📅 {new Date(ped.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'numeric', year: '2-digit' })}
@@ -7081,7 +6965,7 @@ export default function Admin() {
                                       <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 800, color: '#14532d' }}>💰 <span style={{ color: '#16a34a' }}>${ped.total.toLocaleString()}</span></p>
                                       
                                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
-                                        <span style={{ fontSize: '0.68rem', background: '#dcfce7', color: '#166534', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>✓ Verificado</span>
+                                        <span style={{ fontSize: '0.68rem', background: '#dcfce7', color: '#166534', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>✓ Pago Verificado</span>
                                         <span style={{ fontSize: '0.68rem', background: '#e8f5e9', color: '#2e7d32', padding: '2px 6px', borderRadius: '6px', fontWeight: 600 }}>
                                           📅 {new Date(ped.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'numeric', year: '2-digit' })}
                                         </span>
