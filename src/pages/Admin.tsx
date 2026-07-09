@@ -113,6 +113,17 @@ export default function Admin() {
   const [editingAsesorPin, setEditingAsesorPin] = useState('');
   const [nuevoAsesorFotoUrl, setNuevoAsesorFotoUrl] = useState('');
   const [editingAsesorFotoUrl, setEditingAsesorFotoUrl] = useState('');
+  // Mayorista states
+  const [nuevoMayoristaNombre, setNuevoMayoristaNombre] = useState('');
+  const [nuevoMayoristaTelefonos, setNuevoMayoristaTelefonos] = useState<string[]>(['']);
+  const [nuevoMayoristaPin, setNuevoMayoristaPin] = useState(() => Math.floor(1000 + Math.random() * 9000).toString());
+  const [nuevoMayoristaFotoUrl, setNuevoMayoristaFotoUrl] = useState('');
+  const [mayoristaBuscador, setMayoristaBuscador] = useState('');
+  const [editingMayoristaId, setEditingMayoristaId] = useState<string | null>(null);
+  const [editingMayoristaNombre, setEditingMayoristaNombre] = useState('');
+  const [editingMayoristaTelefonos, setEditingMayoristaTelefonos] = useState<string[]>(['']);
+  const [editingMayoristaPin, setEditingMayoristaPin] = useState('');
+  const [editingMayoristaFotoUrl, setEditingMayoristaFotoUrl] = useState('');
 
   // POS States
   const [posCart, setPosCart] = useState<any[]>([]);
@@ -268,20 +279,20 @@ export default function Admin() {
     });
 
     return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', verticalAlign: 'middle' }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', verticalAlign: 'middle' }}>
         {match?.foto_url ? (
           <img 
             src={match.foto_url} 
             alt={name} 
-            style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover', border: '1px solid #cbd5e1' }} 
+            style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #cbd5e1', flexShrink: 0 }} 
             onError={(e) => { e.currentTarget.style.display = 'none'; }}
           />
         ) : (
-          <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '22px', height: '22px', borderRadius: '50%', background: '#e2e8f0', fontSize: '0.7rem', color: '#475569', fontWeight: 700 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '40px', height: '40px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary-color,#6366f1), #8b5cf6)', fontSize: '1rem', color: 'white', fontWeight: 700, flexShrink: 0 }}>
             {name.charAt(0).toUpperCase()}
           </span>
         )}
-        <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>{name}</span>
+        <span style={{ fontSize: '0.9rem', color: '#0f172a', fontWeight: 700 }}>{name}</span>
       </span>
     );
   };
@@ -3719,6 +3730,274 @@ export default function Admin() {
               </div>
             </div>
           )}
+
+          {/* ── MAYORISTAS TAB ── */}
+          {activeTab === 'mayoristas' && (() => {
+            const mayoristas = asesores.filter(a => a.tipo === 'mayorista');
+            const filteredMayoristas = mayoristaBuscador.trim()
+              ? mayoristas.filter(m =>
+                  (m.nombre || '').toLowerCase().includes(mayoristaBuscador.toLowerCase()) ||
+                  (m.telefono || '').includes(mayoristaBuscador)
+                )
+              : mayoristas;
+
+            async function handleCrearMayorista(e: React.FormEvent) {
+              e.preventDefault();
+              const tels = nuevoMayoristaTelefonos.map(t => t.trim()).filter(Boolean);
+              if (!nuevoMayoristaNombre.trim() || tels.length === 0) {
+                showToast('Ingresa nombre y al menos un teléfono.', 'error'); return;
+              }
+              setLoading(true);
+              try {
+                const cleanPhone = tels.map(n => n.replace(/\D/g, '')).filter(Boolean).join(',');
+                const { data, error } = await supabase.from('asesores').insert({
+                  nombre: nuevoMayoristaNombre.trim(),
+                  telefono: cleanPhone,
+                  pin: nuevoMayoristaPin.trim() || '1234',
+                  foto_url: nuevoMayoristaFotoUrl.trim() || null,
+                  tipo: 'mayorista',
+                  tenant_id: getTenantId()
+                }).select().single();
+                if (error) throw error;
+                setAsesores(prev => [data, ...prev]);
+                setNuevoMayoristaNombre(''); setNuevoMayoristaTelefonos(['']); setNuevoMayoristaFotoUrl('');
+                setNuevoMayoristaPin(Math.floor(1000 + Math.random() * 9000).toString());
+                showToast('Mayorista registrado ✓', 'success');
+              } catch (err: any) { showToast('Error: ' + err.message, 'error'); }
+              finally { setLoading(false); }
+            }
+
+            async function handleGuardarMayorista(id: string) {
+              const tels = editingMayoristaTelefonos.map(t => t.trim()).filter(Boolean);
+              if (!editingMayoristaNombre.trim() || tels.length === 0) {
+                showToast('Nombre y teléfono requeridos.', 'error'); return;
+              }
+              const cleanPhone = tels.map(n => n.replace(/\D/g, '')).filter(Boolean).join(',');
+              try {
+                const { error } = await supabase.from('asesores').update({
+                  nombre: editingMayoristaNombre.trim(),
+                  telefono: cleanPhone,
+                  pin: editingMayoristaPin.trim(),
+                  foto_url: editingMayoristaFotoUrl.trim() || null
+                }).eq('id', id);
+                if (error) throw error;
+                setAsesores(prev => prev.map(a => a.id === id ? { ...a, nombre: editingMayoristaNombre.trim(), telefono: cleanPhone, pin: editingMayoristaPin.trim(), foto_url: editingMayoristaFotoUrl.trim() || undefined } : a));
+                setEditingMayoristaId(null);
+                showToast('Mayorista actualizado ✓', 'success');
+              } catch (err: any) { showToast('Error: ' + err.message, 'error'); }
+            }
+
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                {/* Formulario Registro */}
+                <div className="admin-panel">
+                  <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
+                    <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
+                      <Users size={18} /> Registrar Nuevo Mayorista
+                    </h3>
+                    <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>
+                      Crea un acceso de catálogo con precios mayoristas para este cliente especial
+                    </p>
+                  </div>
+                  <div className="panel-body">
+                    <form onSubmit={handleCrearMayorista} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', alignItems: 'start' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Nombre del Mayorista</label>
+                        <input type="text" required placeholder="Ej: Distribuidora López" value={nuevoMayoristaNombre}
+                          onChange={e => setNuevoMayoristaNombre(e.target.value)}
+                          style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }} />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Números de WhatsApp</label>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          {nuevoMayoristaTelefonos.map((tel, idx) => (
+                            <div key={idx} style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+                              <input type="text" required placeholder="Ej: 3123456789" value={tel}
+                                onChange={e => { const t = [...nuevoMayoristaTelefonos]; t[idx] = e.target.value; setNuevoMayoristaTelefonos(t); }}
+                                style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none', flex: 1 }} />
+                              {nuevoMayoristaTelefonos.length > 1 && (
+                                <button type="button" onClick={() => setNuevoMayoristaTelefonos(nuevoMayoristaTelefonos.filter((_, i) => i !== idx))}
+                                  style={{ background: '#fee2e2', border: '1px solid #fca5a5', color: '#ef4444', padding: '0.6rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                        <button type="button" onClick={() => setNuevoMayoristaTelefonos([...nuevoMayoristaTelefonos, ''])}
+                          style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', marginTop: '0.25rem', padding: '0.2rem 0' }}>+ Añadir más líneas</button>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>PIN de Acceso (4 dígitos)</label>
+                        <input type="text" required maxLength={6} placeholder="Ej: 4321" value={nuevoMayoristaPin}
+                          onChange={e => setNuevoMayoristaPin(e.target.value)}
+                          style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }} />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                        <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'transparent', userSelect: 'none' }}>Spacer</div>
+                        <button type="submit" className="btn-primary" disabled={loading}
+                          style={{ padding: '0.62rem', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontWeight: 700, height: '43px' }}>
+                          <Plus size={16} /> Registrar Mayorista
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+
+                {/* Listado */}
+                <div className="admin-panel">
+                  <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1rem' }}>
+                    <div>
+                      <h3 style={{ margin: 0 }}>📦 Mayoristas Registrados</h3>
+                      <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Clientes con acceso a precios y catálogo mayorista</p>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f1f5f9', padding: '0.4rem 0.8rem', borderRadius: '10px', border: '1px solid #e2e8f0', minWidth: '260px' }}>
+                      <Search size={16} style={{ color: '#64748b' }} />
+                      <input type="text" placeholder="Buscar mayorista..." value={mayoristaBuscador}
+                        onChange={e => setMayoristaBuscador(e.target.value)}
+                        style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '0.84rem', width: '100%', color: '#0f172a' }} />
+                      {mayoristaBuscador && <button type="button" onClick={() => setMayoristaBuscador('')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>}
+                    </div>
+                  </div>
+                  <div className="panel-body" style={{ overflowX: 'auto' }}>
+                    {filteredMayoristas.length === 0 ? (
+                      <div className="empty-state" style={{ padding: '3rem 1rem', textAlign: 'center' }}>
+                        <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📦</div>
+                        <h4 style={{ color: '#0f172a', margin: '0 0 0.25rem 0' }}>No hay mayoristas registrados</h4>
+                        <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>
+                          {mayoristaBuscador ? 'Prueba con otro término.' : 'Usa el formulario de arriba para agregar tu primer mayorista.'}
+                        </p>
+                      </div>
+                    ) : (
+                      <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '2px solid #f1f5f9', background: '#f8fafc' }}>
+                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Mayorista</th>
+                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Línea WhatsApp</th>
+                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>PIN de Acceso</th>
+                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Pedidos</th>
+                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'right' }}>Total Compras</th>
+                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Enlace Catálogo Mayorista</th>
+                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredMayoristas.map(m => {
+                            const mOrders = pedidos.filter(p => {
+                              const op = p.linea_whatsapp?.replace(/\D/g, '');
+                              const mPhones = (m.telefono || '').split(',').map((ph: string) => ph.replace(/\D/g, '')).filter(Boolean);
+                              return op && mPhones.includes(op);
+                            });
+                            const totalCompras = mOrders.filter(p => p.estado === 'completado').reduce((s, p) => s + (p.total || 0), 0);
+                            const isEd = editingMayoristaId === m.id;
+                            return (
+                              <tr key={m.id} style={{ borderBottom: '1px solid #f1f5f9' }} className="table-row-hover">
+                                <td style={{ padding: '1rem', fontWeight: 700, color: '#0f172a' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                    {m.foto_url ? (
+                                      <img src={m.foto_url} alt={m.nombre} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '1px solid #e2e8f0' }} />
+                                    ) : (
+                                      <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #0ea5e9, #6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 'bold', color: 'white' }}>
+                                        {m.nombre.charAt(0).toUpperCase()}
+                                      </div>
+                                    )}
+                                    <div>
+                                      {isEd ? (
+                                        <input type="text" value={editingMayoristaNombre} onChange={e => setEditingMayoristaNombre(e.target.value)}
+                                          style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', width: '130px' }} />
+                                      ) : m.nombre}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td style={{ padding: '1rem' }}>
+                                  {isEd ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                                      {editingMayoristaTelefonos.map((tel, idx) => (
+                                        <div key={idx} style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                                          <input type="text" value={tel} onChange={e => { const t = [...editingMayoristaTelefonos]; t[idx] = e.target.value; setEditingMayoristaTelefonos(t); }}
+                                            placeholder="3123456789" style={{ padding: '0.25rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', width: '110px' }} />
+                                          {editingMayoristaTelefonos.length > 1 && (
+                                            <button type="button" onClick={() => setEditingMayoristaTelefonos(editingMayoristaTelefonos.filter((_, i) => i !== idx))}
+                                              style={{ background: '#fee2e2', border: 'none', color: '#ef4444', borderRadius: '4px', cursor: 'pointer', padding: '0.25rem' }}>✕</button>
+                                          )}
+                                        </div>
+                                      ))}
+                                      <button type="button" onClick={() => setEditingMayoristaTelefonos([...editingMayoristaTelefonos, ''])}
+                                        style={{ background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', alignSelf: 'flex-start' }}>+ Añadir línea</button>
+                                    </div>
+                                  ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                                      {(m.telefono || '').split(',').map((p: string) => p.trim()).filter(Boolean).map((phone: string, idx: number) => (
+                                        <a key={idx} href={`https://wa.me/${phone}`} target="_blank" rel="noopener noreferrer"
+                                          style={{ color: '#10b981', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem' }}>
+                                          <Phone size={12} /> {phone}
+                                        </a>
+                                      ))}
+                                    </div>
+                                  )}
+                                </td>
+                                <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                  {isEd ? (
+                                    <input type="text" value={editingMayoristaPin} onChange={e => setEditingMayoristaPin(e.target.value)}
+                                      style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', width: '70px', textAlign: 'center' }} />
+                                  ) : (
+                                    <span style={{ fontFamily: 'monospace', fontWeight: 600, color: '#475569', background: '#f1f5f9', padding: '0.2rem 0.5rem', borderRadius: '6px' }}>{m.pin || '1234'}</span>
+                                  )}
+                                </td>
+                                <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 600, color: '#475569' }}>{mOrders.length}</td>
+                                <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 800, color: '#0ea5e9' }}>${totalCompras.toLocaleString()}</td>
+                                <td style={{ padding: '1rem' }}>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                                    {(m.telefono || '').split(',').map((p: string) => p.trim()).filter(Boolean).map((phone: string, idx: number) => {
+                                      const link = `${window.location.origin}/${getTenantId()}?ws=${phone}&tipo=mayorista`;
+                                      return (
+                                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                          <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, minWidth: '90px' }}>{phone}:</span>
+                                          <input type="text" readOnly value={link}
+                                            style={{ padding: '0.25rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.75rem', width: '150px', background: '#f8fafc', color: '#64748b' }}
+                                            onClick={e => (e.target as HTMLInputElement).select()} />
+                                          <button type="button" onClick={() => { navigator.clipboard.writeText(link); showToast(`Enlace mayorista copiado ✓`, 'success'); }}
+                                            className="btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center', gap: '0.2rem', whiteSpace: 'nowrap' }}>
+                                            <Copy size={10} /> Copiar
+                                          </button>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </td>
+                                <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                  <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
+                                    {isEd ? (
+                                      <>
+                                        <button type="button" onClick={() => handleGuardarMayorista(m.id)} className="btn-primary"
+                                          style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', fontWeight: 700 }}>Guardar</button>
+                                        <button type="button" onClick={() => setEditingMayoristaId(null)} className="btn-secondary"
+                                          style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}>Cancelar</button>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <button type="button" onClick={() => {
+                                          setEditingMayoristaId(m.id);
+                                          setEditingMayoristaNombre(m.nombre);
+                                          setEditingMayoristaTelefonos((m.telefono || '').split(',').map((t: string) => t.trim()).filter(Boolean));
+                                          setEditingMayoristaPin(m.pin || '1234');
+                                          setEditingMayoristaFotoUrl(m.foto_url || '');
+                                        }} className="btn-secondary" style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}>Editar</button>
+                                        <button type="button" onClick={() => handleEliminarAsesor(m.id)} className="btn-secondary"
+                                          style={{ color: '#ef4444', borderColor: '#fee2e2', background: '#fef2f2', padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}><Trash2 size={12} /></button>
+                                      </>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* ── DASHBOARD TAB ── */}
           {activeTab === 'dashboard' && (
