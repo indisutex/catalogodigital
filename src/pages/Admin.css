@@ -1311,4 +1311,18 @@ body {
   }
 }
 
+@keyframes pulseBell {
+  0% { transform: scale(1); }
+  10% { transform: scale(0.9) rotate(-10deg); }
+  20% { transform: scale(1.1) rotate(10deg); }
+  30% { transform: scale(0.95) rotate(-10deg); }
+  40% { transform: scale(1.05) rotate(10deg); }
+  50% { transform: scale(1) rotate(0deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+
+.pulse-bell {
+  animation: pulseBell 1.6s infinite ease-in-out;
+}
+
 

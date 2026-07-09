@@ -4,7 +4,7 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Cloud } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const SECRET_PIN = '0000';
@@ -39,7 +39,7 @@ const emptyProduct: ProductFormData = {
   stock: 0
 };
 
-type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor';
+type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor';
 
 type Toast = { message: string; type: 'success' | 'error' } | null;
 
@@ -82,7 +82,7 @@ export default function Admin() {
     const defaultTab = (localStorage.getItem(`admin_role_${getTenantId()}`) === 'asesor') ? 'pedidos' : 'productos';
     const saved = localStorage.getItem('admin_active_tab') as string;
     if (saved === 'perfil_admin' || saved === 'perfil_admin_tab') return 'dashboard';
-    const allowedTabs: string[] = ['dashboard', 'productos', 'categorias', 'pedidos', 'clientes', 'asesores', 'mayoristas', 'pos', 'siigo', 'config', 'perfil_asesor', 'resumen_asesor'];
+    const allowedTabs: string[] = ['dashboard', 'productos', 'categorias', 'pedidos', 'clientes', 'asesores', 'mayoristas', 'pos', 'siigo', 'config', 'perfil_asesor', 'resumen_asesor', 'notificaciones_asesor'];
     if (saved && !allowedTabs.includes(saved)) return defaultTab;
     return (saved as TabType) || defaultTab;
   });
@@ -103,6 +103,108 @@ export default function Admin() {
   const [clientes, setClientes] = useState<any[]>([]);
   const [clienteSearchQuery, setClienteSearchQuery] = useState('');
   const [asesores, setAsesores] = useState<Asesor[]>([]);
+  const currentAsesor = useMemo(() => {
+    return role === 'asesor' ? asesores.find(a => a.id === localStorage.getItem(`admin_asesor_id_${getTenantId()}`)) : null;
+  }, [role, asesores]);
+
+  const getMotivationalPhrase = (asesorId: string) => {
+    const phrases = [
+      "¡Cada cliente es una oportunidad para alcanzar tus metas! ¡A darlo todo hoy! 🚀",
+      "¡El éxito llega a quienes se atreven a actuar! ¡Haz que hoy cuente! 💎",
+      "¡Tu energía y entusiasmo son tus mejores herramientas de venta! ✨",
+      "¡La persistencia rompe barreras! Hoy conquistarás nuevas ventas. 🏆",
+      "¡La excelencia no es un acto, es un hábito! ¡A brillar hoy! 🌟",
+      "¡Enfócate en aportar valor y las ventas llegarán solas! 💪",
+      "¡Cada 'no' te acerca un paso más al próximo 'sí'! ¡Sigue adelante! 🎯",
+      "¡Hoy es el día perfecto para superar tus límites! ¡Vamos equipo! 🔥",
+      "¡El camino al éxito es tomar acción masiva y decidida! ⚖️",
+      "¡Haz que cada cliente viva una experiencia única hoy! 👑"
+    ];
+    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+    const seed = (dayOfYear + String(asesorId).charCodeAt(0)) % phrases.length;
+    return phrases[seed];
+  };
+
+  const getAdvisorNotifications = (asesor: Asesor, stats: any) => {
+    const list: any[] = [];
+    const now = Date.now();
+
+    // 1. Check for abandoned leads (No Interesados) assigned to this advisor that are not yet contacted / recovered
+    const myLeads = leads.filter(l => {
+      const isAssigned = (l.linea_whatsapp || '').split(',').map((p: string) => p.replace(/\D/g, '')).some((p: string) => 
+        (asesor.telefono || '').split(',').map((ap: string) => ap.replace(/\D/g, '')).includes(p)
+      );
+      return isAssigned && l.retargeting_estado !== 'contactado' && l.retargeting_estado !== 'recuperado' && l.estado !== 'completado';
+    });
+
+    myLeads.forEach(l => {
+      const elapsedMins = Math.floor((now - new Date(l.created_at).getTime()) / 60000);
+      if (elapsedMins >= 15) {
+        list.push({
+          id: `lead-${l.id}`,
+          type: 'warning',
+          title: '⚠️ Demora en Carrito Abandonado',
+          message: `Llevas ${elapsedMins} minutos sin atender al cliente "${l.nombre || 'Anónimo'}". ¡Recupéralo antes de que se enfríe!`,
+          actionTab: 'pedidos',
+          time: l.created_at
+        });
+      }
+    });
+
+    // 2. Check for orders waiting for attention / checking
+    const myOrders = pedidos.filter(p => {
+      const isAssigned = (p.linea_whatsapp || '').split(',').map((ph: string) => ph.replace(/\D/g, '')).some((ph: string) => 
+        (asesor.telefono || '').split(',').map((ap: string) => ap.replace(/\D/g, '')).includes(ph)
+      );
+      return isAssigned && p.estado !== 'completado';
+    });
+
+    myOrders.forEach(o => {
+      const elapsedMins = Math.floor((now - new Date(o.created_at).getTime()) / 60000);
+      if (!o.atendido && elapsedMins >= 10) {
+        list.push({
+          id: `order-atender-${o.id}`,
+          type: 'danger',
+          title: '📞 Cliente Esperando Atención',
+          message: `El cliente "${o.cliente_nombre}" realizó un pedido hace ${elapsedMins} minutos y aún no ha sido atendido.`,
+          actionTab: 'pedidos',
+          time: o.created_at
+        });
+      } else if (o.atendido && !o.pantallazo_url && elapsedMins >= 45) {
+        list.push({
+          id: `order-espera-${o.id}`,
+          type: 'info',
+          title: '⏳ Esperando Comprobante',
+          message: `Hace ${elapsedMins} minutos atendiste a "${o.cliente_nombre}", pero no ha subido comprobante. Escríbele para ofrecerle otro medio de pago.`,
+          actionTab: 'pedidos',
+          time: o.created_at
+        });
+      }
+    });
+
+    // 3. Motivational notification based on daily performance
+    if (stats && stats.comisionHoy === 0) {
+      list.push({
+        id: 'motivate-sales-today',
+        type: 'motivate',
+        title: '💪 ¡Motívate hoy!',
+        message: 'Aún no registras comisiones hoy. ¡El día no ha terminado! Envía un mensaje amable a tus carritos abandonados y activa tus ventas.',
+        actionTab: 'pedidos',
+        time: new Date().toISOString()
+      });
+    } else if (stats && stats.comisionHoy > 0) {
+      list.push({
+        id: 'congrats-sales-today',
+        type: 'success',
+        title: '🎉 ¡Vas por excelente camino!',
+        message: `¡Hoy has ganado $${stats.comisionHoy.toLocaleString()} en comisiones! Sigue así y rompe tu récord diario.`,
+        actionTab: 'pedidos',
+        time: new Date().toISOString()
+      });
+    }
+
+    return list.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
+  };
   const [nuevoAsesorNombre, setNuevoAsesorNombre] = useState('');
   const [nuevoAsesorTelefonos, setNuevoAsesorTelefonos] = useState<string[]>(['']);
   const [nuevoAsesorPin, setNuevoAsesorPin] = useState(() => Math.floor(1000 + Math.random() * 9000).toString());
@@ -265,7 +367,21 @@ export default function Admin() {
     return numSinIndicativo;
   };
 
-  const renderAsesorBadge = (phone?: string) => {
+  const getParsedProducts = (rawProds: any) => {
+    if (!rawProds) return [];
+    if (Array.isArray(rawProds)) return rawProds;
+    if (typeof rawProds === 'string') {
+      try {
+        const parsed = JSON.parse(rawProds);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch (e) {
+        return [];
+      }
+    }
+    return [];
+  };
+
+  const renderAsesorBadge = (phone?: string, origen?: string) => {
     if (!phone) return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', color: '#64748b' }}>👤 Sin Asignar</span>;
     const cleanInput = phone.trim();
     if (cleanInput === 'pos' || cleanInput.replace(/\D/g, '') === 'pos') {
@@ -281,7 +397,7 @@ export default function Admin() {
 
     const lineaDisplay = cleanInput.split(',').map(p => p.trim()).filter(Boolean)[0] || cleanInput;
     return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', verticalAlign: 'middle' }}>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', verticalAlign: 'middle', textAlign: 'left' }}>
         {match?.foto_url ? (
           <img 
             src={match.foto_url} 
@@ -294,9 +410,16 @@ export default function Admin() {
             {name.charAt(0).toUpperCase()}
           </span>
         )}
-        <span style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+        <span style={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'flex-start' }}>
           <span style={{ fontSize: '0.9rem', color: '#0f172a', fontWeight: 700, lineHeight: 1.2 }}>{name}</span>
           <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 500, lineHeight: 1 }}>📲 {lineaDisplay}</span>
+          {origen && (
+            origen === 'pos' ? (
+              <span style={{ fontSize: '0.65rem', background: '#dcfce7', color: '#166534', padding: '1px 5px', borderRadius: '4px', fontWeight: 700, marginTop: '2px', display: 'inline-block' }}>POS</span>
+            ) : (
+              <span style={{ fontSize: '0.65rem', background: '#e0f2fe', color: '#0369a1', padding: '1px 5px', borderRadius: '4px', fontWeight: 700, marginTop: '2px', display: 'inline-block' }}>Catálogo</span>
+            )
+          )}
         </span>
       </span>
     );
@@ -1337,7 +1460,18 @@ export default function Admin() {
       const op = (p.linea_whatsapp || '').replace(/\D/g, '');
       return aPhones.includes(op);
     });
-    const aLeads = aPedidos.filter(p => p.estado === 'abandonado' || p.estado === 'borrador');
+    const aLeads = leads.filter(l => {
+      const leadPhone = l.linea_whatsapp?.replace(/\D/g, '');
+      const isAssigned = leadPhone && aPhones.includes(leadPhone);
+      if (!isAssigned) return false;
+      if (l.estado === 'completado') return false;
+      const cleanLeadPhone = (l.telefono || '').replace(/\D/g, '');
+      if (cleanLeadPhone) {
+        const hasOrder = pedidos.some(p => (p.cliente_telefono || '').replace(/\D/g, '') === cleanLeadPhone);
+        if (hasOrder) return false;
+      }
+      return true;
+    });
     const aCompletados = aPedidos.filter(p => p.estado === 'completado');
     const aPendientes = aPedidos.filter(p => p.estado === 'pendiente' || p.estado === 'interesado');
     const totalVentas = aCompletados.reduce((s, p) => s + (p.total || 0), 0);
@@ -1681,6 +1815,14 @@ export default function Admin() {
     return list;
   }, [clientes, clienteSearchQuery]);
 
+  const activeNotifications = useMemo(() => {
+    if (role !== 'asesor' || !currentAsesor) return [];
+    const advStats = getAdvisorStats(currentAsesor);
+    return getAdvisorNotifications(currentAsesor, advStats);
+  }, [role, currentAsesor, leads, pedidos]);
+
+  const activeNotificationsCount = activeNotifications.length;
+
   const filteredAsesores = useMemo(() => {
     let list = [...asesores];
     if (asesorSearchQuery.trim()) {
@@ -2012,7 +2154,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'asesor' ? asesores.find(a => a.id === localStorage.getItem(`admin_asesor_id_${getTenantId()}`)) : null} />
+          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={currentAsesor} activeNotificationsCount={activeNotificationsCount} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -2145,7 +2287,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'asesor' ? asesores.find(a => a.id === localStorage.getItem(`admin_asesor_id_${getTenantId()}`)) : null} />
+          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={currentAsesor} activeNotificationsCount={activeNotificationsCount} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -2231,7 +2373,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'asesor' ? asesores.find(a => a.id === localStorage.getItem(`admin_asesor_id_${getTenantId()}`)) : null} />
+          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={currentAsesor} activeNotificationsCount={activeNotificationsCount} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -2294,7 +2436,8 @@ export default function Admin() {
           handleLogout={handleLogout} 
           onClose={() => setIsMobileMenuOpen(false)} 
           role={role}
-          currentAsesor={role === 'asesor' ? asesores.find(a => a.id === localStorage.getItem(`admin_asesor_id_${getTenantId()}`)) : null}
+          currentAsesor={currentAsesor}
+          activeNotificationsCount={activeNotificationsCount}
         />
       </aside>
 
@@ -2316,24 +2459,46 @@ export default function Admin() {
           >
             {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
-          <div className="topbar-title">
-            <h2>
-              {activeTab === 'dashboard' && '📊 Dashboard'}
-              {activeTab === 'productos' && '📦 Productos'}
-              {activeTab === 'categorias' && '🗂️ Categorías'}
-              {activeTab === 'clientes' && '👥 Clientes'}
-              {activeTab === 'asesores' && '👥 Asesores'}
-              {activeTab === 'mayoristas' && '👥 Mayoristas'}
-              {activeTab === 'config' && '⚙️ Configuración'}
-            </h2>
-            <p>
-              {activeTab === 'productos' && `${productos.length} productos en total`}
-              {activeTab === 'categorias' && `${categoriasData.length} categorías activas`}
-              {activeTab === 'clientes' && `${clientes.length} clientes en total`}
-              {activeTab === 'asesores' && `${asesores.filter(a => a.tipo === 'asesor' || !a.tipo).length} asesores en tu equipo`}
-              {activeTab === 'mayoristas' && `${asesores.filter(a => a.tipo === 'mayorista').length} mayoristas en tu equipo`}
-              {activeTab === 'config' && 'Ajustes globales de tu tienda'}
-            </p>
+          <div className="topbar-title" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            {role === 'asesor' && currentAsesor ? (
+              <>
+                <div style={{ background: currentAsesor.foto_url ? 'transparent' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '42px', height: '42px', borderRadius: '50%', border: '1px solid #cbd5e1', overflow: 'hidden', flexShrink: 0 }}>
+                  {currentAsesor.foto_url ? (
+                    <img src={currentAsesor.foto_url} alt={currentAsesor.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <span style={{ fontSize: '1.2rem', fontWeight: 800 }}>{currentAsesor.nombre.charAt(0)}</span>
+                  )}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+                  <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>
+                    {currentAsesor.nombre}
+                  </h2>
+                  <p style={{ margin: '0.05rem 0 0 0', fontSize: '0.74rem', color: configuracion?.color_primario || '#6366f1', fontWeight: 700, fontStyle: 'normal', fontFamily: 'Nunito, sans-serif' }}>
+                    ✨ {getMotivationalPhrase(currentAsesor.id)}
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
+                <h2 style={{ margin: 0 }}>
+                  {activeTab === 'dashboard' && '📊 Dashboard'}
+                  {activeTab === 'productos' && '📦 Productos'}
+                  {activeTab === 'categorias' && '🗂️ Categorías'}
+                  {activeTab === 'clientes' && '👥 Clientes'}
+                  {activeTab === 'asesores' && '👥 Asesores'}
+                  {activeTab === 'mayoristas' && '👥 Mayoristas'}
+                  {activeTab === 'config' && '⚙️ Configuración'}
+                </h2>
+                <p style={{ margin: '0.15rem 0 0 0' }}>
+                  {activeTab === 'productos' && `${productos.length} productos en total`}
+                  {activeTab === 'categorias' && `${categoriasData.length} categorías activas`}
+                  {activeTab === 'clientes' && `${clientes.length} clientes en total`}
+                  {activeTab === 'asesores' && `${asesores.filter(a => a.tipo === 'asesor' || !a.tipo).length} asesores en tu equipo`}
+                  {activeTab === 'mayoristas' && `${asesores.filter(a => a.tipo === 'mayorista').length} mayoristas en tu equipo`}
+                  {activeTab === 'config' && 'Ajustes globales de tu tienda'}
+                </p>
+              </div>
+            )}
           </div>
           <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             {activeTab === 'productos' && (
@@ -2362,6 +2527,53 @@ export default function Admin() {
                   </button>
                 </div>
               )
+            )}
+            {role === 'asesor' && (
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setActiveTab('notificaciones_asesor')}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '0.55rem',
+                  borderRadius: '10px',
+                  border: activeTab === 'notificaciones_asesor' ? '1px solid #fee2e2' : '1px solid #cbd5e1',
+                  cursor: 'pointer',
+                  background: activeTab === 'notificaciones_asesor' ? '#fee2e2' : 'white',
+                  color: activeTab === 'notificaciones_asesor' ? '#ef4444' : '#475569',
+                  position: 'relative',
+                  transition: 'all 0.2s',
+                  width: '38px',
+                  height: '38px',
+                  flexShrink: 0
+                }}
+                title="Notificaciones y Alertas"
+              >
+                <Bell size={18} className={activeNotificationsCount > 0 ? 'pulse-bell' : ''} style={{ color: activeNotificationsCount > 0 ? '#ef4444' : 'inherit' }} />
+                {activeNotificationsCount > 0 && (
+                  <span style={{
+                    position: 'absolute',
+                    top: '-6px',
+                    right: '-6px',
+                    background: '#ef4444',
+                    color: 'white',
+                    fontSize: '0.65rem',
+                    padding: '2px 5px',
+                    borderRadius: '50%',
+                    fontWeight: 800,
+                    border: '2px solid white',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minWidth: '18px',
+                    height: '18px'
+                  }}>
+                    {activeNotificationsCount}
+                  </span>
+                )}
+              </button>
             )}
             <button 
               type="button"
@@ -2977,21 +3189,268 @@ export default function Admin() {
             const advStats = getAdvisorStats(currentAsesorData);
             return (
               <div className="admin-panel" style={{ borderRadius: '20px', padding: '1.5rem 1.75rem' }}>
-                <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  {currentAsesorData.foto_url ? (
-                    <img src={currentAsesorData.foto_url} alt={currentAsesorData.nombre} style={{ width: '56px', height: '56px', borderRadius: '50%', objectFit: 'cover', border: '3px solid rgba(0,0,0,0.05)' }} />
-                  ) : (
-                    <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 800, color: '#475569' }}>
-                      {currentAsesorData.nombre.charAt(0)}
-                    </div>
-                  )}
-                  <div>
-                    <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#0f172a' }}>📊 Mi Resumen de Ventas</h2>
-                    <p style={{ margin: '0.15rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Visualiza tus métricas, mejores horarios y productos vendidos</p>
+                <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', textAlign: 'left' }}>
+                  <span style={{ fontSize: '1.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📊</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left' }}>
+                    <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#0f172a', textAlign: 'left' }}>Mi Resumen de Ventas</h2>
+                    <p style={{ margin: '0.15rem 0 0 0', color: '#64748b', fontSize: '0.85rem', textAlign: 'left' }}>Visualiza tus métricas, mejores horarios y productos vendidos</p>
                   </div>
                 </div>
                 <div className="panel-body">
                   {renderAdvisorStatsView(advStats)}
+                </div>
+              </div>
+            );
+          })()}
+
+           {/* ── NOTIFICACIONES ASESOR TAB ── */}
+          {activeTab === 'notificaciones_asesor' && role === 'asesor' && (() => {
+            const currentAsesorData = asesores.find(a => a.telefono === loggedAsesorPhone);
+            if (!currentAsesorData) return <p style={{ color: '#64748b', padding: '2rem', textAlign: 'center' }}>Cargando notificaciones...</p>;
+            
+            const stats = getAdvisorStats(currentAsesorData);
+            const primaryColor = configuracion?.color_primario || '#6366f1';
+
+            return (
+              <div className="admin-panel" style={{ borderRadius: '20px', padding: '1.5rem 1.75rem' }}>
+                <style>{`
+                  @keyframes alertPulseDanger {
+                    0% {
+                      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+                      border-color: rgba(239, 68, 68, 0.7);
+                    }
+                    50% {
+                      box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+                      border-color: rgba(239, 68, 68, 0.3);
+                    }
+                    100% {
+                      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+                      border-color: rgba(239, 68, 68, 0.7);
+                    }
+                  }
+                  @keyframes alertPulseWarning {
+                    0% {
+                      box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4);
+                      border-color: rgba(245, 158, 11, 0.7);
+                    }
+                    50% {
+                      box-shadow: 0 0 0 10px rgba(245, 158, 11, 0);
+                      border-color: rgba(245, 158, 11, 0.3);
+                    }
+                    100% {
+                      box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+                      border-color: rgba(245, 158, 11, 0.7);
+                    }
+                  }
+                  .alert-card-danger {
+                    animation: alertPulseDanger 2s infinite ease-in-out;
+                  }
+                  .alert-card-warning {
+                    animation: alertPulseWarning 2s infinite ease-in-out;
+                  }
+                  .notif-hover {
+                    transition: all 0.25s ease-in-out;
+                  }
+                  .notif-hover:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 16px -3px rgba(0, 0, 0, 0.06), 0 3px 6px -2px rgba(0, 0, 0, 0.03);
+                  }
+                `}</style>
+
+                <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', textAlign: 'left' }}>
+                  <div style={{ background: '#fee2e2', padding: '0.5rem', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Lightbulb size={24} style={{ color: '#ef4444' }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left' }}>
+                    <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#0f172a', textAlign: 'left' }}>Centro de Notificaciones y Alertas</h2>
+                    <p style={{ margin: '0.15rem 0 0 0', color: '#64748b', fontSize: '0.85rem', textAlign: 'left' }}>Alertas de tiempo de respuesta y recordatorios de retargeting</p>
+                  </div>
+                </div>
+
+                <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  {/* Notifications list */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                    <h3 style={{ margin: '0 0 0.25rem 0', fontSize: '1rem', fontWeight: 800, color: '#1e293b', textAlign: 'left' }}>Alertas Activas ({activeNotifications.length})</h3>
+                    {activeNotifications.length === 0 ? (
+                      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '2.5rem 2rem', textAlign: 'center', color: '#64748b' }}>
+                        <p style={{ margin: '0 0 0.5rem 0', fontSize: '2rem' }}>🎉</p>
+                        <p style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, color: '#475569' }}>¡Estás al día!</p>
+                        <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: '#94a3b8' }}>No tienes tareas ni alertas pendientes de respuesta en este momento.</p>
+                      </div>
+                    ) : (
+                      activeNotifications.map((notif: any) => {
+                        const isDanger = notif.type === 'danger';
+                        const isWarning = notif.type === 'warning';
+                        const isSuccess = notif.type === 'success';
+
+                        let cardClass = "notif-hover ";
+                        if (isDanger) cardClass += "alert-card-danger";
+                        else if (isWarning) cardClass += "alert-card-warning";
+
+                        return (
+                          <div 
+                            key={notif.id}
+                            className={cardClass}
+                            style={{
+                              background: isDanger 
+                                ? 'linear-gradient(135deg, #fff5f5, #fef2f2)' 
+                                : isWarning 
+                                  ? 'linear-gradient(135deg, #fffbeb, #fffcf0)' 
+                                  : isSuccess 
+                                    ? 'linear-gradient(135deg, #f0fdf4, #dcfce7)' 
+                                    : 'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
+                              border: `1.5px solid ${isDanger ? '#f87171' : isWarning ? '#fbbf24' : isSuccess ? '#4ade80' : '#60a5fa'}`,
+                              borderRadius: '16px',
+                              padding: '1.1rem 1.25rem',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              gap: '1rem',
+                              textAlign: 'left',
+                              position: 'relative',
+                              overflow: 'hidden'
+                            }}
+                          >
+                            {/* Decorative background symbol */}
+                            <div style={{
+                              position: 'absolute',
+                              right: '-10px',
+                              top: '-10px',
+                              fontSize: '4.5rem',
+                              opacity: 0.05,
+                              pointerEvents: 'none',
+                              userSelect: 'none'
+                            }}>
+                              {isDanger ? '🚨' : isWarning ? '⏳' : isSuccess ? '🎉' : '🔔'}
+                            </div>
+
+                            <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'flex-start', flex: 1, zIndex: 1 }}>
+                              <span style={{ fontSize: '1.3rem', marginTop: '0.1rem' }}>
+                                {isDanger ? '🔴' : isWarning ? '🟡' : isSuccess ? '🟢' : '🔵'}
+                              </span>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                                <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, color: '#0f172a' }}>{notif.title}</h4>
+                                <p style={{ margin: 0, fontSize: '0.82rem', color: '#334155', lineHeight: 1.45, fontWeight: 500 }}>{notif.message}</p>
+                                <span style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.25rem', fontWeight: 600 }}>
+                                  ⏰ {new Date(notif.time).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </div>
+                            </div>
+
+                            {notif.actionTab && (
+                              <button
+                                onClick={() => setActiveTab(notif.actionTab)}
+                                style={{
+                                  background: isDanger ? '#ef4444' : isWarning ? '#f59e0b' : primaryColor,
+                                  color: 'white',
+                                  border: 'none',
+                                  padding: '0.5rem 1rem',
+                                  borderRadius: '10px',
+                                  fontSize: '0.8rem',
+                                  fontWeight: 800,
+                                  cursor: 'pointer',
+                                  whiteSpace: 'nowrap',
+                                  boxShadow: '0 4px 6px -1px rgba(0,0,0,0.06)',
+                                  transition: 'all 0.2s',
+                                  zIndex: 1
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.transform = 'translateY(-1px)';
+                                  e.currentTarget.style.boxShadow = '0 6px 8px -1px rgba(0,0,0,0.1)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.transform = 'none';
+                                  e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.06)';
+                                }}
+                              >
+                                Ir a atender →
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+
+                  {/* Collapsible Sales Tips */}
+                  <details 
+                    style={{ 
+                      border: '1.5px solid #cbd5e1', 
+                      borderRadius: '16px', 
+                      overflow: 'hidden',
+                      marginTop: '0.75rem',
+                      background: '#f8fafc',
+                      boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)'
+                    }}
+                  >
+                    <summary 
+                      style={{ 
+                        padding: '1.1rem 1.4rem', 
+                        fontSize: '0.96rem', 
+                        fontWeight: 800, 
+                        color: '#1e293b', 
+                        background: '#f1f5f9', 
+                        cursor: 'pointer', 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center', 
+                        userSelect: 'none' 
+                      }}
+                    >
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>💡 Consejos de Venta & Metas Diarias</span>
+                      <span style={{ fontSize: '0.85rem', color: '#64748b' }}>▼</span>
+                    </summary>
+                    <div style={{ padding: '1.5rem', background: 'white', borderTop: '1px solid #cbd5e1', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                      {/* Daily specific advisor advise */}
+                      {(() => {
+                        const bestDay = stats.bestDay as { day: number; name: string; count: number };
+                        const bestHour = stats.bestHour as [string, number];
+                        const aLeads = stats.aLeads;
+                        const topSellingProducts = stats.topSellingProducts;
+                        const today = new Date();
+                        const dayOfWeek = today.getDay();
+                        const horaLabels = [
+                          '12:00 AM', '1:00 AM', '2:00 AM', '3:00 AM', '4:00 AM', '5:00 AM', '6:00 AM', '7:00 AM', '8:00 AM', '9:00 AM', '10:00 AM', '11:00 AM',
+                          '12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM', '7:00 PM', '8:00 PM', '9:00 PM', '10:00 PM', '11:00 PM'
+                        ];
+                        const topProdName = topSellingProducts.length > 0 ? topSellingProducts[0].nombre : 'ninguno aún';
+                        const topProdQty = topSellingProducts.length > 0 ? topSellingProducts[0].cantidad : 0;
+
+                        return (
+                          <>
+                            {dayOfWeek === 1 && (
+                              <div style={{ background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', border: '1.5px solid #bfdbfe', borderRadius: '12px', padding: '1.1rem 1.25rem', textAlign: 'left', position: 'relative' }}>
+                                <div style={{ position: 'absolute', right: '15px', top: '10px', fontSize: '2.5rem', opacity: 0.15 }}>📊</div>
+                                <h4 style={{ margin: '0 0 0.5rem 0', color: '#1e40af', fontWeight: 800, fontSize: '0.92rem' }}>📊 Resumen de Ventas de la Semana</h4>
+                                <p style={{ margin: 0, fontSize: '0.84rem', color: '#1e3a8a', lineHeight: 1.5, fontWeight: 500 }}>
+                                  Tu mejor día histórico de ventas es el <strong>{bestDay.count > 0 ? bestDay.name : 'fin de semana'}</strong> con <strong>{bestDay.count} pedidos</strong>. Aprovecha para publicar contenido y pautar en esos días.
+                                </p>
+                              </div>
+                            )}
+
+                            <div style={{ background: 'linear-gradient(135deg, #fffbeb, #fef3c7)', border: '1.5px solid #fde68a', borderRadius: '12px', padding: '1.1rem 1.25rem', textAlign: 'left', position: 'relative' }}>
+                              <div style={{ position: 'absolute', right: '15px', top: '10px', fontSize: '2.5rem', opacity: 0.15 }}>🎯</div>
+                              <h4 style={{ margin: '0 0 0.4rem 0', color: '#b45309', fontWeight: 800, fontSize: '0.92rem' }}>🎯 Meta para hoy ({['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'][dayOfWeek]})</h4>
+                              <p style={{ margin: 0, fontSize: '0.84rem', color: '#78350f', lineHeight: 1.5, fontWeight: 500 }}>
+                                {(() => {
+                                  switch (dayOfWeek) {
+                                    case 0: return 'Planifica tu semana y define tus metas de comisiones.';
+                                    case 1: return `Contacta a tus ${aLeads.length} carritos abandonados. ¡Recupera ventas perdidas hoy!`;
+                                    case 2: return 'Haz seguimiento a clientes con estados "Pendiente de Pago".';
+                                    case 3: return 'Saluda a tus clientes usando su nombre para aumentar la confianza.';
+                                    case 4: return `Ofrece el artículo de alta demanda: "${topProdName}" (${topProdQty} vendidos) como recomendación.`;
+                                    case 5: return `Tu pico máximo de ventas suele ser a las ${bestHour && Number(bestHour[1]) > 0 ? `${horaLabels[Number(bestHour[0])]}` : 'las tardes'}. Mantente alerta.`;
+                                    case 6: return 'Responde al instante: Las respuestas rápidas multiplican por 3 el cierre de ventas.';
+                                    default: return 'Actualiza tu stock y verifica las comisiones acumuladas.';
+                                  }
+                                })()}
+                              </p>
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                  </details>
                 </div>
               </div>
             );
@@ -3018,7 +3477,6 @@ export default function Admin() {
                         .from('asesores')
                         .update({
                           nombre: (document.getElementById('perfil-nombre') as HTMLInputElement).value,
-                          pin: (document.getElementById('perfil-pin') as HTMLInputElement).value,
                           foto_url: (document.getElementById('perfil-foto') as HTMLInputElement).value,
                         })
                         .eq('id', currentAsesorData.id);
@@ -3029,7 +3487,6 @@ export default function Admin() {
                         a.id === currentAsesorData.id 
                           ? { ...a, 
                               nombre: (document.getElementById('perfil-nombre') as HTMLInputElement).value,
-                              pin: (document.getElementById('perfil-pin') as HTMLInputElement).value,
                               foto_url: (document.getElementById('perfil-foto') as HTMLInputElement).value,
                             } 
                           : a
@@ -3064,9 +3521,11 @@ export default function Admin() {
                         <input 
                           type="text" 
                           id="perfil-pin"
+                          disabled
                           defaultValue={asesores.find(a => a.telefono === loggedAsesorPhone)?.pin} 
                           required 
                         />
+                        <small style={{color: '#64748b'}}>Solo el administrador puede cambiar tu PIN de acceso.</small>
                       </div>
                       <div className="form-field">
                         <label>Foto de Perfil</label>
@@ -4131,31 +4590,40 @@ export default function Admin() {
                                   {(a.telefono || '').split(',').map(p => p.trim()).filter(Boolean).map((phone, idx) => {
                                     const link = `${window.location.origin}/${getTenantId()}?ws=${phone}`;
                                     return (
-                                      <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginBottom: '0.5rem' }}>
-                                        <span style={{ fontSize: '0.8rem', color: '#334155', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                                        <a
+                                          href={link}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          style={{ 
+                                            fontSize: '0.78rem', 
+                                            color: '#1e1b4b', 
+                                            fontWeight: 700, 
+                                            display: 'inline-flex', 
+                                            alignItems: 'center', 
+                                            gap: '0.25rem', 
+                                            textDecoration: 'underline', 
+                                            textDecorationColor: '#cbd5e1', 
+                                            transition: 'all 0.2s',
+                                            cursor: 'pointer'
+                                          }}
+                                          onMouseEnter={e => { e.currentTarget.style.color = '#10b981'; e.currentTarget.style.textDecorationColor = '#10b981'; }}
+                                          onMouseLeave={e => { e.currentTarget.style.color = '#1e1b4b'; e.currentTarget.style.textDecorationColor = '#cbd5e1'; }}
+                                          title="Click para ver catálogo de este asesor"
+                                        >
                                           📲 {phone}
-                                        </span>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                          <a
-                                            href={link}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            style={{ fontSize: '0.72rem', background: '#dcfce7', color: '#16a34a', padding: '0.2rem 0.55rem', borderRadius: '20px', fontWeight: 700, textDecoration: 'none', border: '1px solid #86efac', whiteSpace: 'nowrap' }}
-                                          >
-                                            🛍️ Catálogo
-                                          </a>
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              navigator.clipboard.writeText(link);
-                                              showToast(`Enlace (${phone}) copiado ✓`, 'success');
-                                            }}
-                                            className="btn-secondary"
-                                            style={{ padding: '0.2rem 0.45rem', fontSize: '0.68rem', display: 'inline-flex', alignItems: 'center', gap: '0.2rem', whiteSpace: 'nowrap' }}
-                                          >
-                                            <Copy size={10} /> Copiar
-                                          </button>
-                                        </div>
+                                        </a>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            navigator.clipboard.writeText(link);
+                                            showToast(`Enlace (${phone}) copiado ✓`, 'success');
+                                          }}
+                                          className="btn-secondary"
+                                          style={{ padding: '0.15rem 0.4rem', fontSize: '0.65rem', display: 'inline-flex', alignItems: 'center', gap: '0.2rem', whiteSpace: 'nowrap' }}
+                                        >
+                                          <Copy size={10} /> Copiar
+                                        </button>
                                       </div>
                                     );
                                   })}
@@ -5650,7 +6118,7 @@ export default function Admin() {
                               let isHot = false;
                               
                               if (elapsedMins >= 0) {
-                                if (elapsedMins < 30) {
+                                if (elapsedMins < 120) {
                                   timeLabel = `🔥 Caliente (${elapsedMins}m atrás)`;
                                   isHot = true;
                                 } else if (elapsedMins < 60) {
@@ -5667,41 +6135,77 @@ export default function Admin() {
                               }
 
                               return (
-                                <div key={lead.id} className="kanban-card lead-card" style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '0.85rem', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem', flexWrap: 'wrap', gap: '0.35rem' }}>
-                                    <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0f172a', fontWeight: 700 }}>👤 {lead.nombre || 'Borrador Anónimo'}</h4>
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
-                                      {lead.linea_whatsapp && renderAsesorBadge(lead.linea_whatsapp)}
-                                      <span className={`badge ${isHot ? 'lead-hot-badge' : ''}`} style={isHot ? { padding: '0.15rem 0.45rem', borderRadius: '6px', fontSize: '0.7rem' } : { background: '#f1f5f9', color: '#64748b', padding: '0.15rem 0.45rem', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700 }}>
-                                        {timeLabel}
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <p className="phone" style={{ margin: '0 0 0.25rem 0', fontSize: '0.8rem', color: '#475569' }}>📞 {lead.telefono || 'Sin número'}</p>
-                                  <p className="city" style={{ margin: '0 0 0.4rem 0', fontSize: '0.8rem', color: '#475569' }}>📍 {lead.ciudad || 'No especificada'}</p>
-                                  
-                                  {/* Listado de productos en el carrito */}
-                                  {Array.isArray(lead.productos) && lead.productos.length > 0 && (
-                                    <div className="card-products-summary" style={{ margin: '0.6rem 0', padding: '0.5rem 0.65rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                                      <p style={{ margin: '0 0 0.3rem 0', fontSize: '0.72rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>🛒 Carrito:</p>
-                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                                        {lead.productos.map((prod: any, idx: number) => (
-                                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.76rem', color: '#334155' }}>
-                                            <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '170px' }} title={prod.nombre}>
-                                              {prod.nombre} {prod.talla ? `(${prod.talla})` : ''} {prod.estampado ? `[${prod.estampado}]` : ''}
-                                            </span>
-                                            <span style={{ color: '#64748b', fontWeight: 700 }}>x{prod.cantidad}</span>
-                                          </div>
-                                        ))}
-                                      </div>
+                                <div key={lead.id} className="kanban-card lead-card" style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.01)' }}>
+                                  {/* Info Layout: 2 Columns */}
+                                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '0.75rem', marginBottom: '0.75rem', borderBottom: '1px dashed #f1f5f9', paddingBottom: '0.75rem' }}>
+                                    {/* Left Column: Customer details */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', textAlign: 'left' }}>
+                                      <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0f172a', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                                        <span>👤 {lead.nombre || 'Borrador Anónimo'}</span>
+                                        <span 
+                                          className={`badge ${isHot ? 'lead-hot-badge' : ''}`} 
+                                          style={isHot ? { 
+                                            padding: '0.15rem 0.45rem', 
+                                            borderRadius: '6px', 
+                                            fontSize: '0.66rem',
+                                            fontWeight: 800,
+                                            background: '#fee2e2',
+                                            color: '#ef4444',
+                                            border: '1px solid #fca5a5'
+                                          } : { 
+                                            background: '#f1f5f9', 
+                                            color: '#64748b', 
+                                            padding: '0.15rem 0.45rem', 
+                                            borderRadius: '6px', 
+                                            fontSize: '0.66rem', 
+                                            fontWeight: 700 
+                                          }}
+                                        >
+                                          {timeLabel}
+                                        </span>
+                                      </h4>
+                                      <p style={{ margin: 0, fontSize: '0.78rem', color: '#475569' }}>📞 {lead.telefono || 'Sin número'}</p>
+                                      <p style={{ margin: 0, fontSize: '0.78rem', color: '#475569' }}>📍 {lead.ciudad || 'No especificada'}</p>
                                       {lead.total > 0 && (
-                                        <div style={{ borderTop: '1px dashed #cbd5e1', marginTop: '0.4rem', paddingTop: '0.3rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', fontWeight: 800, color: '#0f172a' }}>
-                                          <span>Total:</span>
-                                          <span style={{ color: '#10b981' }}>${lead.total.toLocaleString()}</span>
-                                        </div>
+                                        <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 800, color: '#0f172a' }}>💰 <span style={{ color: '#10b981' }}>${lead.total.toLocaleString()}</span></p>
                                       )}
                                     </div>
-                                  )}
+
+                                    {/* Right Column: Advisor info only */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'flex-start' }}>
+                                      {lead.linea_whatsapp && renderAsesorBadge(lead.linea_whatsapp, 'catalogo')}
+                                    </div>
+                                  </div>
+
+                                  {/* Full Width Section: Products summary */}
+                                  {(() => {
+                                    const parsedProds = getParsedProducts(lead.productos);
+                                    if (parsedProds.length > 0) {
+                                      return (
+                                        <div className="card-products-summary" style={{ margin: '0 0 0.75rem 0', padding: '0.5rem 0.65rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'left' }}>
+                                          <p style={{ margin: 0, marginBottom: '0.3rem', fontSize: '0.7rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>🛒 Carrito:</p>
+                                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                                            {parsedProds.map((prod: any, idx: number) => (
+                                              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.76rem', color: '#334155' }}>
+                                                <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '170px' }} title={prod.nombre}>
+                                                  {prod.nombre} {prod.talla ? `(${prod.talla})` : ''} {prod.estampado ? `[${prod.estampado}]` : ''}
+                                                </span>
+                                                <span style={{ color: '#64748b', fontWeight: 700 }}>x{prod.cantidad}</span>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      );
+                                    } else {
+                                      return (
+                                        <div className="card-products-summary" style={{ margin: '0 0 0.75rem 0', padding: '0.5rem 0.65rem', background: '#fffbeb', borderRadius: '8px', border: '1.5px dashed #fcd34d', textAlign: 'left' }}>
+                                          <p style={{ margin: 0, fontSize: '0.74rem', color: '#b45309', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                            <span>⚠️</span> <span>Sin productos registrados en el carrito</span>
+                                          </p>
+                                        </div>
+                                      );
+                                    }
+                                  })()}
 
                                   {/* Retargeting Status Selector */}
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', margin: '0.5rem 0' }}>
@@ -5840,86 +6344,92 @@ export default function Admin() {
                             <span className="badge" style={{ background: '#fef9c3', color: '#eab308', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{interesadosFiltrados.length}</span>
                           </div>
                           <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
-                            {interesadosFiltrados.map((ped) => (
-                              <div key={ped.id} className="kanban-card order-card" style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '0.85rem', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0 0 0.4rem 0', flexWrap: 'wrap', gap: '0.25rem' }}>
-                                  <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0f172a', fontWeight: 700 }}>👤 {ped.cliente_nombre}</h4>
-                                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                                    {ped.linea_whatsapp && renderAsesorBadge(ped.linea_whatsapp)}
-                                    {ped.origen === 'pos' ? (
-                                      <span style={{ fontSize: '0.65rem', background: '#dcfce7', color: '#166534', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>POS</span>
+                            {interesadosFiltrados.map((ped) => {
+                              return (
+                                <div key={ped.id} className="kanban-card order-card" style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.01)' }}>
+                                  {/* Info Layout: 2 Columns */}
+                                  <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: '0.75rem', marginBottom: '0.75rem', borderBottom: '1px dashed #f1f5f9', paddingBottom: '0.75rem' }}>
+                                    {/* Left Column: Customer & Order info */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', textAlign: 'left' }}>
+                                      <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0f172a', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>👤 {ped.cliente_nombre}</h4>
+                                      <p style={{ margin: 0, fontSize: '0.78rem', color: '#475569' }}>📞 {ped.cliente_telefono}</p>
+                                      <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 800, color: '#0f172a' }}>💰 <span style={{ color: '#10b981' }}>${ped.total.toLocaleString()}</span></p>
+                                      
+                                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
+                                        {ped.pantallazo_url ? (
+                                          <span style={{ fontSize: '0.68rem', background: '#e0f2fe', color: '#0369a1', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>✅ Pago</span>
+                                        ) : (
+                                          <span style={{ fontSize: '0.68rem', background: '#fffbeb', color: '#b45309', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>⏳ Espera</span>
+                                        )}
+                                        <span style={{ fontSize: '0.68rem', background: '#f1f5f9', color: '#475569', padding: '2px 6px', borderRadius: '6px', fontWeight: 600 }}>
+                                          📅 {new Date(ped.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'numeric', year: '2-digit' })}
+                                        </span>
+                                      </div>
+                                    </div>
+
+                                    {/* Right Column: Advisor info */}
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-start' }}>
+                                      {ped.linea_whatsapp && renderAsesorBadge(ped.linea_whatsapp, ped.origen)}
+                                    </div>
+                                  </div>
+
+                                  {/* Full Width Section: Products summary */}
+                                  {Array.isArray(ped.productos) && ped.productos.length > 0 && (
+                                    <div className="card-products-summary" style={{ margin: '0 0 0.75rem 0', padding: '0.5rem 0.65rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'left' }}>
+                                      <p style={{ margin: '0 0 0.3rem 0', fontSize: '0.7rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📦 Artículos:</p>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                                        {ped.productos.map((prod: any, idx: number) => (
+                                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#334155' }}>
+                                            <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '170px' }} title={prod.nombre}>
+                                              {prod.nombre} {prod.talla ? `(${prod.talla})` : ''} {prod.estampado ? `[${prod.estampado}]` : ''}
+                                            </span>
+                                            <span style={{ color: '#64748b', fontWeight: 700 }}>
+                                              x{prod.cantidad}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Buttons area */}
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                    <button 
+                                      className="btn-view-detail"
+                                      style={{ width: '100%', padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', color: '#475569', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
+                                      onClick={() => setSelectedPedido(ped)}
+                                    >
+                                      🔍 Ver Detalle
+                                    </button>
+                                    {ped.pantallazo_url ? (
+                                      <button 
+                                        className="btn-primary" 
+                                        style={{ padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', background: configuracion?.color_primario || '#3b82f6', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 700 }}
+                                        onClick={() => setSelectedPedido(ped)}
+                                      >
+                                        💳 Verificar pago
+                                      </button>
+                                    ) : ped.atendido ? (
+                                      <button 
+                                        disabled
+                                        className="btn-secondary" 
+                                        style={{ padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#64748b', cursor: 'not-allowed', fontWeight: 600 }}
+                                      >
+                                        ⏳ Esperando comprobante
+                                      </button>
                                     ) : (
-                                      <span style={{ fontSize: '0.65rem', background: '#e0f2fe', color: '#0369a1', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>Catálogo</span>
+                                      <button 
+                                        className="btn-primary" 
+                                        style={{ padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', background: '#25D366', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 700 }}
+                                        onClick={() => handleAtenderPedido(ped)}
+                                      >
+                                        📞 Atender
+                                      </button>
                                     )}
                                   </div>
                                 </div>
-                                <p className="phone" style={{ margin: '0 0 0.25rem 0', fontSize: '0.8rem', color: '#475569' }}>📞 {ped.cliente_telefono}</p>
-                                <p className="total" style={{ margin: '0 0 0.4rem 0', fontSize: '0.82rem', fontWeight: 700, color: '#0f172a' }}>💰 Total: <span style={{ color: '#10b981' }}>${ped.total.toLocaleString()}</span></p>
-                                
-                                {/* Lista de productos comprados */}
-                                {Array.isArray(ped.productos) && ped.productos.length > 0 && (
-                                  <div className="card-products-summary" style={{ margin: '0.6rem 0', padding: '0.5rem 0.65rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                                    <p style={{ margin: '0 0 0.3rem 0', fontSize: '0.72rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📦 Artículos:</p>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                                      {ped.productos.map((prod: any, idx: number) => (
-                                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#334155' }}>
-                                          <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '170px' }} title={prod.nombre}>
-                                            {prod.nombre} {prod.talla ? `(${prod.talla})` : ''} {prod.estampado ? `[${prod.estampado}]` : ''}
-                                          </span>
-                                          <span style={{ color: '#64748b', fontWeight: 700 }}>
-                                            x{prod.cantidad}
-                                          </span>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-
-                                <div className="status" style={{ margin: '0.5rem 0' }}>
-                                  {ped.pantallazo_url ? (
-                                    <span className="status-badge upload-success" style={{ background: '#e0f2fe', color: '#0369a1', border: '1px solid #bae6fd', padding: '0.25rem 0.5rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, display: 'inline-block' }}>✅ Comprobante Subido</span>
-                                  ) : (
-                                    <span className="status-badge upload-wait" style={{ background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', padding: '0.25rem 0.5rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, display: 'inline-block' }}>⏳ Esperando Pago</span>
-                                  )}
-                                </div>
-                                <p className="date" style={{ margin: '0 0 0.6rem 0', fontSize: '0.75rem', color: '#64748b' }}>📅 {new Date(ped.created_at).toLocaleDateString('es-CO', { dateStyle: 'short' })}</p>
-                                
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.5rem' }}>
-                                  <button 
-                                    className="btn-view-detail"
-                                    style={{ width: '100%', padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', color: '#475569', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
-                                    onClick={() => setSelectedPedido(ped)}
-                                  >
-                                    🔍 Ver Detalle
-                                  </button>
-                                  {ped.pantallazo_url ? (
-                                    <button 
-                                      className="btn-primary" 
-                                      style={{ padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', background: configuracion?.color_primario || '#3b82f6', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 700 }}
-                                      onClick={() => setSelectedPedido(ped)}
-                                    >
-                                      💳 Verificar pago
-                                    </button>
-                                  ) : ped.atendido ? (
-                                    <button 
-                                      disabled
-                                      className="btn-secondary" 
-                                      style={{ padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#64748b', cursor: 'not-allowed', fontWeight: 600 }}
-                                    >
-                                      ⏳ Esperando comprobante
-                                    </button>
-                                  ) : (
-                                    <button 
-                                      className="btn-primary" 
-                                      style={{ padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', background: '#25D366', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 700 }}
-                                      onClick={() => handleAtenderPedido(ped)}
-                                    >
-                                      📞 Atender
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                             {interesadosFiltrados.length === 0 && (
                               <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0' }}>No hay pedidos pendientes.</p>
                             )}
@@ -5933,54 +6443,60 @@ export default function Admin() {
                             <span className="badge" style={{ background: '#dcfce7', color: '#22c55e', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{clientesFiltrados.length}</span>
                           </div>
                           <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
-                            {clientesFiltrados.map((ped) => (
-                              <div key={ped.id} className="kanban-card client-card" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px', padding: '0.85rem', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0 0 0.4rem 0', flexWrap: 'wrap', gap: '0.25rem' }}>
-                                  <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#14532d', fontWeight: 700 }}>👤 {ped.cliente_nombre}</h4>
-                                  <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-                                    {ped.linea_whatsapp && renderAsesorBadge(ped.linea_whatsapp)}
-                                    {ped.origen === 'pos' ? (
-                                      <span style={{ fontSize: '0.65rem', background: '#dcfce7', color: '#166534', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>POS</span>
-                                    ) : (
-                                      <span style={{ fontSize: '0.65rem', background: '#e0f2fe', color: '#0369a1', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>Catálogo</span>
-                                    )}
-                                  </div>
-                                </div>
-                                <p className="phone" style={{ margin: '0 0 0.25rem 0', fontSize: '0.8rem', color: '#166534' }}>📞 {ped.cliente_telefono}</p>
-                                <p className="total" style={{ margin: '0 0 0.4rem 0', fontSize: '0.82rem', fontWeight: 700, color: '#14532d' }}>💰 Facturado: <span style={{ color: '#16a34a' }}>${ped.total.toLocaleString()}</span></p>
+                            {clientesFiltrados.map((ped) => {
+                              return (
+                                <div key={ped.id} className="kanban-card client-card" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '1rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.01)' }}>
+                                  {/* Info Layout: 2 Columns */}
+                                  <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: '0.75rem', marginBottom: '0.75rem', borderBottom: '1px dashed #bbf7d0', paddingBottom: '0.75rem' }}>
+                                    {/* Left Column: Customer & Order info */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', textAlign: 'left' }}>
+                                      <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#14532d', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>👤 {ped.cliente_nombre}</h4>
+                                      <p style={{ margin: 0, fontSize: '0.78rem', color: '#166534' }}>📞 {ped.cliente_telefono}</p>
+                                      <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 800, color: '#14532d' }}>💰 <span style={{ color: '#16a34a' }}>${ped.total.toLocaleString()}</span></p>
+                                      
+                                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
+                                        <span style={{ fontSize: '0.68rem', background: '#dcfce7', color: '#166534', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>✓ Verificado</span>
+                                        <span style={{ fontSize: '0.68rem', background: '#e8f5e9', color: '#2e7d32', padding: '2px 6px', borderRadius: '6px', fontWeight: 600 }}>
+                                          📅 {new Date(ped.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'numeric', year: '2-digit' })}
+                                        </span>
+                                      </div>
+                                    </div>
 
-                                {/* Lista de productos comprados */}
-                                {Array.isArray(ped.productos) && ped.productos.length > 0 && (
-                                  <div className="card-products-summary" style={{ margin: '0.6rem 0', padding: '0.5rem 0.65rem', background: 'white', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
-                                    <p style={{ margin: '0 0 0.3rem 0', fontSize: '0.72rem', fontWeight: 800, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📦 Artículos:</p>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                                      {ped.productos.map((prod: any, idx: number) => (
-                                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#166534' }}>
-                                          <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '170px' }} title={prod.nombre}>
-                                            {prod.nombre} {prod.talla ? `(${prod.talla})` : ''} {prod.estampado ? `[${prod.estampado}]` : ''}
-                                          </span>
-                                          <span style={{ color: '#166534', fontWeight: 700 }}>
-                                            x{prod.cantidad}
-                                          </span>
-                                        </div>
-                                      ))}
+                                    {/* Right Column: Advisor info */}
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-start' }}>
+                                      {ped.linea_whatsapp && renderAsesorBadge(ped.linea_whatsapp, ped.origen)}
                                     </div>
                                   </div>
-                                )}
 
-                                <div className="status" style={{ margin: '0.5rem 0' }}>
-                                  <span className="status-badge verified" style={{ background: '#dcfce7', color: '#16a34a', border: '1px solid #86efac', padding: '0.25rem 0.5rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700, display: 'inline-block' }}>✓ Pago Verificado</span>
+                                  {/* Full Width Section: Products summary */}
+                                  {Array.isArray(ped.productos) && ped.productos.length > 0 && (
+                                    <div className="card-products-summary" style={{ margin: '0 0 0.75rem 0', padding: '0.5rem 0.65rem', background: 'white', borderRadius: '8px', border: '1px solid #bbf7d0', textAlign: 'left' }}>
+                                      <p style={{ margin: '0 0 0.3rem 0', fontSize: '0.7rem', fontWeight: 800, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📦 Artículos:</p>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                                        {ped.productos.map((prod: any, idx: number) => (
+                                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#166534' }}>
+                                            <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '170px' }} title={prod.nombre}>
+                                              {prod.nombre} {prod.talla ? `(${prod.talla})` : ''} {prod.estampado ? `[${prod.estampado}]` : ''}
+                                            </span>
+                                            <span style={{ color: '#166534', fontWeight: 700 }}>
+                                              x{prod.cantidad}
+                                            </span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  <button 
+                                    className="btn-view-detail"
+                                    style={{ width: '100%', padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', border: '1px solid #bbf7d0', background: 'white', color: '#14532d', cursor: 'pointer', fontWeight: 600 }}
+                                    onClick={() => setSelectedPedido(ped)}
+                                  >
+                                    🔍 Ver Factura
+                                  </button>
                                 </div>
-                                <p className="date" style={{ margin: '0 0 0.6rem 0', fontSize: '0.75rem', color: '#166534' }}>📅 {new Date(ped.created_at).toLocaleDateString('es-CO', { dateStyle: 'short' })}</p>
-                                <button 
-                                  className="btn-view-detail"
-                                  style={{ width: '100%', padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', border: '1px solid #bbf7d0', background: 'white', color: '#14532d', cursor: 'pointer', fontWeight: 600 }}
-                                  onClick={() => setSelectedPedido(ped)}
-                                >
-                                  🔍 Ver Factura
-                                </button>
-                              </div>
-                            ))}
+                              );
+                            })}
                             {clientesFiltrados.length === 0 && (
                               <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0' }}>No hay ventas exitosas aún.</p>
                             )}
@@ -6260,7 +6776,9 @@ export default function Admin() {
                   </div>
                   <div>
                     <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase' }}>Línea WhatsApp Asignada</h5>
-                    <p style={{ margin: 0, fontWeight: 700, color: '#0ea5e9', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>{renderAsesorBadge(selectedPedido.linea_whatsapp)}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', marginTop: '0.2rem' }}>
+                      {renderAsesorBadge(selectedPedido.linea_whatsapp, selectedPedido.origen)}
+                    </div>
                   </div>
                   <div style={{ gridColumn: 'span 2' }}>
                     <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase' }}>Dirección de Entrega</h5>
@@ -6556,6 +7074,88 @@ export default function Admin() {
         </div>
       )}
 
+      {/* FLOATING NOTIFICATION REMINDER FOR ADVISOR */}
+      {role === 'asesor' && activeNotifications.some(n => n.type === 'warning' || n.type === 'danger') && (() => {
+        const criticalCount = activeNotifications.filter(n => n.type === 'warning' || n.type === 'danger').length;
+        const key = `dismiss_notif_${currentAsesor?.id}_${new Date().toDateString()}`;
+        const isDismissed = localStorage.getItem(key) === 'true';
+        if (isDismissed) return null;
+        
+        return (
+          <div style={{
+            position: 'fixed',
+            bottom: '20px',
+            right: '20px',
+            background: 'white',
+            border: '1px solid #fca5a5',
+            borderRadius: '16px',
+            padding: '1rem',
+            boxShadow: '0 10px 15px -3px rgba(239, 68, 68, 0.15), 0 4px 6px -2px rgba(239, 68, 68, 0.05)',
+            zIndex: 1000,
+            maxWidth: '320px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.5rem',
+            animation: 'slideUp 0.3s ease-out'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#b91c1c', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                🔔 Tienes {criticalCount} pendientes
+              </span>
+              <button 
+                onClick={() => localStorage.setItem(key, 'true')} 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', color: '#94a3b8', padding: 0 }}
+              >
+                ×
+              </button>
+            </div>
+            <p style={{ margin: 0, fontSize: '0.78rem', color: '#475569', lineHeight: 1.4 }}>
+              Hay carritos abandonados o pedidos esperando atención. ¡Atiéndelos rápido para no perder la venta!
+            </p>
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+              <button 
+                onClick={() => {
+                  setActiveTab('pedidos');
+                  localStorage.setItem(key, 'true');
+                }}
+                style={{
+                  flex: 1,
+                  background: 'var(--primary-color, #6366f1)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '0.35rem 0.5rem',
+                  fontSize: '0.74rem',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                Ir a Pedidos
+              </button>
+              <button 
+                onClick={() => {
+                  setActiveTab('notificaciones_asesor');
+                  localStorage.setItem(key, 'true');
+                }}
+                style={{
+                  flex: 1,
+                  background: '#f1f5f9',
+                  color: '#475569',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '8px',
+                  padding: '0.35rem 0.5rem',
+                  fontSize: '0.74rem',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                Ver Alertas
+              </button>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* MODAL ANALÍTICA ASESOR */}
       {selectedAsesorAnalytics && (() => {
         const a = selectedAsesorAnalytics;
@@ -6592,7 +7192,7 @@ export default function Admin() {
 
 // ── SIDEBAR COMPONENT ──
 function SidebarContent({
-  activeTab, setActiveTab, productos, configuracion, handleLogout, onClose, role, currentAsesor
+  activeTab, setActiveTab, productos, configuracion, handleLogout, onClose, role, currentAsesor, activeNotificationsCount = 0
 }: {
   activeTab: TabType;
   setActiveTab: (t: TabType) => void;
@@ -6602,6 +7202,7 @@ function SidebarContent({
   onClose?: () => void;
   role: 'admin' | 'asesor';
   currentAsesor?: any;
+  activeNotificationsCount?: number;
 }) {
   const handleSelectTab = (tab: TabType) => {
     setActiveTab(tab);
@@ -6664,6 +7265,21 @@ function SidebarContent({
               <span className="nav-icon"><ShoppingBag size={14} /></span> Pedidos
               {activeTab === 'pedidos' && <span className="active-dot"></span>}
             </button>
+            <button 
+              className={`nav-item ${activeTab === 'notificaciones_asesor' ? 'active' : ''}`} 
+              onClick={() => handleSelectTab('notificaciones_asesor')}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingRight: '0.75rem' }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span className="nav-icon"><Lightbulb size={14} style={{ transform: 'rotate(180deg)' }} /></span> Notificaciones
+              </span>
+              {activeNotificationsCount > 0 && (
+                <span style={{ background: '#ef4444', color: 'white', fontSize: '0.7rem', padding: '1px 6px', borderRadius: '10px', fontWeight: 800 }}>
+                  {activeNotificationsCount}
+                </span>
+              )}
+              {activeTab === 'notificaciones_asesor' && activeNotificationsCount === 0 && <span className="active-dot"></span>}
+            </button>
             <button className={`nav-item ${activeTab === 'perfil_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('perfil_asesor')}>
               <span className="nav-icon"><Settings size={14} /></span> Mi Perfil
               {activeTab === 'perfil_asesor' && <span className="active-dot"></span>}
@@ -6674,6 +7290,10 @@ function SidebarContent({
             <button className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => handleSelectTab('dashboard')}>
               <span className="nav-icon"><LayoutDashboard size={14} /></span> Dashboard
               {activeTab === 'dashboard' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'pos' ? 'active' : ''}`} onClick={() => handleSelectTab('pos')}>
+              <span className="nav-icon"><CreditCard size={14} /></span> POS
+              {activeTab === 'pos' && <span className="active-dot"></span>}
             </button>
             <button className={`nav-item ${activeTab === 'productos' ? 'active' : ''}`} onClick={() => handleSelectTab('productos')}>
               <span className="nav-icon"><Package size={14} /></span> Productos
@@ -6687,10 +7307,6 @@ function SidebarContent({
               <span className="nav-icon"><ShoppingBag size={14} /></span> Pedidos
               {activeTab === 'pedidos' && <span className="active-dot"></span>}
             </button>
-          </>
-        )}
-        {role !== 'asesor' && (
-          <>
             <button className={`nav-item ${activeTab === 'clientes' ? 'active' : ''}`} onClick={() => handleSelectTab('clientes')}>
               <span className="nav-icon"><User size={14} /></span> Clientes
               {activeTab === 'clientes' && <span className="active-dot"></span>}
@@ -6703,12 +7319,6 @@ function SidebarContent({
               <span className="nav-icon"><Users size={14} /></span> Mayoristas
               {activeTab === 'mayoristas' && <span className="active-dot"></span>}
             </button>
-            {getTenantId() !== 'indisutex' && (
-              <button className={`nav-item ${activeTab === 'pos' ? 'active' : ''}`} onClick={() => handleSelectTab('pos')}>
-                <span className="nav-icon"><Calculator size={14} /></span> POS Ventas
-                {activeTab === 'pos' && <span className="active-dot"></span>}
-              </button>
-            )}
             <button className={`nav-item ${activeTab === 'siigo' ? 'active' : ''}`} onClick={() => handleSelectTab('siigo')}>
               <span className="nav-icon"><Code size={14} /></span> Desarrollador
               {activeTab === 'siigo' && <span className="active-dot"></span>}
@@ -6721,19 +7331,23 @@ function SidebarContent({
         )}
       </nav>
 
-      <div className="sidebar-storage-stats">
-        <div className="storage-text">
-          <strong>{productos.length} Productos</strong>
-          <span>límite sugerido 500</span>
+      {role !== 'asesor' && (
+        <div className="sidebar-storage-stats">
+          <div className="storage-text">
+            <strong>{productos.length} Productos</strong>
+            <span>límite sugerido 500</span>
+          </div>
+          <div className="storage-bar">
+            <div className="storage-progress" style={{ width: `${Math.min((productos.length / 500) * 100, 100)}%` }}></div>
+          </div>
         </div>
-        <div className="storage-bar">
-          <div className="storage-progress" style={{ width: `${Math.min((productos.length / 500) * 100, 100)}%` }}></div>
-        </div>
-      </div>
+      )}
 
       <div className="sidebar-footer" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', padding: '1.2rem', borderTop: '1px solid #f1f5f9' }}>
         <a 
-          href={`/${getTenantId()}${role === 'asesor' && currentAsesor?.telefono ? `?ws=${currentAsesor.telefono.replace(/\D/g, '')}` : '?ws=clear'}`} 
+          href={role === 'asesor' && currentAsesor?.telefono 
+            ? `/${getTenantId()}?ws=${currentAsesor.telefono.replace(/\D/g, '')}` 
+            : `/${getTenantId()}?ws=clear`} 
           target="_blank" 
           rel="noopener noreferrer"
           className="btn-primary" 
