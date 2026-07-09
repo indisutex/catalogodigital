@@ -63,7 +63,7 @@ const emptyProduct: ProductFormData = {
   stock: 0
 };
 
-type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor' | 'material_apoyo' | 'material_asesor';
+type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor' | 'material_apoyo' | 'material_asesor' | 'productos_asesor';
 
 type Toast = { message: string; type: 'success' | 'error' } | null;
 
@@ -107,7 +107,7 @@ export default function Admin() {
     const defaultTab = (userRole === 'asesor') ? 'pedidos' : (userRole === 'mayorista' ? 'resumen_asesor' : 'productos');
     const saved = localStorage.getItem('admin_active_tab') as string;
     if (saved === 'perfil_admin' || saved === 'perfil_admin_tab') return 'dashboard';
-    const allowedTabs: string[] = ['dashboard', 'productos', 'categorias', 'pedidos', 'clientes', 'asesores', 'mayoristas', 'pos', 'siigo', 'config', 'perfil_asesor', 'resumen_asesor', 'notificaciones_asesor', 'material_apoyo', 'material_asesor'];
+    const allowedTabs: string[] = ['dashboard', 'productos', 'categorias', 'pedidos', 'clientes', 'asesores', 'mayoristas', 'pos', 'siigo', 'config', 'perfil_asesor', 'resumen_asesor', 'notificaciones_asesor', 'material_apoyo', 'material_asesor', 'productos_asesor'];
     if (saved && !allowedTabs.includes(saved)) return defaultTab as TabType;
     return (saved as TabType) || (defaultTab as TabType);
   });
@@ -4203,6 +4203,7 @@ export default function Admin() {
                       </div>
                       <div className="form-field">
                         <label>PIN de Acceso</label>
+                        <img src={asesores.find(a => a.telefono === loggedAsesorPhone)?.foto_url ?? ''} className="img-preview-thumb" alt="Foto Perfil" style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover' }} />
                         <input 
                           type="text" 
                           id="perfil-pin"
@@ -8608,6 +8609,10 @@ function SidebarContent({
               <span className="nav-icon"><Upload size={14} /></span> Material de Venta
               {activeTab === 'material_asesor' && <span className="active-dot"></span>}
             </button>
+            <button className={`nav-item ${activeTab === 'productos_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('productos_asesor')}>
+              <span className="nav-icon"><Package size={14} /></span> Mis Productos
+              {activeTab === 'productos_asesor' && <span className="active-dot"></span>}
+            </button>
             <button className={`nav-item ${activeTab === 'perfil_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('perfil_asesor')}>
               <span className="nav-icon"><Settings size={14} /></span> Mi Perfil
               {activeTab === 'perfil_asesor' && <span className="active-dot"></span>}
@@ -8641,6 +8646,10 @@ function SidebarContent({
             <button className={`nav-item ${activeTab === 'material_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('material_asesor')}>
               <span className="nav-icon"><Upload size={14} /></span> Material de Apoyo
               {activeTab === 'material_asesor' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'productos_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('productos_asesor')}>
+              <span className="nav-icon"><Package size={14} /></span> Mis Productos
+              {activeTab === 'productos_asesor' && <span className="active-dot"></span>}
             </button>
             <button className={`nav-item ${activeTab === 'perfil_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('perfil_asesor')}>
               <span className="nav-icon"><Settings size={14} /></span> Mi Perfil
