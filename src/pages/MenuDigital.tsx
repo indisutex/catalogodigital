@@ -126,6 +126,8 @@ export default function MenuDigital() {
     setDetailProduct(null);
   };
   
+  const { items, addToCart, removeFromCart, updateQuantity, total, clearCart, buyerType, setBuyerType } = useCart();
+
   const [formData, setFormData] = useState({
     nombre: '',
     telefono: '',
@@ -149,7 +151,9 @@ export default function MenuDigital() {
               telefono: formData.telefono,
               ciudad: formData.ciudad,
               estado: 'abandonado',
-              linea_whatsapp: numeroWhatsApp
+              linea_whatsapp: numeroWhatsApp,
+              productos: items,
+              total: total
             })
             .eq('id', leadId);
         } else {
@@ -161,7 +165,9 @@ export default function MenuDigital() {
               ciudad: formData.ciudad,
               tenant_id: tenant,
               estado: 'abandonado',
-              linea_whatsapp: numeroWhatsApp
+              linea_whatsapp: numeroWhatsApp,
+              productos: items,
+              total: total
             })
             .select('id')
             .single();
@@ -176,9 +182,7 @@ export default function MenuDigital() {
     }, 1500); // 1.5s debounce
 
     return () => clearTimeout(delayDebounceFn);
-  }, [formData.nombre, formData.telefono, formData.ciudad, overrideWhatsApp, configuracion]);
-
-  const { items, addToCart, removeFromCart, updateQuantity, total, clearCart, buyerType, setBuyerType } = useCart();
+  }, [formData.nombre, formData.telefono, formData.ciudad, overrideWhatsApp, configuracion, items, total, leadId]);
 
   useEffect(() => {
     async function cargarDatos() {
