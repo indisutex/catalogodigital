@@ -138,6 +138,17 @@ export default function Admin() {
   const [nuevoMaterialCampana, setNuevoMaterialCampana] = useState('');
   const [campanaFilter, setCampanaFilter] = useState<string>('todas');
 
+  const uniqueCampanas = useMemo(() => {
+    const campanas = materiales.map(m => m.campana).filter(Boolean);
+    return Array.from(new Set(campanas));
+  }, [materiales]);
+
+  const filteredMateriales = materiales.filter(m => {
+    const typeMatch = materialFilter === 'todos' || m.tipo === materialFilter;
+    const campanaMatch = campanaFilter === 'todas' || m.campana === campanaFilter;
+    return typeMatch && campanaMatch;
+  });
+
   const currentAsesor = useMemo(() => {
     return (role === 'asesor' || role === 'mayorista') ? asesores.find(a => a.id === localStorage.getItem(`admin_asesor_id_${getTenantId()}`)) : null;
   }, [role, asesores]);
@@ -2550,16 +2561,7 @@ export default function Admin() {
     );
   }
 
-  const uniqueCampanas = useMemo(() => {
-    const campanas = materiales.map(m => m.campana).filter(Boolean);
-    return Array.from(new Set(campanas));
-  }, [materiales]);
 
-  const filteredMateriales = materiales.filter(m => {
-    const typeMatch = materialFilter === 'todos' || m.tipo === materialFilter;
-    const campanaMatch = campanaFilter === 'todas' || m.campana === campanaFilter;
-    return typeMatch && campanaMatch;
-  });
   // ── MAIN DASHBOARD ──
   return (
     <div className="admin-app">
