@@ -4,10 +4,25 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Cloud } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const SECRET_PIN = '0000';
+
+const getGoogleDriveEmbedUrl = (url: string) => {
+  if (!url) return '';
+  // File match
+  const fileMatch = url.match(/\/file\/d\/([^/]+)/);
+  if (fileMatch && fileMatch[1]) {
+    return `https://drive.google.com/file/d/${fileMatch[1]}/preview`;
+  }
+  // Folder match
+  const folderMatch = url.match(/\/folders\/([^/?]+)/);
+  if (folderMatch && folderMatch[1]) {
+    return `https://drive.google.com/embeddedfolderview?id=${folderMatch[1]}#grid`;
+  }
+  return url;
+};
 
 type ProductFormData = {
   nombre: string;
@@ -39,7 +54,7 @@ const emptyProduct: ProductFormData = {
   stock: 0
 };
 
-type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor';
+type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor' | 'material_apoyo' | 'material_asesor';
 
 type Toast = { message: string; type: 'success' | 'error' } | null;
 
@@ -71,20 +86,21 @@ export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return localStorage.getItem(`admin_auth_${getTenantId()}`) === 'true';
   });
-  const [role, setRole] = useState<'admin' | 'asesor'>(() => {
-    return (localStorage.getItem(`admin_role_${getTenantId()}`) as 'admin' | 'asesor') || 'admin';
+  const [role, setRole] = useState<'admin' | 'asesor' | 'mayorista'>(() => {
+    return (localStorage.getItem(`admin_role_${getTenantId()}`) as 'admin' | 'asesor' | 'mayorista') || 'admin';
   });
   const [loggedAsesorPhone, setLoggedAsesorPhone] = useState<string | null>(() => {
     return localStorage.getItem(`admin_asesor_phone_${getTenantId()}`);
   });
   const [pin, setPin] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>(() => {
-    const defaultTab = (localStorage.getItem(`admin_role_${getTenantId()}`) === 'asesor') ? 'pedidos' : 'productos';
+    const userRole = localStorage.getItem(`admin_role_${getTenantId()}`);
+    const defaultTab = (userRole === 'asesor') ? 'pedidos' : (userRole === 'mayorista' ? 'resumen_asesor' : 'productos');
     const saved = localStorage.getItem('admin_active_tab') as string;
     if (saved === 'perfil_admin' || saved === 'perfil_admin_tab') return 'dashboard';
-    const allowedTabs: string[] = ['dashboard', 'productos', 'categorias', 'pedidos', 'clientes', 'asesores', 'mayoristas', 'pos', 'siigo', 'config', 'perfil_asesor', 'resumen_asesor', 'notificaciones_asesor'];
-    if (saved && !allowedTabs.includes(saved)) return defaultTab;
-    return (saved as TabType) || defaultTab;
+    const allowedTabs: string[] = ['dashboard', 'productos', 'categorias', 'pedidos', 'clientes', 'asesores', 'mayoristas', 'pos', 'siigo', 'config', 'perfil_asesor', 'resumen_asesor', 'notificaciones_asesor', 'material_apoyo', 'material_asesor'];
+    if (saved && !allowedTabs.includes(saved)) return defaultTab as TabType;
+    return (saved as TabType) || (defaultTab as TabType);
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -103,8 +119,14 @@ export default function Admin() {
   const [clientes, setClientes] = useState<any[]>([]);
   const [clienteSearchQuery, setClienteSearchQuery] = useState('');
   const [asesores, setAsesores] = useState<Asesor[]>([]);
+  const [materiales, setMateriales] = useState<any[]>([]);
+  const [nuevoMaterialTitulo, setNuevoMaterialTitulo] = useState('');
+  const [nuevoMaterialDesc, setNuevoMaterialDesc] = useState('');
+  const [nuevoMaterialTipo, setNuevoMaterialTipo] = useState<'video' | 'imagen' | 'documento'>('video');
+  const [nuevoMaterialUrl, setNuevoMaterialUrl] = useState('');
+
   const currentAsesor = useMemo(() => {
-    return role === 'asesor' ? asesores.find(a => a.id === localStorage.getItem(`admin_asesor_id_${getTenantId()}`)) : null;
+    return (role === 'asesor' || role === 'mayorista') ? asesores.find(a => a.id === localStorage.getItem(`admin_asesor_id_${getTenantId()}`)) : null;
   }, [role, asesores]);
 
   const getMotivationalPhrase = (asesorId: string) => {
@@ -467,14 +489,15 @@ export default function Admin() {
       const tenant = getTenantId();
 
       // Fetch other data in parallel
-      const [catRes, subcatRes, confRes, pedRes, leadRes, cliRes, aseRes] = await Promise.all([
+      const [catRes, subcatRes, confRes, pedRes, leadRes, cliRes, aseRes, matRes] = await Promise.all([
         supabase.from('categorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
         supabase.from('subcategorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
         supabase.from('configuracion').select('*').eq('tenant_id', tenant).limit(1).single(),
         supabase.from('pedidos').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
         supabase.from('leads').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
         supabase.from('clientes_exitosos').select('*').eq('tenant_id', tenant).order('total_compras', { ascending: false }),
-        supabase.from('asesores').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false })
+        supabase.from('asesores').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
+        supabase.from('material_apoyo').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false })
       ]);
 
       if (catRes.data) setCategoriasData(catRes.data);
@@ -483,6 +506,7 @@ export default function Admin() {
       if (leadRes.data) setLeads(leadRes.data);
       if (cliRes.data) setClientes(cliRes.data);
       if (aseRes && aseRes.data) setAsesores(aseRes.data);
+      if (matRes && matRes.data) setMateriales(matRes.data);
 
       // Fetch products in chunks of 1000 to bypass Supabase defaults
       let allProducts: Producto[] = [];
@@ -559,14 +583,16 @@ export default function Admin() {
 
       if (advisorMatch) {
         localStorage.setItem(`admin_auth_${getTenantId()}`, 'true');
-        localStorage.setItem(`admin_role_${getTenantId()}`, 'asesor');
+        const userRole = advisorMatch.tipo === 'mayorista' ? 'mayorista' : 'asesor';
+        localStorage.setItem(`admin_role_${getTenantId()}`, userRole);
         localStorage.setItem(`admin_asesor_id_${getTenantId()}`, advisorMatch.id);
         localStorage.setItem(`admin_asesor_phone_${getTenantId()}`, advisorMatch.telefono);
-        setRole('asesor');
+        setRole(userRole);
         setLoggedAsesorPhone(advisorMatch.telefono);
         setIsAuthenticated(true);
-        setActiveTab('pedidos');
-        showToast(`Sesión iniciada como asesor: ${advisorMatch.nombre} ✓`, 'success');
+        const defaultTab = userRole === 'mayorista' ? 'resumen_asesor' : 'pedidos';
+        setActiveTab(defaultTab);
+        showToast(`Sesión iniciada como ${userRole === 'mayorista' ? 'mayorista' : 'asesor'}: ${advisorMatch.nombre} ✓`, 'success');
       } else {
         showToast('PIN incorrecto o no registrado.', 'error');
         setPin('');
@@ -1823,8 +1849,10 @@ export default function Admin() {
 
   const activeNotificationsCount = activeNotifications.length;
 
+  const [viewingAdvisorAlerts, setViewingAdvisorAlerts] = useState<{ advisor: any; alerts: any[] } | null>(null);
+
   const filteredAsesores = useMemo(() => {
-    let list = [...asesores];
+    let list = asesores.filter(a => a.tipo === 'asesor' || !a.tipo);
     if (asesorSearchQuery.trim()) {
       const q = asesorSearchQuery.toLowerCase();
       list = list.filter(a => 
@@ -1863,6 +1891,63 @@ export default function Admin() {
       showToast('Error al eliminar duplicados', 'error');
     } finally {
       setCleaningDuplicates(false);
+    }
+  }
+
+  async function handleCrearMaterial(e: React.FormEvent) {
+    e.preventDefault();
+    if (!nuevoMaterialTitulo.trim() || !nuevoMaterialUrl.trim()) {
+      showToast('Título y archivo son obligatorios.', 'error');
+      return;
+    }
+    setLoading(true);
+    try {
+      const tenant = getTenantId();
+      const { data, error } = await supabase
+        .from('material_apoyo')
+        .insert({
+          tenant_id: tenant,
+          titulo: nuevoMaterialTitulo.trim(),
+          descripcion: nuevoMaterialDesc.trim() || null,
+          tipo: nuevoMaterialTipo,
+          url: nuevoMaterialUrl
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      setMateriales([data, ...materiales]);
+      setNuevoMaterialTitulo('');
+      setNuevoMaterialDesc('');
+      setNuevoMaterialUrl('');
+      showToast('Material de apoyo agregado ✓', 'success');
+    } catch (err: any) {
+      console.error(err);
+      showToast('Error registrando material: ' + err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleEliminarMaterial(id: string) {
+    if (!window.confirm('¿Seguro que deseas eliminar este material de apoyo?')) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('material_apoyo')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setMateriales(materiales.filter(m => m.id !== id));
+      showToast('Material de apoyo eliminado ✓', 'success');
+    } catch (err: any) {
+      console.error(err);
+      showToast('Error eliminando material: ' + err.message, 'error');
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -3183,10 +3268,181 @@ export default function Admin() {
           )}
 
           {/* ── RESUMEN ASESOR TAB ── */}
-          {activeTab === 'resumen_asesor' && role === 'asesor' && (() => {
+          {activeTab === 'resumen_asesor' && (role === 'asesor' || role === 'mayorista') && (() => {
             const currentAsesorData = asesores.find(a => a.telefono === loggedAsesorPhone);
             if (!currentAsesorData) return <p style={{ color: '#64748b', padding: '2rem', textAlign: 'center' }}>Cargando datos del asesor...</p>;
             const advStats = getAdvisorStats(currentAsesorData);
+
+            if (role === 'mayorista') {
+              // Get all active/pending orders matching this wholesaler's line_whatsapp
+              const mPhones = (currentAsesorData.telefono || '').split(',').map((ph: string) => ph.trim().replace(/\D/g, '')).filter(Boolean);
+              const mOrders = pedidos.filter(p => {
+                const op = p.linea_whatsapp?.replace(/\D/g, '');
+                return op && mPhones.includes(op);
+              });
+
+              // Extract all product units requested in mOrders (only active/pending/completed)
+              const requestedProductsMap: { [key: string]: { name: string; size: string; count: number; image: string; price: number } } = {};
+              mOrders.forEach(o => {
+                try {
+                  const items = Array.isArray(o.productos) ? o.productos : JSON.parse(o.productos || '[]');
+                  items.forEach((item: any) => {
+                    const key = `${item.nombre || item.title}_${item.size || 'Única'}`;
+                    const price = item.precio_por_mayor || item.precio || 0;
+                    if (!requestedProductsMap[key]) {
+                      requestedProductsMap[key] = {
+                        name: item.nombre || item.title,
+                        size: item.size || 'Única',
+                        count: 0,
+                        image: item.imagen || item.image || '',
+                        price: price
+                      };
+                    }
+                    requestedProductsMap[key].count += Number(item.cantidad || item.quantity || 1);
+                  });
+                } catch (err) {
+                  console.error("Error parsing order products: ", err);
+                }
+              });
+
+              const consolidatedProductsList = Object.values(requestedProductsMap).sort((a, b) => b.count - a.count);
+              const totalItemsCount = consolidatedProductsList.reduce((acc, p) => acc + p.count, 0);
+
+              // WhatsApp handler
+              const handleSolicitarWhatsApp = (type: 'consolidado' | 'cliente') => {
+                let msg = `*SOLICITUD DE PEDIDO MAYORISTA - ${currentAsesorData.nombre}*\n`;
+                msg += `Fecha: ${new Date().toLocaleDateString()}\n`;
+                msg += `Total artículos: ${totalItemsCount}\n\n`;
+
+                if (type === 'consolidado') {
+                  msg += `*RESUMEN CONSOLIDADO DE ARTÍCULOS:*\n`;
+                  consolidatedProductsList.forEach(p => {
+                    msg += `• ${p.name} (Talla: ${p.size}) x${p.count} unds\n`;
+                  });
+                } else {
+                  msg += `*DETALLE DE PEDIDOS POR CLIENTE:*\n`;
+                  mOrders.forEach((o, index) => {
+                    msg += `\n_${index + 1}. Cliente: ${o.cliente_nombre || 'N/A'} (Línea: ${o.linea_whatsapp || 'N/A'})_\n`;
+                    try {
+                      const items = Array.isArray(o.productos) ? o.productos : JSON.parse(o.productos || '[]');
+                      items.forEach((item: any) => {
+                        msg += `  - ${item.nombre || item.title} (Talla: ${item.size || 'Única'}) x${item.cantidad || 1} unds\n`;
+                      });
+                    } catch {}
+                  });
+                }
+
+                msg += `\nFavor preparar despacho a nombre de ${currentAsesorData.nombre}. ¡Muchas gracias!`;
+
+                const adminPhone = configuracion?.whatsapp?.replace(/\D/g, '') || '';
+                const waUrl = `https://wa.me/${adminPhone}?text=${encodeURIComponent(msg)}`;
+                window.open(waUrl, '_blank');
+              };
+
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  {/* Dashboard stats cards */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
+                    <div style={{ background: 'white', padding: '1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0', textAlign: 'left', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                      <span style={{ fontSize: '2rem' }}>📦</span>
+                      <div style={{ textAlign: 'left' }}>
+                        <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Total Pedidos</span>
+                        <h3 style={{ margin: '0.2rem 0 0 0', fontSize: '1.5rem', fontWeight: 800, color: '#0f172a' }}>{mOrders.length}</h3>
+                      </div>
+                    </div>
+                    <div style={{ background: 'white', padding: '1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0', textAlign: 'left', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                      <span style={{ fontSize: '2rem' }}>👕</span>
+                      <div style={{ textAlign: 'left' }}>
+                        <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Artículos Solicitados</span>
+                        <h3 style={{ margin: '0.2rem 0 0 0', fontSize: '1.5rem', fontWeight: 800, color: '#0ea5e9' }}>{totalItemsCount}</h3>
+                      </div>
+                    </div>
+                    <div style={{ background: 'white', padding: '1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0', textAlign: 'left', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                      <span style={{ fontSize: '2rem' }}>💰</span>
+                      <div style={{ textAlign: 'left' }}>
+                        <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Ventas Totales</span>
+                        <h3 style={{ margin: '0.2rem 0 0 0', fontSize: '1.5rem', fontWeight: 800, color: '#10b981' }}>${advStats.totalVentas.toLocaleString()}</h3>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Consolidator panel */}
+                  <div className="admin-panel">
+                    <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                      <div style={{ textAlign: 'left' }}>
+                        <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>👕 Productos Solicitados por Clientes</h3>
+                        <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Consolida los productos que te han pedido tus clientes para solicitárselos a Indisutex.</p>
+                      </div>
+                      
+                      {consolidatedProductsList.length > 0 && (
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button 
+                            type="button" 
+                            onClick={() => handleSolicitarWhatsApp('consolidado')}
+                            className="btn-primary" 
+                            style={{ background: '#0ea5e9', display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: 700, padding: '0.55rem 1rem', fontSize: '0.82rem', border: 'none', borderRadius: '8px', cursor: 'pointer', color: 'white' }}
+                          >
+                            📲 Solicitud Consolidada
+                          </button>
+                          <button 
+                            type="button" 
+                            onClick={() => handleSolicitarWhatsApp('cliente')}
+                            className="btn-primary" 
+                            style={{ background: '#10b981', display: 'flex', alignItems: 'center', gap: '0.35rem', fontWeight: 700, padding: '0.55rem 1rem', fontSize: '0.82rem', border: 'none', borderRadius: '8px', cursor: 'pointer', color: 'white' }}
+                          >
+                            📲 Solicitud por Clientes
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    <div className="panel-body">
+                      {consolidatedProductsList.length === 0 ? (
+                        <div style={{ padding: '3rem 1rem', textAlign: 'center', color: '#64748b' }}>
+                          <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>👕</div>
+                          <h4 style={{ margin: '0 0 0.25rem 0', color: '#0f172a' }}>No hay solicitudes de clientes</h4>
+                          <p style={{ margin: 0, fontSize: '0.85rem' }}>Comparte tu enlace de catálogo mayorista para comenzar a recibir pedidos de tus clientes.</p>
+                        </div>
+                      ) : (
+                        <div style={{ overflowX: 'auto' }}>
+                          <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                            <thead>
+                              <tr style={{ borderBottom: '2px solid #f1f5f9', background: '#f8fafc' }}>
+                                <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Producto</th>
+                                <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Talla / Variante</th>
+                                <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Cantidad Solicitada</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {consolidatedProductsList.map((item, idx) => (
+                                <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                  <td style={{ padding: '1rem', fontWeight: 700, color: '#0f172a' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                      {item.image ? (
+                                        <img src={item.image} alt={item.name} style={{ width: '40px', height: '40px', borderRadius: '6px', objectFit: 'cover', border: '1px solid #e2e8f0' }} />
+                                      ) : (
+                                        <div style={{ width: '40px', height: '40px', borderRadius: '6px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>👕</div>
+                                      )}
+                                      <span>{item.name}</span>
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 700, color: '#475569' }}>
+                                    <span style={{ background: '#f1f5f9', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.82rem' }}>{item.size}</span>
+                                  </td>
+                                  <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 800, fontSize: '1rem', color: '#0ea5e9' }}>
+                                    x{item.count}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
             return (
               <div className="admin-panel" style={{ borderRadius: '20px', padding: '1.5rem 1.75rem' }}>
                 <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', textAlign: 'left' }}>
@@ -3457,7 +3713,7 @@ export default function Admin() {
           })()}
 
           {/* ── PERFIL ASESOR TAB ── */}
-          {activeTab === 'perfil_asesor' && role === 'asesor' && (
+          {activeTab === 'perfil_asesor' && (role === 'asesor' || role === 'mayorista') && (
             <div className="admin-panel">
               <div className="panel-header">
                 <div>
@@ -3577,7 +3833,7 @@ export default function Admin() {
                         <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 1rem 0' }}>Usa estos enlaces para compartirlos con tus clientes. Cuando compren a través de ellos, las ventas se te asignarán automáticamente.</p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                           {(loggedAsesorPhone || '').split(',').map(p => p.trim()).filter(Boolean).map((phone, idx) => {
-                            const link = `${window.location.origin}/${getTenantId()}?ws=${phone.replace(/\D/g, '')}`;
+                            const link = `${window.location.origin}/${getTenantId()}?ws=${phone.replace(/\D/g, '')}${role === 'mayorista' ? '&tipo=mayorista' : ''}`;
                             return (
                               <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'white', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
                                 <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', whiteSpace: 'nowrap' }}>Línea {phone}:</span>
@@ -3612,6 +3868,96 @@ export default function Admin() {
                   </form>
                 ) : (
                   <p>Cargando datos del perfil...</p>
+                )}
+              </div>
+            </div>
+          )}
+
+
+          {/* ── MATERIAL DE APOYO ASESOR / MAYORISTA TAB ── */}
+          {activeTab === 'material_asesor' && (
+            <div className="admin-panel">
+              <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
+                <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Upload size={18} /> Material de Apoyo y Ventas</h3>
+                <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Visualiza, comparte y descarga los recursos de Google Drive provistos por el negocio</p>
+              </div>
+              <div className="panel-body">
+                {materiales.length === 0 ? (
+                  <div style={{ padding: '3rem 1rem', textAlign: 'center', color: '#64748b' }}>
+                    <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📁</div>
+                    <h4 style={{ margin: '0 0 0.25rem 0', color: '#0f172a' }}>No hay material de apoyo disponible</h4>
+                    <p style={{ margin: 0, fontSize: '0.85rem' }}>El administrador aún no ha registrado recursos de Google Drive.</p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
+                    {materiales.map((m) => {
+                      const embedUrl = getGoogleDriveEmbedUrl(m.url);
+                      return (
+                        <div key={m.id} style={{ border: '1px solid #e2e8f0', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                          {/* Preview Area / Iframe */}
+                          <div style={{ background: '#f8fafc', height: '220px', position: 'relative', borderBottom: '1px solid #e2e8f0' }}>
+                            {embedUrl ? (
+                              <iframe
+                                src={embedUrl}
+                                width="100%"
+                                height="100%"
+                                frameBorder="0"
+                                allow="autoplay"
+                                style={{ border: 'none' }}
+                              ></iframe>
+                            ) : (
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8', fontSize: '2rem' }}>
+                                {m.tipo === 'video' ? '🎥' : m.tipo === 'imagen' ? '🖼️' : '📄'}
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Info Area */}
+                          <div style={{ padding: '1rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'left' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '0.5rem' }}>
+                              <span style={{ 
+                                fontSize: '0.68rem', 
+                                background: m.tipo === 'video' ? '#fee2e2' : m.tipo === 'imagen' ? '#dcfce7' : m.tipo === 'carpeta' ? '#fef3c7' : '#e0f2fe',
+                                color: m.tipo === 'video' ? '#ef4444' : m.tipo === 'imagen' ? '#22c55e' : m.tipo === 'carpeta' ? '#d97706' : '#0284c7',
+                                padding: '0.2rem 0.55rem', 
+                                borderRadius: '20px', 
+                                fontWeight: 800,
+                                textTransform: 'uppercase'
+                              }}>
+                                {m.tipo === 'video' ? '🎥 Video' : m.tipo === 'imagen' ? '🖼️ Imagen' : m.tipo === 'carpeta' ? '📁 Carpeta' : '📄 PDF/Doc'}
+                              </span>
+                            </div>
+                            <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0f172a', fontWeight: 800 }}>{m.titulo}</h4>
+                            {m.descripcion && <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b', lineHeight: 1.4 }}>{m.descripcion}</p>}
+                            
+                            {/* Action buttons */}
+                            <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto', paddingTop: '0.75rem', borderTop: '1px solid #f1f5f9' }}>
+                              <a
+                                href={m.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn-secondary"
+                                style={{ flex: 1, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.45rem' }}
+                              >
+                                <Eye size={12} /> Abrir Drive
+                              </a>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(m.url);
+                                  showToast('Enlace de recurso copiado ✓', 'success');
+                                }}
+                                className="btn-primary"
+                                style={{ flex: 1.2, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.45rem', borderRadius: '8px', background: 'var(--primary-color, #6366f1)', color: 'white', border: 'none', fontWeight: 700, cursor: 'pointer' }}
+                              >
+                                <Copy size={12} /> Copiar Enlace
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
             </div>
@@ -4230,6 +4576,176 @@ export default function Admin() {
             </div>
           )}
 
+          {/* ── MATERIAL DE APOYO ADMIN TAB ── */}
+          {activeTab === 'material_apoyo' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {/* Formulario de Subida/Registro */}
+              <div className="admin-panel">
+                <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
+                  <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}><Upload size={18} /> Registrar Recurso en Google Drive</h3>
+                  <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Agrega carpetas, imágenes o videos compartidos desde Google Drive para el equipo</p>
+                </div>
+                <div className="panel-body">
+                  <form onSubmit={handleCrearMaterial} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', alignItems: 'start' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Título del Recurso</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Ej: Video Campaña Colección Invierno"
+                        value={nuevoMaterialTitulo}
+                        onChange={e => setNuevoMaterialTitulo(e.target.value)}
+                        style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Descripción (Opcional)</label>
+                      <input
+                        type="text"
+                        placeholder="Ej: Video para estados de WhatsApp"
+                        value={nuevoMaterialDesc}
+                        onChange={e => setNuevoMaterialDesc(e.target.value)}
+                        style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Tipo de Recurso</label>
+                      <select
+                        value={nuevoMaterialTipo}
+                        onChange={e => setNuevoMaterialTipo(e.target.value as any)}
+                        style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none', background: 'white' }}
+                      >
+                        <option value="video">🎥 Video (Google Drive)</option>
+                        <option value="imagen">🖼️ Imagen / Catálogo (Google Drive)</option>
+                        <option value="documento">📄 Documento / PDF (Google Drive)</option>
+                        <option value="carpeta">📁 Carpeta Completa (Google Drive)</option>
+                      </select>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Enlace de Google Drive (Compartido)</label>
+                      <input
+                        type="url"
+                        required
+                        placeholder="https://drive.google.com/..."
+                        value={nuevoMaterialUrl}
+                        onChange={e => setNuevoMaterialUrl(e.target.value)}
+                        style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'transparent', userSelect: 'none' }}>Spacer</div>
+                      <button
+                        type="submit"
+                        className="btn-primary"
+                        disabled={loading}
+                        style={{ padding: '0.62rem', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontWeight: 700, height: '43px' }}
+                      >
+                        <Plus size={16} /> Registrar Recurso
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+
+              {/* Listado de Material de Apoyo */}
+              <div className="admin-panel">
+                <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
+                  <h3 style={{ margin: 0 }}>📁 Recursos y Material de Apoyo</h3>
+                  <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Listado de materiales de apoyo activos para el equipo de ventas</p>
+                </div>
+                <div className="panel-body">
+                  {materiales.length === 0 ? (
+                    <div style={{ padding: '3rem 1rem', textAlign: 'center', color: '#64748b' }}>
+                      <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📁</div>
+                      <h4 style={{ margin: '0 0 0.25rem 0', color: '#0f172a' }}>No hay material de apoyo</h4>
+                      <p style={{ margin: 0, fontSize: '0.85rem' }}>Registra enlaces de Google Drive arriba para que tus vendedores los utilicen.</p>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
+                      {materiales.map((m) => {
+                        const embedUrl = getGoogleDriveEmbedUrl(m.url);
+                        return (
+                          <div key={m.id} style={{ border: '1px solid #e2e8f0', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                            {/* Preview Area / Iframe */}
+                            <div style={{ background: '#f8fafc', height: '220px', position: 'relative', borderBottom: '1px solid #e2e8f0' }}>
+                              {embedUrl ? (
+                                <iframe
+                                  src={embedUrl}
+                                  width="100%"
+                                  height="100%"
+                                  frameBorder="0"
+                                  allow="autoplay"
+                                  style={{ border: 'none' }}
+                                ></iframe>
+                              ) : (
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8', fontSize: '2rem' }}>
+                                  {m.tipo === 'video' ? '🎥' : m.tipo === 'imagen' ? '🖼️' : '📄'}
+                                </div>
+                              )}
+                            </div>
+                            
+                            {/* Info Area */}
+                            <div style={{ padding: '1rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'left' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '0.5rem' }}>
+                                <span style={{ 
+                                  fontSize: '0.68rem', 
+                                  background: m.tipo === 'video' ? '#fee2e2' : m.tipo === 'imagen' ? '#dcfce7' : m.tipo === 'carpeta' ? '#fef3c7' : '#e0f2fe',
+                                  color: m.tipo === 'video' ? '#ef4444' : m.tipo === 'imagen' ? '#22c55e' : m.tipo === 'carpeta' ? '#d97706' : '#0284c7',
+                                  padding: '0.2rem 0.5rem', 
+                                  borderRadius: '20px', 
+                                  fontWeight: 800,
+                                  textTransform: 'uppercase'
+                                }}>
+                                  {m.tipo === 'video' ? '🎥 Video' : m.tipo === 'imagen' ? '🖼️ Imagen' : m.tipo === 'carpeta' ? '📁 Carpeta' : '📄 PDF/Doc'}
+                                </span>
+                              </div>
+                              <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0f172a', fontWeight: 800 }}>{m.titulo}</h4>
+                              {m.descripcion && <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b', lineHeight: 1.4 }}>{m.descripcion}</p>}
+                              
+                              {/* Action buttons */}
+                              <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto', paddingTop: '0.75rem', borderTop: '1px solid #f1f5f9' }}>
+                                <a
+                                  href={m.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="btn-secondary"
+                                  style={{ flex: 1, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.45rem' }}
+                                >
+                                  <Eye size={12} /> Abrir Drive
+                                </a>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(m.url);
+                                    showToast('Enlace de recurso copiado ✓', 'success');
+                                  }}
+                                  className="btn-secondary"
+                                  style={{ padding: '0.45rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                                  title="Copiar Enlace para Compartir"
+                                >
+                                  <Copy size={12} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleEliminarMaterial(m.id)}
+                                  className="btn-secondary"
+                                  style={{ color: '#ef4444', borderColor: '#fee2e2', background: '#fef2f2', padding: '0.45rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                                  title="Eliminar Recurso"
+                                >
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
 
           {/* ── CLIENTES TAB ── */}
           {activeTab === 'clientes' && (
@@ -4470,6 +4986,7 @@ export default function Admin() {
                           <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>PIN de Acceso</th>
                           <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Pedidos Asignados</th>
                           <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'right' }}>Total Ventas (Pagados)</th>
+                          <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Alertas</th>
                           <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Enlace de Catálogo Exclusivo</th>
                           <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Acciones</th>
                         </tr>
@@ -4585,6 +5102,43 @@ export default function Admin() {
                               <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 800, color: '#10b981' }}>
                                 ${totalVentas.toLocaleString()}
                               </td>
+                              {(() => {
+                                const stats = getAdvisorStats(a);
+                                const notifications = getAdvisorNotifications(a, stats);
+                                const alerts = notifications.filter(n => n.type === 'danger' || n.type === 'warning' || n.type === 'info');
+                                
+                                return (
+                                  <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                    {alerts.length === 0 ? (
+                                      <span style={{ fontSize: '0.78rem', color: '#10b981', background: '#dcfce7', padding: '0.2rem 0.55rem', borderRadius: '20px', fontWeight: 700 }}>
+                                        ✅ Al día
+                                      </span>
+                                    ) : (
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'center' }}>
+                                        <span 
+                                          onClick={() => setViewingAdvisorAlerts({ advisor: a, alerts: alerts })}
+                                          style={{ 
+                                            fontSize: '0.74rem', 
+                                            color: 'white', 
+                                            background: alerts.some(n => n.type === 'danger') ? '#ef4444' : '#f59e0b', 
+                                            padding: '0.2rem 0.55rem', 
+                                            borderRadius: '20px', 
+                                            fontWeight: 800,
+                                            boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                                            cursor: 'pointer',
+                                            transition: 'transform 0.2s ease'
+                                          }}
+                                          onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'}
+                                          onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                                          title="Haga clic para ver el detalle de las alertas"
+                                        >
+                                          ⚠️ {alerts.length} {alerts.length === 1 ? 'Alerta' : 'Alertas'}
+                                        </span>
+                                      </div>
+                                    )}
+                                  </td>
+                                );
+                              })()}
                               <td style={{ padding: '1rem' }}>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                                   {(a.telefono || '').split(',').map(p => p.trim()).filter(Boolean).map((phone, idx) => {
@@ -4841,8 +5395,9 @@ export default function Admin() {
                             <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Línea WhatsApp</th>
                             <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>PIN de Acceso</th>
                             <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Pedidos</th>
-                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'right' }}>Total Compras</th>
-                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Enlace Catálogo Mayorista</th>
+                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'right' }}>Total Ventas (Pagados)</th>
+                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Alertas</th>
+                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Enlace de Catálogo Exclusivo</th>
                             <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Acciones</th>
                           </tr>
                         </thead>
@@ -4910,19 +5465,81 @@ export default function Admin() {
                                   )}
                                 </td>
                                 <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 600, color: '#475569' }}>{mOrders.length}</td>
-                                <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 800, color: '#0ea5e9' }}>${totalCompras.toLocaleString()}</td>
+                                <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 800, color: '#10b981' }}>${totalCompras.toLocaleString()}</td>
+                                {(() => {
+                                  const stats = getAdvisorStats(m);
+                                  const notifications = getAdvisorNotifications(m, stats);
+                                  const alerts = notifications.filter(n => n.type === 'danger' || n.type === 'warning' || n.type === 'info');
+                                  
+                                  return (
+                                    <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                      {alerts.length === 0 ? (
+                                        <span style={{ fontSize: '0.78rem', color: '#10b981', background: '#dcfce7', padding: '0.2rem 0.55rem', borderRadius: '20px', fontWeight: 700 }}>
+                                          ✅ Al día
+                                        </span>
+                                      ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'center' }}>
+                                          <span 
+                                            onClick={() => setViewingAdvisorAlerts({ advisor: m, alerts: alerts })}
+                                            style={{ 
+                                              fontSize: '0.74rem', 
+                                              color: 'white', 
+                                              background: alerts.some(n => n.type === 'danger') ? '#ef4444' : '#f59e0b', 
+                                              padding: '0.2rem 0.55rem', 
+                                              borderRadius: '20px', 
+                                              fontWeight: 800,
+                                              boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                                              cursor: 'pointer',
+                                              transition: 'transform 0.2s ease'
+                                            }}
+                                            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'}
+                                            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                                            title="Haga clic para ver el detalle de las alertas"
+                                          >
+                                            ⚠️ {alerts.length} {alerts.length === 1 ? 'Alerta' : 'Alertas'}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </td>
+                                  );
+                                })()}
                                 <td style={{ padding: '1rem' }}>
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                                     {(m.telefono || '').split(',').map((p: string) => p.trim()).filter(Boolean).map((phone: string, idx: number) => {
                                       const link = `${window.location.origin}/${getTenantId()}?ws=${phone}&tipo=mayorista`;
                                       return (
-                                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                          <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, minWidth: '90px' }}>{phone}:</span>
-                                          <input type="text" readOnly value={link}
-                                            style={{ padding: '0.25rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.75rem', width: '150px', background: '#f8fafc', color: '#64748b' }}
-                                            onClick={e => (e.target as HTMLInputElement).select()} />
-                                          <button type="button" onClick={() => { navigator.clipboard.writeText(link); showToast(`Enlace mayorista copiado ✓`, 'success'); }}
-                                            className="btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center', gap: '0.2rem', whiteSpace: 'nowrap' }}>
+                                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                                          <a
+                                            href={link}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            style={{ 
+                                              fontSize: '0.78rem', 
+                                              color: '#1e1b4b', 
+                                              fontWeight: 700, 
+                                              display: 'inline-flex', 
+                                              alignItems: 'center', 
+                                              gap: '0.25rem', 
+                                              textDecoration: 'underline', 
+                                              textDecorationColor: '#cbd5e1', 
+                                              transition: 'all 0.2s',
+                                              cursor: 'pointer'
+                                            }}
+                                            onMouseEnter={e => { e.currentTarget.style.color = '#0ea5e9'; e.currentTarget.style.textDecorationColor = '#0ea5e9'; }}
+                                            onMouseLeave={e => { e.currentTarget.style.color = '#1e1b4b'; e.currentTarget.style.textDecorationColor = '#cbd5e1'; }}
+                                            title="Click para ver catálogo de este mayorista"
+                                          >
+                                            📲 {phone}
+                                          </a>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              navigator.clipboard.writeText(link);
+                                              showToast(`Enlace mayorista copiado ✓`, 'success');
+                                            }}
+                                            className="btn-secondary"
+                                            style={{ padding: '0.15rem 0.4rem', fontSize: '0.65rem', display: 'inline-flex', alignItems: 'center', gap: '0.2rem', whiteSpace: 'nowrap' }}
+                                          >
                                             <Copy size={10} /> Copiar
                                           </button>
                                         </div>
@@ -4941,6 +5558,15 @@ export default function Admin() {
                                       </>
                                     ) : (
                                       <>
+                                        <button
+                                          type="button"
+                                          onClick={() => setSelectedAsesorAnalytics(m)}
+                                          className="btn-secondary"
+                                          style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', color: 'var(--primary-color,#6366f1)', borderColor: 'var(--primary-color,#6366f1)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontWeight: 600 }}
+                                          title="Ver analítica del mayorista"
+                                        >
+                                          <LayoutDashboard size={12} /> Resumen
+                                        </button>
                                         <button type="button" onClick={() => {
                                           setEditingMayoristaId(m.id);
                                           setEditingMayoristaNombre(m.nombre);
@@ -7186,6 +7812,51 @@ export default function Admin() {
           </div>
         );
       })()}
+
+      {/* MODAL VER DETALLE DE ALERTAS DE ASESOR */}
+      {viewingAdvisorAlerts && (() => {
+        const { advisor, alerts } = viewingAdvisorAlerts;
+        return (
+          <div className="modal-overlay" onClick={() => setViewingAdvisorAlerts(null)} style={{ zIndex: 1100 }}>
+            <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px', width: '100%', borderRadius: '16px', padding: '1.5rem', background: 'white' }}>
+              <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1.25rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  ⚠️ Alertas Activas — {advisor.nombre}
+                </h3>
+                <button onClick={() => setViewingAdvisorAlerts(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <X size={20} />
+                </button>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxHeight: '60vh', overflowY: 'auto', paddingRight: '0.25rem' }}>
+                {alerts.map((al, idx) => (
+                  <div 
+                    key={idx} 
+                    style={{ 
+                      padding: '1rem', 
+                      borderRadius: '12px', 
+                      background: al.type === 'danger' ? '#fef2f2' : al.type === 'warning' ? '#fffbeb' : '#f0f9ff',
+                      border: al.type === 'danger' ? '1px solid #fee2e2' : al.type === 'warning' ? '#fef3c7' : '#e0f2fe',
+                      textAlign: 'left'
+                    }}
+                  >
+                    <h4 style={{ margin: '0 0 0.35rem 0', fontSize: '0.88rem', fontWeight: 800, color: al.type === 'danger' ? '#991b1b' : al.type === 'warning' ? '#92400e' : '#0369a1' }}>
+                      {al.title}
+                    </h4>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#475569', lineHeight: 1.4 }}>
+                      {al.message}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
+                <button className="btn-secondary" onClick={() => setViewingAdvisorAlerts(null)} style={{ padding: '0.5rem 1.25rem' }}>
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -7200,7 +7871,7 @@ function SidebarContent({
   configuracion: Configuracion | null;
   handleLogout: () => void;
   onClose?: () => void;
-  role: 'admin' | 'asesor';
+  role: 'admin' | 'asesor' | 'mayorista';
   currentAsesor?: any;
   activeNotificationsCount?: number;
 }) {
@@ -7224,7 +7895,7 @@ function SidebarContent({
             {configuracion?.nombre_negocio || 'Catálogo'}
           </h2>
           <p style={{ margin: 0 }}>Panel Administrativo</p>
-          {role === 'asesor' && currentAsesor ? (
+          {(role === 'asesor' || role === 'mayorista') && currentAsesor ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.3rem' }}>
               {(currentAsesor.telefono || '').split(',').map((p: string) => p.trim()).filter(Boolean).map((phone: string, idx: number) => (
                 <a 
@@ -7255,7 +7926,7 @@ function SidebarContent({
 
       <nav className="sidebar-nav" style={{ paddingTop: '0.5rem' }}>
         <div className="sidebar-nav-label">Navegación</div>
-        {role === 'asesor' ? (
+        {(role === 'asesor' || role === 'mayorista') ? (
           <>
             <button className={`nav-item ${activeTab === 'resumen_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('resumen_asesor')}>
               <span className="nav-icon"><LayoutDashboard size={14} /></span> Resumen
@@ -7279,6 +7950,10 @@ function SidebarContent({
                 </span>
               )}
               {activeTab === 'notificaciones_asesor' && activeNotificationsCount === 0 && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'material_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('material_asesor')}>
+              <span className="nav-icon"><Upload size={14} /></span> Material de Apoyo
+              {activeTab === 'material_asesor' && <span className="active-dot"></span>}
             </button>
             <button className={`nav-item ${activeTab === 'perfil_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('perfil_asesor')}>
               <span className="nav-icon"><Settings size={14} /></span> Mi Perfil
@@ -7323,6 +7998,10 @@ function SidebarContent({
               <span className="nav-icon"><Code size={14} /></span> Desarrollador
               {activeTab === 'siigo' && <span className="active-dot"></span>}
             </button>
+            <button className={`nav-item ${activeTab === 'material_apoyo' ? 'active' : ''}`} onClick={() => handleSelectTab('material_apoyo')}>
+              <span className="nav-icon"><Upload size={14} /></span> Material de Apoyo
+              {activeTab === 'material_apoyo' && <span className="active-dot"></span>}
+            </button>
             <button className={`nav-item ${activeTab === 'config' ? 'active' : ''}`} onClick={() => handleSelectTab('config')}>
               <span className="nav-icon"><Settings size={14} /></span> Configuración
               {activeTab === 'config' && <span className="active-dot"></span>}
@@ -7345,8 +8024,8 @@ function SidebarContent({
 
       <div className="sidebar-footer" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', padding: '1.2rem', borderTop: '1px solid #f1f5f9' }}>
         <a 
-          href={role === 'asesor' && currentAsesor?.telefono 
-            ? `/${getTenantId()}?ws=${currentAsesor.telefono.replace(/\D/g, '')}` 
+          href={(role === 'asesor' || role === 'mayorista') && currentAsesor?.telefono 
+            ? `/${getTenantId()}?ws=${currentAsesor.telefono.split(',')[0].trim().replace(/\D/g, '')}${role === 'mayorista' ? '&tipo=mayorista' : ''}` 
             : `/${getTenantId()}?ws=clear`} 
           target="_blank" 
           rel="noopener noreferrer"
@@ -7358,9 +8037,9 @@ function SidebarContent({
         
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginTop: '0.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div className="avatar" style={{ background: (role === 'asesor' && currentAsesor?.foto_url) ? 'transparent' : (role === 'admin' && configuracion?.admin_foto_url) ? 'transparent' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', borderRadius: '50%', border: '1px solid #e2e8f0', color: '#64748b', padding: 0, overflow: 'hidden' }}>
-              {role === 'asesor' && currentAsesor?.foto_url ? (
-                <img src={currentAsesor.foto_url} alt="Asesor" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <div className="avatar" style={{ background: ((role === 'asesor' || role === 'mayorista') && currentAsesor?.foto_url) ? 'transparent' : (role === 'admin' && configuracion?.admin_foto_url) ? 'transparent' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', borderRadius: '50%', border: '1px solid #e2e8f0', color: '#64748b', padding: 0, overflow: 'hidden' }}>
+              {(role === 'asesor' || role === 'mayorista') && currentAsesor?.foto_url ? (
+                <img src={currentAsesor.foto_url} alt="Usuario" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (role === 'admin' && configuracion?.admin_foto_url) ? (
                 <img src={configuracion.admin_foto_url} alt="Admin" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : (
@@ -7369,9 +8048,11 @@ function SidebarContent({
             </div>
             <div className="user-info">
               <h4 style={{ fontSize: '0.9rem', margin: 0, color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '160px' }}>
-                {role === 'asesor' && currentAsesor ? currentAsesor.nombre : (configuracion?.admin_nombre || 'Administrador')}
+                {(role === 'asesor' || role === 'mayorista') && currentAsesor ? currentAsesor.nombre : (configuracion?.admin_nombre || 'Administrador')}
               </h4>
-              <p style={{ fontSize: '0.75rem', color: '#10b981', margin: 0 }}>{role === 'asesor' ? 'Asesor' : 'Sesión activa'}</p>
+              <p style={{ fontSize: '0.75rem', color: role === 'mayorista' ? '#0ea5e9' : '#10b981', margin: 0 }}>
+                {role === 'asesor' ? 'Asesor' : role === 'mayorista' ? 'Mayorista' : 'Sesión activa'}
+              </p>
             </div>
           </div>
           <button 
