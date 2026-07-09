@@ -4203,7 +4203,6 @@ export default function Admin() {
                       </div>
                       <div className="form-field">
                         <label>PIN de Acceso</label>
-                        <img src={asesores.find(a => a.telefono === loggedAsesorPhone)?.foto_url ?? ''} className="img-preview-thumb" alt="Foto Perfil" style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover' }} />
                         <input 
                           type="text" 
                           id="perfil-pin"
@@ -4217,7 +4216,7 @@ export default function Admin() {
                         <label>Foto de Perfil</label>
                         <div className="img-input-row" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                           {asesores.find(a => a.telefono === loggedAsesorPhone)?.foto_url && (
-                            <img src={asesores.find(a => a.telefono === loggedAsesorPhone)?.foto_url} className="img-preview-thumb" alt="Foto Perfil" style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover' }} />
+                            <img src={asesores.find(a => a.telefono === loggedAsesorPhone)?.foto_url ?? ''} className="img-preview-thumb" alt="Foto Perfil" style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover' }} />
                           )}
                           <input 
                             type="url" 
@@ -4303,7 +4302,161 @@ export default function Admin() {
           )}
 
 
-          {/* ── MATERIAL DE APOYO ASESOR / MAYORISTA TAB ── */}
+          
+          {/* ── PRODUCTOS ASESOR / MAYORISTA TAB ── */}
+          {activeTab === 'productos_asesor' && (
+            <div className="admin-panel">
+              <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
+                <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Package size={18} /> {role === 'mayorista' ? 'Mis Precios y Productos' : 'Catálogo de Productos'}</h3>
+                <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>
+                  {role === 'mayorista' ? 'Configura tu porcentaje de ganancia general o precios especiales por producto.' : 'Visualiza los productos disponibles en el catálogo de la empresa.'}
+                </p>
+              </div>
+              <div className="panel-body">
+                {role === 'mayorista' && currentMayorista && (
+                  <div style={{ marginBottom: '2rem', padding: '1.5rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <h4 style={{ margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#0f172a' }}>Ganancia Global</h4>
+                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                      <div className="form-field" style={{ margin: 0, flex: 1, minWidth: '250px' }}>
+                        <label>Porcentaje de incremento (%) sobre el precio base de todos los productos</label>
+                        <input 
+                          type="number" 
+                          id="mayorista-markup"
+                          defaultValue={currentMayorista.porcentaje_ganancia || 0}
+                          min="0"
+                          step="0.1"
+                        />
+                      </div>
+                      <button 
+                        className="btn-primary"
+                        onClick={async () => {
+                          try {
+                            setLoading(true);
+                            const val = Number((document.getElementById('mayorista-markup') as HTMLInputElement).value);
+                            const { error } = await supabase.from('mayoristas').update({ porcentaje_ganancia: val }).eq('id', currentMayorista.id);
+                            if (error) throw error;
+                            showToast('Porcentaje global actualizado correctamente', 'success');
+                            // Fallback if setMayoristas doesn't work, wait 1 sec and reload or rely on state
+                            setMayoristas(mayoristas.map(m => m.id === currentMayorista.id ? { ...m, porcentaje_ganancia: val } : m));
+                          } catch(e: any) {
+                            showToast(e.message || 'Error al actualizar', 'error');
+                          } finally {
+                            setLoading(false);
+                          }
+                        }}
+                      >
+                        Guardar Porcentaje
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="data-table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Producto</th>
+                        <th>Precio Detal</th>
+                        <th>Al por Mayor</th>
+                        <th>50 Unid.</th>
+                        {role === 'mayorista' && <th>Precio Detal Final</th>}
+                        {role === 'mayorista' && <th>Precio Especial</th>}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {productos.map(p => {
+                        let finalPrice = p.precio;
+                        let hasOverride = false;
+                        let overrideVal = '';
+                        
+                        if (role === 'mayorista' && currentMayorista) {
+                          const markup = currentMayorista.porcentaje_ganancia || 0;
+                          const overrides = currentMayorista.ajustes_productos || {};
+                          finalPrice = p.precio * (1 + markup / 100);
+                          if (overrides[p.id]) {
+                            finalPrice = Number(overrides[p.id]);
+                            hasOverride = true;
+                            overrideVal = overrides[p.id];
+                          }
+                        }
+
+                        return (
+                          <tr key={p.id}>
+                            <td>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                {p.imagenes && p.imagenes[0] ? (
+                                  <img src={p.imagenes[0]} alt={p.nombre} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '8px' }} />
+                                ) : (
+                                  <div style={{ width: '40px', height: '40px', background: '#e2e8f0', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <Package size={20} color="#94a3b8" />
+                                  </div>
+                                )}
+                                <div>
+                                  <div style={{ fontWeight: 600 }}>{p.nombre}</div>
+                                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{p.codigo}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td>${p.precio?.toLocaleString()}</td>
+                            <td style={{ color: '#64748b' }}>{p.precio_por_mayor ? `${p.precio_por_mayor.toLocaleString()}` : '-'}</td>
+                            <td style={{ color: '#64748b' }}>{p.precio_50_unidades ? `${p.precio_50_unidades.toLocaleString()}` : '-'}</td>
+                            {role === 'mayorista' && (
+                              <td style={{ fontWeight: hasOverride ? 'normal' : 'bold', color: hasOverride ? '#94a3b8' : '#10b981', textDecoration: hasOverride ? 'line-through' : 'none' }}>
+                                ${Math.round(p.precio * (1 + (currentMayorista?.porcentaje_ganancia || 0) / 100)).toLocaleString()}
+                              </td>
+                            )}
+                            {role === 'mayorista' && currentMayorista && (
+                              <td>
+                                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                  <input 
+                                    type="number" 
+                                    placeholder="Ej: 50000"
+                                    defaultValue={overrideVal}
+                                    id={`override-${p.id}`}
+                                    style={{ width: '100px', padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                                  />
+                                  <button 
+                                    className="btn-secondary"
+                                    style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem' }}
+                                    onClick={async () => {
+                                      try {
+                                        setLoading(true);
+                                        const inputVal = (document.getElementById(`override-${p.id}`) as HTMLInputElement).value;
+                                        const currentOverrides = { ...(currentMayorista.ajustes_productos || {}) };
+                                        
+                                        if (!inputVal) {
+                                          delete currentOverrides[p.id];
+                                        } else {
+                                          currentOverrides[p.id] = Number(inputVal);
+                                        }
+                                        
+                                        const { error } = await supabase.from('mayoristas').update({ ajustes_productos: currentOverrides }).eq('id', currentMayorista.id);
+                                        if (error) throw error;
+                                        showToast(!inputVal ? 'Precio especial removido' : 'Precio especial guardado', 'success');
+                                        setMayoristas(mayoristas.map(m => m.id === currentMayorista.id ? { ...m, ajustes_productos: currentOverrides } : m));
+                                      } catch(e: any) {
+                                        showToast(e.message || 'Error al actualizar', 'error');
+                                      } finally {
+                                        setLoading(false);
+                                      }
+                                    }}
+                                  >
+                                    Guardar
+                                  </button>
+                                </div>
+                              </td>
+                            )}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+{/* ── MATERIAL DE APOYO ASESOR / MAYORISTA TAB ── */}
           {activeTab === 'material_asesor' && (
             <div className="admin-panel">
               <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
@@ -6180,7 +6333,7 @@ export default function Admin() {
                        <>
                          <div style={{ position: 'absolute', right: '15px', top: '15px', zIndex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                            {hasPhoto ? (
-                             <img src={bestAsesorObj.foto_url} alt={bestAsesorObj.nombre} style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '50%', border: '4px solid rgba(255,255,255,0.4)', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.2))', animation: 'float-party 3s ease-in-out infinite' }} />
+                             <img src={bestAsesorObj?.foto_url ?? ''} alt={bestAsesorObj?.nombre ?? ''} style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '50%', border: '4px solid rgba(255,255,255,0.4)', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.2))', animation: 'float-party 3s ease-in-out infinite' }} />
                            ) : hasAdvisor ? (
                              <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, #ec4899, #8b5cf6)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', fontWeight: 800, border: '4px solid rgba(255,255,255,0.4)', filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.2))', animation: 'float-party 3s ease-in-out infinite' }}>
                                {bestAsesorObj.nombre.charAt(0).toUpperCase()}
