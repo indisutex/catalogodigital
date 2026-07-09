@@ -3,6 +3,7 @@ import MenuDigital from './pages/MenuDigital';
 import Admin from './pages/Admin';
 import SuperAdmin from './pages/SuperAdmin';
 import PagoNequi from './pages/PagoNequi';
+import { ErrorBoundary } from './components/ErrorBoundary';
 
 function App() {
   return (
@@ -13,8 +14,8 @@ function App() {
         <Route path="/menu" element={<MenuDigital />} />
         
         {/* Panel de Administración */}
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/superadmin" element={<SuperAdmin />} />
+        <Route path="/admin" element={<ErrorBoundary><Admin /></ErrorBoundary>} />
+        <Route path="/superadmin" element={<ErrorBoundary><SuperAdmin /></ErrorBoundary>} />
 
         {/* Pago Nequi - página pública para subir comprobante */}
         <Route path="/pago/:pedidoId" element={<PagoNequi />} />
