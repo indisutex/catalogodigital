@@ -404,7 +404,11 @@ export default function MenuDigital() {
       console.error('Error al registrar pedido en base de datos:', dbErr);
     }
 
-    const url = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`;
+    let cleanWhatsApp = numeroWhatsApp.replace(/\D/g, '');
+    if (cleanWhatsApp.length === 10) {
+      cleanWhatsApp = '57' + cleanWhatsApp;
+    }
+    const url = `https://wa.me/${cleanWhatsApp}?text=${encodeURIComponent(mensaje)}`;
     
     window.open(url, '_blank');
     
@@ -495,7 +499,11 @@ export default function MenuDigital() {
         }}>
           {/* Enlace Especial Dropshipper en la Esquina Inferior Izquierda */}
           <a 
-            href={configuracion?.link_dropshipper || `https://wa.me/${overrideWhatsApp || (configuracion?.whatsapp || '').replace(/\D/g, '')}?text=Hola,%20soy%20dropshipper,%20me%20interesa%20trabajar%20con%20ustedes`} 
+            href={configuracion?.link_dropshipper || (() => {
+              let clean = (overrideWhatsApp || configuracion?.whatsapp || '').replace(/\D/g, '');
+              if (clean.length === 10) clean = '57' + clean;
+              return `https://wa.me/${clean}?text=Hola,%20soy%20dropshipper,%20me%20interesa%20trabajar%20con%20ustedes`;
+            })()} 
             target="_blank" 
             rel="noopener noreferrer"
             className="special-header-btn"
@@ -522,7 +530,11 @@ export default function MenuDigital() {
 
           {/* Enlace Especial Ganar Dinero en la Esquina Inferior Derecha */}
           <a 
-            href={configuracion?.link_ganar_dinero || `https://wa.me/${overrideWhatsApp || (configuracion?.whatsapp || '').replace(/\D/g, '')}?text=Hola,%20quiero%20saber%20cómo%20ganar%20dinero%20con%20ustedes`} 
+            href={configuracion?.link_ganar_dinero || (() => {
+              let clean = (overrideWhatsApp || configuracion?.whatsapp || '').replace(/\D/g, '');
+              if (clean.length === 10) clean = '57' + clean;
+              return `https://wa.me/${clean}?text=Hola,%20quiero%20saber%20cómo%20ganar%20dinero%20con%20ustedes`;
+            })()} 
             target="_blank" 
             rel="noopener noreferrer"
             className="ganar-dinero-pulse special-header-btn"
@@ -736,6 +748,8 @@ export default function MenuDigital() {
                     />
                   ) : producto.imagen_url ? (
                     <img src={producto.imagen_url} alt={producto.nombre} />
+                  ) : (producto.imagenes_extra && producto.imagenes_extra.length > 0 && producto.imagenes_extra[0]) ? (
+                    <img src={producto.imagenes_extra[0]} alt={producto.nombre} />
                   ) : (
                     <div className="img-placeholder"></div>
                   )}
@@ -888,7 +902,13 @@ export default function MenuDigital() {
                     items.map(item => (
                       <div key={`${item.id}-${item.talla || 'none'}-${item.estampado || 'none'}`} className="cart-item">
                         <div className="cart-item-img">
-                          {item.imagen_url ? <img src={item.imagen_url} alt={item.nombre} /> : <div className="img-placeholder-small"></div>}
+                          {item.imagen_url ? (
+                            <img src={item.imagen_url} alt={item.nombre} />
+                          ) : (item.imagenes_extra && item.imagenes_extra.length > 0 && item.imagenes_extra[0]) ? (
+                            <img src={item.imagenes_extra[0]} alt={item.nombre} />
+                          ) : (
+                            <div className="img-placeholder-small"></div>
+                          )}
                         </div>
                         <div className="cart-item-details">
                           <h4>{item.nombre}</h4>

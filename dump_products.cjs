@@ -1,0 +1,15 @@
+const { createClient } = require('@supabase/supabase-js');
+
+const url = "https://dowbsbxvxjzjjhyqmyfr.supabase.co";
+const key = "sb_publishable_-6hv7O7DhudWC7NAW8izOw_PAc8hPre";
+const supabase = createClient(url, key);
+
+supabase.from('productos').select('*').ilike('nombre', '%SHORT TIRA PLUS%')
+  .then(({ data, error }) => {
+    if (error) {
+      console.error("Error fetching products:", error);
+    } else {
+      console.log("SHORT TIRA PLUS product from DB:");
+      console.log(JSON.stringify(data, null, 2));
+    }
+  });

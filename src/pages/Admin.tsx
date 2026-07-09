@@ -1143,6 +1143,11 @@ export default function Admin() {
     e.preventDefault();
     if (!editingProduct) return;
     setLoading(true);
+    const extraImgs = editExtraImages.filter(u => u.trim());
+    let mainImg = editingProduct.imagen_url || '';
+    if (!mainImg && extraImgs.length > 0) {
+      mainImg = extraImgs[0];
+    }
     const { error } = await supabase.from('productos').update({
       nombre: editingProduct.nombre,
       descripcion: editingProduct.descripcion,
@@ -1151,8 +1156,8 @@ export default function Admin() {
       precio_50_unidades: editingProduct.precio_50_unidades || null,
       categoria: editingProduct.categoria,
       subcategoria: editingProduct.subcategoria || null,
-      imagen_url: editingProduct.imagen_url,
-      imagenes_extra: editExtraImages.filter(u => u.trim()),
+      imagen_url: mainImg,
+      imagenes_extra: extraImgs,
       video_url: editingProduct.video_url,
       tallas: editingProduct.tallas,
       estampados: editingProduct.estampados || null,
@@ -1324,9 +1329,14 @@ export default function Admin() {
 
     if ((role === 'asesor' || role === 'mayorista') && loggedAsesorPhone) {
       result = result.filter(p => {
-        const orderPhone = p.linea_whatsapp?.replace(/\D/g, '');
-        const advisorPhones = loggedAsesorPhone.split(',').map(phone => phone.replace(/\D/g, '')).filter(Boolean);
-        return orderPhone && advisorPhones.includes(orderPhone);
+        if (!p.linea_whatsapp) return false;
+        const cleanOrder = p.linea_whatsapp.replace(/\D/g, '');
+        const orderPhone = cleanOrder.length === 12 && cleanOrder.startsWith('57') ? cleanOrder.substring(2) : cleanOrder;
+        const advisorPhones = loggedAsesorPhone.split(',').map(phone => {
+          const clean = phone.replace(/\D/g, '');
+          return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
+        }).filter(Boolean);
+        return advisorPhones.includes(orderPhone);
       });
     } else if (orderFilterAsesor !== 'todos') {
       result = result.filter(p => {
@@ -1899,9 +1909,14 @@ export default function Admin() {
     }
     if ((role === 'asesor' || role === 'mayorista') && loggedAsesorPhone) {
       temp = temp.filter(l => {
-        const leadPhone = l.linea_whatsapp?.replace(/\D/g, '');
-        const advisorPhones = loggedAsesorPhone.split(',').map(phone => phone.replace(/\D/g, '')).filter(Boolean);
-        return leadPhone && advisorPhones.includes(leadPhone);
+        if (!l.linea_whatsapp) return false;
+        const cleanLead = l.linea_whatsapp.replace(/\D/g, '');
+        const leadPhone = cleanLead.length === 12 && cleanLead.startsWith('57') ? cleanLead.substring(2) : cleanLead;
+        const advisorPhones = loggedAsesorPhone.split(',').map(phone => {
+          const clean = phone.replace(/\D/g, '');
+          return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
+        }).filter(Boolean);
+        return advisorPhones.includes(leadPhone);
       });
     } else if (orderFilterAsesor !== 'todos') {
       temp = temp.filter(l => {
@@ -3345,7 +3360,13 @@ export default function Admin() {
                       {filteredProducts.map(p => (
                         <div key={p.id} className="product-card">
                           <div className="product-card-img">
-                            {p.imagen_url ? <img src={p.imagen_url} alt={p.nombre} /> : '🖼️'}
+                            {p.imagen_url ? (
+                              <img src={p.imagen_url} alt={p.nombre} />
+                            ) : (p.imagenes_extra && p.imagenes_extra.length > 0 && p.imagenes_extra[0]) ? (
+                              <img src={p.imagenes_extra[0]} alt={p.nombre} />
+                            ) : (
+                              '🖼️'
+                            )}
                           </div>
                           <div className="product-card-body">
                             <h4>{p.nombre}</h4>
@@ -4249,7 +4270,13 @@ export default function Admin() {
                   {productos.map(p => (
                     <div key={p.id} className="product-card">
                       <div className="product-card-img">
-                        {p.imagen_url ? <img src={p.imagen_url} alt={p.nombre} /> : <div style={{width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', background:'#f1f5f9'}}><Package size={24} color="#94a3b8" /></div>}
+                        {p.imagen_url ? (
+                          <img src={p.imagen_url} alt={p.nombre} />
+                        ) : (p.imagenes_extra && p.imagenes_extra.length > 0 && p.imagenes_extra[0]) ? (
+                          <img src={p.imagenes_extra[0]} alt={p.nombre} />
+                        ) : (
+                          <div style={{width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', background:'#f1f5f9'}}><Package size={24} color="#94a3b8" /></div>
+                        )}
                       </div>
                       <div className="product-card-body">
                         <h4>{p.nombre}</h4>
@@ -4348,7 +4375,13 @@ export default function Admin() {
                         return (
                         <div key={p.id} className="product-card">
                           <div className="product-card-img">
-                            {p.imagen_url ? <img src={p.imagen_url} alt={p.nombre} /> : <div style={{width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', background:'#f1f5f9'}}><Package size={24} color="#94a3b8" /></div>}
+                            {p.imagen_url ? (
+                              <img src={p.imagen_url} alt={p.nombre} />
+                            ) : (p.imagenes_extra && p.imagenes_extra.length > 0 && p.imagenes_extra[0]) ? (
+                              <img src={p.imagenes_extra[0]} alt={p.nombre} />
+                            ) : (
+                              <div style={{width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', background:'#f1f5f9'}}><Package size={24} color="#94a3b8" /></div>
+                            )}
                           </div>
                           <div className="product-card-body">
                             <h4>{p.nombre}</h4>
@@ -4443,12 +4476,24 @@ export default function Admin() {
               : asesores.find(a => a.telefono === loggedAsesorPhone);
             if (!currentAsesorData) return <p style={{ color: '#64748b', padding: '2rem', textAlign: 'center' }}>Cargando ranking...</p>;
 
-            const mPhones2 = (currentAsesorData.telefono || '').split(',').map((ph: string) => ph.trim().replace(/\D/g, '')).filter(Boolean);
+            const mPhones2 = (currentAsesorData.telefono || '').split(',').map((ph: string) => {
+              const clean = ph.trim().replace(/\D/g, '');
+              return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
+            }).filter(Boolean);
             const allMayoristas = mayoristas;
             const rankingData = allMayoristas.map(m => {
-              const mPs = (m.telefono || '').split(',').map((ph: string) => ph.replace(/\D/g, '')).filter(Boolean);
+              const mPs = (m.telefono || '').split(',').map((ph: string) => {
+                const clean = ph.replace(/\D/g, '');
+                return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
+              }).filter(Boolean);
               const total = pedidos
-                .filter(p => p.estado === 'completado' && mPs.includes((p.linea_whatsapp || '').replace(/\D/g, '')))
+                .filter(p => {
+                  if (p.estado !== 'completado') return false;
+                  if (!p.linea_whatsapp) return false;
+                  const cleanP = p.linea_whatsapp.replace(/\D/g, '');
+                  const normP = cleanP.length === 12 && cleanP.startsWith('57') ? cleanP.substring(2) : cleanP;
+                  return mPs.includes(normP);
+                })
                 .reduce((s, p) => s + (p.total || 0), 0);
               return { id: m.id, nombre: m.nombre, total, foto_url: m.foto_url, isMe: mPs.some(ph => mPhones2.includes(ph)) };
             }).sort((a, b) => b.total - a.total);
@@ -7501,9 +7546,10 @@ export default function Admin() {
                             onChange={e => setOrderFilterStatus(e.target.value)}
                             style={{ padding: '0.55rem 1rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', cursor: 'pointer' }}
                           >
-                            <option value="todos">Todos los Pagos</option>
+                            <option value="todos">Todos los Pedidos y Leads</option>
                             <option value="comprobante">Con Comprobante</option>
                             <option value="esperando_pago">Esperando Pago</option>
+                            <option value="abandonados">🛒 Abandonados (Leads)</option>
                           </select>
                         )}
 
@@ -7978,14 +8024,27 @@ export default function Admin() {
                             </tr>
                           </thead>
                           <tbody>
-                            {filteredPedidos.map((ped) => (
-                            <tr key={ped.id} style={{ borderBottom: '1px solid #f1f5f9', background: ped.estado === 'completado' ? '#f0fdf4' : 'transparent' }}>
+                            {(() => {
+                              const pedItems = filteredPedidos.map(p => ({ ...p, isLead: false }));
+                              const leadItems = orderFilterStatus === 'comprobante' || orderFilterStatus === 'esperando_pago'
+                                ? []
+                                : leadsFiltrados.map(l => ({ ...l, isLead: true, cliente_nombre: l.nombre || 'Borrador Anónimo', cliente_telefono: l.telefono || 'Sin número', direccion: l.direccion || '', estado: 'abandonado' }));
+                              
+                              const combinedList = orderFilterStatus === 'abandonados'
+                                ? leadsFiltrados.map(l => ({ ...l, isLead: true, cliente_nombre: l.nombre || 'Borrador Anónimo', cliente_telefono: l.telefono || 'Sin número', direccion: l.direccion || '', estado: 'abandonado' })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+                                : [...pedItems, ...leadItems].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+                              return combinedList.map((ped) => (
+                            <tr key={ped.id} style={{ borderBottom: '1px solid #f1f5f9', background: ped.estado === 'completado' ? '#f0fdf4' : ped.isLead ? 'rgba(239, 68, 68, 0.02)' : 'transparent' }}>
                               <td style={{ padding: '1rem', color: ped.estado === 'completado' ? '#166534' : '#64748b', verticalAlign: 'middle' }}>
                                 {new Date(ped.created_at).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}
                               </td>
                               <td style={{ padding: '1rem', fontWeight: 600, color: ped.estado === 'completado' ? '#14532d' : '#0f172a', verticalAlign: 'middle' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                                   <span>{ped.cliente_nombre}</span>
+                                  {ped.isLead && (
+                                    <span style={{ fontSize: '0.68rem', background: '#fee2e2', color: '#ef4444', padding: '1px 5px', borderRadius: '4px', fontWeight: 800 }}>🔴 Lead</span>
+                                  )}
                                   {ped.origen === 'pos' ? (
                                     <span style={{ fontSize: '0.68rem', background: '#dcfce7', color: '#166534', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>💻 POS</span>
                                   ) : (
@@ -8010,7 +8069,11 @@ export default function Admin() {
                                 </span>
                               </td>
                               <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
-                                {ped.estado === 'completado' ? (
+                                {ped.isLead ? (
+                                  <span style={{ background: '#fee2e2', color: '#ef4444', border: '1px solid #fca5a5', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 600, display: 'inline-block', lineHeight: '1.2' }}>
+                                    🛒 Abandonado
+                                  </span>
+                                ) : ped.estado === 'completado' ? (
                                   <span style={{ background: '#dcfce7', color: '#16a34a', border: '1px solid #86efac', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 600, display: 'inline-block', lineHeight: '1.2' }}>
                                     ✓ Pago Verificado
                                   </span>
@@ -8069,7 +8132,8 @@ export default function Admin() {
                                 </div>
                               </td>
                             </tr>
-                            ))}
+                            ));
+                            })()}
                           </tbody>
                         </table>
                       </div>
