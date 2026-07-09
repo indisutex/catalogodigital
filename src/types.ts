@@ -97,5 +97,6 @@ export interface Mayorista {
   created_at: string;
   foto_url?: string | null;
   porcentaje_ganancia?: number;
+  ajustes_productos?: any;
 }
 

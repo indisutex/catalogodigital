@@ -3620,8 +3620,10 @@ export default function Admin() {
 
           {/* ── RESUMEN ASESOR TAB ── */}
           {activeTab === 'resumen_asesor' && (role === 'asesor' || role === 'mayorista') && (() => {
-            const currentAsesorData = asesores.find(a => a.telefono === loggedAsesorPhone);
-            if (!currentAsesorData) return <p style={{ color: '#64748b', padding: '2rem', textAlign: 'center' }}>Cargando datos del asesor...</p>;
+            const currentAsesorData = role === 'mayorista'
+              ? mayoristas.find(m => m.telefono === loggedAsesorPhone) || asesores.find(a => a.telefono === loggedAsesorPhone)
+              : asesores.find(a => a.telefono === loggedAsesorPhone);
+            if (!currentAsesorData) return <p style={{ color: '#64748b', padding: '2rem', textAlign: 'center' }}>Cargando datos...</p>;
             const advStats = getAdvisorStats(currentAsesorData);
 
             if (role === 'mayorista') {
@@ -3706,7 +3708,9 @@ export default function Admin() {
                     </div>
                   </div>
 
-                  {/* 🏆 RANKING GAMIFICADO DE MAYORISTAS */}
+                  {/* 2-Column Grid Layout for Ranking and Consolidated Products */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
+                    {/* 🏆 RANKING GAMIFICADO DE MAYORISTAS */}
                   {(() => {
                     const mPhones2 = (currentAsesorData.telefono || '').split(',').map((ph: string) => ph.trim().replace(/\D/g, '')).filter(Boolean);
                     const allMayoristas = mayoristas;
@@ -3750,7 +3754,7 @@ export default function Admin() {
                           </div>
                         )}
                         {myData && myPos === 0 && (
-                          <div style={{ background: 'rgba(251,191,36,0.15)', border: '1px solid rgba(251,191,36,0.4)', borderRadius: '10px', padding: '0.9rem 1rem', marginBottom: '1.25rem', textAlign: 'center' }}>
+                          <div style={{ background: 'rgba(99,102,241,0.2)', border: '1px solid rgba(99,102,241,0.5)', borderRadius: '10px', padding: '0.9rem 1rem', marginBottom: '1.25rem', textAlign: 'center' }}>
                             <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: '#fbbf24' }}>🥇 ¡Eres el #1 este período! Mantén el liderazgo 🔥</p>
                           </div>
                         )}
@@ -3758,10 +3762,10 @@ export default function Admin() {
                         {/* Lista top 5 */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                           {rankingData.slice(0, 5).map((r, idx) => (
-                            <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.65rem 0.9rem', borderRadius: '10px', background: r.isMe ? 'rgba(251,191,36,0.15)' : 'rgba(255,255,255,0.05)', border: r.isMe ? '1px solid rgba(251,191,36,0.5)' : '1px solid transparent' }}>
+                            <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.65rem 0.9rem', borderRadius: '10px', background: r.isMe ? 'rgba(99,102,241,0.2)' : 'rgba(255,255,255,0.05)', border: r.isMe ? '1px solid rgba(99,102,241,0.5)' : '1px solid transparent' }}>
                               <span style={{ fontSize: '1.1rem', minWidth: '28px', textAlign: 'center' }}>{medals[idx] || `#${idx + 1}`}</span>
                               {r.foto_url ? <img src={r.foto_url} alt={r.nombre} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} /> : <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#334155', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem' }}>👤</div>}
-                              <span style={{ fontWeight: r.isMe ? 800 : 600, color: r.isMe ? '#fbbf24' : 'white', fontSize: '0.88rem', flex: 1 }}>{r.nombre}{r.isMe ? ' (Tú)' : ''}</span>
+                              <span style={{ fontWeight: r.isMe ? 800 : 600, color: r.isMe ? '#a5b4fc' : 'white', fontSize: '0.88rem', flex: 1 }}>{r.nombre}{r.isMe ? ' (Tú)' : ''}</span>
                               <span style={{ fontWeight: 700, color: '#94a3b8', fontSize: '0.82rem' }}>${r.total.toLocaleString()}</span>
                             </div>
                           ))}
@@ -3844,6 +3848,7 @@ export default function Admin() {
                       )}
                     </div>
                   </div>
+                  </div>
                 </div>
               );
             }
@@ -3866,7 +3871,9 @@ export default function Admin() {
 
           {/* ── NOTIFICACIONES ASESOR TAB ── */}
           {activeTab === 'notificaciones_asesor' && (role === 'asesor' || role === 'mayorista') && (() => {
-            const currentAsesorData = asesores.find(a => a.telefono === loggedAsesorPhone);
+            const currentAsesorData = role === 'mayorista'
+              ? mayoristas.find(m => m.telefono === loggedAsesorPhone) || asesores.find(a => a.telefono === loggedAsesorPhone)
+              : asesores.find(a => a.telefono === loggedAsesorPhone);
             if (!currentAsesorData) return <p style={{ color: '#64748b', padding: '2rem', textAlign: 'center' }}>Cargando notificaciones...</p>;
             
             const stats = getAdvisorStats(currentAsesorData);
@@ -4128,15 +4135,19 @@ export default function Admin() {
                 </div>
               </div>
               <div className="panel-body">
-                {asesores.find(a => a.telefono === loggedAsesorPhone) ? (
+                {(() => {
+                  const currentAsesorData = role === 'mayorista'
+                    ? mayoristas.find(m => m.telefono === loggedAsesorPhone) || asesores.find(a => a.telefono === loggedAsesorPhone)
+                    : asesores.find(a => a.telefono === loggedAsesorPhone);
+                  if (!currentAsesorData) return <p style={{ color: '#64748b', padding: '2rem', textAlign: 'center' }}>Cargando perfil...</p>;
+                  return (
                   <form onSubmit={async (e) => {
                     e.preventDefault();
                     try {
                       setLoading(true);
-                      const currentAsesorData = asesores.find(a => a.telefono === loggedAsesorPhone);
-                      if (!currentAsesorData) return;
+                      const tableName = role === 'mayorista' ? 'mayoristas' : 'asesores';
                       const { error } = await supabase
-                        .from('asesores')
+                        .from(tableName)
                         .update({
                           nombre: (document.getElementById('perfil-nombre') as HTMLInputElement).value,
                           foto_url: (document.getElementById('perfil-foto') as HTMLInputElement).value,
@@ -4145,14 +4156,26 @@ export default function Admin() {
                       if (error) throw error;
                       showToast('Perfil actualizado correctamente', 'success');
                       // Update local state
-                      setAsesores(asesores.map(a => 
-                        a.id === currentAsesorData.id 
-                          ? { ...a, 
-                              nombre: (document.getElementById('perfil-nombre') as HTMLInputElement).value,
-                              foto_url: (document.getElementById('perfil-foto') as HTMLInputElement).value,
-                            } 
-                          : a
-                      ));
+                      if (role === 'mayorista') {
+                        setMayoristas(mayoristas.map(m =>
+                          m.id === currentAsesorData.id
+                            ? { ...m,
+                                nombre: (document.getElementById('perfil-nombre') as HTMLInputElement).value,
+                                foto_url: (document.getElementById('perfil-foto') as HTMLInputElement).value,
+                              }
+                            : m
+                        ));
+                      } else {
+                        setAsesores(asesores.map(a =>
+                          a.id === currentAsesorData.id
+                            ? { ...a,
+                                nombre: (document.getElementById('perfil-nombre') as HTMLInputElement).value,
+                                foto_url: (document.getElementById('perfil-foto') as HTMLInputElement).value,
+                              }
+                            : a
+                        ));
+                      }
+                  
                     } catch (err: any) {
                       showToast(err.message || 'Error al actualizar', 'error');
                     } finally {
@@ -4272,9 +4295,8 @@ export default function Admin() {
                       </button>
                     </div>
                   </form>
-                ) : (
-                  <p>Cargando datos del perfil...</p>
-                )}
+                  );
+                })()}
               </div>
             </div>
           )}

@@ -78,7 +78,7 @@ export default function MenuDigital() {
         // Primero buscar en asesores
         const { data: asesoresData } = await supabase
           .from('asesores')
-          .select('id, telefono, porcentaje_ganancia')
+          .select('id, telefono, porcentaje_ganancia, ajustes_productos')
           .eq('tenant_id', tenant);
 
         if (asesoresData) {
@@ -86,8 +86,9 @@ export default function MenuDigital() {
             const phones = (a.telefono || '').split(',').map((p: string) => p.replace(/\D/g, '')).filter(Boolean);
             return phones.includes(phone);
           });
-          if (match && (match as any).porcentaje_ganancia) {
+          if (match) {
             setMarkupPorcentaje(Number((match as any).porcentaje_ganancia) || 0);
+            setAjustesProductos((match as any).ajustes_productos || {});
             return;
           }
         }
@@ -95,7 +96,7 @@ export default function MenuDigital() {
         // Si no se encontró en asesores, buscar en mayoristas (tabla independiente)
         const { data: mayoristasData } = await supabase
           .from('mayoristas')
-          .select('id, telefono, porcentaje_ganancia')
+          .select('id, telefono, porcentaje_ganancia, ajustes_productos')
           .eq('tenant_id', tenant);
 
         if (mayoristasData) {
@@ -103,13 +104,16 @@ export default function MenuDigital() {
             const phones = (m.telefono || '').split(',').map((p: string) => p.replace(/\D/g, '')).filter(Boolean);
             return phones.includes(phone);
           });
-          if (match && (match as any).porcentaje_ganancia) {
+          if (match) {
             setMarkupPorcentaje(Number((match as any).porcentaje_ganancia) || 0);
+            setAjustesProductos((match as any).ajustes_productos || {});
             return;
           }
         }
 
         setMarkupPorcentaje(0);
+        setAjustesProductos({});
+        setAjustesProductos({});
       } catch (err) {
         console.error("Error loading wholesaler markup: ", err);
       }
@@ -203,7 +207,7 @@ export default function MenuDigital() {
     setDetailProduct(null);
   };
   
-  const { items, addToCart, removeFromCart, updateQuantity, total, clearCart, buyerType, setBuyerType, markupPorcentaje, setMarkupPorcentaje } = useCart();
+  const { items, addToCart, removeFromCart, updateQuantity, total, clearCart, buyerType, setBuyerType, markupPorcentaje, setMarkupPorcentaje, ajustesProductos, setAjustesProductos } = useCart();
 
   const [formData, setFormData] = useState({
     nombre: '',
@@ -334,6 +338,14 @@ export default function MenuDigital() {
     });
   }
 
+  // Ocultar productos desactivados por el mayorista/asesor
+  if (ajustesProductos) {
+    productosFiltrados = productosFiltrados.filter(p => {
+      const productSetting = ajustesProductos[p.id];
+      return !(productSetting && productSetting.oculto);
+    });
+  }
+
   // Text search filter
   if (busqueda.trim()) {
     const q = busqueda.toLowerCase().trim();
@@ -362,7 +374,7 @@ export default function MenuDigital() {
     
     mensaje += `*PRODUCTOS:*\n`;
     const mensajeProductos = items.map(item => 
-      `- ${item.cantidad}x ${item.nombre} ${item.talla ? `(Talla: ${item.talla}) ` : ''}${item.estampado ? `(Estampado: ${item.estampado}) ` : ''}- $${(getEffectivePrice(item, buyerType, markupPorcentaje) * item.cantidad).toLocaleString('es-CO')}`
+      `- ${item.cantidad}x ${item.nombre} ${item.talla ? `(Talla: ${item.talla}) ` : ''}${item.estampado ? `(Estampado: ${item.estampado}) ` : ''}- $${(getEffectivePrice(item, buyerType, markupPorcentaje, ajustesProductos) * item.cantidad).toLocaleString('es-CO')}`
     ).join('\n');
     mensaje += mensajeProductos;
     
@@ -739,7 +751,7 @@ export default function MenuDigital() {
                 </div>
                 <div className="item-details">
                   <h4>{producto.nombre}</h4>
-                  <p className="item-price">${getEffectivePrice(producto, buyerType, markupPorcentaje).toLocaleString('es-CO')}</p>
+                  <p className="item-price">${getEffectivePrice(producto, buyerType, markupPorcentaje, ajustesProductos).toLocaleString('es-CO')}</p>
                 </div>
               </div>
             ))
@@ -882,7 +894,7 @@ export default function MenuDigital() {
                           <h4>{item.nombre}</h4>
                           {item.talla && <p style={{fontSize: '0.8rem', color: '#666', margin: '2px 0'}}>Talla: {item.talla}</p>}
                           {item.estampado && <p style={{fontSize: '0.8rem', color: '#666', margin: '2px 0'}}>Estampado: {item.estampado}</p>}
-                          <p className="cart-item-price">${(getEffectivePrice(item, buyerType, markupPorcentaje) * item.cantidad).toLocaleString('es-CO')}</p>
+                          <p className="cart-item-price">${(getEffectivePrice(item, buyerType, markupPorcentaje, ajustesProductos) * item.cantidad).toLocaleString('es-CO')}</p>
                           <div className="cart-item-qty">
                             <button onClick={() => updateQuantity(item.id, item.cantidad - 1, item.talla, item.estampado)}>-</button>
                             <span>{item.cantidad}</span>
@@ -968,7 +980,7 @@ export default function MenuDigital() {
               <div className="detail-info">
                 <div className="detail-header-row">
                   <h3 className="detail-name">{detailProduct.nombre}</h3>
-                  <p className="detail-price">${getEffectivePrice(detailProduct, buyerType, markupPorcentaje).toLocaleString('es-CO')}</p>
+                  <p className="detail-price">${getEffectivePrice(detailProduct, buyerType, markupPorcentaje, ajustesProductos).toLocaleString('es-CO')}</p>
                 </div>
                 {detailProduct.descripcion && (
                   <p className="detail-desc">{detailProduct.descripcion}</p>
@@ -1052,7 +1064,7 @@ export default function MenuDigital() {
                 {/* ── ADD TO CART ── */}
                 <button className="detail-add-btn" onClick={handleAddFromDetail}>
                   <ShoppingCart size={18} />
-                  Añadir al carrito • ${(getEffectivePrice(detailProduct, buyerType, markupPorcentaje) * selectedCantidad).toLocaleString('es-CO')}
+                  Añadir al carrito • ${(getEffectivePrice(detailProduct, buyerType, markupPorcentaje, ajustesProductos) * selectedCantidad).toLocaleString('es-CO')}
                 </button>
               </div>
             </div>
