@@ -4365,16 +4365,15 @@ export default function Admin() {
                     </thead>
                     <tbody>
                       {productos.map(p => {
-                        let finalPrice = p.precio;
                         let hasOverride = false;
                         let overrideVal = '';
                         
                         if (role === 'mayorista' && currentMayorista) {
                           const markup = currentMayorista.porcentaje_ganancia || 0;
                           const overrides = currentMayorista.ajustes_productos || {};
-                          finalPrice = p.precio * (1 + markup / 100);
+                          
                           if (overrides[p.id]) {
-                            finalPrice = Number(overrides[p.id]);
+                            
                             hasOverride = true;
                             overrideVal = overrides[p.id];
                           }
@@ -4384,8 +4383,8 @@ export default function Admin() {
                           <tr key={p.id}>
                             <td>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                {p.imagenes && p.imagenes[0] ? (
-                                  <img src={p.imagenes[0]} alt={p.nombre} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '8px' }} />
+                                {p.imagen_url ? (
+                                  <img src={p.imagen_url} alt={p.nombre} style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '8px' }} />
                                 ) : (
                                   <div style={{ width: '40px', height: '40px', background: '#e2e8f0', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <Package size={20} color="#94a3b8" />
@@ -4393,7 +4392,7 @@ export default function Admin() {
                                 )}
                                 <div>
                                   <div style={{ fontWeight: 600 }}>{p.nombre}</div>
-                                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{p.codigo}</div>
+                                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{p.referencia}</div>
                                 </div>
                               </div>
                             </td>
