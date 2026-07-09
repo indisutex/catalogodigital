@@ -1365,9 +1365,91 @@
   font-weight: 700;
   letter-spacing: 0.5px;
   z-index: 10;
-  pointer-events: none; /* No interfere con clics */
+  pointer-events: none;
   max-width: 90%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* ============================================
+   RESPONSIVE - Catálogo Digital Extra
+   ============================================ */
+
+/* ── Very small phones (≤ 360px) ── */
+@media (max-width: 360px) {
+  .menu-list {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+  }
+  .menu-list-item {
+    border-radius: 14px;
+  }
+  .item-name {
+    font-size: 0.7rem !important;
+  }
+  .item-price {
+    font-size: 0.75rem !important;
+  }
+  .menu-app-logo {
+    width: 65px !important;
+    height: 65px !important;
+  }
+  .category-pills {
+    gap: 0.4rem;
+  }
+  .category-pill {
+    padding: 0.3rem 0.7rem !important;
+    font-size: 0.7rem !important;
+  }
+}
+
+/* ── Bottom navigation safe area (iPhone notch) ── */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .menu-app-container {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .detail-modal {
+    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
+  }
+}
+
+/* ── Ticker / info bar responsive ── */
+@media (max-width: 480px) {
+  .info-ticker-text {
+    font-size: 0.72rem !important;
+  }
+  .detail-modal {
+    max-width: 95%;
+    max-height: 90dvh;
+    border-radius: 20px;
+  }
+  .detail-carousel {
+    max-height: 45dvh;
+  }
+  .detail-carousel-img {
+    max-height: 45dvh;
+  }
+  /* Cart / checkout */
+  .cart-item {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  /* Form inputs 16px to avoid iOS zoom */
+  .checkout-form input,
+  .checkout-form textarea,
+  .checkout-form select {
+    font-size: 16px !important;
+  }
+}
+
+/* ── Desktop centering ── */
+@media (min-width: 992px) {
+  .menu-app-container {
+    margin: 0 auto;
+    max-width: 480px;
+    box-shadow: 0 0 60px rgba(0,0,0,0.12);
+    border-radius: 0;
+    min-height: 100vh;
+  }
 }
