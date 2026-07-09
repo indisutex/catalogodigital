@@ -39,7 +39,7 @@ const emptyProduct: ProductFormData = {
   stock: 0
 };
 
-type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'perfil_asesor' | 'perfil_admin';
+type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor';
 
 type Toast = { message: string; type: 'success' | 'error' } | null;
 
@@ -82,7 +82,7 @@ export default function Admin() {
     const defaultTab = (localStorage.getItem(`admin_role_${getTenantId()}`) === 'asesor') ? 'pedidos' : 'productos';
     const saved = localStorage.getItem('admin_active_tab') as string;
     if (saved === 'perfil_admin' || saved === 'perfil_admin_tab') return 'dashboard';
-    const allowedTabs: string[] = ['dashboard', 'productos', 'categorias', 'pedidos', 'clientes', 'asesores', 'pos', 'siigo', 'config', 'perfil_asesor'];
+    const allowedTabs: string[] = ['dashboard', 'productos', 'categorias', 'pedidos', 'clientes', 'asesores', 'mayoristas', 'pos', 'siigo', 'config', 'perfil_asesor'];
     if (saved && !allowedTabs.includes(saved)) return defaultTab;
     return (saved as TabType) || defaultTab;
   });
@@ -251,6 +251,39 @@ export default function Admin() {
     
     if (match) return match.nombre;
     return numSinIndicativo;
+  };
+
+  const renderAsesorBadge = (phone?: string) => {
+    if (!phone) return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', color: '#64748b' }}>👤 Sin Asignar</span>;
+    const cleanInput = phone.trim();
+    if (cleanInput === 'pos' || cleanInput.replace(/\D/g, '') === 'pos') {
+      return <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', color: '#166534', fontWeight: 700 }}>💻 POS</span>;
+    }
+    
+    const name = getAsesorNameByPhone(phone);
+    
+    const match = asesores.find(a => {
+      const phones = (a.telefono || '').split(',').map(p => p.replace(/\D/g, '')).filter(Boolean);
+      return phones.some(p => cleanInput.split(',').map(cp => cp.replace(/\D/g, '')).includes(p));
+    });
+
+    return (
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', verticalAlign: 'middle' }}>
+        {match?.foto_url ? (
+          <img 
+            src={match.foto_url} 
+            alt={name} 
+            style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover', border: '1px solid #cbd5e1' }} 
+            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+          />
+        ) : (
+          <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '22px', height: '22px', borderRadius: '50%', background: '#e2e8f0', fontSize: '0.7rem', color: '#475569', fontWeight: 700 }}>
+            {name.charAt(0).toUpperCase()}
+          </span>
+        )}
+        <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 600 }}>{name}</span>
+      </span>
+    );
   };
 
   useEffect(() => {
@@ -1124,7 +1157,14 @@ export default function Admin() {
   }, [pedidos, asesores]);
 
   const leadsFiltrados = useMemo(() => {
-    let temp = [...leads];
+    let temp = leads.filter(l => {
+      if (l.estado === 'completado') return false;
+      const cleanLeadPhone = (l.telefono || '').replace(/\D/g, '');
+      if (!cleanLeadPhone) return true;
+      const hasOrder = pedidos.some(p => (p.cliente_telefono || '').replace(/\D/g, '') === cleanLeadPhone);
+      return !hasOrder;
+    });
+
     if (orderSearchQuery) {
       const q = orderSearchQuery.toLowerCase();
       temp = temp.filter(l => 
@@ -1150,7 +1190,7 @@ export default function Admin() {
       });
     }
     return temp;
-  }, [leads, orderSearchQuery, orderFilterDate, role, loggedAsesorPhone, orderFilterAsesor]);
+  }, [leads, pedidos, orderSearchQuery, orderFilterDate, role, loggedAsesorPhone, orderFilterAsesor]);
 
   const interesadosFiltrados = useMemo(() => {
     return filteredPedidos.filter(p => p.estado === 'pendiente' || p.estado === 'atendido' || !p.estado);
@@ -1814,13 +1854,15 @@ export default function Admin() {
               {activeTab === 'categorias' && '🗂️ Categorías'}
               {activeTab === 'clientes' && '👥 Clientes'}
               {activeTab === 'asesores' && '👥 Asesores'}
+              {activeTab === 'mayoristas' && '👥 Mayoristas'}
               {activeTab === 'config' && '⚙️ Configuración'}
             </h2>
             <p>
               {activeTab === 'productos' && `${productos.length} productos en total`}
               {activeTab === 'categorias' && `${categoriasData.length} categorías activas`}
               {activeTab === 'clientes' && `${clientes.length} clientes en total`}
-              {activeTab === 'asesores' && `${asesores.length} asesores en tu equipo`}
+              {activeTab === 'asesores' && `${asesores.filter(a => a.tipo === 'asesor' || !a.tipo).length} asesores en tu equipo`}
+              {activeTab === 'mayoristas' && `${asesores.filter(a => a.tipo === 'mayorista').length} mayoristas en tu equipo`}
               {activeTab === 'config' && 'Ajustes globales de tu tienda'}
             </p>
           </div>
@@ -2574,6 +2616,37 @@ export default function Admin() {
                           </label>
                         </div>
                         <small style={{color: '#64748b'}}>Esta foto aparecerá en tu panel y como asesor estrella.</small>
+                      </div>
+                      <div className="form-field full" style={{ marginTop: '1.5rem', background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                        <label style={{ fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem', display: 'block' }}>🔗 Tus Enlaces de Venta Personalizados</label>
+                        <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 1rem 0' }}>Usa estos enlaces para compartirlos con tus clientes. Cuando compren a través de ellos, las ventas se te asignarán automáticamente.</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                          {(loggedAsesorPhone || '').split(',').map(p => p.trim()).filter(Boolean).map((phone, idx) => {
+                            const link = `${window.location.origin}/${getTenantId()}?ws=${phone.replace(/\D/g, '')}`;
+                            return (
+                              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'white', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', whiteSpace: 'nowrap' }}>Línea {phone}:</span>
+                                <input 
+                                  readOnly 
+                                  value={link} 
+                                  style={{ flex: 1, fontSize: '0.8rem', background: 'transparent', border: 'none', color: 'var(--primary-color, #6366f1)', fontWeight: 600, padding: 0 }} 
+                                  onClick={(e) => (e.target as HTMLInputElement).select()}
+                                />
+                                <button
+                                  type="button"
+                                  className="btn-secondary"
+                                  style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', borderRadius: '6px', cursor: 'pointer', border: '1px solid #cbd5e1', background: 'white' }}
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(link);
+                                    showToast('Enlace copiado al portapapeles ✅', 'success');
+                                  }}
+                                >
+                                  Copiar
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                     <div className="form-actions" style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
@@ -4567,8 +4640,8 @@ export default function Admin() {
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem' }}>
                                   <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0f172a', fontWeight: 700 }}>👤 {lead.nombre || 'Borrador Anónimo'}</h4>
                                   {lead.linea_whatsapp && (
-                                    <span style={{ fontSize: '0.65rem', background: '#f8fafc', color: '#475569', padding: '2px 6px', borderRadius: '12px', border: '1px solid #cbd5e1', whiteSpace: 'nowrap' }}>
-                                      🎯 {getAsesorNameByPhone(lead.linea_whatsapp)}
+                                    <span style={{ fontSize: '0.65rem', background: '#f8fafc', color: '#475569', padding: '2px 6px', borderRadius: '12px', border: '1px solid #cbd5e1', whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center' }}>
+                                      🎯 {renderAsesorBadge(lead.linea_whatsapp)}
                                     </span>
                                   )}
                                 </div>
@@ -4608,8 +4681,8 @@ export default function Admin() {
                                   <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0f172a', fontWeight: 700 }}>👤 {ped.cliente_nombre}</h4>
                                   <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                                     {ped.linea_whatsapp && (
-                                      <span style={{ fontSize: '0.65rem', background: '#f8fafc', color: '#475569', padding: '1px 5px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
-                                        🎯 {getAsesorNameByPhone(ped.linea_whatsapp)}
+                                      <span style={{ fontSize: '0.65rem', background: '#f8fafc', color: '#475569', padding: '1px 5px', borderRadius: '4px', border: '1px solid #cbd5e1', display: 'inline-flex', alignItems: 'center' }}>
+                                        🎯 {renderAsesorBadge(ped.linea_whatsapp)}
                                       </span>
                                     )}
                                     {ped.origen === 'pos' ? (
@@ -4705,8 +4778,8 @@ export default function Admin() {
                                   <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#14532d', fontWeight: 700 }}>👤 {ped.cliente_nombre}</h4>
                                   <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
                                     {ped.linea_whatsapp && (
-                                      <span style={{ fontSize: '0.65rem', background: '#f8fafc', color: '#475569', padding: '1px 5px', borderRadius: '4px', border: '1px solid #cbd5e1' }}>
-                                        🎯 {asesores.find(a => a.telefono?.replace(/\D/g, '') === ped.linea_whatsapp?.replace(/\D/g, ''))?.nombre || ped.linea_whatsapp}
+                                      <span style={{ fontSize: '0.65rem', background: '#f8fafc', color: '#475569', padding: '1px 5px', borderRadius: '4px', border: '1px solid #cbd5e1', display: 'inline-flex', alignItems: 'center' }}>
+                                        🎯 {renderAsesorBadge(ped.linea_whatsapp)}
                                       </span>
                                     )}
                                     {ped.origen === 'pos' ? (
@@ -5030,7 +5103,7 @@ export default function Admin() {
                   </div>
                   <div>
                     <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase' }}>Línea WhatsApp Asignada</h5>
-                    <p style={{ margin: 0, fontWeight: 700, color: '#0ea5e9' }}>📞 {getAsesorNameByPhone(selectedPedido.linea_whatsapp)}</p>
+                    <p style={{ margin: 0, fontWeight: 700, color: '#0ea5e9', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>{renderAsesorBadge(selectedPedido.linea_whatsapp)}</p>
                   </div>
                   <div style={{ gridColumn: 'span 2' }}>
                     <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase' }}>Dirección de Entrega</h5>
@@ -5428,6 +5501,10 @@ function SidebarContent({
             <button className={`nav-item ${activeTab === 'asesores' ? 'active' : ''}`} onClick={() => handleSelectTab('asesores')}>
               <span className="nav-icon"><Users size={14} /></span> Asesores
               {activeTab === 'asesores' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'mayoristas' ? 'active' : ''}`} onClick={() => handleSelectTab('mayoristas')}>
+              <span className="nav-icon"><Users size={14} /></span> Mayoristas
+              {activeTab === 'mayoristas' && <span className="active-dot"></span>}
             </button>
             {getTenantId() !== 'indisutex' && (
               <button className={`nav-item ${activeTab === 'pos' ? 'active' : ''}`} onClick={() => handleSelectTab('pos')}>

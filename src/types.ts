@@ -85,4 +85,5 @@ export interface Asesor {
   tenant_id: string;
   created_at: string;
   foto_url?: string;
+  tipo?: string;
 }
