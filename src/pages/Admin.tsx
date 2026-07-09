@@ -7791,7 +7791,8 @@ export default function Admin() {
                                           ? lead.productos.map((p: any) => `${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ')
                                           : '';
                                         const text = `¡Hola ${lead.nombre || ''}! 👋 Vimos que estás interesado en: ${prodNames ? `*${prodNames}*` : 'nuestros productos'}. ¿Tienes alguna duda o te ayudamos a completar tu pedido? Escríbenos y con gusto te colaboramos. 😊`;
-                                        window.open(`https://wa.me/57${cleanPhone}?text=${encodeURIComponent(text)}`, '_blank');
+                                        const targetPhone = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
+                                        window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`, '_blank');
                                       }}
                                     >
                                       💬 Recuperar venta
