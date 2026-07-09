@@ -5733,17 +5733,48 @@ export default function Admin() {
                                     </p>
                                   )}
 
-                                  {/* Dynamic templates WhatsApp contact dropdown/list */}
+                                  {/* Direct WhatsApp Retargeting Button with customized details */}
+                                  {lead.telefono && (
+                                    <button 
+                                      className="btn-whatsapp-retarget"
+                                      style={{
+                                        width: '100%',
+                                        padding: '0.45rem',
+                                        fontSize: '0.78rem',
+                                        borderRadius: '8px',
+                                        border: '1px solid #25D366',
+                                        background: '#f0fdf4',
+                                        color: '#166534',
+                                        cursor: 'pointer',
+                                        fontWeight: 600,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '0.25rem',
+                                        transition: 'all 0.2s',
+                                        marginTop: '0.6rem',
+                                        marginBottom: '0.3rem'
+                                      }}
+                                      onClick={() => {
+                                        handleUpdateLeadStatus(lead.id, 'contactado');
+                                        const prodNames = Array.isArray(lead.productos) && lead.productos.length > 0
+                                          ? lead.productos.map((p: any) => `${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ')
+                                          : '';
+                                        const text = `¡Hola ${lead.nombre || ''}! 👋 Vimos que estás interesado en: ${prodNames ? `*${prodNames}*` : 'nuestros productos'}. ¿Tienes alguna duda o te ayudamos a completar tu pedido? Escríbenos y con gusto te colaboramos. 😊`;
+                                        window.open(`https://wa.me/57${lead.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(text)}`, '_blank');
+                                      }}
+                                    >
+                                      💬 Recuperar venta
+                                    </button>
+                                  )}
+
+                                  {/* Collapsible strategies templates dropdown */}
                                   {lead.telefono && (() => {
                                     const prodNames = Array.isArray(lead.productos) && lead.productos.length > 0
                                       ? lead.productos.map((p: any) => p.nombre).join(', ')
                                       : '';
 
                                     const templates = [
-                                      {
-                                        name: '❓ Duda / Problema',
-                                        text: `¡Hola ${lead.nombre || ''}! 👋 Vimos que estabas mirando nuestro catálogo de *${configuracion?.nombre_negocio || ''}* y empezaste a llenar tus datos de envío pero no completaste el pedido. ¿Tuviste algún problema o tienes alguna duda con los productos? ¡Escríbenos y con gusto te ayudamos! 😊`
-                                      },
                                       {
                                         name: '🏷️ Cupón 10% Off',
                                         text: `¡Hola ${lead.nombre || ''}! 👋 Notamos que dejaste algunos artículos en tu carrito ${prodNames ? `(*${prodNames}*)` : ''}. ¡Queremos ayudarte a tenerlos! Si completas tu pedido en las próximas 2 horas, te regalamos un *10% de descuento* extra usando el cupón *RECOVERY10*. Escríbenos si deseas aplicarlo 🚀`
@@ -5755,9 +5786,12 @@ export default function Admin() {
                                     ];
 
                                     return (
-                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', borderTop: '1px solid #f1f5f9', paddingTop: '0.6rem', marginTop: '0.4rem', textAlign: 'left' }}>
-                                        <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>🚀 Estrategia de Contacto:</span>
-                                        <div style={{ display: 'flex', gap: '0.25rem', flexDirection: 'column' }}>
+                                      <details style={{ marginTop: '0.3rem', border: '1px solid #cbd5e1', borderRadius: '8px', overflow: 'hidden' }}>
+                                        <summary style={{ padding: '0.4rem 0.6rem', fontSize: '0.72rem', fontWeight: 700, color: '#475569', background: '#f8fafc', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', userSelect: 'none' }}>
+                                          <span>🚀 Otras Estrategias</span>
+                                          <span style={{ fontSize: '0.6rem', color: '#94a3b8' }}>▼</span>
+                                        </summary>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', padding: '0.5rem', background: 'white', borderTop: '1px solid #cbd5e1', textAlign: 'left' }}>
                                           {templates.map((tpl, i) => (
                                             <button
                                               key={i}
@@ -5787,7 +5821,7 @@ export default function Admin() {
                                             </button>
                                           ))}
                                         </div>
-                                      </div>
+                                      </details>
                                     );
                                   })()}
                                 </div>
