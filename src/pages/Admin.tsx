@@ -452,12 +452,18 @@ export default function Admin() {
     const firstPhone = cleanInput.split(',')[0].replace(/\D/g, '');
     const numSinIndicativo = firstPhone.startsWith('57') ? firstPhone.substring(2) : firstPhone;
     
-    const match = asesores.find(a => {
+    const matchAsesor = asesores.find(a => {
       const phones = (a.telefono || '').split(',').map(p => p.replace(/\D/g, '')).filter(Boolean);
       return phones.some(p => cleanInput.split(',').map(cp => cp.replace(/\D/g, '')).includes(p));
     });
-    
-    if (match) return match.nombre;
+    if (matchAsesor) return matchAsesor.nombre;
+
+    const matchMayorista = mayoristas.find(m => {
+      const phones = (m.telefono || '').split(',').map(p => p.replace(/\D/g, '')).filter(Boolean);
+      return phones.some(p => cleanInput.split(',').map(cp => cp.replace(/\D/g, '')).includes(p));
+    });
+    if (matchMayorista) return matchMayorista.nombre;
+
     return numSinIndicativo;
   };
 
@@ -484,10 +490,15 @@ export default function Admin() {
     
     const name = getAsesorNameByPhone(phone);
     
-    const match = asesores.find(a => {
+    const matchAsesor = asesores.find(a => {
       const phones = (a.telefono || '').split(',').map(p => p.replace(/\D/g, '')).filter(Boolean);
       return phones.some(p => cleanInput.split(',').map(cp => cp.replace(/\D/g, '')).includes(p));
     });
+    const matchMayorista = mayoristas.find(m => {
+      const phones = (m.telefono || '').split(',').map(p => p.replace(/\D/g, '')).filter(Boolean);
+      return phones.some(p => cleanInput.split(',').map(cp => cp.replace(/\D/g, '')).includes(p));
+    });
+    const match = matchAsesor || matchMayorista;
 
     const lineaDisplay = cleanInput.split(',').map(p => p.trim()).filter(Boolean)[0] || cleanInput;
     return (
@@ -4322,21 +4333,26 @@ export default function Admin() {
                       <strong>Error de Sesión:</strong> No se pudo cargar tu perfil de mayorista. Por favor, cierra sesión e ingresa nuevamente.
                     </div>
                   ) : (
-                  <div style={{ marginBottom: '2rem', padding: '1.5rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                    <h4 style={{ margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#0f172a' }}>Ganancia Global</h4>
-                    <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-                      <div className="form-field" style={{ margin: 0, flex: 1, minWidth: '250px' }}>
-                        <label>Porcentaje de incremento (%) sobre el precio base de todos los productos</label>
+                  <div style={{ marginBottom: '2rem', display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap', background: '#f8fafc', padding: '1.25rem 1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ flex: 1, minWidth: '200px', textAlign: 'left' }}>
+                      <h4 style={{ margin: 0, fontSize: '1rem', color: '#0f172a', fontWeight: 800 }}>Ganancia Global</h4>
+                      <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.78rem', color: '#64748b' }}>Porcentaje de incremento (%) sobre el precio base de todos los productos</p>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                         <input 
                           type="number" 
                           id="mayorista-markup"
                           defaultValue={currentMayorista.porcentaje_ganancia || 0}
                           min="0"
                           step="0.1"
+                          style={{ width: '100px', padding: '0.55rem 1.5rem 0.55rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700, textAlign: 'center', outline: 'none', margin: 0 }}
                         />
+                        <span style={{ position: 'absolute', right: '0.75rem', color: '#64748b', fontWeight: 800, fontSize: '0.88rem' }}>%</span>
                       </div>
                       <button 
                         className="btn-primary"
+                        style={{ margin: 0, padding: '0.55rem 1.25rem', borderRadius: '8px', fontWeight: 700, fontSize: '0.88rem', background: configuracion?.color_primario || '#4f46e5', color: 'white', border: 'none', cursor: 'pointer' }}
                         onClick={async () => {
                           try {
                             setLoading(true);
@@ -4506,6 +4522,7 @@ export default function Admin() {
             const leader = rankingData[0];
             const gapToLeader = myData && leader && !myData.isMe ? leader.total - myData.total : 0;
             const medals = ['🥇','🥈','🥉'];
+            const primaryColor = configuracion?.color_primario || '#6366f1';
 
             return (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', textAlign: 'left' }}>
@@ -4525,7 +4542,7 @@ export default function Admin() {
                 {/* Métricas de Gamificación del Usuario */}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.25rem' }}>
                   {/* Card 1: Puntos */}
-                  <div className="metric-card" style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #6366f1 100%)', color: 'white', border: 'none' }}>
+                  <div className="metric-card" style={{ background: `linear-gradient(135deg, ${primaryColor} 0%, ${primaryColor}cc 100%)`, color: 'white', border: 'none' }}>
                     <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.85, fontWeight: 700 }}>Tus Puntos de Crecimiento</span>
                     <h2 style={{ margin: '0.2rem 0', fontSize: '2rem', fontWeight: 800, color: 'white', fontFamily: 'Outfit' }}>
                       {myPoints.toLocaleString()} <span style={{ fontSize: '1rem', fontWeight: 600 }}>pts</span>
@@ -4534,7 +4551,7 @@ export default function Admin() {
                   </div>
 
                   {/* Card 2: Posición */}
-                  <div className="metric-card" style={{ background: 'linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)', color: 'white', border: 'none' }}>
+                  <div className="metric-card" style={{ background: `linear-gradient(135deg, ${primaryColor}dd 0%, ${primaryColor}99 100%)`, color: 'white', border: 'none' }}>
                     <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.85, fontWeight: 700 }}>Tu Posición Global</span>
                     <h2 style={{ margin: '0.2rem 0', fontSize: '2rem', fontWeight: 800, color: 'white', fontFamily: 'Outfit' }}>
                       {myPos >= 0 ? `${medals[myPos] || ''} #${myPos + 1}` : 'Sin posición'}
@@ -4543,7 +4560,7 @@ export default function Admin() {
                   </div>
 
                   {/* Card 3: Compras */}
-                  <div className="metric-card" style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', color: 'white', border: 'none' }}>
+                  <div className="metric-card" style={{ background: `linear-gradient(135deg, ${primaryColor}bb 0%, ${primaryColor}77 100%)`, color: 'white', border: 'none' }}>
                     <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.85, fontWeight: 700 }}>Total Compras</span>
                     <h2 style={{ margin: '0.2rem 0', fontSize: '1.8rem', fontWeight: 800, color: 'white', fontFamily: 'Outfit' }}>
                       ${myTotal.toLocaleString()} <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>COP</span>
@@ -4562,7 +4579,7 @@ export default function Admin() {
                     </h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                       {rankingData.map((r, idx) => (
-                        <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderRadius: '12px', background: r.isMe ? 'rgba(99,102,241,0.1)' : 'rgba(248,250,252,0.8)', border: r.isMe ? '1px solid rgba(99,102,241,0.3)' : '1px solid #e2e8f0' }}>
+                        <div key={r.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', borderRadius: '12px', background: r.isMe ? `${primaryColor}15` : 'rgba(248,250,252,0.8)', border: r.isMe ? `1px solid ${primaryColor}4d` : '1px solid #e2e8f0' }}>
                           <span style={{ fontSize: '1.2rem', minWidth: '32px', fontWeight: 800, textAlign: 'center', color: idx < 3 ? '#d97706' : '#64748b' }}>
                             {medals[idx] || `#${idx + 1}`}
                           </span>
@@ -4573,7 +4590,7 @@ export default function Admin() {
                               {r.nombre.charAt(0).toUpperCase()}
                             </div>
                           )}
-                          <span style={{ fontWeight: r.isMe ? 800 : 600, color: r.isMe ? '#4f46e5' : '#0f172a', fontSize: '0.9rem', flex: 1 }}>
+                          <span style={{ fontWeight: r.isMe ? 800 : 600, color: r.isMe ? primaryColor : '#0f172a', fontSize: '0.9rem', flex: 1 }}>
                             {r.nombre}{r.isMe ? ' (Tú)' : ''}
                           </span>
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
@@ -4603,11 +4620,11 @@ export default function Admin() {
                       {myData && gapToLeader > 0 && (
                         <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                           <p style={{ margin: 0, fontSize: '0.82rem', color: '#64748b' }}>Para alcanzar al líder del ranking te faltan:</p>
-                          <p style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, color: '#4f46e5' }}>
+                          <p style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, color: primaryColor }}>
                             ${gapToLeader.toLocaleString()} COP
                           </p>
                           <div style={{ height: '8px', background: '#f1f5f9', borderRadius: '9999px', overflow: 'hidden', marginTop: '0.5rem' }}>
-                            <div style={{ height: '100%', width: `${leader.total > 0 ? Math.min(100, (myData.total / leader.total) * 100) : 0}%`, background: 'linear-gradient(90deg, #4f46e5, #0ea5e9)', borderRadius: '9999px', transition: 'width 1s ease' }} />
+                            <div style={{ height: '100%', width: `${leader.total > 0 ? Math.min(100, (myData.total / leader.total) * 100) : 0}%`, background: `linear-gradient(90deg, ${primaryColor}, ${primaryColor}66)`, borderRadius: '9999px', transition: 'width 1s ease' }} />
                           </div>
                           <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.74rem', color: '#475569', fontWeight: 600 }}>
                             {leader.total > 0 ? Math.round((myData.total / leader.total) * 100) : 0}% del puntaje de {leader.nombre}
@@ -7764,12 +7781,17 @@ export default function Admin() {
                                         marginBottom: '0.3rem'
                                       }}
                                       onClick={() => {
+                                        const cleanPhone = (lead.telefono || '').replace(/\D/g, '');
+                                        if (!cleanPhone) {
+                                          showToast('El cliente no tiene un teléfono válido registrado para WhatsApp', 'error');
+                                          return;
+                                        }
                                         handleUpdateLeadStatus(lead.id, 'contactado');
                                         const prodNames = Array.isArray(lead.productos) && lead.productos.length > 0
                                           ? lead.productos.map((p: any) => `${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ')
                                           : '';
                                         const text = `¡Hola ${lead.nombre || ''}! 👋 Vimos que estás interesado en: ${prodNames ? `*${prodNames}*` : 'nuestros productos'}. ¿Tienes alguna duda o te ayudamos a completar tu pedido? Escríbenos y con gusto te colaboramos. 😊`;
-                                        window.open(`https://wa.me/57${lead.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(text)}`, '_blank');
+                                        window.open(`https://wa.me/57${cleanPhone}?text=${encodeURIComponent(text)}`, '_blank');
                                       }}
                                     >
                                       💬 Recuperar venta
