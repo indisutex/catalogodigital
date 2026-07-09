@@ -4,7 +4,7 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const SECRET_PIN = '0000';
@@ -1817,7 +1817,7 @@ export default function Admin() {
               {activeTab === 'config' && 'Ajustes globales de tu tienda'}
             </p>
           </div>
-          <div className="topbar-actions">
+          <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             {activeTab === 'productos' && (
               isAddingProduct ? (
                 <button className="btn-secondary" onClick={() => setIsAddingProduct(false)}>
@@ -1845,6 +1845,16 @@ export default function Admin() {
                 </div>
               )
             )}
+            <button 
+              type="button"
+              className="btn-secondary" 
+              onClick={handleLogout}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.55rem 1rem', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 600, border: '1px solid #cbd5e1', cursor: 'pointer', background: 'white', color: '#475569', transition: 'all 0.2s' }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#94a3b8'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+            >
+              <Home size={14} /> Ir al Inicio
+            </button>
           </div>
         </div>
 
@@ -2573,93 +2583,7 @@ export default function Admin() {
           )}
 
 
-          {/* ── PERFIL ADMIN TAB ── */}
-          {activeTab === 'perfil_admin' && (
-            <div className="admin-panel">
-              <div className="panel-header">
-                <div>
-                  <h3><User size={16} /> Mi Perfil (Administrador)</h3>
-                  <p>Configura tus datos personales</p>
-                </div>
-              </div>
-              <div className="panel-body">
-                {configuracion ? (
-                  <form onSubmit={async (e) => {
-                    e.preventDefault();
-                    setLoading(true);
-                    
-                    const updateData = {
-                      admin_nombre: configuracion.admin_nombre,
-                      admin_foto_url: configuracion.admin_foto_url
-                    };
-                    
-                    const { error } = await supabase.from('configuracion').update(updateData).eq('id', configuracion.id);
-                    
-                    if (error) {
-                      showToast('Error: ' + error.message, 'error');
-                    } else {
-                      showToast('Perfil guardado ✓');
-                    }
-                    
-                    setLoading(false);
-                  }}>
-                    <div className="config-section">
-                      <div className="form-grid">
-                        <div className="form-field">
-                          <label>Nombre del Administrador</label>
-                          <input 
-                            value={configuracion.admin_nombre || ''} 
-                            onChange={e => setConfiguracion({ ...configuracion, admin_nombre: e.target.value })} 
-                            placeholder="Ej. Juan Pérez" 
-                          />
-                        </div>
-                        <div className="form-field">
-                          <label>Foto de Perfil</label>
-                          <div className="img-input-row">
-                            {configuracion.admin_foto_url && <img src={configuracion.admin_foto_url} className="img-preview-thumb" alt="Admin" />}
-                            <input 
-                              type="url" 
-                              value={configuracion.admin_foto_url || ''} 
-                              onChange={e => setConfiguracion({ ...configuracion, admin_foto_url: e.target.value })} 
-                              placeholder="https://..." 
-                              style={{ flex: 1 }} 
-                            />
-                            <label className="btn-upload-img" style={{ flexShrink: 0, cursor: 'pointer' }}>
-                              <Upload size={12} /> Subir
-                              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
-                                const file = e.target.files?.[0];
-                                if (!file) return;
-                                setLoading(true);
-                                try {
-                                  const compFile = await compressImage(file);
-                                  const fileName = `admin_foto_${Date.now()}.${compFile.name.split('.').pop()}`;
-                                  await supabase.storage.from('archivos').upload(fileName, compFile);
-                                  const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
-                                  setConfiguracion({ ...configuracion, admin_foto_url: data.publicUrl });
-                                  showToast('Foto subida ✓');
-                                } catch { showToast('Error subiendo foto', 'error'); }
-                                setLoading(false);
-                              }} />
-                            </label>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="form-actions" style={{ marginTop: '1.5rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
-                      <button type="submit" className="btn-primary" disabled={loading} style={{ padding: '0.6rem 2rem' }}>
-                        {loading ? 'Guardando...' : 'Guardar Perfil'}
-                      </button>
-                    </div>
-                  </form>
-                ) : (
-                  <div className="empty-state">
-                    <div className="loading-dot" />
-                    <p style={{ marginTop: '1rem' }}>Cargando perfil...</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+
 
           {/* ── CONFIG TAB ── */}
 
@@ -2687,7 +2611,8 @@ export default function Admin() {
                       video_hero_url: configuracion.video_hero_url,
                       color_primario: configuracion.color_primario || '#6366f1',
                       admin_nombre: configuracion.admin_nombre,
-                      admin_foto_url: configuracion.admin_foto_url
+                      admin_foto_url: configuracion.admin_foto_url,
+                      preguntar_tipo_cliente: configuracion.preguntar_tipo_cliente || false
                     };
                     
                     let { error } = await supabase.from('configuracion').update(updateData).eq('id', configuracion.id);
@@ -2709,6 +2634,50 @@ export default function Admin() {
                     setLoading(false);
                   }}>
                     <div className="config-section">
+                      <div className="config-section-title">👤 Perfil del Administrador</div>
+                      <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+                        <div className="form-field">
+                          <label>Nombre del Administrador</label>
+                          <input 
+                            value={configuracion.admin_nombre || ''} 
+                            onChange={e => setConfiguracion({ ...configuracion, admin_nombre: e.target.value })} 
+                            placeholder="Ej. Juan Pérez" 
+                          />
+                        </div>
+                        <div className="form-field">
+                          <label>Foto de Perfil</label>
+                          <div className="img-input-row" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            {configuracion.admin_foto_url && <img src={configuracion.admin_foto_url} className="img-preview-thumb" alt="Admin" style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }} />}
+                            <input 
+                              type="text" 
+                              value={configuracion.admin_foto_url || ''} 
+                              onChange={e => setConfiguracion({ ...configuracion, admin_foto_url: e.target.value })} 
+                              placeholder="https://..." 
+                              style={{ flex: 1 }} 
+                            />
+                            <label className="btn-upload-img" style={{ flexShrink: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.55rem 0.85rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600 }}>
+                              <Upload size={12} /> Subir
+                              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                setLoading(true);
+                                try {
+                                  const compFile = await compressImage(file);
+                                  const fileName = `admin_foto_${Date.now()}.${compFile.name.split('.').pop()}`;
+                                  await supabase.storage.from('archivos').upload(fileName, compFile);
+                                  const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
+                                  setConfiguracion({ ...configuracion, admin_foto_url: data.publicUrl });
+                                  showToast('Foto subida ✓');
+                                } catch { showToast('Error subiendo foto', 'error'); }
+                                setLoading(false);
+                              }} />
+                            </label>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="config-section" style={{ marginTop: '1.5rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
                       <div className="config-section-title">🏪 Datos del Negocio</div>
                       <div className="form-grid">
                         <div className="form-field">
@@ -2747,6 +2716,104 @@ export default function Admin() {
                             />
                             Mostrar pantalla "¿Qué tipo de cliente eres?" al inicio
                           </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="config-section" style={{ marginTop: '1.5rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
+                      <div className="config-section-title">✨ Personalización del Catálogo</div>
+                      <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+                        
+                        {/* Logo del Negocio */}
+                        <div className="form-field">
+                          <label>Logo del Negocio</label>
+                          <div className="img-input-row" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            {configuracion.logo_url && <img src={configuracion.logo_url} alt="Logo" style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }} />}
+                            <input 
+                              type="text" 
+                              value={configuracion.logo_url || ''} 
+                              onChange={e => setConfiguracion({ ...configuracion, logo_url: e.target.value })} 
+                              placeholder="https://..." 
+                              style={{ flex: 1 }}
+                            />
+                            <label className="btn-upload-img" style={{ flexShrink: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.55rem 0.85rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600 }}>
+                              <Upload size={12} /> Subir
+                              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                setLoading(true);
+                                try {
+                                  const compFile = await compressImage(file);
+                                  const fileName = `logo_${Date.now()}.${compFile.name.split('.').pop()}`;
+                                  await supabase.storage.from('archivos').upload(fileName, compFile);
+                                  const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
+                                  setConfiguracion({ ...configuracion, logo_url: data.publicUrl });
+                                  showToast('Logo subido ✓');
+                                } catch { showToast('Error subiendo logo', 'error'); }
+                                setLoading(false);
+                              }} />
+                            </label>
+                          </div>
+                        </div>
+
+                        {/* Video de Fondo Hero */}
+                        <div className="form-field">
+                          <label>Video del Banner (Hero - Vertical)</label>
+                          <div className="img-input-row" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <input 
+                              type="text" 
+                              value={configuracion.video_hero_url || ''} 
+                              onChange={e => setConfiguracion({ ...configuracion, video_hero_url: e.target.value })} 
+                              placeholder="https://..." 
+                              style={{ flex: 1 }}
+                            />
+                            <label className="btn-upload-img" style={{ flexShrink: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.55rem 0.85rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600 }}>
+                              <Upload size={12} /> Subir
+                              <input type="file" accept="video/*" style={{ display: 'none' }} onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (!file) return;
+                                setLoading(true);
+                                try {
+                                  const fileName = `video_hero_${Date.now()}.${file.name.split('.').pop()}`;
+                                  await supabase.storage.from('archivos').upload(fileName, file);
+                                  const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
+                                  setConfiguracion({ ...configuracion, video_hero_url: data.publicUrl });
+                                  showToast('Video subido ✓');
+                                } catch { showToast('Error subiendo video', 'error'); }
+                                setLoading(false);
+                              }} />
+                            </label>
+                          </div>
+                        </div>
+
+                        {/* Descripción Hero */}
+                        <div className="form-field full">
+                          <label>Descripción del Banner (Hero)</label>
+                          <input 
+                            value={configuracion.descripcion_hero || ''} 
+                            onChange={e => setConfiguracion({ ...configuracion, descripcion_hero: e.target.value })} 
+                            placeholder="Ej. Encuentra la mejor moda mayorista de Colombia"
+                          />
+                        </div>
+
+                        {/* Link Dropshipper */}
+                        <div className="form-field">
+                          <label>Enlace de Dropshipping (Opcional)</label>
+                          <input 
+                            value={configuracion.link_dropshipper || ''} 
+                            onChange={e => setConfiguracion({ ...configuracion, link_dropshipper: e.target.value })} 
+                            placeholder="https://..."
+                          />
+                        </div>
+
+                        {/* Link Ganar Dinero */}
+                        <div className="form-field">
+                          <label>Enlace 'Trabaja con Nosotros' (Opcional)</label>
+                          <input 
+                            value={configuracion.link_ganar_dinero || ''} 
+                            onChange={e => setConfiguracion({ ...configuracion, link_ganar_dinero: e.target.value })} 
+                            placeholder="https://..."
+                          />
                         </div>
                       </div>
                     </div>
@@ -5277,19 +5344,6 @@ function SidebarContent({
   role: 'admin' | 'asesor';
   currentAsesor?: any;
 }) {
-  const [isOnline, setIsOnline] = useState(window.navigator.onLine);
-
-  useEffect(() => {
-    const handleOnline = () => setIsOnline(true);
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, []);
-
   const handleSelectTab = (tab: TabType) => {
     setActiveTab(tab);
     if (onClose) onClose();
@@ -5402,14 +5456,6 @@ function SidebarContent({
         </div>
         <div className="storage-bar">
           <div className="storage-progress" style={{ width: `${Math.min((productos.length / 500) * 100, 100)}%` }}></div>
-        </div>
-      </div>
-
-      <div className="sidebar-network-status" style={{ padding: '0 1.5rem', marginBottom: '1.5rem' }}>
-        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.5rem' }}>Estado de Red</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: isOnline ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)', color: isOnline ? '#059669' : '#dc2626', padding: '0.6rem 0.8rem', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 700 }}>
-          <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: isOnline ? '#10b981' : '#ef4444', boxShadow: isOnline ? '0 0 8px #10b981' : '0 0 8px #ef4444', animation: 'pulse 2s infinite' }}></span>
-          {isOnline ? 'Bueno' : 'Malo'}
         </div>
       </div>
 
