@@ -422,11 +422,13 @@ export default function Admin() {
     localStorage.removeItem(`admin_role_${getTenantId()}`);
     localStorage.removeItem(`admin_asesor_id_${getTenantId()}`);
     localStorage.removeItem(`admin_asesor_phone_${getTenantId()}`);
+    localStorage.removeItem('admin_active_tab');
     setIsAuthenticated(false);
     setRole('admin');
     setLoggedAsesorPhone(null);
     setSelectedCompany(null);
     setPin('');
+    setActiveTab('productos');
   }
 
   const [pagoModalUrl, setPagoModalUrl] = useState<string | null>(null);
@@ -518,13 +520,21 @@ export default function Admin() {
         <span style={{ display: 'flex', flexDirection: 'column', gap: '2px', alignItems: 'flex-start' }}>
           <span style={{ fontSize: '0.9rem', color: '#0f172a', fontWeight: 700, lineHeight: 1.2 }}>{name}</span>
           <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 500, lineHeight: 1 }}>📲 {lineaDisplay}</span>
-          {origen && (
-            origen === 'pos' ? (
-              <span style={{ fontSize: '0.65rem', background: '#dcfce7', color: '#166534', padding: '1px 5px', borderRadius: '4px', fontWeight: 700, marginTop: '2px', display: 'inline-block' }}>POS</span>
-            ) : (
-              <span style={{ fontSize: '0.65rem', background: '#e0f2fe', color: '#0369a1', padding: '1px 5px', borderRadius: '4px', fontWeight: 700, marginTop: '2px', display: 'inline-block' }}>Catálogo</span>
-            )
-          )}
+          <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '2px' }}>
+            {origen && (
+              origen === 'pos' ? (
+                <span style={{ fontSize: '0.65rem', background: '#dcfce7', color: '#166534', padding: '1px 5px', borderRadius: '4px', fontWeight: 700, display: 'inline-block' }}>POS</span>
+              ) : (
+                <span style={{ fontSize: '0.65rem', background: '#e0f2fe', color: '#0369a1', padding: '1px 5px', borderRadius: '4px', fontWeight: 700, display: 'inline-block' }}>Catálogo</span>
+              )
+            )}
+            {matchAsesor && (
+              <span style={{ fontSize: '0.65rem', background: '#f3e8ff', color: '#6b21a8', padding: '1px 5px', borderRadius: '4px', fontWeight: 700, display: 'inline-block' }}>Asesor</span>
+            )}
+            {matchMayorista && (
+              <span style={{ fontSize: '0.65rem', background: '#fef3c7', color: '#b45309', padding: '1px 5px', borderRadius: '4px', fontWeight: 700, display: 'inline-block' }}>Mayorista</span>
+            )}
+          </div>
         </span>
       </span>
     );
@@ -650,6 +660,7 @@ export default function Admin() {
       setRole('admin');
       setLoggedAsesorPhone(null);
       setIsAuthenticated(true);
+      setActiveTab('productos');
       return;
     }
 

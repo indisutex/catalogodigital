@@ -116,6 +116,7 @@ export default function MenuDigital() {
           if (match) {
             setMarkupPorcentaje(Number((match as any).porcentaje_ganancia) || 0);
             setAjustesProductos((match as any).ajustes_productos || {});
+            setBuyerType('detal'); // Bypass clients selection screen for mayoristas
             return;
           }
         }
