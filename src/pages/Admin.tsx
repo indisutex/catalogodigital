@@ -113,6 +113,7 @@ export default function Admin() {
   const [editingAsesorPin, setEditingAsesorPin] = useState('');
   const [nuevoAsesorFotoUrl, setNuevoAsesorFotoUrl] = useState('');
   const [editingAsesorFotoUrl, setEditingAsesorFotoUrl] = useState('');
+  const [selectedAsesorAnalytics, setSelectedAsesorAnalytics] = useState<any | null>(null);
   // Mayorista states
   const [nuevoMayoristaNombre, setNuevoMayoristaNombre] = useState('');
   const [nuevoMayoristaTelefonos, setNuevoMayoristaTelefonos] = useState<string[]>(['']);
@@ -1160,6 +1161,43 @@ export default function Admin() {
       .map(([id, info]) => ({ id, ...info }))
       .sort((a, b) => b.total - a.total)[0] || { id: 'pos', name: 'POS', total: 0, phone: 'pos' };
 
+    // 6. Mejor hora del día
+    const hourCounts: Record<number, number> = {};
+    for (let i = 0; i < 24; i++) hourCounts[i] = 0;
+    completados.forEach(p => { const h = new Date(p.created_at).getHours(); hourCounts[h] = (hourCounts[h] || 0) + 1; });
+    const bestHourEntry = Object.entries(hourCounts).sort((a, b) => Number(b[1]) - Number(a[1]))[0];
+    const bestHour = { hour: Number(bestHourEntry[0]), count: Number(bestHourEntry[1]) };
+    const hourLabels = ['12am','1am','2am','3am','4am','5am','6am','7am','8am','9am','10am','11am','12pm','1pm','2pm','3pm','4pm','5pm','6pm','7pm','8pm','9pm','10pm','11pm'];
+
+    // 7. Mejor día de la semana
+    const dayNames = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+    const dayCounts: Record<number, number> = {0:0,1:0,2:0,3:0,4:0,5:0,6:0};
+    completados.forEach(p => { const d = new Date(p.created_at).getDay(); dayCounts[d] = (dayCounts[d] || 0) + 1; });
+    const bestDayEntry = Object.entries(dayCounts).sort((a, b) => Number(b[1]) - Number(a[1]))[0];
+    const bestDay = { day: Number(bestDayEntry[0]), name: dayNames[Number(bestDayEntry[0])], count: Number(bestDayEntry[1]) };
+
+    // 8. Ranking de asesores por ventas
+    const advisorRanking = Object.entries(advisorSales)
+      .map(([id, info]) => ({ id, ...info }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+
+    // 9. Consejo del día (rotativo por fecha)
+    const allTips = [
+      { icon: '📱', text: 'Responde en menos de 5 minutos: los clientes que reciben respuesta rápida compran 3x más.' },
+      { icon: '📸', text: 'Comparte 3 fotos del producto desde diferentes ángulos. Las imágenes claras reducen las dudas y aumentan el cierre.' },
+      { icon: '⭐', text: 'Pide a cada cliente satisfecho que te recomiende con un conocido. El voz a voz es tu mejor publicidad.' },
+      { icon: '🎁', text: 'Ofrece un pequeño regalo o envío gratis por encima de cierto monto para aumentar el ticket promedio.' },
+      { icon: '📅', text: `Las ventas pico son los ${bestDay.count > 0 ? bestDay.name : 'fines de semana'}. Planifica más stock y asesoras disponibles ese día.` },
+      { icon: '⏰', text: `La hora de oro es ${bestHour.count > 0 ? hourLabels[bestHour.hour] : 'la tarde'}. Programa tus publicaciones en redes en ese horario.` },
+      { icon: '💬', text: 'Un seguimiento después de 24h a los carros abandonados recupera hasta un 20% de ventas perdidas.' },
+      { icon: '📊', text: 'Revisa tu analítica semanal. Los datos te dicen qué productos y asesoras funcionan mejor.' },
+      { icon: '📦', text: 'Mantén tu catálogo actualizado. Los productos sin stock generan frustración y pérdida de clientes.' },
+      { icon: '📝', text: 'Personaliza el mensaje de WhatsApp. Un saludo con el nombre del cliente aumenta la tasa de respuesta.' },
+    ];
+    const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
+    const todayTips = Array.from({ length: 8 }, (_, i) => allTips[(dayOfYear + i) % allTips.length]);
+
     return {
       totalVentasVal,
       noResueltosCount: noResueltos.length,
@@ -1167,7 +1205,15 @@ export default function Admin() {
       catalogCount: catalogOrders.length,
       sortedCities,
       bestAdvisorPhone: bestAdvisor.phone,
-      bestAdvisorTotal: bestAdvisor.total
+      bestAdvisorTotal: bestAdvisor.total,
+      bestHour,
+      bestDay,
+      advisorRanking,
+      todayTips,
+      hourLabels,
+      hourCounts,
+      dayCounts,
+      dayNames,
     };
   }, [pedidos, asesores]);
 
@@ -3650,26 +3696,31 @@ export default function Admin() {
                                   {(a.telefono || '').split(',').map(p => p.trim()).filter(Boolean).map((phone, idx) => {
                                     const link = `${window.location.origin}/${getTenantId()}?ws=${phone}`;
                                     return (
-                                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600, minWidth: '90px' }}>{phone}:</span>
-                                        <input
-                                          type="text"
-                                          readOnly
-                                          value={link}
-                                          style={{ padding: '0.25rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.75rem', width: '150px', background: '#f8fafc', color: '#64748b' }}
-                                          onClick={e => (e.target as HTMLInputElement).select()}
-                                        />
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            navigator.clipboard.writeText(link);
-                                            showToast(`Enlace (${phone}) copiado ✓`, 'success');
-                                          }}
-                                          className="btn-secondary"
-                                          style={{ padding: '0.25rem 0.5rem', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center', gap: '0.2rem', whiteSpace: 'nowrap' }}
-                                        >
-                                          <Copy size={10} /> Copiar
-                                        </button>
+                                      <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginBottom: '0.5rem' }}>
+                                        <span style={{ fontSize: '0.8rem', color: '#334155', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                                          📲 {phone}
+                                        </span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                          <a
+                                            href={link}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            style={{ fontSize: '0.72rem', background: '#dcfce7', color: '#16a34a', padding: '0.2rem 0.55rem', borderRadius: '20px', fontWeight: 700, textDecoration: 'none', border: '1px solid #86efac', whiteSpace: 'nowrap' }}
+                                          >
+                                            🛍️ Catálogo
+                                          </a>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              navigator.clipboard.writeText(link);
+                                              showToast(`Enlace (${phone}) copiado ✓`, 'success');
+                                            }}
+                                            className="btn-secondary"
+                                            style={{ padding: '0.2rem 0.45rem', fontSize: '0.68rem', display: 'inline-flex', alignItems: 'center', gap: '0.2rem', whiteSpace: 'nowrap' }}
+                                          >
+                                            <Copy size={10} /> Copiar
+                                          </button>
+                                        </div>
                                       </div>
                                     );
                                   })}
@@ -3698,6 +3749,15 @@ export default function Admin() {
                                     </>
                                   ) : (
                                     <>
+                                      <button
+                                        type="button"
+                                        onClick={() => setSelectedAsesorAnalytics(a)}
+                                        className="btn-secondary"
+                                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', color: 'var(--primary-color,#6366f1)', borderColor: 'var(--primary-color,#6366f1)' }}
+                                        title="Ver analítica del asesor"
+                                      >
+                                        📊
+                                      </button>
                                       <button
                                         type="button"
                                         onClick={() => {
@@ -5669,6 +5729,178 @@ export default function Admin() {
           <span>{toast.message}</span>
         </div>
       )}
+
+      {/* MODAL ANALÍTICA ASESOR */}
+      {selectedAsesorAnalytics && (() => {
+        const a = selectedAsesorAnalytics;
+        const aPhones = (a.telefono || '').split(',').map((p: string) => p.replace(/\D/g, '')).filter(Boolean);
+        const aPedidos = pedidos.filter(p => {
+          const op = (p.linea_whatsapp || '').replace(/\D/g, '');
+          return aPhones.includes(op);
+        });
+        const aLeads = aPedidos.filter(p => p.estado === 'abandonado' || p.estado === 'borrador');
+        const aCompletados = aPedidos.filter(p => p.estado === 'completado');
+        const aPendientes = aPedidos.filter(p => p.estado === 'pendiente' || p.estado === 'interesado');
+        const totalVentas = aCompletados.reduce((s, p) => s + (p.total || 0), 0);
+        const ticketProm = aCompletados.length > 0 ? Math.round(totalVentas / aCompletados.length) : 0;
+        const horasMap: Record<number, number> = {};
+        for (let i = 0; i < 24; i++) horasMap[i] = 0;
+        aCompletados.forEach(p => { const h = new Date(p.created_at).getHours(); horasMap[h] = (horasMap[h] || 0) + 1; });
+        const maxHoraCount = Math.max(1, ...Object.values(horasMap));
+        const horaLabels = ['12am','1','2','3','4','5','6','7am','8','9','10','11','12pm','1','2','3','4','5','6','7pm','8','9','10','11'];
+        const bestHour = Object.entries(horasMap).reduce((best, [h, c]) => c > best[1] ? [h, c] : best, ['0', 0]);
+        const monthsMap: Record<string, number> = {};
+        const now = new Date();
+        for (let i = 5; i >= 0; i--) {
+          const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          monthsMap[`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`] = 0;
+        }
+        aCompletados.forEach(p => {
+          const d = new Date(p.created_at);
+          const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+          if (key in monthsMap) monthsMap[key] = (monthsMap[key] || 0) + 1;
+        });
+        const monthEntries = Object.entries(monthsMap);
+        const maxMonthCount = Math.max(1, ...monthEntries.map(([, c]) => c));
+        const monthNames = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+        const primaryColor = configuracion?.color_primario || '#6366f1';
+        return (
+          <div className="modal-overlay" onClick={() => setSelectedAsesorAnalytics(null)} style={{ zIndex: 1100 }}>
+            <div className="modal-content" onClick={e => e.stopPropagation()}
+              style={{ maxWidth: '820px', width: '100%', borderRadius: '20px', padding: '0', maxHeight: '92vh', overflowY: 'auto', background: 'white' }}>
+              <div style={{ padding: '1.5rem 1.75rem', background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}cc)`, borderRadius: '20px 20px 0 0', color: 'white', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                {a.foto_url ? (
+                  <img src={a.foto_url} alt={a.nombre} style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', border: '3px solid rgba(255,255,255,0.4)' }} />
+                ) : (
+                  <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.8rem', fontWeight: 800, color: 'white', border: '3px solid rgba(255,255,255,0.4)' }}>
+                    {a.nombre.charAt(0)}
+                  </div>
+                )}
+                <div style={{ flex: 1 }}>
+                  <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>📊 Analítica — {a.nombre}</h2>
+                  <p style={{ margin: '0.2rem 0 0 0', opacity: 0.85, fontSize: '0.88rem' }}>📲 {(a.telefono || '').split(',').join(' · ')}</p>
+                </div>
+                <button onClick={() => setSelectedAsesorAnalytics(null)}
+                  style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+              </div>
+              <div style={{ padding: '1.5rem 1.75rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem' }}>
+                  {[
+                    { label: 'Ventas Completadas', value: aCompletados.length, icon: '✅', color: '#10b981', sub: `$${totalVentas.toLocaleString()} total` },
+                    { label: 'Pendientes de Pago', value: aPendientes.length, icon: '⏳', color: '#eab308', sub: 'Esperando comprobante' },
+                    { label: 'Abandonos', value: aLeads.length, icon: '🔴', color: '#ef4444', sub: 'Borradores / no interesados' },
+                    { label: 'Ticket Promedio', value: `$${ticketProm.toLocaleString()}`, icon: '💰', color: primaryColor, sub: 'Por venta completada' },
+                  ].map((kpi, i) => (
+                    <div key={i} style={{ background: '#f8fafc', borderRadius: '14px', padding: '1rem', border: `2px solid ${kpi.color}22`, position: 'relative', overflow: 'hidden' }}>
+                      <div style={{ position: 'absolute', right: '-8px', top: '-8px', fontSize: '3rem', opacity: 0.1 }}>{kpi.icon}</div>
+                      <div style={{ fontSize: '0.73rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.4rem' }}>{kpi.label}</div>
+                      <div style={{ fontSize: '1.7rem', fontWeight: 800, color: kpi.color, lineHeight: 1 }}>{kpi.value}</div>
+                      <div style={{ fontSize: '0.72rem', color: '#94a3b8', marginTop: '0.3rem' }}>{kpi.sub}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
+                  <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>⏰ Horario de Mayor Venta</h4>
+                  <p style={{ margin: '0 0 1rem 0', color: '#64748b', fontSize: '0.8rem' }}>
+                    {aCompletados.length > 0 ? `Pico máximo: ${horaLabels[Number(bestHour[0])]} (${bestHour[1]} ventas)` : 'Sin datos suficientes'}
+                  </p>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: '3px', height: '80px' }}>
+                    {Object.entries(horasMap).map(([h, count]) => {
+                      const pct = (count / maxHoraCount) * 100;
+                      const isWarm = Number(h) >= 8 && Number(h) <= 20;
+                      const isBest = Number(h) === Number(bestHour[0]) && count > 0;
+                      return (
+                        <div key={h} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, minWidth: '18px' }} title={`${horaLabels[Number(h)]}: ${count} ventas`}>
+                          <div style={{ width: '100%', background: '#e2e8f0', borderRadius: '3px 3px 0 0', height: '64px', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
+                            <div style={{ width: '100%', height: `${pct}%`, background: isBest ? 'linear-gradient(180deg,#fbbf24,#f59e0b)' : isWarm ? `${primaryColor}bb` : `${primaryColor}44`, borderRadius: '3px 3px 0 0', transition: 'height 0.8s ease' }} />
+                          </div>
+                          {Number(h) % 4 === 0 && <span style={{ fontSize: '0.5rem', color: '#94a3b8', marginTop: '2px' }}>{horaLabels[Number(h)]}</span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
+                    <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>📈 Ventas Últimos 6 Meses</h4>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '100px' }}>
+                      {monthEntries.map(([key, count], idx) => {
+                        const pct = (count / maxMonthCount) * 100;
+                        const mo = parseInt(key.split('-')[1]) - 1;
+                        return (
+                          <div key={key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ fontSize: '0.7rem', color: '#0f172a', fontWeight: 700 }}>{count > 0 ? count : ''}</span>
+                            <div style={{ width: '100%', background: '#e2e8f0', borderRadius: '6px 6px 0 0', height: '72px', display: 'flex', alignItems: 'flex-end', overflow: 'hidden' }}>
+                              <div style={{ width: '100%', height: `${pct}%`, background: `linear-gradient(180deg,${primaryColor},${primaryColor}88)`, borderRadius: '6px 6px 0 0', transition: `height ${0.4 + idx * 0.1}s ease` }} />
+                            </div>
+                            <span style={{ fontSize: '0.65rem', color: '#64748b' }}>{monthNames[mo]}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
+                    <h4 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>🥧 Distribución de Pedidos</h4>
+                    {aPedidos.length === 0 ? (
+                      <p style={{ color: '#94a3b8', fontSize: '0.85rem', textAlign: 'center', marginTop: '2rem' }}>Sin pedidos registrados</p>
+                    ) : (() => {
+                      const total = aPedidos.length;
+                      const segs = [
+                        { label: 'Completados', count: aCompletados.length, color: '#10b981' },
+                        { label: 'Pendientes', count: aPendientes.length, color: '#eab308' },
+                        { label: 'Abandonos', count: aLeads.length, color: '#ef4444' },
+                      ];
+                      const r = 40, cx = 60, cy = 55, stroke = 18;
+                      let offset = 0;
+                      const circ = 2 * Math.PI * r;
+                      return (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                          <svg width="120" height="110" viewBox="0 0 120 110">
+                            {segs.map((seg, i) => {
+                              const dash = (seg.count / total) * circ;
+                              const rotate = (offset / total) * 360 - 90;
+                              offset += seg.count;
+                              return <circle key={i} cx={cx} cy={cy} r={r} fill="none" stroke={seg.color} strokeWidth={stroke} strokeDasharray={`${dash} ${circ - dash}`} transform={`rotate(${rotate} ${cx} ${cy})`} />;
+                            })}
+                            <text x={cx} y={cy + 2} textAnchor="middle" dominantBaseline="middle" style={{ fontSize: '14px', fontWeight: 800, fill: '#0f172a' }}>{total}</text>
+                            <text x={cx} y={cy + 16} textAnchor="middle" style={{ fontSize: '8px', fill: '#64748b' }}>pedidos</text>
+                          </svg>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            {segs.map((seg, i) => (
+                              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: seg.color }} />
+                                <span style={{ fontSize: '0.78rem', color: '#475569', fontWeight: 600 }}>{seg.label}: <strong style={{ color: '#0f172a' }}>{seg.count}</strong></span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                </div>
+                {aCompletados.length > 0 && (
+                  <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
+                    <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>🕐 Últimas Ventas</h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '200px', overflowY: 'auto' }}>
+                      {[...aCompletados].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 8).map((p, i) => (
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.5rem 0.75rem', background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                          <div>
+                            <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0f172a' }}>{p.cliente_nombre || 'Cliente'}</span>
+                            <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: '0.5rem' }}>
+                              {new Date(p.created_at).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' })} · {new Date(p.created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          <span style={{ fontWeight: 800, color: '#10b981', fontSize: '0.88rem' }}>${(p.total || 0).toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -5848,3 +6080,4 @@ function SidebarContent({
     </>
   );
 }
+
