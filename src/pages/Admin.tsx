@@ -4336,7 +4336,7 @@ export default function Admin() {
                                    placeholder="Ej: 50000"
                                    defaultValue={overrideVal}
                                    id={`override-${p.id}`}
-                                   style={{ flex: 1, padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.85rem' }}
+                                   style={{ flex: 1, minWidth: '0', padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.85rem' }}
                                  />
                                  <button 
                                    className="btn-primary"
