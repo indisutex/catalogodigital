@@ -4,7 +4,7 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MoreHorizontal, MessageSquare, Filter, Link } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Filter, Link } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const SECRET_PIN = '0000';
@@ -31,6 +31,15 @@ const getGoogleDriveDownloadUrl = (url: string) => {
     return `https://drive.google.com/uc?export=download&id=${fileMatch[1]}`;
   }
   return url;
+};
+
+const getGoogleDriveThumbnailUrl = (url: string) => {
+  if (!url) return '';
+  const fileMatch = url.match(/\/file\/d\/([^/]+)/);
+  if (fileMatch && fileMatch[1]) {
+    return `https://lh3.googleusercontent.com/d/${fileMatch[1]}`;
+  }
+  return '';
 };
 
 type ProductFormData = {
@@ -101,6 +110,7 @@ export default function Admin() {
   const [loggedAsesorPhone, setLoggedAsesorPhone] = useState<string | null>(() => {
     return localStorage.getItem(`admin_asesor_phone_${getTenantId()}`);
   });
+  const [failedThumbnails, setFailedThumbnails] = useState<Record<string, boolean>>({});
   const [pin, setPin] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>(() => {
     const userRole = localStorage.getItem(`admin_role_${getTenantId()}`);
@@ -1742,7 +1752,7 @@ export default function Admin() {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         {/* KPI Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem' }}>
           {[
             { label: 'Ventas Completadas', value: aCompletados.length, icon: '✅', color: '#10b981', sub: `$${totalVentas.toLocaleString()} total` },
             { label: 'Pendientes de Pago', value: aPendientes.length, icon: '⏳', color: '#eab308', sub: 'Esperando comprobante' },
@@ -1759,7 +1769,7 @@ export default function Admin() {
         </div>
 
         {/* Row for Hourly and Weekly charts */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
           
           {/* Horario de Mayor Venta */}
           <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
@@ -2872,25 +2882,31 @@ export default function Admin() {
               {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           )}
-          <div className="topbar-title" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            {role === 'asesor' && currentAsesor ? (
-              <>
-                <div style={{ background: currentAsesor.foto_url ? 'transparent' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '42px', height: '42px', borderRadius: '50%', border: '1px solid #cbd5e1', overflow: 'hidden', flexShrink: 0 }}>
-                  {currentAsesor.foto_url ? (
-                    <img src={currentAsesor.foto_url} alt={currentAsesor.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    <span style={{ fontSize: '1.2rem', fontWeight: 800 }}>{currentAsesor.nombre.charAt(0)}</span>
-                  )}
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-                  <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>
-                    {currentAsesor.nombre}
-                  </h2>
-                  <p className="topbar-motivational-quote" style={{ margin: '0.05rem 0 0 0', fontSize: '0.85rem', color: configuracion?.color_primario || '#6366f1', fontWeight: 700, fontStyle: 'normal', fontFamily: 'Nunito, sans-serif' }}>
-                    {getMotivationalPhrase(currentAsesor.id)}
-                  </p>
-                </div>
-              </>
+          <div className="topbar-title" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: 0 }}>
+            {((role === 'asesor' && currentAsesor) || (role === 'mayorista' && currentMayorista)) ? (
+              (() => {
+                const currentUser = role === 'mayorista' ? currentMayorista : currentAsesor;
+                if (!currentUser) return null;
+                return (
+                  <>
+                    <div style={{ background: currentUser.foto_url ? 'transparent' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '42px', height: '42px', borderRadius: '50%', border: '1px solid #cbd5e1', overflow: 'hidden', flexShrink: 0 }}>
+                      {currentUser.foto_url ? (
+                        <img src={currentUser.foto_url} alt={currentUser.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <span style={{ fontSize: '1.2rem', fontWeight: 800 }}>{currentUser.nombre.charAt(0)}</span>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', minWidth: 0, flex: 1 }}>
+                      <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {currentUser.nombre}
+                      </h2>
+                      <p className="topbar-motivational-quote" style={{ margin: '0.05rem 0 0 0', fontSize: '0.85rem', color: configuracion?.color_primario || '#6366f1', fontWeight: 700, fontStyle: 'normal', fontFamily: 'Nunito, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {getMotivationalPhrase(currentUser.id)}
+                      </p>
+                    </div>
+                  </>
+                );
+              })()
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
                 <h2 style={{ margin: 0 }}>
@@ -2941,7 +2957,7 @@ export default function Admin() {
                 </div>
               )
             )}
-            {role === 'asesor' && (
+            {(role === 'asesor' || role === 'mayorista') && (
               <div style={{ position: 'relative' }}>
                 <button
                   type="button"
@@ -3700,8 +3716,8 @@ export default function Admin() {
                 <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', textAlign: 'left' }}>
                   <span style={{ fontSize: '1.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📊</span>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left' }}>
-                    <h2 className="panel-header-title-custom">Mi Resumen de Ventas</h2>
-                    <p style={{ margin: '0.15rem 0 0 0', color: '#64748b', fontSize: '0.85rem', textAlign: 'left' }}>Visualiza tus métricas, mejores horarios y productos vendidos</p>
+                    <h2 className="panel-header-title-custom">{role === 'mayorista' ? 'Mi Resumen de Negocio' : 'Mi Resumen de Ventas'}</h2>
+                    <p style={{ margin: '0.15rem 0 0 0', color: '#64748b', fontSize: '0.85rem', textAlign: 'left' }}>{role === 'mayorista' ? 'Visualiza las métricas, mejores horarios y productos de tu negocio' : 'Visualiza tus métricas, mejores horarios y productos vendidos'}</p>
                   </div>
                 </div>
                 <div className="panel-body">
@@ -4215,12 +4231,12 @@ export default function Admin() {
                       <strong>Error de Sesión:</strong> No se pudo cargar tu perfil de mayorista. Por favor, cierra sesión e ingresa nuevamente.
                     </div>
                   ) : (
-                  <div style={{ marginBottom: '2rem', display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap', background: '#f8fafc', padding: '1.25rem 1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
-                    <div style={{ flex: 1, minWidth: '200px', textAlign: 'left' }}>
+                  <div className="wholesaler-markup-container">
+                    <div className="wholesaler-markup-info">
                       <h4 style={{ margin: 0, fontSize: '1rem', color: '#0f172a', fontWeight: 800 }}>Ganancia Global</h4>
                       <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.78rem', color: '#64748b' }}>Porcentaje de incremento (%) sobre el precio base de todos los productos</p>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <div className="wholesaler-markup-controls">
                       <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
                         <input 
                           type="number" 
@@ -4313,7 +4329,7 @@ export default function Admin() {
                           {role === 'mayorista' && currentMayorista && (
                             <div className="product-card-actions" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '0.75rem 0.9rem', background: '#fafafa', borderTop: '1px solid #f1f5f9' }}>
                                <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569' }}>Fijar Precio Especial Manual:</label>
-                               <div style={{ display: 'flex', gap: '0.4rem' }}>
+                               <div className="product-override-row">
                                  <input 
                                    type="number" 
                                    placeholder="Ej: 50000"
@@ -4322,8 +4338,8 @@ export default function Admin() {
                                    style={{ flex: 1, padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.85rem' }}
                                  />
                                  <button 
-                                   className="btn-secondary"
-                                   style={{ padding: '0.4rem 0.6rem', fontSize: '0.8rem' }}
+                                   className="btn-primary"
+                                   style={{ padding: '0.4rem 0.9rem', fontSize: '0.8rem', background: configuracion?.color_primario || '#4f46e5', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}
                                    onClick={async () => {
                                      try {
                                        setLoading(true);
@@ -4410,13 +4426,13 @@ export default function Admin() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', textAlign: 'left' }}>
                 {/* Cabecera del Ranking */}
                 <div className="admin-panel" style={{ borderRadius: '20px', padding: '1.5rem 1.75rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                    <div style={{ background: 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)', width: '56px', height: '56px', borderRadius: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '2rem', boxShadow: '0 8px 16px rgba(217, 119, 6, 0.2)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexDirection: 'row' }}>
+                    <div style={{ background: 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)', width: '46px', height: '46px', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', boxShadow: '0 4px 8px rgba(217, 119, 6, 0.15)', flexShrink: 0 }}>
                       🏆
                     </div>
                     <div>
-                      <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800, color: '#0f172a' }}>Ranking de Mayoristas</h2>
-                      <p style={{ margin: '0.15rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Gamificación y puntaje en base a compras completadas</p>
+                      <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>Ranking de Mayoristas</h2>
+                      <p style={{ margin: '0.1rem 0 0 0', color: '#64748b', fontSize: '0.78rem', lineHeight: 1.3 }}>Gamificación y puntaje en base a compras completadas</p>
                     </div>
                   </div>
                 </div>
@@ -4580,26 +4596,68 @@ export default function Admin() {
                 ) : (
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
                     {filteredMateriales.map((m) => {
-                      const embedUrl = getGoogleDriveEmbedUrl(m.url);
                       return (
                         <div key={m.id} className="material-card" style={{ border: '1px solid #e2e8f0', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                           <div className="material-card-content-row" style={{ display: 'flex', flex: 1, flexDirection: 'column' }}>
-                            {/* Preview Area / Iframe */}
-                            <div className="material-preview-area" style={{ background: '#f8fafc', height: '200px', position: 'relative', borderBottom: '1px solid #e2e8f0' }}>
-                              {embedUrl ? (
-                                <iframe
-                                  src={embedUrl}
-                                  width="100%"
-                                  height="100%"
-                                  frameBorder="0"
-                                  allow="autoplay"
-                                  style={{ border: 'none' }}
-                                ></iframe>
-                              ) : (
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8', fontSize: '2rem' }}>
-                                  {m.tipo === 'video' ? '🎥' : m.tipo === 'imagen' ? '🖼️' : '📄'}
-                                </div>
-                              )}
+                            {/* Preview Area / Thumbnail (Hybrid) */}
+                            <div className="material-preview-area" style={{ background: '#f8fafc', height: '200px', position: 'relative', borderBottom: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                              {(() => {
+                                const isBroken = failedThumbnails[m.id];
+                                const thumbnailUrl = (!isBroken && m.tipo !== 'carpeta') ? getGoogleDriveThumbnailUrl(m.url) : '';
+                                const embedUrl = getGoogleDriveEmbedUrl(m.url);
+                                
+                                if (thumbnailUrl) {
+                                  return (
+                                    <>
+                                      <img
+                                        src={thumbnailUrl}
+                                        alt={m.titulo}
+                                        onError={() => setFailedThumbnails(prev => ({ ...prev, [m.id]: true }))}
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                                      />
+                                      {m.tipo === 'video' && (
+                                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'rgba(0,0,0,0.65)', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', pointerEvents: 'none' }}>
+                                          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                            <path d="M8 5v14l11-7z" />
+                                          </svg>
+                                        </div>
+                                      )}
+                                      <a
+                                        href={m.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(0,0,0,0.5)', padding: '5px', borderRadius: '6px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                        title="Abrir en Drive"
+                                      >
+                                        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                                          <polyline points="15 3 21 3 21 9" />
+                                          <line x1="10" y1="14" x2="21" y2="3" />
+                                        </svg>
+                                      </a>
+                                    </>
+                                  );
+                                }
+                                
+                                if (embedUrl && m.tipo !== 'carpeta') {
+                                  return (
+                                    <iframe
+                                      src={embedUrl}
+                                      width="100%"
+                                      height="100%"
+                                      frameBorder="0"
+                                      allow="autoplay"
+                                      style={{ border: 'none', background: '#000' }}
+                                    ></iframe>
+                                  );
+                                }
+                                
+                                return (
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8', fontSize: '2rem' }}>
+                                    {m.tipo === 'video' ? '🎥' : m.tipo === 'imagen' ? '🖼️' : m.tipo === 'carpeta' ? '📁' : '📄'}
+                                  </div>
+                                );
+                              })()}
                             </div>
                             
                             {/* Info Area */}
@@ -4658,7 +4716,7 @@ export default function Admin() {
                                 showToast('Enlace de recurso copiado ✓', 'success');
                               }}
                               className="btn-secondary"
-                              style={{ flex: 1.2, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.45rem', borderRadius: '8px', background: 'white', color: '#ec4899', borderColor: '#fbcfe8', border: '1px solid #fbcfe8', fontWeight: 700, cursor: 'pointer' }}
+                              style={{ flex: 1.2, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.45rem', borderRadius: '8px', background: 'white', color: '#ec4899', border: '1px solid #cbd5e1', fontWeight: 700, cursor: 'pointer' }}
                             >
                               <Link size={12} style={{ color: '#ec4899' }} /> Compartir
                             </button>
@@ -5438,26 +5496,68 @@ export default function Admin() {
                   ) : (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
                       {filteredMateriales.map((m) => {
-                        const embedUrl = getGoogleDriveEmbedUrl(m.url);
                         return (
                           <div key={m.id} className="material-card" style={{ border: '1px solid #e2e8f0', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                             <div className="material-card-content-row" style={{ display: 'flex', flex: 1, flexDirection: 'column' }}>
-                              {/* Preview Area / Iframe */}
-                              <div className="material-preview-area" style={{ background: '#f8fafc', height: '200px', position: 'relative', borderBottom: '1px solid #e2e8f0' }}>
-                                {embedUrl ? (
-                                  <iframe
-                                    src={embedUrl}
-                                    width="100%"
-                                    height="100%"
-                                    frameBorder="0"
-                                    allow="autoplay"
-                                    style={{ border: 'none' }}
-                                  ></iframe>
-                                ) : (
-                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8', fontSize: '2rem' }}>
-                                    {m.tipo === 'video' ? '🎥' : m.tipo === 'imagen' ? '🖼️' : '📄'}
-                                  </div>
-                                )}
+                              {/* Preview Area / Thumbnail (Hybrid) */}
+                              <div className="material-preview-area" style={{ background: '#f8fafc', height: '200px', position: 'relative', borderBottom: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                                {(() => {
+                                  const isBroken = failedThumbnails[m.id];
+                                  const thumbnailUrl = (!isBroken && m.tipo !== 'carpeta') ? getGoogleDriveThumbnailUrl(m.url) : '';
+                                  const embedUrl = getGoogleDriveEmbedUrl(m.url);
+                                  
+                                  if (thumbnailUrl) {
+                                    return (
+                                      <>
+                                        <img
+                                          src={thumbnailUrl}
+                                          alt={m.titulo}
+                                          onError={() => setFailedThumbnails(prev => ({ ...prev, [m.id]: true }))}
+                                          style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                                        />
+                                        {m.tipo === 'video' && (
+                                          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'rgba(0,0,0,0.65)', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', pointerEvents: 'none' }}>
+                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                              <path d="M8 5v14l11-7z" />
+                                            </svg>
+                                          </div>
+                                        )}
+                                        <a
+                                          href={m.url}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          style={{ position: 'absolute', top: '8px', right: '8px', background: 'rgba(0,0,0,0.5)', padding: '5px', borderRadius: '6px', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                          title="Abrir en Drive"
+                                        >
+                                          <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                                            <polyline points="15 3 21 3 21 9" />
+                                            <line x1="10" y1="14" x2="21" y2="3" />
+                                          </svg>
+                                        </a>
+                                      </>
+                                    );
+                                  }
+                                  
+                                  if (embedUrl && m.tipo !== 'carpeta') {
+                                    return (
+                                      <iframe
+                                        src={embedUrl}
+                                        width="100%"
+                                        height="100%"
+                                        frameBorder="0"
+                                        allow="autoplay"
+                                        style={{ border: 'none', background: '#000' }}
+                                      ></iframe>
+                                    );
+                                  }
+                                  
+                                  return (
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8', fontSize: '2rem' }}>
+                                      {m.tipo === 'video' ? '🎥' : m.tipo === 'imagen' ? '🖼️' : m.tipo === 'carpeta' ? '📁' : '📄'}
+                                    </div>
+                                  );
+                                })()}
                               </div>
                               
                               {/* Info Area */}
@@ -5516,7 +5616,7 @@ export default function Admin() {
                                   showToast('Enlace de recurso copiado ✓', 'success');
                                 }}
                                 className="btn-secondary"
-                                style={{ flex: 1.2, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.45rem', borderRadius: '8px', background: 'white', color: '#ec4899', borderColor: '#fbcfe8', border: '1px solid #fbcfe8', fontWeight: 700, cursor: 'pointer' }}
+                                style={{ flex: 1.2, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.45rem', borderRadius: '8px', background: 'white', color: '#ec4899', border: '1px solid #cbd5e1', fontWeight: 700, cursor: 'pointer' }}
                               >
                                 <Link size={12} style={{ color: '#ec4899' }} /> Compartir
                               </button>
@@ -7779,8 +7879,8 @@ export default function Admin() {
                                         window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`, '_blank');
                                       }}
                                     >
-                                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style={{ marginRight: '5px', display: 'inline-block', verticalAlign: 'middle' }}>
-                                        <path d="M12.012 2c-5.506 0-9.988 4.482-9.988 9.988 0 1.761.46 3.473 1.332 4.978L2 22l5.222-1.368a9.92 9.92 0 0 0 4.79 1.228h.004c5.502 0 9.984-4.482 9.984-9.988C22 6.482 17.514 2 12.012 2zm5.836 14.199c-.24.676-1.18 1.258-1.748 1.356-.572.096-1.28.18-3.79-.824-3.13-1.252-5.112-4.412-5.268-4.622-.156-.21-1.272-1.688-1.272-3.218 0-1.53.804-2.28 1.092-2.584.288-.304.624-.378.834-.378.21 0 .42.002.604.01.192.008.452-.074.708.536.26.622.888 2.164.966 2.322.078.158.13.342.024.552-.104.21-.156.342-.312.524-.156.182-.328.406-.468.546-.156.156-.32.326-.138.636.182.31.81 1.334 1.738 2.16.196.176.386.326.568.428 1.218.682 1.83.582 2.112.282.282-.3.626-.642.796-.89.17-.25.334-.208.562-.124.228.084 1.442.68 1.69 1.046.248.366.248.55.128.832z"/>
+                                      <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" style={{ marginRight: '5px', display: 'inline-block', verticalAlign: 'middle' }}>
+                                        <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.69-4.294c-.202-.101-1.196-.59-1.378-.656-.182-.066-.315-.099-.448.099-.133.197-.517.656-.634.793-.118.137-.236.154-.438.053-2.006-.997-3.11-1.808-4.113-3.526-.266-.457.266-.425.762-1.417.082-.163.041-.307-.02-.408-.062-.101-.448-1.077-.614-1.478-.162-.392-.326-.339-.448-.345l-.381-.008c-.131 0-.343.049-.524.246-.181.197-.69.673-.69 1.64s.704 1.903.804 2.036c.1.133 1.386 2.115 3.357 2.97.47.203.837.324 1.123.415.473.15.902.129 1.243.078.38-.057 1.196-.49 1.365-.962.169-.472.169-.877.118-.962-.05-.085-.183-.133-.385-.234z"/>
                                       </svg>
                                       Recuperar
                                     </button>
@@ -8168,7 +8268,7 @@ export default function Admin() {
                           let probLabel = '50%';
                           let probClass = 'prob-medium';
                           if (isLead) {
-                            const charCodeSum = (ped.cliente_nombre || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                            const charCodeSum = (ped.cliente_nombre || '').split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
                             const randProb = 15 + (charCodeSum % 80);
                             probLabel = `${randProb}%`;
                             probClass = randProb > 70 ? 'prob-high' : randProb > 40 ? 'prob-medium' : 'prob-low';
@@ -8296,8 +8396,8 @@ export default function Admin() {
                                         window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`, '_blank');
                                       }}
                                     >
-                                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style={{ marginRight: '5px', display: 'inline-block', verticalAlign: 'middle' }}>
-                                        <path d="M12.012 2c-5.506 0-9.988 4.482-9.988 9.988 0 1.761.46 3.473 1.332 4.978L2 22l5.222-1.368a9.92 9.92 0 0 0 4.79 1.228h.004c5.502 0 9.984-4.482 9.984-9.988C22 6.482 17.514 2 12.012 2zm5.836 14.199c-.24.676-1.18 1.258-1.748 1.356-.572.096-1.28.18-3.79-.824-3.13-1.252-5.112-4.412-5.268-4.622-.156-.21-1.272-1.688-1.272-3.218 0-1.53.804-2.28 1.092-2.584.288-.304.624-.378.834-.378.21 0 .42.002.604.01.192.008.452-.074.708.536.26.622.888 2.164.966 2.322.078.158.13.342.024.552-.104.21-.156.342-.312.524-.156.182-.328.406-.468.546-.156.156-.32.326-.138.636.182.31.81 1.334 1.738 2.16.196.176.386.326.568.428 1.218.682 1.83.582 2.112.282.282-.3.626-.642.796-.89.17-.25.334-.208.562-.124.228.084 1.442.68 1.69 1.046.248.366.248.55.128.832z"/>
+                                      <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" style={{ marginRight: '5px', display: 'inline-block', verticalAlign: 'middle' }}>
+                                        <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.69-4.294c-.202-.101-1.196-.59-1.378-.656-.182-.066-.315-.099-.448.099-.133.197-.517.656-.634.793-.118.137-.236.154-.438.053-2.006-.997-3.11-1.808-4.113-3.526-.266-.457.266-.425.762-1.417.082-.163.041-.307-.02-.408-.062-.101-.448-1.077-.614-1.478-.162-.392-.326-.339-.448-.345l-.381-.008c-.131 0-.343.049-.524.246-.181.197-.69.673-.69 1.64s.704 1.903.804 2.036c.1.133 1.386 2.115 3.357 2.97.47.203.837.324 1.123.415.473.15.902.129 1.243.078.38-.057 1.196-.49 1.365-.962.169-.472.169-.877.118-.962-.05-.085-.183-.133-.385-.234z"/>
                                       </svg>
                                       Recuperar
                                     </button>

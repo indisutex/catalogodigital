@@ -2368,10 +2368,76 @@ body {
     text-align: center !important;
     justify-content: center !important;
     border-radius: 8px !important;
+}
+}
+
+/* ── Wholesaler Markup Container ── */
+.wholesaler-markup-container {
+  margin-bottom: 2rem;
+  display: flex;
+  gap: 1.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  background: #f8fafc;
+  padding: 1.25rem 1.5rem;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+}
+.wholesaler-markup-info {
+  flex: 1;
+  min-width: 200px;
+  text-align: left;
+}
+.wholesaler-markup-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+@media (max-width: 600px) {
+  .wholesaler-markup-container {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+    padding: 1rem;
+  }
+  .wholesaler-markup-controls {
+    display: grid !important;
+    grid-template-columns: 1fr 2fr !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+  }
+  .wholesaler-markup-controls > div {
+    width: 100% !important;
+  }
+  .wholesaler-markup-controls input {
+    width: 100% !important;
+  }
+  .wholesaler-markup-controls button {
+    width: 100% !important;
+    text-align: center;
+    justify-content: center;
   }
 }
 
-
-
-
-
+/* ── Product Override Row ── */
+.product-override-row {
+  display: flex;
+  gap: 0.4rem;
+  width: 100%;
+}
+@media (max-width: 600px) {
+  .product-override-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .product-override-row button {
+    width: 100% !important;
+    padding: 0.5rem !important;
+    font-size: 0.78rem !important;
+  }
+  .product-override-row input {
+    width: 100% !important;
+    padding: 0.5rem !important;
+    font-size: 0.78rem !important;
+  }
+}
