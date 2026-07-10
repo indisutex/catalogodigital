@@ -1379,12 +1379,13 @@ body {
   /* Modals full-width */
   .modal-content {
     max-width: 100% !important;
-    border-radius: 16px 16px 0 0 !important;
+    border-radius: 16px !important;
     max-height: 95dvh !important;
   }
   .modal-overlay {
-    align-items: flex-end !important;
-  }
+      align-items: flex-start !important;
+      padding-top: 5vh;
+    }
   /* Form fields */
   .form-field input,
   .form-field textarea,
@@ -1702,8 +1703,8 @@ body {
   .client-details h4 {
     margin: 0;
     font-size: 0.95rem;
-    font-weight: 800;
-    color: #0f172a;
+    font-weight: 400;
+    color: #334155;
     line-height: 1.2;
   }
   
@@ -1731,7 +1732,7 @@ body {
   
   .card-status-badge {
     font-size: 0.65rem;
-    font-weight: 800;
+    font-weight: 500;
     letter-spacing: 0.4px;
     padding: 2px 8px;
     border-radius: 6px;
@@ -1768,14 +1769,10 @@ body {
   
   /* Body Row Layout */
   .card-body-row {
-    display: grid;
-    grid-template-columns: 1.25fr 0.75fr;
-    gap: 12px;
-    background: #f8fafc;
-    padding: 10px;
-    border-radius: 12px;
-    border: 1.5px solid #f1f5f9;
-    align-items: stretch;
+    display: block;
+    width: 100%;
+    background: transparent;
+    padding: 0;
   }
   
   .cart-summary-block {
@@ -1797,14 +1794,14 @@ body {
   
   .cart-total-amount {
     font-size: 1.25rem;
-    font-weight: 850;
+    font-weight: 600;
     color: #10b981;
   }
   
   .items-count {
     font-size: 0.75rem;
     color: #64748b;
-    font-weight: 800;
+    font-weight: 500;
     background: #e2e8f0;
     padding: 2px 6px;
     border-radius: 6px;
@@ -1862,7 +1859,7 @@ body {
   .block-title {
     font-size: 0.65rem;
     color: #94a3b8;
-    font-weight: 800;
+    font-weight: 500;
     text-transform: uppercase;
     letter-spacing: 0.3px;
   }
@@ -1903,7 +1900,7 @@ body {
   .advisor-meta h5 {
     margin: 0;
     font-size: 0.8rem;
-    font-weight: 800;
+    font-weight: 400;
     color: #334155;
     line-height: 1.1;
   }
@@ -1965,7 +1962,7 @@ body {
     padding: 6px 16px;
     border-radius: 20px;
     font-size: 0.82rem;
-    font-weight: 800;
+    font-weight: 500;
     cursor: pointer;
     border: none;
     transition: background 0.2s, transform 0.1s;
@@ -2155,7 +2152,7 @@ body {
 /* ── Ver Detalles Button Styles ── */
 .btn-details-action {
   font-size: 0.72rem;
-  font-weight: 800;
+  font-weight: 500;
   color: #0f172a;
   background: #ffffff;
   border: 1.5px solid #e2e8f0;

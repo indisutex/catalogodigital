@@ -189,8 +189,8 @@ export default function Admin() {
     return phrases[seed];
   };
 
-  const renderLeadOrOrderCard = (ped: any) => {
-    const isLead = ped.isLead || !ped.estado;
+  const renderLeadOrOrderCard = (ped: any, forceIsLead?: boolean) => {
+    const isLead = forceIsLead || ped.isLead || !ped.estado || (ped.retargeting_estado !== undefined);
     const elapsedMs = new Date().getTime() - new Date(ped.created_at).getTime();
     const elapsedMins = Math.floor(elapsedMs / 60000);
     let timeLabel = 'Hace un momento';
@@ -206,15 +206,15 @@ export default function Admin() {
       timeLabel = `Hace ${elapsedMins} ${elapsedMins === 1 ? 'minuto' : 'minutos'}`;
     }
 
-    let probLabel = '50%';
-    let probClass = 'prob-medium';
+    // let // probLabel = "50%";
+    // let // probClass = "prob-medium";
     const nombreCliente = ped.cliente_nombre || ped.nombre || 'Borrador Anónimo';
     const telefonoCliente = ped.cliente_telefono || ped.telefono || '';
     if (isLead) {
-      const charCodeSum = nombreCliente.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
-      const randProb = 15 + (charCodeSum % 80);
-      probLabel = `${randProb}%`;
-      probClass = randProb > 70 ? 'prob-high' : randProb > 40 ? 'prob-medium' : 'prob-low';
+      // const charCodeSum = nombreCliente.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+      // const randProb = 15 + (charCodeSum % 80);
+      // probLabel = `${randProb}%`;
+      // probClass = randProb > 70 ? 'prob-high' : randProb > 40 ? 'prob-medium' : 'prob-low';
     }
 
     const adv = getAsesorInfoByPhone(ped.linea_whatsapp);
@@ -234,18 +234,19 @@ export default function Admin() {
             </div>
           </div>
           <div className="status-badges-block">
-            <span className="card-status-badge">
-              {isLead ? 'ABANDONADO' : ped.estado === 'completado' ? 'VERIFICADO' : ped.pantallazo_url ? 'PAGO RECIBIDO' : 'PENDIENTE'}
-            </span>
-            {isLead ? (
-              <span className={`prob-badge-small ${probClass}`}>
-                📊 {probLabel}
-              </span>
-            ) : (
-              <span className={`payment-badge-small ${ped.estado === 'completado' ? 'verified' : ped.pantallazo_url ? 'uploaded' : 'pending'}`}>
-                {ped.estado === 'completado' ? 'Pago verificado' : ped.pantallazo_url ? 'Comprobante' : 'Pendiente pago'}
-              </span>
-            )}
+            <div className="advisor-badge">
+              <div className="advisor-avatar">
+                {adv.foto_url ? (
+                  <img src={adv.foto_url} alt="" />
+                ) : (
+                  adv.nombre.charAt(0).toUpperCase()
+                )}
+              </div>
+              <div className="advisor-meta">
+                <h5>{adv.nombre}</h5>
+                <span className="advisor-role">{adv.role}</span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -279,22 +280,7 @@ export default function Admin() {
             )}
           </div>
 
-          <div className="advisor-info-block">
-            <span className="block-title">Asesor asignado</span>
-            <div className="advisor-badge">
-              <div className="advisor-avatar">
-                {adv.foto_url ? (
-                  <img src={adv.foto_url} alt="" />
-                ) : (
-                  adv.nombre.charAt(0).toUpperCase()
-                )}
-              </div>
-              <div className="advisor-meta">
-                <h5>{adv.nombre}</h5>
-                <span className="advisor-role">{adv.role}</span>
-              </div>
-            </div>
-          </div>
+
         </div>
 
         {isLead && (
@@ -331,10 +317,7 @@ export default function Admin() {
         )}
 
         <div className="card-footer-row" style={{ marginTop: '0.25rem' }}>
-          <div className="quick-actions">
-            <a href={`tel:${(telefonoCliente || '').replace(/\D/g, '')}`} className="btn-circle-action">
-              <Phone size={13} />
-            </a>
+          <div className="quick-actions" style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', flexWrap: 'wrap' }}>
             {telefonoCliente && (
               <button 
                 type="button" 
@@ -351,6 +334,18 @@ export default function Admin() {
             <button type="button" className="btn-details-action" onClick={() => setSelectedPedido(ped)}>
               Ver detalles
             </button>
+            {isLead && (
+              <select 
+                className="lead-status-dropdown" 
+                value={ped.retargeting_estado || ''}
+                onChange={(e) => handleUpdateLeadStatus(ped.id, e.target.value)}
+                style={{ fontSize: '0.75rem', padding: '0.25rem', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer' }}
+              >
+                <option value="">Estado...</option>
+                <option value="contactado">Contactado</option>
+                <option value="descartado">Descartado</option>
+              </select>
+            )}
           </div>
 
           <div className="main-action-wrapper">
@@ -400,7 +395,7 @@ export default function Admin() {
                 className="btn-main-recover green"
                 onClick={() => {
                   const cleanPhone = (telefonoCliente || '').replace(/\D/g, '');
-                  if (!cleanPhone) return;
+                  if (!cleanPhone) { showToast('Teléfono inválido para WhatsApp', 'error'); return; }
                   const prodNames = Array.isArray(ped.productos) && ped.productos.length > 0
                     ? ped.productos.map((p: any) => p.nombre).join(', ')
                     : '';
@@ -8043,7 +8038,7 @@ export default function Admin() {
                             className={`mobile-filter-pill pill-green ${orderFilterStatus === 'comprobante' ? 'active' : ''}`}
                             onClick={() => setOrderFilterStatus('comprobante')}
                           >
-                            Recuperados <span className="pill-badge bg-green">{recoveredCount}</span>
+                            Ventas Exitosas <span className="pill-badge bg-green">{recoveredCount}</span>
                           </button>
                           <button
                             type="button"
@@ -8066,7 +8061,7 @@ export default function Admin() {
                             <span className="badge" style={{ background: '#fee2e2', color: '#ef4444', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{leadsFiltrados.length}</span>
                           </div>
                           <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
-                            {leadsFiltrados.map(lead => renderLeadOrOrderCard(lead))}
+                            {leadsFiltrados.map(lead => renderLeadOrOrderCard(lead, true))}
                             {leadsFiltrados.length === 0 && (
                               <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0' }}>No hay carritos abandonados.</p>
                             )}
@@ -8249,13 +8244,13 @@ export default function Admin() {
                           }
 
                           // Consistent probability for leads
-                          let probLabel = '50%';
-                          let probClass = 'prob-medium';
+                          // // let // probLabel = "50%";
+                          // let // probClass = "prob-medium";
                           if (isLead) {
-                            const charCodeSum = (ped.cliente_nombre || '').split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
-                            const randProb = 15 + (charCodeSum % 80);
-                            probLabel = `${randProb}%`;
-                            probClass = randProb > 70 ? 'prob-high' : randProb > 40 ? 'prob-medium' : 'prob-low';
+                            // const charCodeSum = (ped.cliente_nombre || '').split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+                            // const randProb = 15 + (charCodeSum % 80);
+                            // probLabel = `${randProb}%`;
+                            // probClass = randProb > 70 ? 'prob-high' : randProb > 40 ? 'prob-medium' : 'prob-low';
                           }
 
                           // Advisor Info
@@ -8276,18 +8271,19 @@ export default function Admin() {
                                   </div>
                                 </div>
                                 <div className="status-badges-block">
-                                  <span className="card-status-badge">
-                                    {isLead ? 'ABANDONADO' : ped.estado === 'completado' ? 'VERIFICADO' : ped.pantallazo_url ? 'PAGO RECIBIDO' : 'PENDIENTE'}
-                                  </span>
-                                  {isLead ? (
-                                    <span className={`prob-badge-small ${probClass}`}>
-                                      📊 {probLabel}
-                                    </span>
-                                  ) : (
-                                    <span className={`payment-badge-small ${ped.estado === 'completado' ? 'verified' : ped.pantallazo_url ? 'uploaded' : 'pending'}`}>
-                                      {ped.estado === 'completado' ? 'Pago verificado' : ped.pantallazo_url ? 'Comprobante' : 'Pendiente pago'}
-                                    </span>
-                                  )}
+                                  <div className="advisor-badge">
+                                    <div className="advisor-avatar">
+                                      {adv.foto_url ? (
+                                        <img src={adv.foto_url} alt="" />
+                                      ) : (
+                                        adv.nombre.charAt(0).toUpperCase()
+                                      )}
+                                    </div>
+                                    <div className="advisor-meta">
+                                      <h5>{adv.nombre}</h5>
+                                      <span className="advisor-role">{adv.role}</span>
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
 
@@ -8318,30 +8314,12 @@ export default function Admin() {
                                   )}
                                 </div>
 
-                                <div className="advisor-info-block">
-                                  <span className="block-title">Asesor asignado</span>
-                                  <div className="advisor-badge">
-                                    <div className="advisor-avatar">
-                                      {adv.foto_url ? (
-                                        <img src={adv.foto_url} alt="" />
-                                      ) : (
-                                        adv.nombre.charAt(0).toUpperCase()
-                                      )}
-                                    </div>
-                                    <div className="advisor-meta">
-                                      <h5>{adv.nombre}</h5>
-                                      <span className="advisor-role">{adv.role}</span>
-                                    </div>
-                                  </div>
-                                </div>
+
                               </div>
 
                               {/* Footer Row: Quick contact buttons on left, WhatsApp action on right */}
                               <div className="card-footer-row">
-                                <div className="quick-actions">
-                                  <a href={`tel:${(ped.cliente_telefono || '').replace(/\D/g, '')}`} className="btn-circle-action">
-                                    <Phone size={13} />
-                                  </a>
+                                <div className="quick-actions" style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', flexWrap: 'wrap' }}>
                                   {ped.cliente_telefono && (
                                     <button 
                                       type="button" 
@@ -8358,6 +8336,18 @@ export default function Admin() {
                                   <button type="button" className="btn-details-action" onClick={() => setSelectedPedido(ped)}>
                                     Ver detalles
                                   </button>
+                                  {isLead && (
+                                    <select 
+                                      className="lead-status-dropdown" 
+                                      value={ped.retargeting_estado || ''}
+                                      onChange={(e) => handleUpdateLeadStatus(ped.id, e.target.value)}
+                                      style={{ fontSize: '0.75rem', padding: '0.25rem', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer' }}
+                                    >
+                                      <option value="">Estado...</option>
+                                      <option value="contactado">Contactado</option>
+                                      <option value="descartado">Descartado</option>
+                                    </select>
+                                  )}
                                 </div>
 
                                 <div className="main-action-wrapper">
@@ -8409,7 +8399,7 @@ export default function Admin() {
                                       className="btn-main-recover green"
                                       onClick={() => {
                                         const cleanPhone = (ped.cliente_telefono || '').replace(/\D/g, '');
-                                        if (!cleanPhone) return;
+                                        if (!cleanPhone) { showToast('Teléfono inválido para WhatsApp', 'error'); return; }
                                         const prodNames = Array.isArray(ped.productos) && ped.productos.length > 0
                                           ? ped.productos.map((p: any) => p.nombre).join(', ')
                                           : '';
@@ -8587,8 +8577,8 @@ export default function Admin() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                   <div>
                     <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase' }}>Cliente</h5>
-                    <p style={{ margin: 0, fontWeight: 600, color: '#0f172a' }}>{selectedPedido.cliente_nombre}</p>
-                    <p style={{ margin: '0.2rem 0 0 0', color: '#475569' }}>{selectedPedido.cliente_telefono}</p>
+                    <p style={{ margin: 0, fontWeight: 600, color: '#0f172a' }}>{selectedPedido.cliente_nombre || (selectedPedido as any).nombre || 'Borrador Anónimo'}</p>
+                    <p style={{ margin: '0.2rem 0 0 0', color: '#475569' }}>{selectedPedido.cliente_telefono || (selectedPedido as any).telefono || 'Sin teléfono'}</p>
                   </div>
                   <div>
                     <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase' }}>Línea WhatsApp Asignada</h5>
