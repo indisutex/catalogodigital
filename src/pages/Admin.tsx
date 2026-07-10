@@ -4,7 +4,7 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MoreHorizontal, MessageSquare, Filter, Link } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const SECRET_PIN = '0000';
@@ -162,16 +162,16 @@ export default function Admin() {
 
   const getMotivationalPhrase = (asesorId: string) => {
     const phrases = [
-      "¡Cada cliente es una oportunidad para alcanzar tus metas! ¡A darlo todo hoy! 🚀",
-      "¡El éxito llega a quienes se atreven a actuar! ¡Haz que hoy cuente! 💎",
-      "¡Tu energía y entusiasmo son tus mejores herramientas de venta! ✨",
-      "¡La persistencia rompe barreras! Hoy conquistarás nuevas ventas. 🏆",
-      "¡La excelencia no es un acto, es un hábito! ¡A brillar hoy! 🌟",
-      "¡Enfócate en aportar valor y las ventas llegarán solas! 💪",
-      "¡Cada 'no' te acerca un paso más al próximo 'sí'! ¡Sigue adelante! 🎯",
-      "¡Hoy es el día perfecto para superar tus límites! ¡Vamos equipo! 🔥",
-      "¡El camino al éxito es tomar acción masiva y decidida! ⚖️",
-      "¡Haz que cada cliente viva una experiencia única hoy! 👑"
+      "¡Cada cliente es una oportunidad para alcanzar tus metas! ¡A darlo todo hoy!",
+      "¡El éxito llega a quienes se atreven a actuar! ¡Haz que hoy cuente!",
+      "¡Tu energía y entusiasmo son tus mejores herramientas de venta!",
+      "¡La persistencia rompe barreras! Hoy conquistarás nuevas ventas.",
+      "¡La excelencia no es un acto, es un hábito! ¡A brillar hoy!",
+      "¡Enfócate en aportar valor y las ventas llegarán solas!",
+      "¡Cada 'no' te acerca un paso más al próximo 'sí'! ¡Sigue adelante!",
+      "¡Hoy es el día perfecto para superar tus límites! ¡Vamos equipo!",
+      "¡El camino al éxito es tomar acción masiva y decidida!",
+      "¡Haz que cada cliente viva una experiencia única hoy!"
     ];
     const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
     const seed = (dayOfYear + String(asesorId).charCodeAt(0)) % phrases.length;
@@ -440,6 +440,8 @@ export default function Admin() {
   const [orderSearchQuery, setOrderSearchQuery] = useState<string>('');
   const [orderFilterDate, setOrderFilterDate] = useState<string>('');
   const [orderSortBy, setOrderSortBy] = useState<string>('date_desc');
+  const [showMobileSearch, setShowMobileSearch] = useState<boolean>(false);
+  const [showMobileFilters, setShowMobileFilters] = useState<boolean>(false);
 
   const [leads, setLeads] = useState<any[]>([]);
   const [pedidosViewMode, setPedidosViewMode] = useState<'lista' | 'kanban'>(() => {
@@ -467,6 +469,28 @@ export default function Admin() {
     if (matchMayorista) return matchMayorista.nombre;
 
     return numSinIndicativo;
+  };
+
+  const getAsesorInfoByPhone = (phone?: string) => {
+    if (!phone) return { nombre: 'Sin Asignar', foto_url: '', role: 'Catálogo' };
+    const cleanInput = phone.trim();
+    if (cleanInput === 'pos' || cleanInput.replace(/\D/g, '') === 'pos') return { nombre: 'POS', foto_url: '', role: 'Sistema' };
+    
+    const matchAsesor = asesores.find(a => {
+      const phones = (a.telefono || '').split(',').map(p => p.replace(/\D/g, '')).filter(Boolean);
+      return phones.some(p => cleanInput.split(',').map(cp => cp.replace(/\D/g, '')).includes(p));
+    });
+    if (matchAsesor) return { nombre: matchAsesor.nombre, foto_url: matchAsesor.foto_url || '', role: 'Asesor' };
+
+    const matchMayorista = mayoristas.find(m => {
+      const phones = (m.telefono || '').split(',').map(p => p.replace(/\D/g, '')).filter(Boolean);
+      return phones.some(p => cleanInput.split(',').map(cp => cp.replace(/\D/g, '')).includes(p));
+    });
+    if (matchMayorista) return { nombre: matchMayorista.nombre, foto_url: matchMayorista.foto_url || '', role: 'Mayorista' };
+
+    const cleanPhone = cleanInput.split(',')[0].replace(/\D/g, '');
+    const numSinIndicativo = cleanPhone.startsWith('57') ? cleanPhone.substring(2) : cleanPhone;
+    return { nombre: numSinIndicativo, foto_url: '', role: 'Asesor' };
   };
 
   const getParsedProducts = (rawProds: any) => {
@@ -2839,13 +2863,15 @@ export default function Admin() {
       <div className="admin-main">
         {/* TOP BAR */}
         <div className="admin-topbar">
-          <button 
-            type="button" 
-            className="mobile-menu-toggle" 
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          >
-            {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
-          </button>
+          {!(role === 'asesor' || role === 'mayorista') && (
+            <button 
+              type="button" 
+              className="mobile-menu-toggle" 
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            >
+              {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          )}
           <div className="topbar-title" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             {role === 'asesor' && currentAsesor ? (
               <>
@@ -2860,8 +2886,8 @@ export default function Admin() {
                   <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>
                     {currentAsesor.nombre}
                   </h2>
-                  <p style={{ margin: '0.05rem 0 0 0', fontSize: '0.74rem', color: configuracion?.color_primario || '#6366f1', fontWeight: 700, fontStyle: 'normal', fontFamily: 'Nunito, sans-serif' }}>
-                    ✨ {getMotivationalPhrase(currentAsesor.id)}
+                  <p className="topbar-motivational-quote" style={{ margin: '0.05rem 0 0 0', fontSize: '0.85rem', color: configuracion?.color_primario || '#6366f1', fontWeight: 700, fontStyle: 'normal', fontFamily: 'Nunito, sans-serif' }}>
+                    {getMotivationalPhrase(currentAsesor.id)}
                   </p>
                 </div>
               </>
@@ -3050,13 +3076,13 @@ export default function Admin() {
             )}
             <button 
               type="button"
-              className="btn-secondary" 
+              className="btn-secondary btn-home-header" 
               onClick={handleLogout}
               style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.55rem 1rem', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 600, border: '1px solid #cbd5e1', cursor: 'pointer', background: 'white', color: '#475569', transition: 'all 0.2s' }}
               onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#94a3b8'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
             >
-              <Home size={14} /> Ir al Inicio
+              <Home size={15} /> <span className="btn-home-text">Ir al Inicio</span>
             </button>
           </div>
         </div>
@@ -3674,7 +3700,7 @@ export default function Admin() {
                 <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', textAlign: 'left' }}>
                   <span style={{ fontSize: '1.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📊</span>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left' }}>
-                    <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#0f172a', textAlign: 'left' }}>Mi Resumen de Ventas</h2>
+                    <h2 className="panel-header-title-custom">Mi Resumen de Ventas</h2>
                     <p style={{ margin: '0.15rem 0 0 0', color: '#64748b', fontSize: '0.85rem', textAlign: 'left' }}>Visualiza tus métricas, mejores horarios y productos vendidos</p>
                   </div>
                 </div>
@@ -3746,7 +3772,7 @@ export default function Admin() {
                     <Lightbulb size={24} style={{ color: '#ef4444' }} />
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left' }}>
-                    <h2 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#0f172a', textAlign: 'left' }}>Centro de Notificaciones y Alertas</h2>
+                    <h2 className="panel-header-title-custom">Centro de Notificaciones y Alertas</h2>
                     <p style={{ margin: '0.15rem 0 0 0', color: '#64748b', fontSize: '0.85rem', textAlign: 'left' }}>Alertas de tiempo de respuesta y recordatorios de retargeting</p>
                   </div>
                 </div>
@@ -4123,13 +4149,15 @@ export default function Admin() {
           {activeTab === 'productos_asesor' && (
             <div className="admin-panel">
               <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
-                <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Package size={18} /> Productos</h3>
-                <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>
-                  Visualiza los productos disponibles en el catálogo de la empresa.
-                </p>
+                <div>
+                  <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Package size={18} /> Productos</h3>
+                  <p className="panel-header-subtitle" style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>
+                    Visualiza los productos disponibles en el catálogo de la empresa.
+                  </p>
+                </div>
               </div>
               <div className="panel-body">
-                <div className="products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.5rem', width: '100%' }}>
+                <div className="products-grid">
                   {productos.map(p => (
                     <div key={p.id} className="product-card">
                       <div className="product-card-img">
@@ -4173,10 +4201,12 @@ export default function Admin() {
           {activeTab === 'productos_mayorista' && (
             <div className="admin-panel">
               <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
-                <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Package size={18} /> Productos</h3>
-                <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>
-                  Configura tu porcentaje de ganancia general o precios especiales por producto.
-                </p>
+                <div>
+                  <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Package size={18} /> Productos</h3>
+                  <p className="panel-header-subtitle" style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>
+                    Configura tu porcentaje de ganancia general o precios especiales por producto.
+                  </p>
+                </div>
               </div>
               <div className="panel-body">
                 {role === 'mayorista' && (
@@ -4228,7 +4258,7 @@ export default function Admin() {
                 )
                 )}
 
-                <div className="products-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1.5rem', width: '100%' }}>
+                <div className="products-grid">
                       {productos.map(p => {
                         let hasOverride = false;
                         let overrideVal = '';
@@ -4515,11 +4545,13 @@ export default function Admin() {
           {activeTab === 'material_asesor' && (
             <div className="admin-panel">
               <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
-                <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Upload size={18} /> Material de Apoyo y Ventas</h3>
-                <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Visualiza, comparte y descarga los recursos de Google Drive provistos por el negocio</p>
+                <div>
+                  <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Upload size={18} /> Material de Apoyo y Ventas</h3>
+                  <p className="panel-header-subtitle" style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Visualiza, comparte and descarga los recursos de Google Drive provistos por el negocio</p>
+                </div>
               </div>
               <div className="panel-body">
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+                <div className="materials-filter-bar" style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
                   <button type="button" className={materialFilter === 'todos' ? 'btn-primary' : 'btn-secondary'} onClick={() => setMaterialFilter('todos')} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '20px' }}>Todos</button>
                   <button type="button" className={materialFilter === 'video' ? 'btn-primary' : 'btn-secondary'} onClick={() => setMaterialFilter('video')} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '20px' }}>🎥 Videos</button>
                   <button type="button" className={materialFilter === 'imagen' ? 'btn-primary' : 'btn-secondary'} onClick={() => setMaterialFilter('imagen')} style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem', borderRadius: '20px' }}>🖼️ Imágenes</button>
@@ -4550,82 +4582,86 @@ export default function Admin() {
                     {filteredMateriales.map((m) => {
                       const embedUrl = getGoogleDriveEmbedUrl(m.url);
                       return (
-                        <div key={m.id} style={{ border: '1px solid #e2e8f0', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                          {/* Preview Area / Iframe */}
-                          <div style={{ background: '#f8fafc', height: '220px', position: 'relative', borderBottom: '1px solid #e2e8f0' }}>
-                            {embedUrl ? (
-                              <iframe
-                                src={embedUrl}
-                                width="100%"
-                                height="100%"
-                                frameBorder="0"
-                                allow="autoplay"
-                                style={{ border: 'none' }}
-                              ></iframe>
-                            ) : (
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8', fontSize: '2rem' }}>
-                                {m.tipo === 'video' ? '🎥' : m.tipo === 'imagen' ? '🖼️' : '📄'}
-                              </div>
-                            )}
-                          </div>
-                          
-                          {/* Info Area */}
-                          <div style={{ padding: '1rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'left' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '0.5rem' }}>
-                              <span style={{ 
-                                fontSize: '0.68rem', 
-                                background: m.tipo === 'video' ? '#fee2e2' : m.tipo === 'imagen' ? '#dcfce7' : m.tipo === 'carpeta' ? '#fef3c7' : '#e0f2fe',
-                                color: m.tipo === 'video' ? '#ef4444' : m.tipo === 'imagen' ? '#22c55e' : m.tipo === 'carpeta' ? '#d97706' : '#0284c7',
-                                padding: '0.2rem 0.55rem', 
-                                borderRadius: '20px', 
-                                fontWeight: 800,
-                                textTransform: 'uppercase'
-                              }}>
-                                {m.tipo === 'video' ? '🎥 Video' : m.tipo === 'imagen' ? '🖼️ Imagen' : m.tipo === 'carpeta' ? '📁 Carpeta' : '📄 PDF/Doc'}
-                              </span>
-                              {m.campana && (
-                                <span style={{ fontSize: '0.68rem', background: '#fce7f3', color: '#db2777', padding: '0.2rem 0.55rem', borderRadius: '20px', fontWeight: 800 }}>
-                                  🌟 {m.campana}
-                                </span>
+                        <div key={m.id} className="material-card" style={{ border: '1px solid #e2e8f0', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                          <div className="material-card-content-row" style={{ display: 'flex', flex: 1, flexDirection: 'column' }}>
+                            {/* Preview Area / Iframe */}
+                            <div className="material-preview-area" style={{ background: '#f8fafc', height: '200px', position: 'relative', borderBottom: '1px solid #e2e8f0' }}>
+                              {embedUrl ? (
+                                <iframe
+                                  src={embedUrl}
+                                  width="100%"
+                                  height="100%"
+                                  frameBorder="0"
+                                  allow="autoplay"
+                                  style={{ border: 'none' }}
+                                ></iframe>
+                              ) : (
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8', fontSize: '2rem' }}>
+                                  {m.tipo === 'video' ? '🎥' : m.tipo === 'imagen' ? '🖼️' : '📄'}
+                                </div>
                               )}
                             </div>
-                            <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0f172a', fontWeight: 800 }}>{m.titulo}</h4>
-                            {m.descripcion && <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b', lineHeight: 1.4 }}>{m.descripcion}</p>}
                             
-                            {/* Action buttons */}
-                            <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto', paddingTop: '0.75rem', borderTop: '1px solid #f1f5f9' }}>
+                            {/* Info Area */}
+                            <div className="material-info-area" style={{ padding: '1rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'left' }}>
+                              <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'start', gap: '0.5rem' }}>
+                                <span style={{ 
+                                  fontSize: '0.68rem', 
+                                  background: m.tipo === 'video' ? '#fee2e2' : m.tipo === 'imagen' ? '#dcfce7' : m.tipo === 'carpeta' ? '#fef3c7' : '#e0f2fe',
+                                  color: m.tipo === 'video' ? '#ef4444' : m.tipo === 'imagen' ? '#22c55e' : m.tipo === 'carpeta' ? '#d97706' : '#0284c7',
+                                  padding: '0.2rem 0.55rem', 
+                                  borderRadius: '20px', 
+                                  fontWeight: 800,
+                                  textTransform: 'uppercase'
+                                }}>
+                                  {m.tipo === 'video' ? '🎥 Video' : m.tipo === 'imagen' ? '🖼️ Imagen' : m.tipo === 'carpeta' ? '📁 Carpeta' : '📄 PDF/Doc'}
+                                </span>
+                              </div>
+                              <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0f172a', fontWeight: 800 }}>{m.titulo}</h4>
+                              {m.descripcion && <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b', lineHeight: 1.4 }}>{m.descripcion}</p>}
+                              {m.campana && (
+                                <div style={{ display: 'flex', marginTop: '2px' }}>
+                                  <span style={{ fontSize: '0.68rem', background: '#fce7f3', color: '#db2777', padding: '0.2rem 0.55rem', borderRadius: '20px', fontWeight: 800 }}>
+                                    🌟 {m.campana}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Action buttons */}
+                          <div className="material-card-actions" style={{ display: 'flex', gap: '0.5rem', padding: '0.75rem 1rem', borderTop: '1px solid #f1f5f9', background: '#fafafa' }}>
+                            <a
+                              href={m.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn-secondary"
+                              style={{ flex: 1, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.45rem' }}
+                            >
+                              <Eye size={12} /> Ver
+                            </a>
+                            {m.tipo !== 'carpeta' && (
                               <a
-                                href={m.url}
+                                href={getGoogleDriveDownloadUrl(m.url)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="btn-secondary"
-                                style={{ flex: 1, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.45rem' }}
+                                style={{ flex: 1, textDecoration: 'none', padding: '0.45rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', color: '#64748b', borderColor: '#e2e8f0', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', fontWeight: 700 }}
                               >
-                                <Eye size={12} /> Abrir Drive
+                                <Download size={12} style={{ color: '#0ea5e9' }} /> Descargar
                               </a>
-                              {m.tipo !== 'carpeta' && (
-                                <a
-                                  href={getGoogleDriveDownloadUrl(m.url)}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="btn-secondary"
-                                  style={{ flex: 1, textDecoration: 'none', padding: '0.45rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', color: '#0ea5e9', borderColor: '#e0f2fe', background: '#f0f9ff', fontWeight: 700 }}
-                                >
-                                  <Download size={12} /> Descargar
-                                </a>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  navigator.clipboard.writeText(m.url);
-                                  showToast('Enlace de recurso copiado ✓', 'success');
-                                }}
-                                className="btn-primary"
-                                style={{ flex: 1.2, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.45rem', borderRadius: '8px', background: 'var(--primary-color, #6366f1)', color: 'white', border: 'none', fontWeight: 700, cursor: 'pointer' }}
-                              >
-                                <Copy size={12} /> Copiar Enlace
-                              </button>
-                            </div>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(m.url);
+                                showToast('Enlace de recurso copiado ✓', 'success');
+                              }}
+                              className="btn-secondary"
+                              style={{ flex: 1.2, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.45rem', borderRadius: '8px', background: 'white', color: '#ec4899', borderColor: '#fbcfe8', border: '1px solid #fbcfe8', fontWeight: 700, cursor: 'pointer' }}
+                            >
+                              <Link size={12} style={{ color: '#ec4899' }} /> Compartir
+                            </button>
                           </div>
                         </div>
                       );
@@ -5289,8 +5325,10 @@ export default function Admin() {
               {/* Formulario de Subida/Registro */}
               <div className="admin-panel">
                 <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
-                  <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}><Upload size={18} /> Registrar Recurso en Google Drive</h3>
-                  <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Agrega carpetas, imágenes o videos compartidos desde Google Drive para el equipo</p>
+                  <div>
+                    <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}><Upload size={18} /> Registrar Recurso en Google Drive</h3>
+                    <p className="panel-header-subtitle" style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Agrega carpetas, imágenes o videos compartidos desde Google Drive para el equipo</p>
+                  </div>
                 </div>
                 <div className="panel-body">
                   <form onSubmit={handleCrearMaterial} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', alignItems: 'start' }}>
@@ -5402,91 +5440,95 @@ export default function Admin() {
                       {filteredMateriales.map((m) => {
                         const embedUrl = getGoogleDriveEmbedUrl(m.url);
                         return (
-                          <div key={m.id} style={{ border: '1px solid #e2e8f0', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                            {/* Preview Area / Iframe */}
-                            <div style={{ background: '#f8fafc', height: '220px', position: 'relative', borderBottom: '1px solid #e2e8f0' }}>
-                              {embedUrl ? (
-                                <iframe
-                                  src={embedUrl}
-                                  width="100%"
-                                  height="100%"
-                                  frameBorder="0"
-                                  allow="autoplay"
-                                  style={{ border: 'none' }}
-                                ></iframe>
-                              ) : (
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8', fontSize: '2rem' }}>
-                                  {m.tipo === 'video' ? '🎥' : m.tipo === 'imagen' ? '🖼️' : '📄'}
-                                </div>
-                              )}
-                            </div>
-                            
-                            {/* Info Area */}
-                            <div style={{ padding: '1rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'left' }}>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '0.5rem' }}>
-                                <span style={{ 
-                                  fontSize: '0.68rem', 
-                                  background: m.tipo === 'video' ? '#fee2e2' : m.tipo === 'imagen' ? '#dcfce7' : m.tipo === 'carpeta' ? '#fef3c7' : '#e0f2fe',
-                                  color: m.tipo === 'video' ? '#ef4444' : m.tipo === 'imagen' ? '#22c55e' : m.tipo === 'carpeta' ? '#d97706' : '#0284c7',
-                                  padding: '0.2rem 0.5rem', 
-                                  borderRadius: '20px', 
-                                  fontWeight: 800,
-                                  textTransform: 'uppercase'
-                                }}>
-                                  {m.tipo === 'video' ? '🎥 Video' : m.tipo === 'imagen' ? '🖼️ Imagen' : m.tipo === 'carpeta' ? '📁 Carpeta' : '📄 PDF/Doc'}
-                                </span>
-                                {m.campana && (
-                                  <span style={{ fontSize: '0.68rem', background: '#fce7f3', color: '#db2777', padding: '0.2rem 0.55rem', borderRadius: '20px', fontWeight: 800 }}>
-                                    🌟 {m.campana}
-                                  </span>
+                          <div key={m.id} className="material-card" style={{ border: '1px solid #e2e8f0', borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'white', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                            <div className="material-card-content-row" style={{ display: 'flex', flex: 1, flexDirection: 'column' }}>
+                              {/* Preview Area / Iframe */}
+                              <div className="material-preview-area" style={{ background: '#f8fafc', height: '200px', position: 'relative', borderBottom: '1px solid #e2e8f0' }}>
+                                {embedUrl ? (
+                                  <iframe
+                                    src={embedUrl}
+                                    width="100%"
+                                    height="100%"
+                                    frameBorder="0"
+                                    allow="autoplay"
+                                    style={{ border: 'none' }}
+                                  ></iframe>
+                                ) : (
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94a3b8', fontSize: '2rem' }}>
+                                    {m.tipo === 'video' ? '🎥' : m.tipo === 'imagen' ? '🖼️' : '📄'}
+                                  </div>
                                 )}
                               </div>
-                              <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0f172a', fontWeight: 800 }}>{m.titulo}</h4>
-                              {m.descripcion && <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b', lineHeight: 1.4 }}>{m.descripcion}</p>}
                               
-                              {/* Action buttons */}
-                              <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto', paddingTop: '0.75rem', borderTop: '1px solid #f1f5f9', flexWrap: 'wrap' }}>
+                              {/* Info Area */}
+                              <div className="material-info-area" style={{ padding: '1rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'left' }}>
+                                <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'start', gap: '0.5rem' }}>
+                                  <span style={{ 
+                                    fontSize: '0.68rem', 
+                                    background: m.tipo === 'video' ? '#fee2e2' : m.tipo === 'imagen' ? '#dcfce7' : m.tipo === 'carpeta' ? '#fef3c7' : '#e0f2fe',
+                                    color: m.tipo === 'video' ? '#ef4444' : m.tipo === 'imagen' ? '#22c55e' : m.tipo === 'carpeta' ? '#d97706' : '#0284c7',
+                                    padding: '0.2rem 0.5rem', 
+                                    borderRadius: '20px', 
+                                    fontWeight: 800,
+                                    textTransform: 'uppercase'
+                                  }}>
+                                    {m.tipo === 'video' ? '🎥 Video' : m.tipo === 'imagen' ? '🖼️ Imagen' : m.tipo === 'carpeta' ? '📁 Carpeta' : '📄 PDF/Doc'}
+                                  </span>
+                                </div>
+                                <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0f172a', fontWeight: 800 }}>{m.titulo}</h4>
+                                {m.descripcion && <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b', lineHeight: 1.4 }}>{m.descripcion}</p>}
+                                {m.campana && (
+                                  <div style={{ display: 'flex', marginTop: '2px' }}>
+                                    <span style={{ fontSize: '0.68rem', background: '#fce7f3', color: '#db2777', padding: '0.2rem 0.55rem', borderRadius: '20px', fontWeight: 800 }}>
+                                      🌟 {m.campana}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                            
+                            {/* Action buttons */}
+                            <div className="material-card-actions" style={{ display: 'flex', gap: '0.5rem', padding: '0.75rem 1rem', borderTop: '1px solid #f1f5f9', background: '#fafafa' }}>
+                              <a
+                                href={m.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn-secondary"
+                                style={{ flex: 1, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.45rem' }}
+                              >
+                                <Eye size={12} /> Ver
+                              </a>
+                              {m.tipo !== 'carpeta' && (
                                 <a
-                                  href={m.url}
+                                  href={getGoogleDriveDownloadUrl(m.url)}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="btn-secondary"
-                                  style={{ flex: 1, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.45rem', minWidth: '90px' }}
+                                  style={{ flex: 1, textDecoration: 'none', padding: '0.45rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', color: '#64748b', borderColor: '#e2e8f0', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', fontWeight: 700 }}
                                 >
-                                  <Eye size={12} /> Abrir Drive
+                                  <Download size={12} style={{ color: '#0ea5e9' }} /> Descargar
                                 </a>
-                                {m.tipo !== 'carpeta' && (
-                                  <a
-                                    href={getGoogleDriveDownloadUrl(m.url)}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="btn-secondary"
-                                    style={{ flex: 1, textDecoration: 'none', padding: '0.45rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', color: '#0ea5e9', borderColor: '#e0f2fe', background: '#f0f9ff', fontWeight: 700, minWidth: '90px' }}
-                                  >
-                                    <Download size={12} /> Descargar
-                                  </a>
-                                )}
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(m.url);
-                                    showToast('Enlace de recurso copiado ✓', 'success');
-                                  }}
-                                  className="btn-secondary"
-                                  style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.45rem', minWidth: '90px' }}
-                                >
-                                  <Copy size={12} /> Copiar
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleEliminarMaterial(m.id)}
-                                  className="btn-secondary"
-                                  style={{ color: '#ef4444', borderColor: '#fee2e2', background: '#fef2f2', padding: '0.45rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
-                                  title="Eliminar Recurso"
-                                >
-                                  <Trash2 size={12} />
-                                </button>
-                              </div>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(m.url);
+                                  showToast('Enlace de recurso copiado ✓', 'success');
+                                }}
+                                className="btn-secondary"
+                                style={{ flex: 1.2, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.45rem', borderRadius: '8px', background: 'white', color: '#ec4899', borderColor: '#fbcfe8', border: '1px solid #fbcfe8', fontWeight: 700, cursor: 'pointer' }}
+                              >
+                                <Link size={12} style={{ color: '#ec4899' }} /> Compartir
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleEliminarMaterial(m.id)}
+                                className="btn-secondary"
+                                style={{ color: '#ef4444', borderColor: '#fee2e2', background: '#fef2f2', padding: '0.45rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+                                title="Eliminar Recurso"
+                              >
+                                <Trash2 size={12} />
+                              </button>
                             </div>
                           </div>
                         );
@@ -7322,16 +7364,51 @@ export default function Admin() {
 
 
           {/* ── PEDIDOS TAB ── */}
-          {activeTab === 'pedidos' && (
-            <div className="admin-panel">
-              <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+          {activeTab === 'pedidos' && (() => {
+            const pedItems = filteredPedidos.map(p => ({ ...p, isLead: false }));
+            const leadItems = orderFilterStatus === 'comprobante' || orderFilterStatus === 'esperando_pago'
+              ? []
+              : leadsFiltrados.map(l => ({ ...l, isLead: true, cliente_nombre: l.nombre || 'Borrador Anónimo', cliente_telefono: l.telefono || 'Sin número', direccion: l.direccion || '', estado: 'abandonado' }));
+            
+            const combinedList = orderFilterStatus === 'abandonados'
+              ? leadsFiltrados.map(l => ({ ...l, isLead: true, cliente_nombre: l.nombre || 'Borrador Anónimo', cliente_telefono: l.telefono || 'Sin número', direccion: l.direccion || '', estado: 'abandonado' })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+              : [...pedItems, ...leadItems].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+            return (
+              <div className="admin-panel">
+              <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'nowrap', gap: '1rem', width: '100%' }}>
                 <div>
-                  <h3><ShoppingBag size={16} /> Registro de Pedidos</h3>
-                  <p>Pedidos recibidos desde el catálogo digital y su asignación de línea</p>
+                  <h3 style={{ margin: 0, whiteSpace: 'nowrap' }}><ShoppingBag size={16} /> Registro de Pedidos</h3>
+                  <p className="panel-header-subtitle" style={{ margin: '0.2rem 0 0 0' }}>Pedidos recibidos desde el catálogo digital y su asignación de línea</p>
                 </div>
                 
-                {/* Switcher Vista */}
-                <div style={{ display: 'flex', gap: '0.25rem', background: '#f1f5f9', padding: '0.25rem', borderRadius: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {/* Toggles de Búsqueda y Filtros en Móvil */}
+                  <div className="mobile-search-filter-toggles">
+                    <button 
+                      type="button" 
+                      className={`toggle-button ${showMobileSearch ? 'active' : ''}`}
+                      onClick={() => {
+                        setShowMobileSearch(!showMobileSearch);
+                        setShowMobileFilters(false);
+                      }}
+                    >
+                      <Search size={16} />
+                    </button>
+                    <button 
+                      type="button" 
+                      className={`toggle-button ${showMobileFilters ? 'active' : ''}`}
+                      onClick={() => {
+                        setShowMobileFilters(!showMobileFilters);
+                        setShowMobileSearch(false);
+                      }}
+                    >
+                      <Filter size={16} />
+                    </button>
+                  </div>
+
+                  {/* Switcher Vista */}
+                  <div className="desktop-view-mode-switcher" style={{ display: 'flex', gap: '0.25rem', background: '#f1f5f9', padding: '0.25rem', borderRadius: '8px' }}>
                   <button
                     type="button"
                     onClick={() => setPedidosViewMode('lista')}
@@ -7368,98 +7445,153 @@ export default function Admin() {
                   </button>
                 </div>
               </div>
-              <div className="panel-body">
-                {pedidos.length === 0 && leads.length === 0 ? (
-                  <div className="empty-state">
-                    <div className="es-icon">📋</div>
-                    <p style={{ marginTop: '1rem' }}>No hay pedidos ni leads registrados todavía</p>
-                  </div>
-                ) : (
-                  <>
-                    {/* Barra de Filtros y Búsqueda */}
-                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap', background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                      <div className="search-input-container" style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 1, minWidth: '220px' }}>
-                        <span style={{ position: 'absolute', left: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center' }}>
+            </div>
+            <div className="panel-body">
+              {pedidos.length === 0 && leads.length === 0 ? (
+                <div className="empty-state">
+                  <div className="es-icon">📋</div>
+                  <p style={{ marginTop: '1rem' }}>No hay pedidos ni leads registrados todavía</p>
+                </div>
+              ) : (
+                <>
+                    <div className={`orders-search-filter-container ${showMobileSearch ? 'show-search-mobile' : ''} ${showMobileFilters ? 'show-filters-mobile' : ''}`}>
+                      <div className="search-input-container">
+                        <span className="search-icon-wrapper">
                           <Search size={15} />
                         </span>
                         <input
                           className="search-bar"
-                          style={{ width: '100%', padding: '0.55rem 1rem 0.55rem 2.25rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', margin: 0 }}
                           placeholder="Buscar por cliente, teléfono o ciudad..."
                           value={orderSearchQuery}
                           onChange={e => setOrderSearchQuery(e.target.value)}
                         />
                       </div>
 
-                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                        <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-                          <input 
-                            type="date"
-                            value={orderFilterDate}
-                            onChange={e => setOrderFilterDate(e.target.value)}
-                            style={{ padding: '0.55rem 0.8rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', cursor: 'pointer' }}
-                          />
-                          {orderFilterDate && (
-                            <button 
-                              onClick={() => setOrderFilterDate('')}
-                              style={{ padding: '0.55rem 0.85rem', borderRadius: '10px', border: '1px solid #fca5a5', background: '#fee2e2', color: '#b91c1c', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600 }}
-                            >
-                              Limpiar
-                            </button>
-                          )}
+                      <div className="filters-grid-container">
+                        <div className="filter-item-col">
+                          <label className="filter-label">Fecha</label>
+                          <div style={{ display: 'flex', gap: '0.25rem', width: '100%', alignItems: 'center' }}>
+                            <input 
+                              type="date"
+                              value={orderFilterDate}
+                              onChange={e => setOrderFilterDate(e.target.value)}
+                              className="filter-select-input"
+                            />
+                            {orderFilterDate && (
+                              <button 
+                                onClick={() => setOrderFilterDate('')}
+                                className="btn-clear-date"
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
                         </div>
 
                         {pedidosViewMode === 'lista' && (
-                          <select 
-                            value={orderFilterStatus} 
-                            onChange={e => setOrderFilterStatus(e.target.value)}
-                            style={{ padding: '0.55rem 1rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', cursor: 'pointer' }}
-                          >
-                            <option value="todos">Todos los Pedidos y Leads</option>
-                            <option value="comprobante">Con Comprobante</option>
-                            <option value="esperando_pago">Esperando Pago</option>
-                            <option value="abandonados">🛒 Abandonados (Leads)</option>
-                          </select>
+                          <div className="filter-item-col desktop-order-filter-status">
+                            <label className="filter-label">Estado</label>
+                            <select 
+                              value={orderFilterStatus} 
+                              onChange={e => setOrderFilterStatus(e.target.value)}
+                              className="filter-select-input"
+                            >
+                              <option value="todos">Todos los Pedidos y Leads</option>
+                              <option value="comprobante">Con Comprobante</option>
+                              <option value="esperando_pago">Esperando Pago</option>
+                              <option value="abandonados">🛒 Abandonados (Leads)</option>
+                            </select>
+                          </div>
                         )}
 
-                        <select 
-                          value={orderFilterOrigin} 
-                          onChange={e => setOrderFilterOrigin(e.target.value)}
-                          style={{ padding: '0.55rem 1rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', cursor: 'pointer' }}
-                        >
-                          <option value="todos">Todos los Orígenes</option>
-                          <option value="catalogo">📱 Catálogo</option>
-                          <option value="pos">💻 POS</option>
-                        </select>
+                        <div className="filter-item-col">
+                          <label className="filter-label">Origen</label>
+                          <select 
+                            value={orderFilterOrigin} 
+                            onChange={e => setOrderFilterOrigin(e.target.value)}
+                            className="filter-select-input"
+                          >
+                            <option value="todos">Todos los Orígenes</option>
+                            <option value="catalogo">📱 Catálogo</option>
+                            <option value="pos">💻 POS</option>
+                          </select>
+                        </div>
 
                         {role === 'admin' && (
-                          <select 
-                            value={orderFilterAsesor} 
-                            onChange={e => setOrderFilterAsesor(e.target.value)}
-                            style={{ padding: '0.55rem 1rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', cursor: 'pointer' }}
-                          >
-                            <option value="todos">Todos los Asesores</option>
-                            {asesores.map(a => (
-                              <option key={a.id} value={a.telefono}>👤 {a.nombre} ({a.telefono})</option>
-                            ))}
-                          </select>
+                          <div className="filter-item-col">
+                            <label className="filter-label">Asesor</label>
+                            <select 
+                              value={orderFilterAsesor} 
+                              onChange={e => setOrderFilterAsesor(e.target.value)}
+                              className="filter-select-input"
+                            >
+                              <option value="todos">Todos los Asesores</option>
+                              {asesores.map(a => (
+                                <option key={a.id} value={a.telefono}>👤 {a.nombre}</option>
+                              ))}
+                            </select>
+                          </div>
                         )}
 
-                        <select 
-                          value={orderSortBy} 
-                          onChange={e => setOrderSortBy(e.target.value)}
-                          style={{ padding: '0.55rem 1rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', cursor: 'pointer' }}
-                        >
-                          <option value="date_desc">Más recientes primero</option>
-                          <option value="date_asc">Más antiguos primero</option>
-                          <option value="total_desc">Mayor valor</option>
-                          <option value="total_asc">Menor valor</option>
-                        </select>
+                        <div className="filter-item-col">
+                          <label className="filter-label">Ordenar por</label>
+                          <select 
+                            value={orderSortBy} 
+                            onChange={e => setOrderSortBy(e.target.value)}
+                            className="filter-select-input"
+                          >
+                            <option value="date_desc">Más recientes primero</option>
+                            <option value="date_asc">Más antiguos primero</option>
+                            <option value="total_desc">Mayor valor</option>
+                            <option value="total_asc">Menor valor</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
 
-                    {pedidosViewMode === 'kanban' ? (
-                      <div className="super-crm-kanban" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem', marginTop: '1rem', alignItems: 'start' }}>
+                    {(() => {
+                      const leadsCount = leadsFiltrados.length;
+                      const pendingCount = filteredPedidos.filter(p => !p.pantallazo_url && p.estado !== 'completado').length;
+                      const recoveredCount = filteredPedidos.filter(p => p.pantallazo_url || p.estado === 'completado').length;
+                      const totalCount = leadsCount + pendingCount + recoveredCount;
+
+                      return (
+                        <div className="mobile-order-filters">
+                          <button
+                            type="button"
+                            className={`mobile-filter-pill pill-red ${orderFilterStatus === 'abandonados' ? 'active' : ''}`}
+                            onClick={() => setOrderFilterStatus('abandonados')}
+                          >
+                            Abandonados <span className="pill-badge bg-red">{leadsCount}</span>
+                          </button>
+                          <button
+                            type="button"
+                            className={`mobile-filter-pill pill-yellow ${orderFilterStatus === 'esperando_pago' ? 'active' : ''}`}
+                            onClick={() => setOrderFilterStatus('esperando_pago')}
+                          >
+                            Pendientes <span className="pill-badge bg-yellow">{pendingCount}</span>
+                          </button>
+                          <button
+                            type="button"
+                            className={`mobile-filter-pill pill-green ${orderFilterStatus === 'comprobante' ? 'active' : ''}`}
+                            onClick={() => setOrderFilterStatus('comprobante')}
+                          >
+                            Recuperados <span className="pill-badge bg-green">{recoveredCount}</span>
+                          </button>
+                          <button
+                            type="button"
+                            className={`mobile-filter-pill pill-gray ${orderFilterStatus === 'todos' ? 'active' : ''}`}
+                            onClick={() => setOrderFilterStatus('todos')}
+                          >
+                            Todos <span className="pill-badge bg-gray">{totalCount}</span>
+                          </button>
+                        </div>
+                      );
+                    })()}
+
+                          <div className="orders-desktop-view">
+                            {pedidosViewMode === 'kanban' ? (
+                              <div className="super-crm-kanban" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem', marginTop: '1rem', alignItems: 'start' }}>
                         {/* Columna 1: No Interesados (Abandonos) */}
                         <div className="kanban-column" style={{ background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}>
                           <div className="kanban-column-header col-red" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #ef4444', paddingBottom: '0.5rem' }}>
@@ -7647,7 +7779,10 @@ export default function Admin() {
                                         window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`, '_blank');
                                       }}
                                     >
-                                      💬 Recuperar venta
+                                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style={{ marginRight: '5px', display: 'inline-block', verticalAlign: 'middle' }}>
+                                        <path d="M12.012 2c-5.506 0-9.988 4.482-9.988 9.988 0 1.761.46 3.473 1.332 4.978L2 22l5.222-1.368a9.92 9.92 0 0 0 4.79 1.228h.004c5.502 0 9.984-4.482 9.984-9.988C22 6.482 17.514 2 12.012 2zm5.836 14.199c-.24.676-1.18 1.258-1.748 1.356-.572.096-1.28.18-3.79-.824-3.13-1.252-5.112-4.412-5.268-4.622-.156-.21-1.272-1.688-1.272-3.218 0-1.53.804-2.28 1.092-2.584.288-.304.624-.378.834-.378.21 0 .42.002.604.01.192.008.452-.074.708.536.26.622.888 2.164.966 2.322.078.158.13.342.024.552-.104.21-.156.342-.312.524-.156.182-.328.406-.468.546-.156.156-.32.326-.138.636.182.31.81 1.334 1.738 2.16.196.176.386.326.568.428 1.218.682 1.83.582 2.112.282.282-.3.626-.642.796-.89.17-.25.334-.208.562-.124.228.084 1.442.68 1.69 1.046.248.366.248.55.128.832z"/>
+                                      </svg>
+                                      Recuperar
                                     </button>
                                   )}
 
@@ -7883,34 +8018,24 @@ export default function Admin() {
                         </div>
                       </div>
                     ) : (
-                      <div style={{ overflowX: 'auto', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
+                      <div className="orders-desktop-table-container" style={{ overflowX: 'auto', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', textAlign: 'left' }}>
-                          <thead>
-                            <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b', fontWeight: 600 }}>
-                              <th style={{ padding: '1rem' }}>Fecha</th>
-                              <th style={{ padding: '1rem' }}>Cliente</th>
-                              <th style={{ padding: '1rem' }}>Teléfono</th>
-                              <th style={{ padding: '1rem' }}>Dirección</th>
-                              <th style={{ padding: '1rem' }}>Productos</th>
-                              <th style={{ padding: '1rem' }}>Línea Receptora</th>
-                              <th style={{ padding: '1rem' }}>Estado de Pago</th>
-                              <th style={{ padding: '1rem' }}>Total</th>
-                              <th style={{ padding: '1rem', textAlign: 'center' }}>Acción</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {(() => {
-                              const pedItems = filteredPedidos.map(p => ({ ...p, isLead: false }));
-                              const leadItems = orderFilterStatus === 'comprobante' || orderFilterStatus === 'esperando_pago'
-                                ? []
-                                : leadsFiltrados.map(l => ({ ...l, isLead: true, cliente_nombre: l.nombre || 'Borrador Anónimo', cliente_telefono: l.telefono || 'Sin número', direccion: l.direccion || '', estado: 'abandonado' }));
-                              
-                              const combinedList = orderFilterStatus === 'abandonados'
-                                ? leadsFiltrados.map(l => ({ ...l, isLead: true, cliente_nombre: l.nombre || 'Borrador Anónimo', cliente_telefono: l.telefono || 'Sin número', direccion: l.direccion || '', estado: 'abandonado' })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-                                : [...pedItems, ...leadItems].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-
-                              return combinedList.map((ped) => (
-                            <tr key={ped.id} style={{ borderBottom: '1px solid #f1f5f9', background: ped.estado === 'completado' ? '#f0fdf4' : ped.isLead ? 'rgba(239, 68, 68, 0.02)' : 'transparent' }}>
+                              <thead>
+                                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b', fontWeight: 600 }}>
+                                  <th style={{ padding: '1rem' }}>Fecha</th>
+                                  <th style={{ padding: '1rem' }}>Cliente</th>
+                                  <th style={{ padding: '1rem' }}>Teléfono</th>
+                                  <th style={{ padding: '1rem' }}>Dirección</th>
+                                  <th style={{ padding: '1rem' }}>Productos</th>
+                                  <th style={{ padding: '1rem' }}>Línea Receptora</th>
+                                  <th style={{ padding: '1rem' }}>Estado de Pago</th>
+                                  <th style={{ padding: '1rem' }}>Total</th>
+                                  <th style={{ padding: '1rem', textAlign: 'center' }}>Acción</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {combinedList.map((ped) => (
+                                  <tr key={ped.id} style={{ borderBottom: '1px solid #f1f5f9', background: ped.estado === 'completado' ? '#f0fdf4' : ped.isLead ? 'rgba(239, 68, 68, 0.02)' : 'transparent' }}>
                               <td style={{ padding: '1rem', color: ped.estado === 'completado' ? '#166534' : '#64748b', verticalAlign: 'middle' }}>
                                 {new Date(ped.created_at).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}
                               </td>
@@ -8007,17 +8132,225 @@ export default function Admin() {
                                 </div>
                               </td>
                             </tr>
-                            ));
-                            })()}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Vista Móvil - Tarjetas (Cards) */}
+                <div className="orders-mobile-cards-container">
+                      {combinedList.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '3rem 1rem', color: '#64748b' }}>
+                          <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>📋</div>
+                          <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>No se encontraron registros</p>
+                        </div>
+                      ) : (
+                        combinedList.map((ped) => {
+                          const isLead = ped.isLead;
+                          const elapsedMs = new Date().getTime() - new Date(ped.created_at).getTime();
+                          const elapsedMins = Math.floor(elapsedMs / 60000);
+                          let timeLabel = 'Hace un momento';
+                          if (elapsedMins >= 60) {
+                            const elapsedHours = Math.floor(elapsedMins / 60);
+                            if (elapsedHours >= 24) {
+                              const days = Math.floor(elapsedHours / 24);
+                              timeLabel = `Hace ${days} ${days === 1 ? 'día' : 'días'}`;
+                            } else {
+                              timeLabel = `Hace ${elapsedHours} ${elapsedHours === 1 ? 'hora' : 'horas'}`;
+                            }
+                          } else if (elapsedMins > 0) {
+                            timeLabel = `Hace ${elapsedMins} ${elapsedMins === 1 ? 'minuto' : 'minutos'}`;
+                          }
+
+                          // Consistent probability for leads
+                          let probLabel = '50%';
+                          let probClass = 'prob-medium';
+                          if (isLead) {
+                            const charCodeSum = (ped.cliente_nombre || '').split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                            const randProb = 15 + (charCodeSum % 80);
+                            probLabel = `${randProb}%`;
+                            probClass = randProb > 70 ? 'prob-high' : randProb > 40 ? 'prob-medium' : 'prob-low';
+                          }
+
+                          // Advisor Info
+                          const adv = getAsesorInfoByPhone(ped.linea_whatsapp);
+
+                          return (
+                            <div key={ped.id} className={`order-mobile-card ${isLead ? 'lead-abandonado' : ped.estado === 'completado' ? 'order-completado' : ped.pantallazo_url ? 'order-comprobante' : 'order-pendiente'}`}>
+                              {/* Header Row: Client avatar, details, and status badges */}
+                              <div className="card-header-row">
+                                <div className="client-info-block">
+                                  <div className="client-avatar">
+                                    {(ped.cliente_nombre || '?').charAt(0).toUpperCase()}
+                                  </div>
+                                  <div className="client-details">
+                                    <h4>{ped.cliente_nombre}</h4>
+                                    <p className="client-phone">📞 {ped.cliente_telefono}</p>
+                                    <span className="client-time">{timeLabel}</span>
+                                  </div>
+                                </div>
+                                <div className="status-badges-block">
+                                  <span className="card-status-badge">
+                                    {isLead ? 'ABANDONADO' : ped.estado === 'completado' ? 'VERIFICADO' : ped.pantallazo_url ? 'PAGO RECIBIDO' : 'PENDIENTE'}
+                                  </span>
+                                  {isLead ? (
+                                    <span className={`prob-badge-small ${probClass}`}>
+                                      📊 {probLabel}
+                                    </span>
+                                  ) : (
+                                    <span className={`payment-badge-small ${ped.estado === 'completado' ? 'verified' : ped.pantallazo_url ? 'uploaded' : 'pending'}`}>
+                                      {ped.estado === 'completado' ? 'Pago verificado' : ped.pantallazo_url ? 'Comprobante' : 'Pendiente pago'}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Body Row: 2 columns (Cart Summary & Assigned Advisor) */}
+                              <div className="card-body-row">
+                                <div className="cart-summary-block">
+                                  <div className="cart-total-info">
+                                    <span className="cart-total-icon">💰</span>
+                                    <span className="cart-total-amount">${ped.total.toLocaleString()}</span>
+                                    <span className="items-count">📦 {Array.isArray(ped.productos) ? ped.productos.reduce((acc: number, p: any) => acc + (p.cantidad || 1), 0) : 0} uds</span>
+                                  </div>
+                                  
+                                  {Array.isArray(ped.productos) && ped.productos.length > 0 && (
+                                    <div className="cart-products-box">
+                                      <ul className="cart-products-list">
+                                        {ped.productos.slice(0, 2).map((prod: any, idx: number) => (
+                                          <li key={idx}>
+                                            • {prod.nombre} {prod.talla ? `(${prod.talla})` : ''}
+                                          </li>
+                                        ))}
+                                      </ul>
+                                      {ped.productos.length > 2 && (
+                                        <div className="more-products-badge" onClick={() => setSelectedPedido(ped)}>
+                                          + Ver {ped.productos.length - 2} más
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="advisor-info-block">
+                                  <span className="block-title">Asesor asignado</span>
+                                  <div className="advisor-badge">
+                                    <div className="advisor-avatar">
+                                      {adv.foto_url ? (
+                                        <img src={adv.foto_url} alt="" />
+                                      ) : (
+                                        adv.nombre.charAt(0).toUpperCase()
+                                      )}
+                                    </div>
+                                    <div className="advisor-meta">
+                                      <h5>{adv.nombre}</h5>
+                                      <span className="advisor-role">{adv.role}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Footer Row: Quick contact buttons on left, WhatsApp action on right */}
+                              <div className="card-footer-row">
+                                <div className="quick-actions">
+                                  <a href={`tel:${(ped.cliente_telefono || '').replace(/\D/g, '')}`} className="btn-circle-action">
+                                    <Phone size={13} />
+                                  </a>
+                                  {ped.cliente_telefono && (
+                                    <button 
+                                      type="button" 
+                                      className="btn-circle-action"
+                                      onClick={() => {
+                                        const cleanPhone = ped.cliente_telefono.replace(/\D/g, '');
+                                        const target = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
+                                        window.open(`https://wa.me/${target}`, '_blank');
+                                      }}
+                                    >
+                                      <MessageSquare size={13} />
+                                    </button>
+                                  )}
+                                  <button type="button" className="btn-details-action" onClick={() => setSelectedPedido(ped)}>
+                                    Ver detalles
+                                  </button>
+                                </div>
+
+                                <div className="main-action-wrapper">
+                                  {isLead ? (
+                                    <button 
+                                      type="button" 
+                                      className="btn-main-recover green"
+                                      onClick={() => {
+                                        const cleanPhone = (ped.cliente_telefono || '').replace(/\D/g, '');
+                                        if (!cleanPhone) {
+                                          showToast('Teléfono inválido para WhatsApp', 'error');
+                                          return;
+                                        }
+                                        handleUpdateLeadStatus(ped.id, 'contactado');
+                                        const prodNames = Array.isArray(ped.productos) && ped.productos.length > 0
+                                          ? ped.productos.map((p: any) => `${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ')
+                                          : '';
+                                        const text = `¡Hola ${ped.cliente_nombre || ''}! 👋 Vimos que estás interesado en: ${prodNames ? `*${prodNames}*` : 'nuestros productos'}. ¿Tienes alguna duda o te ayudamos a completar tu pedido? Escríbenos y con gusto te colaboramos. 😊`;
+                                        const targetPhone = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
+                                        window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`, '_blank');
+                                      }}
+                                    >
+                                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style={{ marginRight: '5px', display: 'inline-block', verticalAlign: 'middle' }}>
+                                        <path d="M12.012 2c-5.506 0-9.988 4.482-9.988 9.988 0 1.761.46 3.473 1.332 4.978L2 22l5.222-1.368a9.92 9.92 0 0 0 4.79 1.228h.004c5.502 0 9.984-4.482 9.984-9.988C22 6.482 17.514 2 12.012 2zm5.836 14.199c-.24.676-1.18 1.258-1.748 1.356-.572.096-1.28.18-3.79-.824-3.13-1.252-5.112-4.412-5.268-4.622-.156-.21-1.272-1.688-1.272-3.218 0-1.53.804-2.28 1.092-2.584.288-.304.624-.378.834-.378.21 0 .42.002.604.01.192.008.452-.074.708.536.26.622.888 2.164.966 2.322.078.158.13.342.024.552-.104.21-.156.342-.312.524-.156.182-.328.406-.468.546-.156.156-.32.326-.138.636.182.31.81 1.334 1.738 2.16.196.176.386.326.568.428 1.218.682 1.83.582 2.112.282.282-.3.626-.642.796-.89.17-.25.334-.208.562-.124.228.084 1.442.68 1.69 1.046.248.366.248.55.128.832z"/>
+                                      </svg>
+                                      Recuperar
+                                    </button>
+                                  ) : ped.estado === 'completado' ? (
+                                    <button 
+                                      type="button" 
+                                      className="btn-main-recover blue"
+                                      onClick={() => setSelectedPedido(ped)}
+                                    >
+                                      👁️ Ver Factura
+                                    </button>
+                                  ) : ped.pantallazo_url ? (
+                                    <button 
+                                      type="button" 
+                                      className="btn-main-recover blue"
+                                      onClick={() => setSelectedPedido(ped)}
+                                    >
+                                      💳 Verificar Pago
+                                    </button>
+                                  ) : (
+                                    <button 
+                                      type="button" 
+                                      className="btn-main-recover green"
+                                      onClick={() => {
+                                        const cleanPhone = (ped.cliente_telefono || '').replace(/\D/g, '');
+                                        if (!cleanPhone) return;
+                                        const prodNames = Array.isArray(ped.productos) && ped.productos.length > 0
+                                          ? ped.productos.map((p: any) => p.nombre).join(', ')
+                                          : '';
+                                        const text = `¡Hola ${ped.cliente_nombre || ''}! 👋 Esperamos que estés muy bien. Recordamos que tu pedido de ${prodNames ? `*${prodNames}*` : 'nuestro catálogo'} por valor de *$${ped.total.toLocaleString()}* está pendiente de pago. ¿Te ayudamos a registrar el comprobante? 😊`;
+                                        const targetPhone = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
+                                        window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`, '_blank');
+                                      }}
+                                    >
+                                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style={{ marginRight: '5px', display: 'inline-block', verticalAlign: 'middle' }}>
+                                        <path d="M12.012 2c-5.506 0-9.988 4.482-9.988 9.988 0 1.761.46 3.473 1.332 4.978L2 22l5.222-1.368a9.92 9.92 0 0 0 4.79 1.228h.004c5.502 0 9.984-4.482 9.984-9.988C22 6.482 17.514 2 12.012 2zm5.836 14.199c-.24.676-1.18 1.258-1.748 1.356-.572.096-1.28.18-3.79-.824-3.13-1.252-5.112-4.412-5.268-4.622-.156-.21-1.272-1.688-1.272-3.218 0-1.53.804-2.28 1.092-2.584.288-.304.624-.378.834-.378.21 0 .42.002.604.01.192.008.452-.074.708.536.26.622.888 2.164.966 2.322.078.158.13.342.024.552-.104.21-.156.342-.312.524-.156.182-.328.406-.468.546-.156.156-.32.326-.138.636.182.31.81 1.334 1.738 2.16.196.176.386.326.568.428 1.218.682 1.83.582 2.112.282.282-.3.626-.642.796-.89.17-.25.334-.208.562-.124.228.084 1.442.68 1.69 1.046.248.366.248.55.128.832z"/>
+                                      </svg>
+                                      Recordar Pago
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
                   </>
                 )}
               </div>
             </div>
-          )}
+          );
+        })()}
 
         </div>
       </div>
@@ -8742,6 +9075,178 @@ export default function Admin() {
           </div>
         );
       })()}
+      
+      {(role === 'asesor' || role === 'mayorista') && (
+        <div className="mobile-bottom-nav">
+          {role === 'asesor' ? (
+            <>
+              <button 
+                type="button"
+                className={`bottom-nav-item ${activeTab === 'resumen_asesor' ? 'active' : ''}`} 
+                onClick={() => setActiveTab('resumen_asesor')}
+              >
+                <div className="bottom-nav-icon-container">
+                  <Home size={20} />
+                </div>
+                <span>Resumen</span>
+                <div className="bottom-nav-indicator"></div>
+              </button>
+
+              <button 
+                type="button"
+                className={`bottom-nav-item ${activeTab === 'pedidos' ? 'active' : ''}`} 
+                onClick={() => setActiveTab('pedidos')}
+              >
+                <div className="bottom-nav-icon-container">
+                  <ShoppingBag size={20} />
+                </div>
+                <span>Pedidos</span>
+                <div className="bottom-nav-indicator"></div>
+              </button>
+
+              <button 
+                type="button"
+                className={`bottom-nav-item ${activeTab === 'productos_asesor' ? 'active' : ''}`} 
+                onClick={() => setActiveTab('productos_asesor')}
+              >
+                <div className="bottom-nav-icon-container">
+                  <Package size={20} />
+                </div>
+                <span>Productos</span>
+                <div className="bottom-nav-indicator"></div>
+              </button>
+
+              <button 
+                type="button"
+                className={`bottom-nav-item ${activeTab === 'notificaciones_asesor' ? 'active' : ''}`} 
+                onClick={() => setActiveTab('notificaciones_asesor')}
+              >
+                <div className="bottom-nav-icon-container">
+                  <Bell size={20} />
+                  {activeNotificationsCount > 0 && (
+                    <span className="bottom-nav-badge">{activeNotificationsCount}</span>
+                  )}
+                </div>
+                <span>Alertas</span>
+                <div className="bottom-nav-indicator"></div>
+              </button>
+
+              <button 
+                type="button"
+                className={`bottom-nav-item ${activeTab === 'material_asesor' ? 'active' : ''}`} 
+                onClick={() => setActiveTab('material_asesor')}
+              >
+                <div className="bottom-nav-icon-container">
+                  <Upload size={20} />
+                </div>
+                <span>Apoyo</span>
+                <div className="bottom-nav-indicator"></div>
+              </button>
+
+              <button 
+                type="button"
+                className={`bottom-nav-item ${activeTab === 'perfil_asesor' ? 'active' : ''}`} 
+                onClick={() => setActiveTab('perfil_asesor')}
+              >
+                <div className="bottom-nav-icon-container">
+                  <Settings size={20} />
+                </div>
+                <span>Perfil</span>
+                <div className="bottom-nav-indicator"></div>
+              </button>
+            </>
+          ) : (
+            <>
+              <button 
+                type="button"
+                className={`bottom-nav-item ${activeTab === 'resumen_asesor' ? 'active' : ''}`} 
+                onClick={() => setActiveTab('resumen_asesor')}
+              >
+                <div className="bottom-nav-icon-container">
+                  <Home size={20} />
+                </div>
+                <span>Negocio</span>
+                <div className="bottom-nav-indicator"></div>
+              </button>
+
+              <button 
+                type="button"
+                className={`bottom-nav-item ${activeTab === 'productos_mayorista' ? 'active' : ''}`} 
+                onClick={() => setActiveTab('productos_mayorista')}
+              >
+                <div className="bottom-nav-icon-container">
+                  <Package size={20} />
+                </div>
+                <span>Productos</span>
+                <div className="bottom-nav-indicator"></div>
+              </button>
+
+              <button 
+                type="button"
+                className={`bottom-nav-item ${activeTab === 'pedidos' ? 'active' : ''}`} 
+                onClick={() => setActiveTab('pedidos')}
+              >
+                <div className="bottom-nav-icon-container">
+                  <ShoppingBag size={20} />
+                </div>
+                <span>Pedidos</span>
+                <div className="bottom-nav-indicator"></div>
+              </button>
+
+              <button 
+                type="button"
+                className={`bottom-nav-item ${activeTab === 'notificaciones_asesor' ? 'active' : ''}`} 
+                onClick={() => setActiveTab('notificaciones_asesor')}
+              >
+                <div className="bottom-nav-icon-container">
+                  <Bell size={20} />
+                  {activeNotificationsCount > 0 && (
+                    <span className="bottom-nav-badge">{activeNotificationsCount}</span>
+                  )}
+                </div>
+                <span>Alertas</span>
+                <div className="bottom-nav-indicator"></div>
+              </button>
+
+              <button 
+                type="button"
+                className={`bottom-nav-item ${activeTab === 'ranking_mayorista' ? 'active' : ''}`} 
+                onClick={() => setActiveTab('ranking_mayorista')}
+              >
+                <div className="bottom-nav-icon-container">
+                  <Trophy size={20} />
+                </div>
+                <span>Ranking</span>
+                <div className="bottom-nav-indicator"></div>
+              </button>
+
+              <button 
+                type="button"
+                className={`bottom-nav-item ${activeTab === 'material_asesor' ? 'active' : ''}`} 
+                onClick={() => setActiveTab('material_asesor')}
+              >
+                <div className="bottom-nav-icon-container">
+                  <Upload size={20} />
+                </div>
+                <span>Venta</span>
+                <div className="bottom-nav-indicator"></div>
+              </button>
+
+              <button 
+                type="button"
+                className={`bottom-nav-item ${activeTab === 'perfil_asesor' ? 'active' : ''}`} 
+                onClick={() => setActiveTab('perfil_asesor')}
+              >
+                <div className="bottom-nav-icon-container">
+                  <Settings size={20} />
+                </div>
+                <span>Perfil</span>
+                <div className="bottom-nav-indicator"></div>
+              </button>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
