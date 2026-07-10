@@ -2458,3 +2458,14 @@ body {
   border-color: #128C7E !important;
 }
 
+
+  .kanban-column-header.col-blue { border-bottom: 2.5px solid #3b82f6; }
+  .kanban-column-header.col-blue h3 { color: #1d4ed8; }
+  .kanban-column-header.col-blue .badge { background: #eff6ff; color: #1d4ed8; }
+
+  .pill-blue.active {
+    background: #eff6ff !important;
+    border-color: #3b82f6 !important;
+    color: #1d4ed8 !important;
+  }
+  .bg-blue { background: #3b82f6; }

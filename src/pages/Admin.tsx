@@ -811,7 +811,16 @@ export default function Admin() {
   }, [configuracion]);
 
   useEffect(() => {
-    if (isAuthenticated) cargarDatos();
+    if (!isAuthenticated) return;
+    
+    cargarDatos();
+    
+    // Auto-refresh data every 20 seconds to keep stats and orders in real-time
+    const interval = setInterval(() => {
+      cargarDatos();
+    }, 20000);
+    
+    return () => clearInterval(interval);
   }, [isAuthenticated]);
 
   async function cargarDatos() {
@@ -1581,9 +1590,11 @@ export default function Admin() {
 
     if (orderFilterStatus !== 'todos') {
       if (orderFilterStatus === 'comprobante') {
-        result = result.filter(p => !!p.pantallazo_url);
+        result = result.filter(p => !!p.pantallazo_url && p.estado !== 'completado');
       } else if (orderFilterStatus === 'esperando_pago') {
-        result = result.filter(p => !p.pantallazo_url);
+        result = result.filter(p => !p.pantallazo_url && p.estado !== 'completado');
+      } else if (orderFilterStatus === 'exitosas') {
+        result = result.filter(p => p.estado === 'completado');
       }
     }
 
@@ -2203,8 +2214,12 @@ export default function Admin() {
     return temp;
   }, [leads, pedidos, orderSearchQuery, orderFilterDate, role, loggedAsesorPhone, orderFilterAsesor]);
 
-  const interesadosFiltrados = useMemo(() => {
-    return filteredPedidos.filter(p => p.estado === 'pendiente' || p.estado === 'atendido' || !p.estado);
+  const pendientePagoFiltrados = useMemo(() => {
+    return filteredPedidos.filter(p => (p.estado === 'pendiente' || p.estado === 'atendido' || !p.estado) && !p.pantallazo_url);
+  }, [filteredPedidos]);
+
+  const comprobarPagosFiltrados = useMemo(() => {
+    return filteredPedidos.filter(p => (p.estado === 'pendiente' || p.estado === 'atendido' || !p.estado) && p.pantallazo_url);
   }, [filteredPedidos]);
 
   const clientesFiltrados = useMemo(() => {
@@ -5048,7 +5063,7 @@ export default function Admin() {
                   }}>
                     <div className="config-section">
                       <div className="config-section-title">👤 Perfil del Administrador</div>
-                      <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+                      <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(270px, 1fr))', gap: '1.25rem' }}>
                         <div className="form-field">
                           <label>Nombre del Administrador</label>
                           <input 
@@ -7902,6 +7917,7 @@ export default function Admin() {
                               <option value="todos">Todos los Pedidos y Leads</option>
                               <option value="comprobante">Con Comprobante</option>
                               <option value="esperando_pago">Esperando Pago</option>
+                              <option value="exitosas">Ventas Exitosas</option>
                               <option value="abandonados">🛒 Abandonados (Leads)</option>
                             </select>
                           </div>
@@ -7955,8 +7971,9 @@ export default function Admin() {
                     {(() => {
                       const leadsCount = leadsFiltrados.length;
                       const pendingCount = filteredPedidos.filter(p => !p.pantallazo_url && p.estado !== 'completado').length;
-                      const recoveredCount = filteredPedidos.filter(p => p.pantallazo_url || p.estado === 'completado').length;
-                      const totalCount = leadsCount + pendingCount + recoveredCount;
+                      const comprobarCount = filteredPedidos.filter(p => p.pantallazo_url && p.estado !== 'completado').length;
+                      const exitosasCount = filteredPedidos.filter(p => p.estado === 'completado').length;
+                      const totalCount = leadsCount + pendingCount + comprobarCount + exitosasCount;
 
                       return (
                         <div className="mobile-order-filters">
@@ -7976,10 +7993,17 @@ export default function Admin() {
                           </button>
                           <button
                             type="button"
-                            className={`mobile-filter-pill pill-green ${orderFilterStatus === 'comprobante' ? 'active' : ''}`}
+                            className={`mobile-filter-pill pill-blue ${orderFilterStatus === 'comprobante' ? 'active' : ''}`}
                             onClick={() => setOrderFilterStatus('comprobante')}
                           >
-                            Ventas Exitosas <span className="pill-badge bg-green">{recoveredCount}</span>
+                            Comprobar Pagos <span className="pill-badge bg-blue">{comprobarCount}</span>
+                          </button>
+                          <button
+                            type="button"
+                            className={`mobile-filter-pill pill-green ${orderFilterStatus === 'exitosas' ? 'active' : ''}`}
+                            onClick={() => setOrderFilterStatus('exitosas')}
+                          >
+                            Ventas Exitosas <span className="pill-badge bg-green">{exitosasCount}</span>
                           </button>
                           <button
                             type="button"
@@ -8009,16 +8033,30 @@ export default function Admin() {
                           </div>
                         </div>
 
-                        {/* Columna 2: Interesados (Pendiente Pago) */}
+                        {/* Columna 2: Pendientes (Esperando Pago) */}
                         <div className="kanban-column" style={{ background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}>
                           <div className="kanban-column-header col-yellow" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #eab308', paddingBottom: '0.5rem' }}>
-                            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#eab308' }}>🟡 Interesados (Pendiente Pago)</h3>
-                            <span className="badge" style={{ background: '#fef9c3', color: '#eab308', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{interesadosFiltrados.length}</span>
+                            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#eab308' }}>🟡 Pendientes (Esperando Pago)</h3>
+                            <span className="badge" style={{ background: '#fef9c3', color: '#eab308', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{pendientePagoFiltrados.length}</span>
                           </div>
                           <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
-                            {interesadosFiltrados.map(ped => renderLeadOrOrderCard(ped))}
-                            {interesadosFiltrados.length === 0 && (
+                            {pendientePagoFiltrados.map(ped => renderLeadOrOrderCard(ped))}
+                            {pendientePagoFiltrados.length === 0 && (
                               <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0' }}>No hay pedidos pendientes.</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Columna 3: Comprobante Recibido (Comprobar Pagos) */}
+                        <div className="kanban-column" style={{ background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}>
+                          <div className="kanban-column-header col-blue" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #3b82f6', paddingBottom: '0.5rem' }}>
+                            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#3b82f6' }}>📸 Comprobante Recibido</h3>
+                            <span className="badge" style={{ background: '#eff6ff', color: '#3b82f6', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{comprobarPagosFiltrados.length}</span>
+                          </div>
+                          <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
+                            {comprobarPagosFiltrados.map(ped => renderLeadOrOrderCard(ped))}
+                            {comprobarPagosFiltrados.length === 0 && (
+                              <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0' }}>No hay comprobantes por revisar.</p>
                             )}
                           </div>
                         </div>
