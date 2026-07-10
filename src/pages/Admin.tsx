@@ -4606,6 +4606,31 @@ export default function Admin() {
                                 const isBroken = failedThumbnails[m.id];
                                 const thumbnailUrl = (!isBroken && m.tipo !== 'carpeta') ? getGoogleDriveThumbnailUrl(m.url) : '';
                                 const embedUrl = getGoogleDriveEmbedUrl(m.url);
+                                const isPlaying = playingVideoId === m.id;
+                                
+                                // If video is playing, show iframe
+                                if (isPlaying && embedUrl) {
+                                  return (
+                                    <>
+                                      <iframe
+                                        src={embedUrl}
+                                        width="100%"
+                                        height="100%"
+                                        frameBorder="0"
+                                        allow="autoplay; encrypted-media"
+                                        allowFullScreen
+                                        style={{ border: 'none', background: '#000', display: 'block' }}
+                                      ></iframe>
+                                      <button
+                                        onClick={() => setPlayingVideoId(null)}
+                                        style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '6px', color: 'white', padding: '4px 8px', fontSize: '0.7rem', cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}
+                                        title="Cerrar video"
+                                      >
+                                        ✕ Cerrar
+                                      </button>
+                                    </>
+                                  );
+                                }
                                 
                                 if (thumbnailUrl) {
                                   return (
@@ -4616,12 +4641,18 @@ export default function Admin() {
                                         onError={() => setFailedThumbnails(prev => ({ ...prev, [m.id]: true }))}
                                         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                                       />
-                                      {m.tipo === 'video' && (
-                                        <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'rgba(0,0,0,0.65)', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', pointerEvents: 'none' }}>
-                                          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                      {m.tipo === 'video' && embedUrl && (
+                                        <button
+                                          onClick={() => setPlayingVideoId(m.id)}
+                                          style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'rgba(0,0,0,0.72)', border: 'none', width: '52px', height: '52px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', cursor: 'pointer', transition: 'transform 0.2s, background 0.2s', boxShadow: '0 4px 12px rgba(0,0,0,0.4)' }}
+                                          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0,0,0,0.9)'; (e.currentTarget as HTMLButtonElement).style.transform = 'translate(-50%, -50%) scale(1.1)'; }}
+                                          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0,0,0,0.72)'; (e.currentTarget as HTMLButtonElement).style.transform = 'translate(-50%, -50%) scale(1)'; }}
+                                          title="Reproducir video"
+                                        >
+                                          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
                                             <path d="M8 5v14l11-7z" />
                                           </svg>
-                                        </div>
+                                        </button>
                                       )}
                                       <a
                                         href={m.url}
@@ -4642,14 +4673,22 @@ export default function Admin() {
                                 
                                 if (embedUrl && m.tipo !== 'carpeta') {
                                   return (
-                                    <iframe
-                                      src={embedUrl}
-                                      width="100%"
-                                      height="100%"
-                                      frameBorder="0"
-                                      allow="autoplay"
-                                      style={{ border: 'none', background: '#000' }}
-                                    ></iframe>
+                                    <>
+                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', background: '#1e293b', color: '#94a3b8', fontSize: '2.5rem' }}>
+                                        {m.tipo === 'video' ? '🎥' : m.tipo === 'imagen' ? '🖼️' : '📄'}
+                                      </div>
+                                      {m.tipo === 'video' && (
+                                        <button
+                                          onClick={() => setPlayingVideoId(m.id)}
+                                          style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'rgba(0,0,0,0.72)', border: 'none', width: '52px', height: '52px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.4)' }}
+                                          title="Reproducir video"
+                                        >
+                                          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                                            <path d="M8 5v14l11-7z" />
+                                          </svg>
+                                        </button>
+                                      )}
+                                    </>
                                   );
                                 }
                                 
