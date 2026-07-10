@@ -189,6 +189,294 @@ export default function Admin() {
     return phrases[seed];
   };
 
+  const renderLeadOrOrderCard = (ped: any) => {
+    const isLead = ped.isLead || !ped.estado;
+    const elapsedMs = new Date().getTime() - new Date(ped.created_at).getTime();
+    const elapsedMins = Math.floor(elapsedMs / 60000);
+    let timeLabel = 'Hace un momento';
+    if (elapsedMins >= 60) {
+      const elapsedHours = Math.floor(elapsedMins / 60);
+      if (elapsedHours >= 24) {
+        const days = Math.floor(elapsedHours / 24);
+        timeLabel = `Hace ${days} ${days === 1 ? 'día' : 'días'}`;
+      } else {
+        timeLabel = `Hace ${elapsedHours} ${elapsedHours === 1 ? 'hora' : 'horas'}`;
+      }
+    } else if (elapsedMins > 0) {
+      timeLabel = `Hace ${elapsedMins} ${elapsedMins === 1 ? 'minuto' : 'minutos'}`;
+    }
+
+    let probLabel = '50%';
+    let probClass = 'prob-medium';
+    const nombreCliente = ped.cliente_nombre || ped.nombre || 'Borrador Anónimo';
+    const telefonoCliente = ped.cliente_telefono || ped.telefono || '';
+    if (isLead) {
+      const charCodeSum = nombreCliente.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
+      const randProb = 15 + (charCodeSum % 80);
+      probLabel = `${randProb}%`;
+      probClass = randProb > 70 ? 'prob-high' : randProb > 40 ? 'prob-medium' : 'prob-low';
+    }
+
+    const adv = getAsesorInfoByPhone(ped.linea_whatsapp);
+    const parsedProds = getParsedProducts(ped.productos);
+
+    return (
+      <div key={ped.id} className={`order-mobile-card ${isLead ? 'lead-abandonado' : ped.estado === 'completado' ? 'order-completado' : ped.pantallazo_url ? 'order-comprobante' : 'order-pendiente'}`} style={{ margin: 0 }}>
+        <div className="card-header-row">
+          <div className="client-info-block">
+            <div className="client-avatar">
+              {nombreCliente.charAt(0).toUpperCase()}
+            </div>
+            <div className="client-details">
+              <h4>{nombreCliente}</h4>
+              <p className="client-phone">📞 {telefonoCliente || 'Sin número'}</p>
+              <span className="client-time">{timeLabel}</span>
+            </div>
+          </div>
+          <div className="status-badges-block">
+            <span className="card-status-badge">
+              {isLead ? 'ABANDONADO' : ped.estado === 'completado' ? 'VERIFICADO' : ped.pantallazo_url ? 'PAGO RECIBIDO' : 'PENDIENTE'}
+            </span>
+            {isLead ? (
+              <span className={`prob-badge-small ${probClass}`}>
+                📊 {probLabel}
+              </span>
+            ) : (
+              <span className={`payment-badge-small ${ped.estado === 'completado' ? 'verified' : ped.pantallazo_url ? 'uploaded' : 'pending'}`}>
+                {ped.estado === 'completado' ? 'Pago verificado' : ped.pantallazo_url ? 'Comprobante' : 'Pendiente pago'}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="card-body-row">
+          <div className="cart-summary-block">
+            <div className="cart-total-info">
+              <span className="cart-total-icon">💰</span>
+              <span className="cart-total-amount">${ped.total.toLocaleString()}</span>
+              <span className="items-count">📦 {parsedProds.reduce((acc: number, p: any) => acc + (p.cantidad || 1), 0)} uds</span>
+            </div>
+            
+            {parsedProds.length > 0 ? (
+              <div className="cart-products-box">
+                <ul className="cart-products-list">
+                  {parsedProds.slice(0, 2).map((prod: any, idx: number) => (
+                    <li key={idx}>
+                      • {prod.nombre} {prod.talla ? `(${prod.talla})` : ''}
+                    </li>
+                  ))}
+                </ul>
+                {parsedProds.length > 2 && (
+                  <div className="more-products-badge" onClick={() => setSelectedPedido(ped)}>
+                    + Ver {parsedProds.length - 2} más
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="cart-products-box" style={{ background: '#fffbeb', borderColor: '#fde68a' }}>
+                <span style={{ fontSize: '0.65rem', color: '#b45309', fontWeight: 600 }}>⚠️ Sin productos</span>
+              </div>
+            )}
+          </div>
+
+          <div className="advisor-info-block">
+            <span className="block-title">Asesor asignado</span>
+            <div className="advisor-badge">
+              <div className="advisor-avatar">
+                {adv.foto_url ? (
+                  <img src={adv.foto_url} alt="" />
+                ) : (
+                  adv.nombre.charAt(0).toUpperCase()
+                )}
+              </div>
+              <div className="advisor-meta">
+                <h5>{adv.nombre}</h5>
+                <span className="advisor-role">{adv.role}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {isLead && (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginTop: '0.25rem', padding: '0 4px' }}>
+              <span style={{
+                fontSize: '0.72rem',
+                fontWeight: 800,
+                padding: '0.2rem 0.5rem',
+                borderRadius: '6px',
+                textTransform: 'uppercase',
+                background: ped.retargeting_estado === 'contactado' ? '#e0f2fe' : ped.retargeting_estado === 'recuperado' ? '#dcfce7' : ped.retargeting_estado === 'descartado' ? '#fee2e2' : '#f1f5f9',
+                color: ped.retargeting_estado === 'contactado' ? '#0369a1' : ped.retargeting_estado === 'recuperado' ? '#15803d' : ped.retargeting_estado === 'descartado' ? '#b91c1c' : '#475569'
+              }}>
+                {ped.retargeting_estado === 'contactado' ? '💬 Contactado' : ped.retargeting_estado === 'recuperado' ? '🎉 Recuperado' : ped.retargeting_estado === 'descartado' ? '✕ Descartado' : '⏳ Pendiente'}
+              </span>
+              <select
+                value={ped.retargeting_estado || 'pendiente'}
+                onChange={e => handleUpdateLeadStatus(ped.id, e.target.value)}
+                style={{ fontSize: '0.72rem', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.15rem 0.3rem', outline: 'none', cursor: 'pointer', background: 'white' }}
+              >
+                <option value="pendiente">Pendiente</option>
+                <option value="contactado">💬 Contactado</option>
+                <option value="recuperado">🎉 Recuperado</option>
+                <option value="descartado">✕ Descartado</option>
+              </select>
+            </div>
+            {ped.retargeted_by && (
+              <p style={{ margin: '0 0 0.25rem 4px', fontSize: '0.68rem', color: '#94a3b8', fontStyle: 'italic', textAlign: 'left' }}>
+                Atendido por: {ped.retargeted_by}
+              </p>
+            )}
+          </>
+        )}
+
+        <div className="card-footer-row" style={{ marginTop: '0.25rem' }}>
+          <div className="quick-actions">
+            <a href={`tel:${(telefonoCliente || '').replace(/\D/g, '')}`} className="btn-circle-action">
+              <Phone size={13} />
+            </a>
+            {telefonoCliente && (
+              <button 
+                type="button" 
+                className="btn-circle-action"
+                onClick={() => {
+                  const cleanPhone = telefonoCliente.replace(/\D/g, '');
+                  const target = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
+                  window.open(`https://wa.me/${target}`, '_blank');
+                }}
+              >
+                <MessageSquare size={13} />
+              </button>
+            )}
+            <button type="button" className="btn-details-action" onClick={() => setSelectedPedido(ped)}>
+              Ver detalles
+            </button>
+          </div>
+
+          <div className="main-action-wrapper">
+            {isLead ? (
+              <button 
+                type="button" 
+                className="btn-main-recover green"
+                onClick={() => {
+                  const cleanPhone = (telefonoCliente || '').replace(/\D/g, '');
+                  if (!cleanPhone) {
+                    showToast('Teléfono inválido para WhatsApp', 'error');
+                    return;
+                  }
+                  const prodNames = Array.isArray(ped.productos) && ped.productos.length > 0
+                    ? ped.productos.map((p: any) => `${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ')
+                    : '';
+                  const text = `¡Hola ${nombreCliente || ''}! 👋 Vimos que estás interesado en: ${prodNames ? `*${prodNames}*` : 'nuestros productos'}. ¿Tienes alguna duda o te ayudamos a completar tu pedido? Escríbenos y con gusto te colaboramos. 😊`;
+                  const targetPhone = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
+                  window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`, '_blank');
+                  handleUpdateLeadStatus(ped.id, 'contactado');
+                }}
+              >
+                <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" style={{ marginRight: '5px', display: 'inline-block', verticalAlign: 'middle' }}>
+                  <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.69-4.294c-.202-.101-1.196-.59-1.378-.656-.182-.066-.315-.099-.448.099-.133.197-.517.656-.634.793-.118.137-.236.154-.438.053-2.006-.997-3.11-1.808-4.113-3.526-.266-.457.266-.425.762-1.417.082-.163.041-.307-.02-.408-.062-.101-.448-1.077-.614-1.478-.162-.392-.326-.339-.448-.345l-.381-.008c-.131 0-.343.049-.524.246-.181.197-.69.673-.69 1.64s.704 1.903.804 2.036c.1.133 1.386 2.115 3.357 2.97.47.203.837.324 1.123.415.473.15.902.129 1.243.078.38-.057 1.196-.49 1.365-.962.169-.472.169-.877.118-.962-.05-.085-.183-.133-.385-.234z"/>
+                </svg>
+                Recuperar
+              </button>
+            ) : ped.estado === 'completado' ? (
+              <button 
+                type="button" 
+                className="btn-main-recover blue"
+                onClick={() => setSelectedPedido(ped)}
+              >
+                👁️ Ver Factura
+              </button>
+            ) : ped.pantallazo_url ? (
+              <button 
+                type="button" 
+                className="btn-main-recover blue"
+                onClick={() => setSelectedPedido(ped)}
+              >
+                💳 Verificar Pago
+              </button>
+            ) : (
+              <button 
+                type="button" 
+                className="btn-main-recover green"
+                onClick={() => {
+                  const cleanPhone = (telefonoCliente || '').replace(/\D/g, '');
+                  if (!cleanPhone) return;
+                  const prodNames = Array.isArray(ped.productos) && ped.productos.length > 0
+                    ? ped.productos.map((p: any) => p.nombre).join(', ')
+                    : '';
+                  const text = `¡Hola ${nombreCliente || ''}! 👋 Esperamos que estés muy bien. Recordamos que tu pedido de ${prodNames ? `*${prodNames}*` : 'nuestro catálogo'} por valor de *$${ped.total.toLocaleString()}* está pendiente de pago. ¿Te ayudamos a registrar el comprobante? 😊`;
+                  const targetPhone = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
+                  window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`, '_blank');
+                }}
+              >
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style={{ marginRight: '5px', display: 'inline-block', verticalAlign: 'middle' }}>
+                  <path d="M12.012 2c-5.506 0-9.988 4.482-9.988 9.988 0 1.761.46 3.473 1.332 4.978L2 22l5.222-1.368a9.92 9.92 0 0 0 4.79 1.228h.004c5.502 0 9.984-4.482 9.984-9.988C22 6.482 17.514 2 12.012 2zm5.836 14.199c-.24.676-1.18 1.258-1.748 1.356-.572.096-1.28.18-3.79-.824-3.13-1.252-5.112-4.412-5.268-4.622-.156-.21-1.272-1.688-1.272-3.218 0-1.53.804-2.28 1.092-2.584.288-.304.624-.378.834-.378.21 0 .42.002.604.01.192.008.452-.074.708.536.26.622.888 2.164.966 2.322.078.158.13.342.024.552-.104.21-.156.342-.312.524-.156.182-.328.406-.468.546-.156.156-.32.326-.138.636.182.31.81 1.334 1.738 2.16.196.176.386.326.568.428 1.218.682 1.83.582 2.112.282.282-.3.626-.642.796-.89.17-.25.334-.208.562-.124.228.084 1.442.68 1.69 1.046.248.366.248.55.128.832z"/>
+                </svg>
+                Recordar Pago
+              </button>
+            )}
+          </div>
+        </div>
+
+        {isLead && telefonoCliente && (() => {
+          const prodNames = Array.isArray(ped.productos) && ped.productos.length > 0
+            ? ped.productos.map((p: any) => p.nombre).join(', ')
+            : '';
+
+          const templates = [
+            {
+              name: '🏷️ Cupón 10% Off',
+              text: `¡Hola ${nombreCliente || ''}! 👋 Notamos que dejaste algunos artículos en tu carrito ${prodNames ? `(*${prodNames}*)` : ''}. ¡Queremos ayudarte a tenerlos! Si completas tu pedido en las próximas 2 horas, te regalamos un *10% de descuento* extra usando el cupón *RECOVERY10*. Escríbenos si deseas aplicarlo 🚀`
+            },
+            {
+              name: '🚚 Envío Gratis hoy',
+              text: `¡Hola ${nombreCliente || ''}! 👋 Queremos obsequiarte el *envío gratis* para tu compra de ${prodNames ? `*${prodNames}*` : 'nuestro catálogo'}. ¿Te ayudamos a registrar el pedido? Escríbenos y te lo despachamos de inmediato. 😊`
+            }
+          ];
+
+          return (
+            <details style={{ marginTop: '0.35rem', border: '1px solid #cbd5e1', borderRadius: '8px', overflow: 'hidden' }}>
+              <summary style={{ padding: '0.4rem 0.6rem', fontSize: '0.72rem', fontWeight: 700, color: '#475569', background: '#f8fafc', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', userSelect: 'none' }}>
+                <span>🚀 Otras Estrategias</span>
+                <span style={{ fontSize: '0.6rem', color: '#94a3b8' }}>▼</span>
+              </summary>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', padding: '0.5rem', background: 'white', borderTop: '1px solid #cbd5e1', textAlign: 'left' }}>
+                {templates.map((tpl, i) => (
+                  <button
+                    key={i}
+                    className="btn-whatsapp-retarget"
+                    style={{
+                      width: '100%',
+                      padding: '0.35rem 0.5rem',
+                      fontSize: '0.74rem',
+                      borderRadius: '6px',
+                      border: '1px solid #25D366',
+                      background: '#f0fdf4',
+                      color: '#166534',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '0.25rem'
+                    }}
+                    onClick={() => {
+                      handleUpdateLeadStatus(ped.id, 'contactado');
+                      window.open(`https://wa.me/57${telefonoCliente.replace(/\D/g, '')}?text=${encodeURIComponent(tpl.text)}`, '_blank');
+                    }}
+                  >
+                    <span>{tpl.name}</span>
+                    <span style={{ fontSize: '0.8rem' }}>💬</span>
+                  </button>
+                ))}
+              </div>
+            </details>
+          );
+        })()}
+      </div>
+    );
+  };
+
   const getAdvisorNotifications = (asesor: Asesor | Mayorista, stats: any, isMayorista = false) => {
     const list: any[] = [];
     const now = Date.now();
@@ -7778,253 +8066,7 @@ export default function Admin() {
                             <span className="badge" style={{ background: '#fee2e2', color: '#ef4444', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{leadsFiltrados.length}</span>
                           </div>
                           <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
-                            {/* Inject glowing animation for hot leads */}
-                            <style>{`
-                              @keyframes pulseHot {
-                                0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-                                70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(239, 68, 68, 0); }
-                                100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
-                              }
-                              .lead-hot-badge {
-                                animation: pulseHot 1.8s infinite;
-                                display: inline-flex;
-                                align-items: center;
-                                background: #fee2e2;
-                                color: #ef4444;
-                                font-weight: 800;
-                                border: 1px solid #fca5a5;
-                              }
-                            `}</style>
-                            {leadsFiltrados.map((lead) => {
-                              const elapsedMs = new Date().getTime() - new Date(lead.created_at).getTime();
-                              const elapsedMins = Math.floor(elapsedMs / 60000);
-                              let timeLabel = 'Hace un momento';
-                              let isHot = false;
-                              
-                              if (elapsedMins >= 0) {
-                                if (elapsedMins < 120) {
-                                  timeLabel = `🔥 Caliente (${elapsedMins}m atrás)`;
-                                  isHot = true;
-                                } else if (elapsedMins < 60) {
-                                  timeLabel = `Hace ${elapsedMins}m`;
-                                } else {
-                                  const elapsedHours = Math.floor(elapsedMins / 60);
-                                  if (elapsedHours < 24) {
-                                    timeLabel = `Hace ${elapsedHours} ${elapsedHours === 1 ? 'hora' : 'horas'}`;
-                                  } else {
-                                    const elapsedDays = Math.floor(elapsedHours / 24);
-                                    timeLabel = `Hace ${elapsedDays} ${elapsedDays === 1 ? 'día' : 'días'}`;
-                                  }
-                                }
-                              }
-
-                              return (
-                                <div key={lead.id} className="kanban-card lead-card" style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.01)' }}>
-                                  {/* Info Layout: 2 Columns */}
-                                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '0.75rem', marginBottom: '0.75rem', borderBottom: '1px dashed #f1f5f9', paddingBottom: '0.75rem' }}>
-                                    {/* Left Column: Customer details */}
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', textAlign: 'left' }}>
-                                      <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0f172a', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
-                                        <span>👤 {lead.nombre || 'Borrador Anónimo'}</span>
-                                        <span 
-                                          className={`badge ${isHot ? 'lead-hot-badge' : ''}`} 
-                                          style={isHot ? { 
-                                            padding: '0.15rem 0.45rem', 
-                                            borderRadius: '6px', 
-                                            fontSize: '0.66rem',
-                                            fontWeight: 800,
-                                            background: '#fee2e2',
-                                            color: '#ef4444',
-                                            border: '1px solid #fca5a5'
-                                          } : { 
-                                            background: '#f1f5f9', 
-                                            color: '#64748b', 
-                                            padding: '0.15rem 0.45rem', 
-                                            borderRadius: '6px', 
-                                            fontSize: '0.66rem', 
-                                            fontWeight: 700 
-                                          }}
-                                        >
-                                          {timeLabel}
-                                        </span>
-                                      </h4>
-                                      <p style={{ margin: 0, fontSize: '0.78rem', color: '#475569' }}>📞 {lead.telefono || 'Sin número'}</p>
-                                      <p style={{ margin: 0, fontSize: '0.78rem', color: '#475569' }}>📍 {lead.ciudad || 'No especificada'}</p>
-                                      {lead.total > 0 && (
-                                        <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 800, color: '#0f172a' }}>💰 <span style={{ color: '#10b981' }}>${lead.total.toLocaleString()}</span></p>
-                                      )}
-                                    </div>
-
-                                    {/* Right Column: Advisor info only */}
-                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', justifyContent: 'flex-start' }}>
-                                      {lead.linea_whatsapp && renderAsesorBadge(lead.linea_whatsapp, 'catalogo')}
-                                    </div>
-                                  </div>
-
-                                  {/* Full Width Section: Products summary */}
-                                  {(() => {
-                                    const parsedProds = getParsedProducts(lead.productos);
-                                    if (parsedProds.length > 0) {
-                                      return (
-                                        <div className="card-products-summary" style={{ margin: '0 0 0.75rem 0', padding: '0.5rem 0.65rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'left' }}>
-                                          <p style={{ margin: 0, marginBottom: '0.3rem', fontSize: '0.7rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>🛒 Carrito:</p>
-                                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                                            {parsedProds.map((prod: any, idx: number) => (
-                                              <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.76rem', color: '#334155' }}>
-                                                <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '170px' }} title={prod.nombre}>
-                                                  {prod.nombre} {prod.talla ? `(${prod.talla})` : ''} {prod.estampado ? `[${prod.estampado}]` : ''}
-                                                </span>
-                                                <span style={{ color: '#64748b', fontWeight: 700 }}>x{prod.cantidad}</span>
-                                              </div>
-                                            ))}
-                                          </div>
-                                        </div>
-                                      );
-                                    } else {
-                                      return (
-                                        <div className="card-products-summary" style={{ margin: '0 0 0.75rem 0', padding: '0.5rem 0.65rem', background: '#fffbeb', borderRadius: '8px', border: '1.5px dashed #fcd34d', textAlign: 'left' }}>
-                                          <p style={{ margin: 0, fontSize: '0.74rem', color: '#b45309', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                            <span>⚠️</span> <span>Sin productos registrados en el carrito</span>
-                                          </p>
-                                        </div>
-                                      );
-                                    }
-                                  })()}
-
-                                  {/* Retargeting Status Selector */}
-                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', margin: '0.5rem 0' }}>
-                                    <span style={{
-                                      fontSize: '0.72rem',
-                                      fontWeight: 800,
-                                      padding: '0.2rem 0.5rem',
-                                      borderRadius: '6px',
-                                      textTransform: 'uppercase',
-                                      background: lead.retargeting_estado === 'contactado' ? '#e0f2fe' : lead.retargeting_estado === 'recuperado' ? '#dcfce7' : lead.retargeting_estado === 'descartado' ? '#fee2e2' : '#f1f5f9',
-                                      color: lead.retargeting_estado === 'contactado' ? '#0369a1' : lead.retargeting_estado === 'recuperado' ? '#15803d' : lead.retargeting_estado === 'descartado' ? '#b91c1c' : '#475569'
-                                    }}>
-                                      {lead.retargeting_estado === 'contactado' ? '💬 Contactado' : lead.retargeting_estado === 'recuperado' ? '🎉 Recuperado' : lead.retargeting_estado === 'descartado' ? '✕ Descartado' : '⏳ Pendiente'}
-                                    </span>
-                                    <select
-                                      value={lead.retargeting_estado || 'pendiente'}
-                                      onChange={e => handleUpdateLeadStatus(lead.id, e.target.value)}
-                                      style={{ fontSize: '0.72rem', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.1rem 0.3rem', outline: 'none', cursor: 'pointer', background: 'white' }}
-                                    >
-                                      <option value="pendiente">Pendiente</option>
-                                      <option value="contactado">💬 Contactado</option>
-                                      <option value="recuperado">🎉 Recuperado</option>
-                                      <option value="descartado">✕ Descartado</option>
-                                    </select>
-                                  </div>
-                                  {lead.retargeted_by && (
-                                    <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.68rem', color: '#94a3b8', fontStyle: 'italic', textAlign: 'left' }}>
-                                      Atendido por: {lead.retargeted_by}
-                                    </p>
-                                  )}
-
-                                  {/* Direct WhatsApp Retargeting Button with customized details */}
-                                  {lead.telefono && (
-                                    <button 
-                                      className="btn-whatsapp-retarget"
-                                      style={{
-                                        width: '100%',
-                                        padding: '0.45rem',
-                                        fontSize: '0.78rem',
-                                        borderRadius: '8px',
-                                        border: '1px solid #25D366',
-                                        background: '#f0fdf4',
-                                        color: '#166534',
-                                        cursor: 'pointer',
-                                        fontWeight: 600,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '0.25rem',
-                                        transition: 'all 0.2s',
-                                        marginTop: '0.6rem',
-                                        marginBottom: '0.3rem'
-                                      }}
-                                      onClick={() => {
-                                        const cleanPhone = (lead.telefono || '').replace(/\D/g, '');
-                                        if (!cleanPhone) {
-                                          showToast('El cliente no tiene un teléfono válido registrado para WhatsApp', 'error');
-                                          return;
-                                        }
-                                        const prodNames = Array.isArray(lead.productos) && lead.productos.length > 0
-                                          ? lead.productos.map((p: any) => `${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ')
-                                          : '';
-                                        const text = `¡Hola ${lead.nombre || ''}! 👋 Vimos que estás interesado en: ${prodNames ? `*${prodNames}*` : 'nuestros productos'}. ¿Tienes alguna duda o te ayudamos a completar tu pedido? Escríbenos y con gusto te colaboramos. 😊`;
-                                        const targetPhone = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
-                                        // Open WhatsApp FIRST so browser does not block popup
-                                        window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`, '_blank');
-                                        handleUpdateLeadStatus(lead.id, 'contactado');
-                                      }}
-                                    >
-                                      <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" style={{ marginRight: '5px', display: 'inline-block', verticalAlign: 'middle' }}>
-                                        <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.69-4.294c-.202-.101-1.196-.59-1.378-.656-.182-.066-.315-.099-.448.099-.133.197-.517.656-.634.793-.118.137-.236.154-.438.053-2.006-.997-3.11-1.808-4.113-3.526-.266-.457.266-.425.762-1.417.082-.163.041-.307-.02-.408-.062-.101-.448-1.077-.614-1.478-.162-.392-.326-.339-.448-.345l-.381-.008c-.131 0-.343.049-.524.246-.181.197-.69.673-.69 1.64s.704 1.903.804 2.036c.1.133 1.386 2.115 3.357 2.97.47.203.837.324 1.123.415.473.15.902.129 1.243.078.38-.057 1.196-.49 1.365-.962.169-.472.169-.877.118-.962-.05-.085-.183-.133-.385-.234z"/>
-                                      </svg>
-                                      Recuperar
-                                    </button>
-                                  )}
-
-                                  {/* Collapsible strategies templates dropdown */}
-                                  {lead.telefono && (() => {
-                                    const prodNames = Array.isArray(lead.productos) && lead.productos.length > 0
-                                      ? lead.productos.map((p: any) => p.nombre).join(', ')
-                                      : '';
-
-                                    const templates = [
-                                      {
-                                        name: '🏷️ Cupón 10% Off',
-                                        text: `¡Hola ${lead.nombre || ''}! 👋 Notamos que dejaste algunos artículos en tu carrito ${prodNames ? `(*${prodNames}*)` : ''}. ¡Queremos ayudarte a tenerlos! Si completas tu pedido en las próximas 2 horas, te regalamos un *10% de descuento* extra usando el cupón *RECOVERY10*. Escríbenos si deseas aplicarlo 🚀`
-                                      },
-                                      {
-                                        name: '🚚 Envío Gratis hoy',
-                                        text: `¡Hola ${lead.nombre || ''}! 👋 Queremos obsequiarte el *envío gratis* para tu compra de ${prodNames ? `*${prodNames}*` : 'nuestro catálogo'}. ¿Te ayudamos a registrar el pedido? Escríbenos y te lo despachamos de inmediato. 😊`
-                                      }
-                                    ];
-
-                                    return (
-                                      <details style={{ marginTop: '0.3rem', border: '1px solid #cbd5e1', borderRadius: '8px', overflow: 'hidden' }}>
-                                        <summary style={{ padding: '0.4rem 0.6rem', fontSize: '0.72rem', fontWeight: 700, color: '#475569', background: '#f8fafc', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', userSelect: 'none' }}>
-                                          <span>🚀 Otras Estrategias</span>
-                                          <span style={{ fontSize: '0.6rem', color: '#94a3b8' }}>▼</span>
-                                        </summary>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', padding: '0.5rem', background: 'white', borderTop: '1px solid #cbd5e1', textAlign: 'left' }}>
-                                          {templates.map((tpl, i) => (
-                                            <button
-                                              key={i}
-                                              className="btn-whatsapp-retarget"
-                                              style={{
-                                                width: '100%',
-                                                padding: '0.35rem 0.5rem',
-                                                fontSize: '0.74rem',
-                                                borderRadius: '6px',
-                                                border: '1px solid #25D366',
-                                                background: '#f0fdf4',
-                                                color: '#166534',
-                                                cursor: 'pointer',
-                                                fontWeight: 600,
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'space-between',
-                                                gap: '0.25rem'
-                                              }}
-                                              onClick={() => {
-                                                handleUpdateLeadStatus(lead.id, 'contactado');
-                                                window.open(`https://wa.me/57${lead.telefono.replace(/\D/g, '')}?text=${encodeURIComponent(tpl.text)}`, '_blank');
-                                              }}
-                                            >
-                                              <span>{tpl.name}</span>
-                                              <span style={{ fontSize: '0.8rem' }}>💬</span>
-                                            </button>
-                                          ))}
-                                        </div>
-                                      </details>
-                                    );
-                                  })()}
-                                </div>
-                              );
-                            })}
+                            {leadsFiltrados.map(lead => renderLeadOrOrderCard(lead))}
                             {leadsFiltrados.length === 0 && (
                               <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0' }}>No hay carritos abandonados.</p>
                             )}
@@ -8038,92 +8080,7 @@ export default function Admin() {
                             <span className="badge" style={{ background: '#fef9c3', color: '#eab308', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{interesadosFiltrados.length}</span>
                           </div>
                           <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
-                            {interesadosFiltrados.map((ped) => {
-                              return (
-                                <div key={ped.id} className="kanban-card order-card" style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.01)' }}>
-                                  {/* Info Layout: 2 Columns */}
-                                  <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: '0.75rem', marginBottom: '0.75rem', borderBottom: '1px dashed #f1f5f9', paddingBottom: '0.75rem' }}>
-                                    {/* Left Column: Customer & Order info */}
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', textAlign: 'left' }}>
-                                      <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0f172a', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>👤 {ped.cliente_nombre}</h4>
-                                      <p style={{ margin: 0, fontSize: '0.78rem', color: '#475569' }}>📞 {ped.cliente_telefono}</p>
-                                      <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 800, color: '#0f172a' }}>💰 <span style={{ color: '#10b981' }}>${ped.total.toLocaleString()}</span></p>
-                                      
-                                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
-                                        {ped.pantallazo_url ? (
-                                          <span style={{ fontSize: '0.68rem', background: '#e0f2fe', color: '#0369a1', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>✅ Pago</span>
-                                        ) : (
-                                          <span style={{ fontSize: '0.68rem', background: '#fffbeb', color: '#b45309', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>⏳ Pago en Espera</span>
-                                        )}
-                                        <span style={{ fontSize: '0.68rem', background: '#f1f5f9', color: '#475569', padding: '2px 6px', borderRadius: '6px', fontWeight: 600 }}>
-                                          📅 {new Date(ped.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'numeric', year: '2-digit' })}
-                                        </span>
-                                      </div>
-                                    </div>
-
-                                    {/* Right Column: Advisor info */}
-                                    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-start' }}>
-                                      {ped.linea_whatsapp && renderAsesorBadge(ped.linea_whatsapp, ped.origen)}
-                                    </div>
-                                  </div>
-
-                                  {/* Full Width Section: Products summary */}
-                                  {Array.isArray(ped.productos) && ped.productos.length > 0 && (
-                                    <div className="card-products-summary" style={{ margin: '0 0 0.75rem 0', padding: '0.5rem 0.65rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0', textAlign: 'left' }}>
-                                      <p style={{ margin: '0 0 0.3rem 0', fontSize: '0.7rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📦 Artículos:</p>
-                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                                        {ped.productos.map((prod: any, idx: number) => (
-                                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#334155' }}>
-                                            <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '170px' }} title={prod.nombre}>
-                                              {prod.nombre} {prod.talla ? `(${prod.talla})` : ''} {prod.estampado ? `[${prod.estampado}]` : ''}
-                                            </span>
-                                            <span style={{ color: '#64748b', fontWeight: 700 }}>
-                                              x{prod.cantidad}
-                                            </span>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  {/* Buttons area */}
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                                    <button 
-                                      className="btn-view-detail"
-                                      style={{ width: '100%', padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', color: '#475569', cursor: 'pointer', fontWeight: 600, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem' }}
-                                      onClick={() => setSelectedPedido(ped)}
-                                    >
-                                      🔍 Ver Detalle
-                                    </button>
-                                    {ped.pantallazo_url ? (
-                                      <button 
-                                        className="btn-primary" 
-                                        style={{ padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', background: configuracion?.color_primario || '#3b82f6', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 700 }}
-                                        onClick={() => setSelectedPedido(ped)}
-                                      >
-                                        💳 Verificar pago
-                                      </button>
-                                    ) : ped.atendido ? (
-                                      <button 
-                                        disabled
-                                        className="btn-secondary" 
-                                        style={{ padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#64748b', cursor: 'not-allowed', fontWeight: 600 }}
-                                      >
-                                        ⏳ Esperando comprobante
-                                      </button>
-                                    ) : (
-                                      <button 
-                                        className="btn-primary" 
-                                        style={{ padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', background: '#25D366', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 700 }}
-                                        onClick={() => handleAtenderPedido(ped)}
-                                      >
-                                        📞 Atender
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                              );
-                            })}
+                            {interesadosFiltrados.map(ped => renderLeadOrOrderCard(ped))}
                             {interesadosFiltrados.length === 0 && (
                               <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0' }}>No hay pedidos pendientes.</p>
                             )}
@@ -8137,60 +8094,7 @@ export default function Admin() {
                             <span className="badge" style={{ background: '#dcfce7', color: '#22c55e', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{clientesFiltrados.length}</span>
                           </div>
                           <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
-                            {clientesFiltrados.map((ped) => {
-                              return (
-                                <div key={ped.id} className="kanban-card client-card" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '1rem', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02), 0 2px 4px -1px rgba(0,0,0,0.01)' }}>
-                                  {/* Info Layout: 2 Columns */}
-                                  <div style={{ display: 'grid', gridTemplateColumns: '1.25fr 1fr', gap: '0.75rem', marginBottom: '0.75rem', borderBottom: '1px dashed #bbf7d0', paddingBottom: '0.75rem' }}>
-                                    {/* Left Column: Customer & Order info */}
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', textAlign: 'left' }}>
-                                      <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#14532d', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>👤 {ped.cliente_nombre}</h4>
-                                      <p style={{ margin: 0, fontSize: '0.78rem', color: '#166534' }}>📞 {ped.cliente_telefono}</p>
-                                      <p style={{ margin: 0, fontSize: '0.8rem', fontWeight: 800, color: '#14532d' }}>💰 <span style={{ color: '#16a34a' }}>${ped.total.toLocaleString()}</span></p>
-                                      
-                                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginTop: '0.2rem' }}>
-                                        <span style={{ fontSize: '0.68rem', background: '#dcfce7', color: '#166534', padding: '2px 6px', borderRadius: '6px', fontWeight: 700 }}>✓ Pago Verificado</span>
-                                        <span style={{ fontSize: '0.68rem', background: '#e8f5e9', color: '#2e7d32', padding: '2px 6px', borderRadius: '6px', fontWeight: 600 }}>
-                                          📅 {new Date(ped.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'numeric', year: '2-digit' })}
-                                        </span>
-                                      </div>
-                                    </div>
-
-                                    {/* Right Column: Advisor info */}
-                                    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-start' }}>
-                                      {ped.linea_whatsapp && renderAsesorBadge(ped.linea_whatsapp, ped.origen)}
-                                    </div>
-                                  </div>
-
-                                  {/* Full Width Section: Products summary */}
-                                  {Array.isArray(ped.productos) && ped.productos.length > 0 && (
-                                    <div className="card-products-summary" style={{ margin: '0 0 0.75rem 0', padding: '0.5rem 0.65rem', background: 'white', borderRadius: '8px', border: '1px solid #bbf7d0', textAlign: 'left' }}>
-                                      <p style={{ margin: '0 0 0.3rem 0', fontSize: '0.7rem', fontWeight: 800, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📦 Artículos:</p>
-                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                                        {ped.productos.map((prod: any, idx: number) => (
-                                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#166534' }}>
-                                            <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '170px' }} title={prod.nombre}>
-                                              {prod.nombre} {prod.talla ? `(${prod.talla})` : ''} {prod.estampado ? `[${prod.estampado}]` : ''}
-                                            </span>
-                                            <span style={{ color: '#166534', fontWeight: 700 }}>
-                                              x{prod.cantidad}
-                                            </span>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
-
-                                  <button 
-                                    className="btn-view-detail"
-                                    style={{ width: '100%', padding: '0.45rem', fontSize: '0.78rem', borderRadius: '8px', border: '1px solid #bbf7d0', background: 'white', color: '#14532d', cursor: 'pointer', fontWeight: 600 }}
-                                    onClick={() => setSelectedPedido(ped)}
-                                  >
-                                    🔍 Ver Factura
-                                  </button>
-                                </div>
-                              );
-                            })}
+                            {clientesFiltrados.map(ped => renderLeadOrOrderCard(ped))}
                             {clientesFiltrados.length === 0 && (
                               <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0' }}>No hay ventas exitosas aún.</p>
                             )}
