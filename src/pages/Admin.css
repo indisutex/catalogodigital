@@ -1440,15 +1440,18 @@ body {
     backdrop-filter: blur(12px);
     box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.12), 0 8px 10px -6px rgba(15, 23, 42, 0.12);
     border-radius: 16px;
-    padding: 4px 8px;
+    padding: 6px 4px;
     z-index: 98;
-    justify-content: space-around;
+    justify-content: flex-start;
     align-items: center;
     border: 1px solid rgba(226, 232, 240, 0.8);
     overflow-x: auto;
+    overflow-y: hidden;
     white-space: nowrap;
     scrollbar-width: none; /* Firefox */
-    gap: 4px;
+    gap: 0;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
   }
   
   .mobile-bottom-nav::-webkit-scrollbar {
@@ -1469,7 +1472,7 @@ body {
   border: none;
   color: #64748b;
   cursor: pointer;
-  padding: 4px 2px;
+  padding: 6px 4px;
   font-size: 0.7rem;
   font-weight: 700;
   position: relative;
@@ -1478,7 +1481,10 @@ body {
   gap: 2px;
   outline: none;
   font-family: inherit;
-  min-width: 60px;
+  /* Show exactly 4 items, rest scrolls */
+  min-width: calc(25vw - 8px);
+  max-width: calc(25vw - 8px);
+  scroll-snap-align: start;
 }
 
 .bottom-nav-item.active {

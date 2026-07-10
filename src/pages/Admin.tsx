@@ -111,6 +111,7 @@ export default function Admin() {
     return localStorage.getItem(`admin_asesor_phone_${getTenantId()}`);
   });
   const [failedThumbnails, setFailedThumbnails] = useState<Record<string, boolean>>({});
+  const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
   const [pin, setPin] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>(() => {
     const userRole = localStorage.getItem(`admin_role_${getTenantId()}`);
@@ -1842,7 +1843,7 @@ export default function Admin() {
         </div>
 
         {/* Row for Products and Months */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem', minWidth: 0 }}>
           
           {/* Productos Más Vendidos */}
           <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
@@ -1878,7 +1879,7 @@ export default function Admin() {
           </div>
 
           {/* Histórico 6 meses / Distribución Pedidos */}
-          <div style={{ display: 'grid', gridTemplateRows: '1fr 1fr', gap: '1rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', minWidth: 0 }}>
             <div style={{ background: '#f8fafc', borderRadius: '14px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
               <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>📈 Ventas Últimos 6 Meses</h4>
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '60px' }}>
@@ -5505,6 +5506,31 @@ export default function Admin() {
                                   const isBroken = failedThumbnails[m.id];
                                   const thumbnailUrl = (!isBroken && m.tipo !== 'carpeta') ? getGoogleDriveThumbnailUrl(m.url) : '';
                                   const embedUrl = getGoogleDriveEmbedUrl(m.url);
+                                  const isPlaying = playingVideoId === m.id;
+                                  
+                                  // If video is playing, show iframe
+                                  if (isPlaying && embedUrl) {
+                                    return (
+                                      <>
+                                        <iframe
+                                          src={embedUrl}
+                                          width="100%"
+                                          height="100%"
+                                          frameBorder="0"
+                                          allow="autoplay; encrypted-media"
+                                          allowFullScreen
+                                          style={{ border: 'none', background: '#000', display: 'block' }}
+                                        ></iframe>
+                                        <button
+                                          onClick={() => setPlayingVideoId(null)}
+                                          style={{ position: 'absolute', top: '8px', left: '8px', background: 'rgba(0,0,0,0.6)', border: 'none', borderRadius: '6px', color: 'white', padding: '4px 8px', fontSize: '0.7rem', cursor: 'pointer', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}
+                                          title="Cerrar video"
+                                        >
+                                          ✕ Cerrar
+                                        </button>
+                                      </>
+                                    );
+                                  }
                                   
                                   if (thumbnailUrl) {
                                     return (
@@ -5515,12 +5541,18 @@ export default function Admin() {
                                           onError={() => setFailedThumbnails(prev => ({ ...prev, [m.id]: true }))}
                                           style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                                         />
-                                        {m.tipo === 'video' && (
-                                          <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'rgba(0,0,0,0.65)', width: '36px', height: '36px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', pointerEvents: 'none' }}>
-                                            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                                        {m.tipo === 'video' && embedUrl && (
+                                          <button
+                                            onClick={() => setPlayingVideoId(m.id)}
+                                            style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'rgba(0,0,0,0.72)', border: 'none', width: '52px', height: '52px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', cursor: 'pointer', transition: 'transform 0.2s, background 0.2s', boxShadow: '0 4px 12px rgba(0,0,0,0.4)' }}
+                                            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0,0,0,0.9)'; (e.currentTarget as HTMLButtonElement).style.transform = 'translate(-50%, -50%) scale(1.1)'; }}
+                                            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = 'rgba(0,0,0,0.72)'; (e.currentTarget as HTMLButtonElement).style.transform = 'translate(-50%, -50%) scale(1)'; }}
+                                            title="Reproducir video"
+                                          >
+                                            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
                                               <path d="M8 5v14l11-7z" />
                                             </svg>
-                                          </div>
+                                          </button>
                                         )}
                                         <a
                                           href={m.url}
@@ -5541,14 +5573,22 @@ export default function Admin() {
                                   
                                   if (embedUrl && m.tipo !== 'carpeta') {
                                     return (
-                                      <iframe
-                                        src={embedUrl}
-                                        width="100%"
-                                        height="100%"
-                                        frameBorder="0"
-                                        allow="autoplay"
-                                        style={{ border: 'none', background: '#000' }}
-                                      ></iframe>
+                                      <>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', background: '#1e293b', color: '#94a3b8', fontSize: '2.5rem' }}>
+                                          {m.tipo === 'video' ? '🎥' : m.tipo === 'imagen' ? '🖼️' : '📄'}
+                                        </div>
+                                        {m.tipo === 'video' && (
+                                          <button
+                                            onClick={() => setPlayingVideoId(m.id)}
+                                            style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', background: 'rgba(0,0,0,0.72)', border: 'none', width: '52px', height: '52px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0,0,0,0.4)' }}
+                                            title="Reproducir video"
+                                          >
+                                            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+                                              <path d="M8 5v14l11-7z" />
+                                            </svg>
+                                          </button>
+                                        )}
+                                      </>
                                     );
                                   }
                                   
@@ -7870,13 +7910,14 @@ export default function Admin() {
                                           showToast('El cliente no tiene un teléfono válido registrado para WhatsApp', 'error');
                                           return;
                                         }
-                                        handleUpdateLeadStatus(lead.id, 'contactado');
                                         const prodNames = Array.isArray(lead.productos) && lead.productos.length > 0
                                           ? lead.productos.map((p: any) => `${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ')
                                           : '';
                                         const text = `¡Hola ${lead.nombre || ''}! 👋 Vimos que estás interesado en: ${prodNames ? `*${prodNames}*` : 'nuestros productos'}. ¿Tienes alguna duda o te ayudamos a completar tu pedido? Escríbenos y con gusto te colaboramos. 😊`;
                                         const targetPhone = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
+                                        // Open WhatsApp FIRST so browser does not block popup
                                         window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`, '_blank');
+                                        handleUpdateLeadStatus(lead.id, 'contactado');
                                       }}
                                     >
                                       <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" style={{ marginRight: '5px', display: 'inline-block', verticalAlign: 'middle' }}>
@@ -8387,13 +8428,15 @@ export default function Admin() {
                                           showToast('Teléfono inválido para WhatsApp', 'error');
                                           return;
                                         }
-                                        handleUpdateLeadStatus(ped.id, 'contactado');
                                         const prodNames = Array.isArray(ped.productos) && ped.productos.length > 0
                                           ? ped.productos.map((p: any) => `${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ')
                                           : '';
                                         const text = `¡Hola ${ped.cliente_nombre || ''}! 👋 Vimos que estás interesado en: ${prodNames ? `*${prodNames}*` : 'nuestros productos'}. ¿Tienes alguna duda o te ayudamos a completar tu pedido? Escríbenos y con gusto te colaboramos. 😊`;
                                         const targetPhone = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
+                                        // Open WhatsApp FIRST (synchronous, browser allows popup on direct click)
                                         window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`, '_blank');
+                                        // Then update status asynchronously
+                                        handleUpdateLeadStatus(ped.id, 'contactado');
                                       }}
                                     >
                                       <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" style={{ marginRight: '5px', display: 'inline-block', verticalAlign: 'middle' }}>
