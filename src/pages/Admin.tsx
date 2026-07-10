@@ -247,6 +247,11 @@ export default function Admin() {
                 <span className="advisor-role">{adv.role}</span>
               </div>
             </div>
+            {!isLead && (
+              <span className={`payment-badge-small ${ped.estado === 'completado' ? 'verified' : ped.pantallazo_url ? 'uploaded' : 'pending'}`} style={{ marginTop: '4px', display: 'inline-block' }}>
+                {ped.estado === 'completado' ? '✅ Verificado' : ped.pantallazo_url ? '📸 Comprobante recibido' : '⏳ Esperando comprobante de pago'}
+              </span>
+            )}
           </div>
         </div>
 
@@ -283,38 +288,7 @@ export default function Admin() {
 
         </div>
 
-        {isLead && (
-          <>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', marginTop: '0.25rem', padding: '0 4px' }}>
-              <span style={{
-                fontSize: '0.72rem',
-                fontWeight: 800,
-                padding: '0.2rem 0.5rem',
-                borderRadius: '6px',
-                textTransform: 'uppercase',
-                background: ped.retargeting_estado === 'contactado' ? '#e0f2fe' : ped.retargeting_estado === 'recuperado' ? '#dcfce7' : ped.retargeting_estado === 'descartado' ? '#fee2e2' : '#f1f5f9',
-                color: ped.retargeting_estado === 'contactado' ? '#0369a1' : ped.retargeting_estado === 'recuperado' ? '#15803d' : ped.retargeting_estado === 'descartado' ? '#b91c1c' : '#475569'
-              }}>
-                {ped.retargeting_estado === 'contactado' ? '💬 Contactado' : ped.retargeting_estado === 'recuperado' ? '🎉 Recuperado' : ped.retargeting_estado === 'descartado' ? '✕ Descartado' : '⏳ Pendiente'}
-              </span>
-              <select
-                value={ped.retargeting_estado || 'pendiente'}
-                onChange={e => handleUpdateLeadStatus(ped.id, e.target.value)}
-                style={{ fontSize: '0.72rem', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.15rem 0.3rem', outline: 'none', cursor: 'pointer', background: 'white' }}
-              >
-                <option value="pendiente">Pendiente</option>
-                <option value="contactado">💬 Contactado</option>
-                <option value="recuperado">🎉 Recuperado</option>
-                <option value="descartado">✕ Descartado</option>
-              </select>
-            </div>
-            {ped.retargeted_by && (
-              <p style={{ margin: '0 0 0.25rem 4px', fontSize: '0.68rem', color: '#94a3b8', fontStyle: 'italic', textAlign: 'left' }}>
-                Atendido por: {ped.retargeted_by}
-              </p>
-            )}
-          </>
-        )}
+
 
         <div className="card-footer-row" style={{ marginTop: '0.25rem' }}>
           <div className="quick-actions" style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -368,11 +342,9 @@ export default function Admin() {
                   handleUpdateLeadStatus(ped.id, 'contactado');
                 }}
               >
-                <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" style={{ marginRight: '5px', display: 'inline-block', verticalAlign: 'middle' }}>
-                  <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.69-4.294c-.202-.101-1.196-.59-1.378-.656-.182-.066-.315-.099-.448.099-.133.197-.517.656-.634.793-.118.137-.236.154-.438.053-2.006-.997-3.11-1.808-4.113-3.526-.266-.457.266-.425.762-1.417.082-.163.041-.307-.02-.408-.062-.101-.448-1.077-.614-1.478-.162-.392-.326-.339-.448-.345l-.381-.008c-.131 0-.343.049-.524.246-.181.197-.69.673-.69 1.64s.704 1.903.804 2.036c.1.133 1.386 2.115 3.357 2.97.47.203.837.324 1.123.415.473.15.902.129 1.243.078.38-.057 1.196-.49 1.365-.962.169-.472.169-.877.118-.962-.05-.085-.183-.133-.385-.234z"/>
-                </svg>
-                Recuperar
-              </button>
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style={{ marginRight: '5px', display: 'inline-block', verticalAlign: 'middle' }}>
+                  <path d="M12.012 2c-5.506 0-9.988 4.482-9.988 9.988 0 1.761.46 3.473 1.332 4.978L2 22l5.222-1.368a9.92 9.92 0 0 0 4.79 1.228h.004c5.502 0 9.984-4.482 9.984-9.988C22 6.482 17.514 2 12.012 2zm5.836 14.199c-.24.676-1.18 1.258-1.748 1.356-.572.096-1.28.18-3.79-.824-3.13-1.252-5.112-4.412-5.268-4.622-.156-.21-1.272-1.688-1.272-3.218 0-1.53.804-2.28 1.092-2.584.288-.304.624-.378.834-.378.21 0 .42.002.604.01.192.008.452-.074.708.536.26.622.888 2.164.966 2.322.078.158.13.342.024.552-.104.21-.156.342-.312.524-.156.182-.328.406-.468.546-.156.156-.32.326-.138.636.182.31.81 1.334 1.738 2.16.196.176.386.326.568.428 1.218.682 1.83.582 2.112.282.282-.3.626-.642.796-.89.17-.25.334-.208.562-.124.228.084 1.442.68 1.69 1.046.248.366.248.55.128.832z"/>
+                </svg> Recuperar venta</button>
             ) : ped.estado === 'completado' ? (
               <button 
                 type="button" 
@@ -399,7 +371,8 @@ export default function Admin() {
                   const prodNames = Array.isArray(ped.productos) && ped.productos.length > 0
                     ? ped.productos.map((p: any) => p.nombre).join(', ')
                     : '';
-                  const text = `¡Hola ${nombreCliente || ''}! 👋 Esperamos que estés muy bien. Recordamos que tu pedido de ${prodNames ? `*${prodNames}*` : 'nuestro catálogo'} por valor de *$${ped.total.toLocaleString()}* está pendiente de pago. ¿Te ayudamos a registrar el comprobante? 😊`;
+                  const uploadLink = `${window.location.origin}/pago/${ped.id}`;
+                  const text = `¡Hola ${nombreCliente || ''}! 👋 Esperamos que estés muy bien. Recordamos que tu pedido de ${prodNames ? `*${prodNames}*` : 'nuestro catálogo'} por valor de *${ped.total.toLocaleString()}* está pendiente de pago.\n\nPor favor, sube tu comprobante de pago en el siguiente enlace para completar tu pedido:\n${uploadLink} 😊`;
                   const targetPhone = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
                   window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`, '_blank');
                 }}
@@ -413,61 +386,7 @@ export default function Admin() {
           </div>
         </div>
 
-        {isLead && telefonoCliente && (() => {
-          const prodNames = Array.isArray(ped.productos) && ped.productos.length > 0
-            ? ped.productos.map((p: any) => p.nombre).join(', ')
-            : '';
 
-          const templates = [
-            {
-              name: '🏷️ Cupón 10% Off',
-              text: `¡Hola ${nombreCliente || ''}! 👋 Notamos que dejaste algunos artículos en tu carrito ${prodNames ? `(*${prodNames}*)` : ''}. ¡Queremos ayudarte a tenerlos! Si completas tu pedido en las próximas 2 horas, te regalamos un *10% de descuento* extra usando el cupón *RECOVERY10*. Escríbenos si deseas aplicarlo 🚀`
-            },
-            {
-              name: '🚚 Envío Gratis hoy',
-              text: `¡Hola ${nombreCliente || ''}! 👋 Queremos obsequiarte el *envío gratis* para tu compra de ${prodNames ? `*${prodNames}*` : 'nuestro catálogo'}. ¿Te ayudamos a registrar el pedido? Escríbenos y te lo despachamos de inmediato. 😊`
-            }
-          ];
-
-          return (
-            <details style={{ marginTop: '0.35rem', border: '1px solid #cbd5e1', borderRadius: '8px', overflow: 'hidden' }}>
-              <summary style={{ padding: '0.4rem 0.6rem', fontSize: '0.72rem', fontWeight: 700, color: '#475569', background: '#f8fafc', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', userSelect: 'none' }}>
-                <span>🚀 Otras Estrategias</span>
-                <span style={{ fontSize: '0.6rem', color: '#94a3b8' }}>▼</span>
-              </summary>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', padding: '0.5rem', background: 'white', borderTop: '1px solid #cbd5e1', textAlign: 'left' }}>
-                {templates.map((tpl, i) => (
-                  <button
-                    key={i}
-                    className="btn-whatsapp-retarget"
-                    style={{
-                      width: '100%',
-                      padding: '0.35rem 0.5rem',
-                      fontSize: '0.74rem',
-                      borderRadius: '6px',
-                      border: '1px solid #25D366',
-                      background: '#f0fdf4',
-                      color: '#166534',
-                      cursor: 'pointer',
-                      fontWeight: 600,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '0.25rem'
-                    }}
-                    onClick={() => {
-                      handleUpdateLeadStatus(ped.id, 'contactado');
-                      window.open(`https://wa.me/57${telefonoCliente.replace(/\D/g, '')}?text=${encodeURIComponent(tpl.text)}`, '_blank');
-                    }}
-                  >
-                    <span>{tpl.name}</span>
-                    <span style={{ fontSize: '0.8rem' }}>💬</span>
-                  </button>
-                ))}
-              </div>
-            </details>
-          );
-        })()}
       </div>
     );
   };
@@ -1643,14 +1562,22 @@ export default function Admin() {
     let result = [...pedidos];
 
     if (orderSearchQuery) {
-      const q = orderSearchQuery.toLowerCase().trim();
-      result = result.filter(p => 
-        (p.cliente_nombre || '').toLowerCase().includes(q) ||
-        (p.cliente_telefono || '').toLowerCase().includes(q) ||
-        (p.ciudad || '').toLowerCase().includes(q) ||
-        (p.direccion || '').toLowerCase().includes(q)
-      );
-    }
+        const q = orderSearchQuery.toLowerCase().trim();
+        result = result.filter(p => 
+          (p.cliente_nombre || '').toLowerCase().includes(q) ||
+          (p.cliente_telefono || '').toLowerCase().includes(q) ||
+          (p.ciudad || '').toLowerCase().includes(q) ||
+          (p.direccion || '').toLowerCase().includes(q)
+        ).sort((a, b) => {
+          const aName = (a.cliente_nombre || '').toLowerCase();
+          const bName = (b.cliente_nombre || '').toLowerCase();
+          const aStarts = aName.startsWith(q);
+          const bStarts = bName.startsWith(q);
+          if (aStarts && !bStarts) return -1;
+          if (!aStarts && bStarts) return 1;
+          return 0;
+        });
+      }
 
     if (orderFilterStatus !== 'todos') {
       if (orderFilterStatus === 'comprobante') {
@@ -2237,13 +2164,21 @@ export default function Admin() {
     });
 
     if (orderSearchQuery) {
-      const q = orderSearchQuery.toLowerCase();
-      temp = temp.filter(l => 
-        (l.nombre || '').toLowerCase().includes(q) ||
-        (l.telefono || '').toLowerCase().includes(q) ||
-        (l.ciudad || '').toLowerCase().includes(q)
-      );
-    }
+        const q = orderSearchQuery.toLowerCase().trim();
+        temp = temp.filter(l => 
+          (l.nombre || '').toLowerCase().includes(q) ||
+          (l.telefono || '').toLowerCase().includes(q) ||
+          (l.ciudad || '').toLowerCase().includes(q)
+        ).sort((a, b) => {
+          const aName = (a.nombre || '').toLowerCase();
+          const bName = (b.nombre || '').toLowerCase();
+          const aStarts = aName.startsWith(q);
+          const bStarts = bName.startsWith(q);
+          if (aStarts && !bStarts) return -1;
+          if (!aStarts && bStarts) return 1;
+          return 0;
+        });
+      }
     if (orderFilterDate) {
       temp = temp.filter(l => l.created_at.startsWith(orderFilterDate));
     }
@@ -2623,7 +2558,10 @@ export default function Admin() {
       }
       if (purgeTargets.leads) {
         let q = supabase.from('leads').select('id', { count: 'exact', head: true }).eq('tenant_id', tenant);
-        if (purgeEstado !== 'todos') q = q.eq('estado', purgeEstado);
+        if (purgeEstado !== 'todos') {
+          const dbState = purgeEstado === 'abandonado' ? 'borrador' : purgeEstado;
+          q = q.eq('estado', dbState);
+        }
         if (purgeDesde) q = q.gte('created_at', purgeDesde);
         if (purgeHasta) q = q.lte('created_at', purgeHasta + 'T23:59:59');
         const { count } = await q;
@@ -2650,7 +2588,7 @@ export default function Admin() {
       let totalEliminados = 0;
 
       if (purgeTargets.pedidos) {
-        let q = supabase.from('pedidos').delete().eq('tenant_id', tenant);
+        let q = supabase.from('pedidos').delete({ count: 'exact' }).eq('tenant_id', tenant);
         if (purgeEstado !== 'todos') q = q.eq('estado', purgeEstado);
         if (purgeDesde) q = q.gte('created_at', purgeDesde);
         if (purgeHasta) q = q.lte('created_at', purgeHasta + 'T23:59:59');
@@ -2667,7 +2605,7 @@ export default function Admin() {
       }
 
       if (purgeTargets.clientes) {
-        let q = supabase.from('clientes_exitosos').delete().eq('tenant_id', tenant);
+        let q = supabase.from('clientes_exitosos').delete({ count: 'exact' }).eq('tenant_id', tenant);
         if (purgeDesde) q = q.gte('created_at', purgeDesde);
         if (purgeHasta) q = q.lte('created_at', purgeHasta + 'T23:59:59');
         const { error, count } = await q;
@@ -2677,8 +2615,11 @@ export default function Admin() {
       }
 
       if (purgeTargets.leads) {
-        let q = supabase.from('leads').delete().eq('tenant_id', tenant);
-        if (purgeEstado !== 'todos') q = q.eq('estado', purgeEstado);
+        let q = supabase.from('leads').delete({ count: 'exact' }).eq('tenant_id', tenant);
+        if (purgeEstado !== 'todos') {
+          const dbState = purgeEstado === 'abandonado' ? 'borrador' : purgeEstado;
+          q = q.eq('estado', dbState);
+        }
         if (purgeDesde) q = q.gte('created_at', purgeDesde);
         if (purgeHasta) q = q.lte('created_at', purgeHasta + 'T23:59:59');
         const { error, count } = await q;
@@ -8284,6 +8225,11 @@ export default function Admin() {
                                       <span className="advisor-role">{adv.role}</span>
                                     </div>
                                   </div>
+                                  {!isLead && (
+                                    <span className={`payment-badge-small ${ped.estado === 'completado' ? 'verified' : ped.pantallazo_url ? 'uploaded' : 'pending'}`} style={{ marginTop: '4px', display: 'inline-block' }}>
+                                      {ped.estado === 'completado' ? '✅ Verificado' : ped.pantallazo_url ? '📸 Comprobante recibido' : '⏳ Esperando comprobante de pago'}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
 
@@ -8372,11 +8318,9 @@ export default function Admin() {
                                         handleUpdateLeadStatus(ped.id, 'contactado');
                                       }}
                                     >
-                                      <svg viewBox="0 0 16 16" width="14" height="14" fill="currentColor" style={{ marginRight: '5px', display: 'inline-block', verticalAlign: 'middle' }}>
-                                        <path d="M13.601 2.326A7.85 7.85 0 0 0 7.994 0C3.627 0 .068 3.558.064 7.926c0 1.399.366 2.76 1.057 3.965L0 16l4.204-1.102a7.9 7.9 0 0 0 3.79.965h.004c4.368 0 7.926-3.558 7.93-7.93A7.9 7.9 0 0 0 13.6 2.326zM7.994 14.521a6.6 6.6 0 0 1-3.356-.92l-.24-.144-2.494.654.666-2.433-.156-.251a6.56 6.56 0 0 1-1.007-3.505c0-3.626 2.957-6.584 6.591-6.584a6.56 6.56 0 0 1 4.66 1.931 6.56 6.56 0 0 1 1.928 4.66c-.004 3.639-2.961 6.592-6.592 6.592m3.69-4.294c-.202-.101-1.196-.59-1.378-.656-.182-.066-.315-.099-.448.099-.133.197-.517.656-.634.793-.118.137-.236.154-.438.053-2.006-.997-3.11-1.808-4.113-3.526-.266-.457.266-.425.762-1.417.082-.163.041-.307-.02-.408-.062-.101-.448-1.077-.614-1.478-.162-.392-.326-.339-.448-.345l-.381-.008c-.131 0-.343.049-.524.246-.181.197-.69.673-.69 1.64s.704 1.903.804 2.036c.1.133 1.386 2.115 3.357 2.97.47.203.837.324 1.123.415.473.15.902.129 1.243.078.38-.057 1.196-.49 1.365-.962.169-.472.169-.877.118-.962-.05-.085-.183-.133-.385-.234z"/>
-                                      </svg>
-                                      Recuperar
-                                    </button>
+                                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style={{ marginRight: '5px', display: 'inline-block', verticalAlign: 'middle' }}>
+                  <path d="M12.012 2c-5.506 0-9.988 4.482-9.988 9.988 0 1.761.46 3.473 1.332 4.978L2 22l5.222-1.368a9.92 9.92 0 0 0 4.79 1.228h.004c5.502 0 9.984-4.482 9.984-9.988C22 6.482 17.514 2 12.012 2zm5.836 14.199c-.24.676-1.18 1.258-1.748 1.356-.572.096-1.28.18-3.79-.824-3.13-1.252-5.112-4.412-5.268-4.622-.156-.21-1.272-1.688-1.272-3.218 0-1.53.804-2.28 1.092-2.584.288-.304.624-.378.834-.378.21 0 .42.002.604.01.192.008.452-.074.708.536.26.622.888 2.164.966 2.322.078.158.13.342.024.552-.104.21-.156.342-.312.524-.156.182-.328.406-.468.546-.156.156-.32.326-.138.636.182.31.81 1.334 1.738 2.16.196.176.386.326.568.428 1.218.682 1.83.582 2.112.282.282-.3.626-.642.796-.89.17-.25.334-.208.562-.124.228.084 1.442.68 1.69 1.046.248.366.248.55.128.832z"/>
+                </svg> Recuperar venta</button>
                                   ) : ped.estado === 'completado' ? (
                                     <button 
                                       type="button" 

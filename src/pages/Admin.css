@@ -2447,3 +2447,14 @@ body {
     font-size: 0.78rem !important;
   }
 }
+
+.btn-circle-action.green {
+  background: #25D366 !important;
+  color: #ffffff !important;
+  border-color: #25D366 !important;
+}
+.btn-circle-action.green:hover {
+  background: #128C7E !important;
+  border-color: #128C7E !important;
+}
+
