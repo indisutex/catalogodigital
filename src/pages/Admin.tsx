@@ -9,6 +9,13 @@ import * as XLSX from 'xlsx';
 
 const SECRET_PIN = '0000';
 
+const formatWhatsAppLink = (phone: string, text?: string) => {
+  if (!phone) return '#';
+  const clean = phone.replace(/\D/g, '');
+  const finalNum = clean.startsWith('57') && clean.length > 10 ? clean : '57' + clean;
+  return `https://wa.me/${finalNum}${text ? `?text=${encodeURIComponent(text)}` : ''}`;
+};
+
 const getGoogleDriveEmbedUrl = (url: string) => {
   if (!url) return '';
   // File match
@@ -1397,11 +1404,9 @@ export default function Admin() {
   };
 
   const handleAtenderPedido = async (ped: Pedido) => {
-    // 1. Abrir WhatsApp con cobro y enlace
-    const num = (ped.cliente_telefono || '').replace(/\D/g, '');
     const uploadLink = `${window.location.origin}/pago/${ped.id}`;
-    const msg = `¡Hola ${ped.cliente_nombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: $${ped.total.toLocaleString()} COP*\n\n💳 *Datos del banco:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\nPara poder completar tu pedido, haz la captura de pantalla de tu pago o de transacción y envíala por este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
-    window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
+    const msg = `¡Hola ${ped.cliente_nombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: ${ped.total.toLocaleString()} COP*\n\n💳 *Datos del banco:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\nPara poder completar tu pedido, haz la captura de pantalla de tu pago o de transacción y envíala por este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
+    window.open(formatWhatsAppLink(ped.cliente_telefono || '', msg), '_blank');
 
     // 2. Marcar en Base de Datos como atendido
     const { error } = await supabase.from('pedidos').update({ atendido: true }).eq('id', ped.id);
@@ -7341,10 +7346,9 @@ export default function Admin() {
                       }}
                       onClick={() => {
                         if (!posLastInvoice) return;
-                        const num = posLastInvoice.cliente_telefono.replace(/\D/g, '');
                         const itemsStr = posLastInvoice.productos.map((i: any) => `- ${i.cantidad}x ${i.nombre} ${i.talla ? `(${i.talla})` : ''}`).join('\n');
-                        const msg = `¡Hola ${posLastInvoice.cliente_nombre}! 👋\\nMuchas gracias por tu compra en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\\n\\n*Detalle de tu compra:*\\n${itemsStr}\\n\\n*Total Pagado: $${posLastInvoice.total.toLocaleString()} COP*\\n*Método de Pago: ${posLastInvoice.metodo_pago.toUpperCase()}*\\n\\n¡Esperamos que disfrutes tus productos! 😊`;
-                        window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
+                        const msg = `¡Hola ${posLastInvoice.cliente_nombre}! 👋\nMuchas gracias por tu compra en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Detalle de tu compra:*\n${itemsStr}\n\n*Total Pagado: ${posLastInvoice.total.toLocaleString()} COP*\n*Método de Pago: ${posLastInvoice.metodo_pago.toUpperCase()}*\n\n¡Esperamos que disfrutes tus productos! 😊`;
+                        window.open(formatWhatsAppLink(posLastInvoice.cliente_telefono || '', msg), '_blank');
                       }}
                     >
                       💬 Enviar Recibo por WhatsApp
@@ -8599,11 +8603,10 @@ export default function Admin() {
                       gap: '0.5rem'
                     }}
                     onClick={() => {
-                      const num = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
                       const name = selectedPedido.cliente_nombre;
                       const business = configuracion?.nombre_negocio || 'Indisutex';
                       const msg = `¡Felicidades ${name}! 🎉 Has hecho una compra exitosa con *${business}*.\n\nTu número de guía de envío es: *${numeroGuia || 'Pendiente'}*\n\n¡Muchas gracias por confiar en nosotros! 😊`;
-                      window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
+                      window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
                     }}
                   >
                     💬 Enviar WhatsApp de Éxito y Guía
@@ -8718,11 +8721,10 @@ export default function Admin() {
                         <button
                           type="button"
                           onClick={() => {
-                            const num = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
                             const name = selectedPedido.cliente_nombre;
                             const business = configuracion?.nombre_negocio || 'Indisutex';
                             const msg = `¡Felicidades ${name}! 🎉 Has hecho una compra exitosa con *${business}*.\n\nTu número de guía de envío es: *${numeroGuia}*\n\n¡Muchas gracias por confiar en nosotros! 😊`;
-                            window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
+                            window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
                           }}
                           style={{ padding: '0.3rem 0.6rem', background: '#25D366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}
                         >
@@ -8798,10 +8800,9 @@ export default function Admin() {
                     <button
                       style={{ flex: 1, padding: '0.65rem 1rem', background: '#25D366', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                       onClick={() => {
-                        const num = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
                         const uploadLink = `${window.location.origin}/pago/${selectedPedido.id}`;
-                        const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: $${selectedPedido.total.toLocaleString()} COP*\n\n💳 *Datos del banco:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\nPara poder completar tu pedido, haz la captura de pantalla de tu pago o de transacción y envíala por este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
-                        window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
+                        const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: ${selectedPedido.total.toLocaleString()} COP*\n\n💳 *Datos del banco:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\nPara poder completar tu pedido, haz la captura de pantalla de tu pago o de transacción y envíala por este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
+                        window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
                       }}
                     >
                       💳 Cobrar por Nequi/WhatsApp
@@ -8809,9 +8810,8 @@ export default function Admin() {
                     <button
                       style={{ flex: 1, padding: '0.65rem 1rem', background: configuracion?.color_primario || '#0ea5e9', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                       onClick={() => {
-                        const num = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
-                        const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋 Tu pedido ha sido *VERIFICADO y DESPACHADO* 🚚\n\nPedido: ${selectedPedido.productos?.map((p: any) => `${p.cantidad}x ${p.nombre}`).join(', ')}\nTotal: $${selectedPedido.total.toLocaleString()} COP\n\n📦 Tu paquete está en camino. ¡Gracias por tu compra!`;
-                        window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
+                        const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋 Tu pedido ha sido *VERIFICADO y DESPACHADO* 🚚\n\nPedido: ${selectedPedido.productos?.map((p: any) => `${p.cantidad}x ${p.nombre}`).join(', ')}\nTotal: ${selectedPedido.total.toLocaleString()} COP\n\n📦 Tu paquete está en camino. ¡Gracias por tu compra!`;
+                        window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
                       }}
                     >
                       🚚 Confirmar Despacho

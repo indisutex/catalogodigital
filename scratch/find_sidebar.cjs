@@ -2,7 +2,7 @@ const fs = require('fs');
 const code = fs.readFileSync('src/pages/Admin.tsx', 'utf8');
 const lines = code.split('\n');
 lines.forEach((line, idx) => {
-  if (line.includes("activeTab === 'pos'")) {
+  if (line.includes('wa.me/')) {
     console.log(`${idx + 1}: ${line.trim()}`);
   }
 });
