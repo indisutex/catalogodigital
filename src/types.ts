@@ -57,6 +57,7 @@ export interface Configuracion {
   preguntar_tipo_cliente?: boolean;
   admin_nombre?: string;
   admin_foto_url?: string;
+  admin_pin?: string;
 }
 
 export interface Pedido {

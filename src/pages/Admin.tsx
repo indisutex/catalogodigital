@@ -915,19 +915,29 @@ export default function Admin() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pin === SECRET_PIN) {
-      localStorage.setItem(`admin_auth_${getTenantId()}`, 'true');
-      localStorage.setItem(`admin_role_${getTenantId()}`, 'admin');
-      setRole('admin');
-      setLoggedAsesorPhone(null);
-      setIsAuthenticated(true);
-      setActiveTab('productos');
-      return;
-    }
-
     try {
       setLoading(true);
       const tenant = getTenantId();
+
+      const { data: confData } = await supabase
+        .from('configuracion')
+        .select('admin_pin')
+        .eq('tenant_id', tenant)
+        .limit(1)
+        .maybeSingle();
+
+      const expectedAdminPin = confData?.admin_pin || SECRET_PIN;
+
+      if (pin.trim() === expectedAdminPin.trim()) {
+        localStorage.setItem(`admin_auth_${getTenantId()}`, 'true');
+        localStorage.setItem(`admin_role_${getTenantId()}`, 'admin');
+        setRole('admin');
+        setLoggedAsesorPhone(null);
+        setIsAuthenticated(true);
+        setActiveTab('productos');
+        setLoading(false);
+        return;
+      }
       const { data: advisorMatch, error } = await supabase
         .from('asesores')
         .select('*')
@@ -5102,6 +5112,7 @@ export default function Admin() {
                       color_primario: configuracion.color_primario || '#6366f1',
                       admin_nombre: configuracion.admin_nombre,
                       admin_foto_url: configuracion.admin_foto_url,
+                      admin_pin: configuracion.admin_pin || '0000',
                       preguntar_tipo_cliente: configuracion.preguntar_tipo_cliente || false
                     };
                     
@@ -5132,6 +5143,16 @@ export default function Admin() {
                             value={configuracion.admin_nombre || ''} 
                             onChange={e => setConfiguracion({ ...configuracion, admin_nombre: e.target.value })} 
                             placeholder="Ej. Juan Pérez" 
+                          />
+                        </div>
+                        <div className="form-field">
+                          <label>PIN de Administrador (para inicio de sesión)</label>
+                          <input 
+                            type="text"
+                            maxLength={6}
+                            value={configuracion.admin_pin || ''} 
+                            onChange={e => setConfiguracion({ ...configuracion, admin_pin: e.target.value })} 
+                            placeholder="Ej. 0000" 
                           />
                         </div>
                         <div className="form-field">
