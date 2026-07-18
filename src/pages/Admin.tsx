@@ -3889,6 +3889,18 @@ export default function Admin() {
                                 }}
                               />
                             </label>
+                            <button 
+                              className="btn-edit" 
+                              onClick={() => {
+                                const link = `${window.location.origin}/${getTenantId()}?categoria=${c.slug}`;
+                                navigator.clipboard.writeText(link);
+                                showToast('Enlace de categoría copiado ✓', 'success');
+                              }}
+                              style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+                              title="Copiar enlace permanente"
+                            >
+                              <Link size={11} /> Enlace
+                            </button>
                             <button className="btn-edit" onClick={() => setEditingCategory(c)}>
                               <Pencil size={11} /> Editar
                             </button>
@@ -3925,6 +3937,19 @@ export default function Admin() {
                                   <h4>{s.nombre}</h4>
                                   <p>/{s.slug} · en {parentCat?.nombre || 'Categoría eliminada'}</p>
                                 </div>
+                                <button 
+                                  className="btn-edit" 
+                                  onClick={() => {
+                                    const parentCat = categoriasData.find(c => c.id === s.categoria_id);
+                                    const link = `${window.location.origin}/${getTenantId()}?categoria=${parentCat?.slug || ''}&subcategoria=${s.slug}`;
+                                    navigator.clipboard.writeText(link);
+                                    showToast('Enlace de subcategoría copiado ✓', 'success');
+                                  }}
+                                  style={{ padding: '0.4rem 0.6rem', height: 30, display: 'flex', alignItems: 'center', gap: '0.2rem', borderRadius: 8, background: '#f1f5f9', border: 'none', cursor: 'pointer', fontSize: '0.75rem' }}
+                                  title="Copiar enlace permanente"
+                                >
+                                  <Link size={11} /> Enlace
+                                </button>
                                 <button className="btn-edit" onClick={() => setEditingSubcategory(s)} style={{ padding: '0.4rem 0.6rem', height: 30, display: 'flex', alignItems: 'center', gap: '0.2rem', borderRadius: 8, background: '#f1f5f9', border: 'none', cursor: 'pointer', fontSize: '0.75rem' }}>
                                   <Pencil size={11} /> Editar
                                 </button>

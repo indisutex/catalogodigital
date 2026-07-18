@@ -39,6 +39,33 @@ export default function MenuDigital() {
   
   const [filtroCategoria, setFiltroCategoria] = useState<string>('todos');
   const [filtroSubcategoria, setFiltroSubcategoria] = useState<string>('todas');
+
+  const selectCategoria = (catSlug: string) => {
+    setFiltroCategoria(catSlug);
+    setFiltroSubcategoria('todas');
+    const params = new URLSearchParams(window.location.search);
+    if (catSlug === 'todos') {
+      params.delete('categoria');
+    } else {
+      params.set('categoria', catSlug);
+    }
+    params.delete('subcategoria');
+    const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+    window.history.replaceState(null, '', newUrl);
+  };
+
+  const selectSubcategoria = (subcatSlug: string) => {
+    setFiltroSubcategoria(subcatSlug);
+    const params = new URLSearchParams(window.location.search);
+    if (subcatSlug === 'todas') {
+      params.delete('subcategoria');
+    } else {
+      params.set('subcategoria', subcatSlug);
+    }
+    const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
+    window.history.replaceState(null, '', newUrl);
+  };
+
   const [busqueda, setBusqueda] = useState('');
   const [searchVisible, setSearchVisible] = useState(false);
   
@@ -156,6 +183,15 @@ export default function MenuDigital() {
 
     if (phoneToQuery) {
       loadWholesalerMarkup(phoneToQuery);
+    }
+
+    const catParam = params.get('categoria');
+    if (catParam) {
+      setFiltroCategoria(catParam);
+    }
+    const subcatParam = params.get('subcategoria');
+    if (subcatParam) {
+      setFiltroSubcategoria(subcatParam);
     }
   }, []);
   
@@ -671,7 +707,7 @@ export default function MenuDigital() {
         <div className="categories-carousel">
           <div 
             className={`category-card ${filtroCategoria === 'todos' ? 'active' : ''}`}
-            onClick={() => setFiltroCategoria('todos')}
+            onClick={() => selectCategoria('todos')}
           >
             <div className="cat-img-placeholder" style={{backgroundColor: '#f36b8e'}}>⭐</div>
             <div className="cat-info">
@@ -683,10 +719,7 @@ export default function MenuDigital() {
             <div 
               key={cat.id}
               className={`category-card ${filtroCategoria === cat.slug ? 'active' : ''}`}
-              onClick={() => {
-                setFiltroCategoria(cat.slug);
-                setFiltroSubcategoria('todas');
-              }}
+              onClick={() => selectCategoria(cat.slug)}
             >
               {cat.imagen_url ? (
                 <img
@@ -709,7 +742,7 @@ export default function MenuDigital() {
         {filtroCategoria !== 'todos' && subcategorias.filter(s => s.categoria_id === categorias.find(c => c.slug === filtroCategoria)?.id).length > 0 && (
           <div style={{display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '0.5rem', paddingLeft: '0.5rem'}}>
             <button 
-              onClick={() => setFiltroSubcategoria('todas')}
+              onClick={() => selectSubcategoria('todas')}
               style={{
                 padding: '0.4rem 1rem', borderRadius: '20px', border: 'none', fontWeight: 700, fontSize: '0.8rem',
                 backgroundColor: filtroSubcategoria === 'todas' ? 'var(--primary)' : '#eee',
@@ -722,7 +755,7 @@ export default function MenuDigital() {
               .map(subcat => (
                 <button 
                   key={subcat.id}
-                  onClick={() => setFiltroSubcategoria(subcat.slug)}
+                  onClick={() => selectSubcategoria(subcat.slug)}
                   style={{
                     padding: '0.4rem 1rem', borderRadius: '20px', border: 'none', fontWeight: 700, fontSize: '0.8rem',
                     backgroundColor: filtroSubcategoria === subcat.slug ? 'var(--primary)' : '#eee',
