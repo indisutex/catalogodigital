@@ -1099,7 +1099,7 @@ body {
 
 .super-crm-kanban {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 1.5rem;
   margin-top: 1.5rem;
 }
@@ -2469,3 +2469,25 @@ body {
     color: #1d4ed8 !important;
   }
   .bg-blue { background: #3b82f6; }
+
+/* Collapsible sidebar styles */
+.admin-sidebar {
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), min-width 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.admin-sidebar.collapsed {
+  width: 0px !important;
+  min-width: 0px !important;
+  border-right: none !important;
+  overflow: hidden !important;
+}
+
+.sidebar-collapse-toggle {
+  display: flex !important;
+}
+
+@media (max-width: 992px) {
+  .sidebar-collapse-toggle {
+    display: none !important;
+  }
+}

@@ -833,6 +833,17 @@ export default function Admin() {
   }, [configuracion]);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
+    return localStorage.getItem('admin_sidebar_collapsed') === 'true';
+  });
+
+  const toggleSidebar = () => {
+    setIsSidebarCollapsed(prev => {
+      const newVal = !prev;
+      localStorage.setItem('admin_sidebar_collapsed', String(newVal));
+      return newVal;
+    });
+  };
 
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
@@ -3162,7 +3173,7 @@ export default function Admin() {
   return (
     <div className="admin-app">
       {/* SIDEBAR */}
-      <aside className={`admin-sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
+      <aside className={`admin-sidebar ${isSidebarCollapsed ? 'collapsed' : ''} ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
         <SidebarContent 
           activeTab={activeTab} 
           setActiveTab={setActiveTab} 
@@ -3187,6 +3198,28 @@ export default function Admin() {
       <div className="admin-main">
         {/* TOP BAR */}
         <div className="admin-topbar">
+          <button 
+            type="button" 
+            className="sidebar-collapse-toggle"
+            onClick={toggleSidebar}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'transparent',
+              color: '#64748b',
+              border: 'none',
+              borderRadius: '8px',
+              width: '36px',
+              height: '36px',
+              cursor: 'pointer',
+              marginRight: '0.75rem',
+              transition: 'all 0.2s',
+            }}
+            title={isSidebarCollapsed ? "Mostrar Menú Lateral" : "Ocultar Menú Lateral"}
+          >
+            <Menu size={20} style={{ color: '#475569' }} />
+          </button>
           {!(role === 'asesor' || role === 'mayorista') && (
             <button 
               type="button" 
@@ -8180,7 +8213,7 @@ export default function Admin() {
 
                           <div className="orders-desktop-view">
                             {pedidosViewMode === 'kanban' ? (
-                              <div className="super-crm-kanban" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem', marginTop: '1rem', alignItems: 'start' }}>
+                              <div className="super-crm-kanban" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '1.25rem', marginTop: '1rem', alignItems: 'start' }}>
                         {/* Columna 1: No Interesados (Abandonos) */}
                         <div className="kanban-column" style={{ background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}>
                           <div className="kanban-column-header col-red" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #ef4444', paddingBottom: '0.5rem' }}>
