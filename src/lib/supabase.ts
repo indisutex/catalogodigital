@@ -13,7 +13,7 @@ export const getTenantId = () => {
   const validTenants = [
     'saramantha', 'sublimados_majestic', 'pijamas_lucerito', 
     'sublimados-majestic', 'pijamas-lucerito', 'indisutex',
-    'sueno_de_reina', 'sueno-de-reina'
+    'lovely'
   ];
   
   if (pathname && validTenants.includes(pathname.toLowerCase())) {
