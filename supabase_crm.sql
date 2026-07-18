@@ -21,3 +21,6 @@ FOR UPDATE USING (true) WITH CHECK (true);
 
 CREATE POLICY "Permitir lecturas públicas" ON public.leads
 FOR SELECT USING (true);
+
+CREATE POLICY "Permitir eliminaciones públicas" ON public.leads
+FOR DELETE USING (true);

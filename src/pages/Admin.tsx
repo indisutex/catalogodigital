@@ -2604,7 +2604,7 @@ export default function Admin() {
       if (purgeTargets.leads) {
         let q = supabase.from('leads').select('id', { count: 'exact', head: true }).eq('tenant_id', tenant);
         if (purgeEstado !== 'todos') {
-          const dbState = purgeEstado === 'abandonado' ? 'borrador' : purgeEstado;
+          const dbState = purgeEstado;
           q = q.eq('estado', dbState);
         }
         if (purgeDesde) q = q.gte('created_at', purgeDesde);
@@ -2662,7 +2662,7 @@ export default function Admin() {
       if (purgeTargets.leads) {
         let q = supabase.from('leads').delete({ count: 'exact' }).eq('tenant_id', tenant);
         if (purgeEstado !== 'todos') {
-          const dbState = purgeEstado === 'abandonado' ? 'borrador' : purgeEstado;
+          const dbState = purgeEstado;
           q = q.eq('estado', dbState);
         }
         if (purgeDesde) q = q.gte('created_at', purgeDesde);
