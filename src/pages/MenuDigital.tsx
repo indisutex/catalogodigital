@@ -429,8 +429,7 @@ export default function MenuDigital() {
     ).join('\n');
     mensaje += mensajeProductos;
     
-    mensaje += `\n*TOTAL:* $${total.toLocaleString('es-CO')}\n\n`;
-    mensaje += `Por favor indícame los métodos de pago para confirmar mi compra.`;
+    mensaje += `\n*TOTAL:* $${total.toLocaleString('es-CO')}`;
 
     const numeroWhatsApp = overrideWhatsApp || configuracion?.whatsapp || '573185637317';
 
@@ -464,7 +463,7 @@ export default function MenuDigital() {
 
     if (orderId) {
       const uploadLink = `${window.location.origin}/pago/${orderId}`;
-      mensaje += `\n\n*Sube tu comprobante de pago aquí:* ${uploadLink}`;
+      mensaje += `\n\n*Sube el comprobante de pago en el siguiente link:* ${uploadLink}`;
     }
 
     let cleanWhatsApp = numeroWhatsApp.replace(/\D/g, '');
