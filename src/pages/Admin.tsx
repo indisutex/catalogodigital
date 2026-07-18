@@ -127,6 +127,7 @@ export default function Admin() {
   useEffect(() => {
     localStorage.setItem('admin_active_tab', activeTab);
   }, [activeTab]);
+
   const [toast, setToast] = useState<Toast>(null);
   
   const [selectedCompany, setSelectedCompany] = useState<string | null>(getTenantId() || null);
@@ -170,6 +171,20 @@ export default function Admin() {
     if (role === 'mayorista') return mayoristas.find(m => m.id === localStorage.getItem(`admin_asesor_id_${getTenantId()}`)) ?? null;
     return null;
   }, [role, mayoristas]);
+
+  useEffect(() => {
+    if (selectedCompany) {
+      const compName = selectedCompany.charAt(0).toUpperCase() + selectedCompany.slice(1);
+      let titleStr = `${compName} Admin`;
+      const activeAsesor = role === 'mayorista' ? currentMayorista : currentAsesor;
+      if (activeAsesor) {
+        titleStr += ` - ${activeAsesor.nombre}`;
+      }
+      document.title = titleStr;
+    } else {
+      document.title = 'Indisutex Admin';
+    }
+  }, [selectedCompany, currentAsesor, currentMayorista, role]);
 
   const getMotivationalPhrase = (asesorId: string) => {
     const phrases = [
@@ -9386,12 +9401,17 @@ function SidebarContent({
           )}
         </div>
         <div className="brand-text">
-          <h2 style={{ textTransform: 'capitalize', fontSize: '1.1rem', color: '#0f172a' }}>
-            {configuracion?.nombre_negocio || 'Catálogo'}
+          <h2 style={{ textTransform: 'capitalize', fontSize: '1.1rem', color: '#0f172a', fontWeight: 800 }}>
+            {configuracion?.nombre_negocio ? `${configuracion.nombre_negocio} Admin` : 'Admin'}
           </h2>
-          <p style={{ margin: 0 }}>
+          <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>
             {role === 'mayorista' ? 'Panel Mayorista' : role === 'asesor' ? 'Panel de Asesor' : 'Panel Administrativo'}
           </p>
+          {(role === 'asesor' || role === 'mayorista') && currentAsesor && (
+            <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.78rem', fontWeight: 700, color: 'var(--primary-color, #6366f1)' }}>
+              Sesión: {currentAsesor.nombre}
+            </p>
+          )}
           {(role === 'asesor' || role === 'mayorista') && currentAsesor ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.3rem' }}>
               {(currentAsesor.telefono || '').split(',').map((p: string) => p.trim()).filter(Boolean).map((phone: string, idx: number) => (
