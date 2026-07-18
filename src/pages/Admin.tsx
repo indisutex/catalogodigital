@@ -2778,9 +2778,26 @@ export default function Admin() {
             </div>
           ) : (
             <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ textAlign: 'center', marginBottom: '1rem', background: '#f8fafc', padding: '0.8rem', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: 600, color: '#333' }}>Empresa: {companies.find(c => c.id === selectedCompany)?.name || selectedCompany}</span>
-                <button type="button" onClick={() => setSelectedCompany(null)} style={{ background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer' }}>Cambiar</button>
+              <div style={{ textAlign: 'center', marginBottom: '1rem', background: '#f8fafc', padding: '0.8rem', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {(() => {
+                    const selectedComp = companies.find(c => c.id === selectedCompany);
+                    return selectedComp ? (
+                      <>
+                        <img 
+                          src={selectedComp.logo} 
+                          alt={selectedComp.name} 
+                          style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} 
+                          onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                        />
+                        <span style={{ fontWeight: 600, color: '#333' }}>Empresa: {selectedComp.name}</span>
+                      </>
+                    ) : (
+                      <span style={{ fontWeight: 600, color: '#333' }}>Empresa: {selectedCompany}</span>
+                    );
+                  })()}
+                </div>
+                <button type="button" onClick={() => setSelectedCompany(null)} style={{ background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>Cambiar</button>
               </div>
               <input
                 type="password"
