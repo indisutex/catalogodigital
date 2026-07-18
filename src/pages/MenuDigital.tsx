@@ -434,9 +434,10 @@ export default function MenuDigital() {
 
     const numeroWhatsApp = overrideWhatsApp || configuracion?.whatsapp || '573185637317';
 
+    let orderId = '';
     // Guardar en la base de datos de pedidos
     try {
-      await supabase.from('pedidos').insert({
+      const { data: newOrder, error: dbErr } = await supabase.from('pedidos').insert({
         cliente_nombre: formData.nombre,
         cliente_telefono: formData.telefono,
         direccion: formData.direccion,
@@ -445,7 +446,13 @@ export default function MenuDigital() {
         productos: items,
         linea_whatsapp: numeroWhatsApp,
         tenant_id: getTenantId()
-      });
+      }).select('id').single();
+
+      if (dbErr) {
+        console.error('Error al registrar pedido en base de datos:', dbErr);
+      } else if (newOrder) {
+        orderId = newOrder.id;
+      }
 
       if (leadId) {
         await supabase.from('leads').update({ estado: 'completado' }).eq('id', leadId);
@@ -453,6 +460,11 @@ export default function MenuDigital() {
       }
     } catch (dbErr) {
       console.error('Error al registrar pedido en base de datos:', dbErr);
+    }
+
+    if (orderId) {
+      const uploadLink = `${window.location.origin}/pago/${orderId}`;
+      mensaje += `\n\n*Sube tu comprobante de pago aquí:* ${uploadLink}`;
     }
 
     let cleanWhatsApp = numeroWhatsApp.replace(/\D/g, '');
