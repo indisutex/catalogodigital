@@ -2677,10 +2677,10 @@ export default function Admin() {
 
   if (!isAuthenticated) {
     const baseCompanies = [
+      { id: 'indisutex', name: 'Indisutex', logo: '/indisutex-logo.png' },
       { id: 'saramantha', name: 'Saramantha', logo: '/saramantha-logo.jpg' }, 
       { id: 'sublimados_majestic', name: 'Sublimados Majestic', logo: '/sublimados-logo.jpg' },
       { id: 'pijamas_lucerito', name: 'Pijamas Lucerito', logo: '/lucerito-logo.jpg' },
-      { id: 'sueno_de_reina', name: 'Sueño de Reina', logo: '/sueno-de-reina-logo.jpg' },
     ];
     
     // Mezclar las bases con las de la base de datos
