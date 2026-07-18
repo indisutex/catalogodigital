@@ -193,6 +193,11 @@ export default function MenuDigital() {
     if (subcatParam) {
       setFiltroSubcategoria(subcatParam);
     }
+
+    const tipoParam = params.get('tipo');
+    if (tipoParam === 'mayorista' || tipoParam === 'detal' || tipoParam === '50_unidades') {
+      setBuyerType(tipoParam);
+    }
   }, []);
   
   useEffect(() => {
