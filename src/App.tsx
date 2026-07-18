@@ -15,6 +15,7 @@ function App() {
         
         {/* Panel de Administración */}
         <Route path="/admin" element={<ErrorBoundary><Admin /></ErrorBoundary>} />
+        <Route path="/:tenant/admin" element={<ErrorBoundary><Admin /></ErrorBoundary>} />
         <Route path="/superadmin" element={<ErrorBoundary><SuperAdmin /></ErrorBoundary>} />
 
         {/* Pago Nequi - página pública para subir comprobante */}

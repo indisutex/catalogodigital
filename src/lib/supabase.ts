@@ -10,14 +10,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const getTenantId = () => {
   // First check URL path (slug)
   const pathname = window.location.pathname.replace(/^\/+/g, '').trim();
+  const firstPart = pathname.split('/')[0].toLowerCase();
   const validTenants = [
     'saramantha', 'sublimados_majestic', 'pijamas_lucerito', 
     'sublimados-majestic', 'pijamas-lucerito', 'indisutex',
     'lovely'
   ];
   
-  if (pathname && validTenants.includes(pathname.toLowerCase())) {
-    const normalised = pathname.toLowerCase().replace(/-/g, '_');
+  if (firstPart && validTenants.includes(firstPart)) {
+    const normalised = firstPart.replace(/-/g, '_');
     setTenantId(normalised);
     return normalised;
   }

@@ -2725,6 +2725,8 @@ export default function Admin() {
                     onClick={() => {
                       setTenantId(company.id);
                       setSelectedCompany(company.id);
+                      const newPath = `/${company.id}/admin`;
+                      window.history.replaceState(null, '', newPath);
                     }}
                     style={{
                       background: 'white', border: '2px solid #eee', borderRadius: '12px', padding: '1rem',
@@ -2797,7 +2799,10 @@ export default function Admin() {
                     );
                   })()}
                 </div>
-                <button type="button" onClick={() => setSelectedCompany(null)} style={{ background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>Cambiar</button>
+                <button type="button" onClick={() => {
+                  setSelectedCompany(null);
+                  window.history.replaceState(null, '', '/admin');
+                }} style={{ background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>Cambiar</button>
               </div>
               <input
                 type="password"
