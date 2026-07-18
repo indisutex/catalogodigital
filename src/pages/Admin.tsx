@@ -832,15 +832,29 @@ export default function Admin() {
     }
   }, [configuracion]);
 
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      await cargarDatos();
+      showToast('Datos sincronizados ✓');
+    } catch (e: any) {
+      showToast('Error al sincronizar: ' + e.message, 'error');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   useEffect(() => {
     if (!isAuthenticated) return;
     
     cargarDatos();
     
-    // Auto-refresh data every 20 seconds to keep stats and orders in real-time
+    // Auto-refresh data every 10 seconds to keep stats and orders in real-time
     const interval = setInterval(() => {
       cargarDatos();
-    }, 20000);
+    }, 10000);
     
     return () => clearInterval(interval);
   }, [isAuthenticated]);
@@ -2200,7 +2214,15 @@ export default function Admin() {
       if (l.estado === 'completado') return false;
       const cleanLeadPhone = (l.telefono || '').replace(/\D/g, '');
       if (!cleanLeadPhone) return true;
-      const hasOrder = pedidos.some(p => (p.cliente_telefono || '').replace(/\D/g, '') === cleanLeadPhone);
+      
+      // Solo consideramos que tiene pedido si existe un pedido creado después del lead (o hasta 5 minutos antes para tolerar retrasos)
+      const hasOrder = pedidos.some(p => {
+        if ((p.cliente_telefono || '').replace(/\D/g, '') !== cleanLeadPhone) return false;
+        const orderTime = new Date(p.created_at).getTime();
+        const leadTime = new Date(l.created_at).getTime();
+        return orderTime >= leadTime - 5 * 60 * 1000;
+      });
+      
       return !hasOrder;
     });
 
@@ -3222,6 +3244,28 @@ export default function Admin() {
             )}
           </div>
           <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            {/* Botón de Sincronización Global */}
+            <button
+              type="button"
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: '#f1f5f9',
+                color: '#475569',
+                border: 'none',
+                borderRadius: '8px',
+                width: '36px',
+                height: '36px',
+                cursor: isRefreshing ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s',
+              }}
+              title="Sincronizar Datos"
+            >
+              <RefreshCw size={16} className={isRefreshing ? 'spin-icon-active' : ''} />
+            </button>
             {activeTab === 'productos' && (
               isAddingProduct ? (
                 <button className="btn-secondary" onClick={() => setIsAddingProduct(false)}>
@@ -7888,6 +7932,37 @@ export default function Admin() {
                 </div>
                 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  {/* Botón Refrescar */}
+                  <button
+                    type="button"
+                    onClick={handleManualRefresh}
+                    disabled={isRefreshing}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: '#f1f5f9',
+                      color: '#475569',
+                      border: 'none',
+                      borderRadius: '8px',
+                      width: '36px',
+                      height: '36px',
+                      cursor: isRefreshing ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.2s',
+                    }}
+                    title="Sincronizar Datos"
+                  >
+                    <style>{`
+                      @keyframes spin {
+                        0% { transform: rotate(0deg); }
+                        100% { transform: rotate(360deg); }
+                      }
+                      .spin-icon-active {
+                        animation: spin 1s linear infinite;
+                      }
+                    `}</style>
+                    <RefreshCw size={16} className={isRefreshing ? 'spin-icon-active' : ''} />
+                  </button>
                   {/* Toggles de Búsqueda y Filtros en Móvil */}
                   <div className="mobile-search-filter-toggles">
                     <button 
