@@ -12,7 +12,8 @@ export const getTenantId = () => {
   const pathname = window.location.pathname.replace(/^\/+/g, '').trim();
   const validTenants = [
     'saramantha', 'sublimados_majestic', 'pijamas_lucerito', 
-    'sublimados-majestic', 'pijamas-lucerito', 'indisutex'
+    'sublimados-majestic', 'pijamas-lucerito', 'indisutex',
+    'sueno_de_reina', 'sueno-de-reina'
   ];
   
   if (pathname && validTenants.includes(pathname.toLowerCase())) {
