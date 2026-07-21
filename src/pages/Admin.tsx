@@ -4,7 +4,7 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Filter, Link } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Filter, Link } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const SECRET_PIN = '0000';
@@ -1371,6 +1371,21 @@ export default function Admin() {
     const { error } = await supabase.from('productos').delete().eq('id', id);
     if (!error) { cargarDatos(); showToast('Producto eliminado'); }
     else showToast('Error al eliminar', 'error');
+  };
+
+  const handleToggleVisibility = async (p: Producto) => {
+    try {
+      setLoading(true);
+      const newStatus = !p.oculto;
+      const { error } = await supabase.from('productos').update({ oculto: newStatus }).eq('id', p.id);
+      if (error) throw error;
+      setProductos(productos.map(prod => prod.id === p.id ? { ...prod, oculto: newStatus } : prod));
+      showToast(newStatus ? 'Producto ocultado globalmente 👁️‍🗨️' : 'Producto visible globalmente 👁️', 'success');
+    } catch (err: any) {
+      showToast(err.message || 'Error al cambiar visibilidad', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDuplicate = async (p: any) => {
@@ -3911,6 +3926,14 @@ export default function Admin() {
                               <Copy size={14} />
                             </button>
                             <button 
+                              className="btn-secondary" 
+                              style={{ padding: '0.5rem', borderRadius: '8px', cursor: 'pointer', border: p.oculto ? '1px solid #fca5a5' : '1px solid #e2e8f0', background: p.oculto ? '#fee2e2' : 'white', color: p.oculto ? '#dc2626' : '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', width: '32px', height: '32px' }}
+                              onClick={() => handleToggleVisibility(p)} 
+                              title={p.oculto ? "Mostrar Producto" : "Ocultar Producto"}
+                            >
+                              {p.oculto ? <EyeOff size={14} /> : <Eye size={14} />}
+                            </button>
+                            <button 
                               className="btn-danger" 
                               style={{ padding: '0.5rem', borderRadius: '8px', cursor: 'pointer', border: '1px solid #fca5a5', background: '#fee2e2', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', width: '32px', height: '32px' }}
                               onClick={() => handleDelete(p.id)}
@@ -4825,10 +4848,43 @@ export default function Admin() {
                             </div>
                           </div>
                           
-                          {role === 'mayorista' && currentMayorista && (
-                            <div className="product-card-actions" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '0.75rem 0.9rem', background: '#fafafa', borderTop: '1px solid #f1f5f9' }}>
-                               <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569' }}>Fijar Precio Especial Manual:</label>
-                               <div className="product-override-row">
+                          {role === 'mayorista' && currentMayorista && (() => {
+                              const hiddenProducts = currentMayorista.ajustes_productos?.hidden_products || [];
+                              const isHiddenLocally = hiddenProducts.includes(p.id);
+                              
+                              return (
+                                <div className="product-card-actions" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '0.75rem 0.9rem', background: '#fafafa', borderTop: '1px solid #f1f5f9' }}>
+                                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                     <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569' }}>Fijar Precio Especial Manual:</label>
+                                     <button 
+                                       style={{ background: isHiddenLocally ? '#fee2e2' : 'transparent', border: isHiddenLocally ? '1px solid #fca5a5' : '1px solid #cbd5e1', borderRadius: '6px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isHiddenLocally ? '#dc2626' : '#64748b' }}
+                                       title={isHiddenLocally ? 'Mostrar en mi catálogo' : 'Ocultar de mi catálogo'}
+                                       onClick={async () => {
+                                         try {
+                                           setLoading(true);
+                                           const currentOverrides = { ...(currentMayorista.ajustes_productos || {}) };
+                                           let currentHidden = [...(currentOverrides.hidden_products || [])];
+                                           if (isHiddenLocally) {
+                                             currentHidden = currentHidden.filter((id: string) => id !== p.id);
+                                           } else {
+                                             currentHidden.push(p.id);
+                                           }
+                                           currentOverrides.hidden_products = currentHidden;
+                                           const { error } = await supabase.from('mayoristas').update({ ajustes_productos: currentOverrides }).eq('id', currentMayorista.id);
+                                           if (error) throw error;
+                                           setMayoristas(mayoristas.map(m => m.id === currentMayorista.id ? { ...m, ajustes_productos: currentOverrides } : m));
+                                           showToast(isHiddenLocally ? 'Producto visible en tu catálogo' : 'Producto oculto de tu catálogo', 'success');
+                                         } catch (e: any) {
+                                           showToast('Error cambiando visibilidad', 'error');
+                                         } finally {
+                                           setLoading(false);
+                                         }
+                                       }}
+                                     >
+                                       {isHiddenLocally ? <EyeOff size={14} /> : <Eye size={14} />}
+                                     </button>
+                                   </div>
+                                   <div className="product-override-row">
                                  <input 
                                    type="number" 
                                    placeholder="Ej: 50000"
@@ -4871,7 +4927,8 @@ export default function Admin() {
                                  </div>
                                )}
                             </div>
-                          )}
+                           );
+                          })()}
                         </div>
                         );
                       })}

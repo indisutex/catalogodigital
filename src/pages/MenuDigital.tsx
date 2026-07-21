@@ -35,6 +35,7 @@ export default function MenuDigital() {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
   const [configuracion, setConfiguracion] = useState<Configuracion | null>(null);
+  const [mayoristaBranding, setMayoristaBranding] = useState<{nombre: string, logo: string, video: string} | null>(null);
   const [cargando, setCargando] = useState(true);
   
   const [filtroCategoria, setFiltroCategoria] = useState<string>('todos');
@@ -129,7 +130,7 @@ export default function MenuDigital() {
         // Si no se encontró en asesores, buscar en mayoristas (tabla independiente)
         const { data: mayoristasData } = await supabase
           .from('mayoristas')
-          .select('id, telefono, porcentaje_ganancia, ajustes_productos')
+          .select('id, telefono, porcentaje_ganancia, ajustes_productos, nombre_negocio, logo_url, video_hero_url')
           .eq('tenant_id', tenant);
 
         if (mayoristasData) {
@@ -143,6 +144,11 @@ export default function MenuDigital() {
           if (match) {
             setMarkupPorcentaje(Number((match as any).porcentaje_ganancia) || 0);
             setAjustesProductos((match as any).ajustes_productos || {});
+            setMayoristaBranding({ 
+              nombre: (match as any).nombre_negocio || '', 
+              logo: (match as any).logo_url || '', 
+              video: (match as any).video_hero_url || '' 
+            });
             setBuyerType('detal'); // Bypass clients selection screen for mayoristas
             return;
           }
@@ -370,14 +376,14 @@ export default function MenuDigital() {
 
 
   const catActual = categorias.find(c => c.slug === filtroCategoria);
-  let productosFiltrados = filtroCategoria === 'todos' 
+  let productosFiltrados = (filtroCategoria === 'todos' 
     ? productos 
     : productos.filter(p => {
         const pCat = (p.categoria || '').toLowerCase().trim();
         return pCat === filtroCategoria.toLowerCase().trim()
           || pCat === (catActual?.nombre || '').toLowerCase().trim()
           || pCat === (catActual?.slug || '').toLowerCase().trim();
-      });
+      })).filter(p => !p.oculto);
 
   if (filtroCategoria !== 'todos' && filtroSubcategoria !== 'todas') {
     const subcatActual = subcategorias.find(s => s.slug === filtroSubcategoria);
@@ -393,7 +399,9 @@ export default function MenuDigital() {
   if (ajustesProductos) {
     productosFiltrados = productosFiltrados.filter(p => {
       const productSetting = ajustesProductos[p.id];
-      return !(productSetting && productSetting.oculto);
+      const isHiddenObject = productSetting && typeof productSetting === 'object' && productSetting.oculto;
+      const isHiddenArray = ajustesProductos.hidden_products?.includes(p.id);
+      return !isHiddenObject && !isHiddenArray;
     });
   }
 
@@ -484,7 +492,7 @@ export default function MenuDigital() {
   if (buyerType === null && !cargando && configuracion?.preguntar_tipo_cliente) {
     return (
       <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: configuracion?.color_primario || '#10b981', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 9999, color: '#fff', padding: '2rem', textAlign: 'center' }}>
-        <h1 style={{ fontSize: '2rem', marginBottom: '1rem', fontWeight: 800 }}>Bienvenido a {configuracion?.nombre_negocio || 'Nuestro Catálogo'}</h1>
+        <h1 style={{ fontSize: '2rem', marginBottom: '1rem', fontWeight: 800 }}>Bienvenido a {mayoristaBranding?.nombre || configuracion?.nombre_negocio || 'Nuestro Catálogo'}</h1>
         <p style={{ marginBottom: '2.5rem', fontSize: '1.2rem', opacity: 0.9 }}>Por favor, selecciona tu tipo de compra para mostrarte los precios correctos:</p>
         <button onClick={() => setBuyerType('detal')} style={{ padding: '1.2rem 2rem', fontSize: '1.1rem', margin: '0.6rem', width: '100%', maxWidth: '350px', backgroundColor: '#fff', color: configuracion?.color_primario || '#10b981', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', transition: 'transform 0.2s' }}>
           🛍️ Compras al detal
@@ -501,11 +509,11 @@ export default function MenuDigital() {
 
   return (
     <div className="menu-app-container">
-      <div className={`menu-app-header ${configuracion?.video_hero_url ? 'has-video' : ''}`} style={{ position: 'relative' }}>
-        {configuracion?.video_hero_url && (
+      <div className={`menu-app-header ${(mayoristaBranding?.video || configuracion?.video_hero_url) ? 'has-video' : ''}`} style={{ position: 'relative' }}>
+        {(mayoristaBranding?.video || configuracion?.video_hero_url) && (
           <>
             <video 
-              src={configuracion.video_hero_url} 
+              src={mayoristaBranding?.video || configuracion?.video_hero_url} 
               autoPlay 
               loop 
               muted={heroMuted}
@@ -626,16 +634,16 @@ export default function MenuDigital() {
 
         <div className="hero-content-overlay" style={{ paddingTop: '1.5rem' }}>
           <div className="menu-app-logo" style={{ marginTop: '-1rem' }}>
-            {configuracion?.logo_url ? (
+            {(mayoristaBranding?.logo || configuracion?.logo_url) ? (
               <img
-                src={configuracion.logo_url}
+                src={mayoristaBranding?.logo || configuracion?.logo_url}
                 alt="Logo"
                 className="store-logo-round"
               />
             ) : (
               <div className="store-logo-round store-logo-placeholder">
                 <span className="logo-letter c1" style={{ fontSize: '24px', fontWeight: 'bold' }}>
-                  {(configuracion?.nombre_negocio || 'T').substring(0, 1).toUpperCase()}
+                  {(mayoristaBranding?.nombre || configuracion?.nombre_negocio || 'T').substring(0, 1).toUpperCase()}
                 </span>
               </div>
             )}

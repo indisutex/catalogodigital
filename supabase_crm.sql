@@ -24,3 +24,11 @@ FOR SELECT USING (true);
 
 CREATE POLICY "Permitir eliminaciones públicas" ON public.leads
 FOR DELETE USING (true);
+
+-- Nuevas columnas para ocultar productos
+ALTER TABLE public.productos ADD COLUMN IF NOT EXISTS oculto BOOLEAN DEFAULT FALSE;
+
+-- Nuevas columnas para el branding del mayorista
+ALTER TABLE public.mayoristas ADD COLUMN IF NOT EXISTS nombre_negocio TEXT;
+ALTER TABLE public.mayoristas ADD COLUMN IF NOT EXISTS logo_url TEXT;
+ALTER TABLE public.mayoristas ADD COLUMN IF NOT EXISTS video_hero_url TEXT;
