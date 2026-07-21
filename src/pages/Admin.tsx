@@ -8213,7 +8213,7 @@ export default function Admin() {
 
                           <div className="orders-desktop-view">
                             {pedidosViewMode === 'kanban' ? (
-                              <div className="super-crm-kanban" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '1.25rem', marginTop: '1rem', alignItems: 'start' }}>
+                              <div className="super-crm-kanban" style={{ alignItems: 'start' }}>
                         {/* Columna 1: No Interesados (Abandonos) */}
                         <div className="kanban-column" style={{ background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}>
                           <div className="kanban-column-header col-red" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #ef4444', paddingBottom: '0.5rem' }}>
