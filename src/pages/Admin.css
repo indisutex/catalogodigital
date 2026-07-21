@@ -2507,3 +2507,9 @@ body {
     display: none !important;
   }
 }
+
+/* Auto-added Visual Enhancements */
+.product-card, .dashboard-card, .stat-card, .order-card, .admin-login-card, .order-mobile-card { transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease; }
+.product-card:hover, .dashboard-card:hover, .stat-card:hover, .order-card:hover, .order-mobile-card:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,0.1); }
+button { transition: all 0.2s ease-in-out; }
+button:active { transform: scale(0.95); }
