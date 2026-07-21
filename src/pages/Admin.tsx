@@ -1203,6 +1203,47 @@ export default function Admin() {
     }
   };
 
+  const downloadExcelTemplate = () => {
+    const templateData = [
+      {
+        "Nombre": "Camiseta Básica",
+        "Referencia": "CAM-001",
+        "Descripción": "Camiseta 100% algodón",
+        "Precio": 25000,
+        "Costo": 15000,
+        "Precio por mayor": 20000,
+        "Precio 50 unidades": 18000,
+        "Categoría": "Ropa",
+        "Subcategoría": "Camisetas",
+        "Tallas": "S, M, L, XL",
+        "Estampados": "Liso, Rayas",
+        "Stock": 100,
+        "Imagen": "https://ejemplo.com/imagen.jpg",
+        "Video": "https://ejemplo.com/video.mp4"
+      },
+      {
+        "Nombre": "Pantalón Jean",
+        "Referencia": "PAN-002",
+        "Descripción": "Jean clásico azul",
+        "Precio": 65000,
+        "Costo": 40000,
+        "Precio por mayor": 55000,
+        "Precio 50 unidades": 50000,
+        "Categoría": "Ropa",
+        "Subcategoría": "Pantalones",
+        "Tallas": "28, 30, 32, 34",
+        "Estampados": "",
+        "Stock": 50,
+        "Imagen": "",
+        "Video": ""
+      }
+    ];
+    const ws = XLSX.utils.json_to_sheet(templateData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Plantilla_Productos");
+    XLSX.writeFile(wb, "Plantilla_Importacion_Productos.xlsx");
+  };
+
   const handleExcelImport = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -3785,10 +3826,15 @@ export default function Admin() {
                         <p style={{ margin: '0 0 1.5rem 0', color: '#64748b', fontSize: '0.85rem', maxWidth: '500px', marginLeft: 'auto', marginRight: 'auto', lineHeight: '1.4' }}>
                           Las columnas se detectan automáticamente de forma inteligente. Asegúrate de incluir encabezados claros como: <strong>Nombre, Descripción, Precio, Categoría, Subcategoría, Imagen, Tallas</strong>.
                         </p>
-                        <label className="btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.7rem 1.8rem', borderRadius: '8px', fontSize: '0.9rem' }}>
-                          <Upload size={14} /> Seleccionar Archivo Excel
-                          <input type="file" accept=".xlsx, .xls, .csv" style={{ display: 'none' }} onChange={handleExcelImport} />
-                        </label>
+                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', alignItems: 'center' }}>
+                          <button type="button" onClick={downloadExcelTemplate} className="btn-secondary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.7rem 1.8rem', borderRadius: '8px', fontSize: '0.9rem', border: '1px solid #cbd5e1', background: '#fff', color: '#475569', fontWeight: 600 }}>
+                            <Download size={14} /> Descargar Plantilla
+                          </button>
+                          <label className="btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', padding: '0.7rem 1.8rem', borderRadius: '8px', fontSize: '0.9rem' }}>
+                            <Upload size={14} /> Seleccionar Archivo Excel
+                            <input type="file" accept=".xlsx, .xls, .csv" style={{ display: 'none' }} onChange={handleExcelImport} />
+                          </label>
+                        </div>
                       </div>
 
                       {excelProducts.length > 0 && (
