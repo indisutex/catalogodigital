@@ -706,6 +706,9 @@ export default function Admin() {
   const [configuracion, setConfiguracion] = useState<Configuracion | null>(null);
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [productSort, setProductSort] = useState<string>('recientes');
+  const [mayoristaSearchQuery, setMayoristaSearchQuery] = useState('');
+  const [mayoristaProductSort, setMayoristaProductSort] = useState<string>('recientes');
 
   const [bulkForms, setBulkForms] = useState<ProductFormData[]>([{ ...emptyProduct }]);
 
@@ -2819,10 +2822,38 @@ export default function Admin() {
     }
   }
 
-  const filteredProducts = productos.filter(p =>
+  let filteredProducts = productos.filter(p =>
     p.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.categoria.toLowerCase().includes(searchQuery.toLowerCase())
   );
+  if (productSort === 'alfabetico') {
+    filteredProducts.sort((a, b) => a.nombre.localeCompare(b.nombre));
+  } else if (productSort === 'visibles') {
+    filteredProducts = filteredProducts.filter(p => !p.oculto);
+  } else if (productSort === 'ocultos') {
+    filteredProducts = filteredProducts.filter(p => p.oculto);
+  }
+
+  let mayoristaFilteredProducts = productos.filter(p =>
+    p.nombre.toLowerCase().includes(mayoristaSearchQuery.toLowerCase()) ||
+    p.categoria.toLowerCase().includes(mayoristaSearchQuery.toLowerCase())
+  );
+  if (role === 'mayorista') {
+    const tempMayorista = mayoristas.find(m => m.telefono === loggedAsesorPhone) || asesores.find(a => a.telefono === loggedAsesorPhone);
+    if (mayoristaProductSort === 'alfabetico') {
+      mayoristaFilteredProducts.sort((a, b) => a.nombre.localeCompare(b.nombre));
+    } else if (mayoristaProductSort === 'visibles') {
+      mayoristaFilteredProducts = mayoristaFilteredProducts.filter(p => {
+        const hiddenProducts = tempMayorista?.ajustes_productos?.hidden_products || [];
+        return !hiddenProducts.includes(p.id);
+      });
+    } else if (mayoristaProductSort === 'ocultos') {
+      mayoristaFilteredProducts = mayoristaFilteredProducts.filter(p => {
+        const hiddenProducts = tempMayorista?.ajustes_productos?.hidden_products || [];
+        return hiddenProducts.includes(p.id);
+      });
+    }
+  }
 
   // ── LOGIN SCREEN ──
   const [dbCompanies, setDbCompanies] = useState<any[]>([]);
@@ -3878,22 +3909,29 @@ export default function Admin() {
                           onChange={e => setSearchQuery(e.target.value)}
                         />
                       </div>
+                      <select
+                        value={productSort}
+                        onChange={e => setProductSort(e.target.value)}
+                        style={{ padding: '0.55rem 1rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', color: '#475569', cursor: 'pointer' }}
+                      >
+                        <option value="recientes">Más recientes</option>
+                        <option value="alfabetico">A-Z</option>
+                        <option value="visibles">Solo Visibles</option>
+                        <option value="ocultos">Solo Ocultos</option>
+                      </select>
                     </div>
                   </div>
                 <div className="panel-body">
                   {filteredProducts.length === 0 ? (
-                    <div className="empty-state">
-                      <div className="es-icon">📦</div>
-                      <h4>No hay productos aún</h4>
-                      <p>Aún no tienes ningún producto en tu inventario.</p>
-                      <button className="btn-primary" onClick={() => setIsAddingProduct(true)} style={{ marginTop: '1rem' }}>
-                        + Agregar Primer Producto
-                      </button>
+                    <div className="empty-state" style={{ padding: '4rem 2rem' }}>
+                      <div className="empty-icon"><Package size={48} /></div>
+                      <p>No se encontraron productos.</p>
+                      {searchQuery && <button className="btn-secondary" onClick={() => setSearchQuery('')}>Limpiar Búsqueda</button>}
                     </div>
                   ) : (
                     <div className="products-grid">
                       {filteredProducts.map(p => (
-                        <div key={p.id} className="product-card">
+                        <div key={p.id} className="product-card" style={{ opacity: p.oculto ? 0.5 : 1, filter: p.oculto ? 'grayscale(100%)' : 'none', background: p.oculto ? '#f8fafc' : 'white' }}>
                           <div className="product-card-img">
                             {p.imagen_url ? (
                               <img src={p.imagen_url} alt={p.nombre} />
@@ -4796,20 +4834,48 @@ export default function Admin() {
                 )
                 )}
 
+                <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+                  <div className="search-input-container" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                    <span style={{ position: 'absolute', left: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center' }}>
+                      <Search size={15} />
+                    </span>
+                    <input
+                      className="search-bar"
+                      style={{ width: '240px', padding: '0.55rem 1rem 0.55rem 2.25rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', transition: 'all 0.2s', margin: 0 }}
+                      placeholder="Buscar producto..."
+                      value={mayoristaSearchQuery}
+                      onChange={e => setMayoristaSearchQuery(e.target.value)}
+                    />
+                  </div>
+                  <select
+                    value={mayoristaProductSort}
+                    onChange={e => setMayoristaProductSort(e.target.value)}
+                    style={{ padding: '0.55rem 1rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', color: '#475569', cursor: 'pointer' }}
+                  >
+                    <option value="recientes">Más recientes</option>
+                    <option value="alfabetico">A-Z</option>
+                    <option value="visibles">Solo Visibles</option>
+                    <option value="ocultos">Solo Ocultos</option>
+                  </select>
+                </div>
+
                 <div className="products-grid">
-                      {productos.map(p => {
+                      {mayoristaFilteredProducts.map(p => {
                         let hasOverride = false;
                         let overrideVal = '';
+                        let isHiddenLocally = false;
                         if (role === 'mayorista' && currentMayorista) {
                           const overrides = currentMayorista.ajustes_productos || {};
                           if (overrides[p.id]) {
                             hasOverride = true;
                             overrideVal = overrides[p.id];
                           }
+                          const hiddenProducts = overrides.hidden_products || [];
+                          isHiddenLocally = hiddenProducts.includes(p.id);
                         }
                         
                         return (
-                        <div key={p.id} className="product-card">
+                        <div key={p.id} className="product-card" style={{ opacity: isHiddenLocally ? 0.5 : 1, filter: isHiddenLocally ? 'grayscale(100%)' : 'none', background: isHiddenLocally ? '#f8fafc' : 'white' }}>
                           <div className="product-card-img">
                             {p.imagen_url ? (
                               <img src={p.imagen_url} alt={p.nombre} />
