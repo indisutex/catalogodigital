@@ -6717,7 +6717,7 @@ export default function Admin() {
                                 return (
                                   <td style={{ padding: '1rem', textAlign: 'center' }}>
                                     {alerts.length === 0 ? (
-                                      <span style={{ fontSize: '0.78rem', color: '#10b981', background: '#dcfce7', padding: '0.2rem 0.55rem', borderRadius: '20px', fontWeight: 700 }}>
+                                      <span style={{ fontSize: '0.78rem', color: '#10b981', background: '#dcfce7', padding: '0.2rem 0.55rem', borderRadius: '20px', fontWeight: 700, whiteSpace: 'nowrap', display: 'inline-block' }}>
                                         ✅ Al día
                                       </span>
                                     ) : (
@@ -6733,7 +6733,9 @@ export default function Admin() {
                                             fontWeight: 800,
                                             boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
                                             cursor: 'pointer',
-                                            transition: 'transform 0.2s ease'
+                                            transition: 'transform 0.2s ease',
+                                            whiteSpace: 'nowrap',
+                                            display: 'inline-block'
                                           }}
                                           onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'}
                                           onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
@@ -7075,7 +7077,7 @@ export default function Admin() {
                                   return (
                                     <td style={{ padding: '1rem', textAlign: 'center' }}>
                                       {alerts.length === 0 ? (
-                                        <span style={{ fontSize: '0.78rem', color: '#10b981', background: '#dcfce7', padding: '0.2rem 0.55rem', borderRadius: '20px', fontWeight: 700 }}>
+                                        <span style={{ fontSize: '0.78rem', color: '#10b981', background: '#dcfce7', padding: '0.2rem 0.55rem', borderRadius: '20px', fontWeight: 700, whiteSpace: 'nowrap', display: 'inline-block' }}>
                                           ✅ Al día
                                         </span>
                                       ) : (
@@ -7091,7 +7093,9 @@ export default function Admin() {
                                               fontWeight: 800,
                                               boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
                                               cursor: 'pointer',
-                                              transition: 'transform 0.2s ease'
+                                              transition: 'transform 0.2s ease',
+                                              whiteSpace: 'nowrap',
+                                              display: 'inline-block'
                                             }}
                                             onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'}
                                             onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
