@@ -511,7 +511,7 @@ export default function MenuDigital() {
     <div className="menu-app-container">
       <div className={`menu-app-header ${(mayoristaBranding?.video || configuracion?.video_hero_url) ? 'has-video' : ''}`} style={{ position: 'relative' }}>
         {(mayoristaBranding?.video || configuracion?.video_hero_url) && (
-          (mayoristaBranding?.video || configuracion?.video_hero_url).match(/\.(mp4|webm|mov|ogg)$/i) ? (
+          (mayoristaBranding?.video || configuracion?.video_hero_url)?.match(/\.(mp4|webm|mov|ogg)$/i) ? (
           <>
             <video 
               src={mayoristaBranding?.video || configuracion?.video_hero_url} 
