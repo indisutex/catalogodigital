@@ -511,6 +511,7 @@ export default function MenuDigital() {
     <div className="menu-app-container">
       <div className={`menu-app-header ${(mayoristaBranding?.video || configuracion?.video_hero_url) ? 'has-video' : ''}`} style={{ position: 'relative' }}>
         {(mayoristaBranding?.video || configuracion?.video_hero_url) && (
+          (mayoristaBranding?.video || configuracion?.video_hero_url).match(/\.(mp4|webm|mov|ogg)$/i) ? (
           <>
             <video 
               src={mayoristaBranding?.video || configuracion?.video_hero_url} 
@@ -554,6 +555,14 @@ export default function MenuDigital() {
               {heroMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
             </button>
           </>
+          ) : (
+            <img 
+              src={mayoristaBranding?.video || configuracion?.video_hero_url}
+              className="hero-background-video"
+              alt="Hero"
+              style={{ objectFit: 'cover' }}
+            />
+          )
         )}
         <div className="header-bottom-bar" style={{
           position: 'absolute',

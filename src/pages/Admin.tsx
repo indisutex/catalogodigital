@@ -4269,22 +4269,6 @@ export default function Admin() {
                     {renderAdvisorStatsView(advStats)}
                   </div>
                 </div>
-                
-                {role === 'mayorista' && (
-                  <MiNegocioSettings 
-                    mayorista={currentAsesorData as Mayorista}
-                    showToast={showToast}
-                    onSave={async (data) => {
-                      const { error } = await supabase
-                        .from('mayoristas')
-                        .update(data)
-                        .eq('id', currentAsesorData.id);
-                      if (error) throw error;
-                      // Actualizar el estado local
-                      setMayoristas(mayoristas.map(m => m.id === currentAsesorData.id ? { ...m, ...data } : m));
-                    }}
-                  />
-                )}
               </>
             );
           })()}
@@ -4561,6 +4545,7 @@ export default function Admin() {
                     : asesores.find(a => a.telefono === loggedAsesorPhone);
                   if (!currentAsesorData) return <p style={{ color: '#64748b', padding: '2rem', textAlign: 'center' }}>Cargando perfil...</p>;
                   return (
+                    <>
                   <form onSubmit={async (e) => {
                     e.preventDefault();
                     try {
@@ -4715,6 +4700,22 @@ export default function Admin() {
                       </button>
                     </div>
                   </form>
+                  {role === 'mayorista' && (
+                    <MiNegocioSettings 
+                      mayorista={currentAsesorData as Mayorista}
+                      showToast={showToast}
+                      onSave={async (data) => {
+                        const { error } = await supabase
+                          .from('mayoristas')
+                          .update(data)
+                          .eq('id', currentAsesorData.id);
+                        if (error) throw error;
+                        // Actualizar el estado local
+                        setMayoristas(mayoristas.map(m => m.id === currentAsesorData.id ? { ...m, ...data } : m));
+                      }}
+                    />
+                  )}
+                  </>
                   );
                 })()}
               </div>
@@ -5584,7 +5585,11 @@ export default function Admin() {
                           <label>Video del Banner (Hero - Vertical)</label>
                           <div className="img-input-row" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                             {configuracion.video_hero_url && !configuracion.video_hero_url.toLowerCase().endsWith('.mov') && (
-                              <video src={configuracion.video_hero_url} style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover', background: '#000' }} muted playsInline />
+                              configuracion.video_hero_url.match(/\.(mp4|webm|mov|ogg)$/i) ? (
+                                <video src={configuracion.video_hero_url} style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover', background: '#000' }} muted playsInline />
+                              ) : (
+                                <img src={configuracion.video_hero_url} alt="preview" style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover', background: '#000' }} />
+                              )
                             )}
                             {configuracion.video_hero_url && configuracion.video_hero_url.toLowerCase().endsWith('.mov') && (
                               <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#fef2f2', border: '1px solid #fca5a5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', flexShrink: 0 }}>⚠️</div>
