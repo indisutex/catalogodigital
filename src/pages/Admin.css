@@ -1099,9 +1099,25 @@ body {
 
 .super-crm-kanban {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(320px, 1fr));
   gap: 1.5rem;
   margin-top: 1.5rem;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+}
+
+.super-crm-kanban::-webkit-scrollbar {
+  height: 8px;
+}
+.super-crm-kanban::-webkit-scrollbar-track {
+  background: transparent;
+}
+.super-crm-kanban::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 8px;
+}
+.super-crm-kanban::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
 }
 
 .kanban-column {
