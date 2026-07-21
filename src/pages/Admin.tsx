@@ -107,6 +107,93 @@ try {
   }
 } catch (e) {}
 
+function MiNegocioSettings({ 
+  mayorista, 
+  onSave, 
+  showToast 
+}: { 
+  mayorista: Mayorista, 
+  onSave: (data: { nombre_negocio: string, logo_url: string, video_hero_url: string }) => Promise<void>, 
+  showToast: (msg: string, type?: 'success' | 'error') => void 
+}) {
+  const [nombre, setNombre] = useState(mayorista.nombre_negocio || '');
+  const [logo, setLogo] = useState(mayorista.logo_url || '');
+  const [video, setVideo] = useState(mayorista.video_hero_url || '');
+  const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await onSave({ nombre_negocio: nombre, logo_url: logo, video_hero_url: video });
+      showToast('Configuración guardada exitosamente ✓', 'success');
+    } catch (err) {
+      showToast('Error al guardar configuración', 'error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'logo' | 'video') => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    setUploading(true);
+    try {
+      const fileName = `${field}_${Date.now()}.${file.name.split('.').pop()}`;
+      await supabase.storage.from('archivos').upload(fileName, file);
+      const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
+      if (field === 'logo') setLogo(data.publicUrl);
+      if (field === 'video') setVideo(data.publicUrl);
+      showToast(`${field === 'logo' ? 'Logo' : 'Video'} subido ✓`, 'success');
+    } catch {
+      showToast(`Error subiendo ${field}`, 'error');
+    }
+    setUploading(false);
+  };
+
+  return (
+    <div className="admin-panel" style={{ borderRadius: '20px', padding: '1.5rem 1.75rem', marginTop: '1.5rem' }}>
+      <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', textAlign: 'left' }}>
+        <span style={{ fontSize: '1.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🏪</span>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left' }}>
+          <h2 className="panel-header-title-custom">Configuración de Mi Catálogo (Marca Blanca)</h2>
+          <p style={{ margin: '0.15rem 0 0 0', color: '#64748b', fontSize: '0.85rem', textAlign: 'left' }}>Personaliza el logo, video y nombre que verán tus clientes en tu catálogo propio.</p>
+        </div>
+      </div>
+      <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <div className="form-group">
+          <label style={{ fontWeight: 600 }}>Nombre de tu Negocio</label>
+          <input type="text" className="form-input" value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Ej: Moda Express" />
+        </div>
+        <div className="form-group">
+          <label style={{ fontWeight: 600 }}>Logo del Negocio</label>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            {logo && <img src={logo} alt="Logo preview" style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '8px' }} />}
+            <input type="text" className="form-input" style={{ flex: 1 }} value={logo} onChange={e => setLogo(e.target.value)} placeholder="URL del logo" />
+            <label className="btn-upload-img" style={{ flexShrink: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.55rem 0.85rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600 }}>
+              <Upload size={12} /> {uploading ? '...' : 'Subir'}
+              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleFileUpload(e, 'logo')} disabled={uploading} />
+            </label>
+          </div>
+        </div>
+        <div className="form-group">
+          <label style={{ fontWeight: 600 }}>Video Principal / Imagen Hero</label>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <input type="text" className="form-input" style={{ flex: 1 }} value={video} onChange={e => setVideo(e.target.value)} placeholder="URL del video o imagen" />
+            <label className="btn-upload-img" style={{ flexShrink: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.55rem 0.85rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600 }}>
+              <Upload size={12} /> {uploading ? '...' : 'Subir'}
+              <input type="file" accept="video/*,image/*" style={{ display: 'none' }} onChange={e => handleFileUpload(e, 'video')} disabled={uploading} />
+            </label>
+          </div>
+        </div>
+        <button className="btn-main" onClick={handleSave} disabled={saving || uploading} style={{ alignSelf: 'flex-start', marginTop: '0.5rem' }}>
+          {saving ? 'Guardando...' : 'Guardar Configuración'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     return localStorage.getItem(`admin_auth_${getTenantId()}`) === 'true';
@@ -4106,18 +4193,36 @@ export default function Admin() {
             const advStats = getAdvisorStats(currentAsesorData);
 
             return (
-              <div className="admin-panel" style={{ borderRadius: '20px', padding: '1.5rem 1.75rem' }}>
-                <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', textAlign: 'left' }}>
-                  <span style={{ fontSize: '1.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📊</span>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left' }}>
-                    <h2 className="panel-header-title-custom">{role === 'mayorista' ? 'Mi Resumen de Negocio' : 'Mi Resumen de Ventas'}</h2>
-                    <p style={{ margin: '0.15rem 0 0 0', color: '#64748b', fontSize: '0.85rem', textAlign: 'left' }}>{role === 'mayorista' ? 'Visualiza las métricas, mejores horarios y productos de tu negocio' : 'Visualiza tus métricas, mejores horarios y productos vendidos'}</p>
+              <>
+                <div className="admin-panel" style={{ borderRadius: '20px', padding: '1.5rem 1.75rem' }}>
+                  <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', textAlign: 'left' }}>
+                    <span style={{ fontSize: '1.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📊</span>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left' }}>
+                      <h2 className="panel-header-title-custom">{role === 'mayorista' ? 'Mi Resumen de Negocio' : 'Mi Resumen de Ventas'}</h2>
+                      <p style={{ margin: '0.15rem 0 0 0', color: '#64748b', fontSize: '0.85rem', textAlign: 'left' }}>{role === 'mayorista' ? 'Visualiza las métricas, mejores horarios y productos de tu negocio' : 'Visualiza tus métricas, mejores horarios y productos vendidos'}</p>
+                    </div>
+                  </div>
+                  <div className="panel-body">
+                    {renderAdvisorStatsView(advStats)}
                   </div>
                 </div>
-                <div className="panel-body">
-                  {renderAdvisorStatsView(advStats)}
-                </div>
-              </div>
+                
+                {role === 'mayorista' && (
+                  <MiNegocioSettings 
+                    mayorista={currentAsesorData as Mayorista}
+                    showToast={showToast}
+                    onSave={async (data) => {
+                      const { error } = await supabase
+                        .from('mayoristas')
+                        .update(data)
+                        .eq('id', currentAsesorData.id);
+                      if (error) throw error;
+                      // Actualizar el estado local
+                      setMayoristas(mayoristas.map(m => m.id === currentAsesorData.id ? { ...m, ...data } : m));
+                    }}
+                  />
+                )}
+              </>
             );
           })()}
 

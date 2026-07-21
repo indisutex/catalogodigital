@@ -17,6 +17,7 @@ export interface Producto {
   precio_50_unidades?: number;
   estampados?: string;
   created_at: string;
+  oculto?: boolean;
 }
 
 export interface Categoria {
@@ -99,5 +100,8 @@ export interface Mayorista {
   foto_url?: string | null;
   porcentaje_ganancia?: number;
   ajustes_productos?: any;
+  nombre_negocio?: string;
+  logo_url?: string;
+  video_hero_url?: string;
 }
 
