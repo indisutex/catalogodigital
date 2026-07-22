@@ -3348,7 +3348,7 @@ export default function Admin() {
                      <div className="form-field full">
                         <label>Tallas</label>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.5rem' }}>
-                          {['Única', 'S', 'M', 'L', 'XL', 'XXL'].map(sz => {
+                          {['Única', 'Plus', 'Oversize', 'S', 'M', 'L', 'XL', 'XXL'].map(sz => {
                             const currentTallas = (editingProduct.tallas || '').split(',').map(s => s.trim()).filter(Boolean);
                             const selected = currentTallas.includes(sz);
                             return (
@@ -4017,7 +4017,7 @@ export default function Admin() {
                               <div className="form-field full">
                                 <label>Tallas (opcionales)</label>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.5rem' }}>
-                                  {['Única', 'S', 'M', 'L', 'XL', 'XXL'].map(sz => {
+                                  {['Única', 'Plus', 'Oversize', 'S', 'M', 'L', 'XL', 'XXL'].map(sz => {
                                     const currentTallas = (form.tallas || '').split(',').map(s => s.trim()).filter(Boolean);
                                     const selected = currentTallas.includes(sz);
                                     return (
