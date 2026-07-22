@@ -49,6 +49,18 @@ const getGoogleDriveThumbnailUrl = (url: string) => {
   return '';
 };
 
+const deduplicateTallas = (tallasStr: string | undefined | null) => {
+  if (!tallasStr) return '-';
+  const rawTallas = tallasStr.split(',').map(t => t.trim()).filter(Boolean);
+  if (rawTallas.length === 0) return '-';
+  const tallasMap = new Map();
+  rawTallas.forEach(t => {
+    const key = t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    if (!tallasMap.has(key)) tallasMap.set(key, t);
+  });
+  return Array.from(tallasMap.values()).join(', ') || '-';
+};
+
 export const encodeExtraImage = (url: string, ref: string) => ref ? `${url}|REF:${ref}` : url;
 export const decodeExtraImage = (str: string) => {
   if (!str) return { url: '', ref: '' };
@@ -4318,7 +4330,7 @@ export default function Admin() {
                                </div>
                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                  <small style={{ color: '#64748b' }}>Tallas:</small>
-                                 <strong style={{ fontSize: '0.8rem', color: '#0f172a', textAlign: 'right', wordBreak: 'break-word', maxWidth: '120px' }}>{p.tallas || '-'}</strong>
+                                 <strong style={{ fontSize: '0.8rem', color: '#0f172a', textAlign: 'right', wordBreak: 'break-word', maxWidth: '120px' }}>{deduplicateTallas(p.tallas)}</strong>
                                </div>
                             </div>
 
@@ -5147,7 +5159,7 @@ export default function Admin() {
                            </div>
                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
                              <small style={{ color: '#64748b' }}>Tallas:</small>
-                             <strong style={{ fontSize: '0.8rem', color: '#0f172a', textAlign: 'right', wordBreak: 'break-word', maxWidth: '120px' }}>{p.tallas || '-'}</strong>
+                             <strong style={{ fontSize: '0.8rem', color: '#0f172a', textAlign: 'right', wordBreak: 'break-word', maxWidth: '120px' }}>{deduplicateTallas(p.tallas)}</strong>
                            </div>
                         </div>
                       </div>
