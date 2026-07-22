@@ -8356,11 +8356,25 @@ export default function Admin() {
                                       const decodeExtraImage = (jsonStr: string) => {
                                         try { return JSON.parse(jsonStr); } catch { return { url: jsonStr, ref: '' }; }
                                       };
+                                      const mainRef = item.producto.referencia?.trim().toUpperCase();
                                       const legacyEstampados = item.producto.estampados?.split(',').map((e: string) => e.trim().toUpperCase()).filter(Boolean) || [];
                                       const extraImagesRefs = (item.producto.imagenes_extra || []).map((u: string) => decodeExtraImage(u).ref?.trim().toUpperCase()).filter(Boolean);
-                                      const allEstampados = Array.from(new Set([...legacyEstampados, ...extraImagesRefs]));
+                                      const allEstampados = Array.from(new Set([mainRef, ...legacyEstampados, ...extraImagesRefs].filter(Boolean)));
 
-                                      if (allEstampados.length === 0) return null;
+                                      if (allEstampados.length === 0) {
+                                        return (
+                                          <input
+                                            type="text"
+                                            placeholder="Estampado / Diseño..."
+                                            value={item.estampado || ''}
+                                            onChange={e => {
+                                              const val = e.target.value;
+                                              setPosCart(prev => prev.map((it, i) => i === idx ? { ...it, estampado: val } : it));
+                                            }}
+                                            style={{ fontSize: '0.7rem', padding: '3px 6px', borderRadius: '4px', border: '1px solid #cbd5e1', background: '#f8fafc', outline: 'none' }}
+                                          />
+                                        );
+                                      }
                                       return (
                                         <select
                                           value={item.estampado || ''}
