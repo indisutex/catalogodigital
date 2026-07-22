@@ -3345,16 +3345,57 @@ export default function Admin() {
                        <label>Stock (Cantidad en inventario)</label>
                        <input type="number" min="0" value={editingProduct.stock || 0} onChange={e => setEditingProduct({ ...editingProduct, stock: parseInt(e.target.value) || 0 })} />
                      </div>
-                     <div className="form-field">
-                       <label>Categoría</label>
-                       <select value={editingProduct.categoria} onChange={e => setEditingProduct({ ...editingProduct, categoria: e.target.value })}>
-                         {categoriasData.map(c => <option key={c.id} value={c.slug}>{c.nombre}</option>)}
-                       </select>
-                     </div>
                      <div className="form-field full">
-                      <label>Tallas (separadas por coma)</label>
-                      <input value={editingProduct.tallas || ''} onChange={e => setEditingProduct({ ...editingProduct, tallas: e.target.value })} placeholder="Ej: S, M, L, XL" />
-                    </div>
+                        <label>Tallas</label>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.5rem' }}>
+                          {['Talla Única', 'Talla Plus', 'Única', 'Plus', 'S', 'M', 'L', 'XL', 'XXL', '6', '8', '10', '12', '14', '16', '28', '30', '32', '34', '36', '38'].map(sz => {
+                            const currentTallas = (editingProduct.tallas || '').split(',').map(s => s.trim()).filter(Boolean);
+                            const selected = currentTallas.includes(sz);
+                            return (
+                              <button
+                                key={sz}
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  let newTallas;
+                                  if (selected) {
+                                    newTallas = currentTallas.filter(s => s !== sz);
+                                  } else {
+                                    newTallas = [...currentTallas, sz];
+                                  }
+                                  setEditingProduct({ ...editingProduct, tallas: newTallas.join(', ') });
+                                }}
+                                style={{
+                                  padding: '0.35rem 0.75rem',
+                                  borderRadius: '6px',
+                                  border: selected ? '2px solid #e11d48' : '1px solid #cbd5e1',
+                                  background: selected ? '#fff1f2' : '#f8fafc',
+                                  color: selected ? '#be185d' : '#475569',
+                                  fontSize: '0.85rem',
+                                  fontWeight: selected ? 700 : 500,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease-in-out'
+                                }}
+                              >
+                                {sz}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        <input 
+                          value={editingProduct.tallas || ''} 
+                          onChange={e => setEditingProduct({ ...editingProduct, tallas: e.target.value })} 
+                          placeholder="Otras tallas (separadas por coma)..." 
+                          style={{ fontSize: '0.85rem' }}
+                        />
+                      </div>
+                      <div className="form-field">
+                        <label>Categoría</label>
+                        <select value={editingProduct.categoria} onChange={e => setEditingProduct({ ...editingProduct, categoria: e.target.value })}>
+                          {categoriasData.map(c => <option key={c.id} value={c.slug}>{c.nombre}</option>)}
+                        </select>
+                      </div>
                     <div className="form-field full" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '2rem', alignItems: 'start', background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                       {/* -- FOTO PRINCIPAL -- */}
                       <div>
@@ -3982,8 +4023,44 @@ export default function Admin() {
                                 </select>
                               </div>
                               <div className="form-field full">
-                                <label>Tallas (separadas por coma, opcional)</label>
-                                <input value={form.tallas} onChange={e => updateBulkForm(index, 'tallas', e.target.value)} placeholder="Ej: S, M, L, XL" />
+                                <label>Tallas (opcionales)</label>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.5rem' }}>
+                                  {['Talla Única', 'Talla Plus', 'Única', 'Plus', 'S', 'M', 'L', 'XL', 'XXL', '6', '8', '10', '12', '14', '16', '28', '30', '32', '34', '36', '38'].map(sz => {
+                                    const currentTallas = (form.tallas || '').split(',').map(s => s.trim()).filter(Boolean);
+                                    const selected = currentTallas.includes(sz);
+                                    return (
+                                      <button
+                                        key={sz}
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          let newTallas;
+                                          if (selected) {
+                                            newTallas = currentTallas.filter(s => s !== sz);
+                                          } else {
+                                            newTallas = [...currentTallas, sz];
+                                          }
+                                          updateBulkForm(index, 'tallas', newTallas.join(', '));
+                                        }}
+                                        style={{
+                                          padding: '0.35rem 0.75rem',
+                                          borderRadius: '6px',
+                                          border: selected ? '2px solid #e11d48' : '1px solid #cbd5e1',
+                                          background: selected ? '#fff1f2' : '#f8fafc',
+                                          color: selected ? '#be185d' : '#475569',
+                                          fontSize: '0.85rem',
+                                          fontWeight: selected ? 700 : 500,
+                                          cursor: 'pointer',
+                                          transition: 'all 0.15s ease-in-out'
+                                        }}
+                                      >
+                                        {sz}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                                <input value={form.tallas} onChange={e => updateBulkForm(index, 'tallas', e.target.value)} placeholder="Otras tallas (separadas por coma)..." style={{ fontSize: '0.85rem' }} />
                               </div>
                               <div className="form-field full">
                                 <label>🖼️ Imágenes del Producto</label>
