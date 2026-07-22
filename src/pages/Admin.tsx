@@ -1539,7 +1539,7 @@ export default function Admin() {
     }
   };
 
-  const updateBulkForm = (index: number, field: keyof ProductFormData, value: string | number) => {
+  const updateBulkForm = (index: number, field: keyof ProductFormData, value: string | number | { url: string; ref: string }[]) => {
     const newForms = [...bulkForms];
     newForms[index] = { ...newForms[index], [field]: value };
     setBulkForms(newForms);
@@ -1582,6 +1582,7 @@ export default function Admin() {
     newForms[formIndex] = { ...newForms[formIndex], imagenes: newImagenes };
     setBulkForms(newForms);
   };
+  void updateImagenUrl; // kept for legacy URL input rows if ever needed
 
   const updateImagenRef = (formIndex: number, imgIndex: number, value: string) => {
     const newForms = [...bulkForms];
