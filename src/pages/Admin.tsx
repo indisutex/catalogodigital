@@ -3152,36 +3152,39 @@ export default function Admin() {
                          {categoriasData.map(c => <option key={c.id} value={c.slug}>{c.nombre}</option>)}
                        </select>
                      </div>
-                     <div className="form-field full" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                       <div>
-                         <label>Tallas (separadas por coma)</label>
-                         <input value={editingProduct.tallas || ''} onChange={e => setEditingProduct({ ...editingProduct, tallas: e.target.value })} placeholder="Ej: S, M, L, XL" />
-                       </div>
-                       <div>
-                         <label>Estampados / Temáticas</label>
-                         <input value={editingProduct.estampados || ''} onChange={e => setEditingProduct({ ...editingProduct, estampados: e.target.value })} placeholder="Ej: Dinosaurios, Ositos, Rayas" />
-                       </div>
-                     </div>
-                    <div className="form-field full">
-                      <label>Foto Principal</label>
-                      <div className="img-input-row">
-                        {editingProduct.imagen_url && <img src={editingProduct.imagen_url} className="img-preview-thumb" alt="" />}
-                        <input value={editingProduct.imagen_url || ''} onChange={e => setEditingProduct({ ...editingProduct, imagen_url: e.target.value })} placeholder="URL de imagen principal" />
-                      </div>
-                      <label htmlFor="edit-main-img-upload" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.5rem', cursor: 'pointer', background: '#f0f9ff', border: '1px dashed #0ea5e9', borderRadius: '8px', padding: '0.4rem 0.9rem', fontSize: '0.8rem', color: '#0ea5e9', fontWeight: 600 }}>
-                        <Upload size={14} /> Subir foto principal
-                      </label>
-                      <input id="edit-main-img-upload" type="file" accept="image/*" style={{ display: 'none' }} onChange={handleEditMainImgUpload} />
+                     <div className="form-field full">
+                      <label>Tallas (separadas por coma)</label>
+                      <input value={editingProduct.tallas || ''} onChange={e => setEditingProduct({ ...editingProduct, tallas: e.target.value })} placeholder="Ej: S, M, L, XL" />
                     </div>
+                    <div className="form-field full" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '2rem', alignItems: 'start', background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                      {/* -- FOTO PRINCIPAL -- */}
+                      <div>
+                        <label>Foto Principal</label>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem', alignItems: 'flex-start' }}>
+                          {editingProduct.imagen_url ? (
+                            <img src={editingProduct.imagen_url} alt="" style={{ width: 160, height: 160, objectFit: 'cover', borderRadius: 8, border: '2px solid #cbd5e1', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} />
+                          ) : (
+                            <div style={{ width: 160, height: 160, background: '#e2e8f0', borderRadius: 8, border: '2px dashed #94a3b8', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', color: '#64748b', fontWeight: 600, gap: '0.5rem' }}>
+                              <span style={{ fontSize: '2rem' }}>🖼️</span>
+                              Sin imagen
+                            </div>
+                          )}
+                          <input value={editingProduct.imagen_url || ''} onChange={e => setEditingProduct({ ...editingProduct, imagen_url: e.target.value })} placeholder="URL de imagen principal" style={{ width: '100%', padding: '0.4rem 0.6rem', fontSize: '0.85rem' }} />
+                          <label htmlFor="edit-main-img-upload" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', background: '#f0f9ff', border: '1px dashed #0ea5e9', borderRadius: '8px', padding: '0.5rem 1rem', fontSize: '0.85rem', color: '#0ea5e9', fontWeight: 600, width: '100%', justifyContent: 'center' }}>
+                            <Upload size={14} /> Subir foto principal
+                          </label>
+                          <input id="edit-main-img-upload" type="file" accept="image/*" style={{ display: 'none' }} onChange={handleEditMainImgUpload} />
+                        </div>
+                      </div>
 
-                    {/* ── FOTOS EXTRA ── */}
-                    <div className="form-field full">
-                      <label>📸 Fotos Adicionales del Producto</label>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '0.5rem' }}>
+                      {/* ── FOTOS EXTRA ── */}
+                      <div>
+                        <label>📸 Fotos Adicionales del Producto</label>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '0.5rem' }}>
                         {editExtraImages.map((img, idx) => (
-                          <div key={idx} style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '0.3rem', alignItems: 'center' }}>
-                            {img.url && <img src={img.url} alt="" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 8, border: '2px solid #e2e8f0' }} />}
-                            {!img.url && <div style={{ width: 80, height: 80, background: '#f1f5f9', borderRadius: 8, border: '2px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>📷</div>}
+                          <div key={idx} style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'center' }}>
+                            {img.url && <img src={img.url} alt="" style={{ width: 130, height: 130, objectFit: 'cover', borderRadius: 8, border: '2px solid #e2e8f0' }} />}
+                            {!img.url && <div style={{ width: 130, height: 130, background: '#f1f5f9', borderRadius: 8, border: '2px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>📷</div>}
                             <input
                               value={img.ref}
                               onChange={e => {
@@ -3190,18 +3193,18 @@ export default function Admin() {
                                 setEditExtraImages(newArr);
                               }}
                               placeholder="Ref (Ej. Snoopy)"
-                              style={{ width: '80px', fontSize: '0.65rem', padding: '0.2rem', textAlign: 'center' }}
+                              style={{ width: '130px', fontSize: '0.9rem', padding: '0.4rem', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '6px' }}
                             />
-                            <label htmlFor={`edit-extra-${idx}`} style={{ cursor: 'pointer', fontSize: '0.7rem', color: '#0ea5e9', fontWeight: 600 }}>
+                            <label htmlFor={`edit-extra-${idx}`} style={{ cursor: 'pointer', fontSize: '0.85rem', color: '#0ea5e9', fontWeight: 600 }}>
                               {editUploadingIdx === idx ? '...' : '📤 Cambiar'}
                             </label>
                             <input id={`edit-extra-${idx}`} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleEditExtraUpload(e, idx)} />
-                            <button type="button" onClick={() => setEditExtraImages(prev => prev.filter((_, i) => i !== idx))} style={{ position: 'absolute', top: -6, right: -6, width: 20, height: 20, borderRadius: '50%', background: '#ef4444', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                            <button type="button" onClick={() => setEditExtraImages(prev => prev.filter((_, i) => i !== idx))} style={{ position: 'absolute', top: -8, right: -8, width: 24, height: 24, borderRadius: '50%', background: '#ef4444', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
                           </div>
                         ))}
                         {/* Botón agregar foto extra */}
-                        <label htmlFor="edit-extra-new" style={{ width: 80, height: 80, background: '#f0fdf4', border: '2px dashed #22c55e', borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.65rem', color: '#16a34a', fontWeight: 700, gap: '0.2rem' }}>
-                          <span style={{ fontSize: '1.4rem' }}>+</span> Agregar foto
+                        <label htmlFor="edit-extra-new" style={{ width: 130, height: 130, background: '#f0fdf4', border: '2px dashed #22c55e', borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.9rem', color: '#16a34a', fontWeight: 700, gap: '0.5rem' }}>
+                          <span style={{ fontSize: '2rem' }}>+</span> Agregar foto
                         </label>
                         <input id="edit-extra-new" type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={async e => {
                           const files = Array.from(e.target.files || []);
@@ -3225,9 +3228,10 @@ export default function Admin() {
                       </div>
                     </div>
                   </div>
-                </form>
-              </div>
+                </div>
+              </form>
             </div>
+          </div>
           </div>
         </div>
       </div>
@@ -3777,15 +3781,9 @@ export default function Admin() {
                                   {categoriasData.map(c => <option key={c.id} value={c.slug}>{c.icono} {c.nombre}</option>)}
                                 </select>
                               </div>
-                              <div className="form-field full" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                <div>
-                                  <label>Tallas (separadas por coma, opcional)</label>
-                                  <input value={form.tallas} onChange={e => updateBulkForm(index, 'tallas', e.target.value)} placeholder="Ej: S, M, L, XL" />
-                                </div>
-                                <div>
-                                  <label>Estampados / Temáticas (opcional)</label>
-                                  <input value={form.estampados} onChange={e => updateBulkForm(index, 'estampados', e.target.value)} placeholder="Ej: Dinosaurios, Ositos, Rayas" />
-                                </div>
+                              <div className="form-field full">
+                                <label>Tallas (separadas por coma, opcional)</label>
+                                <input value={form.tallas} onChange={e => updateBulkForm(index, 'tallas', e.target.value)} placeholder="Ej: S, M, L, XL" />
                               </div>
                               <div className="form-field full">
                                 <label>🖼️ Imágenes del Producto</label>
