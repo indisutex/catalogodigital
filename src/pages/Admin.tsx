@@ -8326,9 +8326,9 @@ export default function Admin() {
                                   {/* Selectors for Talla/Estampado if available */}
                                   <div style={{ display: 'flex', gap: '0.35rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
                                     {item.producto.tallas && (() => {
-                                      const rawTallas = item.producto.tallas.split(',').map(t => t.trim()).filter(Boolean);
+                                      const rawTallas = item.producto.tallas.split(',').map((t: string) => t.trim()).filter(Boolean);
                                       const tallasMap = new Map();
-                                      rawTallas.forEach(t => {
+                                      rawTallas.forEach((t: string) => {
                                         let key = t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
                                         if (key === 'talla unica' || key === 'unica' || key === 'tallaunica') key = 'unica';
                                         let displayVal = t;
@@ -8355,8 +8355,8 @@ export default function Admin() {
                                       const decodeExtraImage = (jsonStr: string) => {
                                         try { return JSON.parse(jsonStr); } catch { return { url: jsonStr, ref: '' }; }
                                       };
-                                      const legacyEstampados = item.producto.estampados?.split(',').map(e => e.trim().toUpperCase()).filter(Boolean) || [];
-                                      const extraImagesRefs = (item.producto.imagenes_extra || []).map(u => decodeExtraImage(u).ref?.trim().toUpperCase()).filter(Boolean);
+                                      const legacyEstampados = item.producto.estampados?.split(',').map((e: string) => e.trim().toUpperCase()).filter(Boolean) || [];
+                                      const extraImagesRefs = (item.producto.imagenes_extra || []).map((u: string) => decodeExtraImage(u).ref?.trim().toUpperCase()).filter(Boolean);
                                       const allEstampados = Array.from(new Set([...legacyEstampados, ...extraImagesRefs]));
 
                                       if (allEstampados.length === 0) return null;
