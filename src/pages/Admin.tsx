@@ -215,11 +215,17 @@ export default function Admin() {
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
   const [pin, setPin] = useState('');
   const [activeTab, setActiveTab] = useState<TabType>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlTab = params.get('tab') as TabType;
+
     const userRole = localStorage.getItem(`admin_role_${getTenantId()}`);
     const defaultTab = (userRole === 'asesor') ? 'pedidos' : (userRole === 'mayorista' ? 'resumen_asesor' : 'productos');
     const saved = localStorage.getItem('admin_active_tab') as string;
     if (saved === 'perfil_admin' || saved === 'perfil_admin_tab') return 'dashboard';
     const allowedTabs: string[] = ['dashboard', 'productos', 'categorias', 'pedidos', 'clientes', 'asesores', 'mayoristas', 'pos', 'siigo', 'config', 'perfil_asesor', 'resumen_asesor', 'notificaciones_asesor', 'material_apoyo', 'material_asesor', 'productos_asesor', 'productos_mayorista', 'ranking_mayorista'];
+    
+    if (urlTab && allowedTabs.includes(urlTab)) return urlTab;
+    
     if (saved && !allowedTabs.includes(saved)) return defaultTab as TabType;
     return (saved as TabType) || (defaultTab as TabType);
   });
@@ -748,6 +754,8 @@ export default function Admin() {
 
   // Sync state to URL
   useEffect(() => {
+    if (!hasRestoredModals.current) return;
+
     const params = new URLSearchParams(window.location.search);
     let changed = false;
 
