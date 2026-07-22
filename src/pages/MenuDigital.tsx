@@ -1110,8 +1110,12 @@ export default function MenuDigital() {
 
       {/* ── PRODUCT DETAIL POPUP ── */}
       {detailProduct && (() => {
+        const legacyEstampados = detailProduct.estampados?.split(',').map(e => e.trim().toUpperCase()).filter(Boolean) || [];
+        const extraImagesRefs = (detailProduct.imagenes_extra || []).map(u => decodeExtraImage(u).ref?.trim().toUpperCase()).filter(Boolean);
+        const mainImgRef = legacyEstampados.find(e => !extraImagesRefs.includes(e)) || legacyEstampados[0] || '';
+
         const allImages = [
-          ...(detailProduct.imagen_url ? [{ url: detailProduct.imagen_url, ref: '' }] : []),
+          ...(detailProduct.imagen_url ? [{ url: detailProduct.imagen_url, ref: mainImgRef }] : []),
           ...(detailProduct.imagenes_extra || []).map(u => decodeExtraImage(u)).filter(i => i.url)
         ];
         const tallas = detailProduct.tallas?.split(',').map(t => t.trim()).filter(Boolean) || [];
@@ -1143,10 +1147,10 @@ export default function MenuDigital() {
 
                 {allImages.length > 1 && (
                   <>
-                    <button className="carousel-btn carousel-btn-left" onClick={() => setCarouselIdx(i => (i - 1 + allImages.length) % allImages.length)}>
+                    <button className="carousel-btn carousel-btn-left" style={{ pointerEvents: 'auto' }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCarouselIdx(i => (i - 1 + allImages.length) % allImages.length); }}>
                       <ChevronLeft size={20} />
                     </button>
-                    <button className="carousel-btn carousel-btn-right" onClick={() => setCarouselIdx(i => (i + 1) % allImages.length)}>
+                    <button className="carousel-btn carousel-btn-right" style={{ pointerEvents: 'auto' }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCarouselIdx(i => (i + 1) % allImages.length); }}>
                       <ChevronRight size={20} />
                     </button>
                     <div className="carousel-dots">
@@ -1174,13 +1178,8 @@ export default function MenuDigital() {
                 {/* ── ESTAMPADOS + TALLAS + CANTIDAD ── */}
                 <div className="detail-controls-row" style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', alignItems: 'stretch' }}>
                   {(() => {
-                    const imageEstampados = (detailProduct.imagenes_extra || []).map(u => decodeExtraImage(u).ref?.trim().toUpperCase()).filter(Boolean);
-                    const legacyEstampados = detailProduct.estampados?.split(',').map(e => e.trim().toUpperCase()).filter(Boolean) || [];
-                    
-                    let estampados = Array.from(new Set(imageEstampados));
-                    if (estampados.length === 0) {
-                      estampados = Array.from(new Set(legacyEstampados));
-                    }
+                    const allRefs = allImages.map(img => img.ref?.trim().toUpperCase()).filter(Boolean);
+                    const estampados = Array.from(new Set([...legacyEstampados, ...allRefs]));
                     
                     if (estampados.length === 0) return null;
                     return (
