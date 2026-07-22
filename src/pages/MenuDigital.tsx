@@ -1051,8 +1051,8 @@ export default function MenuDigital() {
                 {/* Seccion de Upsell / Recomendados */}
                 {items.length > 0 && recommendedProducts.length > 0 && (
                   <div style={{ margin: '1rem', padding: '1rem', backgroundColor: '#fff0f6', borderRadius: '12px', border: '1px solid #fbcfe8' }}>
-                    <h4 style={{ color: '#be185d', fontSize: '1.05rem', margin: '0 0 1rem 0', fontWeight: 800, textAlign: 'center' }}>
-                      ¡Aprovecha estos complementos!
+                    <h4 style={{ color: '#be185d', fontSize: '0.95rem', margin: '0 0 1rem 0', fontWeight: 700, textAlign: 'center', fontFamily: 'Outfit, sans-serif' }}>
+                      También te pueden interesar:
                     </h4>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                       {recommendedProducts.map((p: Producto) => (
@@ -1118,7 +1118,7 @@ export default function MenuDigital() {
           ...(detailProduct.imagen_url ? [{ url: detailProduct.imagen_url, ref: mainImgRef }] : []),
           ...(detailProduct.imagenes_extra || []).map(u => decodeExtraImage(u)).filter(i => i.url)
         ];
-        const tallas = detailProduct.tallas?.split(',').map(t => t.trim()).filter(Boolean) || [];
+        const tallas = Array.from(new Set(detailProduct.tallas?.split(',').map(t => t.trim()).filter(Boolean) || []));
         const safeIdx = Math.min(carouselIdx, allImages.length - 1);
         const currentImgRef = allImages[safeIdx]?.ref;
         return (
@@ -1147,7 +1147,7 @@ export default function MenuDigital() {
 
                 {allImages.length > 1 && (
                   <>
-                    <button className="carousel-btn carousel-btn-left" style={{ pointerEvents: 'auto' }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCarouselIdx(i => (i - 1 + allImages.length) % allImages.length); }}>
+                    <button className="carousel-btn carousel-btn-left" style={{ pointerEvents: 'auto' }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCarouselIdx(i => i === 0 ? allImages.length - 1 : i - 1); }}>
                       <ChevronLeft size={20} />
                     </button>
                     <button className="carousel-btn carousel-btn-right" style={{ pointerEvents: 'auto' }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCarouselIdx(i => (i + 1) % allImages.length); }}>
