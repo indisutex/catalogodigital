@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase, getTenantId, setTenantId } from '../lib/supabase';
 import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
@@ -744,6 +744,122 @@ export default function Admin() {
   const [editingCategory, setEditingCategory] = useState<Categoria | null>(null);
   const [editingSubcategory, setEditingSubcategory] = useState<Subcategoria | null>(null);
 
+  const hasRestoredModals = useRef(false);
+
+  // Sync state to URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    let changed = false;
+
+    if (activeTab && params.get('tab') !== activeTab) {
+      params.set('tab', activeTab);
+      changed = true;
+    }
+
+    if (editingProduct) {
+      if (params.get('editProduct') !== editingProduct.id.toString()) {
+        params.set('editProduct', editingProduct.id.toString());
+        changed = true;
+      }
+    } else {
+      if (params.has('editProduct')) {
+        params.delete('editProduct');
+        changed = true;
+      }
+    }
+
+    if (editingCategory) {
+      if (params.get('editCategory') !== editingCategory.id.toString()) {
+        params.set('editCategory', editingCategory.id.toString());
+        changed = true;
+      }
+    } else {
+      if (params.has('editCategory')) {
+        params.delete('editCategory');
+        changed = true;
+      }
+    }
+
+    if (selectedPedido) {
+      if (params.get('viewOrder') !== selectedPedido.id.toString()) {
+        params.set('viewOrder', selectedPedido.id.toString());
+        changed = true;
+      }
+    } else {
+      if (params.has('viewOrder')) {
+        params.delete('viewOrder');
+        changed = true;
+      }
+    }
+
+    if (isAddingProduct) {
+      if (!params.has('newProduct')) { params.set('newProduct', 'true'); changed = true; }
+    } else {
+      if (params.has('newProduct')) { params.delete('newProduct'); changed = true; }
+    }
+
+    if (isAddingCategory) {
+      if (!params.has('newCategory')) { params.set('newCategory', 'true'); changed = true; }
+    } else {
+      if (params.has('newCategory')) { params.delete('newCategory'); changed = true; }
+    }
+
+    if (changed) {
+      const newUrl = `${window.location.pathname}?${params.toString()}`;
+      window.history.replaceState(null, '', newUrl);
+    }
+  }, [activeTab, editingProduct, editingCategory, selectedPedido, isAddingProduct, isAddingCategory]);
+
+  // Sync URL to State on initial data load
+  useEffect(() => {
+    if (hasRestoredModals.current) return;
+    if (productos.length === 0 && categoriasData.length === 0 && pedidos.length === 0) return;
+
+    const params = new URLSearchParams(window.location.search);
+    let restored = false;
+
+    if (params.has('editProduct') && productos.length > 0 && !editingProduct) {
+      const pId = params.get('editProduct');
+      const prod = productos.find(p => p.id === pId);
+      if (prod) {
+        setEditingProduct(prod);
+        setEditExtraImages((prod.imagenes_extra || []).map(u => decodeExtraImage(u)));
+        restored = true;
+      }
+    }
+
+    if (params.has('editCategory') && categoriasData.length > 0 && !editingCategory) {
+      const cId = params.get('editCategory');
+      const cat = categoriasData.find(c => c.id === cId);
+      if (cat) {
+        setEditingCategory(cat);
+        restored = true;
+      }
+    }
+
+    if (params.has('viewOrder') && pedidos.length > 0 && !selectedPedido) {
+      const oId = params.get('viewOrder');
+      const order = pedidos.find(o => o.id === oId);
+      if (order) {
+        setSelectedPedido(order);
+        restored = true;
+      }
+    }
+
+    if (params.has('newProduct') && !isAddingProduct) {
+      setIsAddingProduct(true);
+      restored = true;
+    }
+
+    if (params.has('newCategory') && !isAddingCategory) {
+      setIsAddingCategory(true);
+      restored = true;
+    }
+
+    if (restored || productos.length > 0 || categoriasData.length > 0 || pedidos.length > 0) {
+      hasRestoredModals.current = true;
+    }
+  }, [productos, categoriasData, pedidos]);
   function showToast(message: string, type: 'success' | 'error' = 'success') {
     setToast({ message, type });
     setTimeout(() => setToast(null), 3000);
@@ -1132,23 +1248,24 @@ export default function Admin() {
     if (files.length === 0) return;
     setLoading(true);
     try {
-      const uploadedUrls: string[] = [];
+      const uploadedData: { url: string, ref: string }[] = [];
       for (const file of files) {
         const compFile = await compressImage(file);
         const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${compFile.name.split('.').pop()}`;
         const { error: uploadError } = await supabase.storage.from('archivos').upload(fileName, compFile);
         if (uploadError) throw uploadError;
         const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
-        uploadedUrls.push(data.publicUrl);
+        const originalName = file.name.split('.').slice(0, -1).join('.').toUpperCase();
+        uploadedData.push({ url: data.publicUrl, ref: originalName });
       }
       // Insertar las URLs subidas a partir de la posición imgIndex
       const newForms = [...bulkForms];
       const newImagenes = [...newForms[formIndex].imagenes];
-      newImagenes.splice(imgIndex, 1, ...uploadedUrls.map(u => ({ url: u, ref: '' })));
+      newImagenes.splice(imgIndex, 1, ...uploadedData);
       // Agregar filas extra si se subieron más de una imagen
       newForms[formIndex] = { ...newForms[formIndex], imagenes: newImagenes };
       setBulkForms(newForms);
-      showToast(`${uploadedUrls.length} foto(s) subida(s) ✓`);
+      showToast(`${uploadedData.length} foto(s) subida(s) ✓`);
     } catch {
       showToast('Error al subir foto(s)', 'error');
     } finally {
@@ -1681,21 +1798,22 @@ export default function Admin() {
     if (!files.length) return;
     setEditUploadingIdx(idx);
     try {
-      const uploadedUrls: string[] = [];
+      const uploadedData: { url: string, ref: string }[] = [];
       for (const file of files) {
         const compFile = await compressImage(file);
         const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${compFile.name.split('.').pop()}`;
         const { error: uploadError } = await supabase.storage.from('archivos').upload(fileName, compFile);
         if (uploadError) throw uploadError;
         const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
-        uploadedUrls.push(data.publicUrl);
+        const originalName = file.name.split('.').slice(0, -1).join('.').toUpperCase();
+        uploadedData.push({ url: data.publicUrl, ref: originalName });
       }
       setEditExtraImages(prev => {
         const next = [...prev];
-        next.splice(idx, 1, ...uploadedUrls.map(u => ({ url: u, ref: '' })));
+        next.splice(idx, 1, ...uploadedData);
         return next;
       });
-      showToast(`${uploadedUrls.length} foto(s) extra subida(s) ✓`);
+      showToast(`${uploadedData.length} foto(s) extra subida(s) ✓`);
     } catch { showToast('Error al subir foto extra', 'error'); }
     finally { setEditUploadingIdx(null); }
   };
@@ -3211,17 +3329,18 @@ export default function Admin() {
                           if (!files.length) return;
                           setEditUploadingIdx(-1);
                           try {
-                            const urls: string[] = [];
+                            const uploadedData: { url: string, ref: string }[] = [];
                             for (const file of files) {
                               const compFile = await compressImage(file);
                               const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${compFile.name.split('.').pop()}`;
                               const { error: uploadError } = await supabase.storage.from('archivos').upload(fileName, compFile);
                               if (uploadError) throw uploadError;
                               const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
-                              urls.push(data.publicUrl);
+                              const originalName = file.name.split('.').slice(0, -1).join('.').toUpperCase();
+                              uploadedData.push({ url: data.publicUrl, ref: originalName });
                             }
-                            setEditExtraImages(prev => [...prev, ...urls.map(u => ({ url: u, ref: '' }))]);
-                            showToast(`${urls.length} foto(s) agregada(s) ✓`);
+                            setEditExtraImages(prev => [...prev, ...uploadedData]);
+                            showToast(`${uploadedData.length} foto(s) agregada(s) ✓`);
                           } catch { showToast('Error al subir foto(s)', 'error'); }
                           finally { setEditUploadingIdx(null); }
                         }} />
