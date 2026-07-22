@@ -3400,20 +3400,18 @@ export default function Admin() {
                       {/* -- FOTO PRINCIPAL -- */}
                       <div>
                         <label>Foto Principal</label>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem', alignItems: 'flex-start' }}>
+                        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.5rem', alignItems: 'center', width: 'fit-content' }}>
                           {editingProduct.imagen_url ? (
-                            <img src={editingProduct.imagen_url} alt="" style={{ width: 160, height: 160, objectFit: 'cover', borderRadius: 8, border: '2px solid #cbd5e1', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }} />
+                            <img src={editingProduct.imagen_url} alt="" style={{ width: 160, height: 160, objectFit: 'cover', borderRadius: 8, border: '2px solid #e2e8f0' }} />
                           ) : (
-                            <div style={{ width: 160, height: 160, background: '#e2e8f0', borderRadius: 8, border: '2px dashed #94a3b8', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', color: '#64748b', fontWeight: 600, gap: '0.5rem' }}>
+                            <div style={{ width: 160, height: 160, background: '#f1f5f9', borderRadius: 8, border: '2px dashed #cbd5e1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', color: '#64748b', fontWeight: 600, gap: '0.5rem' }}>
                               <span style={{ fontSize: '2rem' }}>🖼️</span>
                               Sin imagen
                             </div>
                           )}
-                          <input value={editingProduct.imagen_url || ''} onChange={e => setEditingProduct({ ...editingProduct, imagen_url: e.target.value })} placeholder="URL de imagen principal" style={{ width: '100%', padding: '0.4rem 0.6rem', fontSize: '0.85rem' }} />
-                          <label htmlFor="edit-main-img-upload" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', background: '#f0f9ff', border: '1px dashed #0ea5e9', borderRadius: '8px', padding: '0.5rem 1rem', fontSize: '0.85rem', color: '#0ea5e9', fontWeight: 600, width: '100%', justifyContent: 'center' }}>
-                            <Upload size={14} /> Subir foto principal
+                          <label style={{ position: 'absolute', top: 0, left: 0, width: 160, height: 160, cursor: 'pointer', opacity: 0 }}>
+                            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleEditMainImgUpload} />
                           </label>
-                          <input id="edit-main-img-upload" type="file" accept="image/*" style={{ display: 'none' }} onChange={handleEditMainImgUpload} />
                         </div>
                       </div>
 
