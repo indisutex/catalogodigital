@@ -3,6 +3,7 @@ import { supabase, getTenantId } from '../lib/supabase';
 import type { Producto, Categoria, Subcategoria, Configuracion } from '../types';
 import { Loader2, Search, Plus, ShoppingBag, X, ChevronLeft, ChevronRight, ShoppingCart, Volume2, VolumeX } from 'lucide-react';
 import { useCart, getEffectivePrice } from '../context/CartContext';
+import PqrsModal from '../components/PqrsModal';
 import './MenuDigital.css';
 
 // Ejecutar sincrónicamente para evitar parpadeo de color
@@ -76,6 +77,7 @@ export default function MenuDigital() {
   const [searchVisible, setSearchVisible] = useState(false);
   
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isPqrsOpen, setIsPqrsOpen] = useState(false);
   const [isCheckoutMode, setIsCheckoutMode] = useState(false);
   const [overrideWhatsApp, setOverrideWhatsApp] = useState<string | null>(null);
   const [heroMuted, setHeroMuted] = useState(true);
@@ -871,6 +873,17 @@ export default function MenuDigital() {
           )}
         </div>
       </div>
+
+      {/* Footer PQRS */}
+      <div style={{ textAlign: 'center', padding: '3rem 1rem', background: '#f8fafc', borderTop: '1px solid #e2e8f0', marginTop: '2rem' }}>
+        <p style={{ color: '#64748b', fontSize: '0.95rem', marginBottom: '0.75rem' }}>¿Necesitas ayuda con tu pedido o tienes alguna duda?</p>
+        <button onClick={() => setIsPqrsOpen(true)} className="btn-primary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.9rem', background: '#475569' }}>
+          Soporte / PQRS
+        </button>
+      </div>
+
+      {/* PQRS Modal */}
+      {isPqrsOpen && <PqrsModal onClose={() => setIsPqrsOpen(false)} />}
 
       {/* Floating Cart Button */}
       {totalItems > 0 && !isCartOpen && (

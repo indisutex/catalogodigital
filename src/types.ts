@@ -105,3 +105,15 @@ export interface Mayorista {
   video_hero_url?: string;
 }
 
+export interface PQRS {
+  id: string;
+  tenant_id: string;
+  created_at: string;
+  nombre_cliente: string;
+  telefono_cliente: string;
+  numero_pedido?: string;
+  motivo: string;
+  descripcion: string;
+  evidencia_url?: string;
+  estado: string;
+}

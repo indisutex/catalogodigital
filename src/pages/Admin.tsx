@@ -191,25 +191,25 @@ function MiNegocioSettings({
         </div>
       </div>
       <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-        <div className="form-group">
+        <div className="form-field">
           <label style={{ fontWeight: 600 }}>Nombre de tu Negocio</label>
-          <input type="text" className="form-input" value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Ej: Moda Express" />
+          <input type="text" value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Ej: Moda Express" />
         </div>
-        <div className="form-group">
+        <div className="form-field">
           <label style={{ fontWeight: 600 }}>Logo del Negocio</label>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
             {logo && <img src={logo} alt="Logo preview" style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '8px' }} />}
-            <input type="text" className="form-input" style={{ flex: 1 }} value={logo} onChange={e => setLogo(e.target.value)} placeholder="URL del logo" />
+            <input type="text" style={{ flex: 1 }} value={logo} onChange={e => setLogo(e.target.value)} placeholder="URL del logo" />
             <label className="btn-upload-img" style={{ flexShrink: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.55rem 0.85rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600 }}>
               <Upload size={12} /> {uploading ? '...' : 'Subir'}
               <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleFileUpload(e, 'logo')} disabled={uploading} />
             </label>
           </div>
         </div>
-        <div className="form-group">
+        <div className="form-field">
           <label style={{ fontWeight: 600 }}>Video Principal / Imagen Hero</label>
           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <input type="text" className="form-input" style={{ flex: 1 }} value={video} onChange={e => setVideo(e.target.value)} placeholder="URL del video o imagen" />
+            <input type="text" style={{ flex: 1 }} value={video} onChange={e => setVideo(e.target.value)} placeholder="URL del video o imagen" />
             <label className="btn-upload-img" style={{ flexShrink: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.55rem 0.85rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600 }}>
               <Upload size={12} /> {uploading ? '...' : 'Subir'}
               <input type="file" accept="video/*,image/*" style={{ display: 'none' }} onChange={e => handleFileUpload(e, 'video')} disabled={uploading} />
@@ -221,43 +221,46 @@ function MiNegocioSettings({
         <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           <h3 style={{ fontSize: '1.1rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>Configuración de Botones del Catálogo</h3>
           
-          <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-            <h4 style={{ margin: '0 0 1rem 0' }}>Botón: ¿Dropshipper?</h4>
-            <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-              <input type="checkbox" id="ds-enabled" checked={dsEnabled} onChange={e => setDsEnabled(e.target.checked)} style={{ width: 'auto' }} />
-              <label htmlFor="ds-enabled" style={{ margin: 0 }}>Habilitar Botón Dropshipper</label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+            <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <h4 style={{ margin: '0 0 0.5rem 0' }}>Botón 1</h4>
+              <div className="form-field" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <input type="checkbox" id="ds-enabled" checked={dsEnabled} onChange={e => setDsEnabled(e.target.checked)} style={{ width: 'auto' }} />
+                <label htmlFor="ds-enabled" style={{ margin: 0 }}>Habilitar Botón 1</label>
+              </div>
+              <div className="form-field">
+                <label style={{ fontWeight: 600 }}>Texto del Botón</label>
+                <input type="text" value={dsText} onChange={e => setDsText(e.target.value)} placeholder="Ej: ¿Eres Mayorista?" />
+              </div>
+              <div className="form-field">
+                <label style={{ fontWeight: 600 }}>Enlace del Botón (WhatsApp o web)</label>
+                <input type="text" value={dsLink} onChange={e => setDsLink(e.target.value)} placeholder="Ej: https://wa.me/57..." />
+              </div>
             </div>
-            <div className="form-group" style={{ marginBottom: '0.5rem' }}>
-              <label style={{ fontWeight: 600 }}>Texto del Botón</label>
-              <input type="text" className="form-input" value={dsText} onChange={e => setDsText(e.target.value)} placeholder="Ej: ¿Eres Dropshipper?" />
-            </div>
-            <div className="form-group">
-              <label style={{ fontWeight: 600 }}>Enlace del Botón (WhatsApp o web)</label>
-              <input type="text" className="form-input" value={dsLink} onChange={e => setDsLink(e.target.value)} placeholder="Ej: https://wa.me/57..." />
-            </div>
-          </div>
 
-          <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-            <h4 style={{ margin: '0 0 1rem 0' }}>Botón: Ganar Dinero</h4>
-            <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
-              <input type="checkbox" id="earn-enabled" checked={earnEnabled} onChange={e => setEarnEnabled(e.target.checked)} style={{ width: 'auto' }} />
-              <label htmlFor="earn-enabled" style={{ margin: 0 }}>Habilitar Botón Ganar Dinero</label>
-            </div>
-            <div className="form-group" style={{ marginBottom: '0.5rem' }}>
-              <label style={{ fontWeight: 600 }}>Texto del Botón</label>
-              <input type="text" className="form-input" value={earnText} onChange={e => setEarnText(e.target.value)} placeholder="Ej: ¿Quieres ganar dinero extra?" />
-            </div>
-            <div className="form-group">
-              <label style={{ fontWeight: 600 }}>Enlace del Botón (WhatsApp o web)</label>
-              <input type="text" className="form-input" value={earnLink} onChange={e => setEarnLink(e.target.value)} placeholder="Ej: https://wa.me/57..." />
+            <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <h4 style={{ margin: '0 0 0.5rem 0' }}>Botón 2</h4>
+              <div className="form-field" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <input type="checkbox" id="earn-enabled" checked={earnEnabled} onChange={e => setEarnEnabled(e.target.checked)} style={{ width: 'auto' }} />
+                <label htmlFor="earn-enabled" style={{ margin: 0 }}>Habilitar Botón 2</label>
+              </div>
+              <div className="form-field">
+                <label style={{ fontWeight: 600 }}>Texto del Botón</label>
+                <input type="text" value={earnText} onChange={e => setEarnText(e.target.value)} placeholder="Ej: ¿Quieres ganar dinero extra?" />
+              </div>
+              <div className="form-field">
+                <label style={{ fontWeight: 600 }}>Enlace del Botón (WhatsApp o web)</label>
+                <input type="text" value={earnLink} onChange={e => setEarnLink(e.target.value)} placeholder="Ej: https://wa.me/57..." />
+              </div>
             </div>
           </div>
         </div>
 
-
-        <button className="btn-main" onClick={handleSave} disabled={saving || uploading} style={{ alignSelf: 'flex-start', marginTop: '0.5rem' }}>
-          {saving ? 'Guardando...' : 'Guardar Configuración'}
-        </button>
+        <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '1rem' }}>
+          <button className="btn-primary" onClick={handleSave} disabled={saving || uploading}>
+            {saving ? 'Guardando...' : 'Guardar Configuración'}
+          </button>
+        </div>
       </div>
     </div>
   );
