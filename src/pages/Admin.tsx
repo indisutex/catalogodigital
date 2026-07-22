@@ -1369,7 +1369,7 @@ export default function Admin() {
         supabase.from('asesores').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
         supabase.from('material_apoyo').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
         supabase.from('mayoristas').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
-        supabase.from('pqrs').select('*').or(`tenant_id.eq.${tenant},tenant_id.eq.${tenant.replace(/_/g, '-')},tenant_id.eq.${tenant.replace(/-/g, '_')}`).order('created_at', { ascending: false })
+        supabase.from('pqrs').select('*').or(`tenant_id.eq.${tenant},tenant_id.eq.${tenant.replace(/_/g, '-')},tenant_id.eq.${tenant.replace(/-/g, '_')},tenant_id.is.null`).order('created_at', { ascending: false })
       ]);
 
       if (catRes.data) setCategoriasData(catRes.data);
@@ -1387,8 +1387,8 @@ export default function Admin() {
         if (rawLocal) localPqrs = JSON.parse(rawLocal);
       } catch (lsE) {}
 
-      const isMatchingTenant = (tId?: string) => {
-        if (!tId) return false;
+      const isMatchingTenant = (tId?: string | null) => {
+        if (!tId) return true; // Incluir PQRS sin tenant para asegurar que no se pierdan
         return tId === tenant || tId === tenant.replace(/_/g, '-') || tId === tenant.replace(/-/g, '_');
       };
 
@@ -3594,10 +3594,6 @@ export default function Admin() {
                             );
                           })}
                         </div>
-                      </div>
-                      <div className="form-field full">
-                        <label>Estampados (opcional, separados por coma)</label>
-                        <input type="text" value={editingProduct.estampados || ''} onChange={e => setEditingProduct({ ...editingProduct, estampados: e.target.value })} placeholder="Ej: Snoopy, Mickey, Liso" />
                       </div>
                       <div className="form-field full" style={{ background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
