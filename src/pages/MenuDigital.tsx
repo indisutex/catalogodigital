@@ -1,7 +1,7 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { supabase, getTenantId } from '../lib/supabase';
 import type { Producto, Categoria, Subcategoria, Configuracion } from '../types';
-import { Loader2, Search, Plus, ShoppingBag, X, ChevronLeft, ChevronRight, ShoppingCart, Volume2, VolumeX } from 'lucide-react';
+import { Loader2, Search, Plus, ShoppingBag, X, ChevronLeft, ChevronRight, ShoppingCart, Volume2, VolumeX, Package } from 'lucide-react';
 import { useCart, getEffectivePrice } from '../context/CartContext';
 import PqrsModal from '../components/PqrsModal';
 import './MenuDigital.css';
@@ -437,6 +437,13 @@ export default function MenuDigital() {
   }
 
   const totalItems = items.reduce((sum, item) => sum + item.cantidad, 0);
+
+  const recommendedProducts = useMemo(() => {
+    if (items.length === 0) return [];
+    const inCartIds = items.map(i => i.id);
+    const available = productos.filter(p => !inCartIds.includes(p.id) && !p.oculto);
+    return available.slice(0, 2);
+  }, [productos, items]);
 
   const handleEnviarPedido = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1040,6 +1047,46 @@ export default function MenuDigital() {
                     ))
                   )}
                 </div>
+
+                {/* Seccion de Upsell / Recomendados */}
+                {items.length > 0 && recommendedProducts.length > 0 && (
+                  <div style={{ margin: '1rem', padding: '1rem', backgroundColor: '#fff0f6', borderRadius: '12px', border: '1px solid #fbcfe8' }}>
+                    <h4 style={{ color: '#be185d', fontSize: '1.05rem', margin: '0 0 1rem 0', fontWeight: 800, textAlign: 'center' }}>
+                      ¡Aprovecha estos complementos!
+                    </h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                      {recommendedProducts.map((p: Producto) => (
+                        <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', backgroundColor: 'white', padding: '0.75rem', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                          <div style={{ width: '50px', height: '50px', flexShrink: 0, borderRadius: '6px', overflow: 'hidden', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {p.imagen_url ? (
+                              <img src={p.imagen_url} alt={p.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (p.imagenes_extra && p.imagenes_extra.length > 0 && decodeExtraImage(p.imagenes_extra[0]).url) ? (
+                              <img src={decodeExtraImage(p.imagenes_extra[0]).url} alt={p.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              <Package size={20} color="#94a3b8" />
+                            )}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <h5 style={{ margin: '0 0 0.25rem 0', fontSize: '0.9rem', color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.nombre}</h5>
+                            <p style={{ margin: 0, color: '#e11d48', fontWeight: 800, fontSize: '0.9rem' }}>
+                              ${getEffectivePrice(p, buyerType, markupPorcentaje, ajustesProductos).toLocaleString('es-CO')}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => {
+                              const pTalla = p.tallas?.split(',')[0]?.trim();
+                              const pEstampado = p.estampados?.split(',')[0]?.trim();
+                              addToCart(p, pTalla, pEstampado, 1);
+                            }}
+                            style={{ backgroundColor: '#e11d48', color: 'white', border: 'none', padding: '0.4rem 0.75rem', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                          >
+                            + Agregar
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 <div className="cart-footer">
                   <div className="cart-total">
