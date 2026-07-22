@@ -64,7 +64,7 @@ export default function PqrsModal({ onClose }: { onClose: () => void }) {
       setEnviado(true);
     } catch (err: any) {
       console.error('Error enviando PQRS:', err);
-      setError('Hubo un error al enviar tu solicitud. Intenta nuevamente.');
+      setError(err?.message || 'Hubo un error al enviar tu solicitud. Intenta nuevamente.');
     } finally {
       setEnviando(false);
     }

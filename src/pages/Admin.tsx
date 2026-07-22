@@ -4,7 +4,7 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista, PQRS } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Filter, Link, LifeBuoy } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Filter, Link, LifeBuoy, PackageCheck, ArrowRightLeft } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const SECRET_PIN = '0000';
@@ -767,6 +767,141 @@ export default function Admin() {
   const [posCheckoutSuccess, setPosCheckoutSuccess] = useState(false);
   const [posLastInvoice, setPosLastInvoice] = useState<any | null>(null);
 
+  // Asesor Transfer & Product Migration States
+  const [movingAsesor, setMovingAsesor] = useState<Asesor | null>(null);
+  const [targetAsesorTenant, setTargetAsesorTenant] = useState('');
+
+  const [showMigrateProductsModal, setShowMigrateProductsModal] = useState(false);
+  const [selectedSourceTenant, setSelectedSourceTenant] = useState('');
+  const [sourceProducts, setSourceProducts] = useState<Producto[]>([]);
+  const [selectedProductIdsToMigrate, setSelectedProductIdsToMigrate] = useState<string[]>([]);
+  const [isLoadingSourceProducts, setIsLoadingSourceProducts] = useState(false);
+  const [isMigratingProducts, setIsMigratingProducts] = useState(false);
+  const [migrateIncludeImages, setMigrateIncludeImages] = useState(true);
+  const [migrateIncludeTallas, setMigrateIncludeTallas] = useState(true);
+  const [migrateIncludePrices, setMigrateIncludePrices] = useState(true);
+  const [migrateCloneCategories, setMigrateCloneCategories] = useState(true);
+
+  const availableTenantsList = [
+    { slug: 'saramantha', name: 'Saramantha' },
+    { slug: 'sublimados_majestic', name: 'Sublimados Majestic' },
+    { slug: 'pijamas_lucerito', name: 'Pijamas Lucerito' },
+    { slug: 'indisutex', name: 'Indisutex' },
+    { slug: 'lovely', name: 'Lovely' }
+  ];
+
+  const handleConfirmMoveAsesor = async () => {
+    if (!movingAsesor || !targetAsesorTenant) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('asesores')
+        .update({ tenant_id: targetAsesorTenant })
+        .eq('id', movingAsesor.id);
+
+      if (error) throw error;
+
+      const targetName = availableTenantsList.find(t => t.slug === targetAsesorTenant)?.name || targetAsesorTenant;
+      showToast(`Asesor ${movingAsesor.nombre} trasladado a ${targetName} ✓`, 'success');
+      setMovingAsesor(null);
+      setTargetAsesorTenant('');
+      cargarDatos();
+    } catch (err: any) {
+      showToast('Error al trasladar asesor: ' + err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLoadSourceProducts = async (tenantSlug: string) => {
+    setSelectedSourceTenant(tenantSlug);
+    if (!tenantSlug) {
+      setSourceProducts([]);
+      setSelectedProductIdsToMigrate([]);
+      return;
+    }
+    setIsLoadingSourceProducts(true);
+    try {
+      const { data, error } = await supabase
+        .from('productos')
+        .select('*')
+        .eq('tenant_id', tenantSlug)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setSourceProducts(data || []);
+      setSelectedProductIdsToMigrate((data || []).map(p => p.id));
+    } catch (err: any) {
+      showToast('Error al cargar productos de la empresa de origen', 'error');
+    } finally {
+      setIsLoadingSourceProducts(false);
+    }
+  };
+
+  const handleConfirmMigrateProducts = async () => {
+    if (!selectedSourceTenant || selectedProductIdsToMigrate.length === 0) {
+      showToast('Selecciona al menos 1 producto para migrar', 'error');
+      return;
+    }
+    const currentTenant = getTenantId();
+    if (selectedSourceTenant === currentTenant) {
+      showToast('No puedes migrar productos de la misma tienda actual', 'error');
+      return;
+    }
+    setIsMigratingProducts(true);
+    try {
+      const productsToMigrate = sourceProducts.filter(p => selectedProductIdsToMigrate.includes(p.id));
+
+      if (migrateCloneCategories) {
+        const sourceCategories = Array.from(new Set(productsToMigrate.map(p => p.categoria).filter(Boolean)));
+        for (const catSlug of sourceCategories) {
+          const exists = categoriasData.find(c => c.slug === catSlug || c.nombre.toLowerCase() === catSlug.toLowerCase());
+          if (!exists) {
+            await supabase.from('categorias').insert([{
+              tenant_id: currentTenant,
+              nombre: catSlug.charAt(0).toUpperCase() + catSlug.slice(1),
+              slug: catSlug,
+              icono: '🛍️',
+              orden: categoriasData.length + 1
+            }]);
+          }
+        }
+      }
+
+      const newProductsToInsert = productsToMigrate.map(p => ({
+        tenant_id: currentTenant,
+        nombre: p.nombre,
+        descripcion: p.descripcion,
+        precio: migrateIncludePrices ? p.precio : 0,
+        precio_por_mayor: migrateIncludePrices ? p.precio_por_mayor : null,
+        precio_50_unidades: migrateIncludePrices ? p.precio_50_unidades : null,
+        categoria: p.categoria,
+        subcategoria: p.subcategoria,
+        imagen_url: migrateIncludeImages ? p.imagen_url : null,
+        imagenes_extra: migrateIncludeImages ? p.imagenes_extra : [],
+        video_url: p.video_url,
+        tallas: migrateIncludeTallas ? p.tallas : null,
+        estampados: migrateIncludeTallas ? p.estampados : null,
+        stock: p.stock || 100,
+        referencia: p.referencia ? `${p.referencia}` : null
+      }));
+
+      const { error: insertError } = await supabase.from('productos').insert(newProductsToInsert);
+      if (insertError) throw insertError;
+
+      showToast(`¡${newProductsToInsert.length} producto(s) migrados exitosamente! 🎉`, 'success');
+      setShowMigrateProductsModal(false);
+      setSelectedSourceTenant('');
+      setSourceProducts([]);
+      setSelectedProductIdsToMigrate([]);
+      cargarDatos();
+    } catch (err: any) {
+      showToast('Error al migrar productos: ' + err.message, 'error');
+    } finally {
+      setIsMigratingProducts(false);
+    }
+  };
+
   useEffect(() => {
     const lookupCustomer = async () => {
       if (posCustomerPhone.trim().length >= 7) {
@@ -1222,8 +1357,7 @@ export default function Admin() {
       if (matRes && matRes.data) setMateriales(matRes.data);
       if (mayRes && mayRes.data) setMayoristas(mayRes.data);
       if (pqrsRes && pqrsRes.data) {
-        const filtered = pqrsRes.data.filter(p => !p.tenant_id || p.tenant_id === tenant);
-        setListaPqrs(filtered.length > 0 ? filtered : pqrsRes.data);
+        setListaPqrs(pqrsRes.data);
       }
 
       // Fetch products in chunks of 1000 to bypass Supabase defaults
@@ -3783,9 +3917,19 @@ export default function Admin() {
                   <X size={14} /> Volver al Inventario
                 </button>
               ) : (
-                <button className="btn-primary" onClick={() => { setBulkForms([{ ...emptyProduct }]); setIsAddingProduct(true); }}>
-                  <Plus size={14} /> Nuevo Producto
-                </button>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => setShowMigrateProductsModal(true)}
+                    style={{ color: '#0ea5e9', borderColor: '#bae6fd', background: '#f0f9ff', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                  >
+                    <PackageCheck size={15} /> Migrar de Empresa
+                  </button>
+                  <button className="btn-primary" onClick={() => { setBulkForms([{ ...emptyProduct }]); setIsAddingProduct(true); }}>
+                    <Plus size={14} /> Nuevo Producto
+                  </button>
+                </div>
               )
             )}
             {activeTab === 'categorias' && (
@@ -4280,6 +4424,14 @@ export default function Admin() {
                       <p>Todos los productos publicados en tu tienda</p>
                     </div>
                     <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end', marginLeft: 'auto' }}>
+                      <button 
+                        className="btn-secondary hover-lift" 
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', border: '1px solid #bae6fd', color: '#0369a1', background: '#f0f9ff', padding: '0.55rem 1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.82rem' }}
+                        onClick={() => { setShowMigrateProductsModal(true); setSelectedSourceTenant(''); setSourceProducts([]); setSelectedProductIdsToMigrate([]); }}
+                        title="Copiar masivamente productos de otra tienda o empresa"
+                      >
+                        <PackageCheck size={16} color="#0ea5e9" /> Migrar de Empresa
+                      </button>
                       <button 
                         className="btn-secondary hover-lift" 
                         style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', border: '1px solid #fca5a5', color: '#b91c1c', background: '#fee2e2', padding: '0.55rem 1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.82rem' }}
@@ -7386,6 +7538,15 @@ export default function Admin() {
                                       </button>
                                       <button
                                         type="button"
+                                        onClick={() => { setMovingAsesor(a); setTargetAsesorTenant(''); }}
+                                        className="btn-secondary"
+                                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: '#0284c7', borderColor: '#bae6fd', background: '#f0f9ff', fontWeight: 600 }}
+                                        title="Trasladar asesor a otro negocio"
+                                      >
+                                        <ArrowRightLeft size={12} /> Trasladar
+                                      </button>
+                                      <button
+                                        type="button"
                                         onClick={() => handleEliminarAsesor(a.id)}
                                         className="btn-secondary"
                                         style={{ color: '#ef4444', borderColor: '#fee2e2', background: '#fef2f2', padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}
@@ -10346,6 +10507,237 @@ export default function Admin() {
               </button>
             </>
           )}
+        </div>
+      )}
+
+      {/* ── MODAL: TRASLADAR ASESOR ── */}
+      {movingAsesor && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+          <div style={{ background: '#fff', borderRadius: '16px', maxWidth: '440px', width: '100%', padding: '1.5rem', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <ArrowRightLeft size={18} color="#0284c7" /> Trasladar Asesor
+              </h3>
+              <button type="button" onClick={() => setMovingAsesor(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <p style={{ fontSize: '0.9rem', color: '#475569', marginBottom: '1rem' }}>
+              Selecciona a qué empresa deseas trasladar al asesor <strong>{movingAsesor.nombre}</strong>:
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
+              {availableTenantsList.map(t => {
+                const isCurrent = t.slug === getTenantId();
+                const isSelected = targetAsesorTenant === t.slug;
+                return (
+                  <button
+                    key={t.slug}
+                    type="button"
+                    disabled={isCurrent}
+                    onClick={() => setTargetAsesorTenant(t.slug)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.75rem 1rem',
+                      borderRadius: '10px',
+                      border: isSelected ? '2px solid #0284c7' : '1px solid #e2e8f0',
+                      background: isCurrent ? '#f8fafc' : isSelected ? '#f0f9ff' : '#ffffff',
+                      opacity: isCurrent ? 0.6 : 1,
+                      cursor: isCurrent ? 'not-allowed' : 'pointer',
+                      textAlign: 'left',
+                      fontWeight: isSelected ? 700 : 500,
+                      color: isSelected ? '#0369a1' : '#334155',
+                      transition: 'all 0.15s'
+                    }}
+                  >
+                    <span>{t.name} ({t.slug})</span>
+                    {isCurrent && <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>(Actual)</span>}
+                    {isSelected && <span style={{ color: '#0284c7', fontWeight: 800 }}>✓</span>}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+              <button type="button" className="btn-secondary" onClick={() => setMovingAsesor(null)}>
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={!targetAsesorTenant || loading}
+                onClick={handleConfirmMoveAsesor}
+                style={{ background: '#0284c7', color: '#fff' }}
+              >
+                {loading ? 'Trasladando...' : 'Confirmar Traslado'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: MIGRAR PRODUCTOS ENTRE EMPRESAS ── */}
+      {showMigrateProductsModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+          <div style={{ background: '#fff', borderRadius: '16px', maxWidth: '650px', width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
+            <div style={{ padding: '1.25rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <PackageCheck size={20} color="#0ea5e9" /> Migrar Productos de Otra Empresa
+                </h3>
+                <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: '#64748b' }}>
+                  Copia masiva de productos hacia la empresa actual (<strong>{availableTenantsList.find(t => t.slug === getTenantId())?.name || getTenantId()}</strong>)
+                </p>
+              </div>
+              <button type="button" onClick={() => setShowMigrateProductsModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div style={{ padding: '1.25rem', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              {/* Step 1: Source Tenant */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '0.5rem' }}>
+                  1. Empresa de Origen (de dónde provienen los productos):
+                </label>
+                <select
+                  value={selectedSourceTenant}
+                  onChange={e => handleLoadSourceProducts(e.target.value)}
+                  style={{ width: '100%', padding: '0.65rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none' }}
+                >
+                  <option value="">-- Selecciona Empresa de Origen --</option>
+                  {availableTenantsList.filter(t => t.slug !== getTenantId()).map(t => (
+                    <option key={t.slug} value={t.slug}>{t.name} ({t.slug})</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Step 2: Options */}
+              {selectedSourceTenant && (
+                <div style={{ background: '#f0f9ff', borderRadius: '10px', padding: '0.85rem 1rem', border: '1px solid #bae6fd' }}>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0369a1', display: 'block', marginBottom: '0.5rem' }}>
+                    Opciones de Clonación:
+                  </span>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem', fontSize: '0.8rem', color: '#0f172a' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={migrateIncludeImages} onChange={e => setMigrateIncludeImages(e.target.checked)} />
+                      Copiar Imágenes y Estampados
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={migrateIncludePrices} onChange={e => setMigrateIncludePrices(e.target.checked)} />
+                      Copiar Precios (Detal / Por Mayor)
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={migrateIncludeTallas} onChange={e => setMigrateIncludeTallas(e.target.checked)} />
+                      Copiar Tallas y Variaciones
+                    </label>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={migrateCloneCategories} onChange={e => setMigrateCloneCategories(e.target.checked)} />
+                      Crear Categorías Faltantes
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {/* Step 3: Product Selector */}
+              {selectedSourceTenant && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                    <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155' }}>
+                      2. Selecciona Productos a Migrar ({selectedProductIdsToMigrate.length} / {sourceProducts.length}):
+                    </label>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedProductIdsToMigrate(sourceProducts.map(p => p.id))}
+                        style={{ fontSize: '0.75rem', background: 'none', border: 'none', color: '#0284c7', cursor: 'pointer', fontWeight: 600 }}
+                      >
+                        Seleccionar Todos
+                      </button>
+                      <span style={{ color: '#cbd5e1' }}>|</span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedProductIdsToMigrate([])}
+                        style={{ fontSize: '0.75rem', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer' }}
+                      >
+                        Desmarcar Todos
+                      </button>
+                    </div>
+                  </div>
+
+                  {isLoadingSourceProducts ? (
+                    <div style={{ textAlign: 'center', padding: '2rem', color: '#64748b' }}>Cargando catálogo...</div>
+                  ) : sourceProducts.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '1.5rem', background: '#f8fafc', borderRadius: '8px', color: '#94a3b8', fontSize: '0.85rem' }}>
+                      No se encontraron productos en esta empresa.
+                    </div>
+                  ) : (
+                    <div style={{ maxHeight: '220px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.5rem' }}>
+                      {sourceProducts.map(prod => {
+                        const isChecked = selectedProductIdsToMigrate.includes(prod.id);
+                        return (
+                          <label
+                            key={prod.id}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.75rem',
+                              padding: '0.4rem 0.6rem',
+                              borderRadius: '6px',
+                              background: isChecked ? '#f0f9ff' : 'transparent',
+                              cursor: 'pointer',
+                              marginBottom: '0.2rem'
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={e => {
+                                if (e.target.checked) {
+                                  setSelectedProductIdsToMigrate([...selectedProductIdsToMigrate, prod.id]);
+                                } else {
+                                  setSelectedProductIdsToMigrate(selectedProductIdsToMigrate.filter(id => id !== prod.id));
+                                }
+                              }}
+                            />
+                            {prod.imagen_url && (
+                              <img src={prod.imagen_url} alt="" style={{ width: 32, height: 32, borderRadius: 4, objectFit: 'cover' }} />
+                            )}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {prod.nombre}
+                              </div>
+                              <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                                ${prod.precio?.toLocaleString()} {prod.categoria ? `• ${prod.categoria}` : ''}
+                              </div>
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div style={{ padding: '1rem 1.25rem', borderTop: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+              <button type="button" className="btn-secondary" onClick={() => setShowMigrateProductsModal(false)}>
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={!selectedSourceTenant || selectedProductIdsToMigrate.length === 0 || isMigratingProducts}
+                onClick={handleConfirmMigrateProducts}
+                style={{ background: '#0ea5e9', color: '#fff' }}
+              >
+                {isMigratingProducts ? 'Migrando Productos...' : `Migrar ${selectedProductIdsToMigrate.length} Producto(s)`}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
