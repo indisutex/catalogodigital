@@ -793,6 +793,7 @@ export default function Admin() {
   const [productSort, setProductSort] = useState<string>('recientes');
   const [mayoristaSearchQuery, setMayoristaSearchQuery] = useState('');
   const [mayoristaProductSort, setMayoristaProductSort] = useState<string>('recientes');
+  const [mayoristaCategoryFilter, setMayoristaCategoryFilter] = useState<string>('todos');
 
   const [bulkForms, setBulkForms] = useState<ProductFormData[]>([{ ...emptyProduct }]);
 
@@ -3096,8 +3097,9 @@ export default function Admin() {
   }
 
   let mayoristaFilteredProducts = productos.filter(p =>
-    p.nombre.toLowerCase().includes(mayoristaSearchQuery.toLowerCase()) ||
-    p.categoria.toLowerCase().includes(mayoristaSearchQuery.toLowerCase())
+    (mayoristaCategoryFilter === 'todos' || p.categoria === mayoristaCategoryFilter) &&
+    (p.nombre.toLowerCase().includes(mayoristaSearchQuery.toLowerCase()) ||
+     p.categoria.toLowerCase().includes(mayoristaSearchQuery.toLowerCase()))
   );
   if (role === 'mayorista') {
     const tempMayorista = mayoristas.find(m => m.telefono === loggedAsesorPhone) || asesores.find(a => a.telefono === loggedAsesorPhone);
@@ -5120,23 +5122,31 @@ export default function Admin() {
                 )
                 )}
 
-                <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-                  <div className="search-input-container" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.5rem', background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0', alignItems: 'center' }}>
+                  <div className="search-input-container" style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '100%' }}>
                     <span style={{ position: 'absolute', left: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center' }}>
                       <Search size={15} />
                     </span>
                     <input
                       className="search-bar"
-                      style={{ width: '240px', padding: '0.55rem 1rem 0.55rem 2.25rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', transition: 'all 0.2s', margin: 0 }}
-                      placeholder="Buscar producto..."
+                      style={{ width: '100%', padding: '0.65rem 1rem 0.65rem 2.25rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.9rem', transition: 'all 0.2s', margin: 0, background: 'white' }}
+                      placeholder="Buscar producto o ref..."
                       value={mayoristaSearchQuery}
                       onChange={e => setMayoristaSearchQuery(e.target.value)}
                     />
                   </div>
                   <select
+                    value={mayoristaCategoryFilter}
+                    onChange={e => setMayoristaCategoryFilter(e.target.value)}
+                    style={{ width: '100%', padding: '0.65rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.9rem', background: 'white', color: '#475569', cursor: 'pointer' }}
+                  >
+                    <option value="todos">Todas las categorías</option>
+                    {categoriasData.map(c => <option key={c.id} value={c.slug}>{c.nombre}</option>)}
+                  </select>
+                  <select
                     value={mayoristaProductSort}
                     onChange={e => setMayoristaProductSort(e.target.value)}
-                    style={{ padding: '0.55rem 1rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', color: '#475569', cursor: 'pointer' }}
+                    style={{ width: '100%', padding: '0.65rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.9rem', background: 'white', color: '#475569', cursor: 'pointer' }}
                   >
                     <option value="recientes">Más recientes</option>
                     <option value="alfabetico">A-Z</option>
