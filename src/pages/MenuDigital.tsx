@@ -1096,7 +1096,9 @@ export default function MenuDigital() {
                 {/* ── ESTAMPADOS + TALLAS + CANTIDAD ── */}
                 <div className="detail-controls-row" style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', alignItems: 'stretch' }}>
                   {(() => {
-                    const estampados = detailProduct.estampados?.split(',').map(e => e.trim()).filter(Boolean) || [];
+                    const legacyEstampados = detailProduct.estampados?.split(',').map(e => e.trim()).filter(Boolean) || [];
+                    const imageEstampados = (detailProduct.imagenes_extra || []).map(u => decodeExtraImage(u).ref).filter(Boolean);
+                    const estampados = Array.from(new Set([...legacyEstampados, ...imageEstampados]));
                     if (estampados.length === 0) return null;
                     return (
                       <div className="detail-tallas" style={{ width: '100%' }}>
@@ -1107,7 +1109,13 @@ export default function MenuDigital() {
                               key={est}
                               type="button"
                               className={`talla-chip${selectedEstampado === est ? ' active' : ''}`}
-                              onClick={() => setSelectedEstampado(est)}
+                              onClick={() => {
+                                setSelectedEstampado(est);
+                                const imgIdx = allImages.findIndex(img => img.ref === est);
+                                if (imgIdx !== -1) {
+                                  setCarouselIdx(imgIdx);
+                                }
+                              }}
                               style={{
                                 padding: '0.4rem 0.8rem',
                                 borderRadius: '8px',
