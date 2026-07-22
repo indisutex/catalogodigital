@@ -4495,30 +4495,30 @@ export default function Admin() {
                         🔧 Depurar Catálogo
                       </button>
                       
-                      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                        <div className="search-input-container" style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                        <span style={{ position: 'absolute', left: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center' }}>
-                          <Search size={15} />
-                        </span>
-                        <input
-                          className="search-bar"
-                          style={{ width: '240px', padding: '0.55rem 1rem 0.55rem 2.25rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', transition: 'all 0.2s', margin: 0 }}
-                          placeholder="Buscar producto..."
-                          value={searchQuery}
-                          onChange={e => setSearchQuery(e.target.value)}
-                        />
-                      </div>
-                      <select
-                        value={productSort}
-                        onChange={e => setProductSort(e.target.value)}
-                        style={{ padding: '0.55rem 1rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', color: '#475569', cursor: 'pointer' }}
-                      >
-                        <option value="recientes">Más recientes</option>
-                        <option value="alfabetico">A-Z</option>
-                        <option value="visibles">Solo Visibles</option>
-                        <option value="ocultos">Solo Ocultos</option>
-                        <option value="con_fotos">Con fotos</option>
-                      </select>
+                      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', width: '100%' }}>
+                        <div className="search-input-container" style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 1, minWidth: '160px' }}>
+                          <span style={{ position: 'absolute', left: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center' }}>
+                            <Search size={15} />
+                          </span>
+                          <input
+                            className="search-bar"
+                            style={{ width: '100%', padding: '0.55rem 1rem 0.55rem 2.25rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', transition: 'all 0.2s', margin: 0 }}
+                            placeholder="Buscar producto..."
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                          />
+                        </div>
+                        <select
+                          value={productSort}
+                          onChange={e => setProductSort(e.target.value)}
+                          style={{ padding: '0.55rem 0.8rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', color: '#475569', cursor: 'pointer' }}
+                        >
+                          <option value="recientes">Más recientes</option>
+                          <option value="alfabetico">A-Z</option>
+                          <option value="visibles">Solo Visibles</option>
+                          <option value="ocultos">Solo Ocultos</option>
+                          <option value="con_fotos">Con fotos</option>
+                        </select>
                       </div>
                     </div>
                   </div>
@@ -4531,49 +4531,109 @@ export default function Admin() {
                     </div>
                   ) : (
                     <div className="products-grid">
-                      {filteredProducts.map(p => (
-                        <div key={p.id} className="product-card" style={{ opacity: p.oculto ? 0.5 : 1, filter: p.oculto ? 'grayscale(100%)' : 'none', background: p.oculto ? '#f8fafc' : 'white' }}>
-                          <div className="product-card-img">
-                            {p.imagen_url ? (
-                              <img src={p.imagen_url} alt={p.nombre} />
-                            ) : (p.imagenes_extra && p.imagenes_extra.length > 0 && decodeExtraImage(p.imagenes_extra[0]).url) ? (
-                              <img src={decodeExtraImage(p.imagenes_extra[0]).url} alt={p.nombre} />
-                            ) : (
-                              '🖼️'
-                            )}
-                          </div>
-                          <div className="product-card-body">
-                            <h4>{p.nombre}</h4>
-                            <p className="p-cat" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span>{p.categoria}</span>
-                              <span style={{ background: '#e0e7ff', color: '#4f46e5', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600 }}>Stock: {p.stock || 0}</span>
-                            </p>
-                            
-                            <div style={{ marginTop: '0.5rem', padding: '0.6rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
-                                 <small style={{ color: '#64748b' }}>Detal:</small>
-                                 <strong style={{ color: '#0f172a' }}>${p.precio?.toLocaleString()}</strong>
-                               </div>
-                               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
-                                 <small style={{ color: '#64748b' }}>Mayor:</small>
-                                 <strong style={{ color: '#0f172a' }}>{p.precio_por_mayor ? `$${p.precio_por_mayor.toLocaleString()}` : '-'}</strong>
-                               </div>
-                               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
-                                 <small style={{ color: '#64748b' }}>50 Unid:</small>
-                                 <strong style={{ color: '#0f172a' }}>{p.precio_50_unidades ? `$${p.precio_50_unidades.toLocaleString()}` : '-'}</strong>
-                               </div>
-                               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                 <small style={{ color: '#64748b' }}>Tallas:</small>
-                                 <strong style={{ fontSize: '0.8rem', color: '#0f172a', textAlign: 'right', wordBreak: 'break-word', maxWidth: '120px' }}>{deduplicateTallas(p.tallas)}</strong>
-                               </div>
+                      {filteredProducts.map(p => {
+                        const allImages = (() => {
+                          const list: { url: string; ref: string }[] = [];
+                          if (p.imagen_url) list.push({ url: p.imagen_url, ref: '' });
+                          (p.imagenes_extra || []).forEach((str: string) => {
+                            const decoded = decodeExtraImage(str);
+                            if (decoded.url) list.push({ url: decoded.url, ref: decoded.ref || '' });
+                          });
+                          return list;
+                        })();
+
+                        const mainDisplayImg = p.imagen_url || (p.imagenes_extra && p.imagenes_extra.length > 0 ? decodeExtraImage(p.imagenes_extra[0]).url : '');
+
+                        return (
+                          <div key={p.id} className="product-card" style={{ opacity: p.oculto ? 0.5 : 1, filter: p.oculto ? 'grayscale(100%)' : 'none', background: p.oculto ? '#f8fafc' : 'white' }}>
+                            <div className="product-card-img" style={{ position: 'relative' }}>
+                              {mainDisplayImg ? (
+                                <img src={mainDisplayImg} alt={p.nombre} />
+                              ) : (
+                                <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f1f5f9', color: '#94a3b8', gap: '0.3rem' }}>
+                                  <Package size={32} />
+                                  <span style={{ fontSize: '0.75rem', fontWeight: 600 }}>Sin imagen</span>
+                                </div>
+                              )}
                             </div>
 
-                            {p.descripcion && (
-                              <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {p.descripcion}
+                            <div className="product-card-body">
+                              <h4>{p.nombre}</h4>
+                              {p.referencia && (
+                                <p style={{ margin: '0 0 0.2rem 0', fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>
+                                  Ref: {p.referencia}
+                                </p>
+                              )}
+
+                              <p className="p-cat" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '0.2rem 0 0.4rem 0' }}>
+                                <span style={{ background: '#f1f5f9', color: '#475569', padding: '0.15rem 0.4rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600 }}>{p.categoria || 'Sin Cat.'}</span>
+                                <span style={{
+                                  background: (p.stock || 0) > 0 ? '#e0e7ff' : '#fee2e2',
+                                  color: (p.stock || 0) > 0 ? '#4f46e5' : '#ef4444',
+                                  padding: '0.1rem 0.45rem',
+                                  borderRadius: '4px',
+                                  fontSize: '0.7rem',
+                                  fontWeight: 700
+                                }}>
+                                  {(p.stock || 0) > 0 ? `Stock: ${p.stock}` : 'Sin Stock'}
+                                </span>
                               </p>
-                            )}
-                          </div>
+
+                              {/* Mini thumbnails if multiple extra images exist */}
+                              {allImages.length > 1 && (
+                                <div style={{ display: 'flex', gap: '0.35rem', margin: '0.3rem 0', overflowX: 'auto', paddingBottom: '0.2rem' }}>
+                                  {allImages.map((imgObj, iIdx) => (
+                                    <img
+                                      key={iIdx}
+                                      src={imgObj.url}
+                                      alt={imgObj.ref || `Foto ${iIdx + 1}`}
+                                      title={imgObj.ref || `Foto ${iIdx + 1}`}
+                                      style={{ width: 30, height: 30, borderRadius: 6, objectFit: 'cover', border: '1px solid #cbd5e1', flexShrink: 0 }}
+                                    />
+                                  ))}
+                                </div>
+                              )}
+                              
+                              <div style={{ marginTop: '0.4rem', padding: '0.6rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                                   <small style={{ color: '#64748b' }}>Detal:</small>
+                                   <strong style={{ color: '#0f172a' }}>${p.precio?.toLocaleString()}</strong>
+                                 </div>
+                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                                   <small style={{ color: '#64748b' }}>Mayor:</small>
+                                   <strong style={{ color: '#0f172a' }}>{p.precio_por_mayor ? `$${p.precio_por_mayor.toLocaleString()}` : '-'}</strong>
+                                 </div>
+                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                                   <small style={{ color: '#64748b' }}>50 Unid:</small>
+                                   <strong style={{ color: '#0f172a' }}>{p.precio_50_unidades ? `$${p.precio_50_unidades.toLocaleString()}` : '-'}</strong>
+                                 </div>
+                                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                   <small style={{ color: '#64748b' }}>Tallas:</small>
+                                   <strong style={{ fontSize: '0.8rem', color: '#0f172a', textAlign: 'right', wordBreak: 'break-word', maxWidth: '120px' }}>{deduplicateTallas(p.tallas)}</strong>
+                                 </div>
+
+                                 {(() => {
+                                   const legacyEst = p.estampados?.split(',').map((e: string) => e.trim()).filter(Boolean) || [];
+                                   const extraRefs = (p.imagenes_extra || []).map((u: string) => decodeExtraImage(u).ref?.trim()).filter(Boolean);
+                                   const allEst = Array.from(new Set([...legacyEst, ...extraRefs]));
+                                   if (allEst.length === 0) return null;
+                                   return (
+                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem', paddingTop: '0.25rem', borderTop: '1px dashed #e2e8f0' }}>
+                                       <small style={{ color: '#64748b' }}>Estampados:</small>
+                                       <strong style={{ fontSize: '0.75rem', color: '#0284c7', textAlign: 'right', wordBreak: 'break-word', maxWidth: '120px' }}>
+                                         {allEst.join(', ')}
+                                       </strong>
+                                     </div>
+                                   );
+                                 })()}
+                              </div>
+
+                              {p.descripcion && (
+                                <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.4rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {p.descripcion}
+                                </p>
+                              )}
+                            </div>
                           <div className="product-card-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.45rem', padding: '0.65rem 0.9rem', background: '#fafafa', borderTop: '1px solid #f1f5f9' }}>
                             <button 
                               className="btn-edit" 
@@ -4614,7 +4674,8 @@ export default function Admin() {
                             </button>
                           </div>
                         </div>
-                      ))}
+                      );
+                    })}
                     </div>
                   )}
                 </div>
