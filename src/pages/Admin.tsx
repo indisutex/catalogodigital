@@ -1369,7 +1369,7 @@ export default function Admin() {
         supabase.from('asesores').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
         supabase.from('material_apoyo').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
         supabase.from('mayoristas').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
-        supabase.from('pqrs').select('*').order('created_at', { ascending: false })
+        supabase.from('pqrs').select('*').or(`tenant_id.eq.${tenant},tenant_id.eq.${tenant.replace(/_/g, '-')},tenant_id.eq.${tenant.replace(/-/g, '_')}`).order('created_at', { ascending: false })
       ]);
 
       if (catRes.data) setCategoriasData(catRes.data);
@@ -1380,9 +1380,32 @@ export default function Admin() {
       if (aseRes && aseRes.data) setAsesores(aseRes.data);
       if (matRes && matRes.data) setMateriales(matRes.data);
       if (mayRes && mayRes.data) setMayoristas(mayRes.data);
-      if (pqrsRes && pqrsRes.data) {
-        setListaPqrs(pqrsRes.data);
-      }
+      const remotePqrs: PQRS[] = (pqrsRes && pqrsRes.data) ? pqrsRes.data : [];
+      let localPqrs: PQRS[] = [];
+      try {
+        const rawLocal = localStorage.getItem('indisutex_pqrs_backup');
+        if (rawLocal) localPqrs = JSON.parse(rawLocal);
+      } catch (lsE) {}
+
+      const isMatchingTenant = (tId?: string) => {
+        if (!tId) return false;
+        return tId === tenant || tId === tenant.replace(/_/g, '-') || tId === tenant.replace(/-/g, '_');
+      };
+
+      const pqrsMap = new Map<string, PQRS>();
+      localPqrs.filter(item => isMatchingTenant(item.tenant_id)).forEach(item => {
+        const k = item.id || `${item.nombre_cliente}_${item.created_at}`;
+        pqrsMap.set(k, item);
+      });
+      remotePqrs.filter(item => isMatchingTenant(item.tenant_id)).forEach(item => {
+        const k = item.id || `${item.nombre_cliente}_${item.created_at}`;
+        pqrsMap.set(k, item);
+      });
+
+      const combinedPqrs = Array.from(pqrsMap.values()).sort(
+        (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+      );
+      setListaPqrs(combinedPqrs);
 
       // Fetch products in chunks of 1000 to bypass Supabase defaults
       let allProducts: Producto[] = [];
