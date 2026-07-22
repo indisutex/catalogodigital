@@ -3126,7 +3126,7 @@ export default function Admin() {
     (p.nombre.toLowerCase().includes(mayoristaSearchQuery.toLowerCase()) ||
      p.categoria.toLowerCase().includes(mayoristaSearchQuery.toLowerCase()))
   );
-  if (role === 'mayorista') {
+  if (role === 'mayorista' || role === 'asesor') {
     const tempMayorista = mayoristas.find(m => m.telefono === loggedAsesorPhone) || asesores.find(a => a.telefono === loggedAsesorPhone);
     if (mayoristaProductSort === 'alfabetico') {
       mayoristaFilteredProducts.sort((a, b) => a.nombre.localeCompare(b.nombre));
@@ -5279,6 +5279,7 @@ export default function Admin() {
                     <option value="alfabetico">A-Z</option>
                     <option value="visibles">Solo Visibles</option>
                     <option value="ocultos">Solo Ocultos</option>
+                    <option value="con_fotos">Con fotos</option>
                   </select>
                 </div>
 
