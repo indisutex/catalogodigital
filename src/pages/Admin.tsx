@@ -2,9 +2,9 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase, getTenantId, setTenantId } from '../lib/supabase';
 import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
-import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista } from '../types';
+import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista, PQRS } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Filter, Link } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Filter, Link, LifeBuoy } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 const SECRET_PIN = '0000';
@@ -105,7 +105,7 @@ const emptyProduct: ProductFormData = {
   stock: 0
 };
 
-type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor' | 'material_apoyo' | 'material_asesor' | 'productos_asesor' | 'productos_mayorista' | 'ranking_mayorista';
+type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor' | 'material_apoyo' | 'material_asesor' | 'productos_asesor' | 'productos_mayorista' | 'ranking_mayorista' | 'pqrs';
 
 type Toast = { message: string; type: 'success' | 'error' } | null;
 
@@ -185,9 +185,12 @@ function MiNegocioSettings({
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: 'logo' | 'video') => {
     if (!e.target.files || e.target.files.length === 0) return;
-    const file = e.target.files[0];
+    let file = e.target.files[0];
     setUploading(true);
     try {
+      if (file.type.startsWith('image/')) {
+        file = await compressImage(file) as File;
+      }
       const fileName = `${field}_${Date.now()}.${file.name.split('.').pop()}`;
       await supabase.storage.from('archivos').upload(fileName, file);
       const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
@@ -333,6 +336,7 @@ export default function Admin() {
   const [categoriasData, setCategoriasData] = useState<Categoria[]>([]);
   const [subcategoriasData, setSubcategoriasData] = useState<Subcategoria[]>([]);
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
+  const [listaPqrs, setListaPqrs] = useState<PQRS[]>([]);
   const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
   const [clientes, setClientes] = useState<any[]>([]);
   const [clienteSearchQuery, setClienteSearchQuery] = useState('');
@@ -925,7 +929,12 @@ export default function Admin() {
       const prod = productos.find(p => p.id === pId);
       if (prod) {
         setEditingProduct(prod);
-        setEditExtraImages((prod.imagenes_extra || []).map(u => decodeExtraImage(u)));
+        // Build unified image list: imagen_url as main + extras
+        const mainEntry = prod.imagen_url ? [{ url: prod.imagen_url, ref: '', isMain: true }] : [];
+        const extraEntries = (prod.imagenes_extra || []).map((u: string) => ({ ...decodeExtraImage(u), isMain: false }));
+        // Avoid duplicating imagen_url if it's already in imagenes_extra
+        const extraFiltered = extraEntries.filter((e: any) => e.url !== prod.imagen_url);
+        setEditExtraImages([...mainEntry, ...extraFiltered] as any);
         restored = true;
       }
     }
@@ -1191,7 +1200,7 @@ export default function Admin() {
       const tenant = getTenantId();
 
       // Fetch other data in parallel
-      const [catRes, subcatRes, confRes, pedRes, leadRes, cliRes, aseRes, matRes, mayRes] = await Promise.all([
+      const [catRes, subcatRes, confRes, pedRes, leadRes, cliRes, aseRes, matRes, mayRes, pqrsRes] = await Promise.all([
         supabase.from('categorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
         supabase.from('subcategorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
         supabase.from('configuracion').select('*').eq('tenant_id', tenant).limit(1).single(),
@@ -1200,7 +1209,8 @@ export default function Admin() {
         supabase.from('clientes_exitosos').select('*').eq('tenant_id', tenant).order('total_compras', { ascending: false }),
         supabase.from('asesores').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
         supabase.from('material_apoyo').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
-        supabase.from('mayoristas').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false })
+        supabase.from('mayoristas').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
+        supabase.from('pqrs').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false })
       ]);
 
       if (catRes.data) setCategoriasData(catRes.data);
@@ -1211,6 +1221,7 @@ export default function Admin() {
       if (aseRes && aseRes.data) setAsesores(aseRes.data);
       if (matRes && matRes.data) setMateriales(matRes.data);
       if (mayRes && mayRes.data) setMayoristas(mayRes.data);
+      if (pqrsRes && pqrsRes.data) setListaPqrs(pqrsRes.data);
 
       // Fetch products in chunks of 1000 to bypass Supabase defaults
       let allProducts: Producto[] = [];
@@ -1855,12 +1866,12 @@ export default function Admin() {
     e.preventDefault();
     if (!editingProduct) return;
     setLoading(true);
-    const extraImgs = editExtraImages.filter(u => u.url.trim());
-    let mainImg = editingProduct.imagen_url || '';
-    if (!mainImg && extraImgs.length > 0) {
-      mainImg = extraImgs[0].url;
-    }
-    const extraImgsEncoded = extraImgs.map(img => encodeExtraImage(img.url, img.ref));
+    // The image marked as main (isMain=true) becomes imagen_url; rest become imagenes_extra
+    const validImgs = editExtraImages.filter(u => u.url.trim());
+    const mainImgObj = validImgs.find(u => (u as any).isMain) || validImgs[0];
+    const mainImg = mainImgObj?.url || '';
+    const restImgs = validImgs.filter(u => u !== mainImgObj);
+    const extraImgsEncoded = restImgs.map(img => encodeExtraImage(img.url, img.ref));
     const { error } = await supabase.from('productos').update({
       nombre: editingProduct.nombre,
       descripcion: editingProduct.descripcion,
@@ -1879,22 +1890,6 @@ export default function Admin() {
     setLoading(false);
     if (error) showToast('Error al actualizar', 'error');
     else { showToast('Producto actualizado ✓'); setEditingProduct(null); cargarDatos(); }
-  };
-
-  const handleEditMainImgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !editingProduct) return;
-    setLoading(true);
-    try {
-      const compFile = await compressImage(file);
-      const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${compFile.name.split('.').pop()}`;
-      const { error: uploadError } = await supabase.storage.from('archivos').upload(fileName, compFile);
-      if (uploadError) throw uploadError;
-      const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
-      setEditingProduct({ ...editingProduct, imagen_url: data.publicUrl });
-      showToast('Foto principal actualizada ✓');
-    } catch { showToast('Error al subir foto', 'error'); }
-    finally { setLoading(false); }
   };
 
   const handleEditExtraUpload = async (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
@@ -3327,7 +3322,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor} activeNotificationsCount={activeNotificationsCount} />
+          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor} activeNotificationsCount={activeNotificationsCount} listaPqrs={listaPqrs} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -3416,90 +3411,93 @@ export default function Admin() {
                           })}
                         </div>
                       </div>
+                      <div className="form-field full">
+                        <label>Estampados (opcional, separados por coma)</label>
+                        <input type="text" value={editingProduct.estampados || ''} onChange={e => setEditingProduct({ ...editingProduct, estampados: e.target.value })} placeholder="Ej: Snoopy, Mickey, Liso" />
+                      </div>
+                      <div className="form-field full" style={{ background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                         <label style={{ margin: 0 }}>🖼️ Imágenes y Estampados</label>
+                         <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Haz clic en ⭐ para elegir la imagen principal</span>
+                       </div>
+                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+                         {editExtraImages.map((img, idx) => (
+                           <div key={idx} style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'center' }}>
+                             {img.url && (
+                               <div style={{ position: 'relative' }}>
+                                 <img src={img.url} alt="" style={{ width: 130, height: 130, objectFit: 'cover', borderRadius: 8, border: `3px solid ${(img as any).isMain ? '#f59e0b' : '#e2e8f0'}`, transition: 'border 0.2s' }} />
+                                 {/* Main badge */}
+                                 {(img as any).isMain && (
+                                   <span style={{ position: 'absolute', top: 4, left: 4, background: '#f59e0b', color: 'white', borderRadius: 4, fontSize: '0.65rem', padding: '0.1rem 0.3rem', fontWeight: 800 }}>⭐ Principal</span>
+                                 )}
+                                 {/* Set as main button */}
+                                 {!(img as any).isMain && (
+                                   <button type="button" onClick={() => setEditExtraImages(prev => prev.map((im, i) => ({ ...im, isMain: i === idx } as any)))} style={{ position: 'absolute', top: 4, left: 4, background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: 4, fontSize: '0.65rem', padding: '0.15rem 0.4rem', cursor: 'pointer', fontWeight: 700 }}>⭐ Principal</button>
+                                 )}
+                               </div>
+                             )}
+                             {!img.url && <div style={{ width: 130, height: 130, background: '#f1f5f9', borderRadius: 8, border: '2px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>📷</div>}
+                             <input
+                               value={img.ref}
+                               onChange={e => {
+                                 const newArr = [...editExtraImages] as any[];
+                                 newArr[idx] = { ...newArr[idx], ref: e.target.value };
+                                 setEditExtraImages(newArr);
+                               }}
+                               placeholder="Estampado (Ej. Snoopy)"
+                               style={{ width: '130px', fontSize: '0.82rem', padding: '0.35rem', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                             />
+                             <label htmlFor={`edit-extra-${idx}`} style={{ cursor: 'pointer', fontSize: '0.8rem', color: '#0ea5e9', fontWeight: 600 }}>
+                               {editUploadingIdx === idx ? '...' : '📤 Cambiar foto'}
+                             </label>
+                             <input id={`edit-extra-${idx}`} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleEditExtraUpload(e, idx)} />
+                             <button type="button" onClick={() => setEditExtraImages(prev => prev.filter((_, i) => i !== idx))} style={{ position: 'absolute', top: -8, right: -8, width: 22, height: 22, borderRadius: '50%', background: '#ef4444', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                           </div>
+                         ))}
+                         {/* Add new image */}
+                         <label htmlFor="edit-extra-new" style={{ width: 130, height: 130, background: '#f0fdf4', border: '2px dashed #22c55e', borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.9rem', color: '#16a34a', fontWeight: 700, gap: '0.5rem' }}>
+                           <span style={{ fontSize: '2rem' }}>+</span> Agregar foto
+                         </label>
+                         <input id="edit-extra-new" type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={async e => {
+                           const files = Array.from(e.target.files || []);
+                           if (!files.length) return;
+                           setEditUploadingIdx(-1);
+                           try {
+                             const uploadedData: { url: string, ref: string, isMain: boolean }[] = [];
+                             for (const file of files) {
+                               const compFile = await compressImage(file);
+                               const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${compFile.name.split('.').pop()}`;
+                               const { error: uploadError } = await supabase.storage.from('archivos').upload(fileName, compFile);
+                               if (uploadError) throw uploadError;
+                               const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
+                               const originalName = file.name.split('.').slice(0, -1).join('.').toUpperCase();
+                               uploadedData.push({ url: data.publicUrl, ref: originalName, isMain: false });
+                             }
+                             setEditExtraImages(prev => {
+                               const next = [...prev, ...uploadedData] as any[];
+                               // If none is marked as main, mark first as main
+                               if (!next.find((im: any) => im.isMain) && next.length > 0) next[0].isMain = true;
+                               return next;
+                             });
+                             showToast(`${uploadedData.length} foto(s) agregada(s) ✓`);
+                           } catch { showToast('Error al subir foto(s)', 'error'); }
+                           finally { setEditUploadingIdx(null); }
+                         }} />
+                       </div>
+                     </div>
                       <div className="form-field">
                         <label>Categoría</label>
                         <select value={editingProduct.categoria} onChange={e => setEditingProduct({ ...editingProduct, categoria: e.target.value })}>
                           {categoriasData.map(c => <option key={c.id} value={c.slug}>{c.nombre}</option>)}
                         </select>
                       </div>
-                    <div className="form-field full" style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '2rem', alignItems: 'start', background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                      {/* -- FOTO PRINCIPAL -- */}
-                      <div>
-                        <label>Foto Principal</label>
-                        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.5rem', alignItems: 'center', width: 'fit-content' }}>
-                          {editingProduct.imagen_url ? (
-                            <img src={editingProduct.imagen_url} alt="" style={{ width: 160, height: 160, objectFit: 'cover', borderRadius: 8, border: '2px solid #e2e8f0' }} />
-                          ) : (
-                            <div style={{ width: 160, height: 160, background: '#f1f5f9', borderRadius: 8, border: '2px dashed #cbd5e1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', color: '#64748b', fontWeight: 600, gap: '0.5rem' }}>
-                              <span style={{ fontSize: '2rem' }}>🖼️</span>
-                              Sin imagen
-                            </div>
-                          )}
-                          <label style={{ position: 'absolute', top: 0, left: 0, width: 160, height: 160, cursor: 'pointer', opacity: 0 }}>
-                            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleEditMainImgUpload} />
-                          </label>
-                        </div>
-                      </div>
-
-                      {/* ── FOTOS EXTRA ── */}
-                      <div>
-                        <label>📸 Fotos Adicionales del Producto</label>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '0.5rem' }}>
-                        {editExtraImages.map((img, idx) => (
-                          <div key={idx} style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'center' }}>
-                            {img.url && <img src={img.url} alt="" style={{ width: 130, height: 130, objectFit: 'cover', borderRadius: 8, border: '2px solid #e2e8f0' }} />}
-                            {!img.url && <div style={{ width: 130, height: 130, background: '#f1f5f9', borderRadius: 8, border: '2px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>📷</div>}
-                            <input
-                              value={img.ref}
-                              onChange={e => {
-                                const newArr = [...editExtraImages];
-                                newArr[idx].ref = e.target.value;
-                                setEditExtraImages(newArr);
-                              }}
-                              placeholder="Ref (Ej. Snoopy)"
-                              style={{ width: '130px', fontSize: '0.9rem', padding: '0.4rem', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                            />
-                            <label htmlFor={`edit-extra-${idx}`} style={{ cursor: 'pointer', fontSize: '0.85rem', color: '#0ea5e9', fontWeight: 600 }}>
-                              {editUploadingIdx === idx ? '...' : '📤 Cambiar'}
-                            </label>
-                            <input id={`edit-extra-${idx}`} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleEditExtraUpload(e, idx)} />
-                            <button type="button" onClick={() => setEditExtraImages(prev => prev.filter((_, i) => i !== idx))} style={{ position: 'absolute', top: -8, right: -8, width: 24, height: 24, borderRadius: '50%', background: '#ef4444', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
-                          </div>
-                        ))}
-                        {/* Botón agregar foto extra */}
-                        <label htmlFor="edit-extra-new" style={{ width: 130, height: 130, background: '#f0fdf4', border: '2px dashed #22c55e', borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.9rem', color: '#16a34a', fontWeight: 700, gap: '0.5rem' }}>
-                          <span style={{ fontSize: '2rem' }}>+</span> Agregar foto
-                        </label>
-                        <input id="edit-extra-new" type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={async e => {
-                          const files = Array.from(e.target.files || []);
-                          if (!files.length) return;
-                          setEditUploadingIdx(-1);
-                          try {
-                            const uploadedData: { url: string, ref: string }[] = [];
-                            for (const file of files) {
-                              const compFile = await compressImage(file);
-                              const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${compFile.name.split('.').pop()}`;
-                              const { error: uploadError } = await supabase.storage.from('archivos').upload(fileName, compFile);
-                              if (uploadError) throw uploadError;
-                              const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
-                              const originalName = file.name.split('.').slice(0, -1).join('.').toUpperCase();
-                              uploadedData.push({ url: data.publicUrl, ref: originalName });
-                            }
-                            setEditExtraImages(prev => [...prev, ...uploadedData]);
-                            showToast(`${uploadedData.length} foto(s) agregada(s) ✓`);
-                          } catch { showToast('Error al subir foto(s)', 'error'); }
-                          finally { setEditUploadingIdx(null); }
-                        }} />
-                      </div>
                     </div>
-                  </div>
+                  </form>
                 </div>
-              </form>
+              </div>
             </div>
           </div>
-          </div>
         </div>
-      </div>
     );
   }
 
@@ -3508,7 +3506,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor} activeNotificationsCount={activeNotificationsCount} />
+          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor} activeNotificationsCount={activeNotificationsCount} listaPqrs={listaPqrs} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -3594,7 +3592,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor} activeNotificationsCount={activeNotificationsCount} />
+          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor} activeNotificationsCount={activeNotificationsCount} listaPqrs={listaPqrs} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -3660,6 +3658,7 @@ export default function Admin() {
           role={role}
           currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor}
           activeNotificationsCount={activeNotificationsCount}
+          listaPqrs={listaPqrs}
         />
       </aside>
 
@@ -4086,7 +4085,11 @@ export default function Admin() {
                                 </div>
                               </div>
                               <div className="form-field full">
-                                <label>🖼️ Imágenes del Producto</label>
+                                <label>Estampados (opcional, separados por coma)</label>
+                                <input type="text" value={form.estampados || ''} onChange={e => updateBulkForm(index, 'estampados', e.target.value)} placeholder="Ej: Snoopy, Mickey, Liso" />
+                              </div>
+                              <div className="form-field full">
+                                <label>🖼️ Imágenes y Estampados</label>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                   {form.imagenes.map((img, imgIdx) => (
                                     <div key={imgIdx} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', background: '#f8fafc', borderRadius: '12px', padding: '0.8rem', border: '1px solid #e2e8f0', minHeight: '170px' }}>
@@ -4365,7 +4368,12 @@ export default function Admin() {
                             <button 
                               className="btn-edit" 
                               style={{ padding: '0.5rem', borderRadius: '8px', cursor: 'pointer', border: '1px solid #bae6fd', background: '#e0f2fe', color: '#0369a1', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', width: '32px', height: '32px' }}
-                              onClick={() => { setEditingProduct(p); setEditExtraImages((p.imagenes_extra || []).map(u => decodeExtraImage(u))); }}
+                              onClick={() => { setEditingProduct(p); 
+                              const mainEntry = p.imagen_url ? [{ url: p.imagen_url, ref: '', isMain: true }] : [];
+                              const extraEntries = (p.imagenes_extra || []).map((u: string) => ({ ...decodeExtraImage(u), isMain: false }));
+                              const extraFiltered = extraEntries.filter((e: any) => e.url !== p.imagen_url);
+                              setEditExtraImages([...mainEntry, ...extraFiltered] as any);
+                            }}
                               title="Editar Producto"
                             >
                               <Pencil size={14} />
@@ -4545,12 +4553,16 @@ export default function Admin() {
                                   if (!file) return;
                                   setLoading(true);
                                   try {
+                                    let uploadFile = file;
+                                    if (file.type.startsWith('image/')) {
+                                      uploadFile = await compressImage(file) as File;
+                                    }
                                     // PASO 1: subir al storage
-                                    const ext = file.name.split('.').pop() || 'jpg';
+                                    const ext = uploadFile.name.split('.').pop() || 'jpg';
                                     const fileName = `cat_${c.id}_${Date.now()}.${ext}`;
                                     const { error: upErr } = await supabase.storage
                                       .from('archivos')
-                                      .upload(fileName, file, { upsert: true });
+                                      .upload(fileName, uploadFile, { upsert: true });
                                     if (upErr) {
                                       showToast(`Error Storage: ${upErr.message}`, 'error');
                                       return;
@@ -5821,6 +5833,106 @@ export default function Admin() {
           )}
 
 
+
+
+          {/* ── PQRS TAB ── */}
+          {activeTab === 'pqrs' && (
+            <div className="admin-section fade-in">
+              <div className="section-header">
+                <h2>Soporte / PQRS</h2>
+              </div>
+              
+              {listaPqrs.length === 0 ? (
+                <div className="no-items">
+                  <LifeBuoy size={48} style={{ color: '#cbd5e1', marginBottom: '1rem', margin: '0 auto' }} />
+                  <h3>No hay solicitudes PQRS</h3>
+                  <p>No se han recibido solicitudes de soporte.</p>
+                </div>
+              ) : (
+                <div className="table-responsive">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Cliente</th>
+                        <th>Motivo</th>
+                        <th>Descripción</th>
+                        <th>Evidencia</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {listaPqrs.map(pqrs => (
+                        <tr key={pqrs.id}>
+                          <td style={{ whiteSpace: 'nowrap', fontSize: '0.85rem' }}>
+                            {new Date(pqrs.created_at).toLocaleDateString()} <br/>
+                            <span style={{ color: '#64748b' }}>{new Date(pqrs.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          </td>
+                          <td>
+                            <strong>{pqrs.nombre_cliente}</strong><br/>
+                            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{pqrs.telefono_cliente}</span>
+                            {pqrs.numero_pedido && <div style={{ fontSize: '0.75rem', background: '#f1f5f9', display: 'inline-block', padding: '2px 6px', borderRadius: '4px', marginTop: '2px' }}>Pedido: {pqrs.numero_pedido}</div>}
+                          </td>
+                          <td>
+                            <span style={{ fontWeight: 600, color: '#334155' }}>{pqrs.motivo}</span>
+                          </td>
+                          <td style={{ maxWidth: '250px' }}>
+                            <p style={{ margin: 0, fontSize: '0.85rem', color: '#475569', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }} title={pqrs.descripcion}>
+                              {pqrs.descripcion}
+                            </p>
+                          </td>
+                          <td>
+                            {pqrs.evidencia_url ? (
+                              <a href={pqrs.evidencia_url} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Link size={12} /> Ver adjunto
+                              </a>
+                            ) : <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>-</span>}
+                          </td>
+                          <td>
+                            <select 
+                              value={pqrs.estado} 
+                              onChange={async (e) => {
+                                const nuevoEstado = e.target.value;
+                                setListaPqrs(prev => prev.map(p => p.id === pqrs.id ? { ...p, estado: nuevoEstado } : p));
+                                await supabase.from('pqrs').update({ estado: nuevoEstado }).eq('id', pqrs.id);
+                                showToast('Estado actualizado ✓');
+                              }}
+                              style={{ 
+                                padding: '0.4rem', 
+                                borderRadius: '6px', 
+                                border: '1px solid #e2e8f0', 
+                                background: pqrs.estado === 'pendiente' ? '#fef2f2' : pqrs.estado === 'en_proceso' ? '#fffbeb' : '#f0fdf4',
+                                color: pqrs.estado === 'pendiente' ? '#b91c1c' : pqrs.estado === 'en_proceso' ? '#d97706' : '#15803d',
+                                fontWeight: 600,
+                                fontSize: '0.8rem'
+                              }}
+                            >
+                              <option value="pendiente">Pendiente</option>
+                              <option value="en_proceso">En Proceso</option>
+                              <option value="resuelto">Resuelto</option>
+                            </select>
+                          </td>
+                          <td>
+                            <a 
+                              href={formatWhatsAppLink(pqrs.telefono_cliente, `Hola ${pqrs.nombre_cliente}, te contactamos desde ${configuracion?.nombre_negocio || 'la tienda'} respecto a tu solicitud de soporte (${pqrs.motivo}).`)}
+                              target="_blank" 
+                              rel="noreferrer" 
+                              className="btn-whatsapp-table"
+                              title="Contactar por WhatsApp"
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: '#25D366', color: 'white', padding: '0.4rem 0.6rem', borderRadius: '6px', fontSize: '0.8rem', textDecoration: 'none', fontWeight: 600 }}
+                            >
+                              <MessageSquare size={14} /> Contactar
+                            </a>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
 
 
           {/* ── CONFIG TAB ── */}
@@ -8261,7 +8373,10 @@ export default function Admin() {
                                   disabled={!hasStockAvailable}
                                   onClick={() => {
                                     const defaultTalla = p.tallas ? p.tallas.split(',')[0].trim() : undefined;
-                                    const defaultEstampado = p.estampados ? p.estampados.split(',')[0].trim() : undefined;
+                                    const legacyEstampados = p.estampados?.split(',').map(e => e.trim()).filter(Boolean) || [];
+                                    const extraImagesRefs = (p.imagenes_extra || []).map((u: string) => decodeExtraImage(u).ref?.trim()).filter(Boolean);
+                                    const allEstampados = Array.from(new Set([...legacyEstampados, ...extraImagesRefs]));
+                                    const defaultEstampado = allEstampados[0] || undefined;
                                     setPosCart(prev => {
                                       const exist = prev.find(item => item.id === p.id && item.talla === defaultTalla && item.estampado === defaultEstampado);
                                       if (exist) {
@@ -8342,9 +8457,6 @@ export default function Admin() {
                                     );
                                   })()}
                                   {(() => {
-                                    const decodeExtraImage = (jsonStr: string) => {
-                                      try { return JSON.parse(jsonStr); } catch { return { url: jsonStr, ref: '' }; }
-                                    };
                                     const legacyEstampados = item.producto.estampados?.split(',').map((e: string) => e.trim()).filter(Boolean) || [];
                                     const extraImagesRefs = (item.producto.imagenes_extra || []).map((u: string) => decodeExtraImage(u).ref?.trim()).filter(Boolean);
                                     const allEstampados = Array.from(new Set([...legacyEstampados, ...extraImagesRefs]));
@@ -10166,7 +10278,7 @@ export default function Admin() {
 
 // ── SIDEBAR COMPONENT ──
 function SidebarContent({
-  activeTab, setActiveTab, productos, configuracion, handleLogout, onClose, role, currentAsesor, activeNotificationsCount = 0
+  activeTab, setActiveTab, productos, configuracion, handleLogout, onClose, role, currentAsesor, activeNotificationsCount = 0, listaPqrs = []
 }: {
   activeTab: TabType;
   setActiveTab: (t: TabType) => void;
@@ -10177,6 +10289,7 @@ function SidebarContent({
   role: 'admin' | 'asesor' | 'mayorista';
   currentAsesor?: any;
   activeNotificationsCount?: number;
+  listaPqrs?: PQRS[];
 }) {
   const handleSelectTab = (tab: TabType) => {
     setActiveTab(tab);
@@ -10337,6 +10450,17 @@ function SidebarContent({
             <button className={`nav-item ${activeTab === 'pedidos' ? 'active' : ''}`} onClick={() => handleSelectTab('pedidos')}>
               <span className="nav-icon"><ShoppingBag size={14} /></span> Pedidos
               {activeTab === 'pedidos' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'pqrs' ? 'active' : ''}`} onClick={() => handleSelectTab('pqrs')} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingRight: '0.75rem' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span className="nav-icon"><LifeBuoy size={14} /></span> Soporte / PQRS
+              </span>
+              {listaPqrs.filter(p => p.estado === 'pendiente').length > 0 && (
+                <span style={{ background: '#ef4444', color: 'white', fontSize: '0.7rem', padding: '1px 6px', borderRadius: '10px', fontWeight: 800 }}>
+                  {listaPqrs.filter(p => p.estado === 'pendiente').length}
+                </span>
+              )}
+              {activeTab === 'pqrs' && listaPqrs.filter(p => p.estado === 'pendiente').length === 0 && <span className="active-dot"></span>}
             </button>
             <button className={`nav-item ${activeTab === 'clientes' ? 'active' : ''}`} onClick={() => handleSelectTab('clientes')}>
               <span className="nav-icon"><User size={14} /></span> Clientes

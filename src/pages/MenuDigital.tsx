@@ -247,17 +247,14 @@ export default function MenuDigital() {
 
   useEffect(() => {
     if (detailProduct) {
-      const rawAllImages = [
-        ...(detailProduct.imagen_url ? [{ url: detailProduct.imagen_url, ref: detailProduct.referencia || '' }] : []),
-        ...(detailProduct.imagenes_extra || []).map(u => decodeExtraImage(u)).filter(i => i.url)
-      ];
-      const seenUrls = new Set();
-      const allImages = rawAllImages.filter(img => {
-        if (seenUrls.has(img.url)) return false;
-        seenUrls.add(img.url);
-        return true;
-      });
-      const safeIdx = Math.min(carouselIdx, allImages.length - 1);
+      // Use imagenes_extra as the single source of truth for the carousel.
+      // imagen_url is stored as the first item in imagenes_extra after saving.
+      const rawAllImages = (detailProduct.imagenes_extra || []).map(u => decodeExtraImage(u)).filter(i => i.url);
+      // Fallback: if no imagenes_extra, use imagen_url alone
+      const allImages = rawAllImages.length > 0
+        ? rawAllImages
+        : (detailProduct.imagen_url ? [{ url: detailProduct.imagen_url, ref: '' }] : []);
+      const safeIdx = Math.min(carouselIdx, Math.max(0, allImages.length - 1));
       const currentImage = allImages[safeIdx];
       if (currentImage && currentImage.ref) {
         setSelectedEstampado(currentImage.ref.trim().toUpperCase());
@@ -857,13 +854,14 @@ export default function MenuDigital() {
                       loop 
                       muted 
                       playsInline 
+                      preload="metadata"
                       style={{width: '100%', height: '100%', objectFit: 'cover'}}
-                      ref={el => { if (el) el.play().catch(() => {}); }}
+                      ref={el => { if (el && el.paused) el.play().catch(() => {}); }}
                     />
                   ) : producto.imagen_url ? (
-                    <img src={producto.imagen_url} alt={producto.nombre} />
+                    <img src={producto.imagen_url} alt={producto.nombre} loading="lazy" />
                   ) : (producto.imagenes_extra && producto.imagenes_extra.length > 0 && decodeExtraImage(producto.imagenes_extra[0]).url) ? (
-                    <img src={decodeExtraImage(producto.imagenes_extra[0]).url} alt={producto.nombre} />
+                    <img src={decodeExtraImage(producto.imagenes_extra[0]).url} alt={producto.nombre} loading="lazy" />
                   ) : (
                     <div className="img-placeholder"></div>
                   )}
@@ -1028,9 +1026,9 @@ export default function MenuDigital() {
                       <div key={`${item.id}-${item.talla || 'none'}-${item.estampado || 'none'}`} className="cart-item">
                         <div className="cart-item-img">
                           {item.imagen_url ? (
-                            <img src={item.imagen_url} alt={item.nombre} />
+                            <img src={item.imagen_url} alt={item.nombre} loading="lazy" />
                           ) : (item.imagenes_extra && item.imagenes_extra.length > 0 && decodeExtraImage(item.imagenes_extra[0]).url) ? (
-                            <img src={decodeExtraImage(item.imagenes_extra[0]).url} alt={item.nombre} />
+                            <img src={decodeExtraImage(item.imagenes_extra[0]).url} alt={item.nombre} loading="lazy" />
                           ) : (
                             <div className="img-placeholder-small"></div>
                           )}
@@ -1065,9 +1063,9 @@ export default function MenuDigital() {
                         <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', backgroundColor: 'white', padding: '0.75rem', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                           <div style={{ width: '50px', height: '50px', flexShrink: 0, borderRadius: '6px', overflow: 'hidden', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             {p.imagen_url ? (
-                              <img src={p.imagen_url} alt={p.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              <img src={p.imagen_url} alt={p.nombre} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             ) : (p.imagenes_extra && p.imagenes_extra.length > 0 && decodeExtraImage(p.imagenes_extra[0]).url) ? (
-                              <img src={decodeExtraImage(p.imagenes_extra[0]).url} alt={p.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              <img src={decodeExtraImage(p.imagenes_extra[0]).url} alt={p.nombre} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             ) : (
                               <Package size={20} color="#94a3b8" />
                             )}
@@ -1081,7 +1079,10 @@ export default function MenuDigital() {
                           <button
                             onClick={() => {
                               const pTalla = p.tallas?.split(',')[0]?.trim();
-                              const pEstampado = p.estampados?.split(',')[0]?.trim();
+                              const legacyEstampados = p.estampados?.split(',').map(e => e.trim()).filter(Boolean) || [];
+                              const extraImagesRefs = (p.imagenes_extra || []).map(u => decodeExtraImage(u).ref?.trim()).filter(Boolean);
+                              const allEstampados = Array.from(new Set([...legacyEstampados, ...extraImagesRefs]));
+                              const pEstampado = allEstampados[0] || undefined;
                               addToCart(p, pTalla, pEstampado, 1);
                             }}
                             style={{ backgroundColor: '#e11d48', color: 'white', border: 'none', padding: '0.4rem 0.75rem', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
@@ -1117,19 +1118,13 @@ export default function MenuDigital() {
       {/* ── PRODUCT DETAIL POPUP ── */}
       {detailProduct && (() => {
         const legacyEstampados = detailProduct.estampados?.split(',').map(e => e.trim().toUpperCase()).filter(Boolean) || [];
-        const extraImagesRefs = (detailProduct.imagenes_extra || []).map(u => decodeExtraImage(u).ref?.trim().toUpperCase()).filter(Boolean);
-        const mainImgRef = legacyEstampados.find(e => !extraImagesRefs.includes(e)) || legacyEstampados[0] || '';
 
-        const rawAllImages = [
-          ...(detailProduct.imagen_url ? [{ url: detailProduct.imagen_url, ref: mainImgRef }] : []),
-          ...(detailProduct.imagenes_extra || []).map(u => decodeExtraImage(u)).filter(i => i.url)
-        ];
-        const seenUrls = new Set();
-        const allImages = rawAllImages.filter(img => {
-          if (seenUrls.has(img.url)) return false;
-          seenUrls.add(img.url);
-          return true;
-        });
+
+        // Single source of truth: imagenes_extra (imagen_url is saved as the first item in extras)
+        const rawAllImages = (detailProduct.imagenes_extra || []).map(u => decodeExtraImage(u)).filter(i => i.url);
+        const allImages = rawAllImages.length > 0
+          ? rawAllImages
+          : (detailProduct.imagen_url ? [{ url: detailProduct.imagen_url, ref: '' }] : []);
         const rawTallas = detailProduct.tallas?.split(',').map(t => t.trim()).filter(Boolean) || [];
         const tallasMap = new Map();
         rawTallas.forEach(t => {
@@ -1155,9 +1150,9 @@ export default function MenuDigital() {
               {/* ── CAROUSEL ── */}
               <div className="detail-carousel">
                 {detailProduct.video_url ? (
-                  <video src={detailProduct.video_url} autoPlay loop muted playsInline className="detail-carousel-img" ref={el => { if (el) el.play().catch(() => {}); }} />
+                  <video src={detailProduct.video_url} autoPlay loop muted playsInline preload="metadata" className="detail-carousel-img" ref={el => { if (el && el.paused) el.play().catch(() => {}); }} />
                 ) : allImages.length > 0 ? (
-                  <img src={allImages[safeIdx].url} alt={detailProduct.nombre} className="detail-carousel-img" />
+                  <img src={allImages[safeIdx].url} alt={detailProduct.nombre} className="detail-carousel-img" loading="lazy" />
                 ) : (
                   <div className="detail-carousel-placeholder" />
                 )}
