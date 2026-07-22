@@ -1118,7 +1118,13 @@ export default function MenuDigital() {
           ...(detailProduct.imagen_url ? [{ url: detailProduct.imagen_url, ref: mainImgRef }] : []),
           ...(detailProduct.imagenes_extra || []).map(u => decodeExtraImage(u)).filter(i => i.url)
         ];
-        const tallas = Array.from(new Set(detailProduct.tallas?.split(',').map(t => t.trim()).filter(Boolean) || []));
+        const rawTallas = detailProduct.tallas?.split(',').map(t => t.trim()).filter(Boolean) || [];
+        const tallasMap = new Map();
+        rawTallas.forEach(t => {
+          const key = t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+          if (!tallasMap.has(key)) tallasMap.set(key, t);
+        });
+        const tallas = Array.from(tallasMap.values());
         const safeIdx = Math.min(carouselIdx, allImages.length - 1);
         const currentImgRef = allImages[safeIdx]?.ref;
         return (

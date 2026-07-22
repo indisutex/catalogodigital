@@ -5139,7 +5139,11 @@ export default function Admin() {
                            </div>
                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
                              <small style={{ color: '#64748b' }}>50 Unid:</small>
-                             <strong>{p.precio_50_unidades ? `${p.precio_50_unidades.toLocaleString()}` : '-'}</strong>
+                             <strong>{p.precio_50_unidades ? `$${p.precio_50_unidades.toLocaleString()}` : '-'}</strong>
+                           </div>
+                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                             <small style={{ color: '#64748b' }}>Tallas:</small>
+                             <strong style={{ fontSize: '0.8rem', color: '#0f172a', textAlign: 'right', wordBreak: 'break-word', maxWidth: '120px' }}>{p.tallas || '-'}</strong>
                            </div>
                         </div>
                       </div>
