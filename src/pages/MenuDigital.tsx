@@ -30,6 +30,11 @@ try {
   }
 } catch (e) {}
 
+const decodeExtraImage = (str: string) => {
+  if (!str) return { url: '', ref: '' };
+  const [url, ref] = str.split('|REF:');
+  return { url: url || '', ref: ref || '' };
+};
 export default function MenuDigital() {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -824,8 +829,8 @@ export default function MenuDigital() {
                     />
                   ) : producto.imagen_url ? (
                     <img src={producto.imagen_url} alt={producto.nombre} />
-                  ) : (producto.imagenes_extra && producto.imagenes_extra.length > 0 && producto.imagenes_extra[0]) ? (
-                    <img src={producto.imagenes_extra[0]} alt={producto.nombre} />
+                  ) : (producto.imagenes_extra && producto.imagenes_extra.length > 0 && decodeExtraImage(producto.imagenes_extra[0]).url) ? (
+                    <img src={decodeExtraImage(producto.imagenes_extra[0]).url} alt={producto.nombre} />
                   ) : (
                     <div className="img-placeholder"></div>
                   )}
@@ -980,8 +985,8 @@ export default function MenuDigital() {
                         <div className="cart-item-img">
                           {item.imagen_url ? (
                             <img src={item.imagen_url} alt={item.nombre} />
-                          ) : (item.imagenes_extra && item.imagenes_extra.length > 0 && item.imagenes_extra[0]) ? (
-                            <img src={item.imagenes_extra[0]} alt={item.nombre} />
+                          ) : (item.imagenes_extra && item.imagenes_extra.length > 0 && decodeExtraImage(item.imagenes_extra[0]).url) ? (
+                            <img src={decodeExtraImage(item.imagenes_extra[0]).url} alt={item.nombre} />
                           ) : (
                             <div className="img-placeholder-small"></div>
                           )}
@@ -1028,11 +1033,12 @@ export default function MenuDigital() {
       {/* ── PRODUCT DETAIL POPUP ── */}
       {detailProduct && (() => {
         const allImages = [
-          ...(detailProduct.imagen_url ? [detailProduct.imagen_url] : []),
-          ...(detailProduct.imagenes_extra || [])
+          ...(detailProduct.imagen_url ? [{ url: detailProduct.imagen_url, ref: '' }] : []),
+          ...(detailProduct.imagenes_extra || []).map(u => decodeExtraImage(u)).filter(i => i.url)
         ];
         const tallas = detailProduct.tallas?.split(',').map(t => t.trim()).filter(Boolean) || [];
         const safeIdx = Math.min(carouselIdx, allImages.length - 1);
+        const currentImgRef = allImages[safeIdx]?.ref;
         return (
           <div className="detail-overlay" onClick={() => setDetailProduct(null)}>
             <div className="detail-modal" onClick={e => e.stopPropagation()}>
@@ -1044,13 +1050,18 @@ export default function MenuDigital() {
                 {detailProduct.video_url ? (
                   <video src={detailProduct.video_url} autoPlay loop muted playsInline className="detail-carousel-img" ref={el => { if (el) el.play().catch(() => {}); }} />
                 ) : allImages.length > 0 ? (
-                  <img src={allImages[safeIdx]} alt={detailProduct.nombre} className="detail-carousel-img" />
+                  <img src={allImages[safeIdx].url} alt={detailProduct.nombre} className="detail-carousel-img" />
                 ) : (
                   <div className="detail-carousel-placeholder" />
                 )}
                 <div className="sku-badge" style={{ fontSize: '0.6rem', padding: '0.15rem 0.4rem', left: '0.5rem', right: 'auto' }}>
                   Ref: {detailProduct.nombre}
                 </div>
+                {currentImgRef && (
+                  <div className="sku-badge" style={{ fontSize: '0.6rem', padding: '0.15rem 0.4rem', left: '0.5rem', top: '2rem', right: 'auto', background: 'rgba(14, 165, 233, 0.9)' }}>
+                    Estampado: {currentImgRef}
+                  </div>
+                )}
 
                 {allImages.length > 1 && (
                   <>

@@ -49,6 +49,13 @@ const getGoogleDriveThumbnailUrl = (url: string) => {
   return '';
 };
 
+export const encodeExtraImage = (url: string, ref: string) => ref ? `${url}|REF:${ref}` : url;
+export const decodeExtraImage = (str: string) => {
+  if (!str) return { url: '', ref: '' };
+  const [url, ref] = str.split('|REF:');
+  return { url: url || '', ref: ref || '' };
+};
+
 type ProductFormData = {
   nombre: string;
   descripcion: string;
@@ -57,7 +64,7 @@ type ProductFormData = {
   precio_50_unidades: string;
   categoria: string;
   subcategoria: string;
-  imagenes: string[];
+  imagenes: { url: string; ref: string }[];
   video_url: string;
   tallas: string;
   estampados: string;
@@ -72,7 +79,7 @@ const emptyProduct: ProductFormData = {
   precio_50_unidades: '',
   categoria: '',
   subcategoria: '',
-  imagenes: [''],
+  imagenes: [{ url: '', ref: '' }],
   video_url: '',
   tallas: '',
   estampados: '',
@@ -713,7 +720,7 @@ export default function Admin() {
   const [bulkForms, setBulkForms] = useState<ProductFormData[]>([{ ...emptyProduct }]);
 
   const [editingProduct, setEditingProduct] = useState<Producto | null>(null);
-  const [editExtraImages, setEditExtraImages] = useState<string[]>([]);
+  const [editExtraImages, setEditExtraImages] = useState<{ url: string; ref: string }[]>([]);
   const [editUploadingIdx, setEditUploadingIdx] = useState<number | null>(null);
 
   const [isAddingProduct, setIsAddingProduct] = useState(false);
@@ -1137,7 +1144,7 @@ export default function Admin() {
       // Insertar las URLs subidas a partir de la posición imgIndex
       const newForms = [...bulkForms];
       const newImagenes = [...newForms[formIndex].imagenes];
-      newImagenes.splice(imgIndex, 1, ...uploadedUrls);
+      newImagenes.splice(imgIndex, 1, ...uploadedUrls.map(u => ({ url: u, ref: '' })));
       // Agregar filas extra si se subieron más de una imagen
       newForms[formIndex] = { ...newForms[formIndex], imagenes: newImagenes };
       setBulkForms(newForms);
@@ -1152,21 +1159,29 @@ export default function Admin() {
   const updateImagenUrl = (formIndex: number, imgIndex: number, value: string) => {
     const newForms = [...bulkForms];
     const newImagenes = [...newForms[formIndex].imagenes];
-    newImagenes[imgIndex] = value;
+    newImagenes[imgIndex] = { ...newImagenes[imgIndex], url: value };
+    newForms[formIndex] = { ...newForms[formIndex], imagenes: newImagenes };
+    setBulkForms(newForms);
+  };
+
+  const updateImagenRef = (formIndex: number, imgIndex: number, value: string) => {
+    const newForms = [...bulkForms];
+    const newImagenes = [...newForms[formIndex].imagenes];
+    newImagenes[imgIndex] = { ...newImagenes[imgIndex], ref: value };
     newForms[formIndex] = { ...newForms[formIndex], imagenes: newImagenes };
     setBulkForms(newForms);
   };
 
   const addImagenRow = (formIndex: number) => {
     const newForms = [...bulkForms];
-    newForms[formIndex] = { ...newForms[formIndex], imagenes: [...newForms[formIndex].imagenes, ''] };
+    newForms[formIndex] = { ...newForms[formIndex], imagenes: [...newForms[formIndex].imagenes, { url: '', ref: '' }] };
     setBulkForms(newForms);
   };
 
   const removeImagenRow = (formIndex: number, imgIndex: number) => {
     const newForms = [...bulkForms];
     const newImagenes = newForms[formIndex].imagenes.filter((_, i) => i !== imgIndex);
-    newForms[formIndex] = { ...newForms[formIndex], imagenes: newImagenes.length > 0 ? newImagenes : [''] };
+    newForms[formIndex] = { ...newForms[formIndex], imagenes: newImagenes.length > 0 ? newImagenes : [{ url: '', ref: '' }] };
     setBulkForms(newForms);
   };
 
@@ -1176,21 +1191,28 @@ export default function Admin() {
     e.preventDefault();
     setLoading(true);
     const validForms = bulkForms.filter(f => f.nombre.trim() !== '' && f.precio !== '');
-    const newProducts = validForms.map(f => ({
-      nombre: f.nombre,
-      descripcion: f.descripcion,
-      precio: parseFloat(f.precio),
-      precio_por_mayor: parseFloat(f.precio_por_mayor) || null,
-      precio_50_unidades: parseFloat(f.precio_50_unidades) || null,
-      categoria: f.categoria,
-      subcategoria: f.subcategoria || null,
-      imagen_url: f.imagenes.find(u => u.trim()) || '',
-      video_url: f.video_url || null,
-      tallas: f.tallas || null,
-      estampados: f.estampados || null,
-      stock: f.stock || 0,
-      tenant_id: getTenantId()
-    }));
+    const newProducts = validForms.map(f => {
+      const allImgs = f.imagenes.filter(img => img.url.trim() !== '');
+      const mainImg = allImgs.length > 0 ? allImgs[0].url : '';
+      const extraImgs = allImgs.slice(1).map(img => encodeExtraImage(img.url, img.ref));
+
+      return {
+        nombre: f.nombre,
+        descripcion: f.descripcion,
+        precio: parseFloat(f.precio),
+        precio_por_mayor: parseFloat(f.precio_por_mayor) || null,
+        precio_50_unidades: parseFloat(f.precio_50_unidades) || null,
+        categoria: f.categoria,
+        subcategoria: f.subcategoria || null,
+        imagen_url: mainImg,
+        imagenes_extra: extraImgs.length > 0 ? extraImgs : null,
+        video_url: f.video_url || null,
+        tallas: f.tallas || null,
+        estampados: f.estampados || null,
+        stock: f.stock || 0,
+        tenant_id: getTenantId()
+      };
+    });
     const { error } = await supabase.from('productos').insert(newProducts);
     setLoading(false);
     if (error) {
@@ -1612,11 +1634,12 @@ export default function Admin() {
     e.preventDefault();
     if (!editingProduct) return;
     setLoading(true);
-    const extraImgs = editExtraImages.filter(u => u.trim());
+    const extraImgs = editExtraImages.filter(u => u.url.trim());
     let mainImg = editingProduct.imagen_url || '';
     if (!mainImg && extraImgs.length > 0) {
-      mainImg = extraImgs[0];
+      mainImg = extraImgs[0].url;
     }
+    const extraImgsEncoded = extraImgs.map(img => encodeExtraImage(img.url, img.ref));
     const { error } = await supabase.from('productos').update({
       nombre: editingProduct.nombre,
       descripcion: editingProduct.descripcion,
@@ -1626,7 +1649,7 @@ export default function Admin() {
       categoria: editingProduct.categoria,
       subcategoria: editingProduct.subcategoria || null,
       imagen_url: mainImg,
-      imagenes_extra: extraImgs,
+      imagenes_extra: extraImgsEncoded,
       video_url: editingProduct.video_url,
       tallas: editingProduct.tallas,
       estampados: editingProduct.estampados || null,
@@ -1669,7 +1692,7 @@ export default function Admin() {
       }
       setEditExtraImages(prev => {
         const next = [...prev];
-        next.splice(idx, 1, ...uploadedUrls);
+        next.splice(idx, 1, ...uploadedUrls.map(u => ({ url: u, ref: '' })));
         return next;
       });
       showToast(`${uploadedUrls.length} foto(s) extra subida(s) ✓`);
@@ -3155,10 +3178,20 @@ export default function Admin() {
                     <div className="form-field full">
                       <label>📸 Fotos Adicionales del Producto</label>
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem', marginTop: '0.5rem' }}>
-                        {editExtraImages.map((url, idx) => (
+                        {editExtraImages.map((img, idx) => (
                           <div key={idx} style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '0.3rem', alignItems: 'center' }}>
-                            {url && <img src={url} alt="" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 8, border: '2px solid #e2e8f0' }} />}
-                            {!url && <div style={{ width: 80, height: 80, background: '#f1f5f9', borderRadius: 8, border: '2px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>📷</div>}
+                            {img.url && <img src={img.url} alt="" style={{ width: 80, height: 80, objectFit: 'cover', borderRadius: 8, border: '2px solid #e2e8f0' }} />}
+                            {!img.url && <div style={{ width: 80, height: 80, background: '#f1f5f9', borderRadius: 8, border: '2px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>📷</div>}
+                            <input
+                              value={img.ref}
+                              onChange={e => {
+                                const newArr = [...editExtraImages];
+                                newArr[idx].ref = e.target.value;
+                                setEditExtraImages(newArr);
+                              }}
+                              placeholder="Ref (Ej. Snoopy)"
+                              style={{ width: '80px', fontSize: '0.65rem', padding: '0.2rem', textAlign: 'center' }}
+                            />
                             <label htmlFor={`edit-extra-${idx}`} style={{ cursor: 'pointer', fontSize: '0.7rem', color: '#0ea5e9', fontWeight: 600 }}>
                               {editUploadingIdx === idx ? '...' : '📤 Cambiar'}
                             </label>
@@ -3184,7 +3217,7 @@ export default function Admin() {
                               const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
                               urls.push(data.publicUrl);
                             }
-                            setEditExtraImages(prev => [...prev, ...urls]);
+                            setEditExtraImages(prev => [...prev, ...urls.map(u => ({ url: u, ref: '' }))]);
                             showToast(`${urls.length} foto(s) agregada(s) ✓`);
                           } catch { showToast('Error al subir foto(s)', 'error'); }
                           finally { setEditUploadingIdx(null); }
@@ -3757,11 +3790,11 @@ export default function Admin() {
                               <div className="form-field full">
                                 <label>🖼️ Imágenes del Producto</label>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                  {form.imagenes.map((imgUrl, imgIdx) => (
+                                  {form.imagenes.map((img, imgIdx) => (
                                     <div key={imgIdx} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', background: '#f8fafc', borderRadius: '12px', padding: '0.8rem', border: '1px solid #e2e8f0', minHeight: '170px' }}>
-                                      {imgUrl ? (
+                                      {img.url ? (
                                         <img
-                                          src={imgUrl}
+                                          src={img.url}
                                           style={{ width: 160, height: 160, borderRadius: 10, objectFit: 'cover', flexShrink: 0, border: '2px solid #cbd5e1', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
                                           alt=""
                                           onError={e => (e.currentTarget.style.display = 'none')}
@@ -3774,10 +3807,18 @@ export default function Admin() {
                                       )}
                                       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                         <input
-                                          value={imgUrl}
+                                          value={img.url}
                                           onChange={e => updateImagenUrl(index, imgIdx, e.target.value)}
                                           placeholder={imgIdx === 0 ? 'URL de imagen principal...' : 'URL de imagen extra...'}
                                         />
+                                        {imgIdx > 0 && (
+                                          <input
+                                            value={img.ref}
+                                            onChange={e => updateImagenRef(index, imgIdx, e.target.value)}
+                                            placeholder="Nombre de Estampado / Referencia (Ej. Snoopy)..."
+                                            style={{ fontSize: '0.85rem' }}
+                                          />
+                                        )}
                                         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                                           <label className="btn-upload-img" style={{ fontSize: '0.75rem', padding: '0.4rem 0.9rem', cursor: 'pointer' }}>
                                             <Upload size={12} /> Subir archivo(s)
@@ -3983,8 +4024,8 @@ export default function Admin() {
                           <div className="product-card-img">
                             {p.imagen_url ? (
                               <img src={p.imagen_url} alt={p.nombre} />
-                            ) : (p.imagenes_extra && p.imagenes_extra.length > 0 && p.imagenes_extra[0]) ? (
-                              <img src={p.imagenes_extra[0]} alt={p.nombre} />
+                            ) : (p.imagenes_extra && p.imagenes_extra.length > 0 && decodeExtraImage(p.imagenes_extra[0]).url) ? (
+                              <img src={decodeExtraImage(p.imagenes_extra[0]).url} alt={p.nombre} />
                             ) : (
                               '🖼️'
                             )}
@@ -3998,7 +4039,7 @@ export default function Admin() {
                             <button 
                               className="btn-edit" 
                               style={{ padding: '0.5rem', borderRadius: '8px', cursor: 'pointer', border: '1px solid #bae6fd', background: '#e0f2fe', color: '#0369a1', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', width: '32px', height: '32px' }}
-                              onClick={() => { setEditingProduct(p); setEditExtraImages(p.imagenes_extra || []); }}
+                              onClick={() => { setEditingProduct(p); setEditExtraImages((p.imagenes_extra || []).map(u => decodeExtraImage(u))); }}
                               title="Editar Producto"
                             >
                               <Pencil size={14} />
@@ -4788,8 +4829,8 @@ export default function Admin() {
                       <div className="product-card-img">
                         {p.imagen_url ? (
                           <img src={p.imagen_url} alt={p.nombre} />
-                        ) : (p.imagenes_extra && p.imagenes_extra.length > 0 && p.imagenes_extra[0]) ? (
-                          <img src={p.imagenes_extra[0]} alt={p.nombre} />
+                        ) : (p.imagenes_extra && p.imagenes_extra.length > 0 && decodeExtraImage(p.imagenes_extra[0]).url) ? (
+                          <img src={decodeExtraImage(p.imagenes_extra[0]).url} alt={p.nombre} />
                         ) : (
                           <div style={{width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', background:'#f1f5f9'}}><Package size={24} color="#94a3b8" /></div>
                         )}
@@ -4928,8 +4969,8 @@ export default function Admin() {
                           <div className="product-card-img">
                             {p.imagen_url ? (
                               <img src={p.imagen_url} alt={p.nombre} />
-                            ) : (p.imagenes_extra && p.imagenes_extra.length > 0 && p.imagenes_extra[0]) ? (
-                              <img src={p.imagenes_extra[0]} alt={p.nombre} />
+                            ) : (p.imagenes_extra && p.imagenes_extra.length > 0 && decodeExtraImage(p.imagenes_extra[0]).url) ? (
+                              <img src={decodeExtraImage(p.imagenes_extra[0]).url} alt={p.nombre} />
                             ) : (
                               <div style={{width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', background:'#f1f5f9'}}><Package size={24} color="#94a3b8" /></div>
                             )}
