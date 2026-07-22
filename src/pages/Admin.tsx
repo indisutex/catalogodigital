@@ -2672,7 +2672,11 @@ export default function Admin() {
   }, [filteredPedidos]);
 
   const clientesFiltrados = useMemo(() => {
-    return filteredPedidos.filter(p => p.estado === 'completado');
+    return filteredPedidos.filter(p => p.estado === 'completado' && p.origen !== 'pos');
+  }, [filteredPedidos]);
+
+  const posFiltrados = useMemo(() => {
+    return filteredPedidos.filter(p => p.origen === 'pos');
   }, [filteredPedidos]);
 
   const filteredClientes = useMemo(() => {
@@ -8973,6 +8977,20 @@ export default function Admin() {
                             )}
                           </div>
                         </div>
+
+                        {/* Columna 5: Ventas POS */}
+                        <div className="kanban-column" style={{ background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}>
+                          <div className="kanban-column-header col-purple" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #8b5cf6', paddingBottom: '0.5rem' }}>
+                            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#8b5cf6' }}>🏪 Ventas POS</h3>
+                            <span className="badge" style={{ background: '#ede9fe', color: '#8b5cf6', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{posFiltrados.length}</span>
+                          </div>
+                          <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
+                            {posFiltrados.map(ped => renderLeadOrOrderCard(ped))}
+                            {posFiltrados.length === 0 && (
+                              <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0' }}>No hay ventas POS aún.</p>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     ) : (
                       <div className="orders-desktop-table-container" style={{ overflowX: 'auto', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
@@ -9132,7 +9150,10 @@ export default function Admin() {
                           }
 
                           // Advisor Info
-                          const adv = getAsesorInfoByPhone(ped.linea_whatsapp);
+                          let adv = getAsesorInfoByPhone(ped.linea_whatsapp);
+                          if (ped.origen === 'pos') {
+                            adv = { nombre: 'Punto de Venta', role: 'POS', foto_url: '' };
+                          }
 
                           return (
                             <div key={ped.id} className={`order-mobile-card ${isLead ? 'lead-abandonado' : ped.estado === 'completado' ? 'order-completado' : ped.pantallazo_url ? 'order-comprobante' : 'order-pendiente'}`}>
