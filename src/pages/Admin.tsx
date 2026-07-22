@@ -3936,24 +3936,10 @@ export default function Admin() {
               <RefreshCw size={16} className={isRefreshing ? 'spin-icon-active' : ''} />
             </button>
             {activeTab === 'productos' && (
-              isAddingProduct ? (
+              isAddingProduct && (
                 <button className="btn-secondary" onClick={() => setIsAddingProduct(false)}>
                   <X size={14} /> Volver al Inventario
                 </button>
-              ) : (
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    className="btn-secondary"
-                    onClick={() => setShowMigrateProductsModal(true)}
-                    style={{ color: '#0ea5e9', borderColor: '#bae6fd', background: '#f0f9ff', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
-                  >
-                    <PackageCheck size={15} /> Migrar de Empresa
-                  </button>
-                  <button className="btn-primary" onClick={() => { setBulkForms([{ ...emptyProduct }]); setIsAddingProduct(true); }}>
-                    <Plus size={14} /> Nuevo Producto
-                  </button>
-                </div>
               )
             )}
             {activeTab === 'categorias' && (
@@ -4448,6 +4434,13 @@ export default function Admin() {
                       <p>Todos los productos publicados en tu tienda</p>
                     </div>
                     <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end', marginLeft: 'auto' }}>
+                      <button 
+                        className="btn-primary hover-lift" 
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1.1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem' }}
+                        onClick={() => { setBulkForms([{ ...emptyProduct }]); setIsAddingProduct(true); }}
+                      >
+                        <Plus size={16} /> Nuevo Producto
+                      </button>
                       <button 
                         className="btn-secondary hover-lift" 
                         style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', border: '1px solid #bae6fd', color: '#0369a1', background: '#f0f9ff', padding: '0.55rem 1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.82rem' }}
