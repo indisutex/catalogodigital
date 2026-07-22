@@ -1597,6 +1597,7 @@ export default function Admin() {
     newForms[formIndex] = { ...newForms[formIndex], imagenes: [...newForms[formIndex].imagenes, { url: '', ref: '' }] };
     setBulkForms(newForms);
   };
+  void addImagenRow;
 
   const removeImagenRow = (formIndex: number, imgIndex: number) => {
     const newForms = [...bulkForms];
@@ -4337,12 +4338,7 @@ export default function Admin() {
                                   {/* Add new image */}
                                   <label style={{ width: 130, height: 130, background: '#f0fdf4', border: '2px dashed #22c55e', borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.9rem', color: '#16a34a', fontWeight: 700, gap: '0.5rem' }}>
                                     <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={e => {
-                                      const files = Array.from(e.target.files || []);
-                                      if (!files.length) return;
-                                      files.forEach((file, fi) => {
-                                        handleFileUpload({ target: { files: [file] } } as any, index, form.imagenes.length + fi);
-                                        if (fi < files.length - 1) addImagenRow(index);
-                                      });
+                                      handleFileUpload(e, index, form.imagenes.length);
                                       e.target.value = '';
                                     }} />
                                     <span style={{ fontSize: '2rem' }}>+</span> Agregar foto
