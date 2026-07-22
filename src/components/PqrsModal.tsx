@@ -37,7 +37,7 @@ export default function PqrsModal({ onClose }: { onClose: () => void }) {
       }
 
       const tenantId = getTenantId();
-      const { error: insertError } = await supabase.from('pqrs').insert([{
+      let { error: insertError } = await supabase.from('pqrs').insert([{
         tenant_id: tenantId,
         nombre_cliente: formData.nombre,
         telefono_cliente: formData.telefono,
@@ -48,7 +48,19 @@ export default function PqrsModal({ onClose }: { onClose: () => void }) {
         estado: 'pendiente'
       }]);
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        console.warn('Fallback insert PQRS sin tenant_id:', insertError);
+        const { error: fallbackErr } = await supabase.from('pqrs').insert([{
+          nombre_cliente: formData.nombre,
+          telefono_cliente: formData.telefono,
+          numero_pedido: formData.pedido || null,
+          motivo: formData.motivo,
+          descripcion: formData.descripcion,
+          evidencia_url,
+          estado: 'pendiente'
+        }]);
+        if (fallbackErr) throw fallbackErr;
+      }
       setEnviado(true);
     } catch (err: any) {
       console.error('Error enviando PQRS:', err);

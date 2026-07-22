@@ -1210,7 +1210,7 @@ export default function Admin() {
         supabase.from('asesores').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
         supabase.from('material_apoyo').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
         supabase.from('mayoristas').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
-        supabase.from('pqrs').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false })
+        supabase.from('pqrs').select('*').order('created_at', { ascending: false })
       ]);
 
       if (catRes.data) setCategoriasData(catRes.data);
@@ -1221,7 +1221,10 @@ export default function Admin() {
       if (aseRes && aseRes.data) setAsesores(aseRes.data);
       if (matRes && matRes.data) setMateriales(matRes.data);
       if (mayRes && mayRes.data) setMayoristas(mayRes.data);
-      if (pqrsRes && pqrsRes.data) setListaPqrs(pqrsRes.data);
+      if (pqrsRes && pqrsRes.data) {
+        const filtered = pqrsRes.data.filter(p => !p.tenant_id || p.tenant_id === tenant);
+        setListaPqrs(filtered.length > 0 ? filtered : pqrsRes.data);
+      }
 
       // Fetch products in chunks of 1000 to bypass Supabase defaults
       let allProducts: Producto[] = [];
@@ -8261,7 +8264,7 @@ export default function Admin() {
                 </div>
               ) : (
                 /* MAIN POS SALES SCREEN */
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 420px', gap: '1.5rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
                   
                   {/* LEFT COLUMN: PRODUCT SELECTION */}
                   <div className="admin-panel" style={{ minHeight: '650px', background: '#fff', borderRadius: '20px', boxShadow: '0 2px 20px rgba(0,0,0,0.06)' }}>
@@ -8284,7 +8287,7 @@ export default function Admin() {
                               background: posPriceTier === key ? (configuracion?.color_primario || '#4f46e5') : 'transparent',
                               color: posPriceTier === key ? '#fff' : '#64748b',
                               padding: '0.4rem 1rem',
-                              borderRadius: '9px',
+                              borderRadius: '99px',
                               fontSize: '0.8rem',
                               fontWeight: 700,
                               cursor: 'pointer',
@@ -8300,8 +8303,8 @@ export default function Admin() {
 
                     <div className="panel-body">
                       {/* Filters bar */}
-                      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem' }}>
-                        <div style={{ position: 'relative', flex: 1 }}>
+                      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                        <div style={{ position: 'relative', flex: 1, minWidth: '180px' }}>
                           <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', display: 'flex' }}>
                             <Search size={15} />
                           </span>
@@ -8342,7 +8345,7 @@ export default function Admin() {
                               <div key={p.id} style={{ border: `2px solid ${cartQty > 0 ? (configuracion?.color_primario || '#4f46e5') : '#f1f5f9'}`, borderRadius: '16px', padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', background: cartQty > 0 ? `${(configuracion?.color_primario || '#4f46e5')}08` : 'white', position: 'relative', transition: 'all 0.2s', cursor: hasStockAvailable ? 'pointer' : 'default' }}>
                                 {/* Cart badge */}
                                 {cartQty > 0 && (
-                                  <span style={{ position: 'absolute', top: '-8px', right: '-8px', background: configuracion?.color_primario || '#4f46e5', color: 'white', borderRadius: '50%', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 800, boxShadow: '0 2px 6px rgba(0,0,0,0.2)' }}>
+                                  <span style={{ position: 'absolute', top: '6px', right: '6px', background: configuracion?.color_primario || '#4f46e5', color: 'white', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800, boxShadow: '0 2px 6px rgba(0,0,0,0.25)', zIndex: 2 }}>
                                     {cartQty}
                                   </span>
                                 )}
@@ -8382,7 +8385,7 @@ export default function Admin() {
                                       if (exist) {
                                         return prev.map(item => (item.id === p.id && item.talla === defaultTalla && item.estampado === defaultEstampado) ? { ...item, cantidad: item.cantidad + 1 } : item);
                                       } else {
-                                        return [...prev, { id: p.id, nombre: p.nombre, precio: activePrice, cantidad: 1, talla: defaultTalla, estampado: defaultEstampado, producto: p }];
+                                        return [...prev, { id: p.id, nombre: p.nombre, precio: activePrice, cantidad: 1, talla: defaultTalla, estampado: defaultEstampado, selected_image_url: p.imagen_url, producto: p }];
                                       }
                                     });
                                   }}
@@ -8394,7 +8397,7 @@ export default function Admin() {
                                     boxShadow: hasStockAvailable ? '0 2px 8px rgba(0,0,0,0.12)' : 'none'
                                   }}
                                 >
-                                  {hasStockAvailable ? <><Plus size={14} /> Agregar al carrito</> : 'Sin Stock'}
+                                  <Plus size={14} /> Agregar
                                 </button>
                               </div>
                             );
@@ -8403,10 +8406,10 @@ export default function Admin() {
                     </div>
                   </div>
 
-                  {/* RIGHT COLUMN: POS SALES CART */}
-                  <div className="admin-panel" style={{ minHeight: '650px', background: '#fff', borderRadius: '20px', boxShadow: '0 2px 20px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column' }}>
+                  {/* RIGHT COLUMN: CURRENT CART / CHECKOUT */}
+                  <div className="admin-panel" style={{ background: '#fff', borderRadius: '20px', boxShadow: '0 2px 20px rgba(0,0,0,0.06)', display: 'flex', flexDirection: 'column' }}>
                     <div className="panel-header" style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
                           <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>🛍️ Venta Actual</h3>
                           <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '0.15rem 0 0 0' }}>Carrito de cobro y datos del cliente</p>
@@ -8428,74 +8431,147 @@ export default function Admin() {
                             Carrito vacío — agrega productos
                           </div>
                         ) : (
-                          posCart.map((item, idx) => (
-                            <div key={idx} style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', transition: 'all 0.2s' }}>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <h6 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, color: '#0f172a' }}>{item.nombre}</h6>
-                                {/* Selectors for Talla/Estampado */}
-                                <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.35rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                                  {item.producto.tallas && (() => {
-                                    const rawTallas = item.producto.tallas.split(',').map((t: string) => t.trim()).filter(Boolean);
-                                    const tallasMap = new Map();
-                                    rawTallas.forEach((t: string) => {
-                                      let key = t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-                                      if (key === 'talla unica' || key === 'unica' || key === 'tallaunica') key = 'unica';
-                                      let displayVal = t;
-                                      if (key === 'unica') displayVal = 'Única';
-                                      if (!tallasMap.has(key)) tallasMap.set(key, displayVal);
-                                    });
-                                    const uniqueTallas = Array.from(tallasMap.values());
-                                    if (uniqueTallas.length === 0) return null;
-                                    return (
-                                      <select
-                                        value={item.talla || ''}
-                                        onChange={e => { const val = e.target.value; setPosCart(prev => prev.map((it, i) => i === idx ? { ...it, talla: val } : it)); }}
-                                        style={{ fontSize: '0.76rem', padding: '0.2rem 0.5rem', borderRadius: '6px', border: '1.5px solid #cbd5e1', background: 'white', fontWeight: 600, color: '#334155', outline: 'none' }}
-                                      >
-                                        {uniqueTallas.map((t: string) => <option key={t} value={t}>{t}</option>)}
-                                      </select>
-                                    );
-                                  })()}
-                                  {(() => {
-                                    const legacyEstampados = item.producto.estampados?.split(',').map((e: string) => e.trim()).filter(Boolean) || [];
-                                    const extraImagesRefs = (item.producto.imagenes_extra || []).map((u: string) => decodeExtraImage(u).ref?.trim()).filter(Boolean);
-                                    const allEstampados = Array.from(new Set([...legacyEstampados, ...extraImagesRefs]));
-                                    if (allEstampados.length === 0) {
+                          posCart.map((item, idx) => {
+                            const allProductImages = (() => {
+                              const list: { url: string; ref: string }[] = [];
+                              if (item.producto.imagen_url) {
+                                list.push({ url: item.producto.imagen_url, ref: '' });
+                              }
+                              (item.producto.imagenes_extra || []).forEach((str: string) => {
+                                const decoded = decodeExtraImage(str);
+                                if (decoded.url) {
+                                  list.push({ url: decoded.url, ref: decoded.ref || '' });
+                                }
+                              });
+                              return list;
+                            })();
+
+                            const currentSelectedImg = item.selected_image_url || (() => {
+                              const matched = allProductImages.find(img => img.ref && img.ref.toLowerCase() === (item.estampado || '').toLowerCase());
+                              return matched ? matched.url : item.producto.imagen_url;
+                            })();
+
+                            return (
+                              <div key={idx} style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.65rem', transition: 'all 0.2s' }}>
+                                {/* Product Thumbnail */}
+                                {currentSelectedImg ? (
+                                  <img
+                                    src={currentSelectedImg}
+                                    alt=""
+                                    style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover', flexShrink: 0, border: '1px solid #cbd5e1' }}
+                                  />
+                                ) : (
+                                  <div style={{ width: 48, height: 48, borderRadius: 8, background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1.2rem' }}>👕</div>
+                                )}
+
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <h6 style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.nombre}</h6>
+                                  {/* Selectors for Talla/Estampado */}
+                                  <div style={{ display: 'flex', gap: '0.35rem', marginTop: '0.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                                    {item.producto.tallas && (() => {
+                                      const rawTallas = item.producto.tallas.split(',').map((t: string) => t.trim()).filter(Boolean);
+                                      const tallasMap = new Map();
+                                      rawTallas.forEach((t: string) => {
+                                        let key = t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                                        if (key === 'talla unica' || key === 'unica' || key === 'tallaunica') key = 'unica';
+                                        let displayVal = t;
+                                        if (key === 'unica') displayVal = 'Única';
+                                        if (!tallasMap.has(key)) tallasMap.set(key, displayVal);
+                                      });
+                                      const uniqueTallas = Array.from(tallasMap.values());
+                                      if (uniqueTallas.length === 0) return null;
                                       return (
-                                        <input
-                                          type="text"
-                                          placeholder="Diseño / Estampado..."
-                                          value={item.estampado || ''}
-                                          onChange={e => { const val = e.target.value; setPosCart(prev => prev.map((it, i) => i === idx ? { ...it, estampado: val } : it)); }}
-                                          style={{ fontSize: '0.76rem', padding: '0.2rem 0.5rem', borderRadius: '6px', border: '1.5px solid #cbd5e1', background: 'white', outline: 'none', minWidth: '110px' }}
-                                        />
+                                        <select
+                                          value={item.talla || ''}
+                                          onChange={e => { const val = e.target.value; setPosCart(prev => prev.map((it, i) => i === idx ? { ...it, talla: val } : it)); }}
+                                          style={{ fontSize: '0.74rem', padding: '0.15rem 0.4rem', borderRadius: '6px', border: '1.5px solid #cbd5e1', background: 'white', fontWeight: 600, color: '#334155', outline: 'none' }}
+                                        >
+                                          {uniqueTallas.map((t: string) => <option key={t} value={t}>{t}</option>)}
+                                        </select>
                                       );
-                                    }
-                                    return (
-                                      <select
-                                        value={item.estampado || ''}
-                                        onChange={e => { const val = e.target.value; setPosCart(prev => prev.map((it, i) => i === idx ? { ...it, estampado: val } : it)); }}
-                                        style={{ fontSize: '0.76rem', padding: '0.2rem 0.5rem', borderRadius: '6px', border: '1.5px solid #cbd5e1', background: 'white', fontWeight: 600, color: '#334155', outline: 'none' }}
-                                      >
-                                        <option value="">(Sin estampado)</option>
-                                        {allEstampados.map(t => <option key={t} value={t}>{t}</option>)}
-                                      </select>
-                                    );
-                                  })()}
+                                    })()}
+                                    {(() => {
+                                      const legacyEstampados = item.producto.estampados?.split(',').map((e: string) => e.trim()).filter(Boolean) || [];
+                                      const extraImagesRefs = (item.producto.imagenes_extra || []).map((u: string) => decodeExtraImage(u).ref?.trim()).filter(Boolean);
+                                      const allEstampados = Array.from(new Set([...legacyEstampados, ...extraImagesRefs]));
+                                      if (allEstampados.length === 0) {
+                                        return (
+                                          <input
+                                            type="text"
+                                            placeholder="Diseño / Estampado..."
+                                            value={item.estampado || ''}
+                                            onChange={e => { const val = e.target.value; setPosCart(prev => prev.map((it, i) => i === idx ? { ...it, estampado: val } : it)); }}
+                                            style={{ fontSize: '0.74rem', padding: '0.15rem 0.4rem', borderRadius: '6px', border: '1.5px solid #cbd5e1', background: 'white', fontWeight: 600, color: '#334155', outline: 'none', width: '100px' }}
+                                          />
+                                        );
+                                      }
+                                      return (
+                                        <select
+                                          value={item.estampado || ''}
+                                          onChange={e => {
+                                            const val = e.target.value;
+                                            const matchedImg = allProductImages.find(img => img.ref && img.ref.toLowerCase() === val.toLowerCase());
+                                            setPosCart(prev => prev.map((it, i) => i === idx ? { ...it, estampado: val, selected_image_url: matchedImg ? matchedImg.url : it.selected_image_url } : it));
+                                          }}
+                                          style={{ fontSize: '0.74rem', padding: '0.15rem 0.4rem', borderRadius: '6px', border: '1.5px solid #cbd5e1', background: 'white', fontWeight: 600, color: '#334155', outline: 'none', maxWidth: '120px' }}
+                                        >
+                                          <option value="">(Sin estampado)</option>
+                                          {allEstampados.map(t => <option key={t} value={t}>{t}</option>)}
+                                        </select>
+                                      );
+                                    })()}
+                                  </div>
+
+                                  {/* Clickable Image Thumbnails (Estampados Visuales) */}
+                                  {allProductImages.length > 1 && (
+                                    <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.3rem', alignItems: 'center' }}>
+                                      <span style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 700 }}>Fotos:</span>
+                                      {allProductImages.map((imgObj, iIdx) => {
+                                        const isSelected = currentSelectedImg === imgObj.url;
+                                        return (
+                                          <img
+                                            key={iIdx}
+                                            src={imgObj.url}
+                                            alt={imgObj.ref || `Foto ${iIdx + 1}`}
+                                            title={imgObj.ref || `Foto ${iIdx + 1}`}
+                                            onClick={() => {
+                                              setPosCart(prev => prev.map((it, i) => i === idx ? {
+                                                ...it,
+                                                selected_image_url: imgObj.url,
+                                                estampado: imgObj.ref || it.estampado
+                                              } : it));
+                                            }}
+                                            style={{
+                                              width: 24,
+                                              height: 24,
+                                              borderRadius: 5,
+                                              objectFit: 'cover',
+                                              cursor: 'pointer',
+                                              border: isSelected ? '2px solid #e11d48' : '1px solid #cbd5e1',
+                                              opacity: isSelected ? 1 : 0.6,
+                                              transition: 'all 0.15s ease'
+                                            }}
+                                          />
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+
+                                  <span style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: 800, display: 'block', marginTop: '0.2rem' }}>
+                                    ${(item.precio * item.cantidad).toLocaleString()}
+                                  </span>
                                 </div>
-                              </div>
-                              {/* Qty + Price + Remove */}
-                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.35rem', flexShrink: 0 }}>
-                                <strong style={{ fontSize: '0.9rem', color: '#10b981', fontWeight: 800 }}>${(item.precio * item.cantidad).toLocaleString()}</strong>
-                                <div style={{ display: 'flex', alignItems: 'center', background: 'white', border: '1.5px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
-                                  <button type="button" onClick={() => { if (item.cantidad > 1) setPosCart(prev => prev.map((it, i) => i === idx ? { ...it, cantidad: it.cantidad - 1 } : it)); }} style={{ border: 'none', background: 'transparent', padding: '0.3rem 0.65rem', fontSize: '1rem', cursor: 'pointer', fontWeight: 700, color: '#475569', lineHeight: 1 }}>−</button>
-                                  <span style={{ fontSize: '0.85rem', padding: '0 0.5rem', fontWeight: 800, color: '#0f172a' }}>{item.cantidad}</span>
-                                  <button type="button" onClick={() => { if (item.cantidad < (item.producto.stock || 0)) setPosCart(prev => prev.map((it, i) => i === idx ? { ...it, cantidad: it.cantidad + 1 } : it)); }} style={{ border: 'none', background: 'transparent', padding: '0.3rem 0.65rem', fontSize: '1rem', cursor: 'pointer', fontWeight: 700, color: '#475569', lineHeight: 1 }}>+</button>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.2rem' }}>
+                                  <button type="button" onClick={() => setPosCart(prev => prev.map((it, i) => i === idx ? { ...it, cantidad: Math.max(1, it.cantidad - 1) } : it))} style={{ border: 'none', background: 'transparent', width: 22, height: 22, borderRadius: 4, cursor: 'pointer', fontWeight: 800, color: '#475569' }}>-</button>
+                                  <span style={{ fontSize: '0.85rem', fontWeight: 800, minWidth: '18px', textAlign: 'center' }}>{item.cantidad}</span>
+                                  <button type="button" onClick={() => setPosCart(prev => prev.map((it, i) => i === idx ? { ...it, cantidad: it.cantidad + 1 } : it))} style={{ border: 'none', background: 'transparent', width: 22, height: 22, borderRadius: 4, cursor: 'pointer', fontWeight: 800, color: '#475569' }}>+</button>
                                 </div>
-                                <button type="button" onClick={() => setPosCart(prev => prev.filter((_, i) => i !== idx))} style={{ border: 'none', background: 'transparent', color: '#ef4444', fontSize: '0.72rem', padding: 0, cursor: 'pointer', fontWeight: 700 }}>✕ Quitar</button>
+                                <button type="button" onClick={() => setPosCart(prev => prev.filter((_, i) => i !== idx))} style={{ border: 'none', background: '#fee2e2', color: '#ef4444', width: 26, height: 26, borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <Trash2 size={13} />
+                                </button>
                               </div>
-                            </div>
-                          ))
+                            );
+                          })
                         )}
                       </div>
 
@@ -8505,30 +8581,30 @@ export default function Admin() {
                           👤 Datos del Cliente
                         </h4>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: 0 }}>
                             <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Teléfono *</label>
                             <input type="text" required placeholder="Ej: 3122564284" value={posCustomerPhone} onChange={e => setPosCustomerPhone(e.target.value)}
-                              style={{ padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '0.85rem', outline: 'none', background: 'white', transition: 'border 0.2s' }}
+                              style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '0.85rem', outline: 'none', background: 'white', transition: 'border 0.2s' }}
                             />
                           </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: 0 }}>
                             <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nombre *</label>
                             <input type="text" required placeholder="Nombre del cliente" value={posCustomerName} onChange={e => setPosCustomerName(e.target.value)}
-                              style={{ padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '0.85rem', outline: 'none', background: 'white', transition: 'border 0.2s' }}
+                              style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '0.85rem', outline: 'none', background: 'white', transition: 'border 0.2s' }}
                             />
                           </div>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '0.65rem' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: 0 }}>
                             <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Dirección</label>
                             <input type="text" placeholder="Calle, Manzana, Casa..." value={posCustomerAddress} onChange={e => setPosCustomerAddress(e.target.value)}
-                              style={{ padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '0.85rem', outline: 'none', background: 'white' }}
+                              style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '0.85rem', outline: 'none', background: 'white' }}
                             />
                           </div>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: 0 }}>
                             <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ciudad</label>
                             <input type="text" placeholder="Ej: Cali" value={posCustomerCity} onChange={e => setPosCustomerCity(e.target.value)}
-                              style={{ padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '0.85rem', outline: 'none', background: 'white' }}
+                              style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '0.85rem', outline: 'none', background: 'white' }}
                             />
                           </div>
                         </div>
