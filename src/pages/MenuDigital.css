@@ -1110,11 +1110,13 @@
   border: none;
   background: rgba(255,255,255,0.88);
   box-shadow: 0 2px 8px rgba(0,0,0,0.18);
-  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  color: #1e293b;
+  cursor: pointer;
   transition: background 0.15s;
+  touch-action: manipulation;
 }
 .carousel-btn:hover { background: #fff; }
 .carousel-btn-left  { left: 10px; }
