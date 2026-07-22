@@ -1067,7 +1067,7 @@ export default function MenuDigital() {
                             )}
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <h5 style={{ margin: '0 0 0.25rem 0', fontSize: '0.9rem', color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.nombre}</h5>
+                            <h5 style={{ margin: '0 0 0.25rem 0', fontSize: '0.85rem', color: '#1e293b', lineHeight: '1.2', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.nombre}</h5>
                             <p style={{ margin: 0, color: '#e11d48', fontWeight: 800, fontSize: '0.9rem' }}>
                               ${getEffectivePrice(p, buyerType, markupPorcentaje, ajustesProductos).toLocaleString('es-CO')}
                             </p>
