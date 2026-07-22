@@ -1618,7 +1618,6 @@ export default function Admin() {
       return {
         nombre: f.nombre,
         referencia: f.referencia || f.sku || null,
-        sku: f.sku || f.referencia || null,
         descripcion: f.descripcion,
         precio: parseFloat(f.precio),
         precio_por_mayor: parseFloat(f.precio_por_mayor) || null,
@@ -2064,6 +2063,7 @@ export default function Admin() {
     const extraImgsEncoded = restImgs.map(img => encodeExtraImage(img.url, img.ref));
     const { error } = await supabase.from('productos').update({
       nombre: editingProduct.nombre,
+      referencia: editingProduct.referencia || editingProduct.sku || null,
       descripcion: editingProduct.descripcion,
       precio: editingProduct.precio,
       precio_por_mayor: editingProduct.precio_por_mayor || null,
