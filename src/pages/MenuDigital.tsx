@@ -1121,8 +1121,15 @@ export default function MenuDigital() {
         const rawTallas = detailProduct.tallas?.split(',').map(t => t.trim()).filter(Boolean) || [];
         const tallasMap = new Map();
         rawTallas.forEach(t => {
-          const key = t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-          if (!tallasMap.has(key)) tallasMap.set(key, t);
+          let key = t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+          if (key === 'talla unica' || key === 'unica' || key === 'tallaunica') {
+            key = 'unica';
+          }
+          
+          let displayVal = t;
+          if (key === 'unica') displayVal = 'Única';
+
+          if (!tallasMap.has(key)) tallasMap.set(key, displayVal);
         });
         const tallas = Array.from(tallasMap.values());
         const safeIdx = Math.min(carouselIdx, allImages.length - 1);

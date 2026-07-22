@@ -55,8 +55,15 @@ const deduplicateTallas = (tallasStr: string | undefined | null) => {
   if (rawTallas.length === 0) return '-';
   const tallasMap = new Map();
   rawTallas.forEach(t => {
-    const key = t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    if (!tallasMap.has(key)) tallasMap.set(key, t);
+    let key = t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    if (key === 'talla unica' || key === 'unica' || key === 'tallaunica') {
+      key = 'unica';
+    }
+    
+    let displayVal = t;
+    if (key === 'unica') displayVal = 'Única';
+
+    if (!tallasMap.has(key)) tallasMap.set(key, displayVal);
   });
   return Array.from(tallasMap.values()).join(', ') || '-';
 };
