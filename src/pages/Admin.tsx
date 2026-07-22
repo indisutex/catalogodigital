@@ -844,10 +844,12 @@ export default function Admin() {
     }
     setIsLoadingSourceProducts(true);
     try {
+      const slugHyphen = tenantSlug.replace(/_/g, '-');
+      const slugUnderscore = tenantSlug.replace(/-/g, '_');
       const { data, error } = await supabase
         .from('productos')
         .select('*')
-        .eq('tenant_id', tenantSlug)
+        .or(`tenant_id.eq.${tenantSlug},tenant_id.eq.${slugHyphen},tenant_id.eq.${slugUnderscore}`)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -10650,21 +10652,61 @@ export default function Admin() {
             </div>
 
             <div style={{ padding: '1.25rem', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-              {/* Step 1: Source Tenant */}
+              {/* Step 1: Source Tenant Visual Selection */}
               <div>
-                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '0.5rem' }}>
-                  1. Empresa de Origen (de dónde provienen los productos):
+                <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '0.65rem' }}>
+                  1. Selecciona la Empresa de Origen (de dónde provienen los productos):
                 </label>
-                <select
-                  value={selectedSourceTenant}
-                  onChange={e => handleLoadSourceProducts(e.target.value)}
-                  style={{ width: '100%', padding: '0.65rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none' }}
-                >
-                  <option value="">-- Selecciona Empresa de Origen --</option>
-                  {availableTenantsList.filter(t => t.slug !== getTenantId()).map(t => (
-                    <option key={t.slug} value={t.slug}>{t.icon} {t.name}</option>
-                  ))}
-                </select>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '0.65rem' }}>
+                  {availableTenantsList.filter(t => t.slug !== getTenantId()).map(t => {
+                    const isSelected = selectedSourceTenant === t.slug;
+                    const logoUrl = tenantLogos[t.slug];
+                    return (
+                      <button
+                        key={t.slug}
+                        type="button"
+                        onClick={() => handleLoadSourceProducts(t.slug)}
+                        style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.4rem',
+                          padding: '0.75rem 0.5rem',
+                          borderRadius: '12px',
+                          border: isSelected ? `2.5px solid ${t.color || '#0ea5e9'}` : '1.5px solid #e2e8f0',
+                          background: isSelected ? `${t.color || '#0ea5e9'}14` : '#ffffff',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease',
+                          textAlign: 'center'
+                        }}
+                      >
+                        <div style={{
+                          width: '38px',
+                          height: '38px',
+                          borderRadius: '10px',
+                          background: t.bg || '#f1f5f9',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '1.3rem',
+                          overflow: 'hidden',
+                          border: '1px solid rgba(0,0,0,0.06)'
+                        }}>
+                          {logoUrl ? (
+                            <img src={logoUrl} alt={t.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : (
+                            t.icon || '🛍️'
+                          )}
+                        </div>
+                        <span style={{ fontSize: '0.82rem', fontWeight: 800, color: isSelected ? t.color : '#0f172a' }}>
+                          {t.name}
+                        </span>
+                        {isSelected && <span style={{ color: t.color, fontSize: '0.72rem', fontWeight: 800 }}>✓ Seleccionada</span>}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Step 2: Options */}
