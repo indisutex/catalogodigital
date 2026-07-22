@@ -4312,9 +4312,13 @@ export default function Admin() {
                                  <small style={{ color: '#64748b' }}>Mayor:</small>
                                  <strong style={{ color: '#0f172a' }}>{p.precio_por_mayor ? `$${p.precio_por_mayor.toLocaleString()}` : '-'}</strong>
                                </div>
-                               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
                                  <small style={{ color: '#64748b' }}>50 Unid:</small>
                                  <strong style={{ color: '#0f172a' }}>{p.precio_50_unidades ? `$${p.precio_50_unidades.toLocaleString()}` : '-'}</strong>
+                               </div>
+                               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                 <small style={{ color: '#64748b' }}>Tallas:</small>
+                                 <strong style={{ fontSize: '0.8rem', color: '#0f172a', textAlign: 'right', wordBreak: 'break-word', maxWidth: '120px' }}>{p.tallas || '-'}</strong>
                                </div>
                             </div>
 
