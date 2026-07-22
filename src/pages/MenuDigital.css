@@ -1077,19 +1077,18 @@
 .detail-carousel {
   position: relative;
   width: 100%;
+  aspect-ratio: 4 / 5;
   background: #f8fafc;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  max-height: 50dvh;
   overflow: hidden;
 }
 
 .detail-carousel-img {
   width: 100%;
-  height: auto;
-  max-height: 50dvh;
+  height: 100%;
   object-fit: cover;
   display: block;
 }
@@ -1342,10 +1341,11 @@
     border-radius: 20px;
   }
   .detail-carousel {
-    max-height: 45dvh;
+    aspect-ratio: auto;
+    height: 45dvh;
   }
   .detail-carousel-img {
-    max-height: 45dvh;
+    height: 100%;
   }
 }
 
@@ -1425,10 +1425,11 @@
     border-radius: 20px;
   }
   .detail-carousel {
-    max-height: 45dvh;
+    aspect-ratio: auto;
+    height: 45dvh;
   }
   .detail-carousel-img {
-    max-height: 45dvh;
+    height: 100%;
   }
   /* Cart / checkout */
   .cart-item {
