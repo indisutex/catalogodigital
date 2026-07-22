@@ -782,13 +782,35 @@ export default function Admin() {
   const [migrateIncludePrices, setMigrateIncludePrices] = useState(true);
   const [migrateCloneCategories, setMigrateCloneCategories] = useState(true);
 
+  const [tenantLogos, setTenantLogos] = useState<Record<string, string>>({});
+
   const availableTenantsList = [
-    { slug: 'saramantha', name: 'Saramantha' },
-    { slug: 'sublimados_majestic', name: 'Sublimados Majestic' },
-    { slug: 'pijamas_lucerito', name: 'Pijamas Lucerito' },
-    { slug: 'indisutex', name: 'Indisutex' },
-    { slug: 'lovely', name: 'Lovely' }
+    { slug: 'saramantha', name: 'Saramantha', shortName: 'Saramantha', icon: '🌸', color: '#ec4899', bg: '#fce7f3' },
+    { slug: 'sublimados_majestic', name: 'Majestic', shortName: 'Sublimados Majestic', icon: '👑', color: '#8b5cf6', bg: '#f3e8ff' },
+    { slug: 'pijamas_lucerito', name: 'Pijamas Lucerito', shortName: 'Pijamas Lucerito', icon: '🌙', color: '#0ea5e9', bg: '#e0f2fe' },
+    { slug: 'indisutex', name: 'Indisutex', shortName: 'Indisutex', icon: '🛍️', color: '#10b981', bg: '#d1fae5' },
+    { slug: 'lovely', name: 'Lovely', shortName: 'Lovely', icon: '💖', color: '#f43f5e', bg: '#ffe4e6' }
   ];
+
+  useEffect(() => {
+    const fetchLogos = async () => {
+      try {
+        const { data } = await supabase.from('configuraciones').select('tenant_id, logo_url');
+        if (data) {
+          const map: Record<string, string> = {};
+          data.forEach(item => {
+            if (item.tenant_id && item.logo_url) {
+              map[item.tenant_id] = item.logo_url;
+            }
+          });
+          setTenantLogos(map);
+        }
+      } catch (e) {
+        console.warn('Could not fetch tenant logos', e);
+      }
+    };
+    fetchLogos();
+  }, []);
 
   const handleConfirmMoveAsesor = async () => {
     if (!movingAsesor || !targetAsesorTenant) return;
@@ -8619,10 +8641,10 @@ export default function Admin() {
                                   <img
                                     src={currentSelectedImg}
                                     alt=""
-                                    style={{ width: 48, height: 48, borderRadius: 8, objectFit: 'cover', flexShrink: 0, border: '1px solid #cbd5e1' }}
+                                    style={{ width: 64, height: 64, borderRadius: 10, objectFit: 'cover', flexShrink: 0, border: '1.5px solid #cbd5e1', boxShadow: '0 2px 6px rgba(0,0,0,0.06)' }}
                                   />
                                 ) : (
-                                  <div style={{ width: 48, height: 48, borderRadius: 8, background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1.2rem' }}>👕</div>
+                                  <div style={{ width: 64, height: 64, borderRadius: 10, background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1.5rem' }}>👕</div>
                                 )}
 
                                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -8685,8 +8707,8 @@ export default function Admin() {
 
                                   {/* Clickable Image Thumbnails (Estampados Visuales) */}
                                   {allProductImages.length > 1 && (
-                                    <div style={{ display: 'flex', gap: '0.25rem', marginTop: '0.3rem', alignItems: 'center' }}>
-                                      <span style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 700 }}>Fotos:</span>
+                                    <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                                      <span style={{ fontSize: '0.72rem', color: '#475569', fontWeight: 800 }}>Fotos:</span>
                                       {allProductImages.map((imgObj, iIdx) => {
                                         const isSelected = currentSelectedImg === imgObj.url;
                                         return (
@@ -8703,13 +8725,15 @@ export default function Admin() {
                                               } : it));
                                             }}
                                             style={{
-                                              width: 24,
-                                              height: 24,
-                                              borderRadius: 5,
+                                              width: 44,
+                                              height: 44,
+                                              borderRadius: 8,
                                               objectFit: 'cover',
                                               cursor: 'pointer',
-                                              border: isSelected ? '2px solid #e11d48' : '1px solid #cbd5e1',
-                                              opacity: isSelected ? 1 : 0.6,
+                                              border: isSelected ? '2.5px solid #e11d48' : '1.5px solid #cbd5e1',
+                                              opacity: isSelected ? 1 : 0.7,
+                                              boxShadow: isSelected ? '0 2px 8px rgba(225,29,72,0.35)' : 'none',
+                                              transform: isSelected ? 'scale(1.08)' : 'scale(1)',
                                               transition: 'all 0.15s ease'
                                             }}
                                           />
@@ -10531,6 +10555,7 @@ export default function Admin() {
               {availableTenantsList.map(t => {
                 const isCurrent = t.slug === getTenantId();
                 const isSelected = targetAsesorTenant === t.slug;
+                const logoUrl = tenantLogos[t.slug];
                 return (
                   <button
                     key={t.slug}
@@ -10541,21 +10566,48 @@ export default function Admin() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      padding: '0.75rem 1rem',
-                      borderRadius: '10px',
-                      border: isSelected ? '2px solid #0284c7' : '1px solid #e2e8f0',
-                      background: isCurrent ? '#f8fafc' : isSelected ? '#f0f9ff' : '#ffffff',
+                      padding: '0.85rem 1.1rem',
+                      borderRadius: '14px',
+                      border: isSelected ? `2.5px solid ${t.color || '#0284c7'}` : '1.5px solid #e2e8f0',
+                      background: isCurrent ? '#f8fafc' : isSelected ? `${t.color || '#0284c7'}14` : '#ffffff',
                       opacity: isCurrent ? 0.6 : 1,
                       cursor: isCurrent ? 'not-allowed' : 'pointer',
                       textAlign: 'left',
-                      fontWeight: isSelected ? 700 : 500,
-                      color: isSelected ? '#0369a1' : '#334155',
                       transition: 'all 0.15s'
                     }}
                   >
-                    <span>{t.name} ({t.slug})</span>
-                    {isCurrent && <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>(Actual)</span>}
-                    {isSelected && <span style={{ color: '#0284c7', fontWeight: 800 }}>✓</span>}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                      <div style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '12px',
+                        background: t.bg || '#f1f5f9',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '1.4rem',
+                        overflow: 'hidden',
+                        flexShrink: 0,
+                        border: '1px solid rgba(0,0,0,0.06)'
+                      }}>
+                        {logoUrl ? (
+                          <img src={logoUrl} alt={t.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          t.icon || '🛍️'
+                        )}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: '0.98rem', fontWeight: 800, color: isSelected ? t.color : '#0f172a' }}>
+                          {t.name}
+                        </div>
+                        {isCurrent && <span style={{ fontSize: '0.73rem', color: '#94a3b8', fontWeight: 600 }}>Empresa Actual</span>}
+                      </div>
+                    </div>
+                    {isCurrent ? (
+                      <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, background: '#e2e8f0', padding: '0.2rem 0.6rem', borderRadius: '6px' }}>Actual</span>
+                    ) : isSelected ? (
+                      <span style={{ color: t.color, fontWeight: 900, fontSize: '1.25rem' }}>✓</span>
+                    ) : null}
                   </button>
                 );
               })}
@@ -10610,7 +10662,7 @@ export default function Admin() {
                 >
                   <option value="">-- Selecciona Empresa de Origen --</option>
                   {availableTenantsList.filter(t => t.slug !== getTenantId()).map(t => (
-                    <option key={t.slug} value={t.slug}>{t.name} ({t.slug})</option>
+                    <option key={t.slug} value={t.slug}>{t.icon} {t.name}</option>
                   ))}
                 </select>
               </div>
