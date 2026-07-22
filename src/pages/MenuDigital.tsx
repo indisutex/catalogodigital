@@ -243,6 +243,20 @@ export default function MenuDigital() {
   const [selectedEstampado, setSelectedEstampado] = useState<string>('');
   const [selectedCantidad, setSelectedCantidad] = useState(1);
 
+  useEffect(() => {
+    if (detailProduct) {
+      const allImages = [
+        ...(detailProduct.imagen_url ? [{ url: detailProduct.imagen_url, ref: detailProduct.referencia || '' }] : []),
+        ...(detailProduct.imagenes_extra || []).map(u => decodeExtraImage(u)).filter(i => i.url)
+      ];
+      const safeIdx = Math.min(carouselIdx, allImages.length - 1);
+      const currentImage = allImages[safeIdx];
+      if (currentImage && currentImage.ref) {
+        setSelectedEstampado(currentImage.ref.trim().toUpperCase());
+      }
+    }
+  }, [carouselIdx, detailProduct]);
+
   const openDetail = (producto: Producto) => {
     setDetailProduct(producto);
     setCarouselIdx(0);
