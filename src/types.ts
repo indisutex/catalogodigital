@@ -11,6 +11,7 @@ export interface Producto {
   tallas?: string;
   tenant_id?: string;
   referencia?: string;
+  sku?: string;
   stock?: number;
   costo?: number;
   precio_por_mayor?: number;

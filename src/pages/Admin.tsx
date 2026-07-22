@@ -77,6 +77,8 @@ export const decodeExtraImage = (str: string) => {
 
 type ProductFormData = {
   nombre: string;
+  referencia?: string;
+  sku?: string;
   descripcion: string;
   precio: string;
   precio_por_mayor: string;
@@ -92,6 +94,8 @@ type ProductFormData = {
 
 const emptyProduct: ProductFormData = {
   nombre: '',
+  referencia: '',
+  sku: '',
   descripcion: '',
   precio: '',
   precio_por_mayor: '',
@@ -1613,6 +1617,8 @@ export default function Admin() {
 
       return {
         nombre: f.nombre,
+        referencia: f.referencia || f.sku || null,
+        sku: f.sku || f.referencia || null,
         descripcion: f.descripcion,
         precio: parseFloat(f.precio),
         precio_por_mayor: parseFloat(f.precio_por_mayor) || null,
@@ -3556,6 +3562,15 @@ export default function Admin() {
                        <label>Stock (Cantidad en inventario)</label>
                        <input type="number" min="0" value={editingProduct.stock || 0} onChange={e => setEditingProduct({ ...editingProduct, stock: parseInt(e.target.value) || 0 })} />
                      </div>
+                     <div className="form-field">
+                       <label>SKU / Referencia</label>
+                       <input
+                         type="text"
+                         value={editingProduct.referencia || editingProduct.sku || ''}
+                         onChange={e => setEditingProduct({ ...editingProduct, referencia: e.target.value, sku: e.target.value })}
+                         placeholder="Ej: SHD-001, SK-102"
+                       />
+                     </div>
                      <div className="form-field full">
                         <label>Tallas</label>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.5rem' }}>
@@ -4213,6 +4228,18 @@ export default function Admin() {
                               <div className="form-field">
                                 <label>Stock (Cantidad en inventario)</label>
                                 <input type="number" min="0" value={form.stock || 0} onChange={e => updateBulkForm(index, 'stock', parseInt(e.target.value) || 0)} placeholder="Ej: 100" />
+                              </div>
+                              <div className="form-field">
+                                <label>SKU / Referencia</label>
+                                <input
+                                  type="text"
+                                  value={form.referencia || form.sku || ''}
+                                  onChange={e => {
+                                    updateBulkForm(index, 'referencia', e.target.value);
+                                    updateBulkForm(index, 'sku', e.target.value);
+                                  }}
+                                  placeholder="Ej: SHD-001, SK-102"
+                                />
                               </div>
                               <div className="form-field">
                                 <label>Categoría</label>
@@ -5347,48 +5374,121 @@ export default function Admin() {
                 <div>
                   <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}><Package size={18} /> Productos</h3>
                   <p className="panel-header-subtitle" style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>
-                    Visualiza los productos disponibles en el catálogo de la empresa.
+                    Visualiza los productos disponibles en el catálogo de la empresa con stock, precios y estampados.
                   </p>
                 </div>
               </div>
               <div className="panel-body">
                 <div className="products-grid">
-                  {productos.map(p => (
-                    <div key={p.id} className="product-card">
-                      <div className="product-card-img">
-                        {p.imagen_url ? (
-                          <img src={p.imagen_url} alt={p.nombre} />
-                        ) : (p.imagenes_extra && p.imagenes_extra.length > 0 && decodeExtraImage(p.imagenes_extra[0]).url) ? (
-                          <img src={decodeExtraImage(p.imagenes_extra[0]).url} alt={p.nombre} />
-                        ) : (
-                          <div style={{width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', background:'#f1f5f9'}}><Package size={24} color="#94a3b8" /></div>
-                        )}
-                      </div>
-                      <div className="product-card-body">
-                        <h4>{p.nombre}</h4>
-                        <p className="p-cat" style={{ fontSize: '0.75rem', color: '#64748b' }}>{p.referencia}</p>
-                        
-                        <div style={{ marginTop: '0.8rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                             <small style={{ color: '#64748b' }}>Detal:</small>
-                             <strong style={{ color: '#0f172a' }}>${p.precio?.toLocaleString()}</strong>
-                           </div>
-                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                             <small style={{ color: '#64748b' }}>Mayor:</small>
-                             <strong>{p.precio_por_mayor ? `${p.precio_por_mayor.toLocaleString()}` : '-'}</strong>
-                           </div>
-                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                             <small style={{ color: '#64748b' }}>50 Unid:</small>
-                             <strong>{p.precio_50_unidades ? `$${p.precio_50_unidades.toLocaleString()}` : '-'}</strong>
-                           </div>
-                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                             <small style={{ color: '#64748b' }}>Tallas:</small>
-                             <strong style={{ fontSize: '0.8rem', color: '#0f172a', textAlign: 'right', wordBreak: 'break-word', maxWidth: '120px' }}>{deduplicateTallas(p.tallas)}</strong>
-                           </div>
+                  {productos.map(p => {
+                    const allImages = (() => {
+                      const list: { url: string; ref: string }[] = [];
+                      if (p.imagen_url) list.push({ url: p.imagen_url, ref: '' });
+                      (p.imagenes_extra || []).forEach((str: string) => {
+                        const decoded = decodeExtraImage(str);
+                        if (decoded.url) list.push({ url: decoded.url, ref: decoded.ref || '' });
+                      });
+                      return list;
+                    })();
+
+                    return (
+                      <div key={p.id} className="product-card">
+                        <div className="product-card-img" style={{ position: 'relative' }}>
+                          {/* Stock Floating Badge */}
+                          <span style={{
+                            position: 'absolute',
+                            top: 8,
+                            right: 8,
+                            background: (p.stock || 0) > 0 ? '#10b981' : '#ef4444',
+                            color: 'white',
+                            fontSize: '0.7rem',
+                            fontWeight: 800,
+                            padding: '0.2rem 0.65rem',
+                            borderRadius: '20px',
+                            boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+                            zIndex: 2
+                          }}>
+                            {(p.stock || 0) > 0 ? `Stock: ${p.stock}` : 'Sin Stock'}
+                          </span>
+
+                          {p.imagen_url ? (
+                            <img src={p.imagen_url} alt={p.nombre} />
+                          ) : (p.imagenes_extra && p.imagenes_extra.length > 0 && decodeExtraImage(p.imagenes_extra[0]).url) ? (
+                            <img src={decodeExtraImage(p.imagenes_extra[0]).url} alt={p.nombre} />
+                          ) : (
+                            <div style={{width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', background:'#f1f5f9'}}><Package size={24} color="#94a3b8" /></div>
+                          )}
+                        </div>
+
+                        <div className="product-card-body">
+                          {p.categoria && (
+                            <span style={{ background: '#eff6ff', color: '#0284c7', fontSize: '0.68rem', padding: '0.15rem 0.5rem', borderRadius: '6px', fontWeight: 700, display: 'inline-block', marginBottom: '0.3rem' }}>
+                              {p.categoria}
+                            </span>
+                          )}
+
+                          <h4>{p.nombre}</h4>
+                          <p className="p-cat" style={{ fontSize: '0.75rem', color: '#64748b' }}>{p.referencia}</p>
+
+                          {/* Extra Images Thumbnails */}
+                          {allImages.length > 1 && (
+                            <div style={{ display: 'flex', gap: '0.35rem', margin: '0.4rem 0', overflowX: 'auto', paddingBottom: '0.2rem' }}>
+                              {allImages.map((imgObj, iIdx) => (
+                                <img
+                                  key={iIdx}
+                                  src={imgObj.url}
+                                  alt={imgObj.ref || `Foto ${iIdx + 1}`}
+                                  title={imgObj.ref || `Foto ${iIdx + 1}`}
+                                  style={{ width: 32, height: 32, borderRadius: 6, objectFit: 'cover', border: '1px solid #cbd5e1', flexShrink: 0 }}
+                                />
+                              ))}
+                            </div>
+                          )}
+                          
+                          <div style={{ marginTop: '0.6rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem', borderBottom: '1px dashed #e2e8f0', paddingBottom: '0.25rem' }}>
+                              <small style={{ color: '#64748b', fontWeight: 600 }}>Stock Disponible:</small>
+                              <strong style={{ color: (p.stock || 0) > 0 ? '#16a34a' : '#dc2626', fontWeight: 800 }}>
+                                {(p.stock || 0) > 0 ? `${p.stock} uds` : 'Sin Stock'}
+                              </strong>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                              <small style={{ color: '#64748b' }}>Detal:</small>
+                              <strong style={{ color: '#0f172a' }}>${p.precio?.toLocaleString()}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                              <small style={{ color: '#64748b' }}>Mayor:</small>
+                              <strong>{p.precio_por_mayor ? `$${p.precio_por_mayor.toLocaleString()}` : '-'}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                              <small style={{ color: '#64748b' }}>50 Unid:</small>
+                              <strong>{p.precio_50_unidades ? `$${p.precio_50_unidades.toLocaleString()}` : '-'}</strong>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                              <small style={{ color: '#64748b' }}>Tallas:</small>
+                              <strong style={{ fontSize: '0.8rem', color: '#0f172a', textAlign: 'right', wordBreak: 'break-word', maxWidth: '120px' }}>{deduplicateTallas(p.tallas)}</strong>
+                            </div>
+
+                            {(() => {
+                              const legacyEst = p.estampados?.split(',').map((e: string) => e.trim()).filter(Boolean) || [];
+                              const extraRefs = (p.imagenes_extra || []).map((u: string) => decodeExtraImage(u).ref?.trim()).filter(Boolean);
+                              const allEst = Array.from(new Set([...legacyEst, ...extraRefs]));
+                              if (allEst.length === 0) return null;
+                              return (
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem', paddingTop: '0.25rem', borderTop: '1px dashed #e2e8f0' }}>
+                                  <small style={{ color: '#64748b' }}>Estampados:</small>
+                                  <strong style={{ fontSize: '0.78rem', color: '#0284c7', textAlign: 'right', wordBreak: 'break-word', maxWidth: '120px' }}>
+                                    {allEst.join(', ')}
+                                  </strong>
+                                </div>
+                              );
+                            })()}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -11076,7 +11176,7 @@ function SidebarContent({
         </div>
       )}
 
-      <div className="sidebar-footer" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', padding: '1.2rem', borderTop: '1px solid #f1f5f9' }}>
+      <div className="sidebar-footer" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', padding: '1.2rem', borderTop: '1px solid #f1f5f9', marginTop: 'auto', flexShrink: 0 }}>
         <a 
           href={(role === 'asesor' || role === 'mayorista') && currentAsesor?.telefono 
             ? `/${getTenantId()}?ws=${currentAsesor.telefono.split(',')[0].trim().replace(/\D/g, '')}${role === 'mayorista' ? '&tipo=mayorista' : ''}` 
