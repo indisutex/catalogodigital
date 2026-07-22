@@ -3348,7 +3348,7 @@ export default function Admin() {
                      <div className="form-field full">
                         <label>Tallas</label>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.5rem' }}>
-                          {['Talla Única', 'Talla Plus', 'Única', 'Plus', 'S', 'M', 'L', 'XL', 'XXL', '6', '8', '10', '12', '14', '16', '28', '30', '32', '34', '36', '38'].map(sz => {
+                          {['Talla Única', 'Talla Plus', 'Única', 'Plus', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'].map(sz => {
                             const currentTallas = (editingProduct.tallas || '').split(',').map(s => s.trim()).filter(Boolean);
                             const selected = currentTallas.includes(sz);
                             return (
@@ -3383,12 +3383,6 @@ export default function Admin() {
                             );
                           })}
                         </div>
-                        <input 
-                          value={editingProduct.tallas || ''} 
-                          onChange={e => setEditingProduct({ ...editingProduct, tallas: e.target.value })} 
-                          placeholder="Otras tallas (separadas por coma)..." 
-                          style={{ fontSize: '0.85rem' }}
-                        />
                       </div>
                       <div className="form-field">
                         <label>Categoría</label>
@@ -4023,7 +4017,7 @@ export default function Admin() {
                               <div className="form-field full">
                                 <label>Tallas (opcionales)</label>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.5rem' }}>
-                                  {['Talla Única', 'Talla Plus', 'Única', 'Plus', 'S', 'M', 'L', 'XL', 'XXL', '6', '8', '10', '12', '14', '16', '28', '30', '32', '34', '36', '38'].map(sz => {
+                                  {['Talla Única', 'Talla Plus', 'Única', 'Plus', 'S', 'M', 'L', 'XL', 'XXL', 'XXXL'].map(sz => {
                                     const currentTallas = (form.tallas || '').split(',').map(s => s.trim()).filter(Boolean);
                                     const selected = currentTallas.includes(sz);
                                     return (
@@ -4058,7 +4052,6 @@ export default function Admin() {
                                     );
                                   })}
                                 </div>
-                                <input value={form.tallas} onChange={e => updateBulkForm(index, 'tallas', e.target.value)} placeholder="Otras tallas (separadas por coma)..." style={{ fontSize: '0.85rem' }} />
                               </div>
                               <div className="form-field full">
                                 <label>🖼️ Imágenes del Producto</label>
@@ -4305,8 +4298,31 @@ export default function Admin() {
                           </div>
                           <div className="product-card-body">
                             <h4>{p.nombre}</h4>
-                            <p className="p-cat">{p.categoria}</p>
-                            <p className="p-price">${p.precio.toLocaleString()}</p>
+                            <p className="p-cat" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span>{p.categoria}</span>
+                              <span style={{ background: '#e0e7ff', color: '#4f46e5', padding: '0.1rem 0.4rem', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600 }}>Stock: {p.stock || 0}</span>
+                            </p>
+                            
+                            <div style={{ marginTop: '0.5rem', padding: '0.6rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                                 <small style={{ color: '#64748b' }}>Detal:</small>
+                                 <strong style={{ color: '#0f172a' }}>${p.precio?.toLocaleString()}</strong>
+                               </div>
+                               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                                 <small style={{ color: '#64748b' }}>Mayor:</small>
+                                 <strong style={{ color: '#0f172a' }}>{p.precio_por_mayor ? `$${p.precio_por_mayor.toLocaleString()}` : '-'}</strong>
+                               </div>
+                               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                 <small style={{ color: '#64748b' }}>50 Unid:</small>
+                                 <strong style={{ color: '#0f172a' }}>{p.precio_50_unidades ? `$${p.precio_50_unidades.toLocaleString()}` : '-'}</strong>
+                               </div>
+                            </div>
+
+                            {p.descripcion && (
+                              <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.5rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {p.descripcion}
+                              </p>
+                            )}
                           </div>
                           <div className="product-card-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.45rem', padding: '0.65rem 0.9rem', background: '#fafafa', borderTop: '1px solid #f1f5f9' }}>
                             <button 
