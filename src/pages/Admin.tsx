@@ -224,9 +224,12 @@ function MiNegocioSettings({
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
             <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <h4 style={{ margin: '0 0 0.5rem 0' }}>Botón 1</h4>
-              <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 0 }}>
-                <input type="checkbox" id="ds-enabled" checked={dsEnabled} onChange={e => setDsEnabled(e.target.checked)} style={{ width: 'auto' }} />
-                <label htmlFor="ds-enabled" style={{ margin: 0 }}>Habilitar Botón 1</label>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '0.5rem' }}>
+                <label htmlFor="ds-enabled" style={{ margin: 0, fontWeight: 600, color: '#334155', cursor: 'pointer' }}>Habilitar Botón 1</label>
+                <label className="toggle-switch">
+                  <input type="checkbox" id="ds-enabled" checked={dsEnabled} onChange={e => setDsEnabled(e.target.checked)} />
+                  <span className="toggle-slider"></span>
+                </label>
               </div>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label style={{ fontWeight: 600 }}>Texto del Botón</label>
@@ -240,9 +243,12 @@ function MiNegocioSettings({
 
             <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <h4 style={{ margin: '0 0 0.5rem 0' }}>Botón 2</h4>
-              <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: 0 }}>
-                <input type="checkbox" id="earn-enabled" checked={earnEnabled} onChange={e => setEarnEnabled(e.target.checked)} style={{ width: 'auto' }} />
-                <label htmlFor="earn-enabled" style={{ margin: 0 }}>Habilitar Botón 2</label>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '0.5rem' }}>
+                <label htmlFor="earn-enabled" style={{ margin: 0, fontWeight: 600, color: '#334155', cursor: 'pointer' }}>Habilitar Botón 2</label>
+                <label className="toggle-switch">
+                  <input type="checkbox" id="earn-enabled" checked={earnEnabled} onChange={e => setEarnEnabled(e.target.checked)} />
+                  <span className="toggle-slider"></span>
+                </label>
               </div>
               <div className="form-group" style={{ marginBottom: 0 }}>
                 <label style={{ fontWeight: 600 }}>Texto del Botón</label>
