@@ -1706,35 +1706,36 @@ export default function Admin() {
         const telLimpio = ped.cliente_telefono.trim();
         const tenant = ped.tenant_id || getTenantId();
 
-        const { data: extExist, error: errorExist } = await supabase
+        const { data: existList2 } = await supabase
           .from('clientes_exitosos')
           .select('*')
           .eq('telefono', telLimpio)
           .eq('tenant_id', tenant)
-          .maybeSingle();
+          .order('created_at', { ascending: true })
+          .limit(1);
 
-        if (!errorExist) {
-          if (extExist) {
-            await supabase
-              .from('clientes_exitosos')
-              .update({
-                nombre: ped.cliente_nombre || extExist.nombre,
-                total_compras: (extExist.total_compras || 0) + (ped.total || 0),
-                numero_pedidos: (extExist.numero_pedidos || 0) + 1,
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', extExist.id);
-          } else {
-            await supabase
-              .from('clientes_exitosos')
-              .insert({
-                nombre: ped.cliente_nombre,
-                telefono: telLimpio,
-                total_compras: ped.total || 0,
-                numero_pedidos: 1,
-                tenant_id: tenant
-              });
-          }
+        const extExist = existList2 && existList2.length > 0 ? existList2[0] : null;
+
+        if (extExist) {
+          await supabase
+            .from('clientes_exitosos')
+            .update({
+              nombre: ped.cliente_nombre || extExist.nombre,
+              total_compras: (extExist.total_compras || 0) + (ped.total || 0),
+              numero_pedidos: (extExist.numero_pedidos || 0) + 1,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', extExist.id);
+        } else {
+          await supabase
+            .from('clientes_exitosos')
+            .insert({
+              nombre: ped.cliente_nombre,
+              telefono: telLimpio,
+              total_compras: ped.total || 0,
+              numero_pedidos: 1,
+              tenant_id: tenant
+            });
         }
       }
 
@@ -8584,35 +8585,36 @@ export default function Admin() {
 
                               // 3. Register/Update Customer in clientes_exitosos
                               const telLimpio = posCustomerPhone.trim();
-                              const { data: extExist, error: errorExist } = await supabase
+                              const { data: existList } = await supabase
                                 .from('clientes_exitosos')
                                 .select('*')
                                 .eq('telefono', telLimpio)
                                 .eq('tenant_id', tenant)
-                                .maybeSingle();
+                                .order('created_at', { ascending: true })
+                                .limit(1);
 
-                              if (!errorExist) {
-                                if (extExist) {
-                                  await supabase
-                                    .from('clientes_exitosos')
-                                    .update({
-                                      nombre: posCustomerName.trim() || extExist.nombre,
-                                      total_compras: (extExist.total_compras || 0) + totalSale,
-                                      numero_pedidos: (extExist.numero_pedidos || 0) + 1,
-                                      updated_at: new Date().toISOString()
-                                    })
-                                    .eq('id', extExist.id);
-                                } else {
-                                  await supabase
-                                    .from('clientes_exitosos')
-                                    .insert({
-                                      nombre: posCustomerName.trim(),
-                                      telefono: telLimpio,
-                                      total_compras: totalSale,
-                                      numero_pedidos: 1,
-                                      tenant_id: tenant
-                                    });
-                                }
+                              const extExist = existList && existList.length > 0 ? existList[0] : null;
+
+                              if (extExist) {
+                                await supabase
+                                  .from('clientes_exitosos')
+                                  .update({
+                                    nombre: posCustomerName.trim() || extExist.nombre,
+                                    total_compras: (extExist.total_compras || 0) + totalSale,
+                                    numero_pedidos: (extExist.numero_pedidos || 0) + 1,
+                                    updated_at: new Date().toISOString()
+                                  })
+                                  .eq('id', extExist.id);
+                              } else {
+                                await supabase
+                                  .from('clientes_exitosos')
+                                  .insert({
+                                    nombre: posCustomerName.trim(),
+                                    telefono: telLimpio,
+                                    total_compras: totalSale,
+                                    numero_pedidos: 1,
+                                    tenant_id: tenant
+                                  });
                               }
 
                               // 4. Update local states
