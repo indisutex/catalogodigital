@@ -4287,70 +4287,65 @@ export default function Admin() {
                                   })}
                                 </div>
                               </div>
-                              <div className="form-field full">
-                                <label>Estampados (opcional, separados por coma)</label>
-                                <input type="text" value={form.estampados || ''} onChange={e => updateBulkForm(index, 'estampados', e.target.value)} placeholder="Ej: Snoopy, Mickey, Liso" />
-                              </div>
-                              <div className="form-field full">
-                                <label>🖼️ Imágenes y Estampados</label>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                              <div className="form-field full" style={{ background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                                  <label style={{ margin: 0 }}>🖼️ Imágenes y Estampados</label>
+                                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Haz clic en ⭐ para elegir la imagen principal</span>
+                                </div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
                                   {form.imagenes.map((img, imgIdx) => (
-                                    <div key={imgIdx} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', background: '#f8fafc', borderRadius: '12px', padding: '0.8rem', border: '1px solid #e2e8f0', minHeight: '170px' }}>
+                                    <div key={imgIdx} style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'center' }}>
                                       {img.url ? (
-                                        <img
-                                          src={img.url}
-                                          style={{ width: 160, height: 160, borderRadius: 10, objectFit: 'cover', flexShrink: 0, border: '2px solid #cbd5e1', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}
-                                          alt=""
-                                          onError={e => (e.currentTarget.style.display = 'none')}
-                                        />
-                                      ) : (
-                                        <div style={{ width: 160, height: 160, borderRadius: 10, flexShrink: 0, background: '#e2e8f0', border: '2px dashed #94a3b8', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.4rem', color: '#94a3b8', fontSize: '0.75rem', fontWeight: 600 }}>
-                                          <span style={{ fontSize: '2rem' }}>🖼️</span>
-                                          <span>Sin imagen</span>
-                                        </div>
-                                      )}
-                                      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                        <input
-                                          value={img.url}
-                                          onChange={e => updateImagenUrl(index, imgIdx, e.target.value)}
-                                          placeholder={imgIdx === 0 ? 'URL de imagen principal...' : 'URL de imagen extra...'}
-                                        />
-                                        {imgIdx > 0 && (
-                                          <input
-                                            value={img.ref}
-                                            onChange={e => updateImagenRef(index, imgIdx, e.target.value)}
-                                            placeholder="Nombre de Estampado / Referencia (Ej. Snoopy)..."
-                                            style={{ fontSize: '0.85rem' }}
+                                        <div style={{ position: 'relative' }}>
+                                          <img
+                                            src={img.url}
+                                            alt=""
+                                            style={{ width: 130, height: 130, objectFit: 'cover', borderRadius: 8, border: `3px solid ${imgIdx === 0 ? '#f59e0b' : '#e2e8f0'}`, transition: 'border 0.2s' }}
+                                            onError={e => (e.currentTarget.style.display = 'none')}
                                           />
-                                        )}
-                                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                          <label className="btn-upload-img" style={{ fontSize: '0.75rem', padding: '0.4rem 0.9rem', cursor: 'pointer' }}>
-                                            <Upload size={12} /> Subir archivo(s)
-                                            <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={e => handleFileUpload(e, index, imgIdx)} />
-                                          </label>
                                           {imgIdx === 0 && (
-                                            <span style={{ fontSize: '0.7rem', color: '#0ea5e9', fontWeight: 700, alignSelf: 'center', background: 'rgba(14,165,233,0.1)', padding: '0.2rem 0.6rem', borderRadius: 6 }}>★ Principal</span>
+                                            <span style={{ position: 'absolute', top: 4, left: 4, background: '#f59e0b', color: 'white', borderRadius: 4, fontSize: '0.65rem', padding: '0.1rem 0.3rem', fontWeight: 800 }}>⭐ Principal</span>
+                                          )}
+                                          {imgIdx > 0 && (
+                                            <button type="button" onClick={() => {
+                                              const reordered = [...form.imagenes];
+                                              const [picked] = reordered.splice(imgIdx, 1);
+                                              reordered.unshift(picked);
+                                              updateBulkForm(index, 'imagenes', reordered);
+                                            }} style={{ position: 'absolute', top: 4, left: 4, background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: 4, fontSize: '0.65rem', padding: '0.15rem 0.4rem', cursor: 'pointer', fontWeight: 700 }}>⭐ Principal</button>
                                           )}
                                         </div>
-                                      </div>
+                                      ) : (
+                                        <div style={{ width: 130, height: 130, background: '#f1f5f9', borderRadius: 8, border: '2px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>📷</div>
+                                      )}
+                                      <input
+                                        value={img.ref}
+                                        onChange={e => updateImagenRef(index, imgIdx, e.target.value)}
+                                        placeholder={imgIdx === 0 ? 'Nombre foto principal' : 'Estampado (Ej. Snoopy)'}
+                                        style={{ width: '130px', fontSize: '0.82rem', padding: '0.35rem', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '6px' }}
+                                      />
+                                      <label style={{ cursor: 'pointer', fontSize: '0.8rem', color: '#0ea5e9', fontWeight: 600 }}>
+                                        <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={e => handleFileUpload(e, index, imgIdx)} />
+                                        {form.imagenes[imgIdx]?.url ? '📤 Cambiar foto' : '📤 Subir foto'}
+                                      </label>
                                       {form.imagenes.length > 1 && (
-                                        <button
-                                          type="button"
-                                          onClick={() => removeImagenRow(index, imgIdx)}
-                                          style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.3rem', borderRadius: 6, marginLeft: 'auto' }}
-                                        >
-                                          <X size={16} />
-                                        </button>
+                                        <button type="button" onClick={() => removeImagenRow(index, imgIdx)} style={{ position: 'absolute', top: -8, right: -8, width: 22, height: 22, borderRadius: '50%', background: '#ef4444', color: 'white', border: 'none', cursor: 'pointer', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
                                       )}
                                     </div>
                                   ))}
-                                  <button
-                                    type="button"
-                                    onClick={() => addImagenRow(index)}
-                                    style={{ alignSelf: 'flex-start', background: 'rgba(14,165,233,0.08)', border: '1px dashed #0ea5e9', color: '#0ea5e9', borderRadius: 8, padding: '0.4rem 1rem', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                                  >
-                                    <Plus size={13} /> Agregar URL
-                                  </button>
+                                  {/* Add new image */}
+                                  <label style={{ width: 130, height: 130, background: '#f0fdf4', border: '2px dashed #22c55e', borderRadius: 8, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.9rem', color: '#16a34a', fontWeight: 700, gap: '0.5rem' }}>
+                                    <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={e => {
+                                      const files = Array.from(e.target.files || []);
+                                      if (!files.length) return;
+                                      files.forEach((file, fi) => {
+                                        handleFileUpload({ target: { files: [file] } } as any, index, form.imagenes.length + fi);
+                                        if (fi < files.length - 1) addImagenRow(index);
+                                      });
+                                      e.target.value = '';
+                                    }} />
+                                    <span style={{ fontSize: '2rem' }}>+</span> Agregar foto
+                                  </label>
                                 </div>
                               </div>
                             </div>
