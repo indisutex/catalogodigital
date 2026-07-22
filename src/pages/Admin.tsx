@@ -120,19 +120,42 @@ function MiNegocioSettings({
   showToast 
 }: { 
   mayorista: Mayorista, 
-  onSave: (data: { nombre_negocio: string, logo_url: string, video_hero_url: string }) => Promise<void>, 
+  onSave: (data: { nombre_negocio: string, logo_url: string, video_hero_url: string, ajustes_productos?: any }) => Promise<void>, 
   showToast: (msg: string, type?: 'success' | 'error') => void 
 }) {
   const [nombre, setNombre] = useState(mayorista.nombre_negocio || '');
   const [logo, setLogo] = useState(mayorista.logo_url || '');
   const [video, setVideo] = useState(mayorista.video_hero_url || '');
+  const ajustesIni = mayorista.ajustes_productos?.botones_extra || {};
+  const [dsText, setDsText] = useState(ajustesIni.dropshipper_text ?? '');
+  const [dsLink, setDsLink] = useState(ajustesIni.dropshipper_link ?? '');
+  const [dsEnabled, setDsEnabled] = useState(ajustesIni.dropshipper_enabled ?? true);
+  const [earnText, setEarnText] = useState(ajustesIni.earn_money_text ?? '');
+  const [earnLink, setEarnLink] = useState(ajustesIni.earn_money_link ?? '');
+  const [earnEnabled, setEarnEnabled] = useState(ajustesIni.earn_money_enabled ?? true);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await onSave({ nombre_negocio: nombre, logo_url: logo, video_hero_url: video });
+      const newAjustes = {
+        ...(mayorista.ajustes_productos || {}),
+        botones_extra: {
+          dropshipper_text: dsText,
+          dropshipper_link: dsLink,
+          dropshipper_enabled: dsEnabled,
+          earn_money_text: earnText,
+          earn_money_link: earnLink,
+          earn_money_enabled: earnEnabled,
+        }
+      };
+      await onSave({ 
+        nombre_negocio: nombre, 
+        logo_url: logo, 
+        video_hero_url: video,
+        ajustes_productos: newAjustes
+      });
       showToast('Configuración guardada exitosamente ✓', 'success');
     } catch (err) {
       showToast('Error al guardar configuración', 'error');
@@ -193,6 +216,45 @@ function MiNegocioSettings({
             </label>
           </div>
         </div>
+        
+        {/* NUEVOS BOTONES EXTRA */}
+        <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <h3 style={{ fontSize: '1.1rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>Configuración de Botones del Catálogo</h3>
+          
+          <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+            <h4 style={{ margin: '0 0 1rem 0' }}>Botón: ¿Dropshipper?</h4>
+            <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+              <input type="checkbox" id="ds-enabled" checked={dsEnabled} onChange={e => setDsEnabled(e.target.checked)} style={{ width: 'auto' }} />
+              <label htmlFor="ds-enabled" style={{ margin: 0 }}>Habilitar Botón Dropshipper</label>
+            </div>
+            <div className="form-group" style={{ marginBottom: '0.5rem' }}>
+              <label style={{ fontWeight: 600 }}>Texto del Botón</label>
+              <input type="text" className="form-input" value={dsText} onChange={e => setDsText(e.target.value)} placeholder="Ej: ¿Eres Dropshipper?" />
+            </div>
+            <div className="form-group">
+              <label style={{ fontWeight: 600 }}>Enlace del Botón (WhatsApp o web)</label>
+              <input type="text" className="form-input" value={dsLink} onChange={e => setDsLink(e.target.value)} placeholder="Ej: https://wa.me/57..." />
+            </div>
+          </div>
+
+          <div style={{ background: '#f8fafc', padding: '1rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+            <h4 style={{ margin: '0 0 1rem 0' }}>Botón: Ganar Dinero</h4>
+            <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+              <input type="checkbox" id="earn-enabled" checked={earnEnabled} onChange={e => setEarnEnabled(e.target.checked)} style={{ width: 'auto' }} />
+              <label htmlFor="earn-enabled" style={{ margin: 0 }}>Habilitar Botón Ganar Dinero</label>
+            </div>
+            <div className="form-group" style={{ marginBottom: '0.5rem' }}>
+              <label style={{ fontWeight: 600 }}>Texto del Botón</label>
+              <input type="text" className="form-input" value={earnText} onChange={e => setEarnText(e.target.value)} placeholder="Ej: ¿Quieres ganar dinero extra?" />
+            </div>
+            <div className="form-group">
+              <label style={{ fontWeight: 600 }}>Enlace del Botón (WhatsApp o web)</label>
+              <input type="text" className="form-input" value={earnLink} onChange={e => setEarnLink(e.target.value)} placeholder="Ej: https://wa.me/57..." />
+            </div>
+          </div>
+        </div>
+
+
         <button className="btn-main" onClick={handleSave} disabled={saving || uploading} style={{ alignSelf: 'flex-start', marginTop: '0.5rem' }}>
           {saving ? 'Guardando...' : 'Guardar Configuración'}
         </button>

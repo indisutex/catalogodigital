@@ -596,15 +596,16 @@ export default function MenuDigital() {
           pointerEvents: 'none' /* so the space between doesn't block clicks */
         }}>
           {/* Enlace Especial Dropshipper en la Esquina Inferior Izquierda */}
-          <a 
-            href={configuracion?.link_dropshipper || (() => {
-              let clean = (overrideWhatsApp || configuracion?.whatsapp || '').replace(/\D/g, '');
-              if (clean.length === 10) clean = '57' + clean;
-              return `https://wa.me/${clean}?text=Hola,%20soy%20dropshipper,%20me%20interesa%20trabajar%20con%20ustedes`;
-            })()} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="special-header-btn"
+          {(ajustesProductos?.botones_extra?.dropshipper_enabled ?? true) && (
+            <a 
+              href={ajustesProductos?.botones_extra?.dropshipper_link || configuracion?.link_dropshipper || (() => {
+                let clean = (overrideWhatsApp || configuracion?.whatsapp || '').replace(/\D/g, '');
+                if (clean.length === 10) clean = '57' + clean;
+                return `https://wa.me/${clean}?text=Hola,%20soy%20dropshipper,%20me%20interesa%20trabajar%20con%20ustedes`;
+              })()} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="special-header-btn"
             style={{ 
               background: configuracion?.color_primario || '#f36b8e', 
               color: '#ffffff', 
@@ -623,19 +624,21 @@ export default function MenuDigital() {
               pointerEvents: 'auto'
             }}
           >
-            🚀 ¿Dropshipper?
+            {ajustesProductos?.botones_extra?.dropshipper_text || '🚀 ¿Dropshipper?'}
           </a>
+          )}
 
           {/* Enlace Especial Ganar Dinero en la Esquina Inferior Derecha */}
-          <a 
-            href={configuracion?.link_ganar_dinero || (() => {
-              let clean = (overrideWhatsApp || configuracion?.whatsapp || '').replace(/\D/g, '');
-              if (clean.length === 10) clean = '57' + clean;
-              return `https://wa.me/${clean}?text=Hola,%20quiero%20saber%20cómo%20ganar%20dinero%20con%20ustedes`;
-            })()} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="ganar-dinero-pulse special-header-btn"
+          {(ajustesProductos?.botones_extra?.earn_money_enabled ?? true) && (
+            <a 
+              href={ajustesProductos?.botones_extra?.earn_money_link || configuracion?.link_ganar_dinero || (() => {
+                let clean = (overrideWhatsApp || configuracion?.whatsapp || '').replace(/\D/g, '');
+                if (clean.length === 10) clean = '57' + clean;
+                return `https://wa.me/${clean}?text=Hola,%20quiero%20saber%20cómo%20ganar%20dinero%20con%20ustedes`;
+              })()} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="ganar-dinero-pulse special-header-btn"
             style={{ 
               background: configuracion?.color_primario || '#f36b8e', 
               color: '#ffffff', 
@@ -654,8 +657,9 @@ export default function MenuDigital() {
               pointerEvents: 'auto'
             }}
           >
-            💸 ¿Ganar dinero?
+            {ajustesProductos?.botones_extra?.earn_money_text || '💸 Ganar Dinero'}
           </a>
+          )}
         </div>
 
 
