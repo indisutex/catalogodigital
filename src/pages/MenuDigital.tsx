@@ -247,10 +247,16 @@ export default function MenuDigital() {
 
   useEffect(() => {
     if (detailProduct) {
-      const allImages = [
+      const rawAllImages = [
         ...(detailProduct.imagen_url ? [{ url: detailProduct.imagen_url, ref: detailProduct.referencia || '' }] : []),
         ...(detailProduct.imagenes_extra || []).map(u => decodeExtraImage(u)).filter(i => i.url)
       ];
+      const seenUrls = new Set();
+      const allImages = rawAllImages.filter(img => {
+        if (seenUrls.has(img.url)) return false;
+        seenUrls.add(img.url);
+        return true;
+      });
       const safeIdx = Math.min(carouselIdx, allImages.length - 1);
       const currentImage = allImages[safeIdx];
       if (currentImage && currentImage.ref) {
@@ -1114,10 +1120,16 @@ export default function MenuDigital() {
         const extraImagesRefs = (detailProduct.imagenes_extra || []).map(u => decodeExtraImage(u).ref?.trim().toUpperCase()).filter(Boolean);
         const mainImgRef = legacyEstampados.find(e => !extraImagesRefs.includes(e)) || legacyEstampados[0] || '';
 
-        const allImages = [
+        const rawAllImages = [
           ...(detailProduct.imagen_url ? [{ url: detailProduct.imagen_url, ref: mainImgRef }] : []),
           ...(detailProduct.imagenes_extra || []).map(u => decodeExtraImage(u)).filter(i => i.url)
         ];
+        const seenUrls = new Set();
+        const allImages = rawAllImages.filter(img => {
+          if (seenUrls.has(img.url)) return false;
+          seenUrls.add(img.url);
+          return true;
+        });
         const rawTallas = detailProduct.tallas?.split(',').map(t => t.trim()).filter(Boolean) || [];
         const tallasMap = new Map();
         rawTallas.forEach(t => {
@@ -1160,10 +1172,10 @@ export default function MenuDigital() {
 
                 {allImages.length > 1 && (
                   <>
-                    <button className="carousel-btn carousel-btn-left" style={{ pointerEvents: 'auto' }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCarouselIdx(i => i === 0 ? allImages.length - 1 : i - 1); }}>
+                    <button className="carousel-btn carousel-btn-left" style={{ pointerEvents: 'auto' }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCarouselIdx(safeIdx === 0 ? allImages.length - 1 : safeIdx - 1); }}>
                       <ChevronLeft size={24} style={{ pointerEvents: 'none' }} />
                     </button>
-                    <button className="carousel-btn carousel-btn-right" style={{ pointerEvents: 'auto' }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCarouselIdx(i => (i + 1) % allImages.length); }}>
+                    <button className="carousel-btn carousel-btn-right" style={{ pointerEvents: 'auto' }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCarouselIdx((safeIdx + 1) % allImages.length); }}>
                       <ChevronRight size={24} style={{ pointerEvents: 'none' }} />
                     </button>
                     <div className="carousel-dots">

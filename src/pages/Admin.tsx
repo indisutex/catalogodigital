@@ -3113,6 +3113,8 @@ export default function Admin() {
     filteredProducts = filteredProducts.filter(p => !p.oculto);
   } else if (productSort === 'ocultos') {
     filteredProducts = filteredProducts.filter(p => p.oculto);
+  } else if (productSort === 'con_fotos') {
+    filteredProducts = filteredProducts.filter(p => p.imagen_url || (p.imagenes_extra && p.imagenes_extra.length > 0));
   }
 
   let mayoristaFilteredProducts = productos.filter(p =>
@@ -3134,6 +3136,8 @@ export default function Admin() {
         const hiddenProducts = tempMayorista?.ajustes_productos?.hidden_products || [];
         return hiddenProducts.includes(p.id);
       });
+    } else if (mayoristaProductSort === 'con_fotos') {
+      mayoristaFilteredProducts = mayoristaFilteredProducts.filter(p => p.imagen_url || (p.imagenes_extra && p.imagenes_extra.length > 0));
     }
   }
 
@@ -4291,6 +4295,7 @@ export default function Admin() {
                         <option value="alfabetico">A-Z</option>
                         <option value="visibles">Solo Visibles</option>
                         <option value="ocultos">Solo Ocultos</option>
+                        <option value="con_fotos">Con fotos</option>
                       </select>
                       </div>
                     </div>
