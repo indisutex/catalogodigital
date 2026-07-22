@@ -429,7 +429,10 @@ export default function Admin() {
       // probClass = randProb > 70 ? 'prob-high' : randProb > 40 ? 'prob-medium' : 'prob-low';
     }
 
-    const adv = getAsesorInfoByPhone(ped.linea_whatsapp);
+    let adv = getAsesorInfoByPhone(ped.linea_whatsapp);
+    if (ped.origen === 'pos') {
+      adv = { nombre: 'Punto de Venta', foto_url: '', role: 'POS' };
+    }
     const parsedProds = getParsedProducts(ped.productos);
 
     return (
@@ -1021,7 +1024,8 @@ export default function Admin() {
   const getAsesorInfoByPhone = (phone?: string) => {
     if (!phone) return { nombre: 'Sin Asignar', foto_url: '', role: 'Catálogo' };
     const cleanInput = phone.trim();
-    if (cleanInput === 'pos' || cleanInput.replace(/\D/g, '') === 'pos') return { nombre: 'POS', foto_url: '', role: 'Sistema' };
+    const cleanLower = cleanInput.toLowerCase();
+    if (cleanLower === 'pos' || cleanLower === 'punto de venta') return { nombre: 'Punto de Venta', foto_url: '', role: 'POS' };
     
     const matchAsesor = asesores.find(a => {
       const phones = (a.telefono || '').split(',').map(p => p.replace(/\D/g, '')).filter(Boolean);
@@ -8572,7 +8576,7 @@ export default function Admin() {
                                   ciudad: posCustomerCity.trim() || 'POS',
                                   total: totalSale,
                                   productos: serializedProducts,
-                                  linea_whatsapp: configuracion?.whatsapp || 'POS',
+                                  linea_whatsapp: 'pos',
                                   tenant_id: tenant,
                                   estado: 'completado',
                                   atendido: true,
