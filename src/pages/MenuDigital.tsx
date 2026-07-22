@@ -1148,10 +1148,10 @@ export default function MenuDigital() {
                 {allImages.length > 1 && (
                   <>
                     <button className="carousel-btn carousel-btn-left" style={{ pointerEvents: 'auto' }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCarouselIdx(i => i === 0 ? allImages.length - 1 : i - 1); }}>
-                      <ChevronLeft size={20} />
+                      <ChevronLeft size={24} style={{ pointerEvents: 'none' }} />
                     </button>
                     <button className="carousel-btn carousel-btn-right" style={{ pointerEvents: 'auto' }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCarouselIdx(i => (i + 1) % allImages.length); }}>
-                      <ChevronRight size={20} />
+                      <ChevronRight size={24} style={{ pointerEvents: 'none' }} />
                     </button>
                     <div className="carousel-dots">
                       {allImages.map((_, i) => (
