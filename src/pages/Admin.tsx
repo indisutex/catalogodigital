@@ -8321,31 +8321,55 @@ export default function Admin() {
                                   
                                   {/* Selectors for Talla/Estampado if available */}
                                   <div style={{ display: 'flex', gap: '0.35rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
-                                    {item.producto.tallas && (
-                                      <select
-                                        value={item.talla || ''}
-                                        onChange={e => {
-                                          const val = e.target.value;
-                                          setPosCart(prev => prev.map((it, i) => i === idx ? { ...it, talla: val } : it));
-                                        }}
-                                        style={{ fontSize: '0.7rem', padding: '1px 3px', borderRadius: '4px', border: '1px solid #cbd5e1', background: '#f8fafc' }}
-                                      >
-                                        {item.producto.tallas.split(',').map((t: string) => <option key={t} value={t.trim()}>{t.trim()}</option>)}
-                                      </select>
-                                    )}
+                                    {item.producto.tallas && (() => {
+                                      const rawTallas = item.producto.tallas.split(',').map(t => t.trim()).filter(Boolean);
+                                      const tallasMap = new Map();
+                                      rawTallas.forEach(t => {
+                                        let key = t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+                                        if (key === 'talla unica' || key === 'unica' || key === 'tallaunica') key = 'unica';
+                                        let displayVal = t;
+                                        if (key === 'unica') displayVal = 'Única';
+                                        if (!tallasMap.has(key)) tallasMap.set(key, displayVal);
+                                      });
+                                      const uniqueTallas = Array.from(tallasMap.values());
+                                      if (uniqueTallas.length === 0) return null;
+                                      return (
+                                        <select
+                                          value={item.talla || ''}
+                                          onChange={e => {
+                                            const val = e.target.value;
+                                            setPosCart(prev => prev.map((it, i) => i === idx ? { ...it, talla: val } : it));
+                                          }}
+                                          style={{ fontSize: '0.7rem', padding: '1px 3px', borderRadius: '4px', border: '1px solid #cbd5e1', background: '#f8fafc' }}
+                                        >
+                                          {uniqueTallas.map((t: string) => <option key={t} value={t}>{t}</option>)}
+                                        </select>
+                                      );
+                                    })()}
 
-                                    {item.producto.estampados && (
-                                      <select
-                                        value={item.estampado || ''}
-                                        onChange={e => {
-                                          const val = e.target.value;
-                                          setPosCart(prev => prev.map((it, i) => i === idx ? { ...it, estampado: val } : it));
-                                        }}
-                                        style={{ fontSize: '0.7rem', padding: '1px 3px', borderRadius: '4px', border: '1px solid #cbd5e1', background: '#f8fafc' }}
-                                      >
-                                        {item.producto.estampados.split(',').map((t: string) => <option key={t} value={t.trim()}>{t.trim()}</option>)}
-                                      </select>
-                                    )}
+                                    {(() => {
+                                      const decodeExtraImage = (jsonStr: string) => {
+                                        try { return JSON.parse(jsonStr); } catch { return { url: jsonStr, ref: '' }; }
+                                      };
+                                      const legacyEstampados = item.producto.estampados?.split(',').map(e => e.trim().toUpperCase()).filter(Boolean) || [];
+                                      const extraImagesRefs = (item.producto.imagenes_extra || []).map(u => decodeExtraImage(u).ref?.trim().toUpperCase()).filter(Boolean);
+                                      const allEstampados = Array.from(new Set([...legacyEstampados, ...extraImagesRefs]));
+
+                                      if (allEstampados.length === 0) return null;
+                                      return (
+                                        <select
+                                          value={item.estampado || ''}
+                                          onChange={e => {
+                                            const val = e.target.value;
+                                            setPosCart(prev => prev.map((it, i) => i === idx ? { ...it, estampado: val } : it));
+                                          }}
+                                          style={{ fontSize: '0.7rem', padding: '1px 3px', borderRadius: '4px', border: '1px solid #cbd5e1', background: '#f8fafc' }}
+                                        >
+                                          <option value="">(Sin estampado)</option>
+                                          {allEstampados.map(t => <option key={t} value={t}>{t}</option>)}
+                                        </select>
+                                      );
+                                    })()}
                                   </div>
                                 </div>
 
