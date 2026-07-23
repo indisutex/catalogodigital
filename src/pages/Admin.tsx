@@ -6416,24 +6416,20 @@ export default function Admin() {
                         <div className="form-field full">
                           <label>Cuentas Bancarias / Métodos de Pago</label>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
-                            {(() => {
-                              let metodos: any[] = [];
+                            {(function() {
                               try {
-                                if (configuracion.metodos_pago) {
-                                  const parsed = JSON.parse(configuracion.metodos_pago);
-                                  if (Array.isArray(parsed)) metodos = parsed;
-                                }
-                              } catch {}
-                              
-                              return (
-                                <>
-                                  {metodos.map((metodo: any, index: number) => (
+                                const parsed = JSON.parse(configuracion.metodos_pago || '[]');
+                                return Array.isArray(parsed) ? parsed : [];
+                              } catch {
+                                return [];
+                              }
+                            })().map((metodo: any, index: number, arr: any[]) => (
                                     <div key={index} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', background: '#f8fafc', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
                                       <input 
                                         placeholder="Banco (Ej. Nequi)" 
                                         value={metodo.banco || ''}
                                         onChange={(e) => {
-                                          const nuevos = [...metodos];
+                                          const nuevos = [...arr];
                                           nuevos[index] = { ...nuevos[index], banco: e.target.value };
                                           setConfiguracion({ ...configuracion, metodos_pago: JSON.stringify(nuevos) });
                                         }}
@@ -6443,7 +6439,7 @@ export default function Admin() {
                                         placeholder="Tipo (Ahorros/Corriente)" 
                                         value={metodo.tipo || ''}
                                         onChange={(e) => {
-                                          const nuevos = [...metodos];
+                                          const nuevos = [...arr];
                                           nuevos[index] = { ...nuevos[index], tipo: e.target.value };
                                           setConfiguracion({ ...configuracion, metodos_pago: JSON.stringify(nuevos) });
                                         }}
@@ -6453,7 +6449,7 @@ export default function Admin() {
                                         placeholder="Número de cuenta" 
                                         value={metodo.numero || ''}
                                         onChange={(e) => {
-                                          const nuevos = [...metodos];
+                                          const nuevos = [...arr];
                                           nuevos[index] = { ...nuevos[index], numero: e.target.value };
                                           setConfiguracion({ ...configuracion, metodos_pago: JSON.stringify(nuevos) });
                                         }}
@@ -6463,7 +6459,7 @@ export default function Admin() {
                                         type="button" 
                                         title="Eliminar"
                                         onClick={() => {
-                                          const nuevos = metodos.filter((_, i) => i !== index);
+                                          const nuevos = arr.filter((_, i) => i !== index);
                                           setConfiguracion({ ...configuracion, metodos_pago: JSON.stringify(nuevos) });
                                         }}
                                         style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '0.55rem', borderRadius: '6px', cursor: 'pointer', display: 'flex' }}
@@ -6475,6 +6471,9 @@ export default function Admin() {
                                   <button
                                     type="button"
                                     onClick={() => {
+                                      let metodos = [];
+                                      try { metodos = JSON.parse(configuracion.metodos_pago || '[]'); } catch {}
+                                      if (!Array.isArray(metodos)) metodos = [];
                                       const nuevos = [...metodos, { banco: '', tipo: '', numero: '' }];
                                       setConfiguracion({ ...configuracion, metodos_pago: JSON.stringify(nuevos) });
                                     }}
@@ -6482,9 +6481,6 @@ export default function Admin() {
                                   >
                                     <Plus size={16} /> Añadir método de pago
                                   </button>
-                                </>
-                              );
-                            })()}
                           </div>
                         </div>
                         <div className="form-field">
