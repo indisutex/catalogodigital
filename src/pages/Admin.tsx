@@ -4696,7 +4696,7 @@ export default function Admin() {
                               
                               <div style={{ marginTop: '0.4rem', padding: '0.6rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                                  {(() => {
-                                   const desc = configuracion?.descuento_promocional || 0;
+                                   const desc = (p.descuento !== undefined && p.descuento > 0) ? p.descuento : (configuracion?.descuento_promocional || 0);
                                    const precioDetal = p.precio;
                                    const precioMayor = p.precio_por_mayor;
                                    const precio50 = p.precio_50_unidades;
@@ -5660,7 +5660,7 @@ export default function Admin() {
                             </div>
 
                             {(() => {
-                              const desc = configuracion?.descuento_promocional || 0;
+                              const desc = (p.descuento !== undefined && p.descuento > 0) ? p.descuento : (configuracion?.descuento_promocional || 0);
                               const precioDetal = p.precio;
                               const precioMayor = p.precio_por_mayor;
                               const precio50 = p.precio_50_unidades;
@@ -5883,7 +5883,7 @@ export default function Admin() {
                             
                             <div style={{ marginTop: '0.8rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                                {(() => {
-                                 const desc = configuracion?.descuento_promocional || 0;
+                                 const desc = (p.descuento !== undefined && p.descuento > 0) ? p.descuento : (configuracion?.descuento_promocional || 0);
                                  const precioDetal = p.precio;
                                  const precioMayor = p.precio_por_mayor;
                                  const precio50 = p.precio_50_unidades;
