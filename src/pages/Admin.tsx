@@ -4667,18 +4667,71 @@ export default function Admin() {
                               )}
                               
                               <div style={{ marginTop: '0.4rem', padding: '0.6rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
-                                   <small style={{ color: '#64748b' }}>Detal:</small>
-                                   <strong style={{ color: '#0f172a' }}>${p.precio?.toLocaleString()}</strong>
-                                 </div>
-                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
-                                   <small style={{ color: '#64748b' }}>Mayor:</small>
-                                   <strong style={{ color: '#0f172a' }}>{p.precio_por_mayor ? `$${p.precio_por_mayor.toLocaleString()}` : '-'}</strong>
-                                 </div>
-                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
-                                   <small style={{ color: '#64748b' }}>50 Unid:</small>
-                                   <strong style={{ color: '#0f172a' }}>{p.precio_50_unidades ? `$${p.precio_50_unidades.toLocaleString()}` : '-'}</strong>
-                                 </div>
+                                 {(() => {
+                                   const desc = configuracion?.descuento_promocional || 0;
+                                   const precioDetal = p.precio;
+                                   const precioMayor = p.precio_por_mayor;
+                                   const precio50 = p.precio_50_unidades;
+
+                                   const getDiscounted = (val?: number) => {
+                                     if (!val) return 0;
+                                     return Math.round(val * (1 - desc / 100));
+                                   };
+
+                                   return (
+                                     <>
+                                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                                         <small style={{ color: '#64748b' }}>Detal:</small>
+                                         <strong style={{ color: desc > 0 ? '#10b981' : '#0f172a' }}>
+                                           {desc > 0 ? (
+                                             <>
+                                               <span style={{ textDecoration: 'line-through', color: '#94a3b8', marginRight: '0.35rem', fontWeight: 500 }}>
+                                                 ${precioDetal?.toLocaleString()}
+                                               </span>
+                                               ${getDiscounted(precioDetal).toLocaleString()}
+                                             </>
+                                           ) : (
+                                             `$${precioDetal?.toLocaleString()}`
+                                           )}
+                                         </strong>
+                                       </div>
+                                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                                         <small style={{ color: '#64748b' }}>Mayor:</small>
+                                         <strong style={{ color: desc > 0 && precioMayor ? '#10b981' : '#0f172a' }}>
+                                           {desc > 0 && precioMayor ? (
+                                             <>
+                                               <span style={{ textDecoration: 'line-through', color: '#94a3b8', marginRight: '0.35rem', fontWeight: 500 }}>
+                                                 ${precioMayor.toLocaleString()}
+                                               </span>
+                                               ${getDiscounted(precioMayor).toLocaleString()}
+                                             </>
+                                           ) : precioMayor ? (
+                                             `$${precioMayor.toLocaleString()}`
+                                           ) : (
+                                             '-'
+                                           )}
+                                         </strong>
+                                       </div>
+                                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem' }}>
+                                         <small style={{ color: '#64748b' }}>50 Unid:</small>
+                                         <strong style={{ color: desc > 0 && precio50 ? '#10b981' : '#0f172a' }}>
+                                           {desc > 0 && precio50 ? (
+                                             <>
+                                               <span style={{ textDecoration: 'line-through', color: '#94a3b8', marginRight: '0.35rem', fontWeight: 500 }}>
+                                                 ${precio50.toLocaleString()}
+                                               </span>
+                                               ${getDiscounted(precio50).toLocaleString()}
+                                             </>
+                                           ) : precio50 ? (
+                                             `$${precio50.toLocaleString()}`
+                                           ) : (
+                                             '-'
+                                           )}
+                                         </strong>
+                                       </div>
+                                     </>
+                                   );
+                                 })()}
                                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                                    <small style={{ color: '#64748b' }}>Tallas:</small>
                                    <strong style={{ fontSize: '0.8rem', color: '#0f172a', textAlign: 'right', wordBreak: 'break-word', maxWidth: '120px' }}>{deduplicateTallas(p.tallas)}</strong>
@@ -5801,18 +5854,71 @@ export default function Admin() {
                             <p className="p-cat" style={{ fontSize: '0.75rem', color: '#64748b' }}>{p.referencia}</p>
                             
                             <div style={{ marginTop: '0.8rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                                 <small style={{ color: '#64748b' }}>Detal:</small>
-                                 <strong style={{ color: '#0f172a' }}>${p.precio?.toLocaleString()}</strong>
-                               </div>
-                               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                                 <small style={{ color: '#64748b' }}>Mayor:</small>
-                                 <strong>{p.precio_por_mayor ? `${p.precio_por_mayor.toLocaleString()}` : '-'}</strong>
-                               </div>
-                               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                                 <small style={{ color: '#64748b' }}>50 Unid:</small>
-                                 <strong>{p.precio_50_unidades ? `${p.precio_50_unidades.toLocaleString()}` : '-'}</strong>
-                               </div>
+                               {(() => {
+                                 const desc = configuracion?.descuento_promocional || 0;
+                                 const precioDetal = p.precio;
+                                 const precioMayor = p.precio_por_mayor;
+                                 const precio50 = p.precio_50_unidades;
+
+                                 const getDiscounted = (val?: number) => {
+                                   if (!val) return 0;
+                                   return Math.round(val * (1 - desc / 100));
+                                 };
+
+                                 return (
+                                   <>
+                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                       <small style={{ color: '#64748b' }}>Detal:</small>
+                                       <strong style={{ color: desc > 0 ? '#10b981' : '#0f172a' }}>
+                                         {desc > 0 ? (
+                                           <>
+                                             <span style={{ textDecoration: 'line-through', color: '#94a3b8', marginRight: '0.35rem', fontWeight: 500 }}>
+                                               ${precioDetal?.toLocaleString()}
+                                             </span>
+                                             ${getDiscounted(precioDetal).toLocaleString()}
+                                           </>
+                                         ) : (
+                                           `$${precioDetal?.toLocaleString()}`
+                                         )}
+                                       </strong>
+                                     </div>
+                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                       <small style={{ color: '#64748b' }}>Mayor:</small>
+                                       <strong style={{ color: desc > 0 && precioMayor ? '#10b981' : '#0f172a' }}>
+                                         {desc > 0 && precioMayor ? (
+                                           <>
+                                             <span style={{ textDecoration: 'line-through', color: '#94a3b8', marginRight: '0.35rem', fontWeight: 500 }}>
+                                               ${precioMayor.toLocaleString()}
+                                             </span>
+                                             ${getDiscounted(precioMayor).toLocaleString()}
+                                           </>
+                                         ) : precioMayor ? (
+                                           `$${precioMayor.toLocaleString()}`
+                                         ) : (
+                                           '-'
+                                         )}
+                                       </strong>
+                                     </div>
+                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                       <small style={{ color: '#64748b' }}>50 Unid:</small>
+                                       <strong style={{ color: desc > 0 && precio50 ? '#10b981' : '#0f172a' }}>
+                                         {desc > 0 && precio50 ? (
+                                           <>
+                                             <span style={{ textDecoration: 'line-through', color: '#94a3b8', marginRight: '0.35rem', fontWeight: 500 }}>
+                                               ${precio50.toLocaleString()}
+                                             </span>
+                                             ${getDiscounted(precio50).toLocaleString()}
+                                           </>
+                                         ) : precio50 ? (
+                                           `$${precio50.toLocaleString()}`
+                                         ) : (
+                                           '-'
+                                         )}
+                                       </strong>
+                                     </div>
+                                   </>
+                                 );
+                               })()}
                                
                                {role === 'mayorista' && currentMayorista && (
                                  <div style={{ borderTop: '1px dashed #cbd5e1', margin: '0.5rem 0 0 0', paddingTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

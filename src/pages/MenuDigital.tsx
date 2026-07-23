@@ -245,6 +245,18 @@ export default function MenuDigital() {
   const [selectedEstampado, setSelectedEstampado] = useState<string>('');
   const [selectedCantidad, setSelectedCantidad] = useState(1);
 
+  // Prevenir scroll del body cuando algún modal está abierto
+  useEffect(() => {
+    if (isCartOpen || isPqrsOpen || !!detailProduct) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isCartOpen, isPqrsOpen, detailProduct]);
+
   useEffect(() => {
     if (detailProduct) {
       // Use imagenes_extra as the single source of truth for the carousel.
@@ -907,7 +919,7 @@ export default function MenuDigital() {
                     <div style={{
                       position: 'absolute',
                       top: '10px',
-                      left: '10px',
+                      right: '10px',
                       background: '#ef4444',
                       color: 'white',
                       fontSize: '0.72rem',
