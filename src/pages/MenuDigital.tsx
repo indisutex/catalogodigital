@@ -298,14 +298,21 @@ export default function MenuDigital() {
   });
   const [leadId, setLeadId] = useState<string | null>(null);
 
+  const leadIdRef = useRef<string | null>(null);
+  const isInsertingRef = useRef(false);
+
   useEffect(() => {
-    if (!formData.nombre && !formData.telefono) return;
+    // Solo guardar el abandonado si llenó todos los datos
+    if (!formData.nombre || !formData.telefono || !formData.direccion || !formData.ciudad) return;
 
     const delayDebounceFn = setTimeout(async () => {
       try {
         const tenant = getTenantId();
         const numeroWhatsApp = overrideWhatsApp || configuracion?.whatsapp || '573185637317';
-        if (leadId) {
+        
+        const currentLeadId = leadIdRef.current || leadId;
+
+        if (currentLeadId) {
           await supabase
             .from('leads')
             .update({
@@ -317,8 +324,11 @@ export default function MenuDigital() {
               productos: items,
               total: total
             })
-            .eq('id', leadId);
+            .eq('id', currentLeadId);
         } else {
+          if (isInsertingRef.current) return;
+          isInsertingRef.current = true;
+          
           const { data, error } = await supabase
             .from('leads')
             .insert({
@@ -336,15 +346,18 @@ export default function MenuDigital() {
 
           if (!error && data) {
             setLeadId(data.id);
+            leadIdRef.current = data.id;
           }
+          isInsertingRef.current = false;
         }
       } catch (err) {
         console.error('Error saving draft lead:', err);
+        isInsertingRef.current = false;
       }
     }, 1500); // 1.5s debounce
 
     return () => clearTimeout(delayDebounceFn);
-  }, [formData.nombre, formData.telefono, formData.ciudad, overrideWhatsApp, configuracion, items, total, leadId]);
+  }, [formData.nombre, formData.telefono, formData.direccion, formData.ciudad, overrideWhatsApp, configuracion, items, total, leadId]);
 
   useEffect(() => {
     async function cargarDatos() {
