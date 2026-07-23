@@ -513,9 +513,29 @@ export default function MenuDigital() {
       console.error('Error al registrar pedido en base de datos:', dbErr);
     }
 
+    let metodosStr = '';
+    if (configuracion?.metodos_pago) {
+      try {
+        const parsed = JSON.parse(configuracion.metodos_pago);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          metodosStr = `\n💳 *Métodos de pago:*\n` + parsed.map((m: any) => `- ${m.banco} ${m.tipo ? `(${m.tipo})` : ''}: ${m.numero}`).join('\n') + `\n`;
+        } else if (typeof configuracion.metodos_pago === 'string' && configuracion.metodos_pago.trim() !== '') {
+          metodosStr = `\n💳 *Métodos de pago:*\n${configuracion.metodos_pago}\n`;
+        }
+      } catch {
+        if (typeof configuracion.metodos_pago === 'string' && configuracion.metodos_pago.trim() !== '') {
+          metodosStr = `\n💳 *Métodos de pago:*\n${configuracion.metodos_pago}\n`;
+        }
+      }
+    }
+
+    if (metodosStr) {
+      mensaje += metodosStr;
+    }
+
     if (orderId) {
       const uploadLink = `${window.location.origin}/pago/${orderId}`;
-      mensaje += `\n\n*Sube el comprobante de pago en el siguiente link:* ${uploadLink}`;
+      mensaje += `\n*Sube el comprobante de pago en el siguiente link:* ${uploadLink}`;
     }
 
     let cleanWhatsApp = numeroWhatsApp.replace(/\D/g, '');
