@@ -326,6 +326,12 @@ export default function Admin() {
     if (saved && !allowedTabs.includes(saved)) return defaultTab as TabType;
     return (saved as TabType) || (defaultTab as TabType);
   });
+  
+  const activeTabRef = useRef(activeTab);
+  useEffect(() => {
+    activeTabRef.current = activeTab;
+  }, [activeTab]);
+
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -1442,7 +1448,9 @@ export default function Admin() {
       setProductos(allProducts);
       
       if (confRes.data) {
-        setConfiguracion(confRes.data);
+        if (activeTabRef.current !== 'config') {
+          setConfiguracion(confRes.data);
+        }
         setWebhookUrl(`https://dowbsbxvxjzjjhyqmyfr.supabase.co/functions/v1/siigo-webhook?tenant=${tenant}`);
       } else {
         // Create default config for this tenant if it doesn't exist
