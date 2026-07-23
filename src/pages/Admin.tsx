@@ -4540,7 +4540,7 @@ export default function Admin() {
                       <h3><Package size={16} /> Inventario ({filteredProducts.length})</h3>
                       <p>Todos los productos publicados en tu tienda</p>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end', marginLeft: 'auto' }}>
+                    <div className="panel-header-actions">
                       <button 
                         className="btn-primary hover-lift" 
                         style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1.1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem' }}
@@ -9474,7 +9474,7 @@ export default function Admin() {
 
             return (
               <div className="admin-panel">
-              <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'nowrap', gap: '1rem', width: '100%' }}>
+              <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', width: '100%' }}>
                 <div>
                   <h3 style={{ margin: 0, whiteSpace: 'nowrap' }}><ShoppingBag size={16} /> Registro de Pedidos</h3>
                   <p className="panel-header-subtitle" style={{ margin: '0.2rem 0 0 0' }}>Pedidos recibidos desde el catálogo digital y su asignación de línea</p>
