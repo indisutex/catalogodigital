@@ -6406,14 +6406,78 @@ export default function Admin() {
                           <input required value={configuracion.whatsapp} onChange={e => setConfiguracion({ ...configuracion, whatsapp: e.target.value })} placeholder="573185637317" />
                         </div>
                         <div className="form-field full">
-                          <label>Métodos de Pago (Opcional, para el mensaje de cobro)</label>
-                          <textarea 
-                            value={configuracion.metodos_pago || ''} 
-                            onChange={e => setConfiguracion({ ...configuracion, metodos_pago: e.target.value })} 
-                            placeholder={`Ejemplo:\nBancolombia Ahorros: 123456789\nNequi: 3185554444`}
-                            rows={3}
-                            style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '0.9rem', fontFamily: 'inherit', resize: 'vertical' }}
-                          />
+                          <label>Cuentas Bancarias / Métodos de Pago</label>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
+                            {(() => {
+                              let metodos: any[] = [];
+                              try {
+                                if (configuracion.metodos_pago) {
+                                  const parsed = JSON.parse(configuracion.metodos_pago);
+                                  if (Array.isArray(parsed)) metodos = parsed;
+                                }
+                              } catch {}
+                              
+                              return (
+                                <>
+                                  {metodos.map((metodo: any, index: number) => (
+                                    <div key={index} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', background: '#f8fafc', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
+                                      <input 
+                                        placeholder="Banco (Ej. Nequi)" 
+                                        value={metodo.banco || ''}
+                                        onChange={(e) => {
+                                          const nuevos = [...metodos];
+                                          nuevos[index] = { ...nuevos[index], banco: e.target.value };
+                                          setConfiguracion({ ...configuracion, metodos_pago: JSON.stringify(nuevos) });
+                                        }}
+                                        style={{ flex: '1 1 120px', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
+                                      />
+                                      <input 
+                                        placeholder="Tipo (Ahorros/Corriente)" 
+                                        value={metodo.tipo || ''}
+                                        onChange={(e) => {
+                                          const nuevos = [...metodos];
+                                          nuevos[index] = { ...nuevos[index], tipo: e.target.value };
+                                          setConfiguracion({ ...configuracion, metodos_pago: JSON.stringify(nuevos) });
+                                        }}
+                                        style={{ flex: '1 1 120px', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
+                                      />
+                                      <input 
+                                        placeholder="Número de cuenta" 
+                                        value={metodo.numero || ''}
+                                        onChange={(e) => {
+                                          const nuevos = [...metodos];
+                                          nuevos[index] = { ...nuevos[index], numero: e.target.value };
+                                          setConfiguracion({ ...configuracion, metodos_pago: JSON.stringify(nuevos) });
+                                        }}
+                                        style={{ flex: '1 1 150px', padding: '0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
+                                      />
+                                      <button 
+                                        type="button" 
+                                        title="Eliminar"
+                                        onClick={() => {
+                                          const nuevos = metodos.filter((_, i) => i !== index);
+                                          setConfiguracion({ ...configuracion, metodos_pago: JSON.stringify(nuevos) });
+                                        }}
+                                        style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '0.55rem', borderRadius: '6px', cursor: 'pointer', display: 'flex' }}
+                                      >
+                                        <Trash2 size={16} />
+                                      </button>
+                                    </div>
+                                  ))}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      const nuevos = [...metodos, { banco: '', tipo: '', numero: '' }];
+                                      setConfiguracion({ ...configuracion, metodos_pago: JSON.stringify(nuevos) });
+                                    }}
+                                    style={{ alignSelf: 'flex-start', display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.6rem 1rem', background: '#eff6ff', color: '#3b82f6', border: '1px dashed #93c5fd', borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600 }}
+                                  >
+                                    <Plus size={16} /> Añadir método de pago
+                                  </button>
+                                </>
+                              );
+                            })()}
+                          </div>
                         </div>
                         <div className="form-field">
                           <label>Color Temático (Primario)</label>
@@ -10205,9 +10269,20 @@ export default function Admin() {
                       style={{ flex: 1, padding: '0.65rem 1rem', background: '#25D366', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                       onClick={() => {
                         const uploadLink = `${window.location.origin}/pago/${selectedPedido.id}`;
-                        const metodosInfo = configuracion?.metodos_pago 
-                          ? `💳 *Métodos de pago:*\n${configuracion.metodos_pago}\n\n` 
-                          : `💳 *Datos del banco:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\n`;
+                        let metodosStr = '';
+                        if (configuracion?.metodos_pago) {
+                          try {
+                            const parsed = JSON.parse(configuracion.metodos_pago);
+                            if (Array.isArray(parsed) && parsed.length > 0) {
+                              metodosStr = `💳 *Métodos de pago:*\n` + parsed.map((m: any) => `- ${m.banco} ${m.tipo ? `(${m.tipo})` : ''}: ${m.numero}`).join('\n') + `\n\n`;
+                            } else {
+                              metodosStr = `💳 *Métodos de pago:*\n${configuracion.metodos_pago}\n\n`;
+                            }
+                          } catch {
+                            metodosStr = `💳 *Métodos de pago:*\n${configuracion.metodos_pago}\n\n`;
+                          }
+                        }
+                        const metodosInfo = metodosStr || `💳 *Datos del banco:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\n`;
                         const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: ${selectedPedido.total.toLocaleString()} COP*\n\n${metodosInfo}Para poder completar tu pedido, haz la captura de pantalla de tu pago o de transacción y envíala por este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
                         window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
                       }}
