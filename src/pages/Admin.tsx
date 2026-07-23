@@ -6318,7 +6318,8 @@ export default function Admin() {
                       admin_nombre: configuracion.admin_nombre,
                       admin_foto_url: configuracion.admin_foto_url,
                       admin_pin: configuracion.admin_pin || '0000',
-                      preguntar_tipo_cliente: configuracion.preguntar_tipo_cliente || false
+                      preguntar_tipo_cliente: configuracion.preguntar_tipo_cliente || false,
+                      metodos_pago: configuracion.metodos_pago
                     };
                     
                     let { error } = await supabase.from('configuracion').update(updateData).eq('id', configuracion.id);
@@ -6403,6 +6404,16 @@ export default function Admin() {
                         <div className="form-field">
                           <label>Número WhatsApp (sin +)</label>
                           <input required value={configuracion.whatsapp} onChange={e => setConfiguracion({ ...configuracion, whatsapp: e.target.value })} placeholder="573185637317" />
+                        </div>
+                        <div className="form-field full">
+                          <label>Métodos de Pago (Opcional, para el mensaje de cobro)</label>
+                          <textarea 
+                            value={configuracion.metodos_pago || ''} 
+                            onChange={e => setConfiguracion({ ...configuracion, metodos_pago: e.target.value })} 
+                            placeholder={`Ejemplo:\nBancolombia Ahorros: 123456789\nNequi: 3185554444`}
+                            rows={3}
+                            style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '0.9rem', fontFamily: 'inherit', resize: 'vertical' }}
+                          />
                         </div>
                         <div className="form-field">
                           <label>Color Temático (Primario)</label>
@@ -10194,7 +10205,10 @@ export default function Admin() {
                       style={{ flex: 1, padding: '0.65rem 1rem', background: '#25D366', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                       onClick={() => {
                         const uploadLink = `${window.location.origin}/pago/${selectedPedido.id}`;
-                        const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: ${selectedPedido.total.toLocaleString()} COP*\n\n💳 *Datos del banco:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\nPara poder completar tu pedido, haz la captura de pantalla de tu pago o de transacción y envíala por este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
+                        const metodosInfo = configuracion?.metodos_pago 
+                          ? `💳 *Métodos de pago:*\n${configuracion.metodos_pago}\n\n` 
+                          : `💳 *Datos del banco:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\n`;
+                        const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: ${selectedPedido.total.toLocaleString()} COP*\n\n${metodosInfo}Para poder completar tu pedido, haz la captura de pantalla de tu pago o de transacción y envíala por este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
                         window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
                       }}
                     >

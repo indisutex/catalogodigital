@@ -60,6 +60,7 @@ export interface Configuracion {
   admin_nombre?: string;
   admin_foto_url?: string;
   admin_pin?: string;
+  metodos_pago?: string;
 }
 
 export interface Pedido {
