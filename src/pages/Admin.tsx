@@ -1006,6 +1006,7 @@ export default function Admin() {
   const [deleteDate, setDeleteDate] = useState('');
   const [cleaningDuplicates, setCleaningDuplicates] = useState(false);
   const [wipingCatalog, setWipingCatalog] = useState(false);
+  const [uploadingEvidenciaDespacho, setUploadingEvidenciaDespacho] = useState(false);
 
   // States for Editing Categories & Subcategories
   const [editingCategory, setEditingCategory] = useState<Categoria | null>(null);
@@ -1952,6 +1953,15 @@ export default function Admin() {
       cargarDatos();
 
       setShowSuccessScreen(true);
+      
+      // WhatsApp sending
+      if (ped.evidencia_despacho_url) {
+        const prodNames = Array.isArray(ped.productos) && ped.productos.length > 0 
+          ? ped.productos.map((p: any) => `${p.cantidad}x ${p.nombre}`).join(', ') 
+          : '';
+        const msg = `¡Hola ${ped.cliente_nombre}! 👋 Tu pedido ha sido *VERIFICADO y DESPACHADO* 🚚\n\nPedido: ${prodNames}\nTotal: ${ped.total.toLocaleString()} COP\n\n📦 Aquí puedes ver la evidencia del despacho:\n${ped.evidencia_despacho_url}\n\n¡Gracias por tu compra!`;
+        window.open(formatWhatsAppLink(ped.cliente_telefono || '', msg), '_blank');
+      }
     } catch (err: any) {
       console.error(err);
       showToast('Error al procesar la aprobación: ' + err.message, 'error');
@@ -10007,6 +10017,59 @@ export default function Admin() {
                     <p style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600, marginTop: '0.5rem', textAlign: 'center' }}>
                       ✅ Comprobante recibido — Click para ver en pantalla completa
                     </p>
+                  </div>
+                )}
+                {/* Evidencia Despacho */}
+                {(selectedPedido.pantallazo_url || selectedPedido.estado === 'completado') && (
+                  <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
+                    <h4 style={{ margin: '0 0 0.75rem', fontSize: '0.9rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      📦 Evidencia de Despacho (Guía/Paquete)
+                    </h4>
+                    {selectedPedido.evidencia_despacho_url ? (
+                      <div>
+                        <div onClick={() => setPagoModalUrl(selectedPedido.evidencia_despacho_url || null)} style={{ cursor: 'pointer' }}>
+                          <img
+                            src={selectedPedido.evidencia_despacho_url}
+                            alt="Evidencia Despacho"
+                            style={{ width: '100%', maxHeight: '120px', objectFit: 'contain', borderRadius: '12px', border: '1px solid #e2e8f0' }}
+                          />
+                        </div>
+                        <p style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600, marginTop: '0.5rem', textAlign: 'center' }}>
+                          ✅ Evidencia subida
+                        </p>
+                      </div>
+                    ) : (
+                      <div style={{ textAlign: 'center' }}>
+                        <label className="btn-upload-img" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 1rem', background: '#f1f5f9', border: '1px dashed #cbd5e1', borderRadius: '12px', cursor: 'pointer', fontWeight: 600, color: '#475569', fontSize: '0.85rem' }}>
+                          {uploadingEvidenciaDespacho ? 'Subiendo...' : '📸 Subir Foto de Despacho'}
+                          <input type="file" accept="image/*" style={{ display: 'none' }} disabled={uploadingEvidenciaDespacho} onChange={async (e) => {
+                            if (!e.target.files || e.target.files.length === 0) return;
+                            setUploadingEvidenciaDespacho(true);
+                            try {
+                              let file = e.target.files[0];
+                              if (file.type.startsWith('image/')) {
+                                file = await compressImage(file) as File;
+                              }
+                              const fileName = `despacho_${selectedPedido.id}_${Date.now()}.${file.name.split('.').pop()}`;
+                              const { error } = await supabase.storage.from('archivos').upload(fileName, file);
+                              if (error) throw error;
+                              const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
+                              
+                              // Actualizar DB y estado
+                              await supabase.from('pedidos').update({ evidencia_despacho_url: data.publicUrl }).eq('id', selectedPedido.id);
+                              setSelectedPedido({ ...selectedPedido, evidencia_despacho_url: data.publicUrl });
+                              setPedidos(prev => prev.map(p => p.id === selectedPedido.id ? { ...p, evidencia_despacho_url: data.publicUrl } : p));
+                              
+                              showToast('Evidencia subida ✓', 'success');
+                            } catch (err: any) {
+                              showToast('Error al subir evidencia', 'error');
+                            } finally {
+                              setUploadingEvidenciaDespacho(false);
+                            }
+                          }} />
+                        </label>
+                      </div>
+                    )}
                   </div>
                 )}
                 {!selectedPedido.pantallazo_url && (

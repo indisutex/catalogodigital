@@ -78,6 +78,7 @@ export interface Pedido {
   estado?: string;
   numero_guia?: string;
   origen?: string;
+  evidencia_despacho_url?: string;
 }
 
 export interface Asesor {
