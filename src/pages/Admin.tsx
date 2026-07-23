@@ -1448,9 +1448,12 @@ export default function Admin() {
       setProductos(allProducts);
       
       if (confRes.data) {
-        if (activeTabRef.current !== 'config') {
-          setConfiguracion(confRes.data);
-        }
+        setConfiguracion(prev => {
+          if (!prev || activeTabRef.current !== 'config') {
+            return confRes.data;
+          }
+          return prev;
+        });
         setWebhookUrl(`https://dowbsbxvxjzjjhyqmyfr.supabase.co/functions/v1/siigo-webhook?tenant=${tenant}`);
       } else {
         // Create default config for this tenant if it doesn't exist
