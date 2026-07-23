@@ -11,7 +11,7 @@ export interface CartItem extends Producto {
 
 export type BuyerType = 'detal' | 'mayorista' | '50_unidades' | null;
 
-export const getEffectivePrice = (producto: Producto, buyerType: BuyerType, markup: number = 0, ajustesProductos?: any): number => {
+export const getEffectivePrice = (producto: Producto, buyerType: BuyerType, markup: number = 0, ajustesProductos?: any, descuentoPromo: number = 0): number => {
   let price = producto.precio;
   if (buyerType === 'mayorista' && producto.precio_por_mayor) {
     price = producto.precio_por_mayor;
@@ -19,31 +19,42 @@ export const getEffectivePrice = (producto: Producto, buyerType: BuyerType, mark
     price = producto.precio_50_unidades;
   }
 
+  let finalPrice = price;
+  let hasCustomPrice = false;
+
   // Si hay ajustes específicos para este producto
   if (ajustesProductos && ajustesProductos[producto.id]) {
     const setting = ajustesProductos[producto.id];
     if (setting !== null && typeof setting === 'object') {
       if (setting.precio_personalizado !== undefined && setting.precio_personalizado !== null && Number(setting.precio_personalizado) > 0) {
-        return Number(setting.precio_personalizado);
-      }
-      if (setting.porcentaje_personalizado !== undefined && setting.porcentaje_personalizado !== null) {
+        finalPrice = Number(setting.precio_personalizado);
+        hasCustomPrice = true;
+      } else if (setting.porcentaje_personalizado !== undefined && setting.porcentaje_personalizado !== null) {
         const customMarkup = Number(setting.porcentaje_personalizado);
         if (customMarkup > 0) {
-          return Math.round(price * (1 + customMarkup / 100));
+          finalPrice = Math.round(price * (1 + customMarkup / 100));
+          hasCustomPrice = true;
         }
       }
     } else if (typeof setting === 'number' || typeof setting === 'string') {
       const customPrice = Number(setting);
       if (customPrice > 0) {
-        return customPrice;
+        finalPrice = customPrice;
+        hasCustomPrice = true;
       }
     }
   }
 
-  if (markup > 0) {
-    return Math.round(price * (1 + markup / 100));
+  if (!hasCustomPrice && markup > 0) {
+    finalPrice = Math.round(price * (1 + markup / 100));
   }
-  return price;
+
+  // Aplicar descuento promocional
+  if (descuentoPromo > 0) {
+    finalPrice = Math.round(finalPrice * (1 - descuentoPromo / 100));
+  }
+
+  return finalPrice;
 };
 
 interface CartContextType {
@@ -59,6 +70,8 @@ interface CartContextType {
   setMarkupPorcentaje: (val: number) => void;
   ajustesProductos: any;
   setAjustesProductos: (val: any) => void;
+  descuentoPromocional: number;
+  setDescuentoPromocional: (val: number) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -87,6 +100,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const saved = sessionStorage.getItem(`indisutex_ajustes_productos_${tenantId}`);
     return saved ? JSON.parse(saved) : {};
   });
+
+  const [descuentoPromocional, setDescuentoPromocional] = useState<number>(0);
 
   useEffect(() => {
     const tenantId = getTenantId() || 'saramantha';
@@ -146,10 +161,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = () => setItems([]);
 
-  const total = items.reduce((sum, item) => sum + (getEffectivePrice(item, buyerType, markupPorcentaje, ajustesProductos) * item.cantidad), 0);
+  const total = items.reduce((sum, item) => sum + (getEffectivePrice(item, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * item.cantidad), 0);
 
   return (
-    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, total, buyerType, setBuyerType, markupPorcentaje, setMarkupPorcentaje, ajustesProductos, setAjustesProductos }}>
+    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, total, buyerType, setBuyerType, markupPorcentaje, setMarkupPorcentaje, ajustesProductos, setAjustesProductos, descuentoPromocional, setDescuentoPromocional }}>
       {children}
     </CartContext.Provider>
   );

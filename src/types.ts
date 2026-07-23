@@ -61,6 +61,7 @@ export interface Configuracion {
   admin_foto_url?: string;
   admin_pin?: string;
   metodos_pago?: string;
+  descuento_promocional?: number;
 }
 
 export interface Pedido {

@@ -288,7 +288,11 @@ export default function MenuDigital() {
     setDetailProduct(null);
   };
   
-  const { items, addToCart, removeFromCart, updateQuantity, total, clearCart, buyerType, setBuyerType, markupPorcentaje, setMarkupPorcentaje, ajustesProductos, setAjustesProductos } = useCart();
+  const { items, addToCart, removeFromCart, updateQuantity, total, clearCart, buyerType, setBuyerType, markupPorcentaje, setMarkupPorcentaje, ajustesProductos, setAjustesProductos, descuentoPromocional, setDescuentoPromocional } = useCart();
+
+  useEffect(() => {
+    setDescuentoPromocional(configuracion?.descuento_promocional || 0);
+  }, [configuracion, setDescuentoPromocional]);
 
   const [formData, setFormData] = useState({
     nombre: '',
@@ -477,7 +481,7 @@ export default function MenuDigital() {
     
     mensaje += `*PRODUCTOS:*\n`;
     const mensajeProductos = items.map(item => 
-      `- ${item.cantidad}x ${item.nombre} ${item.talla ? `(Talla: ${item.talla}) ` : ''}${item.estampado ? `(Estampado: ${item.estampado}) ` : ''}- $${(getEffectivePrice(item, buyerType, markupPorcentaje, ajustesProductos) * item.cantidad).toLocaleString('es-CO')}`
+      `- ${item.cantidad}x ${item.nombre} ${item.talla ? `(Talla: ${item.talla}) ` : ''}${item.estampado ? `(Estampado: ${item.estampado}) ` : ''}- $${(getEffectivePrice(item, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * item.cantidad).toLocaleString('es-CO')}`
     ).join('\n');
     mensaje += mensajeProductos;
     
@@ -899,6 +903,24 @@ export default function MenuDigital() {
                     <div className="img-placeholder"></div>
                   )}
                   <div className="sku-badge">Ref: {producto.nombre}</div>
+                  {descuentoPromocional > 0 && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '10px',
+                      left: '10px',
+                      background: '#ef4444',
+                      color: 'white',
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      padding: '0.2rem 0.45rem',
+                      borderRadius: '6px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
+                      zIndex: 3,
+                      fontFamily: 'Outfit, sans-serif'
+                    }}>
+                      -{descuentoPromocional}% OFF
+                    </div>
+                  )}
                   
                   <button 
                     className="item-add-btn" 
@@ -910,7 +932,18 @@ export default function MenuDigital() {
                 </div>
                 <div className="item-details">
                   <h4>{producto.nombre}</h4>
-                  <p className="item-price">${getEffectivePrice(producto, buyerType, markupPorcentaje, ajustesProductos).toLocaleString('es-CO')}</p>
+                  <p className="item-price">
+                    {descuentoPromocional > 0 ? (
+                      <>
+                        <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.82em', marginRight: '0.4rem', fontWeight: 500 }}>
+                          ${getEffectivePrice(producto, buyerType, markupPorcentaje, ajustesProductos).toLocaleString('es-CO')}
+                        </span>
+                        ${getEffectivePrice(producto, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional).toLocaleString('es-CO')}
+                      </>
+                    ) : (
+                      `$${getEffectivePrice(producto, buyerType, markupPorcentaje, ajustesProductos).toLocaleString('es-CO')}`
+                    )}
+                  </p>
                 </div>
               </div>
             ))
@@ -1070,7 +1103,7 @@ export default function MenuDigital() {
                           <h4>{item.nombre}</h4>
                           {item.talla && <p style={{fontSize: '0.8rem', color: '#666', margin: '2px 0'}}>Talla: {item.talla}</p>}
                           {item.estampado && <p style={{fontSize: '0.8rem', color: '#666', margin: '2px 0'}}>Estampado: {item.estampado}</p>}
-                          <p className="cart-item-price">${(getEffectivePrice(item, buyerType, markupPorcentaje, ajustesProductos) * item.cantidad).toLocaleString('es-CO')}</p>
+                          <p className="cart-item-price">${(getEffectivePrice(item, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * item.cantidad).toLocaleString('es-CO')}</p>
                           <div className="cart-item-qty">
                             <button onClick={() => updateQuantity(item.id, item.cantidad - 1, item.talla, item.estampado)}>-</button>
                             <span>{item.cantidad}</span>
@@ -1106,7 +1139,7 @@ export default function MenuDigital() {
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <h5 style={{ margin: '0 0 0.25rem 0', fontSize: '0.85rem', color: '#1e293b', lineHeight: '1.2', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.nombre}</h5>
                             <p style={{ margin: 0, color: '#e11d48', fontWeight: 800, fontSize: '0.9rem' }}>
-                              ${getEffectivePrice(p, buyerType, markupPorcentaje, ajustesProductos).toLocaleString('es-CO')}
+                              ${getEffectivePrice(p, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional).toLocaleString('es-CO')}
                             </p>
                           </div>
                           <button
@@ -1222,7 +1255,18 @@ export default function MenuDigital() {
               <div className="detail-info">
                 <div className="detail-header-row">
                   <h3 className="detail-name">{detailProduct.nombre}</h3>
-                  <p className="detail-price">${getEffectivePrice(detailProduct, buyerType, markupPorcentaje, ajustesProductos).toLocaleString('es-CO')}</p>
+                  <p className="detail-price">
+                    {descuentoPromocional > 0 ? (
+                      <>
+                        <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.82em', marginRight: '0.5rem', fontWeight: 500 }}>
+                          ${getEffectivePrice(detailProduct, buyerType, markupPorcentaje, ajustesProductos).toLocaleString('es-CO')}
+                        </span>
+                        ${getEffectivePrice(detailProduct, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional).toLocaleString('es-CO')}
+                      </>
+                    ) : (
+                      `$${getEffectivePrice(detailProduct, buyerType, markupPorcentaje, ajustesProductos).toLocaleString('es-CO')}`
+                    )}
+                  </p>
                 </div>
                 {detailProduct.descripcion && (
                   <p className="detail-desc">{detailProduct.descripcion}</p>
@@ -1318,7 +1362,7 @@ export default function MenuDigital() {
                 {/* ── ADD TO CART ── */}
                 <button className="detail-add-btn" onClick={handleAddFromDetail}>
                   <ShoppingCart size={18} />
-                  Añadir al carrito • ${(getEffectivePrice(detailProduct, buyerType, markupPorcentaje, ajustesProductos) * selectedCantidad).toLocaleString('es-CO')}
+                  Añadir al carrito • ${(getEffectivePrice(detailProduct, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * selectedCantidad).toLocaleString('es-CO')}
                 </button>
               </div>
             </div>

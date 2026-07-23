@@ -4535,6 +4535,37 @@ export default function Admin() {
                       >
                         🔧 Depurar Catálogo
                       </button>
+
+                      {/* Control Promocional */}
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', border: '1px solid #fed7aa', background: '#fff7ed', padding: '0.45rem 0.8rem', borderRadius: '10px', fontSize: '0.82rem', height: '36px' }}>
+                        <span style={{ fontWeight: 800, color: '#c2410c', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                          <Tag size={13} /> Promo:
+                        </span>
+                        <select
+                          value={configuracion?.descuento_promocional || 0}
+                          onChange={async (e) => {
+                            if (!configuracion) return;
+                            const desc = Number(e.target.value);
+                            const { error } = await supabase
+                              .from('configuracion')
+                              .update({ descuento_promocional: desc })
+                              .eq('id', configuracion.id);
+                            
+                            if (error) {
+                              showToast('Error al aplicar descuento: ' + error.message, 'error');
+                            } else {
+                              setConfiguracion({ ...configuracion, descuento_promocional: desc });
+                              showToast(desc > 0 ? `Descuento del ${desc}% aplicado a todo el catálogo ✓` : 'Descuento promocional desactivado ✓');
+                            }
+                          }}
+                          style={{ border: '1px solid #fdba74', borderRadius: '6px', padding: '0.15rem 0.3rem', outline: 'none', background: 'white', color: '#c2410c', fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' }}
+                        >
+                          <option value={0}>Sin Descuento</option>
+                          <option value={5}>Bajar 5%</option>
+                          <option value={10}>Bajar 10%</option>
+                          <option value={20}>Bajar 20%</option>
+                        </select>
+                      </div>
                       
                       <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', width: '100%' }}>
                         <div className="search-input-container" style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 1, minWidth: '160px' }}>
@@ -5547,18 +5578,72 @@ export default function Admin() {
                               </strong>
                             </div>
 
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                              <small style={{ color: '#64748b' }}>Detal:</small>
-                              <strong style={{ color: '#0f172a' }}>${p.precio?.toLocaleString()}</strong>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                              <small style={{ color: '#64748b' }}>Mayor:</small>
-                              <strong>{p.precio_por_mayor ? `$${p.precio_por_mayor.toLocaleString()}` : '-'}</strong>
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                              <small style={{ color: '#64748b' }}>50 Unid:</small>
-                              <strong>{p.precio_50_unidades ? `$${p.precio_50_unidades.toLocaleString()}` : '-'}</strong>
-                            </div>
+                            {(() => {
+                              const desc = configuracion?.descuento_promocional || 0;
+                              const precioDetal = p.precio;
+                              const precioMayor = p.precio_por_mayor;
+                              const precio50 = p.precio_50_unidades;
+
+                              const getDiscounted = (val?: number) => {
+                                if (!val) return 0;
+                                return Math.round(val * (1 - desc / 100));
+                              };
+
+                              return (
+                                <>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                    <small style={{ color: '#64748b' }}>Detal:</small>
+                                    <strong style={{ color: desc > 0 ? '#10b981' : '#0f172a' }}>
+                                      {desc > 0 ? (
+                                        <>
+                                          <span style={{ textDecoration: 'line-through', color: '#94a3b8', marginRight: '0.35rem', fontWeight: 500 }}>
+                                            ${precioDetal?.toLocaleString()}
+                                          </span>
+                                          ${getDiscounted(precioDetal).toLocaleString()}
+                                        </>
+                                      ) : (
+                                        `$${precioDetal?.toLocaleString()}`
+                                      )}
+                                    </strong>
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                    <small style={{ color: '#64748b' }}>Mayor:</small>
+                                    <strong style={{ color: desc > 0 && precioMayor ? '#10b981' : '#475569' }}>
+                                      {desc > 0 && precioMayor ? (
+                                        <>
+                                          <span style={{ textDecoration: 'line-through', color: '#94a3b8', marginRight: '0.35rem', fontWeight: 500 }}>
+                                            ${precioMayor.toLocaleString()}
+                                          </span>
+                                          ${getDiscounted(precioMayor).toLocaleString()}
+                                        </>
+                                      ) : precioMayor ? (
+                                        `$${precioMayor.toLocaleString()}`
+                                      ) : (
+                                        '-'
+                                      )}
+                                    </strong>
+                                  </div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                    <small style={{ color: '#64748b' }}>50 Unid:</small>
+                                    <strong style={{ color: desc > 0 && precio50 ? '#10b981' : '#475569' }}>
+                                      {desc > 0 && precio50 ? (
+                                        <>
+                                          <span style={{ textDecoration: 'line-through', color: '#94a3b8', marginRight: '0.35rem', fontWeight: 500 }}>
+                                            ${precio50.toLocaleString()}
+                                          </span>
+                                          ${getDiscounted(precio50).toLocaleString()}
+                                        </>
+                                      ) : precio50 ? (
+                                        `$${precio50.toLocaleString()}`
+                                      ) : (
+                                        '-'
+                                      )}
+                                    </strong>
+                                  </div>
+                                </>
+                              );
+                            })()}
+
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
                               <small style={{ color: '#64748b' }}>Tallas:</small>
                               <strong style={{ fontSize: '0.8rem', color: '#0f172a', textAlign: 'right', wordBreak: 'break-word', maxWidth: '120px' }}>{deduplicateTallas(p.tallas)}</strong>
