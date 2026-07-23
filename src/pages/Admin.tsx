@@ -339,6 +339,25 @@ export default function Admin() {
   }, [activeTab]);
 
   const [toast, setToast] = useState<Toast>(null);
+
+  const getFormattedMetodosPago = () => {
+    let metodosStr = '';
+    if (configuracion?.metodos_pago) {
+      try {
+        const parsed = JSON.parse(configuracion.metodos_pago);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          metodosStr = `\n\n💳 *Métodos de pago:*\n` + parsed.map((m: any) => `- ${m.banco} ${m.tipo ? `(${m.tipo})` : ''}: ${m.numero}`).join('\n') + `\n`;
+        } else if (typeof configuracion.metodos_pago === 'string' && configuracion.metodos_pago.trim() !== '') {
+          metodosStr = `\n\n💳 *Métodos de pago:*\n${configuracion.metodos_pago}\n`;
+        }
+      } catch {
+        if (typeof configuracion.metodos_pago === 'string' && configuracion.metodos_pago.trim() !== '') {
+          metodosStr = `\n\n💳 *Métodos de pago:*\n${configuracion.metodos_pago}\n`;
+        }
+      }
+    }
+    return metodosStr || `\n\n💳 *Datos del banco:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n`;
+  };
   
   const [selectedCompany, setSelectedCompany] = useState<string | null>(getTenantId() || null);
 
@@ -601,7 +620,8 @@ export default function Admin() {
                     ? ped.productos.map((p: any) => p.nombre).join(', ')
                     : '';
                   const uploadLink = `${window.location.origin}/pago/${ped.id}`;
-                  const text = `¡Hola ${nombreCliente || ''}! 👋 Esperamos que estés muy bien. Recordamos que tu pedido de ${prodNames ? `*${prodNames}*` : 'nuestro catálogo'} por valor de *${ped.total.toLocaleString()}* está pendiente de pago.\n\nPor favor, sube tu comprobante de pago en el siguiente enlace para completar tu pedido:\n${uploadLink} 😊`;
+                  const metodosInfo = getFormattedMetodosPago();
+                  const text = `¡Hola ${nombreCliente || ''}! 👋 Esperamos que estés muy bien. Recordamos que tu pedido de ${prodNames ? `*${prodNames}*` : 'nuestro catálogo'} por valor de *${ped.total.toLocaleString()}* está pendiente de pago.${metodosInfo}\nPor favor, sube tu comprobante de pago en el siguiente enlace para completar tu pedido:\n${uploadLink} 😊`;
                   const targetPhone = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
                   window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`, '_blank');
                 }}
@@ -9876,7 +9896,9 @@ export default function Admin() {
                                         const prodNames = Array.isArray(ped.productos) && ped.productos.length > 0
                                           ? ped.productos.map((p: any) => p.nombre).join(', ')
                                           : '';
-                                        const text = `¡Hola ${ped.cliente_nombre || ''}! 👋 Esperamos que estés muy bien. Recordamos que tu pedido de ${prodNames ? `*${prodNames}*` : 'nuestro catálogo'} por valor de *$${ped.total.toLocaleString()}* está pendiente de pago. ¿Te ayudamos a registrar el comprobante? 😊`;
+                                        const metodosInfo = getFormattedMetodosPago();
+                                        const uploadLink = `${window.location.origin}/pago/${ped.id}`;
+                                        const text = `¡Hola ${ped.cliente_nombre || ''}! 👋 Esperamos que estés muy bien. Recordamos que tu pedido de ${prodNames ? `*${prodNames}*` : 'nuestro catálogo'} por valor de *$${ped.total.toLocaleString()}* está pendiente de pago.${metodosInfo}\nPor favor, sube tu comprobante de pago en el siguiente enlace para completar tu pedido:\n${uploadLink} 😊`;
                                         const targetPhone = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
                                         window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`, '_blank');
                                       }}
