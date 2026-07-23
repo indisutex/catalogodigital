@@ -19,6 +19,7 @@ export interface Producto {
   estampados?: string;
   created_at: string;
   oculto?: boolean;
+  descuento?: number;
 }
 
 export interface Categoria {

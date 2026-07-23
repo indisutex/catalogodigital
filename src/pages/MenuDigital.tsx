@@ -915,24 +915,6 @@ export default function MenuDigital() {
                     <div className="img-placeholder"></div>
                   )}
                   <div className="sku-badge">Ref: {producto.nombre}</div>
-                  {descuentoPromocional > 0 && (
-                    <div style={{
-                      position: 'absolute',
-                      top: '10px',
-                      right: '10px',
-                      background: '#ef4444',
-                      color: 'white',
-                      fontSize: '0.72rem',
-                      fontWeight: 800,
-                      padding: '0.2rem 0.45rem',
-                      borderRadius: '6px',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.15)',
-                      zIndex: 3,
-                      fontFamily: 'Outfit, sans-serif'
-                    }}>
-                      -{descuentoPromocional}% OFF
-                    </div>
-                  )}
                   
                   <button 
                     className="item-add-btn" 
@@ -945,10 +927,10 @@ export default function MenuDigital() {
                 <div className="item-details">
                   <h4>{producto.nombre}</h4>
                   <p className="item-price">
-                    {descuentoPromocional > 0 ? (
+                    {((producto.descuento !== undefined && producto.descuento > 0) || descuentoPromocional > 0) ? (
                       <>
                         <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.82em', marginRight: '0.4rem', fontWeight: 500 }}>
-                          ${getEffectivePrice(producto, buyerType, markupPorcentaje, ajustesProductos).toLocaleString('es-CO')}
+                          ${getEffectivePrice(producto, buyerType, markupPorcentaje, ajustesProductos, 0, true).toLocaleString('es-CO')}
                         </span>
                         ${getEffectivePrice(producto, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional).toLocaleString('es-CO')}
                       </>
@@ -1267,11 +1249,11 @@ export default function MenuDigital() {
               <div className="detail-info">
                 <div className="detail-header-row">
                   <h3 className="detail-name">{detailProduct.nombre}</h3>
-                  <p className="detail-price">
-                    {descuentoPromocional > 0 ? (
+                   <p className="detail-price">
+                    {((detailProduct.descuento !== undefined && detailProduct.descuento > 0) || descuentoPromocional > 0) ? (
                       <>
                         <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.82em', marginRight: '0.5rem', fontWeight: 500 }}>
-                          ${getEffectivePrice(detailProduct, buyerType, markupPorcentaje, ajustesProductos).toLocaleString('es-CO')}
+                          ${getEffectivePrice(detailProduct, buyerType, markupPorcentaje, ajustesProductos, 0, true).toLocaleString('es-CO')}
                         </span>
                         ${getEffectivePrice(detailProduct, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional).toLocaleString('es-CO')}
                       </>

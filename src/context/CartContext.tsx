@@ -11,7 +11,7 @@ export interface CartItem extends Producto {
 
 export type BuyerType = 'detal' | 'mayorista' | '50_unidades' | null;
 
-export const getEffectivePrice = (producto: Producto, buyerType: BuyerType, markup: number = 0, ajustesProductos?: any, descuentoPromo: number = 0): number => {
+export const getEffectivePrice = (producto: Producto, buyerType: BuyerType, markup: number = 0, ajustesProductos?: any, descuentoPromo: number = 0, ignoreDiscounts: boolean = false): number => {
   let price = producto.precio;
   if (buyerType === 'mayorista' && producto.precio_por_mayor) {
     price = producto.precio_por_mayor;
@@ -49,9 +49,17 @@ export const getEffectivePrice = (producto: Producto, buyerType: BuyerType, mark
     finalPrice = Math.round(price * (1 + markup / 100));
   }
 
-  // Aplicar descuento promocional
-  if (descuentoPromo > 0) {
-    finalPrice = Math.round(finalPrice * (1 - descuentoPromo / 100));
+  if (ignoreDiscounts) {
+    return finalPrice;
+  }
+
+  // Aplicar descuento (el descuento del producto específico tiene prioridad, sino se usa el global)
+  const desc = (producto.descuento !== undefined && producto.descuento > 0)
+    ? producto.descuento
+    : descuentoPromo;
+
+  if (desc > 0) {
+    finalPrice = Math.round(finalPrice * (1 - desc / 100));
   }
 
   return finalPrice;

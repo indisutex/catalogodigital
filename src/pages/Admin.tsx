@@ -90,6 +90,7 @@ type ProductFormData = {
   tallas: string;
   estampados: string;
   stock: number;
+  descuento: string;
 };
 
 const emptyProduct: ProductFormData = {
@@ -106,7 +107,8 @@ const emptyProduct: ProductFormData = {
   video_url: '',
   tallas: '',
   estampados: '',
-  stock: 0
+  stock: 0,
+  descuento: ''
 };
 
 type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor' | 'material_apoyo' | 'material_asesor' | 'productos_asesor' | 'productos_mayorista' | 'ranking_mayorista' | 'pqrs';
@@ -1664,6 +1666,7 @@ export default function Admin() {
         tallas: f.tallas || null,
         estampados: f.estampados || null,
         stock: f.stock || 0,
+        descuento: parseInt(f.descuento) || 0,
         tenant_id: getTenantId()
       };
     });
@@ -1839,7 +1842,8 @@ export default function Admin() {
           imagen_url: '',
           video_url: null,
           tallas: '',
-          estampados: getFieldVal(['estampados', 'estampado', 'tematica', 'tematicas', 'print', 'prints'])
+          estampados: getFieldVal(['estampados', 'estampado', 'tematica', 'tematicas', 'print', 'prints']),
+          descuento: parseInt(getFieldVal(['descuento', 'discount', 'promo'])) || 0
         };
       });
       
@@ -1872,6 +1876,7 @@ export default function Admin() {
       precio_50_unidades: p.precio_50_unidades || null,
       stock: p.stock || 0,
       estampados: p.estampados || null,
+      descuento: p.descuento || 0,
       tenant_id: getTenantId()
     }));
     const { error } = await supabase.from('productos').insert(newProducts);
@@ -2118,7 +2123,8 @@ export default function Admin() {
       video_url: editingProduct.video_url,
       tallas: editingProduct.tallas,
       estampados: editingProduct.estampados || null,
-      stock: editingProduct.stock
+      stock: editingProduct.stock,
+      descuento: editingProduct.descuento || 0
     }).eq('id', editingProduct.id);
     setLoading(false);
     if (error) showToast('Error al actualizar', 'error');
@@ -3614,6 +3620,17 @@ export default function Admin() {
                          placeholder="Ej: SHD-001, SK-102"
                        />
                      </div>
+                      <div className="form-field">
+                        <label>Descuento del Producto (%)</label>
+                        <input
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={editingProduct.descuento || 0}
+                          onChange={e => setEditingProduct({ ...editingProduct, descuento: parseInt(e.target.value) || 0 })}
+                          placeholder="Ej: 10, 15, 20"
+                        />
+                      </div>
                      <div className="form-field full">
                         <label>Tallas</label>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.5rem' }}>
@@ -4282,6 +4299,17 @@ export default function Admin() {
                                     updateBulkForm(index, 'sku', e.target.value);
                                   }}
                                   placeholder="Ej: SHD-001, SK-102"
+                                />
+                              </div>
+                              <div className="form-field">
+                                <label>Descuento del Producto (%)</label>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  value={form.descuento || ''}
+                                  onChange={e => updateBulkForm(index, 'descuento', e.target.value)}
+                                  placeholder="Ej: 10, 15, 20"
                                 />
                               </div>
                               <div className="form-field">
