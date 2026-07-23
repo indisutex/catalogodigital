@@ -458,13 +458,16 @@ export default function MenuDigital() {
     });
   }
 
-  // Text search filter
+  // Text search filter (diacritics-insensitive and searches references)
   if (busqueda.trim()) {
-    const q = busqueda.toLowerCase().trim();
+    const cleanStr = (str: string) => 
+      (str || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    const q = cleanStr(busqueda);
     productosFiltrados = productosFiltrados.filter(p =>
-      (p.nombre || '').toLowerCase().includes(q) ||
-      (p.descripcion || '').toLowerCase().includes(q) ||
-      (p.categoria || '').toLowerCase().includes(q)
+      cleanStr(p.nombre || '').includes(q) ||
+      cleanStr(p.descripcion || '').includes(q) ||
+      cleanStr(p.categoria || '').includes(q) ||
+      cleanStr(p.referencia || '').includes(q)
     );
   }
 
@@ -1058,6 +1061,26 @@ export default function MenuDigital() {
                     placeholder="Barrio, Calle #, Casa o Apto, referencias..."
                   />
                 </div>
+
+                {configuracion?.metodos_pago && (
+                  <div style={{ background: '#f8fafc', padding: '0.85rem', borderRadius: '12px', border: '1px solid #e2e8f0', marginTop: '0.2rem', marginBottom: '1rem', fontSize: '0.82rem' }}>
+                    <strong style={{ color: '#1e293b', display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem' }}>💳 Métodos de Pago Disponibles:</strong>
+                    {(() => {
+                      try {
+                        const parsed = JSON.parse(configuracion.metodos_pago);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                          return parsed.map((m: any, idx: number) => (
+                            <div key={idx} style={{ padding: '0.3rem 0', color: '#475569', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: idx < parsed.length - 1 ? '1px dashed #e2e8f0' : 'none' }}>
+                              <span><strong>{m.banco}</strong> {m.tipo ? `(${m.tipo})` : ''}</span>
+                              <span style={{ fontWeight: 700, color: '#0f172a', fontFamily: 'monospace' }}>{m.numero}</span>
+                            </div>
+                          ));
+                        }
+                      } catch {}
+                      return <p style={{ margin: 0, color: '#64748b' }}>{configuracion.metodos_pago}</p>;
+                    })()}
+                  </div>
+                )}
 
                 <div className="cart-footer" style={{ marginTop: 'auto' }}>
                   <div className="cart-total">

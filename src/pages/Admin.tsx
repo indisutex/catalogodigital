@@ -2251,15 +2251,17 @@ export default function Admin() {
     let result = [...pedidos];
 
     if (orderSearchQuery) {
-        const q = orderSearchQuery.toLowerCase().trim();
+        const cleanOrderStr = (str: string) => 
+          (str || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+        const q = cleanOrderStr(orderSearchQuery);
         result = result.filter(p => 
-          (p.cliente_nombre || '').toLowerCase().includes(q) ||
-          (p.cliente_telefono || '').toLowerCase().includes(q) ||
-          (p.ciudad || '').toLowerCase().includes(q) ||
-          (p.direccion || '').toLowerCase().includes(q)
+          cleanOrderStr(p.cliente_nombre).includes(q) ||
+          cleanOrderStr(p.cliente_telefono).includes(q) ||
+          cleanOrderStr(p.ciudad).includes(q) ||
+          cleanOrderStr(p.direccion).includes(q)
         ).sort((a, b) => {
-          const aName = (a.cliente_nombre || '').toLowerCase();
-          const bName = (b.cliente_nombre || '').toLowerCase();
+          const aName = cleanOrderStr(a.cliente_nombre);
+          const bName = cleanOrderStr(b.cliente_nombre);
           const aStarts = aName.startsWith(q);
           const bStarts = bName.startsWith(q);
           if (aStarts && !bStarts) return -1;
@@ -2863,14 +2865,16 @@ export default function Admin() {
     });
 
     if (orderSearchQuery) {
-        const q = orderSearchQuery.toLowerCase().trim();
+        const cleanOrderStr = (str: string) => 
+          (str || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+        const q = cleanOrderStr(orderSearchQuery);
         temp = temp.filter(l => 
-          (l.nombre || '').toLowerCase().includes(q) ||
-          (l.telefono || '').toLowerCase().includes(q) ||
-          (l.ciudad || '').toLowerCase().includes(q)
+          cleanOrderStr(l.nombre).includes(q) ||
+          cleanOrderStr(l.telefono).includes(q) ||
+          cleanOrderStr(l.ciudad).includes(q)
         ).sort((a, b) => {
-          const aName = (a.nombre || '').toLowerCase();
-          const bName = (b.nombre || '').toLowerCase();
+          const aName = cleanOrderStr(a.nombre);
+          const bName = cleanOrderStr(b.nombre);
           const aStarts = aName.startsWith(q);
           const bStarts = bName.startsWith(q);
           if (aStarts && !bStarts) return -1;
@@ -3346,10 +3350,15 @@ export default function Admin() {
     }
   }
 
-  let filteredProducts = productos.filter(p =>
-    p.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.categoria.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const cleanSearchStr = (str: string) => 
+    (str || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+
+  let filteredProducts = productos.filter(p => {
+    const q = cleanSearchStr(searchQuery);
+    return cleanSearchStr(p.nombre).includes(q) ||
+      cleanSearchStr(p.categoria).includes(q) ||
+      cleanSearchStr(p.referencia || '').includes(q);
+  });
   if (productSort === 'alfabetico') {
     filteredProducts.sort((a, b) => a.nombre.localeCompare(b.nombre));
   } else if (productSort === 'visibles') {
@@ -3360,11 +3369,13 @@ export default function Admin() {
     filteredProducts = filteredProducts.filter(p => p.imagen_url || (p.imagenes_extra && p.imagenes_extra.length > 0));
   }
 
-  let mayoristaFilteredProducts = productos.filter(p =>
-    (mayoristaCategoryFilter === 'todos' || p.categoria === mayoristaCategoryFilter) &&
-    (p.nombre.toLowerCase().includes(mayoristaSearchQuery.toLowerCase()) ||
-     p.categoria.toLowerCase().includes(mayoristaSearchQuery.toLowerCase()))
-  );
+  let mayoristaFilteredProducts = productos.filter(p => {
+    const q = cleanSearchStr(mayoristaSearchQuery);
+    return (mayoristaCategoryFilter === 'todos' || p.categoria === mayoristaCategoryFilter) &&
+      (cleanSearchStr(p.nombre).includes(q) ||
+       cleanSearchStr(p.categoria).includes(q) ||
+       cleanSearchStr(p.referencia || '').includes(q));
+  });
   if (role === 'mayorista' || role === 'asesor') {
     const tempMayorista = mayoristas.find(m => m.telefono === loggedAsesorPhone) || asesores.find(a => a.telefono === loggedAsesorPhone);
     if (mayoristaProductSort === 'alfabetico') {
