@@ -10034,9 +10034,27 @@ export default function Admin() {
                             style={{ width: '100%', maxHeight: '120px', objectFit: 'contain', borderRadius: '12px', border: '1px solid #e2e8f0' }}
                           />
                         </div>
-                        <p style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600, marginTop: '0.5rem', textAlign: 'center' }}>
-                          ✅ Evidencia subida
-                        </p>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
+                          <p style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600, margin: 0 }}>
+                            ✅ Evidencia subida
+                          </p>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                await supabase.from('pedidos').update({ evidencia_despacho_url: null }).eq('id', selectedPedido.id);
+                                setSelectedPedido({ ...selectedPedido, evidencia_despacho_url: undefined });
+                                setPedidos(prev => prev.map(p => p.id === selectedPedido.id ? { ...p, evidencia_despacho_url: undefined } : p));
+                                showToast('Evidencia eliminada, puedes subir otra', 'success');
+                              } catch (err: any) {
+                                showToast('Error al eliminar evidencia', 'error');
+                              }
+                            }}
+                            style={{ background: '#fee2e2', color: '#ef4444', border: '1px solid #fca5a5', borderRadius: '6px', padding: '0.2rem 0.5rem', fontSize: '0.7rem', cursor: 'pointer', fontWeight: 600 }}
+                          >
+                            Eliminar / Cambiar
+                          </button>
+                        </div>
                       </div>
                     ) : (
                       <div style={{ textAlign: 'center' }}>
