@@ -1239,6 +1239,14 @@ export default function Admin() {
     setTimeout(() => setToast(null), 4500);
   }
 
+  // Cambiar de pestaña cerrando cualquier formulario abierto
+  function handleTabChange(tab: TabType) {
+    setEditingProduct(null);
+    setIsAddingProduct(false);
+    setEditingCategory(null);
+    setActiveTab(tab);
+  }
+
   function handleLogout() {
     localStorage.removeItem(`admin_auth_${getTenantId()}`);
     localStorage.removeItem(`admin_role_${getTenantId()}`);
@@ -3660,7 +3668,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor} activeNotificationsCount={activeNotificationsCount} listaPqrs={listaPqrs} />
+          <SidebarContent activeTab={activeTab} setActiveTab={handleTabChange} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor} activeNotificationsCount={activeNotificationsCount} listaPqrs={listaPqrs} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -3886,7 +3894,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor} activeNotificationsCount={activeNotificationsCount} listaPqrs={listaPqrs} />
+          <SidebarContent activeTab={activeTab} setActiveTab={handleTabChange} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor} activeNotificationsCount={activeNotificationsCount} listaPqrs={listaPqrs} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -3972,7 +3980,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={setActiveTab} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor} activeNotificationsCount={activeNotificationsCount} listaPqrs={listaPqrs} />
+          <SidebarContent activeTab={activeTab} setActiveTab={handleTabChange} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor} activeNotificationsCount={activeNotificationsCount} listaPqrs={listaPqrs} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -4030,7 +4038,7 @@ export default function Admin() {
       <aside className={`admin-sidebar ${isSidebarCollapsed ? 'collapsed' : ''} ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
         <SidebarContent 
           activeTab={activeTab} 
-          setActiveTab={setActiveTab} 
+          setActiveTab={handleTabChange} 
           productos={productos} 
           configuracion={configuracion} 
           handleLogout={handleLogout} 
