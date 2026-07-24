@@ -3664,6 +3664,24 @@ export default function Admin() {
                           placeholder="Ej: 10, 15, 20"
                         />
                       </div>
+                      <div className="form-field">
+                        <label>Categoría</label>
+                        <select value={editingProduct.categoria || ''} onChange={e => setEditingProduct({ ...editingProduct, categoria: e.target.value, subcategoria: '' })}>
+                          <option value="">Seleccionar...</option>
+                          {categoriasData.map(c => <option key={c.id} value={c.slug}>{c.icono ? `${c.icono} ` : ''}{c.nombre}</option>)}
+                        </select>
+                      </div>
+                      <div className="form-field">
+                        <label>Subcategoría (opcional)</label>
+                        <select value={editingProduct.subcategoria || ''} onChange={e => setEditingProduct({ ...editingProduct, subcategoria: e.target.value })}>
+                          <option value="">Ninguna...</option>
+                          {(() => {
+                            const selectedCat = categoriasData.find(c => c.slug === editingProduct.categoria || c.id === editingProduct.categoria);
+                            const matchedSubs = selectedCat ? subcategoriasData.filter(s => s.categoria_id === selectedCat.id) : subcategoriasData;
+                            return matchedSubs.map(s => <option key={s.id} value={s.slug}>{s.nombre}</option>);
+                          })()}
+                        </select>
+                      </div>
                      <div className="form-field full">
                         <label>Tallas</label>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.5rem' }}>
@@ -3720,7 +3738,7 @@ export default function Admin() {
                                  )}
                                  {/* Set as main button */}
                                  {!(img as any).isMain && (
-                                   <button type="button" onClick={() => setEditExtraImages(prev => prev.map((im, i) => ({ ...im, isMain: i === idx } as any)))} style={{ position: 'absolute', top: 4, left: 4, background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: 4, fontSize: '0.65rem', padding: '0.15rem 0.4rem', cursor: 'pointer', fontWeight: 700 }}>⭐ Principal</button>
+                                   <button type="button" onClick={() => setEditExtraImages(prev => prev.map((im, i) => ({ ...im, isMain: i === idx } as any)))} style={{ position: 'absolute', top: 4, left: 4, background: 'rgba(15,23,42,0.75)', color: 'white', border: 'none', borderRadius: 4, fontSize: '0.65rem', padding: '0.15rem 0.4rem', cursor: 'pointer', fontWeight: 700 }}>Elegir Principal</button>
                                  )}
                                </div>
                              )}
@@ -3732,7 +3750,7 @@ export default function Admin() {
                                  newArr[idx] = { ...newArr[idx], ref: e.target.value };
                                  setEditExtraImages(newArr);
                                }}
-                               placeholder="Estampado (Ej. Snoopy)"
+                               placeholder="Estampado / Referencia"
                                style={{ width: '130px', fontSize: '0.82rem', padding: '0.35rem', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '6px' }}
                              />
                              <label htmlFor={`edit-extra-${idx}`} style={{ cursor: 'pointer', fontSize: '0.8rem', color: '#0ea5e9', fontWeight: 600 }}>
@@ -3773,12 +3791,7 @@ export default function Admin() {
                          }} />
                        </div>
                      </div>
-                      <div className="form-field">
-                        <label>Categoría</label>
-                        <select value={editingProduct.categoria} onChange={e => setEditingProduct({ ...editingProduct, categoria: e.target.value })}>
-                          {categoriasData.map(c => <option key={c.id} value={c.slug}>{c.nombre}</option>)}
-                        </select>
-                      </div>
+
                     </div>
                   </form>
                 </div>
@@ -4352,6 +4365,17 @@ export default function Admin() {
                                   {categoriasData.map(c => <option key={c.id} value={c.slug}>{c.icono} {c.nombre}</option>)}
                                 </select>
                               </div>
+                              <div className="form-field">
+                                <label>Subcategoría (opcional)</label>
+                                <select value={form.subcategoria || ''} onChange={e => updateBulkForm(index, 'subcategoria', e.target.value)}>
+                                  <option value="">Ninguna...</option>
+                                  {(() => {
+                                    const selectedCat = categoriasData.find(c => c.slug === form.categoria || c.id === form.categoria);
+                                    const matchedSubs = selectedCat ? subcategoriasData.filter(s => s.categoria_id === selectedCat.id) : subcategoriasData;
+                                    return matchedSubs.map(s => <option key={s.id} value={s.slug}>{s.nombre}</option>);
+                                  })()}
+                                </select>
+                              </div>
                               <div className="form-field full">
                                 <label>Tallas (opcionales)</label>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.5rem' }}>
@@ -4416,7 +4440,7 @@ export default function Admin() {
                                               const [picked] = reordered.splice(imgIdx, 1);
                                               reordered.unshift(picked);
                                               updateBulkForm(index, 'imagenes', reordered);
-                                            }} style={{ position: 'absolute', top: 4, left: 4, background: 'rgba(0,0,0,0.5)', color: 'white', border: 'none', borderRadius: 4, fontSize: '0.65rem', padding: '0.15rem 0.4rem', cursor: 'pointer', fontWeight: 700 }}>⭐ Principal</button>
+                                            }} style={{ position: 'absolute', top: 4, left: 4, background: 'rgba(15,23,42,0.75)', color: 'white', border: 'none', borderRadius: 4, fontSize: '0.65rem', padding: '0.15rem 0.4rem', cursor: 'pointer', fontWeight: 700 }}>Elegir Principal</button>
                                           )}
                                         </div>
                                       ) : (
@@ -4425,7 +4449,7 @@ export default function Admin() {
                                       <input
                                         value={img.ref}
                                         onChange={e => updateImagenRef(index, imgIdx, e.target.value)}
-                                        placeholder={imgIdx === 0 ? 'Nombre foto principal' : 'Estampado (Ej. Snoopy)'}
+                                        placeholder="Estampado / Referencia"
                                         style={{ width: '130px', fontSize: '0.82rem', padding: '0.35rem', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '6px' }}
                                       />
                                       <label style={{ cursor: 'pointer', fontSize: '0.8rem', color: '#0ea5e9', fontWeight: 600 }}>
