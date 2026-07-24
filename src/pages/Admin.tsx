@@ -71,11 +71,38 @@ const deduplicateTallas = (tallasStr: string | undefined | null) => {
   return Array.from(tallasMap.values()).join(', ') || '-';
 };
 
-export const encodeExtraImage = (url: string, ref: string) => ref ? `${url}|REF:${ref}` : url;
+export const encodeExtraImage = (url: string, ref?: string, estampado?: string) => {
+  let res = url;
+  if (estampado?.trim()) res += `|EST:${estampado.trim()}`;
+  if (ref?.trim()) res += `|REF:${ref.trim()}`;
+  return res;
+};
+
 export const decodeExtraImage = (str: string) => {
-  if (!str) return { url: '', ref: '' };
-  const [url, ref] = str.split('|REF:');
-  return { url: url || '', ref: ref || '' };
+  if (!str) return { url: '', ref: '', estampado: '' };
+
+  let url = str;
+  let estampado = '';
+  let ref = '';
+
+  if (str.includes('|EST:')) {
+    const parts = str.split('|EST:');
+    url = parts[0];
+    const rest = parts[1] || '';
+    if (rest.includes('|REF:')) {
+      const subParts = rest.split('|REF:');
+      estampado = subParts[0] || '';
+      ref = subParts[1] || '';
+    } else {
+      estampado = rest;
+    }
+  } else if (str.includes('|REF:')) {
+    const parts = str.split('|REF:');
+    url = parts[0];
+    estampado = parts[1] || '';
+  }
+
+  return { url: url || '', ref: ref || '', estampado: estampado || '' };
 };
 
 export const buildUnifiedImages = (prod: Partial<Producto>) => {
@@ -86,20 +113,22 @@ export const buildUnifiedImages = (prod: Partial<Producto>) => {
 
   let foundMain = false;
   const unified = decodedExtras.map((e, idx) => {
+    let estampado = e.estampado?.trim() || '';
     let ref = e.ref?.trim() || '';
-    if (!ref && legacyEstampados[idx]) {
-      ref = legacyEstampados[idx];
+    if (!estampado && legacyEstampados[idx]) {
+      estampado = legacyEstampados[idx];
     }
     if (!foundMain && e.url === prod.imagen_url) {
       foundMain = true;
-      return { ...e, ref, isMain: true };
+      return { ...e, estampado, ref, isMain: true };
     }
-    return { ...e, ref, isMain: false };
+    return { ...e, estampado, ref, isMain: false };
   });
 
   if (!foundMain && prod.imagen_url) {
-    const fallbackRef = legacyEstampados[0] || (prod.referencia && !prod.referencia.includes('-') ? prod.referencia : '');
-    unified.unshift({ url: prod.imagen_url, ref: fallbackRef, isMain: true });
+    const fallbackEstampado = legacyEstampados[0] || '';
+    const fallbackRef = (prod.referencia && !prod.referencia.includes('-') ? prod.referencia : '');
+    unified.unshift({ url: prod.imagen_url, estampado: fallbackEstampado, ref: fallbackRef, isMain: true });
   } else if (!foundMain && unified.length > 0) {
     unified[0].isMain = true;
   }
@@ -117,7 +146,7 @@ type ProductFormData = {
   precio_50_unidades: string;
   categoria: string;
   subcategoria: string;
-  imagenes: { url: string; ref: string }[];
+  imagenes: { url: string; ref: string; estampado?: string }[];
   video_url: string;
   tallas: string;
   estampados: string;
@@ -859,16 +888,19 @@ export default function Admin() {
   useEffect(() => {
     const fetchLogos = async () => {
       try {
-        const { data } = await supabase.from('configuraciones').select('tenant_id, logo_url');
+        const { data } = await supabase.from('configuracion').select('tenant_id, logo_url');
+        const map: Record<string, string> = {
+          'sublimados_majestic': '/majestic-logo.svg',
+          'indisutex': '/indisutex-logo.png'
+        };
         if (data) {
-          const map: Record<string, string> = {};
           data.forEach(item => {
             if (item.tenant_id && item.logo_url) {
               map[item.tenant_id] = item.logo_url;
             }
           });
-          setTenantLogos(map);
         }
+        setTenantLogos(map);
       } catch (e) {
         console.warn('Could not fetch tenant logos', e);
       }
@@ -1645,6 +1677,14 @@ export default function Admin() {
   };
   void updateImagenUrl; // kept for legacy URL input rows if ever needed
 
+  const updateImagenEstampado = (formIndex: number, imgIndex: number, value: string) => {
+    const newForms = [...bulkForms];
+    const newImagenes = [...newForms[formIndex].imagenes];
+    newImagenes[imgIndex] = { ...newImagenes[imgIndex], estampado: value };
+    newForms[formIndex] = { ...newForms[formIndex], imagenes: newImagenes };
+    setBulkForms(newForms);
+  };
+
   const updateImagenRef = (formIndex: number, imgIndex: number, value: string) => {
     const newForms = [...bulkForms];
     const newImagenes = [...newForms[formIndex].imagenes];
@@ -1677,8 +1717,8 @@ export default function Admin() {
       const allImgs = f.imagenes.filter(img => img.url && img.url.trim() !== '');
       const mainImgObj = allImgs.find(u => (u as any).isMain) || allImgs[0];
       const mainImg = mainImgObj?.url || '';
-      const extraImgs = allImgs.map(img => encodeExtraImage(img.url, img.ref));
-      const allEstampadosList = Array.from(new Set(allImgs.map(img => img.ref?.trim()).filter(Boolean)));
+      const extraImgs = allImgs.map(img => encodeExtraImage(img.url, img.ref, (img as any).estampado));
+      const allEstampadosList = Array.from(new Set(allImgs.map(img => ((img as any).estampado || img.ref)?.trim()).filter(Boolean)));
       const estampadosStr = allEstampadosList.length > 0 ? allEstampadosList.join(', ') : (f.estampados || null);
 
       return {
@@ -2140,8 +2180,8 @@ export default function Admin() {
     const validImgs = editExtraImages.filter(u => u.url && u.url.trim());
     const mainImgObj = validImgs.find(u => (u as any).isMain) || validImgs[0];
     const mainImg = mainImgObj?.url || '';
-    const extraImgsEncoded = validImgs.map(img => encodeExtraImage(img.url, img.ref));
-    const allEstampadosList = Array.from(new Set(validImgs.map(img => img.ref?.trim()).filter(Boolean)));
+    const extraImgsEncoded = validImgs.map(img => encodeExtraImage(img.url, img.ref, (img as any).estampado));
+    const allEstampadosList = Array.from(new Set(validImgs.map(img => ((img as any).estampado || img.ref)?.trim()).filter(Boolean)));
     const estampadosStr = allEstampadosList.length > 0 ? allEstampadosList.join(', ') : (editingProduct.estampados || null);
 
     const { error } = await supabase.from('productos').update({
@@ -3755,17 +3795,28 @@ export default function Admin() {
                                  )}
                                </div>
                              )}
-                             {!img.url && <div style={{ width: 130, height: 130, background: '#f1f5f9', borderRadius: 8, border: '2px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>📷</div>}
-                             <input
-                               value={img.ref}
-                               onChange={e => {
-                                 const newArr = [...editExtraImages] as any[];
-                                 newArr[idx] = { ...newArr[idx], ref: e.target.value };
-                                 setEditExtraImages(newArr);
-                               }}
-                               placeholder="Estampado / Referencia"
-                               style={{ width: '130px', fontSize: '0.82rem', padding: '0.35rem', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                             />
+                              <div style={{ display: 'flex', gap: '0.35rem', width: '160px' }}>
+                                <input
+                                  value={(img as any).estampado || ''}
+                                  onChange={e => {
+                                    const newArr = [...editExtraImages] as any[];
+                                    newArr[idx] = { ...newArr[idx], estampado: e.target.value };
+                                    setEditExtraImages(newArr);
+                                  }}
+                                  placeholder="Estampado"
+                                  style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', padding: '0.35rem', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '6px', fontWeight: 600 }}
+                                />
+                                <input
+                                  value={img.ref || ''}
+                                  onChange={e => {
+                                    const newArr = [...editExtraImages] as any[];
+                                    newArr[idx] = { ...newArr[idx], ref: e.target.value };
+                                    setEditExtraImages(newArr);
+                                  }}
+                                  placeholder="Referencia"
+                                  style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', padding: '0.35rem', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '6px', fontWeight: 600 }}
+                                />
+                              </div>
                              <label htmlFor={`edit-extra-${idx}`} style={{ cursor: 'pointer', fontSize: '0.8rem', color: '#0ea5e9', fontWeight: 600 }}>
                                {editUploadingIdx === idx ? '...' : '📤 Cambiar foto'}
                              </label>
@@ -4459,12 +4510,20 @@ export default function Admin() {
                                       ) : (
                                         <div style={{ width: 130, height: 130, background: '#f1f5f9', borderRadius: 8, border: '2px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>📷</div>
                                       )}
-                                      <input
-                                        value={img.ref}
-                                        onChange={e => updateImagenRef(index, imgIdx, e.target.value)}
-                                        placeholder="Estampado / Referencia"
-                                        style={{ width: '130px', fontSize: '0.82rem', padding: '0.35rem', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '6px' }}
-                                      />
+                                       <div style={{ display: 'flex', gap: '0.35rem', width: '160px' }}>
+                                         <input
+                                           value={(img as any).estampado || ''}
+                                           onChange={e => updateImagenEstampado(index, imgIdx, e.target.value)}
+                                           placeholder="Estampado"
+                                           style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', padding: '0.35rem', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '6px', fontWeight: 600 }}
+                                         />
+                                         <input
+                                           value={img.ref || ''}
+                                           onChange={e => updateImagenRef(index, imgIdx, e.target.value)}
+                                           placeholder="Referencia"
+                                           style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', padding: '0.35rem', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '6px', fontWeight: 600 }}
+                                         />
+                                       </div>
                                       <label style={{ cursor: 'pointer', fontSize: '0.8rem', color: '#0ea5e9', fontWeight: 600 }}>
                                         <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={e => handleFileUpload(e, index, imgIdx)} />
                                         {form.imagenes[imgIdx]?.url ? '📤 Cambiar foto' : '📤 Subir foto'}
