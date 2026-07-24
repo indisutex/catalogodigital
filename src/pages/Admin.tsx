@@ -8,6 +8,7 @@ import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Penci
 import * as XLSX from 'xlsx';
 import { ERPContabilidadModule } from '../components/erp/ERPContabilidadModule';
 import { ERPContabilidadService } from '../lib/erpContabilidadService';
+import { ERPVentasModule } from '../components/erp/ERPVentasModule';
 
 const SECRET_PIN = '0000';
 
@@ -113,7 +114,7 @@ const emptyProduct: ProductFormData = {
   descuento: ''
 };
 
-type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor' | 'material_apoyo' | 'material_asesor' | 'productos_asesor' | 'productos_mayorista' | 'ranking_mayorista' | 'pqrs' | 'contabilidad';
+type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor' | 'material_apoyo' | 'material_asesor' | 'productos_asesor' | 'productos_mayorista' | 'ranking_mayorista' | 'pqrs' | 'contabilidad' | 'ventas_erp';
 
 type Toast = { message: string; type: 'success' | 'error' } | null;
 
@@ -323,7 +324,7 @@ export default function Admin() {
     const defaultTab = (userRole === 'asesor') ? 'pedidos' : (userRole === 'mayorista' ? 'resumen_asesor' : 'productos');
     const saved = localStorage.getItem('admin_active_tab') as string;
     if (saved === 'perfil_admin' || saved === 'perfil_admin_tab') return 'dashboard';
-    const allowedTabs: string[] = ['dashboard', 'productos', 'categorias', 'pedidos', 'clientes', 'asesores', 'mayoristas', 'pos', 'siigo', 'config', 'perfil_asesor', 'resumen_asesor', 'notificaciones_asesor', 'material_apoyo', 'material_asesor', 'productos_asesor', 'productos_mayorista', 'ranking_mayorista', 'contabilidad'];
+    const allowedTabs: string[] = ['dashboard', 'productos', 'categorias', 'pedidos', 'clientes', 'asesores', 'mayoristas', 'pos', 'siigo', 'config', 'perfil_asesor', 'resumen_asesor', 'notificaciones_asesor', 'material_apoyo', 'material_asesor', 'productos_asesor', 'productos_mayorista', 'ranking_mayorista', 'contabilidad', 'ventas_erp'];
     
     if (urlTab && allowedTabs.includes(urlTab)) return urlTab;
     
@@ -6555,6 +6556,12 @@ export default function Admin() {
           )}
 
 
+          {/* ── ERP VENTAS DASHBOARD TAB ── */}
+
+          {activeTab === 'ventas_erp' && (
+            <ERPVentasModule tenantId={selectedCompany || getTenantId()} />
+          )}
+
           {/* ── ERP CONTABILIDAD TAB ── */}
 
           {activeTab === 'contabilidad' && (
@@ -11648,6 +11655,10 @@ function SidebarContent({
             <button className={`nav-item ${activeTab === 'material_apoyo' ? 'active' : ''}`} onClick={() => handleSelectTab('material_apoyo')}>
               <span className="nav-icon"><Upload size={14} /></span> Material de Apoyo
               {activeTab === 'material_apoyo' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'ventas_erp' ? 'active' : ''}`} onClick={() => handleSelectTab('ventas_erp')}>
+              <span className="nav-icon"><ShoppingBag size={14} /></span> Ventas y Finanzas
+              {activeTab === 'ventas_erp' && <span className="active-dot"></span>}
             </button>
             <button className={`nav-item ${activeTab === 'contabilidad' ? 'active' : ''}`} onClick={() => handleSelectTab('contabilidad')}>
               <span className="nav-icon"><BookOpen size={14} /></span> Contabilidad ERP
