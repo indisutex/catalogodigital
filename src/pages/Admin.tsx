@@ -1000,10 +1000,28 @@ export default function Admin() {
         referencia: p.referencia ? `${p.referencia}` : null
       }));
 
-      const { error: insertError } = await supabase.from('productos').insert(newProductsToInsert);
+      // Verificar duplicados por referencia antes de insertar
+      const existingRefs = new Set(
+        productos
+          .filter(p => p.referencia)
+          .map(p => (p.referencia as string).trim().toUpperCase())
+      );
+      const toInsert = newProductsToInsert.filter(p =>
+        !p.referencia || !existingRefs.has(p.referencia.trim().toUpperCase())
+      );
+      const skipped = newProductsToInsert.length - toInsert.length;
+
+      if (toInsert.length === 0) {
+        showToast(`Todos los productos seleccionados ya existen en esta tienda (${skipped} omitidos por referencia duplicada).`, 'error');
+        setIsMigratingProducts(false);
+        return;
+      }
+
+      const { error: insertError } = await supabase.from('productos').insert(toInsert);
       if (insertError) throw insertError;
 
-      showToast(`¡${newProductsToInsert.length} producto(s) migrados exitosamente! 🎉`, 'success');
+      const skippedMsg = skipped > 0 ? ` (${skipped} omitidos por referencia duplicada)` : '';
+      showToast(`¡${toInsert.length} producto(s) migrados exitosamente!${skippedMsg}`, 'success');
       setShowMigrateProductsModal(false);
       setSelectedSourceTenant('');
       setSourceProducts([]);
@@ -4894,30 +4912,57 @@ export default function Admin() {
                                  </div>
                                   {(() => {
                                     const imgData = (p.imagenes_extra || []).map((u: string) => decodeExtraImage(u));
-                                    const imgEstampados = Array.from(new Set(imgData.map(d => (d.estampado?.trim() || d.ref?.trim())).filter(Boolean)));
-                                    const imgRefs = Array.from(new Set(imgData.filter(d => d.estampado?.trim() && d.ref?.trim() && d.ref?.trim() !== d.estampado?.trim()).map(d => d.ref?.trim())));
+                                    const hasEstRef = imgData.some(d => d.estampado?.trim() && d.ref?.trim());
                                     const legacyEst = p.estampados?.split(',').map((e: string) => e.trim()).filter(Boolean) || [];
-                                    const activeEstampados = imgEstampados.length > 0 ? imgEstampados : legacyEst;
-                                    if (activeEstampados.length === 0 && imgRefs.length === 0) return null;
+
+                                    if (hasEstRef) {
+                                      const seen = new Set<string>();
+                                      const chips = imgData
+                                        .filter(d => d.estampado?.trim() || d.ref?.trim())
+                                        .map(d => ({
+                                          label: d.estampado?.trim() || d.ref?.trim() || '',
+                                          ref: (d.estampado?.trim() && d.ref?.trim() && d.ref.trim() !== d.estampado.trim()) ? d.ref.trim() : ''
+                                        }))
+                                        .filter(c => { const k = `${c.label}|${c.ref}`; if (seen.has(k)) return false; seen.add(k); return true; });
+                                      if (chips.length === 0) return null;
+                                      return (
+                                        <div style={{ marginTop: '0.3rem', paddingTop: '0.3rem', borderTop: '1px dashed #e2e8f0' }}>
+                                          <small style={{ color: '#64748b', fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>Estampados:</small>
+                                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.22rem' }}>
+                                            {chips.map((c, i) => (
+                                              <span key={i} style={{
+                                                display: 'inline-flex', alignItems: 'center', gap: '0.18rem',
+                                                background: '#eff6ff', border: '1px solid #bfdbfe',
+                                                borderRadius: '999px', padding: '0.08rem 0.4rem',
+                                                fontSize: '0.67rem', fontWeight: 700, color: '#1d4ed8',
+                                                whiteSpace: 'nowrap'
+                                              }}>
+                                                {c.label}
+                                                {c.ref && <span style={{ color: '#64748b', fontWeight: 400, fontSize: '0.63rem' }}>· {c.ref}</span>}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+
+                                    const imgEst = Array.from(new Set(imgData.map(d => (d.estampado?.trim() || d.ref?.trim())).filter(Boolean)));
+                                    const activeEstampados = imgEst.length > 0 ? imgEst : legacyEst;
+                                    if (activeEstampados.length === 0) return null;
                                     return (
-                                      <>
-                                        {activeEstampados.length > 0 && (
-                                          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem', paddingTop: '0.25rem', borderTop: '1px dashed #e2e8f0' }}>
-                                            <small style={{ color: '#64748b', fontWeight: 600 }}>Estampados:</small>
-                                            <strong style={{ fontSize: '0.75rem', color: '#0284c7', textAlign: 'right', wordBreak: 'break-word', maxWidth: '130px' }}>
-                                              {activeEstampados.join(', ')}
-                                            </strong>
-                                          </div>
-                                        )}
-                                        {imgRefs.length > 0 && (
-                                          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.2rem' }}>
-                                            <small style={{ color: '#64748b', fontWeight: 600 }}>Referencias:</small>
-                                            <strong style={{ fontSize: '0.75rem', color: '#475569', textAlign: 'right', wordBreak: 'break-word', maxWidth: '130px' }}>
-                                              {imgRefs.join(', ')}
-                                            </strong>
-                                          </div>
-                                        )}
-                                      </>
+                                      <div style={{ marginTop: '0.3rem', paddingTop: '0.3rem', borderTop: '1px dashed #e2e8f0' }}>
+                                        <small style={{ color: '#64748b', fontWeight: 600, display: 'block', marginBottom: '0.25rem' }}>Estampados:</small>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.22rem' }}>
+                                          {activeEstampados.map((est, i) => (
+                                            <span key={i} style={{
+                                              background: '#eff6ff', border: '1px solid #bfdbfe',
+                                              borderRadius: '999px', padding: '0.08rem 0.4rem',
+                                              fontSize: '0.67rem', fontWeight: 700, color: '#1d4ed8',
+                                              whiteSpace: 'nowrap'
+                                            }}>{est}</span>
+                                          ))}
+                                        </div>
+                                      </div>
                                     );
                                   })()}
                               </div>
