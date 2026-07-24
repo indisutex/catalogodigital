@@ -107,17 +107,13 @@ export const decodeExtraImage = (str: string) => {
 
 export const buildUnifiedImages = (prod: Partial<Producto>) => {
   const decodedExtras = (prod.imagenes_extra || []).map((u: string) => ({ ...decodeExtraImage(u), isMain: false }));
-  const legacyEstampados = (prod.estampados || '').split(',').map(s => s.trim()).filter(Boolean);
 
   if (!decodedExtras.length && !prod.imagen_url) return [];
 
   let foundMain = false;
-  const unified = decodedExtras.map((e, idx) => {
+  const unified = decodedExtras.map((e) => {
     let estampado = e.estampado?.trim() || '';
     let ref = e.ref?.trim() || '';
-    if (!estampado && legacyEstampados[idx]) {
-      estampado = legacyEstampados[idx];
-    }
     if (!foundMain && e.url === prod.imagen_url) {
       foundMain = true;
       return { ...e, estampado, ref, isMain: true };
@@ -126,9 +122,7 @@ export const buildUnifiedImages = (prod: Partial<Producto>) => {
   });
 
   if (!foundMain && prod.imagen_url) {
-    const fallbackEstampado = legacyEstampados[0] || '';
-    const fallbackRef = (prod.referencia && !prod.referencia.includes('-') ? prod.referencia : '');
-    unified.unshift({ url: prod.imagen_url, estampado: fallbackEstampado, ref: fallbackRef, isMain: true });
+    unified.unshift({ url: prod.imagen_url, estampado: '', ref: '', isMain: true });
   } else if (!foundMain && unified.length > 0) {
     unified[0].isMain = true;
   }
@@ -4895,9 +4889,9 @@ export default function Admin() {
                                  </div>
 
                                  {(() => {
-                                   const legacyEst = p.estampados?.split(',').map((e: string) => e.trim()).filter(Boolean) || [];
-                                   const extraRefs = (p.imagenes_extra || []).map((u: string) => decodeExtraImage(u).ref?.trim()).filter(Boolean);
-                                   const allEst = Array.from(new Set([...legacyEst, ...extraRefs]));
+                                    const imgEst = (p.imagenes_extra || []).map((u: string) => { const d = decodeExtraImage(u); return (d.estampado || d.ref)?.trim(); }).filter(Boolean);
+                                    const legacyEst = p.estampados?.split(',').map((e: string) => e.trim()).filter(Boolean) || [];
+                                    const allEst = imgEst.length > 0 ? Array.from(new Set(imgEst)) : legacyEst;
                                    if (allEst.length === 0) return null;
                                    return (
                                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem', paddingTop: '0.25rem', borderTop: '1px dashed #e2e8f0' }}>
@@ -5858,9 +5852,9 @@ export default function Admin() {
                             </div>
 
                             {(() => {
-                              const legacyEst = p.estampados?.split(',').map((e: string) => e.trim()).filter(Boolean) || [];
-                              const extraRefs = (p.imagenes_extra || []).map((u: string) => decodeExtraImage(u).ref?.trim()).filter(Boolean);
-                              const allEst = Array.from(new Set([...legacyEst, ...extraRefs]));
+                                    const imgEst = (p.imagenes_extra || []).map((u: string) => { const d = decodeExtraImage(u); return (d.estampado || d.ref)?.trim(); }).filter(Boolean);
+                                    const legacyEst = p.estampados?.split(',').map((e: string) => e.trim()).filter(Boolean) || [];
+                                    const allEst = imgEst.length > 0 ? Array.from(new Set(imgEst)) : legacyEst;
                               if (allEst.length === 0) return null;
                               return (
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem', paddingTop: '0.25rem', borderTop: '1px dashed #e2e8f0' }}>
@@ -9190,9 +9184,9 @@ export default function Admin() {
                                   disabled={!hasStockAvailable}
                                   onClick={() => {
                                     const defaultTalla = p.tallas ? p.tallas.split(',')[0].trim() : undefined;
+                                    const imgEstampados = (p.imagenes_extra || []).map((u: string) => { const d = decodeExtraImage(u); return (d.estampado || d.ref)?.trim(); }).filter(Boolean);
                                     const legacyEstampados = p.estampados?.split(',').map(e => e.trim()).filter(Boolean) || [];
-                                    const extraImagesRefs = (p.imagenes_extra || []).map((u: string) => decodeExtraImage(u).ref?.trim()).filter(Boolean);
-                                    const allEstampados = Array.from(new Set([...legacyEstampados, ...extraImagesRefs]));
+                                    const allEstampados = imgEstampados.length > 0 ? Array.from(new Set(imgEstampados)) : legacyEstampados;
                                     const defaultEstampado = allEstampados[0] || undefined;
                                     setPosCart(prev => {
                                       const exist = prev.find(item => item.id === p.id && item.talla === defaultTalla && item.estampado === defaultEstampado);

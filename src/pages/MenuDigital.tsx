@@ -1162,9 +1162,9 @@ export default function MenuDigital() {
                           <button
                             onClick={() => {
                               const pTalla = p.tallas?.split(',')[0]?.trim();
-                              const legacyEstampados = p.estampados?.split(',').map(e => e.trim()).filter(Boolean) || [];
-                              const extraImagesRefs = (p.imagenes_extra || []).map(u => decodeExtraImage(u).ref?.trim()).filter(Boolean);
-                              const allEstampados = Array.from(new Set([...legacyEstampados, ...extraImagesRefs]));
+                               const imgEstampados = (p.imagenes_extra || []).map(u => { const d = decodeExtraImage(u); return (d.estampado || d.ref)?.trim(); }).filter(Boolean);
+                               const legacyEstampados = p.estampados?.split(',').map(e => e.trim()).filter(Boolean) || [];
+                               const allEstampados = imgEstampados.length > 0 ? Array.from(new Set(imgEstampados)) : legacyEstampados;
                               const pEstampado = allEstampados[0] || undefined;
                               addToCart(p, pTalla, pEstampado, 1);
                             }}
@@ -1292,8 +1292,8 @@ export default function MenuDigital() {
                 {/* ── ESTAMPADOS + TALLAS + CANTIDAD ── */}
                 <div className="detail-controls-row" style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', alignItems: 'stretch' }}>
                   {(() => {
-                    const allRefs = allImages.map(img => img.ref?.trim().toUpperCase()).filter(Boolean);
-                    const estampados = Array.from(new Set([...legacyEstampados, ...allRefs]));
+                    const imgEstampados = allImages.map(img => (img.estampado || img.ref)?.trim().toUpperCase()).filter(Boolean);
+                    const estampados = imgEstampados.length > 0 ? Array.from(new Set(imgEstampados)) : legacyEstampados;
                     
                     if (estampados.length === 0) return null;
                     return (
