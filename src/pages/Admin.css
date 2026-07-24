@@ -822,32 +822,38 @@ body {
 /* Toast */
 .admin-toast {
   position: fixed;
-  top: 20px;
-  right: 20px;
-  z-index: 10000;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 99999;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.85rem 1.5rem;
-  border-radius: 12px;
+  padding: 1rem 2rem;
+  border-radius: 50px;
   font-weight: 700;
-  font-size: 0.9rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-  animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  max-width: 400px;
-  width: max-content;
+  font-size: 1rem;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25);
+  animation: toastIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  white-space: nowrap;
+  pointer-events: none;
 }
 
 .admin-toast.success {
-  background-color: #10b981;
+  background: linear-gradient(135deg, #10b981, #059669);
   color: white;
-  border: 1px solid #059669;
+  border: none;
 }
 
 .admin-toast.error {
-  background-color: #ef4444;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
   color: white;
-  border: 1px solid #dc2626;
+  border: none;
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(-50%) translateY(-20px) scale(0.9); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0)   scale(1); }
 }
 
 /* Category Rows in Admin Panel */

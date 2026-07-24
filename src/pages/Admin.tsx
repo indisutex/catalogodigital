@@ -1236,7 +1236,7 @@ export default function Admin() {
   }, [productos, categoriasData, pedidos]);
   function showToast(message: string, type: 'success' | 'error' = 'success') {
     setToast({ message, type });
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), 4500);
   }
 
   function handleLogout() {
