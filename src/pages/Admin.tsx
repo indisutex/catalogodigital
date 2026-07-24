@@ -80,19 +80,26 @@ export const decodeExtraImage = (str: string) => {
 
 export const buildUnifiedImages = (prod: Partial<Producto>) => {
   const decodedExtras = (prod.imagenes_extra || []).map((u: string) => ({ ...decodeExtraImage(u), isMain: false }));
+  const legacyEstampados = (prod.estampados || '').split(',').map(s => s.trim()).filter(Boolean);
+
   if (!decodedExtras.length && !prod.imagen_url) return [];
 
   let foundMain = false;
-  const unified = decodedExtras.map(e => {
+  const unified = decodedExtras.map((e, idx) => {
+    let ref = e.ref?.trim() || '';
+    if (!ref && legacyEstampados[idx]) {
+      ref = legacyEstampados[idx];
+    }
     if (!foundMain && e.url === prod.imagen_url) {
       foundMain = true;
-      return { ...e, isMain: true };
+      return { ...e, ref, isMain: true };
     }
-    return { ...e, isMain: false };
+    return { ...e, ref, isMain: false };
   });
 
   if (!foundMain && prod.imagen_url) {
-    unified.unshift({ url: prod.imagen_url, ref: '', isMain: true });
+    const fallbackRef = legacyEstampados[0] || (prod.referencia && !prod.referencia.includes('-') ? prod.referencia : '');
+    unified.unshift({ url: prod.imagen_url, ref: fallbackRef, isMain: true });
   } else if (!foundMain && unified.length > 0) {
     unified[0].isMain = true;
   }
@@ -1668,8 +1675,11 @@ export default function Admin() {
     const validForms = bulkForms.filter(f => f.nombre.trim() !== '' && f.precio !== '');
     const newProducts = validForms.map(f => {
       const allImgs = f.imagenes.filter(img => img.url && img.url.trim() !== '');
-      const mainImg = allImgs.length > 0 ? allImgs[0].url : '';
+      const mainImgObj = allImgs.find(u => (u as any).isMain) || allImgs[0];
+      const mainImg = mainImgObj?.url || '';
       const extraImgs = allImgs.map(img => encodeExtraImage(img.url, img.ref));
+      const allEstampadosList = Array.from(new Set(allImgs.map(img => img.ref?.trim()).filter(Boolean)));
+      const estampadosStr = allEstampadosList.length > 0 ? allEstampadosList.join(', ') : (f.estampados || null);
 
       return {
         nombre: f.nombre,
@@ -1684,7 +1694,7 @@ export default function Admin() {
         imagenes_extra: extraImgs.length > 0 ? extraImgs : null,
         video_url: f.video_url || null,
         tallas: f.tallas || null,
-        estampados: f.estampados || null,
+        estampados: estampadosStr,
         stock: f.stock || 0,
         descuento: parseInt(f.descuento) || 0,
         tenant_id: getTenantId()
@@ -2131,6 +2141,9 @@ export default function Admin() {
     const mainImgObj = validImgs.find(u => (u as any).isMain) || validImgs[0];
     const mainImg = mainImgObj?.url || '';
     const extraImgsEncoded = validImgs.map(img => encodeExtraImage(img.url, img.ref));
+    const allEstampadosList = Array.from(new Set(validImgs.map(img => img.ref?.trim()).filter(Boolean)));
+    const estampadosStr = allEstampadosList.length > 0 ? allEstampadosList.join(', ') : (editingProduct.estampados || null);
+
     const { error } = await supabase.from('productos').update({
       nombre: editingProduct.nombre,
       referencia: editingProduct.referencia || editingProduct.sku || null,
@@ -2144,7 +2157,7 @@ export default function Admin() {
       imagenes_extra: extraImgsEncoded,
       video_url: editingProduct.video_url,
       tallas: editingProduct.tallas,
-      estampados: editingProduct.estampados || null,
+      estampados: estampadosStr,
       stock: editingProduct.stock,
       descuento: editingProduct.descuento || 0
     }).eq('id', editingProduct.id);
