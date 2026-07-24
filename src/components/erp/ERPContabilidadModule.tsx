@@ -316,11 +316,11 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId }) => {
               ) : (
                 filteredPuc.map((item) => (
                   <tr key={item.id}>
-                    <td style={{ fontWeight: item.nivel <= 3 ? '700' : '400', color: item.nivel <= 2 ? '#38bdf8' : '#f8fafc' }}>
+                    <td style={{ fontWeight: item.nivel <= 3 ? '700' : '400', color: item.nivel <= 2 ? 'var(--primary-color, #6366f1)' : '#0f172a' }}>
                       {item.codigo}
                     </td>
                     <td style={{ fontWeight: item.nivel <= 3 ? '700' : '400' }}>{item.nombre}</td>
-                    <td><span style={{ fontSize: '0.75rem', background: '#334155', padding: '0.2rem 0.5rem', borderRadius: '0.25rem' }}>Nivel {item.nivel}</span></td>
+                    <td><span style={{ fontSize: '0.75rem', background: '#e2e8f0', color: '#475569', padding: '0.2rem 0.55rem', borderRadius: '6px', fontWeight: 600 }}>Nivel {item.nivel}</span></td>
                     <td>{item.tipo}</td>
                     <td>
                       <span className={item.naturaleza === 'Débito' ? 'badge-debito' : 'badge-credito'}>
@@ -372,7 +372,7 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId }) => {
                 filteredTerceros.map((t) => (
                   <tr key={t.id}>
                     <td><strong>{t.tipo_documento} {t.numero_documento}{t.dv ? `-${t.dv}` : ''}</strong></td>
-                    <td style={{ color: '#f8fafc', fontWeight: 600 }}>{t.razon_social}</td>
+                    <td style={{ color: '#0f172a', fontWeight: 600 }}>{t.razon_social}</td>
                     <td>{t.telefono || '-'}</td>
                     <td>{t.ciudad || 'Cali'}</td>
                     <td>{t.email || '-'}</td>
@@ -404,12 +404,12 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId }) => {
             <p style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>No hay comprobantes contables registrados en el periodo.</p>
           ) : (
             comprobantesList.map((comp) => (
-              <div key={comp.id} style={{ background: '#0f172a', border: '1px solid #334155', borderRadius: '0.5rem', padding: '1rem', marginBottom: '1rem' }}>
+              <div key={comp.id} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1.25rem', marginBottom: '1rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                  <span style={{ fontWeight: 700, color: '#38bdf8' }}>{comp.tipo_comprobante} #{comp.consecutivo}</span>
-                  <span style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{comp.fecha} | Módulo: {comp.origen_modulo}</span>
+                  <span style={{ fontWeight: 700, color: 'var(--primary-color, #6366f1)' }}>{comp.tipo_comprobante} #{comp.consecutivo}</span>
+                  <span style={{ color: '#64748b', fontSize: '0.85rem' }}>{comp.fecha} | Módulo: {comp.origen_modulo}</span>
                 </div>
-                <p style={{ margin: '0 0 0.75rem 0', color: '#cbd5e1', fontSize: '0.9rem' }}>{comp.concepto}</p>
+                <p style={{ margin: '0 0 0.75rem 0', color: '#334155', fontSize: '0.9rem' }}>{comp.concepto}</p>
 
                 <table className="erp-table">
                   <thead>
@@ -468,12 +468,12 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId }) => {
               ) : (
                 balanceList.map((item) => (
                   <tr key={item.cuenta_codigo}>
-                    <td style={{ fontWeight: 700, color: '#38bdf8' }}>{item.cuenta_codigo}</td>
+                    <td style={{ fontWeight: 700, color: 'var(--primary-color, #6366f1)' }}>{item.cuenta_codigo}</td>
                     <td>{item.cuenta_nombre}</td>
                     <td><span className={item.naturaleza === 'Débito' ? 'badge-debito' : 'badge-credito'}>{item.naturaleza}</span></td>
-                    <td style={{ textAlign: 'right', color: '#34d399' }}>${item.total_debito.toLocaleString()}</td>
-                    <td style={{ textAlign: 'right', color: '#f87171' }}>${item.total_credito.toLocaleString()}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 700, color: '#f8fafc' }}>${item.saldo_nuevo.toLocaleString()}</td>
+                    <td style={{ textAlign: 'right', color: '#16a34a', fontWeight: 600 }}>${item.total_debito.toLocaleString()}</td>
+                    <td style={{ textAlign: 'right', color: '#dc2626', fontWeight: 600 }}>${item.total_credito.toLocaleString()}</td>
+                    <td style={{ textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>${item.saldo_nuevo.toLocaleString()}</td>
                   </tr>
                 ))
               )}
