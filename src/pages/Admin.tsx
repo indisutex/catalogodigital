@@ -4,11 +4,11 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista, PQRS } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Filter, Link, LifeBuoy, PackageCheck, ArrowRightLeft, BookOpen } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Filter, Link, LifeBuoy, PackageCheck, ArrowRightLeft, BarChart2 } from 'lucide-react';
+
 import * as XLSX from 'xlsx';
-import { ERPContabilidadModule } from '../components/erp/ERPContabilidadModule';
 import { ERPContabilidadService } from '../lib/erpContabilidadService';
-import { ERPVentasModule } from '../components/erp/ERPVentasModule';
+import { ERPMainModule } from '../components/erp/ERPMainModule';
 
 const SECRET_PIN = '0000';
 
@@ -114,7 +114,7 @@ const emptyProduct: ProductFormData = {
   descuento: ''
 };
 
-type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor' | 'material_apoyo' | 'material_asesor' | 'productos_asesor' | 'productos_mayorista' | 'ranking_mayorista' | 'pqrs' | 'contabilidad' | 'ventas_erp';
+type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor' | 'material_apoyo' | 'material_asesor' | 'productos_asesor' | 'productos_mayorista' | 'ranking_mayorista' | 'pqrs' | 'contabilidad' | 'erp';
 
 type Toast = { message: string; type: 'success' | 'error' } | null;
 
@@ -324,7 +324,7 @@ export default function Admin() {
     const defaultTab = (userRole === 'asesor') ? 'pedidos' : (userRole === 'mayorista' ? 'resumen_asesor' : 'productos');
     const saved = localStorage.getItem('admin_active_tab') as string;
     if (saved === 'perfil_admin' || saved === 'perfil_admin_tab') return 'dashboard';
-    const allowedTabs: string[] = ['dashboard', 'productos', 'categorias', 'pedidos', 'clientes', 'asesores', 'mayoristas', 'pos', 'siigo', 'config', 'perfil_asesor', 'resumen_asesor', 'notificaciones_asesor', 'material_apoyo', 'material_asesor', 'productos_asesor', 'productos_mayorista', 'ranking_mayorista', 'contabilidad', 'ventas_erp'];
+    const allowedTabs: string[] = ['dashboard', 'productos', 'categorias', 'pedidos', 'clientes', 'asesores', 'mayoristas', 'pos', 'siigo', 'config', 'perfil_asesor', 'resumen_asesor', 'notificaciones_asesor', 'material_apoyo', 'material_asesor', 'productos_asesor', 'productos_mayorista', 'ranking_mayorista', 'contabilidad', 'erp'];
     
     if (urlTab && allowedTabs.includes(urlTab)) return urlTab;
     
@@ -6556,16 +6556,10 @@ export default function Admin() {
           )}
 
 
-          {/* ── ERP VENTAS DASHBOARD TAB ── */}
+          {/* ── ERP EMPRESARIAL UNIFICADO ── */}
 
-          {activeTab === 'ventas_erp' && (
-            <ERPVentasModule tenantId={selectedCompany || getTenantId()} />
-          )}
-
-          {/* ── ERP CONTABILIDAD TAB ── */}
-
-          {activeTab === 'contabilidad' && (
-            <ERPContabilidadModule tenantId={selectedCompany || getTenantId()} />
+          {activeTab === 'erp' && (
+            <ERPMainModule tenantId={selectedCompany || getTenantId()} />
           )}
 
           {/* ── CONFIG TAB ── */}
@@ -11656,13 +11650,9 @@ function SidebarContent({
               <span className="nav-icon"><Upload size={14} /></span> Material de Apoyo
               {activeTab === 'material_apoyo' && <span className="active-dot"></span>}
             </button>
-            <button className={`nav-item ${activeTab === 'ventas_erp' ? 'active' : ''}`} onClick={() => handleSelectTab('ventas_erp')}>
-              <span className="nav-icon"><ShoppingBag size={14} /></span> Ventas y Finanzas
-              {activeTab === 'ventas_erp' && <span className="active-dot"></span>}
-            </button>
-            <button className={`nav-item ${activeTab === 'contabilidad' ? 'active' : ''}`} onClick={() => handleSelectTab('contabilidad')}>
-              <span className="nav-icon"><BookOpen size={14} /></span> Contabilidad ERP
-              {activeTab === 'contabilidad' && <span className="active-dot"></span>}
+            <button className={`nav-item ${activeTab === 'erp' ? 'active' : ''}`} onClick={() => handleSelectTab('erp')}>
+              <span className="nav-icon"><BarChart2 size={14} /></span> ERP Empresarial
+              {activeTab === 'erp' && <span className="active-dot"></span>}
             </button>
             <button className={`nav-item ${activeTab === 'config' ? 'active' : ''}`} onClick={() => handleSelectTab('config')}>
               <span className="nav-icon"><Settings size={14} /></span> Configuración

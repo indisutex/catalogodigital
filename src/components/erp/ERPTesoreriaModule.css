@@ -1,0 +1,384 @@
+/* ========================================================
+   ERP TESORERÍA MODULE - ESTILOS
+   ======================================================== */
+
+.teso-container {
+  padding: 1.5rem;
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+.teso-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 1.4rem 1.75rem;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 4px 20px -2px rgba(15,23,42,.04);
+}
+
+.teso-header h1 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  letter-spacing: -.02em;
+}
+
+.teso-header p { color: #64748b; font-size: .87rem; margin: .3rem 0 0; }
+
+/* ── KPI Grid ── */
+.teso-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.teso-kpi {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 1.3rem 1.4rem;
+  box-shadow: 0 4px 15px -2px rgba(15,23,42,.04);
+  position: relative;
+  overflow: hidden;
+  transition: transform .18s, box-shadow .18s;
+}
+
+.teso-kpi:hover { transform: translateY(-3px); box-shadow: 0 12px 28px -5px rgba(15,23,42,.08); }
+
+.teso-kpi::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 18px 18px 0 0;
+}
+
+.teso-kpi.caja::before       { background: linear-gradient(90deg,#10b981,#06b6d4); }
+.teso-kpi.banco::before      { background: linear-gradient(90deg,#0284c7,#6366f1); }
+.teso-kpi.digital::before    { background: linear-gradient(90deg,#8b5cf6,#d946ef); }
+.teso-kpi.cobrar::before     { background: linear-gradient(90deg,#f59e0b,#ef4444); }
+.teso-kpi.pagar::before      { background: linear-gradient(90deg,#ef4444,#f97316); }
+.teso-kpi.neto::before       { background: linear-gradient(90deg,#10b981,#059669); }
+
+.teso-kpi-label {
+  font-size: .74rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: #64748b;
+  margin: 0 0 .5rem;
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+}
+
+.teso-kpi-value {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.55rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -.03em;
+}
+
+/* ── Cuentas Bancarias Cards ── */
+.teso-cuentas-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.teso-cuenta-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 1.4rem;
+  box-shadow: 0 4px 15px -2px rgba(15,23,42,.04);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform .18s, box-shadow .18s;
+}
+
+.teso-cuenta-card:hover { transform: translateY(-3px); box-shadow: 0 12px 28px -5px rgba(15,23,42,.1); }
+
+.teso-cuenta-card-accent {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 4px;
+  border-radius: 18px 18px 0 0;
+}
+
+.teso-cuenta-tipo {
+  font-size: .72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  margin: .8rem 0 .3rem;
+  color: #64748b;
+}
+
+.teso-cuenta-nombre {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 .75rem;
+}
+
+.teso-cuenta-saldo {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.teso-cuenta-puc {
+  font-size: .74rem;
+  color: #94a3b8;
+  margin: .35rem 0 0;
+  font-weight: 600;
+}
+
+/* ── Tabs ── */
+.teso-tabs {
+  display: flex;
+  gap: .5rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.teso-tab {
+  padding: .6rem 1.1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  color: #64748b;
+  font-size: .85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  transition: all .15s;
+}
+
+.teso-tab:hover { background: #f8fafc; color: #0f172a; }
+.teso-tab.active {
+  background: var(--primary-color, #6366f1);
+  color: #fff;
+  border-color: var(--primary-color, #6366f1);
+  box-shadow: 0 6px 15px -3px rgba(99,102,241,.3);
+}
+
+/* ── Panel ── */
+.teso-panel {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  padding: 1.75rem;
+  box-shadow: 0 6px 25px -5px rgba(15,23,42,.04);
+}
+
+.teso-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: .75rem;
+}
+
+.teso-panel-header h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+/* ── Tabla ── */
+.teso-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: .88rem;
+}
+
+.teso-table th {
+  background: #f8fafc;
+  color: #475569;
+  padding: .8rem 1rem;
+  font-weight: 700;
+  font-size: .76rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  border-bottom: 2px solid #e2e8f0;
+  text-align: left;
+}
+
+.teso-table td {
+  padding: .9rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  vertical-align: middle;
+}
+
+.teso-table tr:hover td { background: #f8fafc; }
+.teso-table tr:last-child td { border-bottom: none; }
+
+/* ── Badges de estado ── */
+.teso-badge {
+  display: inline-block;
+  padding: .25rem .65rem;
+  border-radius: 20px;
+  font-size: .73rem;
+  font-weight: 700;
+}
+
+.teso-badge.pendiente  { background: #fef3c7; color: #b45309; }
+.teso-badge.parcial    { background: #dbeafe; color: #1d4ed8; }
+.teso-badge.pagado     { background: #dcfce7; color: #166534; }
+.teso-badge.vencido    { background: #fee2e2; color: #991b1b; }
+.teso-badge.ingreso    { background: #dcfce7; color: #166534; }
+.teso-badge.egreso     { background: #fee2e2; color: #991b1b; }
+
+/* ── Barra de progreso cartera ── */
+.teso-progress {
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: .4rem;
+}
+
+.teso-progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width .3s;
+}
+
+/* ── Formularios ── */
+.teso-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.teso-form-label {
+  display: block;
+  font-size: .82rem;
+  font-weight: 700;
+  color: #475569;
+  margin-bottom: .35rem;
+}
+
+.teso-input, .teso-select {
+  width: 100%;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  color: #0f172a;
+  padding: .65rem .9rem;
+  border-radius: 10px;
+  font-size: .88rem;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.teso-input:focus, .teso-select:focus {
+  border-color: var(--primary-color, #6366f1);
+  box-shadow: 0 0 0 3px rgba(99,102,241,.12);
+  background: #fff;
+}
+
+/* ── Botones ── */
+.teso-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  padding: .65rem 1.2rem;
+  border-radius: 10px;
+  font-size: .87rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  transition: all .18s;
+}
+
+.teso-btn-primary { background: var(--primary-color, #6366f1); color: #fff; box-shadow: 0 4px 12px rgba(99,102,241,.25); }
+.teso-btn-primary:hover { filter: brightness(.9); transform: translateY(-1px); }
+.teso-btn-success { background: #10b981; color: #fff; box-shadow: 0 4px 12px rgba(16,185,129,.2); }
+.teso-btn-danger  { background: #ef4444; color: #fff; }
+.teso-btn-ghost   { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+.teso-btn-ghost:hover { background: #e2e8f0; }
+
+/* ── Modal ── */
+.teso-modal-bg {
+  position: fixed;
+  inset: 0;
+  background: rgba(15,23,42,.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 1rem;
+}
+
+.teso-modal {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 580px;
+  padding: 2rem;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 25px 50px -12px rgba(15,23,42,.2);
+}
+
+.teso-modal h3 {
+  font-family: 'Outfit', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 1.5rem;
+}
+
+/* ── Empty state ── */
+.teso-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #94a3b8;
+}
+
+.teso-empty p { font-size: .9rem; margin: .5rem 0 0; }
+
+/* ── Ingreso/Egreso color ── */
+.teso-ingreso { color: #059669; font-weight: 800; font-family: 'Outfit', sans-serif; }
+.teso-egreso  { color: #dc2626; font-weight: 800; font-family: 'Outfit', sans-serif; }
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .teso-kpi-grid { grid-template-columns: 1fr 1fr; }
+  .teso-form-grid { grid-template-columns: 1fr; }
+  .teso-cuentas-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 480px) {
+  .teso-kpi-grid, .teso-cuentas-grid { grid-template-columns: 1fr; }
+}
