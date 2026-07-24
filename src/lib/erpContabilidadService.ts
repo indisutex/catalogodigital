@@ -14,7 +14,7 @@ export class ERPContabilidadService {
    * Obtiene el catálogo del Plan Único de Cuentas (PUC)
    */
   public static async fetchPUC(tenantId: string): Promise<ERPCuentaPUC[]> {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('erp_cuentas_puc')
       .select('*')
       .eq('tenant_id', tenantId)
@@ -24,6 +24,26 @@ export class ERPContabilidadService {
       console.error('Error al consultar catálogo PUC:', error);
       throw new Error(`Error PUC: ${error.message}`);
     }
+
+    if (!data || data.length === 0) {
+      // Auto-inicialización dinámica multitenant para cualquier marca/inquilino nuevo
+      try {
+        await supabase.rpc('erp_inicializar_puc_tenant', { p_tenant_id: tenantId });
+      } catch (e) {
+        console.warn('RPC erp_inicializar_puc_tenant no disponible aún o ya ejecutado:', e);
+      }
+      
+      const { data: reData } = await supabase
+        .from('erp_cuentas_puc')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .order('codigo', { ascending: true });
+        
+      if (reData && reData.length > 0) {
+        data = reData;
+      }
+    }
+
     return data || [];
   }
 
