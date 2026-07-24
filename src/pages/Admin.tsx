@@ -2176,7 +2176,8 @@ export default function Admin() {
     const mainImg = mainImgObj?.url || '';
     const extraImgsEncoded = validImgs.map(img => encodeExtraImage(img.url, img.ref, (img as any).estampado));
     const allEstampadosList = Array.from(new Set(validImgs.map(img => ((img as any).estampado || img.ref)?.trim()).filter(Boolean)));
-    const estampadosStr = allEstampadosList.length > 0 ? allEstampadosList.join(', ') : (editingProduct.estampados || null);
+    // Always overwrite — never fall back to old estampados in DB. If no images have estampados/refs, clear it.
+    const estampadosStr = allEstampadosList.length > 0 ? allEstampadosList.join(', ') : null;
 
     const { error } = await supabase.from('productos').update({
       nombre: editingProduct.nombre,
