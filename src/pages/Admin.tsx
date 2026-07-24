@@ -78,6 +78,28 @@ export const decodeExtraImage = (str: string) => {
   return { url: url || '', ref: ref || '' };
 };
 
+export const buildUnifiedImages = (prod: Partial<Producto>) => {
+  const decodedExtras = (prod.imagenes_extra || []).map((u: string) => ({ ...decodeExtraImage(u), isMain: false }));
+  if (!decodedExtras.length && !prod.imagen_url) return [];
+
+  let foundMain = false;
+  const unified = decodedExtras.map(e => {
+    if (!foundMain && e.url === prod.imagen_url) {
+      foundMain = true;
+      return { ...e, isMain: true };
+    }
+    return { ...e, isMain: false };
+  });
+
+  if (!foundMain && prod.imagen_url) {
+    unified.unshift({ url: prod.imagen_url, ref: '', isMain: true });
+  } else if (!foundMain && unified.length > 0) {
+    unified[0].isMain = true;
+  }
+
+  return unified;
+};
+
 type ProductFormData = {
   nombre: string;
   referencia?: string;
@@ -1124,12 +1146,7 @@ export default function Admin() {
       const prod = productos.find(p => p.id === pId);
       if (prod) {
         setEditingProduct(prod);
-        // Build unified image list: imagen_url as main + extras
-        const mainEntry = prod.imagen_url ? [{ url: prod.imagen_url, ref: '', isMain: true }] : [];
-        const extraEntries = (prod.imagenes_extra || []).map((u: string) => ({ ...decodeExtraImage(u), isMain: false }));
-        // Avoid duplicating imagen_url if it's already in imagenes_extra
-        const extraFiltered = extraEntries.filter((e: any) => e.url !== prod.imagen_url);
-        setEditExtraImages([...mainEntry, ...extraFiltered] as any);
+        setEditExtraImages(buildUnifiedImages(prod) as any);
         restored = true;
       }
     }
@@ -1650,9 +1667,9 @@ export default function Admin() {
     setLoading(true);
     const validForms = bulkForms.filter(f => f.nombre.trim() !== '' && f.precio !== '');
     const newProducts = validForms.map(f => {
-      const allImgs = f.imagenes.filter(img => img.url.trim() !== '');
+      const allImgs = f.imagenes.filter(img => img.url && img.url.trim() !== '');
       const mainImg = allImgs.length > 0 ? allImgs[0].url : '';
-      const extraImgs = allImgs.slice(1).map(img => encodeExtraImage(img.url, img.ref));
+      const extraImgs = allImgs.map(img => encodeExtraImage(img.url, img.ref));
 
       return {
         nombre: f.nombre,
@@ -2109,12 +2126,11 @@ export default function Admin() {
     e.preventDefault();
     if (!editingProduct) return;
     setLoading(true);
-    // The image marked as main (isMain=true) becomes imagen_url; rest become imagenes_extra
-    const validImgs = editExtraImages.filter(u => u.url.trim());
+    // The image marked as main (isMain=true) becomes imagen_url; ALL images with refs are preserved in imagenes_extra
+    const validImgs = editExtraImages.filter(u => u.url && u.url.trim());
     const mainImgObj = validImgs.find(u => (u as any).isMain) || validImgs[0];
     const mainImg = mainImgObj?.url || '';
-    const restImgs = validImgs.filter(u => u !== mainImgObj);
-    const extraImgsEncoded = restImgs.map(img => encodeExtraImage(img.url, img.ref));
+    const extraImgsEncoded = validImgs.map(img => encodeExtraImage(img.url, img.ref));
     const { error } = await supabase.from('productos').update({
       nombre: editingProduct.nombre,
       referencia: editingProduct.referencia || editingProduct.sku || null,
@@ -2157,8 +2173,8 @@ export default function Admin() {
         next.splice(idx, 1, ...uploadedData);
         return next;
       });
-      showToast(`${uploadedData.length} foto(s) extra subida(s) ✓`);
-    } catch { showToast('Error al subir foto extra', 'error'); }
+      showToast(`${uploadedData.length} foto(s) agregada(s) ✓`);
+    } catch { showToast('Error al subir foto', 'error'); }
     finally { setEditUploadingIdx(null); }
   };
 
@@ -4808,12 +4824,10 @@ export default function Admin() {
                             <button 
                               className="btn-edit" 
                               style={{ padding: '0.5rem', borderRadius: '8px', cursor: 'pointer', border: '1px solid #bae6fd', background: '#e0f2fe', color: '#0369a1', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s', width: '32px', height: '32px' }}
-                              onClick={() => { setEditingProduct(p); 
-                              const mainEntry = p.imagen_url ? [{ url: p.imagen_url, ref: '', isMain: true }] : [];
-                              const extraEntries = (p.imagenes_extra || []).map((u: string) => ({ ...decodeExtraImage(u), isMain: false }));
-                              const extraFiltered = extraEntries.filter((e: any) => e.url !== p.imagen_url);
-                              setEditExtraImages([...mainEntry, ...extraFiltered] as any);
-                            }}
+                              onClick={() => { 
+                                setEditingProduct(p); 
+                                setEditExtraImages(buildUnifiedImages(p) as any);
+                              }}
                               title="Editar Producto"
                             >
                               <Pencil size={14} />
