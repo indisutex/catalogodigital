@@ -4806,8 +4806,13 @@ export default function Admin() {
                             <div className="product-card-body">
                               <h4>{p.nombre}</h4>
                               {p.referencia && (
-                                <p style={{ margin: '0 0 0.2rem 0', fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>
+                                <p style={{ margin: '0 0 0.1rem 0', fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>
                                   Ref: {p.referencia}
+                                </p>
+                              )}
+                              {p.descripcion && (
+                                <p style={{ margin: '0 0 0.2rem 0', fontSize: '0.71rem', color: '#94a3b8', lineHeight: 1.3, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {p.descripcion}
                                 </p>
                               )}
 
@@ -4967,11 +4972,6 @@ export default function Admin() {
                                   })()}
                               </div>
 
-                              {p.descripcion && (
-                                <p style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.4rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                  {p.descripcion}
-                                </p>
-                              )}
                             </div>
                           <div className="product-card-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.45rem', padding: '0.65rem 0.9rem', background: '#fafafa', borderTop: '1px solid #f1f5f9' }}>
                             <button 
