@@ -242,18 +242,35 @@ export class ERPContabilidadService {
   }
 
   /**
-   * Consulta el Libro Diario General de Comprobantes
+   * Consulta el Libro Diario General de Comprobantes con sus asientos
    */
   public static async fetchLibroDiario(tenantId: string): Promise<ERPComprobanteContable[]> {
-    const { data, error } = await supabase
+    // Primero traemos los comprobantes
+    const { data: comprobantes, error } = await supabase
       .from('erp_comprobantes_contables')
-      .select('*, asientos:erp_asientos_contables(*)')
+      .select('*')
       .eq('tenant_id', tenantId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(100);
 
     if (error) throw new Error(`Error Libro Diario: ${error.message}`);
-    return data || [];
+    if (!comprobantes || comprobantes.length === 0) return [];
+
+    // Luego traemos los asientos de esos comprobantes
+    const ids = comprobantes.map(c => c.id);
+    const { data: asientos } = await supabase
+      .from('erp_asientos_contables')
+      .select('*')
+      .in('comprobante_id', ids)
+      .order('orden', { ascending: true });
+
+    // Unimos manualmente
+    return comprobantes.map(comp => ({
+      ...comp,
+      asientos: (asientos || []).filter(a => a.comprobante_id === comp.id)
+    }));
   }
+
 
   /**
    * Genera el Balance de Prueba agrupado por cuenta PUC
