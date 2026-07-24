@@ -1203,11 +1203,16 @@ export default function MenuDigital() {
         const legacyEstampados = detailProduct.estampados?.split(',').map(e => e.trim().toUpperCase()).filter(Boolean) || [];
 
 
-        // Single source of truth: imagenes_extra (imagen_url is saved as the first item in extras)
+        // Single source of truth: imagenes_extra + imagen_url (main image is ALWAYS included 1st)
         const rawAllImages = (detailProduct.imagenes_extra || []).map(u => decodeExtraImage(u)).filter(i => i.url);
-        const allImages = rawAllImages.length > 0
-          ? rawAllImages
-          : (detailProduct.imagen_url ? [{ url: detailProduct.imagen_url, ref: '' }] : []);
+        let allImages = [...rawAllImages];
+        if (detailProduct.imagen_url && !allImages.some(img => img.url === detailProduct.imagen_url)) {
+          const mainRef = (detailProduct.referencia && !detailProduct.referencia.includes('-') ? detailProduct.referencia : '');
+          allImages.unshift({ url: detailProduct.imagen_url, ref: mainRef, estampado: '' });
+        }
+        if (allImages.length === 0 && detailProduct.imagen_url) {
+          allImages = [{ url: detailProduct.imagen_url, ref: '', estampado: '' }];
+        }
         const rawTallas = detailProduct.tallas?.split(',').map(t => t.trim()).filter(Boolean) || [];
         const tallasMap = new Map();
         rawTallas.forEach(t => {

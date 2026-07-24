@@ -2197,7 +2197,7 @@ export default function Admin() {
     }).eq('id', editingProduct.id);
     setLoading(false);
     if (error) showToast('Error al actualizar', 'error');
-    else { showToast('Producto actualizado ✓'); setEditingProduct(null); cargarDatos(); }
+    else { showToast('Producto actualizado ✓'); cargarDatos(); }
   };
 
   const handleEditExtraUpload = async (e: React.ChangeEvent<HTMLInputElement>, idx: number) => {
@@ -3789,26 +3789,28 @@ export default function Admin() {
                                  )}
                                </div>
                              )}
-                              <div style={{ display: 'flex', gap: '0.35rem', width: '160px' }}>
+                              <div style={{ display: 'flex', gap: '0.35rem', width: '175px' }}>
                                 <input
                                   value={(img as any).estampado || ''}
+                                  title={(img as any).estampado || ''}
                                   onChange={e => {
                                     const newArr = [...editExtraImages] as any[];
                                     newArr[idx] = { ...newArr[idx], estampado: e.target.value };
                                     setEditExtraImages(newArr);
                                   }}
                                   placeholder="Estampado"
-                                  style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', padding: '0.35rem', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '6px', fontWeight: 600 }}
+                                  style={{ flex: 1.2, minWidth: 0, fontSize: '0.78rem', padding: '0.4rem 0.25rem', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '6px', fontWeight: 600 }}
                                 />
                                 <input
                                   value={img.ref || ''}
+                                  title={img.ref || ''}
                                   onChange={e => {
                                     const newArr = [...editExtraImages] as any[];
                                     newArr[idx] = { ...newArr[idx], ref: e.target.value };
                                     setEditExtraImages(newArr);
                                   }}
-                                  placeholder="Referencia"
-                                  style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', padding: '0.35rem', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '6px', fontWeight: 600 }}
+                                  placeholder="Ref."
+                                  style={{ flex: 0.8, minWidth: 0, fontSize: '0.78rem', padding: '0.4rem 0.25rem', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '6px', fontWeight: 600 }}
                                 />
                               </div>
                              <label htmlFor={`edit-extra-${idx}`} style={{ cursor: 'pointer', fontSize: '0.8rem', color: '#0ea5e9', fontWeight: 600 }}>
@@ -4504,18 +4506,20 @@ export default function Admin() {
                                       ) : (
                                         <div style={{ width: 130, height: 130, background: '#f1f5f9', borderRadius: 8, border: '2px dashed #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem' }}>📷</div>
                                       )}
-                                       <div style={{ display: 'flex', gap: '0.35rem', width: '160px' }}>
+                                       <div style={{ display: 'flex', gap: '0.35rem', width: '175px' }}>
                                          <input
                                            value={(img as any).estampado || ''}
+                                           title={(img as any).estampado || ''}
                                            onChange={e => updateImagenEstampado(index, imgIdx, e.target.value)}
                                            placeholder="Estampado"
-                                           style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', padding: '0.35rem', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '6px', fontWeight: 600 }}
+                                           style={{ flex: 1.2, minWidth: 0, fontSize: '0.78rem', padding: '0.4rem 0.25rem', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '6px', fontWeight: 600 }}
                                          />
                                          <input
                                            value={img.ref || ''}
+                                           title={img.ref || ''}
                                            onChange={e => updateImagenRef(index, imgIdx, e.target.value)}
-                                           placeholder="Referencia"
-                                           style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', padding: '0.35rem', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '6px', fontWeight: 600 }}
+                                           placeholder="Ref."
+                                           style={{ flex: 0.8, minWidth: 0, fontSize: '0.78rem', padding: '0.4rem 0.25rem', textAlign: 'center', border: '1px solid #cbd5e1', borderRadius: '6px', fontWeight: 600 }}
                                          />
                                        </div>
                                       <label style={{ cursor: 'pointer', fontSize: '0.8rem', color: '#0ea5e9', fontWeight: 600 }}>
@@ -4887,21 +4891,34 @@ export default function Admin() {
                                    <small style={{ color: '#64748b' }}>Tallas:</small>
                                    <strong style={{ fontSize: '0.8rem', color: '#0f172a', textAlign: 'right', wordBreak: 'break-word', maxWidth: '120px' }}>{deduplicateTallas(p.tallas)}</strong>
                                  </div>
-
-                                 {(() => {
-                                    const imgEst = (p.imagenes_extra || []).map((u: string) => { const d = decodeExtraImage(u); return (d.estampado || d.ref)?.trim(); }).filter(Boolean);
+                                  {(() => {
+                                    const imgData = (p.imagenes_extra || []).map((u: string) => decodeExtraImage(u));
+                                    const imgEstampados = Array.from(new Set(imgData.map(d => (d.estampado?.trim() || d.ref?.trim())).filter(Boolean)));
+                                    const imgRefs = Array.from(new Set(imgData.filter(d => d.estampado?.trim() && d.ref?.trim() && d.ref?.trim() !== d.estampado?.trim()).map(d => d.ref?.trim())));
                                     const legacyEst = p.estampados?.split(',').map((e: string) => e.trim()).filter(Boolean) || [];
-                                    const allEst = imgEst.length > 0 ? Array.from(new Set(imgEst)) : legacyEst;
-                                   if (allEst.length === 0) return null;
-                                   return (
-                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem', paddingTop: '0.25rem', borderTop: '1px dashed #e2e8f0' }}>
-                                       <small style={{ color: '#64748b' }}>Estampados:</small>
-                                       <strong style={{ fontSize: '0.75rem', color: '#0284c7', textAlign: 'right', wordBreak: 'break-word', maxWidth: '120px' }}>
-                                         {allEst.join(', ')}
-                                       </strong>
-                                     </div>
-                                   );
-                                 })()}
+                                    const activeEstampados = imgEstampados.length > 0 ? imgEstampados : legacyEst;
+                                    if (activeEstampados.length === 0 && imgRefs.length === 0) return null;
+                                    return (
+                                      <>
+                                        {activeEstampados.length > 0 && (
+                                          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem', paddingTop: '0.25rem', borderTop: '1px dashed #e2e8f0' }}>
+                                            <small style={{ color: '#64748b', fontWeight: 600 }}>Estampados:</small>
+                                            <strong style={{ fontSize: '0.75rem', color: '#0284c7', textAlign: 'right', wordBreak: 'break-word', maxWidth: '130px' }}>
+                                              {activeEstampados.join(', ')}
+                                            </strong>
+                                          </div>
+                                        )}
+                                        {imgRefs.length > 0 && (
+                                          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.2rem' }}>
+                                            <small style={{ color: '#64748b', fontWeight: 600 }}>Referencias:</small>
+                                            <strong style={{ fontSize: '0.75rem', color: '#475569', textAlign: 'right', wordBreak: 'break-word', maxWidth: '130px' }}>
+                                              {imgRefs.join(', ')}
+                                            </strong>
+                                          </div>
+                                        )}
+                                      </>
+                                    );
+                                  })()}
                               </div>
 
                               {p.descripcion && (
@@ -5850,21 +5867,34 @@ export default function Admin() {
                               <small style={{ color: '#64748b' }}>Tallas:</small>
                               <strong style={{ fontSize: '0.8rem', color: '#0f172a', textAlign: 'right', wordBreak: 'break-word', maxWidth: '120px' }}>{deduplicateTallas(p.tallas)}</strong>
                             </div>
-
-                            {(() => {
-                                    const imgEst = (p.imagenes_extra || []).map((u: string) => { const d = decodeExtraImage(u); return (d.estampado || d.ref)?.trim(); }).filter(Boolean);
-                                    const legacyEst = p.estampados?.split(',').map((e: string) => e.trim()).filter(Boolean) || [];
-                                    const allEst = imgEst.length > 0 ? Array.from(new Set(imgEst)) : legacyEst;
-                              if (allEst.length === 0) return null;
-                              return (
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem', paddingTop: '0.25rem', borderTop: '1px dashed #e2e8f0' }}>
-                                  <small style={{ color: '#64748b' }}>Estampados:</small>
-                                  <strong style={{ fontSize: '0.78rem', color: '#0284c7', textAlign: 'right', wordBreak: 'break-word', maxWidth: '120px' }}>
-                                    {allEst.join(', ')}
-                                  </strong>
-                                </div>
-                              );
-                            })()}
+                             {(() => {
+                               const imgData = (p.imagenes_extra || []).map((u: string) => decodeExtraImage(u));
+                               const imgEstampados = Array.from(new Set(imgData.map(d => (d.estampado?.trim() || d.ref?.trim())).filter(Boolean)));
+                               const imgRefs = Array.from(new Set(imgData.filter(d => d.estampado?.trim() && d.ref?.trim() && d.ref?.trim() !== d.estampado?.trim()).map(d => d.ref?.trim())));
+                               const legacyEst = p.estampados?.split(',').map((e: string) => e.trim()).filter(Boolean) || [];
+                               const activeEstampados = imgEstampados.length > 0 ? imgEstampados : legacyEst;
+                               if (activeEstampados.length === 0 && imgRefs.length === 0) return null;
+                               return (
+                                 <>
+                                   {activeEstampados.length > 0 && (
+                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem', paddingTop: '0.25rem', borderTop: '1px dashed #e2e8f0' }}>
+                                       <small style={{ color: '#64748b', fontWeight: 600 }}>Estampados:</small>
+                                       <strong style={{ fontSize: '0.78rem', color: '#0284c7', textAlign: 'right', wordBreak: 'break-word', maxWidth: '130px' }}>
+                                         {activeEstampados.join(', ')}
+                                       </strong>
+                                     </div>
+                                   )}
+                                   {imgRefs.length > 0 && (
+                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.2rem' }}>
+                                       <small style={{ color: '#64748b', fontWeight: 600 }}>Referencias:</small>
+                                       <strong style={{ fontSize: '0.78rem', color: '#475569', textAlign: 'right', wordBreak: 'break-word', maxWidth: '130px' }}>
+                                         {imgRefs.join(', ')}
+                                       </strong>
+                                     </div>
+                                   )}
+                                 </>
+                               );
+                             })()}
                           </div>
                         </div>
                       </div>
