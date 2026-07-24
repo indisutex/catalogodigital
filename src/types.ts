@@ -82,6 +82,7 @@ export interface Pedido {
   numero_guia?: string;
   origen?: string;
   evidencia_despacho_url?: string;
+  envio_metodo?: string;
 }
 
 export interface Asesor {

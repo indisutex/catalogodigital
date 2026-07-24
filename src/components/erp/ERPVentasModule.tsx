@@ -2,6 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { ERPVentasService, type ERPResumenFinanciero, type ERPEgreso } from '../../lib/erpVentasService';
 import type { Pedido } from '../../types';
 import './ERPVentasModule.css';
+import { ERPTesoreriaService, type ERPCuentaBancaria } from '../../lib/erpTesoreriaService';
+
 import {
   ShoppingBag,
   TrendingUp,
@@ -16,7 +18,14 @@ import {
   CreditCard,
   AlertCircle,
   Star,
-  FileText
+  FileText,
+  Eye,
+  Printer,
+  X,
+  User,
+  Phone,
+  MapPin,
+  Calendar
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -53,6 +62,10 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
   const [ventas, setVentas] = useState<Pedido[]>([]);
   const [egresos, setEgresos] = useState<ERPEgreso[]>([]);
   const [topProductos, setTopProductos] = useState<{ nombre: string; cantidad: number; total: number }[]>([]);
+  const [cuentasTesoreria, setCuentasTesoreria] = useState<ERPCuentaBancaria[]>([]);
+
+  // Modal para ver factura detallada de un pedido
+  const [selectedVentaModal, setSelectedVentaModal] = useState<Pedido | null>(null);
 
   const [showEgresoModal, setShowEgresoModal] = useState(false);
   const [egresoForm, setEgresoForm] = useState({
@@ -62,6 +75,7 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
     proveedor_nombre: '',
     monto: '',
     metodo_pago: 'Efectivo',
+    cuenta_id: '',
     notas: ''
   });
 
@@ -74,16 +88,18 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
     setLoading(true);
     setError(null);
     try {
-      const [res, vent, egr, top] = await Promise.all([
+      const [res, vent, egr, top, ctas] = await Promise.all([
         ERPVentasService.fetchResumenFinanciero(tenantId),
         ERPVentasService.fetchVentasReales(tenantId, desde, hasta),
         ERPVentasService.fetchEgresos(tenantId, desde, hasta),
-        ERPVentasService.fetchTopProductos(tenantId)
+        ERPVentasService.fetchTopProductos(tenantId),
+        ERPTesoreriaService.fetchCuentas(tenantId).catch(() => [])
       ]);
       setResumen(res);
       setVentas(vent);
       setEgresos(egr);
       setTopProductos(top);
+      setCuentasTesoreria(ctas);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -97,18 +113,39 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
     e.preventDefault();
     if (!egresoForm.concepto || !egresoForm.monto) return;
     try {
+      const montoNum = Number(egresoForm.monto);
       await ERPVentasService.registrarEgreso({
         tenant_id: tenantId,
         fecha: egresoForm.fecha,
         categoria: egresoForm.categoria,
         concepto: egresoForm.concepto,
         proveedor_nombre: egresoForm.proveedor_nombre,
-        monto: Number(egresoForm.monto),
+        monto: montoNum,
         metodo_pago: egresoForm.metodo_pago,
         notas: egresoForm.notas
       });
+
+      // Si seleccionó una cuenta de tesorería, registrar también movimiento y descontar saldo
+      if (egresoForm.cuenta_id) {
+        await ERPTesoreriaService.registrarMovimiento({
+          tenant_id: tenantId,
+          cuenta_id: egresoForm.cuenta_id,
+          tipo: 'Egreso',
+          categoria: egresoForm.categoria,
+          concepto: egresoForm.concepto,
+          monto: montoNum,
+          fecha: egresoForm.fecha,
+          notas: egresoForm.notas
+        });
+
+        const cta = cuentasTesoreria.find(c => c.id === egresoForm.cuenta_id);
+        if (cta) {
+          await ERPTesoreriaService.actualizarSaldoCuenta(cta.id, Number(cta.saldo_actual) - montoNum);
+        }
+      }
+
       setShowEgresoModal(false);
-      setEgresoForm({ fecha: new Date().toISOString().split('T')[0], categoria: 'Transporte y Envíos', concepto: '', proveedor_nombre: '', monto: '', metodo_pago: 'Efectivo', notas: '' });
+      setEgresoForm({ fecha: new Date().toISOString().split('T')[0], categoria: 'Transporte y Envíos', concepto: '', proveedor_nombre: '', monto: '', metodo_pago: 'Efectivo', cuenta_id: '', notas: '' });
       loadAll();
     } catch (err: any) { alert(err.message); }
   };
@@ -314,11 +351,12 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
                   <th>Ciudad</th>
                   <th>Estado</th>
                   <th style={{ textAlign: 'right' }}>Total</th>
+                  <th style={{ textAlign: 'center' }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {ventas.map(v => (
-                  <tr key={v.id}>
+                  <tr key={v.id} style={{ cursor: 'pointer' }} onClick={() => setSelectedVentaModal(v)}>
                     <td><strong style={{ fontFamily: 'monospace', color: '#6366f1' }}>{v.id.substring(0, 8).toUpperCase()}</strong></td>
                     <td>{v.created_at?.split('T')[0]}</td>
                     <td>
@@ -334,6 +372,11 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
                     <td style={{ textAlign: 'right', fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: '1rem', color: '#059669' }}>
                       {fmt(v.total)}
                     </td>
+                    <td style={{ textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                      <button className="erp-btn-sm erp-btn-detail" onClick={() => setSelectedVentaModal(v)}>
+                        <Eye size={14} /> Ver Factura
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -345,6 +388,7 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
                   <td style={{ textAlign: 'right', fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: '1.1rem', color: '#6366f1', background: '#f8fafc', padding: '0.9rem 1rem' }}>
                     {fmt(ventas.reduce((s, v) => s + Number(v.total), 0))}
                   </td>
+                  <td style={{ background: '#f8fafc' }}></td>
                 </tr>
               </tfoot>
             </table>
@@ -357,7 +401,13 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
         <div className="erp-panel">
           <div className="erp-panel-header">
             <h3>💸 Gastos y Egresos Operativos</h3>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+              <div className="erp-filtros">
+                <label style={{ fontSize: '0.82rem', color: '#64748b', fontWeight: 600 }}>Desde:</label>
+                <input type="date" value={desde} onChange={e => setDesde(e.target.value)} />
+                <label style={{ fontSize: '0.82rem', color: '#64748b', fontWeight: 600 }}>Hasta:</label>
+                <input type="date" value={hasta} onChange={e => setHasta(e.target.value)} />
+              </div>
               <button className="erp-btn erp-btn-ghost" onClick={exportarEgresosExcel}>
                 <Download size={15} /> Excel
               </button>
@@ -372,7 +422,7 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
           ) : egresos.length === 0 ? (
             <div className="erp-empty">
               <FileText size={48} />
-              <p>No hay gastos registrados en el mes.<br />Registra tus gastos: arriendo, servicios, transporte, comisiones, etc.</p>
+              <p>No hay gastos registrados en el periodo seleccionado.<br />Registra tus gastos: arriendo, servicios, transporte, comisiones, etc.</p>
             </div>
           ) : (
             <table className="erp-ventas-table">
@@ -489,6 +539,19 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
                     {METODOS_PAGO.map(m => <option key={m} value={m}>{m}</option>)}
                   </select>
                 </div>
+                {cuentasTesoreria.length > 0 && (
+                  <div>
+                    <label className="erp-form-label">Descontar de Cuenta / Caja:</label>
+                    <select className="erp-select" value={egresoForm.cuenta_id} onChange={e => setEgresoForm({ ...egresoForm, cuenta_id: e.target.value })}>
+                      <option value="">-- No descontar de caja --</option>
+                      {cuentasTesoreria.map(cta => (
+                        <option key={cta.id} value={cta.id}>
+                          {cta.nombre} ({cta.tipo} - Saldo: {fmt(cta.saldo_actual)})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div>
                   <label className="erp-form-label">Notas adicionales:</label>
                   <input type="text" className="erp-input" placeholder="(Opcional)" value={egresoForm.notas} onChange={e => setEgresoForm({ ...egresoForm, notas: e.target.value })} />
@@ -503,6 +566,139 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
           </div>
         </div>
       )}
+
+      {/* ── Modal: Factura Completa de Venta / Pedido ── */}
+      {selectedVentaModal && (
+        <div className="erp-modal-bg" onClick={() => setSelectedVentaModal(null)}>
+          <div className="erp-factura-modal" onClick={e => e.stopPropagation()}>
+            <div className="erp-factura-header">
+              <div>
+                <span className="erp-factura-badge">FACTURA DE VENTA</span>
+                <h2>Pedido #{selectedVentaModal.id.substring(0, 8).toUpperCase()}</h2>
+                <p style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#64748b', fontSize: '0.85rem', margin: '0.2rem 0 0 0' }}>
+                  <Calendar size={14} /> {selectedVentaModal.created_at?.split('T')[0]} {selectedVentaModal.created_at?.includes('T') ? `· ${selectedVentaModal.created_at?.split('T')[1]?.substring(0, 5)}` : ''}
+                </p>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span className={`erp-estado-badge ${estadoClass(selectedVentaModal.estado)}`}>
+                  {selectedVentaModal.estado || 'Aprobado'}
+                </span>
+                <button className="erp-factura-close" onClick={() => setSelectedVentaModal(null)}>
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
+
+            {/* Datos del Cliente */}
+            <div className="erp-factura-cliente-card">
+              <h4 style={{ margin: '0 0 0.6rem 0', fontSize: '0.9rem', color: '#334155', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                <User size={16} color="#6366f1" /> Información del Cliente
+              </h4>
+              <div className="erp-factura-cliente-grid">
+                <div><strong>Nombre:</strong> {selectedVentaModal.cliente_nombre || 'Cliente General'}</div>
+                <div><strong>Teléfono:</strong> <Phone size={12} style={{ verticalAlign: 'middle' }} /> {selectedVentaModal.cliente_telefono || '-'}</div>
+                <div><strong>Ciudad:</strong> <MapPin size={12} style={{ verticalAlign: 'middle' }} /> {selectedVentaModal.ciudad || '-'}</div>
+                <div><strong>Dirección:</strong> {selectedVentaModal.direccion || '-'}</div>
+                {selectedVentaModal.envio_metodo && <div><strong>Método Envío:</strong> {selectedVentaModal.envio_metodo}</div>}
+                {selectedVentaModal.numero_guia && <div><strong>No. Guía:</strong> {selectedVentaModal.numero_guia}</div>}
+              </div>
+            </div>
+
+            {/* Tabla de Productos del Pedido */}
+            <h4 style={{ margin: '1.25rem 0 0.5rem', fontSize: '0.95rem', color: '#0f172a', fontWeight: 800 }}>📦 Detalle de Productos</h4>
+            <table className="erp-ventas-table erp-factura-table">
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th>Variante / Talla</th>
+                  <th style={{ textAlign: 'center' }}>Cant.</th>
+                  <th style={{ textAlign: 'right' }}>Precio Unit.</th>
+                  <th style={{ textAlign: 'right' }}>Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(() => {
+                  try {
+                    const items = Array.isArray(selectedVentaModal.productos)
+                      ? selectedVentaModal.productos
+                      : JSON.parse((selectedVentaModal as any).productos || '[]');
+
+                    if (!items || items.length === 0) {
+                      return <tr><td colSpan={5} style={{ textAlign: 'center', color: '#94a3b8', padding: '1.5rem' }}>No hay detalle de productos en este pedido</td></tr>;
+                    }
+
+                    return items.map((prod: any, idx: number) => {
+                      const qty = Number(prod.cantidad || prod.quantity || 1);
+                      const price = Number(prod.precio || prod.price || 0);
+                      const img = prod.imagen || prod.image || '';
+                      const talla = prod.talla || prod.size || '';
+                      const estampado = prod.estampado || '';
+
+                      return (
+                        <tr key={idx}>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                              {img && (
+                                <img src={img} alt="" style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #e2e8f0' }} />
+                              )}
+                              <span style={{ fontWeight: 600, color: '#0f172a' }}>{prod.nombre || prod.name || 'Producto'}</span>
+                            </div>
+                          </td>
+                          <td>
+                            {talla && <span className="erp-factura-tag">Talla: {talla}</span>}
+                            {estampado && <span className="erp-factura-tag">Est: {estampado}</span>}
+                            {!talla && !estampado && <span style={{ color: '#94a3b8' }}>-</span>}
+                          </td>
+                          <td style={{ textAlign: 'center', fontWeight: 700 }}>{qty}</td>
+                          <td style={{ textAlign: 'right' }}>{fmt(price)}</td>
+                          <td style={{ textAlign: 'right', fontWeight: 800, color: '#0f172a' }}>{fmt(price * qty)}</td>
+                        </tr>
+                      );
+                    });
+                  } catch (e) {
+                    return <tr><td colSpan={5} style={{ textAlign: 'center', color: '#94a3b8', padding: '1.5rem' }}>Error al procesar los productos del pedido</td></tr>;
+                  }
+                })()}
+              </tbody>
+            </table>
+
+            {/* Resumen Final */}
+            <div className="erp-factura-totales">
+              <div>
+                {selectedVentaModal.pantallazo_url && (
+                  <div style={{ marginTop: '0.5rem', background: '#f8fafc', padding: '0.75rem', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                    <p style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', margin: '0 0 0.25rem 0' }}>📎 Comprobante de Pago Adjunto:</p>
+                    <a href={selectedVentaModal.pantallazo_url} target="_blank" rel="noreferrer" style={{ fontSize: '0.82rem', color: '#6366f1', fontWeight: 700, textDecoration: 'underline' }}>
+                      Abrir comprobante completo ↗
+                    </a>
+                  </div>
+                )}
+              </div>
+              <div className="erp-factura-box-total">
+                <div className="erp-factura-row">
+                  <span>Subtotal Productos:</span>
+                  <strong>{fmt(selectedVentaModal.total)}</strong>
+                </div>
+                <div className="erp-factura-row-grand">
+                  <span>TOTAL FACTURA:</span>
+                  <span>{fmt(selectedVentaModal.total)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Botones de acción */}
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #e2e8f0' }}>
+              <button className="erp-btn erp-btn-ghost" onClick={() => window.print()}>
+                <Printer size={15} /> Imprimir / Guardar PDF
+              </button>
+              <button className="erp-btn erp-btn-primary-v" onClick={() => setSelectedVentaModal(null)}>
+                Cerrar Factura
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+

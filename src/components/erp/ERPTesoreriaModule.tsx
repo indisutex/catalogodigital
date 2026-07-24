@@ -73,13 +73,27 @@ export const ERPTesoreriaModule: React.FC<Props> = ({ tenantId }) => {
   const loadAll = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      const [res, ctas, movs, cxc, cxp] = await Promise.all([
+      let [res, ctas, movs, cxc, cxp] = await Promise.all([
         ERPTesoreriaService.fetchResumen(tenantId),
         ERPTesoreriaService.fetchCuentas(tenantId),
         ERPTesoreriaService.fetchMovimientos(tenantId),
         ERPTesoreriaService.fetchCxC(tenantId),
         ERPTesoreriaService.fetchCxP(tenantId)
       ]);
+
+      // Si no existen cuentas registradas, crear las cuentas predeterminadas
+      if (ctas.length === 0) {
+        try {
+          await Promise.all([
+            ERPTesoreriaService.crearCuenta({ tenant_id: tenantId, nombre: 'Caja General Principal', tipo: 'Caja', saldo_inicial: 0, saldo_actual: 0, activa: true, color: '#10b981', cuenta_puc: '110505' }),
+            ERPTesoreriaService.crearCuenta({ tenant_id: tenantId, nombre: 'Bancolombia Principal', tipo: 'Cuenta Ahorros', banco: 'Bancolombia', saldo_inicial: 0, saldo_actual: 0, activa: true, color: '#0284c7', cuenta_puc: '111005' }),
+            ERPTesoreriaService.crearCuenta({ tenant_id: tenantId, nombre: 'Nequi / Daviplata', tipo: 'Billetera Digital', banco: 'Nequi', saldo_inicial: 0, saldo_actual: 0, activa: true, color: '#8b5cf6', cuenta_puc: '110515' })
+          ]);
+          ctas = await ERPTesoreriaService.fetchCuentas(tenantId);
+          res  = await ERPTesoreriaService.fetchResumen(tenantId);
+        } catch (_) {}
+      }
+
       setResumen(res); setCuentas(ctas); setMovimientos(movs);
       setCxcList(cxc); setCxpList(cxp);
     } catch (e: any) { setError(e.message); }
