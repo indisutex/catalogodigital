@@ -61,7 +61,7 @@ export class ERPVentasService {
       .from('pedidos')
       .select('*')
       .eq('tenant_id', tenantId)
-      .in('estado', ['aprobado', 'pagado', 'enviado', 'entregado'])
+      .gt('total', 0)
       .gte('created_at', (desde ?? inicioMes) + 'T00:00:00')
       .lte('created_at', (hasta ?? finMes) + 'T23:59:59')
       .order('created_at', { ascending: false });
@@ -80,12 +80,12 @@ export class ERPVentasService {
     const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0];
     const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).toISOString().split('T')[0];
 
-    // 1. Ventas del mes desde pedidos
+    // 1. Ventas del mes desde pedidos (todos con total > 0)
     const { data: ventasMes } = await supabase
       .from('pedidos')
       .select('total, created_at')
       .eq('tenant_id', tenantId)
-      .in('estado', ['aprobado', 'pagado', 'enviado', 'entregado'])
+      .gt('total', 0)
       .gte('created_at', inicioMes + 'T00:00:00')
       .lte('created_at', finMes + 'T23:59:59');
 
@@ -94,7 +94,7 @@ export class ERPVentasService {
       .from('pedidos')
       .select('total, created_at')
       .eq('tenant_id', tenantId)
-      .in('estado', ['aprobado', 'pagado', 'enviado', 'entregado'])
+      .gt('total', 0)
       .gte('created_at', hoyStr + 'T00:00:00')
       .lte('created_at', hoyStr + 'T23:59:59');
 
@@ -197,7 +197,7 @@ export class ERPVentasService {
       .from('pedidos')
       .select('productos, total')
       .eq('tenant_id', tenantId)
-      .in('estado', ['aprobado', 'pagado', 'enviado', 'entregado'])
+      .gt('total', 0)
       .gte('created_at', inicioMes + 'T00:00:00');
 
     const mapaProductos: Record<string, { cantidad: number; total: number }> = {};
