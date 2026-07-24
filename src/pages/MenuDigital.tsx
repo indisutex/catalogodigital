@@ -31,11 +31,29 @@ try {
   }
 } catch (e) {}
 
+
 const decodeExtraImage = (str: string) => {
-  if (!str) return { url: '', ref: '' };
-  const [url, ref] = str.split('|REF:');
-  return { url: url || '', ref: ref || '' };
+  if (!str) return { url: '', ref: '', estampado: '' };
+  let url = str, estampado = '', ref = '';
+  if (str.includes('|EST:')) {
+    const parts = str.split('|EST:');
+    url = parts[0];
+    const rest = parts[1] || '';
+    if (rest.includes('|REF:')) {
+      const sub = rest.split('|REF:');
+      estampado = sub[0] || '';
+      ref = sub[1] || '';
+    } else {
+      estampado = rest;
+    }
+  } else if (str.includes('|REF:')) {
+    const parts = str.split('|REF:');
+    url = parts[0];
+    estampado = parts[1] || ''; // old format: ref field holds estampado name
+  }
+  return { url: url || '', ref: ref || '', estampado: estampado || '' };
 };
+
 export default function MenuDigital() {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
