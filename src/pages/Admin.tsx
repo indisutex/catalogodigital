@@ -433,6 +433,9 @@ export default function Admin() {
   const [subcategoriasData, setSubcategoriasData] = useState<Subcategoria[]>([]);
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [listaPqrs, setListaPqrs] = useState<PQRS[]>([]);
+  const [pqrsBusqueda, setPqrsBusqueda] = useState('');
+  const [pqrsFiltroEstado, setPqrsFiltroEstado] = useState<'todos' | 'pendiente' | 'en_proceso' | 'resuelto'>('todos');
+  const [detailPqrs, setDetailPqrs] = useState<PQRS | null>(null);
   const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
   const [clientes, setClientes] = useState<any[]>([]);
   const [clienteSearchQuery, setClienteSearchQuery] = useState('');
@@ -6658,99 +6661,296 @@ export default function Admin() {
           {/* ── PQRS TAB ── */}
           {activeTab === 'pqrs' && (
             <div className="admin-section fade-in">
-              <div className="section-header">
-                <h2>Soporte / PQRS</h2>
+              {/* Header section with KPIs */}
+              <div className="pqrs-header-card">
+                <div className="pqrs-header-title">
+                  <div className="pqrs-title-icon">
+                    <LifeBuoy size={26} />
+                  </div>
+                  <div>
+                    <h2>Centro de Soporte & PQRS</h2>
+                    <p>Gestiona solicitudes, reclamos y dudas de tus clientes en tiempo real</p>
+                  </div>
+                </div>
+
+                {/* KPI Cards Grid */}
+                <div className="pqrs-kpi-grid">
+                  <div className={`pqrs-kpi-card ${pqrsFiltroEstado === 'todos' ? 'active' : ''}`} onClick={() => setPqrsFiltroEstado('todos')}>
+                    <div className="pqrs-kpi-val">{listaPqrs.length}</div>
+                    <div className="pqrs-kpi-label">Total Solicitudes</div>
+                  </div>
+                  <div className={`pqrs-kpi-card ${pqrsFiltroEstado === 'pendiente' ? 'active' : ''}`} onClick={() => setPqrsFiltroEstado('pendiente')}>
+                    <div className="pqrs-kpi-val" style={{ color: '#ef4444' }}>
+                      {listaPqrs.filter(p => p.estado === 'pendiente').length}
+                      {listaPqrs.filter(p => p.estado === 'pendiente').length > 0 && <span className="kpi-dot-pulse" />}
+                    </div>
+                    <div className="pqrs-kpi-label">Pendientes</div>
+                  </div>
+                  <div className={`pqrs-kpi-card ${pqrsFiltroEstado === 'en_proceso' ? 'active' : ''}`} onClick={() => setPqrsFiltroEstado('en_proceso')}>
+                    <div className="pqrs-kpi-val" style={{ color: '#f59e0b' }}>
+                      {listaPqrs.filter(p => p.estado === 'en_proceso').length}
+                    </div>
+                    <div className="pqrs-kpi-label">En Proceso</div>
+                  </div>
+                  <div className={`pqrs-kpi-card ${pqrsFiltroEstado === 'resuelto' ? 'active' : ''}`} onClick={() => setPqrsFiltroEstado('resuelto')}>
+                    <div className="pqrs-kpi-val" style={{ color: '#10b981' }}>
+                      {listaPqrs.filter(p => p.estado === 'resuelto').length}
+                    </div>
+                    <div className="pqrs-kpi-label">Resueltos</div>
+                  </div>
+                </div>
               </div>
-              
-              {listaPqrs.length === 0 ? (
-                <div className="no-items">
-                  <LifeBuoy size={48} style={{ color: '#cbd5e1', marginBottom: '1rem', margin: '0 auto' }} />
-                  <h3>No hay solicitudes PQRS</h3>
-                  <p>No se han recibido solicitudes de soporte.</p>
+
+              {/* Controls Bar */}
+              <div className="pqrs-controls-bar">
+                <div className="pqrs-search-input-wrap">
+                  <Search size={16} className="pqrs-search-icon" />
+                  <input
+                    type="text"
+                    placeholder="Buscar por cliente, teléfono, pedido o motivo..."
+                    value={pqrsBusqueda}
+                    onChange={e => setPqrsBusqueda(e.target.value)}
+                    className="pqrs-search-input"
+                  />
+                  {pqrsBusqueda && (
+                    <button className="pqrs-search-clear" onClick={() => setPqrsBusqueda('')}>×</button>
+                  )}
                 </div>
-              ) : (
-                <div className="table-responsive">
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>Fecha</th>
-                        <th>Cliente</th>
-                        <th>Motivo</th>
-                        <th>Descripción</th>
-                        <th>Evidencia</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {listaPqrs.map(pqrs => (
-                        <tr key={pqrs.id}>
-                          <td style={{ whiteSpace: 'nowrap', fontSize: '0.85rem' }}>
-                            {new Date(pqrs.created_at).toLocaleDateString()} <br/>
-                            <span style={{ color: '#64748b' }}>{new Date(pqrs.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                          </td>
-                          <td>
-                            <strong>{pqrs.nombre_cliente}</strong><br/>
-                            <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{pqrs.telefono_cliente}</span>
-                            {pqrs.numero_pedido && <div style={{ fontSize: '0.75rem', background: '#f1f5f9', display: 'inline-block', padding: '2px 6px', borderRadius: '4px', marginTop: '2px' }}>Pedido: {pqrs.numero_pedido}</div>}
-                          </td>
-                          <td>
-                            <span style={{ fontWeight: 600, color: '#334155' }}>{pqrs.motivo}</span>
-                          </td>
-                          <td style={{ maxWidth: '250px' }}>
-                            <p style={{ margin: 0, fontSize: '0.85rem', color: '#475569', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }} title={pqrs.descripcion}>
-                              {pqrs.descripcion}
-                            </p>
-                          </td>
-                          <td>
-                            {pqrs.evidencia_url ? (
-                              <a href={pqrs.evidencia_url} target="_blank" rel="noreferrer" style={{ color: 'var(--primary)', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                <Link size={12} /> Ver adjunto
-                              </a>
-                            ) : <span style={{ color: '#94a3b8', fontSize: '0.8rem' }}>-</span>}
-                          </td>
-                          <td>
-                            <select 
-                              value={pqrs.estado} 
-                              onChange={async (e) => {
-                                const nuevoEstado = e.target.value;
-                                setListaPqrs(prev => prev.map(p => p.id === pqrs.id ? { ...p, estado: nuevoEstado } : p));
-                                await supabase.from('pqrs').update({ estado: nuevoEstado }).eq('id', pqrs.id);
-                                showToast('Estado actualizado ✓');
-                              }}
-                              style={{ 
-                                padding: '0.4rem', 
-                                borderRadius: '6px', 
-                                border: '1px solid #e2e8f0', 
-                                background: pqrs.estado === 'pendiente' ? '#fef2f2' : pqrs.estado === 'en_proceso' ? '#fffbeb' : '#f0fdf4',
-                                color: pqrs.estado === 'pendiente' ? '#b91c1c' : pqrs.estado === 'en_proceso' ? '#d97706' : '#15803d',
-                                fontWeight: 600,
-                                fontSize: '0.8rem'
-                              }}
-                            >
-                              <option value="pendiente">Pendiente</option>
-                              <option value="en_proceso">En Proceso</option>
-                              <option value="resuelto">Resuelto</option>
-                            </select>
-                          </td>
-                          <td>
-                            <a 
-                              href={formatWhatsAppLink(pqrs.telefono_cliente, `Hola ${pqrs.nombre_cliente}, te contactamos desde ${configuracion?.nombre_negocio || 'la tienda'} respecto a tu solicitud de soporte (${pqrs.motivo}).`)}
-                              target="_blank" 
-                              rel="noreferrer" 
-                              className="btn-whatsapp-table"
-                              title="Contactar por WhatsApp"
-                              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', background: '#25D366', color: 'white', padding: '0.4rem 0.6rem', borderRadius: '6px', fontSize: '0.8rem', textDecoration: 'none', fontWeight: 600 }}
-                            >
-                              <MessageSquare size={14} /> Contactar
-                            </a>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+
+                <div className="pqrs-filters-group">
+                  <span className="pqrs-filter-label"><Filter size={14} /> Filtrar por:</span>
+                  <div className="pqrs-pill-tabs">
+                    <button className={`pqrs-pill ${pqrsFiltroEstado === 'todos' ? 'active' : ''}`} onClick={() => setPqrsFiltroEstado('todos')}>Todos ({listaPqrs.length})</button>
+                    <button className={`pqrs-pill pill-danger ${pqrsFiltroEstado === 'pendiente' ? 'active' : ''}`} onClick={() => setPqrsFiltroEstado('pendiente')}>Pendientes ({listaPqrs.filter(p => p.estado === 'pendiente').length})</button>
+                    <button className={`pqrs-pill pill-warning ${pqrsFiltroEstado === 'en_proceso' ? 'active' : ''}`} onClick={() => setPqrsFiltroEstado('en_proceso')}>En Proceso ({listaPqrs.filter(p => p.estado === 'en_proceso').length})</button>
+                    <button className={`pqrs-pill pill-success ${pqrsFiltroEstado === 'resuelto' ? 'active' : ''}`} onClick={() => setPqrsFiltroEstado('resuelto')}>Resueltos ({listaPqrs.filter(p => p.estado === 'resuelto').length})</button>
+                  </div>
                 </div>
-              )}
+              </div>
+
+              {/* PQRS Data Table */}
+              {(() => {
+                const filtrados = listaPqrs.filter(p => {
+                  const matchEstado = pqrsFiltroEstado === 'todos' || p.estado === pqrsFiltroEstado;
+                  const q = pqrsBusqueda.toLowerCase().trim();
+                  const matchSearch = !q || 
+                    (p.nombre_cliente || '').toLowerCase().includes(q) ||
+                    (p.telefono_cliente || '').toLowerCase().includes(q) ||
+                    (p.numero_pedido || '').toLowerCase().includes(q) ||
+                    (p.motivo || '').toLowerCase().includes(q) ||
+                    (p.descripcion || '').toLowerCase().includes(q);
+                  return matchEstado && matchSearch;
+                });
+
+                if (filtrados.length === 0) {
+                  return (
+                    <div className="no-items pqrs-empty-box">
+                      <LifeBuoy size={48} style={{ color: '#cbd5e1', marginBottom: '0.75rem' }} />
+                      <h3>No se encontraron solicitudes PQRS</h3>
+                      <p>{pqrsBusqueda || pqrsFiltroEstado !== 'todos' ? 'Intenta cambiando los filtros de búsqueda.' : 'No se han registrado solicitudes de soporte.'}</p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="pqrs-table-card">
+                    <div className="table-responsive">
+                      <table className="admin-table pqrs-modern-table">
+                        <thead>
+                          <tr>
+                            <th>Fecha</th>
+                            <th>Cliente / Pedido</th>
+                            <th>Motivo</th>
+                            <th>Descripción</th>
+                            <th>Evidencia</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filtrados.map(pqrs => {
+                            const motivoClean = (pqrs.motivo || 'General').trim();
+                            const isReclamo = /reclamo|daño|defect|faltant|error/i.test(motivoClean);
+                            const isQueja = /queja|demora|mal serv|mala aten/i.test(motivoClean);
+                            const isPeticion = /peticion|cambio|garant/i.test(motivoClean);
+
+                            return (
+                              <tr key={pqrs.id}>
+                                <td>
+                                  <div className="pqrs-date-wrap">
+                                    <span className="pqrs-date-day">{new Date(pqrs.created_at).toLocaleDateString()}</span>
+                                    <span className="pqrs-date-time">{new Date(pqrs.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                                  </div>
+                                </td>
+                                <td>
+                                  <div className="pqrs-user-cell">
+                                    <div className="pqrs-user-avatar">
+                                      {(pqrs.nombre_cliente || 'C').substring(0, 2).toUpperCase()}
+                                    </div>
+                                    <div className="pqrs-user-info">
+                                      <strong className="pqrs-user-name">{pqrs.nombre_cliente}</strong>
+                                      <span className="pqrs-user-phone">📞 {pqrs.telefono_cliente}</span>
+                                      {pqrs.numero_pedido && (
+                                        <span className="pqrs-order-badge">
+                                          <Package size={10} /> Pedido: {pqrs.numero_pedido}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td>
+                                  <span className={`pqrs-motivo-chip ${isReclamo ? 'motivo-danger' : isQueja ? 'motivo-warning' : isPeticion ? 'motivo-info' : 'motivo-default'}`}>
+                                    {motivoClean}
+                                  </span>
+                                </td>
+                                <td style={{ maxWidth: '280px' }}>
+                                  <div className="pqrs-desc-box">
+                                    <p className="pqrs-desc-text" title={pqrs.descripcion}>
+                                      {pqrs.descripcion}
+                                    </p>
+                                    <button className="pqrs-btn-expand" onClick={() => setDetailPqrs(pqrs)}>
+                                      Ver detalle completo
+                                    </button>
+                                  </div>
+                                </td>
+                                <td>
+                                  {pqrs.evidencia_url ? (
+                                    <a href={pqrs.evidencia_url} target="_blank" rel="noreferrer" className="pqrs-evidencia-badge">
+                                      <Link size={13} /> Ver adjunto
+                                    </a>
+                                  ) : (
+                                    <span className="pqrs-no-evidencia">Sin adjuntos</span>
+                                  )}
+                                </td>
+                                <td>
+                                  <select 
+                                    value={pqrs.estado} 
+                                    onChange={async (e) => {
+                                      const nuevoEstado = e.target.value;
+                                      setListaPqrs(prev => prev.map(p => p.id === pqrs.id ? { ...p, estado: nuevoEstado } : p));
+                                      await supabase.from('pqrs').update({ estado: nuevoEstado }).eq('id', pqrs.id);
+                                      showToast('Estado actualizado ✓');
+                                    }}
+                                    className={`pqrs-status-select select-status-${pqrs.estado}`}
+                                  >
+                                    <option value="pendiente">🔴 Pendiente</option>
+                                    <option value="en_proceso">🟠 En Proceso</option>
+                                    <option value="resuelto">🟢 Resuelto</option>
+                                  </select>
+                                </td>
+                                <td>
+                                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                                    <a 
+                                      href={formatWhatsAppLink(pqrs.telefono_cliente, `Hola ${pqrs.nombre_cliente}, te contactamos desde ${configuracion?.nombre_negocio || 'la tienda'} respecto a tu solicitud de soporte (${pqrs.motivo}).`)}
+                                      target="_blank" 
+                                      rel="noreferrer" 
+                                      className="pqrs-action-wa-btn"
+                                      title="Contactar por WhatsApp"
+                                    >
+                                      <MessageSquare size={14} /> Contactar
+                                    </a>
+                                    <button 
+                                      className="pqrs-action-icon-btn" 
+                                      onClick={() => setDetailPqrs(pqrs)}
+                                      title="Ver detalle"
+                                    >
+                                      <Eye size={15} />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* ── PQRS DETAIL MODAL ── */}
+          {detailPqrs && (
+            <div className="detail-overlay" onClick={() => setDetailPqrs(null)}>
+              <div className="detail-modal pqrs-modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', width: '92%' }}>
+                <button className="detail-close" onClick={() => setDetailPqrs(null)}><X size={20} /></button>
+                
+                <div style={{ padding: '1.5rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.85rem' }}>
+                    <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem' }}>
+                      {(detailPqrs.nombre_cliente || 'C').substring(0, 2).toUpperCase()}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#0f172a' }}>{detailPqrs.nombre_cliente}</h3>
+                      <span style={{ fontSize: '0.85rem', color: '#64748b' }}>📞 {detailPqrs.telefono_cliente}</span>
+                    </div>
+                    <span className="pqrs-motivo-chip motivo-default" style={{ fontSize: '0.8rem' }}>
+                      {detailPqrs.motivo}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', marginBottom: '1.2rem', background: '#f8fafc', padding: '0.85rem', borderRadius: '10px', fontSize: '0.85rem' }}>
+                    <div>
+                      <span style={{ color: '#64748b', display: 'block', fontSize: '0.75rem' }}>Fecha de registro:</span>
+                      <strong>{new Date(detailPqrs.created_at).toLocaleString()}</strong>
+                    </div>
+                    {detailPqrs.numero_pedido && (
+                      <div>
+                        <span style={{ color: '#64748b', display: 'block', fontSize: '0.75rem' }}>Número de Pedido:</span>
+                        <strong style={{ color: 'var(--primary)' }}>#{detailPqrs.numero_pedido}</strong>
+                      </div>
+                    )}
+                    <div>
+                      <span style={{ color: '#64748b', display: 'block', fontSize: '0.75rem', marginBottom: '0.2rem' }}>Estado actual:</span>
+                      <select 
+                        value={detailPqrs.estado} 
+                        onChange={async (e) => {
+                          const nuevoEstado = e.target.value;
+                          setDetailPqrs({ ...detailPqrs, estado: nuevoEstado });
+                          setListaPqrs(prev => prev.map(p => p.id === detailPqrs.id ? { ...p, estado: nuevoEstado } : p));
+                          await supabase.from('pqrs').update({ estado: nuevoEstado }).eq('id', detailPqrs.id);
+                          showToast('Estado actualizado ✓');
+                        }}
+                        className={`pqrs-status-select select-status-${detailPqrs.estado}`}
+                        style={{ padding: '0.3rem 0.6rem' }}
+                      >
+                        <option value="pendiente">🔴 Pendiente</option>
+                        <option value="en_proceso">🟠 En Proceso</option>
+                        <option value="resuelto">🟢 Resuelto</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: '1.2rem' }}>
+                    <label style={{ display: 'block', fontWeight: 700, fontSize: '0.85rem', color: '#334155', marginBottom: '0.4rem' }}>Descripción del caso:</label>
+                    <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.85rem', fontSize: '0.9rem', color: '#1e293b', lineHeight: '1.5', whiteSpace: 'pre-wrap', maxHeight: '200px', overflowY: 'auto' }}>
+                      {detailPqrs.descripcion}
+                    </div>
+                  </div>
+
+                  {detailPqrs.evidencia_url && (
+                    <div style={{ marginBottom: '1.2rem' }}>
+                      <label style={{ display: 'block', fontWeight: 700, fontSize: '0.85rem', color: '#334155', marginBottom: '0.4rem' }}>Evidencia adjunta:</label>
+                      <a href={detailPqrs.evidencia_url} target="_blank" rel="noreferrer" className="pqrs-evidencia-badge" style={{ display: 'inline-flex', padding: '0.6rem 1rem', fontSize: '0.85rem' }}>
+                        <Link size={15} /> Abrir imagen/archivo adjunto
+                      </a>
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', gap: '0.6rem', marginTop: '1.5rem', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
+                    <a 
+                      href={formatWhatsAppLink(detailPqrs.telefono_cliente, `Hola ${detailPqrs.nombre_cliente}, te escribimos de ${configuracion?.nombre_negocio || 'la tienda'} referente a tu solicitud de soporte: "${detailPqrs.motivo}". Estamos aquí para ayudarte.`)}
+                      target="_blank" 
+                      rel="noreferrer" 
+                      className="pqrs-action-wa-btn"
+                      style={{ flex: 1, justifyContent: 'center', padding: '0.7rem' }}
+                    >
+                      <MessageSquare size={16} /> Abrir WhatsApp con respuesta
+                    </a>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
