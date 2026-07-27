@@ -48,8 +48,9 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId, onNavigateTab
   const [balanceList, setBalanceList] = useState<ERPBalancePruebaItem[]>([]);
   const [inventarioList, setInventarioList] = useState<any[]>([]);
 
-  // Filtro de búsqueda
+  // Filtro de búsqueda y modo de vista (Fácil vs Técnico)
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [modoVista, setModoVista] = useState<'facil' | 'tecnico'>('facil');
 
   // Modales
   const [showCuentaModal, setShowCuentaModal] = useState<boolean>(false);
@@ -552,18 +553,155 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId, onNavigateTab
       {/* Pestaña 3: Historial de Movimientos */}
       {activeTab === 'movimientos' && (
         <div className="erp-card-table">
-          <div className="erp-table-header">
-            <h3>Historial General de Ventas y Movimientos</h3>
-            <button className="erp-btn-primary" onClick={() => setShowComprobanteModal(true)}>
-              <Plus size={16} /> Registrar Movimiento Manual
-            </button>
+          <div className="erp-table-header" style={{ flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div>
+              <h3 style={{ margin: 0 }}>Historial General de Ventas y Movimientos</h3>
+              <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.82rem', color: '#64748b' }}>
+                {modoVista === 'facil' 
+                  ? '💡 Modo Sencillo: Muestra tus ventas e ingresos de forma clara sin tecnicismos.' 
+                  : '📐 Modo Técnico: Muestra los códigos PUC (110505, 413505) y asientos contables NIIF.'}
+              </p>
+            </div>
+
+            {/* Selector de Modo de Vista */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <div style={{ display: 'flex', gap: '0.25rem', background: '#f1f5f9', padding: '0.25rem', borderRadius: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setModoVista('facil')}
+                  style={{
+                    border: 'none',
+                    background: modoVista === 'facil' ? '#10b981' : 'transparent',
+                    color: modoVista === 'facil' ? '#ffffff' : '#64748b',
+                    padding: '0.4rem 0.85rem',
+                    borderRadius: '8px',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    boxShadow: modoVista === 'facil' ? '0 2px 6px rgba(16, 185, 129, 0.3)' : 'none'
+                  }}
+                >
+                  💡 Vista Fácil (Sencilla)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setModoVista('tecnico')}
+                  style={{
+                    border: 'none',
+                    background: modoVista === 'tecnico' ? '#334155' : 'transparent',
+                    color: modoVista === 'tecnico' ? '#ffffff' : '#64748b',
+                    padding: '0.4rem 0.85rem',
+                    borderRadius: '8px',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  📐 Vista Técnico NIIF (PUC)
+                </button>
+              </div>
+
+              <button className="erp-btn-primary" onClick={() => setShowComprobanteModal(true)}>
+                <Plus size={16} /> Registrar Movimiento Manual
+              </button>
+            </div>
           </div>
 
           {loading ? (
-            <p>Cargando historial...</p>
+            <p style={{ textAlign: 'center', padding: '2rem' }}>Cargando historial de ventas y movimientos...</p>
           ) : comprobantesList.length === 0 ? (
             <p style={{ textAlign: 'center', padding: '2.5rem', color: '#64748b' }}>No hay registros de movimientos en el periodo.</p>
+          ) : modoVista === 'facil' ? (
+            /* 🟢 VISTA FÁCIL Y CLARA PARA CUALQUIER USUARIO */
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem' }}>
+              {comprobantesList.map((comp) => {
+                const totalMonto = comp.asientos?.reduce((max, a) => Math.max(max, Number(a.debito || 0), Number(a.credito || 0)), 0) || 0;
+                const isVenta = comp.concepto.toLowerCase().includes('venta') || comp.tipo_comprobante.toLowerCase().includes('venta');
+                const isEgreso = comp.concepto.toLowerCase().includes('gasto') || comp.concepto.toLowerCase().includes('pago');
+
+                return (
+                  <div
+                    key={comp.id}
+                    style={{
+                      background: '#ffffff',
+                      border: '1.5px solid #e2e8f0',
+                      borderRadius: '16px',
+                      padding: '1.1rem 1.25rem',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '1rem',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                      <div
+                        style={{
+                          width: '46px',
+                          height: '46px',
+                          borderRadius: '14px',
+                          background: isVenta ? '#dcfce7' : isEgreso ? '#fee2e2' : '#e0f2fe',
+                          color: isVenta ? '#15803d' : isEgreso ? '#b91c1c' : '#0369a1',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '1.3rem',
+                          fontWeight: 800,
+                          flexShrink: 0
+                        }}
+                      >
+                        {isVenta ? '🛒' : isEgreso ? '💸' : '📄'}
+                      </div>
+
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem', flexWrap: 'wrap' }}>
+                          <strong style={{ fontSize: '0.98rem', color: '#0f172a' }}>{comp.concepto}</strong>
+                          <span
+                            style={{
+                              background: isVenta ? '#dcfce7' : isEgreso ? '#fee2e2' : '#f1f5f9',
+                              color: isVenta ? '#166534' : isEgreso ? '#991b1b' : '#475569',
+                              fontSize: '0.72rem',
+                              padding: '0.15rem 0.6rem',
+                              borderRadius: '99px',
+                              fontWeight: 800
+                            }}
+                          >
+                            {isVenta ? 'ENTRADA DE DINERO (VENTA)' : isEgreso ? 'SALIDA DE DINERO (GASTO)' : 'COMPROBANTE'}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: '#64748b', display: 'flex', gap: '0.85rem', flexWrap: 'wrap' }}>
+                          <span>📅 <strong>Fecha:</strong> {comp.fecha}</span>
+                          <span>🧾 <strong>Registro #:</strong> {comp.consecutivo}</span>
+                          <span>📍 <strong>Origen:</strong> {comp.origen_modulo}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ textAlign: 'right' }}>
+                      <span
+                        style={{
+                          fontSize: '1.3rem',
+                          fontWeight: 800,
+                          color: isVenta ? '#16a34a' : isEgreso ? '#dc2626' : '#0284c7',
+                          display: 'block'
+                        }}
+                      >
+                        {isVenta ? '+' : isEgreso ? '-' : ''}${totalMonto.toLocaleString('es-CO')}
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 700 }}>
+                        ✅ Dinero Ingresado a Caja
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           ) : (
+            /* 📐 VISTA TÉCNICO NIIF CON NÚMEROS PUC (PARA CONTADORES) */
             comprobantesList.map((comp) => (
               <div key={comp.id} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '1.25rem', marginBottom: '1rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
@@ -575,10 +713,10 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId, onNavigateTab
                 <table className="erp-table">
                   <thead>
                     <tr>
-                      <th>Cuenta</th>
+                      <th>Cuenta PUC</th>
                       <th>Detalle de Operación</th>
-                      <th style={{ textAlign: 'right' }}>Entrada ($)</th>
-                      <th style={{ textAlign: 'right' }}>Salida ($)</th>
+                      <th style={{ textAlign: 'right' }}>Débito / Entrada ($)</th>
+                      <th style={{ textAlign: 'right' }}>Crédito / Salida ($)</th>
                     </tr>
                   </thead>
                   <tbody>

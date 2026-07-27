@@ -866,6 +866,7 @@ export default function Admin() {
   const [posCustomerName, setPosCustomerName] = useState('');
   const [posCustomerAddress, setPosCustomerAddress] = useState('');
   const [posCustomerCity, setPosCustomerCity] = useState('');
+  const [posAsesor, setPosAsesor] = useState('');
   const [posPaymentMethod, setPosPaymentMethod] = useState<'efectivo' | 'transferencia' | 'tarjeta'>('efectivo');
   const [posPriceTier, setPosPriceTier] = useState<'detal' | 'por_mayor' | 'precio_50_unidades'>('detal');
   const [posCheckoutSuccess, setPosCheckoutSuccess] = useState(false);
@@ -9495,6 +9496,7 @@ export default function Admin() {
                       <div style={{ marginBottom: '0.75rem' }}>
                         <strong>Cliente:</strong> {posLastInvoice.cliente_nombre}<br />
                         <strong>Teléfono:</strong> {posLastInvoice.cliente_telefono}<br />
+                        <strong>Asesora / Vendedora:</strong> {posLastInvoice.asesor || 'Caja General'}<br />
                         {posLastInvoice.direccion && <><strong>Dirección:</strong> {posLastInvoice.direccion}, {posLastInvoice.ciudad}<br /></>}
                         <strong>Método de Pago:</strong> {posLastInvoice.metodo_pago.toUpperCase()}<br />
                       </div>
@@ -9565,6 +9567,7 @@ export default function Admin() {
                         setPosCustomerName('');
                         setPosCustomerAddress('');
                         setPosCustomerCity('');
+                        setPosAsesor('');
                         setPosCheckoutSuccess(false);
                         setPosLastInvoice(null);
                       }}
@@ -9903,6 +9906,44 @@ export default function Admin() {
                         )}
                       </div>
 
+                      {/* Asesora / Vendedora Selection */}
+                      <div style={{ background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '16px', padding: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                          <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            👩‍💼 Asesora / Vendedora *
+                          </label>
+                          {posAsesor && (
+                            <span style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: 800, background: '#dcfce7', padding: '0.1rem 0.55rem', borderRadius: '99px' }}>
+                              ✓ Asignada
+                            </span>
+                          )}
+                        </div>
+                        <select
+                          value={posAsesor}
+                          onChange={e => setPosAsesor(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '0.6rem 0.85rem',
+                            borderRadius: '10px',
+                            border: '1.5px solid #cbd5e1',
+                            fontSize: '0.88rem',
+                            fontWeight: 700,
+                            color: posAsesor ? '#0f172a' : '#64748b',
+                            background: 'white',
+                            outline: 'none',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          <option value="">-- Seleccionar Asesora / Vendedora --</option>
+                          {asesores.map(a => (
+                            <option key={a.id} value={a.nombre}>
+                              👤 {a.nombre} {a.telefono ? `(${a.telefono.split(',')[0]})` : ''}
+                            </option>
+                          ))}
+                          <option value="Caja General">🏪 Venta Directa en Caja</option>
+                        </select>
+                      </div>
+
                       {/* Customer Data */}
                       <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
                         <h4 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 800, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -10008,7 +10049,8 @@ export default function Admin() {
                                   ciudad: posCustomerCity.trim() || 'POS',
                                   total: totalSale,
                                   productos: serializedProducts,
-                                  linea_whatsapp: 'pos',
+                                  linea_whatsapp: posAsesor ? `pos_${posAsesor}` : 'pos',
+                                  asesor: posAsesor || 'Caja General',
                                   tenant_id: tenant,
                                   estado: 'completado',
                                   atendido: true,
@@ -10062,7 +10104,8 @@ export default function Admin() {
                                 ciudad: posCustomerCity.trim(),
                                 total: totalSale,
                                 productos: serializedProducts,
-                                metodo_pago: posPaymentMethod
+                                metodo_pago: posPaymentMethod,
+                                asesor: posAsesor || 'Caja General'
                               });
 
                               setPosCheckoutSuccess(true);
