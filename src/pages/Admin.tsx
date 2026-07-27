@@ -9654,7 +9654,6 @@ export default function Admin() {
                             const hasStockAvailable = remainingStock > 0 && (p.stock || 0) > 0;
                             return (
                               <div key={p.id} style={{ border: `2px solid ${cartQty > 0 ? (configuracion?.color_primario || '#4f46e5') : '#f1f5f9'}`, borderRadius: '16px', padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', background: cartQty > 0 ? `${(configuracion?.color_primario || '#4f46e5')}08` : 'white', position: 'relative', transition: 'all 0.2s', cursor: hasStockAvailable ? 'pointer' : 'default' }}>
-                                {/* Cart badge */}
                                 {cartQty > 0 && (
                                   <span style={{ position: 'absolute', top: '6px', right: '6px', background: configuracion?.color_primario || '#4f46e5', color: 'white', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 800, boxShadow: '0 2px 6px rgba(0,0,0,0.25)', zIndex: 2 }}>
                                     {cartQty}
@@ -9669,7 +9668,7 @@ export default function Admin() {
                                   )}
                                 </div>
                                 {p.referencia && (
-                                  <span style={{ background: '#eff6ff', color: '#3b82f6', fontSize: '0.6rem', padding: '0.15rem 0.4rem', borderRadius: '5px', fontWeight: 800, alignSelf: 'flex-start', letterSpacing: '0.05em' }}>
+                                  <span style={{ background: '#eff6ff', color: '#3382f6', fontSize: '0.6rem', padding: '0.15rem 0.4rem', borderRadius: '5px', fontWeight: 800, alignSelf: 'flex-start', letterSpacing: '0.05em' }}>
                                     {p.referencia}
                                   </span>
                                 )}
@@ -9689,7 +9688,12 @@ export default function Admin() {
                                     const defaultTalla = p.tallas ? p.tallas.split(',')[0].trim() : undefined;
                                     const imgEstampados = (p.imagenes_extra || []).map((u: string) => { const d = decodeExtraImage(u); return (d.estampado || d.ref)?.trim(); }).filter(Boolean);
                                     const legacyEstampados = p.estampados?.split(',').map(e => e.trim()).filter(Boolean) || [];
-                                    const allEstampados = imgEstampados.length > 0 ? Array.from(new Set(imgEstampados)) : legacyEstampados;
+                                    const estMap = new Map<string, string>();
+                                    [...imgEstampados, ...legacyEstampados].forEach((e: string) => {
+                                      const k = e.toLowerCase();
+                                      if (k && !estMap.has(k)) estMap.set(k, e);
+                                    });
+                                    const allEstampados = Array.from(estMap.values());
                                     const defaultEstampado = allEstampados[0] || undefined;
                                     setPosCart(prev => {
                                       const exist = prev.find(item => item.id === p.id && item.talla === defaultTalla && item.estampado === defaultEstampado);
@@ -9745,13 +9749,16 @@ export default function Admin() {
                           posCart.map((item, idx) => {
                             const allProductImages = (() => {
                               const list: { url: string; ref: string }[] = [];
+                              const seenUrls = new Set<string>();
                               if (item.producto.imagen_url) {
                                 list.push({ url: item.producto.imagen_url, ref: '' });
+                                seenUrls.add(item.producto.imagen_url.trim());
                               }
                               (item.producto.imagenes_extra || []).forEach((str: string) => {
                                 const decoded = decodeExtraImage(str);
-                                if (decoded.url) {
-                                  list.push({ url: decoded.url, ref: decoded.ref || '' });
+                                if (decoded.url && !seenUrls.has(decoded.url.trim())) {
+                                  seenUrls.add(decoded.url.trim());
+                                  list.push({ url: decoded.url, ref: (decoded.estampado || decoded.ref || '').trim() });
                                 }
                               });
                               return list;
@@ -9803,8 +9810,16 @@ export default function Admin() {
                                     })()}
                                     {(() => {
                                       const legacyEstampados = item.producto.estampados?.split(',').map((e: string) => e.trim()).filter(Boolean) || [];
-                                      const extraImagesRefs = (item.producto.imagenes_extra || []).map((u: string) => decodeExtraImage(u).ref?.trim()).filter(Boolean);
-                                      const allEstampados = Array.from(new Set([...legacyEstampados, ...extraImagesRefs]));
+                                      const extraImagesRefs = (item.producto.imagenes_extra || []).map((u: string) => {
+                                        const d = decodeExtraImage(u);
+                                        return (d.estampado || d.ref)?.trim();
+                                      }).filter(Boolean);
+                                      const estMap = new Map<string, string>();
+                                      [...legacyEstampados, ...extraImagesRefs].forEach((e: string) => {
+                                        const k = e.toLowerCase();
+                                        if (k && !estMap.has(k)) estMap.set(k, e);
+                                      });
+                                      const allEstampados = Array.from(estMap.values());
                                       if (allEstampados.length === 0) {
                                         return (
                                           <input
