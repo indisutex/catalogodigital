@@ -1282,7 +1282,7 @@ export default function MenuDigital() {
 
               {/* ── THUMBNAILS STRIP ── */}
               {allImages.length > 1 && (
-                <div className="detail-thumbs" style={{ display: 'flex', gap: '8px', padding: '10px 16px 0', overflowX: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
+                <div className="detail-thumbs" style={{ display: 'flex', gap: '6px', padding: '6px 12px 0', overflowX: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
                   {allImages.map((img, i) => {
                     const imgEstName = (img.estampado || img.ref)?.trim().toUpperCase();
                     return (
@@ -1292,8 +1292,8 @@ export default function MenuDigital() {
                         alt={imgEstName || `Imagen ${i + 1}`}
                         className={`detail-thumb ${i === safeIdx ? 'active' : ''}`}
                         style={{
-                          width: '52px',
-                          height: '52px',
+                          width: '46px',
+                          height: '46px',
                           borderRadius: '8px',
                           objectFit: 'cover',
                           border: i === safeIdx ? '2px solid var(--primary)' : '2px solid #e2e8f0',

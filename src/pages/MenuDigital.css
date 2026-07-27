@@ -1040,10 +1040,10 @@
 
 .detail-modal {
   background: #fff;
-  border-radius: 20px;
+  border-radius: 24px;
   width: 100%;
-  max-width: 440px;
-  max-height: 92dvh;
+  max-width: 460px;
+  max-height: 90dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1080,7 +1080,9 @@
 .detail-carousel {
   position: relative;
   width: 100%;
-  aspect-ratio: 4 / 5;
+  height: 34dvh;
+  max-height: 300px;
+  min-height: 220px;
   background: #f8fafc;
   flex-shrink: 0;
   display: flex;
@@ -1092,7 +1094,7 @@
 .detail-carousel-img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 
@@ -1342,15 +1344,18 @@
 @media (max-width: 480px) {
   .detail-modal {
     max-width: 95%;
-    max-height: 90dvh;
+    max-height: 92dvh;
     border-radius: 20px;
   }
   .detail-carousel {
     aspect-ratio: auto;
-    height: 45dvh;
+    height: 28dvh;
+    max-height: 240px;
+    min-height: 180px;
   }
   .detail-carousel-img {
     height: 100%;
+    object-fit: contain;
   }
 }
 
@@ -1426,15 +1431,18 @@
   }
   .detail-modal {
     max-width: 95%;
-    max-height: 90dvh;
+    max-height: 92dvh;
     border-radius: 20px;
   }
   .detail-carousel {
     aspect-ratio: auto;
-    height: 45dvh;
+    height: 28dvh;
+    max-height: 240px;
+    min-height: 180px;
   }
   .detail-carousel-img {
     height: 100%;
+    object-fit: contain;
   }
   /* Cart / checkout */
   .cart-item {
