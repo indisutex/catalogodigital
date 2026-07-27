@@ -139,11 +139,11 @@ export const ERPMainModule: React.FC<Props> = ({ tenantId }) => {
         )}
 
         {activeTab === 'tesoreria' && (
-          <ERPTesoreriaModule tenantId={tenantId} />
+          <ERPTesoreriaModule tenantId={tenantId} onNavigateTab={(tab) => setActiveTab(tab as any)} />
         )}
 
         {activeTab === 'contabilidad' && (
-          <ERPContabilidadModule tenantId={tenantId} />
+          <ERPContabilidadModule tenantId={tenantId} onNavigateTab={(tab) => setActiveTab(tab as any)} />
         )}
 
         {/* Módulos próximos — pantalla de "coming soon" */}

@@ -16,7 +16,10 @@ import {
   CheckCircle, AlertTriangle, CreditCard, Banknote
 } from 'lucide-react';
 
-interface Props { tenantId: string; }
+interface Props { 
+  tenantId: string;
+  onNavigateTab?: (tab: string) => void;
+}
 
 const fmt = (n: number) => `$${Math.round(n).toLocaleString('es-CO')}`;
 const hoy = () => new Date().toISOString().split('T')[0];

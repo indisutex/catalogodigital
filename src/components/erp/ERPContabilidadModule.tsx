@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { supabase } from '../../lib/supabase';
 import { ERPContabilidadService } from '../../lib/erpContabilidadService';
 import type { 
   ERPCuentaPUC, 
@@ -19,15 +20,22 @@ import {
   FileSpreadsheet,
   CheckCircle2,
   HelpCircle,
-  BookOpen
+  BookOpen,
+  ArrowRightLeft,
+  Receipt,
+  DollarSign,
+  Package,
+  Search,
+  X
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 interface Props {
   tenantId: string;
+  onNavigateTab?: (tab: 'ventas' | 'tesoreria' | 'contabilidad' | 'inventario') => void;
 }
 
-export const ERPContabilidadModule: React.FC<Props> = ({ tenantId }) => {
+export const ERPContabilidadModule: React.FC<Props> = ({ tenantId, onNavigateTab }) => {
   // Pestañas principales simplificadas para el usuario
   const [activeTab, setActiveTab] = useState<'resumen' | 'terceros' | 'movimientos' | 'puc_avanzado'>('resumen');
   const [loading, setLoading] = useState<boolean>(true);
@@ -38,6 +46,7 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId }) => {
   const [tercerosList, setTercerosList] = useState<ERPTercero[]>([]);
   const [comprobantesList, setComprobantesList] = useState<ERPComprobanteContable[]>([]);
   const [balanceList, setBalanceList] = useState<ERPBalancePruebaItem[]>([]);
+  const [inventarioList, setInventarioList] = useState<any[]>([]);
 
   // Filtro de búsqueda
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -46,6 +55,8 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId }) => {
   const [showCuentaModal, setShowCuentaModal] = useState<boolean>(false);
   const [showTerceroModal, setShowTerceroModal] = useState<boolean>(false);
   const [showComprobanteModal, setShowComprobanteModal] = useState<boolean>(false);
+  const [showInventarioModal, setShowInventarioModal] = useState<boolean>(false);
+  const [inventarioSearch, setInventarioSearch] = useState<string>('');
 
   // Formulario Nueva Cuenta PUC
   const [cuentaForm, setCuentaForm] = useState({
@@ -87,17 +98,19 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId }) => {
     setLoading(true);
     setErrorMsg(null);
     try {
-      const [pucData, tercerosData, diarioData, balanceData] = await Promise.all([
+      const [pucData, tercerosData, diarioData, balanceData, prodsRes] = await Promise.all([
         ERPContabilidadService.fetchPUC(tenantId),
         ERPContabilidadService.fetchTerceros(tenantId),
         ERPContabilidadService.fetchLibroDiario(tenantId),
-        ERPContabilidadService.fetchBalancePrueba(tenantId)
+        ERPContabilidadService.fetchBalancePrueba(tenantId),
+        supabase.from('productos').select('*').eq('tenant_id', tenantId)
       ]);
 
       setPucList(pucData);
       setTercerosList(tercerosData);
       setComprobantesList(diarioData);
       setBalanceList(balanceData);
+      setInventarioList(prodsRes.data || []);
     } catch (err: any) {
       setErrorMsg(err.message || 'Error al cargar información del ERP');
     } finally {
@@ -219,6 +232,162 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId }) => {
         <button onClick={loadData} className="erp-btn-primary" style={{ background: '#ffffff', color: '#334155', border: '1px solid #cbd5e1' }}>
           <RefreshCw size={16} /> Actualizar Libro Contable
         </button>
+      </div>
+
+      {/* ── BARRA DE HERRAMIENTAS Y ACCESOS RÁPIDOS ERP ── */}
+      <div style={{
+        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+        borderRadius: '16px',
+        padding: '1.15rem 1.25rem',
+        marginBottom: '1.5rem',
+        boxShadow: '0 8px 24px rgba(15, 23, 42, 0.15)',
+        color: '#ffffff'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+          <span style={{ fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            ⚡ Herramientas y Módulos de Gestión ERP
+          </span>
+          <span style={{ fontSize: '0.75rem', color: '#e2e8f0', background: 'rgba(255,255,255,0.1)', padding: '0.2rem 0.65rem', borderRadius: '12px', fontWeight: 600 }}>
+            Acceso Rápido Unificado
+          </span>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
+          {/* 1. Movimientos */}
+          <button
+            type="button"
+            onClick={() => onNavigateTab ? onNavigateTab('tesoreria') : setActiveTab('resumen')}
+            style={{
+              background: 'rgba(255, 255, 255, 0.07)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              borderRadius: '12px',
+              padding: '0.85rem',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              cursor: 'pointer',
+              textAlign: 'left',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <ArrowRightLeft size={18} />
+            </div>
+            <div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>Movimientos</div>
+              <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Ingresos & Egresos</div>
+            </div>
+          </button>
+
+          {/* 2. Facturación */}
+          <button
+            type="button"
+            onClick={() => onNavigateTab ? onNavigateTab('ventas') : setActiveTab('movimientos')}
+            style={{
+              background: 'rgba(255, 255, 255, 0.07)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              borderRadius: '12px',
+              padding: '0.85rem',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              cursor: 'pointer',
+              textAlign: 'left',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#10b981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Receipt size={18} />
+            </div>
+            <div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>Facturación</div>
+              <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Ventas & Comprobantes</div>
+            </div>
+          </button>
+
+          {/* 3. Cobros & Cartera */}
+          <button
+            type="button"
+            onClick={() => onNavigateTab ? onNavigateTab('tesoreria') : setActiveTab('resumen')}
+            style={{
+              background: 'rgba(255, 255, 255, 0.07)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              borderRadius: '12px',
+              padding: '0.85rem',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              cursor: 'pointer',
+              textAlign: 'left',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#8b5cf6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <DollarSign size={18} />
+            </div>
+            <div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>Cobros & CxC</div>
+              <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Cartera de Clientes</div>
+            </div>
+          </button>
+
+          {/* 4. Inventario & Stock */}
+          <button
+            type="button"
+            onClick={() => setShowInventarioModal(true)}
+            style={{
+              background: 'rgba(255, 255, 255, 0.07)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              borderRadius: '12px',
+              padding: '0.85rem',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              cursor: 'pointer',
+              textAlign: 'left',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#f59e0b', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Package size={18} />
+            </div>
+            <div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>Inventario</div>
+              <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{inventarioList.length} Productos</div>
+            </div>
+          </button>
+
+          {/* 5. Clientes */}
+          <button
+            type="button"
+            onClick={() => setActiveTab('terceros')}
+            style={{
+              background: 'rgba(255, 255, 255, 0.07)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              borderRadius: '12px',
+              padding: '0.85rem',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.75rem',
+              cursor: 'pointer',
+              textAlign: 'left',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#ec4899', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Users size={18} />
+            </div>
+            <div>
+              <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>Clientes</div>
+              <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{tercerosList.length} Terceros NIIF</div>
+            </div>
+          </button>
+        </div>
       </div>
 
       {/* Tarjetas de Resumen Contable NIIF */}
@@ -611,6 +780,104 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId }) => {
                 <button type="submit" className="erp-btn-primary">Guardar Movimiento</button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Modal Inventario & Stock */}
+      {showInventarioModal && (
+        <div className="erp-modal-overlay">
+          <div className="erp-modal-content" style={{ maxWidth: '850px', width: '92%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <Package size={22} color="#f59e0b" />
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800 }}>Inventario & Stock de Productos ERP</h3>
+              </div>
+              <button onClick={() => setShowInventarioModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}>
+                <X size={22} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, position: 'relative', minWidth: '240px' }}>
+                <Search size={18} style={{ position: 'absolute', left: '0.8rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <input
+                  type="text"
+                  className="erp-form-input"
+                  style={{ paddingLeft: '2.4rem', margin: 0, width: '100%' }}
+                  placeholder="Buscar referencia, producto o categoría..."
+                  value={inventarioSearch}
+                  onChange={e => setInventarioSearch(e.target.value)}
+                />
+              </div>
+              <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 600 }}>
+                {inventarioList.filter(p => (p.nombre || '').toLowerCase().includes(inventarioSearch.toLowerCase())).length} Productos encontrados
+              </span>
+            </div>
+
+            <div style={{ maxHeight: '420px', overflowY: 'auto', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
+              <table className="erp-table">
+                <thead>
+                  <tr>
+                    <th>Producto / Referencia</th>
+                    <th>Categoría</th>
+                    <th>Precio de Venta</th>
+                    <th>Variantes / Estampados</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {inventarioList
+                    .filter(p => (p.nombre || '').toLowerCase().includes(inventarioSearch.toLowerCase()))
+                    .map((item, i) => {
+                      const estampadosCount = Array.isArray(item.imagenes) 
+                        ? new Set(item.imagenes.map((img: any) => img.estampado || img.ref).filter(Boolean)).size 
+                        : 0;
+
+                      return (
+                        <tr key={item.id || i}>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                              {item.imagen_url ? (
+                                <img src={item.imagen_url} alt="" style={{ width: '38px', height: '38px', borderRadius: '8px', objectFit: 'cover' }} />
+                              ) : (
+                                <div style={{ width: '38px', height: '38px', borderRadius: '8px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <Package size={18} color="#94a3b8" />
+                                </div>
+                              )}
+                              <div>
+                                <strong style={{ color: '#0f172a', display: 'block' }}>{item.nombre}</strong>
+                                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Ref: {item.nombre}</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <span style={{ background: '#f1f5f9', color: '#475569', padding: '0.2rem 0.6rem', borderRadius: '6px', fontSize: '0.78rem', fontWeight: 600 }}>
+                              {item.categoria || item.categoria_id || 'General'}
+                            </span>
+                          </td>
+                          <td style={{ fontWeight: 700, color: '#0f172a' }}>
+                            ${Number(item.precio_mayorista || item.precio || 0).toLocaleString('es-CO')}
+                          </td>
+                          <td>
+                            <span style={{ fontSize: '0.8rem', color: '#0284c7', fontWeight: 600 }}>
+                              {estampadosCount > 0 ? `${estampadosCount} Estampados` : 'Estándar'}
+                            </span>
+                          </td>
+                          <td>
+                            <span style={{ background: item.activo !== false ? '#dcfce7' : '#fee2e2', color: item.activo !== false ? '#15803d' : '#b91c1c', padding: '0.2rem 0.6rem', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 700 }}>
+                              {item.activo !== false ? 'Disponible' : 'Inactivo'}
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1rem' }}>
+              <button className="erp-btn-primary" onClick={() => setShowInventarioModal(false)}>Cerrar Inventario</button>
+            </div>
           </div>
         </div>
       )}
