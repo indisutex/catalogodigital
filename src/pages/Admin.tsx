@@ -437,7 +437,8 @@ export default function Admin() {
   const [pqrsFiltroEstado, setPqrsFiltroEstado] = useState<'todos' | 'pendiente' | 'en_proceso' | 'resuelto'>('todos');
   const [detailPqrs, setDetailPqrs] = useState<PQRS | null>(null);
   const [showCopyCategoriesModal, setShowCopyCategoriesModal] = useState(false);
-  const [selectedTargetTenant, setSelectedTargetTenant] = useState<string>('saramantha');
+  const [copyCatSourceTenant, setCopyCatSourceTenant] = useState<string>(getTenantId() || 'sublimados_majestic');
+  const [copyCatTargetTenant, setCopyCatTargetTenant] = useState<string>('saramantha');
   const [copyingCategories, setCopyingCategories] = useState(false);
   const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
   const [clientes, setClientes] = useState<any[]>([]);
@@ -2302,8 +2303,7 @@ export default function Admin() {
     }
   };
 
-  const handleCopyCategoriesToTenant = async (targetTenantId: string) => {
-    const sourceTenantId = getTenantId() || 'saramantha';
+  const handleCopyCategoriesToTenant = async (sourceTenantId: string, targetTenantId: string) => {
     if (sourceTenantId === targetTenantId) {
       showToast('La tienda de origen y destino no pueden ser la misma', 'error');
       return;
@@ -2311,13 +2311,18 @@ export default function Admin() {
 
     setCopyingCategories(true);
     try {
+      const allTenantsList = ['saramantha', 'sublimados_majestic', 'lovely', 'pijamas_lucerito', 'indisutex'];
+      const targets = targetTenantId === 'todas'
+        ? allTenantsList.filter(t => t !== sourceTenantId)
+        : [targetTenantId];
+
       const { data: sourceCats, error: errCats } = await supabase
         .from('categorias')
         .select('*')
         .eq('tenant_id', sourceTenantId);
 
       if (errCats || !sourceCats || sourceCats.length === 0) {
-        showToast('No se encontraron categorías en esta tienda para copiar', 'error');
+        showToast('No se encontraron categorías en la tienda de origen para copiar', 'error');
         setCopyingCategories(false);
         return;
       }
@@ -2327,67 +2332,69 @@ export default function Admin() {
         .select('*')
         .eq('tenant_id', sourceTenantId);
 
-      const { data: destCats } = await supabase
-        .from('categorias')
-        .select('*')
-        .eq('tenant_id', targetTenantId);
+      let totalCatsCopied = 0;
+      let totalSubcatsCopied = 0;
 
-      const { data: destSubcats } = await supabase
-        .from('subcategorias')
-        .select('*')
-        .eq('tenant_id', targetTenantId);
+      for (const targetId of targets) {
+        const { data: destCats } = await supabase
+          .from('categorias')
+          .select('*')
+          .eq('tenant_id', targetId);
 
-      let copiedCatsCount = 0;
-      let copiedSubcatsCount = 0;
+        const { data: destSubcats } = await supabase
+          .from('subcategorias')
+          .select('*')
+          .eq('tenant_id', targetId);
 
-      for (const srcCat of sourceCats) {
-        let destCat = destCats?.find(c => c.nombre.trim().toLowerCase() === srcCat.nombre.trim().toLowerCase());
-        let destCatId = destCat?.id;
+        for (const srcCat of sourceCats) {
+          let destCat = destCats?.find(c => c.nombre.trim().toLowerCase() === srcCat.nombre.trim().toLowerCase());
+          let destCatId = destCat?.id;
 
-        if (!destCatId) {
-          const { data: newCat, error: insertCatErr } = await supabase
-            .from('categorias')
-            .insert([{
-              nombre: srcCat.nombre,
-              slug: srcCat.slug || srcCat.nombre.toLowerCase().replace(/ /g, '-'),
-              icono: srcCat.icono,
-              color: srcCat.color,
-              imagen_url: srcCat.imagen_url,
-              activa: srcCat.activa !== false,
-              orden: srcCat.orden || 0,
-              tenant_id: targetTenantId
-            }])
-            .select()
-            .single();
+          if (!destCatId) {
+            const { data: newCat, error: insertCatErr } = await supabase
+              .from('categorias')
+              .insert([{
+                nombre: srcCat.nombre,
+                slug: srcCat.slug || srcCat.nombre.toLowerCase().replace(/ /g, '-'),
+                icono: srcCat.icono,
+                color: srcCat.color,
+                imagen_url: srcCat.imagen_url,
+                activa: srcCat.activa !== false,
+                orden: srcCat.orden || 0,
+                tenant_id: targetId
+              }])
+              .select()
+              .single();
 
-          if (!insertCatErr && newCat) {
-            destCatId = newCat.id;
-            copiedCatsCount++;
+            if (!insertCatErr && newCat) {
+              destCatId = newCat.id;
+              totalCatsCopied++;
+            }
           }
-        }
 
-        if (destCatId && sourceSubcats) {
-          const matchingSubcats = sourceSubcats.filter(s => s.categoria_id === srcCat.id);
-          for (const srcSub of matchingSubcats) {
-            const existsSub = destSubcats?.find(s => 
-              s.categoria_id === destCatId && 
-              s.nombre.trim().toLowerCase() === srcSub.nombre.trim().toLowerCase()
-            );
+          if (destCatId && sourceSubcats) {
+            const matchingSubcats = sourceSubcats.filter(s => s.categoria_id === srcCat.id);
+            for (const srcSub of matchingSubcats) {
+              const existsSub = destSubcats?.find(s => 
+                s.categoria_id === destCatId && 
+                s.nombre.trim().toLowerCase() === srcSub.nombre.trim().toLowerCase()
+              );
 
-            if (!existsSub) {
-              const { error: insertSubErr } = await supabase
-                .from('subcategorias')
-                .insert([{
-                  categoria_id: destCatId,
-                  nombre: srcSub.nombre,
-                  slug: srcSub.slug || srcSub.nombre.toLowerCase().replace(/ /g, '-'),
-                  activa: srcSub.activa !== false,
-                  orden: srcSub.orden || 0,
-                  tenant_id: targetTenantId
-                }]);
+              if (!existsSub) {
+                const { error: insertSubErr } = await supabase
+                  .from('subcategorias')
+                  .insert([{
+                    categoria_id: destCatId,
+                    nombre: srcSub.nombre,
+                    slug: srcSub.slug || srcSub.nombre.toLowerCase().replace(/ /g, '-'),
+                    activa: srcSub.activa !== false,
+                    orden: srcSub.orden || 0,
+                    tenant_id: targetId
+                  }]);
 
-              if (!insertSubErr) {
-                copiedSubcatsCount++;
+                if (!insertSubErr) {
+                  totalSubcatsCopied++;
+                }
               }
             }
           }
@@ -2401,9 +2408,13 @@ export default function Admin() {
         pijamas_lucerito: 'Pijamas Lucerito',
         indisutex: 'Indisutex'
       };
-      const targetName = tenantNames[targetTenantId] || targetTenantId;
-      showToast(`¡Categorías copiadas a ${targetName}! (${copiedCatsCount} nuevas cat, ${copiedSubcatsCount} subcat) ✓`);
+      const targetLabel = targetTenantId === 'todas'
+        ? 'todas las demás tiendas'
+        : (tenantNames[targetTenantId] || targetTenantId);
+
+      showToast(`¡Categorías copiadas exitosamente a ${targetLabel}! (${totalCatsCopied} nuevas cat, ${totalSubcatsCopied} subcat) ✓`);
       setShowCopyCategoriesModal(false);
+      cargarDatos();
     } catch (err: any) {
       showToast('Error al copiar categorías: ' + (err.message || 'Error inesperado'), 'error');
     } finally {
@@ -5420,47 +5431,68 @@ export default function Admin() {
           {/* Modal Copiar Categorías a Otra Tienda */}
           {showCopyCategoriesModal && (
             <div className="detail-overlay" onClick={() => setShowCopyCategoriesModal(false)}>
-              <div className="detail-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '520px', width: '92%' }}>
+              <div className="detail-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '540px', width: '92%' }}>
                 <button className="detail-close" onClick={() => setShowCopyCategoriesModal(false)}><X size={20} /></button>
                 <div style={{ padding: '1.5rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
-                    <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#e0e7ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 100%)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)' }}>
                       <Copy size={22} />
                     </div>
                     <div>
-                      <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#0f172a' }}>Copiar Categorías a Otra Tienda</h3>
-                      <p style={{ margin: 0, fontSize: '0.82rem', color: '#64748b' }}>Duplica la estructura de categorías y subcategorías</p>
+                      <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#0f172a', fontWeight: 800 }}>Copiar Categorías Entre Tiendas</h3>
+                      <p style={{ margin: 0, fontSize: '0.82rem', color: '#64748b' }}>Duplica categorías y subcategorías de un negocio a otro</p>
                     </div>
                   </div>
 
-                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1rem', marginBottom: '1.25rem', fontSize: '0.85rem', color: '#334155' }}>
-                    <p style={{ margin: '0 0 0.5rem 0', fontWeight: 700 }}>
-                      Tienda Origen: <span style={{ color: 'var(--primary)', textTransform: 'uppercase' }}>{getTenantId()}</span>
-                    </p>
-                    <p style={{ margin: 0, color: '#64748b', fontSize: '0.8rem' }}>
-                      Se copiarán <strong>{categoriasData.length} categorías</strong> y <strong>{subcategoriasData.length} subcategorías</strong> hacia la tienda seleccionada. Las categorías que ya existan no se duplicarán.
-                    </p>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
+                    {/* Selector de Origen */}
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 700, fontSize: '0.85rem', color: '#334155', marginBottom: '0.4rem' }}>
+                        1. Tienda Origen (De donde se tomarán las categorías):
+                      </label>
+                      <select
+                        value={copyCatSourceTenant}
+                        onChange={e => setCopyCatSourceTenant(e.target.value)}
+                        style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem', color: '#0f172a', fontWeight: 700, outline: 'none', background: '#f8fafc' }}
+                      >
+                        {[
+                          { id: 'sublimados_majestic', nombre: '✨ Sublimados Majestic' },
+                          { id: 'saramantha', nombre: '🏢 Saramantha' },
+                          { id: 'lovely', nombre: '🏢 Lovely Shop' },
+                          { id: 'pijamas_lucerito', nombre: '🏢 Pijamas Lucerito' },
+                          { id: 'indisutex', nombre: '🏢 Indisutex' }
+                        ].map(t => (
+                          <option key={t.id} value={t.id}>{t.nombre} ({t.id})</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Selector de Destino */}
+                    <div>
+                      <label style={{ display: 'block', fontWeight: 700, fontSize: '0.85rem', color: '#334155', marginBottom: '0.4rem' }}>
+                        2. Tienda Destino (A donde se copiarán):
+                      </label>
+                      <select
+                        value={copyCatTargetTenant}
+                        onChange={e => setCopyCatTargetTenant(e.target.value)}
+                        style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem', color: '#0f172a', fontWeight: 700, outline: 'none', background: '#ffffff' }}
+                      >
+                        <option value="todas">🌐 ¡TODAS LAS DEMÁS TIENDAS! (Copiar a todos)</option>
+                        {[
+                          { id: 'saramantha', nombre: 'Saramantha' },
+                          { id: 'sublimados_majestic', nombre: 'Sublimados Majestic' },
+                          { id: 'lovely', nombre: 'Lovely Shop' },
+                          { id: 'pijamas_lucerito', nombre: 'Pijamas Lucerito' },
+                          { id: 'indisutex', nombre: 'Indisutex' }
+                        ].filter(t => t.id !== copyCatSourceTenant).map(t => (
+                          <option key={t.id} value={t.id}>🏢 {t.nombre} ({t.id})</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
 
-                  <div style={{ marginBottom: '1.5rem' }}>
-                    <label style={{ display: 'block', fontWeight: 700, fontSize: '0.85rem', color: '#334155', marginBottom: '0.5rem' }}>
-                      Selecciona la Tienda Destino:
-                    </label>
-                    <select
-                      value={selectedTargetTenant}
-                      onChange={e => setSelectedTargetTenant(e.target.value)}
-                      style={{ width: '100%', padding: '0.65rem 0.85rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem', color: '#0f172a', fontWeight: 600, outline: 'none' }}
-                    >
-                      {[
-                        { id: 'saramantha', nombre: 'Saramantha' },
-                        { id: 'sublimados_majestic', nombre: 'Sublimados Majestic' },
-                        { id: 'lovely', nombre: 'Lovely Shop' },
-                        { id: 'pijamas_lucerito', nombre: 'Pijamas Lucerito' },
-                        { id: 'indisutex', nombre: 'Indisutex' }
-                      ].filter(t => t.id !== getTenantId()).map(t => (
-                        <option key={t.id} value={t.id}>🏢 {t.nombre} ({t.id})</option>
-                      ))}
-                    </select>
+                  <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '12px', padding: '0.85rem', marginBottom: '1.25rem', fontSize: '0.82rem', color: '#1e40af', lineHeight: '1.45' }}>
+                    💡 <strong>Nota inteligente:</strong> Se copiarán las categorías con sus íconos, colores y subcategorías. Las categorías que ya existan en la tienda de destino no se duplicarán.
                   </div>
 
                   <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
@@ -5469,9 +5501,9 @@ export default function Admin() {
                     </button>
                     <button 
                       className="btn-primary" 
-                      onClick={() => handleCopyCategoriesToTenant(selectedTargetTenant)}
+                      onClick={() => handleCopyCategoriesToTenant(copyCatSourceTenant, copyCatTargetTenant)}
                       disabled={copyingCategories}
-                      style={{ background: '#4f46e5' }}
+                      style={{ background: '#4f46e5', padding: '0.65rem 1.25rem' }}
                     >
                       <Copy size={15} /> {copyingCategories ? 'Copiando...' : 'Copiar Categorías Ahora'}
                     </button>

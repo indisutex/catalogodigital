@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { supabase, getTenantId } from '../lib/supabase';
 import type { Producto, Categoria, Subcategoria, Configuracion } from '../types';
-import { Loader2, Search, Plus, ShoppingBag, X, ChevronLeft, ChevronRight, ShoppingCart, Volume2, VolumeX, Package } from 'lucide-react';
+import { Loader2, Search, Plus, ShoppingBag, X, ChevronLeft, ChevronRight, ShoppingCart, Volume2, VolumeX, Package, HelpCircle } from 'lucide-react';
 import { useCart, getEffectivePrice } from '../context/CartContext';
 import PqrsModal from '../components/PqrsModal';
 import './MenuDigital.css';
@@ -657,6 +657,34 @@ export default function MenuDigital() {
             />
           )
         )}
+
+        {/* Botón Circular PQRS / Soporte (Signo de Interrogación en la Esquina Superior del Hero) */}
+        <button
+          onClick={() => setIsPqrsOpen(true)}
+          style={{
+            position: 'absolute',
+            top: '0.85rem',
+            left: '0.85rem',
+            zIndex: 35,
+            background: 'rgba(255, 255, 255, 0.92)',
+            border: 'none',
+            borderRadius: '50%',
+            width: '38px',
+            height: '38px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            backdropFilter: 'blur(6px)',
+            color: configuracion?.color_primario || '#f36b8e',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
+            transition: 'transform 0.2s ease, background 0.2s ease'
+          }}
+          className="hero-pqrs-btn"
+          title="¿Dudas o Reclamos? Envía tu PQRS"
+        >
+          <HelpCircle size={22} />
+        </button>
         <div className="header-bottom-bar" style={{
           position: 'absolute',
           top: '4.8rem',

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../../lib/supabase';
 import {
   ERPTesoreriaService,
   type ERPCuentaBancaria,
@@ -73,22 +74,51 @@ export const ERPTesoreriaModule: React.FC<Props> = ({ tenantId }) => {
   const loadAll = useCallback(async () => {
     setLoading(true); setError(null);
     try {
-      let [res, ctas, movs, cxc, cxp] = await Promise.all([
+      let [res, ctas, movs, cxc, cxp, configRes] = await Promise.all([
         ERPTesoreriaService.fetchResumen(tenantId),
         ERPTesoreriaService.fetchCuentas(tenantId),
         ERPTesoreriaService.fetchMovimientos(tenantId),
         ERPTesoreriaService.fetchCxC(tenantId),
-        ERPTesoreriaService.fetchCxP(tenantId)
+        ERPTesoreriaService.fetchCxP(tenantId),
+        supabase.from('configuracion').select('*').eq('tenant_id', tenantId)
       ]);
 
-      // Si no existen cuentas registradas, crear las cuentas predeterminadas
+      const configObj = configRes.data?.[0];
+      let configPaymentMethods: string[] = [];
+      if (configObj?.metodos_pago) {
+        try {
+          configPaymentMethods = Array.isArray(configObj.metodos_pago) 
+            ? configObj.metodos_pago 
+            : JSON.parse(configObj.metodos_pago);
+        } catch (_) {
+          if (typeof configObj.metodos_pago === 'string') {
+            configPaymentMethods = configObj.metodos_pago.split(',').map((s: string) => s.trim());
+          }
+        }
+      }
+
+      // Si no existen cuentas registradas, crear las cuentas en base a los métodos de pago configurados en el negocio
       if (ctas.length === 0) {
         try {
-          await Promise.all([
-            ERPTesoreriaService.crearCuenta({ tenant_id: tenantId, nombre: 'Caja General Principal', tipo: 'Caja', saldo_inicial: 0, saldo_actual: 0, activa: true, color: '#10b981', cuenta_puc: '110505' }),
-            ERPTesoreriaService.crearCuenta({ tenant_id: tenantId, nombre: 'Bancolombia Principal', tipo: 'Cuenta Ahorros', banco: 'Bancolombia', saldo_inicial: 0, saldo_actual: 0, activa: true, color: '#0284c7', cuenta_puc: '111005' }),
-            ERPTesoreriaService.crearCuenta({ tenant_id: tenantId, nombre: 'Nequi / Daviplata', tipo: 'Billetera Digital', banco: 'Nequi', saldo_inicial: 0, saldo_actual: 0, activa: true, color: '#8b5cf6', cuenta_puc: '110515' })
-          ]);
+          const defaultMethods = configPaymentMethods.length > 0 ? configPaymentMethods : ['Efectivo', 'Bancolombia', 'Nequi / Daviplata'];
+          const accountsToCreate = defaultMethods.map((m, idx) => {
+            const mClean = m.trim();
+            const isCaja = /caja|efectivo/i.test(mClean);
+            const isDigital = /nequi|daviplata|billetera|pasarela/i.test(mClean);
+            return {
+              tenant_id: tenantId,
+              nombre: mClean,
+              tipo: isCaja ? 'Caja' : isDigital ? 'Billetera Digital' : 'Cuenta Ahorros',
+              banco: isCaja ? undefined : mClean,
+              saldo_inicial: 0,
+              saldo_actual: 0,
+              activa: true,
+              color: COLORES_CUENTA[idx % COLORES_CUENTA.length],
+              cuenta_puc: isCaja ? '110505' : isDigital ? '110515' : '111005'
+            };
+          });
+
+          await Promise.all(accountsToCreate.map(acc => ERPTesoreriaService.crearCuenta(acc)));
           ctas = await ERPTesoreriaService.fetchCuentas(tenantId);
           res  = await ERPTesoreriaService.fetchResumen(tenantId);
         } catch (_) {}
