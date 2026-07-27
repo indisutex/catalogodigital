@@ -1568,6 +1568,15 @@ export default function Admin() {
       
       if (confRes.data && confRes.data.length > 0) {
         const bestConfig = confRes.data.find(c => c.logo_url || c.video_hero_url) || confRes.data[0];
+        try {
+          const localExtra = localStorage.getItem(`config_extra_${bestConfig.id}`);
+          if (localExtra) {
+            const parsed = JSON.parse(localExtra);
+            if (!bestConfig.impresora_termica_ancho) bestConfig.impresora_termica_ancho = parsed.impresora_termica_ancho;
+            if (!bestConfig.formato_ticket_pos) bestConfig.formato_ticket_pos = parsed.formato_ticket_pos;
+          }
+        } catch (e) {}
+
         setConfiguracion(prev => {
           if (!prev || activeTabRef.current !== 'config') {
             return bestConfig;
@@ -7207,19 +7216,29 @@ export default function Admin() {
                       impresora_termica_ancho: configuracion.impresora_termica_ancho || '58mm',
                       formato_ticket_pos: configuracion.formato_ticket_pos || 'termico'
                     };
+
+                    try {
+                      localStorage.setItem(`config_extra_${configuracion.id}`, JSON.stringify({
+                        impresora_termica_ancho: updateData.impresora_termica_ancho,
+                        formato_ticket_pos: updateData.formato_ticket_pos
+                      }));
+                    } catch (e) {}
                     
                     let { error } = await supabase.from('configuracion').update(updateData).eq('id', configuracion.id);
                     
-                    if (error && error.message.includes('color_primario')) {
-                      // Reintentar sin color_primario para no bloquear el guardado
-                      delete updateData.color_primario;
-                      const retryRes = await supabase.from('configuracion').update(updateData).eq('id', configuracion.id);
-                      error = retryRes.error;
-                      if (!error) {
-                        showToast('Guardado (sin color). Ejecuta el comando SQL en Supabase para activar el color primario.', 'error');
+                    if (error) {
+                      const fallbackData = { ...updateData };
+                      delete fallbackData.impresora_termica_ancho;
+                      delete fallbackData.formato_ticket_pos;
+                      if (error.message && error.message.includes('color_primario')) {
+                        delete fallbackData.color_primario;
                       }
-                    } else if (error) {
-                      showToast('Error: ' + error.message, 'error');
+                      const retryRes = await supabase.from('configuracion').update(fallbackData).eq('id', configuracion.id);
+                      error = retryRes.error;
+                    }
+
+                    if (error) {
+                      showToast('Error al guardar: ' + error.message, 'error');
                     } else {
                       showToast('Configuración guardada ✓');
                     }
