@@ -7203,7 +7203,9 @@ export default function Admin() {
                       admin_foto_url: configuracion.admin_foto_url,
                       admin_pin: configuracion.admin_pin || '0000',
                       preguntar_tipo_cliente: configuracion.preguntar_tipo_cliente || false,
-                      metodos_pago: configuracion.metodos_pago
+                      metodos_pago: configuracion.metodos_pago,
+                      impresora_termica_ancho: configuracion.impresora_termica_ancho || '58mm',
+                      formato_ticket_pos: configuracion.formato_ticket_pos || 'termico'
                     };
                     
                     let { error } = await supabase.from('configuracion').update(updateData).eq('id', configuracion.id);
@@ -7387,6 +7389,35 @@ export default function Admin() {
                             />
                             Mostrar pantalla "¿Qué tipo de cliente eres?" al inicio
                           </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 🖨️ Configuración Impresión Térmica POS */}
+                    <div className="config-section" style={{ marginTop: '1.5rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem' }}>
+                      <div className="config-section-title">🖨️ Impresión Térmica de Recibos y POS</div>
+                      <div className="form-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
+                        <div className="form-field">
+                          <label>Formato de Impresión de Facturas / POS</label>
+                          <select
+                            value={configuracion.formato_ticket_pos || 'termico'}
+                            onChange={e => setConfiguracion({ ...configuracion, formato_ticket_pos: e.target.value as any })}
+                            style={{ padding: '0.65rem 0.85rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.88rem', fontWeight: 600, color: '#0f172a', background: 'white' }}
+                          >
+                            <option value="termico">🖨️ Ticket Térmico (Impresora de Comprobantes 58mm / 80mm)</option>
+                            <option value="estandar">📄 Estándar / Recibo Carta / WhatsApp</option>
+                          </select>
+                        </div>
+                        <div className="form-field">
+                          <label>Ancho de Papel Térmico</label>
+                          <select
+                            value={configuracion.impresora_termica_ancho || '58mm'}
+                            onChange={e => setConfiguracion({ ...configuracion, impresora_termica_ancho: e.target.value as any })}
+                            style={{ padding: '0.65rem 0.85rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.88rem', fontWeight: 600, color: '#0f172a', background: 'white' }}
+                          >
+                            <option value="58mm">📏 58mm (Impresora Térmica Pequeña / Bluetooth)</option>
+                            <option value="80mm">📏 80mm (Impresora Térmica Estándar Mostrador / USB)</option>
+                          </select>
                         </div>
                       </div>
                     </div>
@@ -9506,8 +9537,9 @@ export default function Admin() {
                           <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
                             <span>
                               {item.cantidad}x {item.nombre} 
+                              {(item.referencia || item.producto?.referencia) ? ` [Ref: ${item.referencia || item.producto?.referencia}]` : ''} 
                               {item.talla ? ` (${item.talla})` : ''} 
-                              {item.estampado ? ` [${item.estampado}]` : ''}
+                              {item.estampado ? ` [Estampado: ${item.estampado}]` : ''}
                             </span>
                             <span>${(item.precio * item.cantidad).toLocaleString()}</span>
                           </div>
@@ -9522,6 +9554,91 @@ export default function Admin() {
                   )}
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    {/* Botón Imprimir Ticket Térmico */}
+                    <button
+                      type="button"
+                      style={{
+                        padding: '0.75rem 1rem',
+                        background: 'linear-gradient(135deg, #0f172a 0%, #334155 100%)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        fontWeight: 700,
+                        fontSize: '0.92rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                        boxShadow: '0 4px 12px rgba(15, 23, 42, 0.2)'
+                      }}
+                      onClick={() => {
+                        if (!posLastInvoice) return;
+                        const paperWidth = configuracion?.impresora_termica_ancho || '58mm';
+                        const widthPx = paperWidth === '80mm' ? '300px' : '210px';
+                        const itemsHtml = posLastInvoice.productos.map((i: any) => `
+                          <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:11px;">
+                            <span style="flex:1; padding-right:4px;">${i.cantidad}x ${i.nombre} ${i.referencia ? `[Ref: ${i.referencia}]` : ''} ${i.talla ? `(${i.talla})` : ''} ${i.estampado ? `[${i.estampado}]` : ''}</span>
+                            <span style="font-weight:bold;">$${(i.precio * i.cantidad).toLocaleString()}</span>
+                          </div>
+                        `).join('');
+
+                        const receiptHtml = `
+                          <!DOCTYPE html>
+                          <html>
+                            <head>
+                              <title>Ticket POS ${configuracion?.nombre_negocio || 'Indisutex'}</title>
+                              <style>
+                                @page { margin: 0; size: auto; }
+                                body { font-family: 'Courier New', Courier, monospace; width: ${widthPx}; margin: 0 auto; padding: 8px; color: #000; font-size: 11px; line-height: 1.3; }
+                                .center { text-align: center; }
+                                .divider { border-bottom: 1px dashed #000; margin: 6px 0; }
+                                .bold { font-weight: bold; }
+                                .total { font-size: 14px; font-weight: bold; margin-top: 6px; }
+                              </style>
+                            </head>
+                            <body>
+                              <div class="center">
+                                <div class="bold" style="font-size:14px; text-transform:uppercase;">${configuracion?.nombre_negocio || 'Indisutex'}</div>
+                                <div>COMPROBANTE DE VENTA POS</div>
+                                <div style="font-size:10px;">${new Date(posLastInvoice.created_at).toLocaleString()}</div>
+                              </div>
+                              <div class="divider"></div>
+                              <div>
+                                <div><strong>Cliente:</strong> ${posLastInvoice.cliente_nombre}</div>
+                                <div><strong>Teléfono:</strong> ${posLastInvoice.cliente_telefono}</div>
+                                <div><strong>Asesora:</strong> ${posLastInvoice.asesor || 'Caja General'}</div>
+                                <div><strong>Pago:</strong> ${posLastInvoice.metodo_pago.toUpperCase()}</div>
+                              </div>
+                              <div class="divider"></div>
+                              ${itemsHtml}
+                              <div class="divider"></div>
+                              <div class="total center">
+                                TOTAL: $${posLastInvoice.total.toLocaleString()} COP
+                              </div>
+                              <div class="divider"></div>
+                              <div class="center" style="font-size:10px; margin-top:8px;">
+                                ¡Gracias por tu compra! 😊
+                              </div>
+                            </body>
+                          </html>
+                        `;
+
+                        const printWin = window.open('', '_blank', 'width=420,height=600');
+                        if (printWin) {
+                          printWin.document.write(receiptHtml);
+                          printWin.document.close();
+                          printWin.focus();
+                          setTimeout(() => {
+                            printWin.print();
+                            printWin.close();
+                          }, 300);
+                        }
+                      }}
+                    >
+                      🖨️ Imprimir Ticket Térmico ({configuracion?.impresora_termica_ancho || '58mm'})
+                    </button>
+
                     <button
                       type="button"
                       className="btn-primary"
@@ -9906,42 +10023,89 @@ export default function Admin() {
                         )}
                       </div>
 
-                      {/* Asesora / Vendedora Selection */}
+                      {/* Asesora / Vendedora Selection Visual Grid */}
                       <div style={{ background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '16px', padding: '1rem' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
                           <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                            👩‍💼 Asesora / Vendedora *
+                            👩‍💼 Seleccionar Asesora / Vendedora *
                           </label>
                           {posAsesor && (
-                            <span style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: 800, background: '#dcfce7', padding: '0.1rem 0.55rem', borderRadius: '99px' }}>
-                              ✓ Asignada
+                            <span style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: 800, background: '#dcfce7', padding: '0.15rem 0.6rem', borderRadius: '99px' }}>
+                              ✓ {posAsesor}
                             </span>
                           )}
                         </div>
-                        <select
-                          value={posAsesor}
-                          onChange={e => setPosAsesor(e.target.value)}
-                          style={{
-                            width: '100%',
-                            padding: '0.6rem 0.85rem',
-                            borderRadius: '10px',
-                            border: '1.5px solid #cbd5e1',
-                            fontSize: '0.88rem',
-                            fontWeight: 700,
-                            color: posAsesor ? '#0f172a' : '#64748b',
-                            background: 'white',
-                            outline: 'none',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          <option value="">-- Seleccionar Asesora / Vendedora --</option>
-                          {asesores.map(a => (
-                            <option key={a.id} value={a.nombre}>
-                              👤 {a.nombre} {a.telefono ? `(${a.telefono.split(',')[0]})` : ''}
-                            </option>
-                          ))}
-                          <option value="Caja General">🏪 Venta Directa en Caja</option>
-                        </select>
+
+                        <div style={{ display: 'flex', gap: '0.6rem', overflowX: 'auto', paddingBottom: '0.3rem', scrollbarWidth: 'thin' }}>
+                          {/* Option: Caja General */}
+                          <div
+                            onClick={() => setPosAsesor('Caja General')}
+                            style={{
+                              border: posAsesor === 'Caja General' ? `2.5px solid ${configuracion?.color_primario || '#4f46e5'}` : '1.5px solid #e2e8f0',
+                              background: posAsesor === 'Caja General' ? `${(configuracion?.color_primario || '#4f46e5')}12` : 'white',
+                              borderRadius: '14px',
+                              padding: '0.5rem 0.75rem',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              gap: '0.3rem',
+                              cursor: 'pointer',
+                              minWidth: '70px',
+                              flexShrink: 0,
+                              transition: 'all 0.15s ease',
+                              boxShadow: posAsesor === 'Caja General' ? '0 2px 8px rgba(0,0,0,0.1)' : 'none'
+                            }}
+                          >
+                            <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: '#e0f2fe', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', fontWeight: 800 }}>
+                              🏪
+                            </div>
+                            <span style={{ fontSize: '0.72rem', fontWeight: 700, color: posAsesor === 'Caja General' ? (configuracion?.color_primario || '#4f46e5') : '#475569', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                              Caja Directa
+                            </span>
+                          </div>
+
+                          {/* Advisor List with Photos */}
+                          {asesores.map(a => {
+                            const isSelected = posAsesor === a.nombre;
+                            return (
+                              <div
+                                key={a.id}
+                                onClick={() => setPosAsesor(a.nombre)}
+                                style={{
+                                  border: isSelected ? `2.5px solid ${configuracion?.color_primario || '#4f46e5'}` : '1.5px solid #e2e8f0',
+                                  background: isSelected ? `${(configuracion?.color_primario || '#4f46e5')}12` : 'white',
+                                  borderRadius: '14px',
+                                  padding: '0.5rem 0.75rem',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: 'center',
+                                  gap: '0.3rem',
+                                  cursor: 'pointer',
+                                  minWidth: '74px',
+                                  flexShrink: 0,
+                                  transition: 'all 0.15s ease',
+                                  boxShadow: isSelected ? '0 2px 8px rgba(0,0,0,0.12)' : 'none',
+                                  transform: isSelected ? 'scale(1.03)' : 'scale(1)'
+                                }}
+                              >
+                                {a.foto_url ? (
+                                  <img
+                                    src={a.foto_url}
+                                    alt={a.nombre}
+                                    style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover', border: isSelected ? `2px solid ${configuracion?.color_primario || '#4f46e5'}` : '1.5px solid #cbd5e1' }}
+                                  />
+                                ) : (
+                                  <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: '#f1f5f9', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', fontWeight: 800 }}>
+                                    👤
+                                  </div>
+                                )}
+                                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: isSelected ? (configuracion?.color_primario || '#4f46e5') : '#334155', textAlign: 'center', whiteSpace: 'nowrap', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {a.nombre.split(' ')[0]}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
 
                       {/* Customer Data */}
@@ -10034,6 +10198,7 @@ export default function Admin() {
                               const serializedProducts = posCart.map(item => ({
                                 id: item.id,
                                 nombre: item.nombre,
+                                referencia: item.referencia || item.producto?.referencia || null,
                                 cantidad: item.cantidad,
                                 precio: item.precio,
                                 talla: item.talla || null,

@@ -63,6 +63,8 @@ export interface Configuracion {
   admin_pin?: string;
   metodos_pago?: string;
   descuento_promocional?: number;
+  impresora_termica_ancho?: '58mm' | '80mm';
+  formato_ticket_pos?: 'termico' | 'estandar';
 }
 
 export interface Pedido {
