@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { supabase, getTenantId } from '../lib/supabase';
 import type { Producto, Categoria, Subcategoria, Configuracion } from '../types';
-import { Loader2, Search, Plus, ShoppingBag, X, ChevronLeft, ChevronRight, ShoppingCart, Volume2, VolumeX, Package, HelpCircle } from 'lucide-react';
+import { Loader2, Search, Plus, ShoppingBag, X, ShoppingCart, Volume2, VolumeX, Package, HelpCircle } from 'lucide-react';
 import { useCart, getEffectivePrice } from '../context/CartContext';
 import PqrsModal from '../components/PqrsModal';
 import './MenuDigital.css';
@@ -959,6 +959,7 @@ export default function MenuDigital() {
                   
                   <button 
                     className="item-add-btn" 
+                    style={{ background: configuracion?.color_primario || 'var(--primary)' }}
                     onClick={e => { e.stopPropagation(); openDetail(producto); }}
                     aria-label="Añadir al carrito"
                   >
@@ -984,14 +985,6 @@ export default function MenuDigital() {
             ))
           )}
         </div>
-      </div>
-
-      {/* Footer PQRS */}
-      <div style={{ textAlign: 'center', padding: '3rem 1rem', background: '#f8fafc', borderTop: '1px solid #e2e8f0', marginTop: '2rem' }}>
-        <p style={{ color: '#64748b', fontSize: '0.95rem', marginBottom: '0.75rem' }}>¿Necesitas ayuda con tu pedido o tienes alguna duda?</p>
-        <button onClick={() => setIsPqrsOpen(true)} className="btn-primary" style={{ padding: '0.5rem 1.25rem', fontSize: '0.9rem', background: '#475569' }}>
-          Soporte / PQRS
-        </button>
       </div>
 
       {/* PQRS Modal */}
@@ -1290,85 +1283,7 @@ export default function MenuDigital() {
                     Estampado: {currentImgRef}
                   </div>
                 )}
-
-                {allImages.length > 1 && (
-                  <>
-                    <button 
-                      className="carousel-btn carousel-btn-left" 
-                      style={{ pointerEvents: 'auto' }} 
-                      onClick={(e) => { 
-                        e.preventDefault(); 
-                        e.stopPropagation(); 
-                        const nextIdx = safeIdx === 0 ? allImages.length - 1 : safeIdx - 1;
-                        setCarouselIdx(nextIdx);
-                        const estName = (allImages[nextIdx]?.estampado || allImages[nextIdx]?.ref)?.trim().toUpperCase();
-                        if (estName) setSelectedEstampado(estName);
-                      }}
-                    >
-                      <ChevronLeft size={24} style={{ pointerEvents: 'none' }} />
-                    </button>
-                    <button 
-                      className="carousel-btn carousel-btn-right" 
-                      style={{ pointerEvents: 'auto' }} 
-                      onClick={(e) => { 
-                        e.preventDefault(); 
-                        e.stopPropagation(); 
-                        const nextIdx = (safeIdx + 1) % allImages.length;
-                        setCarouselIdx(nextIdx);
-                        const estName = (allImages[nextIdx]?.estampado || allImages[nextIdx]?.ref)?.trim().toUpperCase();
-                        if (estName) setSelectedEstampado(estName);
-                      }}
-                    >
-                      <ChevronRight size={24} style={{ pointerEvents: 'none' }} />
-                    </button>
-                    <div className="carousel-dots">
-                      {allImages.map((img, i) => (
-                        <button 
-                          key={i} 
-                          className={`carousel-dot${i === safeIdx ? ' active' : ''}`} 
-                          onClick={() => {
-                            setCarouselIdx(i);
-                            const estName = (img.estampado || img.ref)?.trim().toUpperCase();
-                            if (estName) setSelectedEstampado(estName);
-                          }} 
-                        />
-                      ))}
-                    </div>
-                  </>
-                )}
               </div>
-
-              {/* ── THUMBNAILS STRIP ── */}
-              {allImages.length > 1 && (
-                <div className="detail-thumbs" style={{ display: 'flex', gap: '6px', padding: '6px 12px 0', overflowX: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
-                  {allImages.map((img, i) => {
-                    const imgEstName = (img.estampado || img.ref)?.trim().toUpperCase();
-                    return (
-                      <img
-                        key={i}
-                        src={img.url}
-                        alt={imgEstName || `Imagen ${i + 1}`}
-                        className={`detail-thumb ${i === safeIdx ? 'active' : ''}`}
-                        style={{
-                          width: '46px',
-                          height: '46px',
-                          borderRadius: '8px',
-                          objectFit: 'cover',
-                          border: i === safeIdx ? '2px solid var(--primary)' : '2px solid #e2e8f0',
-                          opacity: i === safeIdx ? 1 : 0.65,
-                          cursor: 'pointer',
-                          flexShrink: 0,
-                          transition: 'all 0.15s ease'
-                        }}
-                        onClick={() => {
-                          setCarouselIdx(i);
-                          if (imgEstName) setSelectedEstampado(imgEstName);
-                        }}
-                      />
-                    );
-                  })}
-                </div>
-              )}
 
               {/* ── INFO ── */}
               <div className="detail-info">
