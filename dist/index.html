@@ -26,11 +26,6 @@
       fbq('init', '2345441845920493');
       fbq('track', 'PageView');
     </script>
-    <noscript>
-      <img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=855518717538226&ev=PageView&noscript=1">
-      <img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=2345441845920493&ev=PageView&noscript=1">
-    </noscript>
-
     <!-- ══ GOOGLE ANALYTICS 4 ══ -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-1F5GNYHMML"></script>
     <script>
@@ -43,6 +38,12 @@
     <link rel="stylesheet" crossorigin href="/assets/index-Bbqy2ov4.css">
   </head>
   <body>
+    <!-- ══ META PIXEL NOSCRIPT FALLBACK ══ -->
+    <noscript>
+      <img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=855518717538226&ev=PageView&noscript=1" alt="Meta Pixel" />
+      <img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=2345441845920493&ev=PageView&noscript=1" alt="Meta Pixel" />
+    </noscript>
+
     <div id="root"></div>
   </body>
 </html>
