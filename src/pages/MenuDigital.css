@@ -1360,9 +1360,9 @@
   }
   .detail-carousel {
     aspect-ratio: auto;
-    height: 28dvh;
-    max-height: 240px;
-    min-height: 180px;
+    height: 38dvh;
+    max-height: 340px;
+    min-height: 240px;
   }
   .detail-carousel-img {
     height: 100%;
@@ -1447,9 +1447,9 @@
   }
   .detail-carousel {
     aspect-ratio: auto;
-    height: 28dvh;
-    max-height: 240px;
-    min-height: 180px;
+    height: 38dvh;
+    max-height: 340px;
+    min-height: 240px;
   }
   .detail-carousel-img {
     height: 100%;
