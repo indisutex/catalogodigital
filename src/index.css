@@ -42,11 +42,16 @@ body {
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
   width: 100%;
+  max-width: 100%;
+  touch-action: manipulation;
+  -webkit-overflow-scrolling: touch;
 }
 
 html {
   overflow-x: hidden;
   width: 100%;
+  max-width: 100%;
+  touch-action: manipulation;
 }
 
 /* Global Utility Classes */

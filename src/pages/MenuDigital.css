@@ -4,15 +4,17 @@
   min-height: 100vh;
   background-color: #fafafa;
   font-family: 'Outfit', sans-serif;
-  margin: -2rem -1rem -4rem -1rem; /* Negate the container padding from Layout.tsx for full width */
+  margin: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden;
+  touch-action: manipulation;
 }
 
 @media (min-width: 992px) {
   .menu-app-container {
-    margin: -2rem -2rem -4rem -2rem;
+    margin: 0 auto;
     max-width: 600px; /* Keep it looking like a mobile app even on desktop */
-    margin-left: auto;
-    margin-right: auto;
     background-color: white;
     box-shadow: 0 0 50px rgba(0,0,0,0.1);
   }
@@ -212,6 +214,7 @@
   padding: 0.5rem 0.5rem 2rem 0.5rem; /* Aumentado para evitar corte de sombra */
   margin-bottom: 0.5rem;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
   scrollbar-width: none; /* Firefox */
 }
 

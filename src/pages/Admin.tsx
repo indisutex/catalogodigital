@@ -105,6 +105,16 @@ export const decodeExtraImage = (str: string) => {
   return { url: url || '', ref: ref || '', estampado: estampado || '' };
 };
 
+export const isMediaVideo = (url?: string): boolean => {
+  if (!url) return false;
+  const cleanUrl = url.split('?')[0].split('#')[0].toLowerCase();
+  return (
+    /\.(mp4|webm|mov|ogg|m4v|3gp)$/i.test(cleanUrl) ||
+    cleanUrl.includes('video') ||
+    cleanUrl.includes('mp4')
+  );
+};
+
 export const buildUnifiedImages = (prod: Partial<Producto>) => {
   const decodedExtras = (prod.imagenes_extra || []).map((u: string) => ({ ...decodeExtraImage(u), isMain: false }));
 
@@ -7008,15 +7018,12 @@ export default function Admin() {
                         <div className="form-field">
                           <label>Video del Banner (Hero - Vertical)</label>
                           <div className="img-input-row" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                            {configuracion.video_hero_url && !configuracion.video_hero_url.toLowerCase().endsWith('.mov') && (
-                              configuracion.video_hero_url.match(/\.(mp4|webm|mov|ogg)$/i) ? (
+                            {configuracion.video_hero_url && (
+                              isMediaVideo(configuracion.video_hero_url) ? (
                                 <video src={configuracion.video_hero_url} style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover', background: '#000' }} muted playsInline />
                               ) : (
                                 <img src={configuracion.video_hero_url} alt="preview" style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover', background: '#000' }} />
                               )
-                            )}
-                            {configuracion.video_hero_url && configuracion.video_hero_url.toLowerCase().endsWith('.mov') && (
-                              <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#fef2f2', border: '1px solid #fca5a5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', flexShrink: 0 }}>⚠️</div>
                             )}
                             <input 
                               type="text" 

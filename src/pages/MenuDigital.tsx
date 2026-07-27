@@ -54,6 +54,16 @@ const decodeExtraImage = (str: string) => {
   return { url: url || '', ref: ref || '', estampado: estampado || '' };
 };
 
+const isMediaVideo = (url?: string): boolean => {
+  if (!url) return false;
+  const cleanUrl = url.split('?')[0].split('#')[0].toLowerCase();
+  return (
+    /\.(mp4|webm|mov|ogg|m4v|3gp)$/i.test(cleanUrl) ||
+    cleanUrl.includes('video') ||
+    cleanUrl.includes('mp4')
+  );
+};
+
 export default function MenuDigital() {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -283,11 +293,12 @@ export default function MenuDigital() {
       // Fallback: if no imagenes_extra, use imagen_url alone
       const allImages = rawAllImages.length > 0
         ? rawAllImages
-        : (detailProduct.imagen_url ? [{ url: detailProduct.imagen_url, ref: '' }] : []);
+        : (detailProduct.imagen_url ? [{ url: detailProduct.imagen_url, ref: '', estampado: '' }] : []);
       const safeIdx = Math.min(carouselIdx, Math.max(0, allImages.length - 1));
       const currentImage = allImages[safeIdx];
-      if (currentImage && currentImage.ref) {
-        setSelectedEstampado(currentImage.ref.trim().toUpperCase());
+      const estName = (currentImage?.estampado || currentImage?.ref)?.trim().toUpperCase();
+      if (estName) {
+        setSelectedEstampado(estName);
       }
     }
   }, [carouselIdx, detailProduct]);
@@ -610,9 +621,9 @@ export default function MenuDigital() {
 
   return (
     <div className="menu-app-container">
-      <div className={`menu-app-header ${(mayoristaBranding?.video || configuracion?.video_hero_url) ? 'has-video' : ''}`} style={{ position: 'relative' }}>
+      <div className={`menu-app-header ${isMediaVideo(mayoristaBranding?.video || configuracion?.video_hero_url) ? 'has-video' : ''}`} style={{ position: 'relative' }}>
         {(mayoristaBranding?.video || configuracion?.video_hero_url) && (
-          (mayoristaBranding?.video || configuracion?.video_hero_url)?.match(/\.(mp4|webm|mov|ogg)$/i) ? (
+          isMediaVideo(mayoristaBranding?.video || configuracion?.video_hero_url) ? (
           <>
             <video 
               src={mayoristaBranding?.video || configuracion?.video_hero_url} 
@@ -1246,7 +1257,7 @@ export default function MenuDigital() {
         });
         const tallas = Array.from(tallasMap.values());
         const safeIdx = Math.min(carouselIdx, allImages.length - 1);
-        const currentImgRef = allImages[safeIdx]?.ref;
+        const currentImgRef = (allImages[safeIdx]?.estampado || allImages[safeIdx]?.ref)?.trim();
         return (
           <div className="detail-overlay" onClick={() => setDetailProduct(null)}>
             <div className="detail-modal" onClick={e => e.stopPropagation()}>
@@ -1288,8 +1299,37 @@ export default function MenuDigital() {
                 )}
               </div>
 
-
-
+              {/* ── THUMBNAILS STRIP ── */}
+              {allImages.length > 1 && (
+                <div className="detail-thumbs" style={{ display: 'flex', gap: '8px', padding: '10px 16px 0', overflowX: 'auto', WebkitOverflowScrolling: 'touch', touchAction: 'pan-x pan-y' }}>
+                  {allImages.map((img, i) => {
+                    const imgEstName = (img.estampado || img.ref)?.trim().toUpperCase();
+                    return (
+                      <img
+                        key={i}
+                        src={img.url}
+                        alt={imgEstName || `Imagen ${i + 1}`}
+                        className={`detail-thumb ${i === safeIdx ? 'active' : ''}`}
+                        style={{
+                          width: '52px',
+                          height: '52px',
+                          borderRadius: '8px',
+                          objectFit: 'cover',
+                          border: i === safeIdx ? '2px solid var(--primary)' : '2px solid #e2e8f0',
+                          opacity: i === safeIdx ? 1 : 0.65,
+                          cursor: 'pointer',
+                          flexShrink: 0,
+                          transition: 'all 0.15s ease'
+                        }}
+                        onClick={() => {
+                          setCarouselIdx(i);
+                          if (imgEstName) setSelectedEstampado(imgEstName);
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              )}
 
               {/* ── INFO ── */}
               <div className="detail-info">
@@ -1322,39 +1362,40 @@ export default function MenuDigital() {
                     return (
                       <div className="detail-tallas" style={{ width: '100%' }}>
                         <p className="detail-section-label" style={{ marginBottom: '0.4rem' }}>Estampado / Temática</p>
-                        <select
-                          value={selectedEstampado || ''}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setSelectedEstampado(val);
-                            const imgIdx = allImages.findIndex(img => img.ref?.toUpperCase() === val);
-                            if (imgIdx !== -1) {
-                              setCarouselIdx(imgIdx);
-                            }
-                          }}
-                          style={{
-                            width: '100%',
-                            padding: '0.8rem',
-                            borderRadius: '8px',
-                            border: '1px solid #cbd5e1',
-                            fontSize: '0.95rem',
-                            color: '#334155',
-                            background: 'white',
-                            outline: 'none',
-                            appearance: 'none',
-                            backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23475569%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")',
-                            backgroundRepeat: 'no-repeat',
-                            backgroundPosition: 'right 0.8rem top 50%',
-                            backgroundSize: '0.65rem auto',
-                            cursor: 'pointer',
-                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
-                          }}
-                        >
-                          <option value="" disabled>Seleccione una opción...</option>
-                          {estampados.map(est => (
-                            <option key={est} value={est}>{est}</option>
-                          ))}
-                        </select>
+                        
+                        {/* Interactive Pill Buttons for Estampados */}
+                        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+                          {estampados.map(est => {
+                            const isSelected = selectedEstampado === est;
+                            return (
+                              <button
+                                key={est}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedEstampado(est);
+                                  const imgIdx = allImages.findIndex(img => (img.estampado || img.ref)?.trim().toUpperCase() === est.toUpperCase());
+                                  if (imgIdx !== -1) {
+                                    setCarouselIdx(imgIdx);
+                                  }
+                                }}
+                                style={{
+                                  padding: '0.45rem 0.85rem',
+                                  borderRadius: '20px',
+                                  border: isSelected ? '2px solid var(--primary)' : '1px solid #cbd5e1',
+                                  background: isSelected ? 'var(--primary)' : '#fff',
+                                  color: isSelected ? '#fff' : '#334155',
+                                  fontWeight: isSelected ? 700 : 500,
+                                  fontSize: '0.82rem',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease',
+                                  boxShadow: isSelected ? '0 2px 6px rgba(243, 107, 142, 0.3)' : 'none'
+                                }}
+                              >
+                                {est}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     );
                   })()}
