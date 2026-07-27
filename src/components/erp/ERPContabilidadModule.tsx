@@ -210,23 +210,23 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId }) => {
 
   return (
     <div className="erp-contabilidad-container">
-      {/* Encabezado Amigable */}
+      {/* Encabezado NIIF */}
       <div className="erp-header">
         <div>
-          <h1><Wallet size={28} color="var(--primary-color, #6366f1)" /> Gestión de Finanzas y Control de Caja</h1>
-          <p>Supervisa ventas, ingresos, gastos, clientes y dinero disponible de forma sencilla</p>
+          <h1><BookOpen size={28} color="var(--primary-color, #6366f1)" /> Contabilidad NIIF & Plan Único de Cuentas (PUC)</h1>
+          <p>Libro diario, catálogo de terceros, asientos contables y balance de prueba oficial DIAN</p>
         </div>
         <button onClick={loadData} className="erp-btn-primary" style={{ background: '#ffffff', color: '#334155', border: '1px solid #cbd5e1' }}>
-          <RefreshCw size={16} /> Actualizar Datos
+          <RefreshCw size={16} /> Actualizar Libro Contable
         </button>
       </div>
 
-      {/* Tarjetas de Resumen Dinero Real (Fácil de entender) */}
+      {/* Tarjetas de Resumen Contable NIIF */}
       <div className="erp-metrics-grid">
         <div className="erp-metric-card ingresos">
           <div className="erp-metric-icon"><ArrowUpRight /></div>
           <div className="erp-metric-info">
-            <h4>Total Ventas / Ingresos</h4>
+            <h4>Total Ingresos Contables (Clase 4)</h4>
             <p className="amount" style={{ color: '#0284c7' }}>${totalIngresos.toLocaleString()}</p>
           </div>
         </div>
@@ -234,7 +234,7 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId }) => {
         <div className="erp-metric-card pasivos">
           <div className="erp-metric-icon"><ArrowDownRight /></div>
           <div className="erp-metric-info">
-            <h4>Gastos y Costos Operativos</h4>
+            <h4>Costos y Gastos NIIF (Clase 5 y 6)</h4>
             <p className="amount" style={{ color: '#ef4444' }}>${totalGastos.toLocaleString()}</p>
           </div>
         </div>
@@ -242,7 +242,7 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId }) => {
         <div className="erp-metric-card activos">
           <div className="erp-metric-icon"><BarChart3 /></div>
           <div className="erp-metric-info">
-            <h4>Ganancia / Utilidad Estimada</h4>
+            <h4>Resultado del Ejercicio</h4>
             <p className="amount" style={{ color: utilidadNeta >= 0 ? '#10b981' : '#ef4444' }}>
               ${utilidadNeta.toLocaleString()}
             </p>
@@ -250,32 +250,32 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId }) => {
         </div>
       </div>
 
-      {/* Pestañas Simplificadas */}
+      {/* Pestañas Contables NIIF */}
       <div className="erp-nav-tabs">
         <button 
           className={`erp-tab-btn ${activeTab === 'resumen' ? 'active' : ''}`}
           onClick={() => setActiveTab('resumen')}
         >
-          <Wallet size={18} /> Resumen de Dinero y Caja
+          <Wallet size={18} /> Balance de Caja & Bancos
         </button>
         <button 
           className={`erp-tab-btn ${activeTab === 'terceros' ? 'active' : ''}`}
           onClick={() => setActiveTab('terceros')}
         >
-          <Users size={18} /> Clientes y Proveedores ({tercerosList.length})
+          <Users size={18} /> Directorio de Terceros ({tercerosList.length})
         </button>
         <button 
           className={`erp-tab-btn ${activeTab === 'movimientos' ? 'active' : ''}`}
           onClick={() => setActiveTab('movimientos')}
         >
-          <BarChart3 size={18} /> Historial de Movimientos
+          <BarChart3 size={18} /> Libro Diario & Comprobantes
         </button>
         <button 
           className={`erp-tab-btn ${activeTab === 'puc_avanzado' ? 'active' : ''}`}
           onClick={() => setActiveTab('puc_avanzado')}
           style={{ marginLeft: 'auto', background: activeTab === 'puc_avanzado' ? undefined : '#f1f5f9' }}
         >
-          <BookOpen size={18} /> Configuración Contable (PUC)
+          <BookOpen size={18} /> Plan Único de Cuentas (PUC)
         </button>
       </div>
 

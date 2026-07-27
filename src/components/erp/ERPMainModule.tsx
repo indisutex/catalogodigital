@@ -34,24 +34,24 @@ const NAV_ITEMS: NavItem[] = [
   {
     key: 'ventas',
     icon: <BarChart2 size={16} />,
-    label: 'Ventas',
-    sublabel: 'Ingresos · Dashboard · Top productos',
+    label: 'Ventas & Facturación',
+    sublabel: 'Ventas reales · Historial de pedidos · Top productos',
     available: true,
     badge: 'ACTIVO'
   },
   {
     key: 'tesoreria',
     icon: <Landmark size={16} />,
-    label: 'Tesorería',
-    sublabel: 'Caja · Bancos · CxC · CxP · Proveedores',
+    label: 'Tesorería & Bancos',
+    sublabel: 'Cajas · Bancos · Cartera CxC · Proveedores CxP',
     available: true,
     badge: 'ACTIVO'
   },
   {
     key: 'contabilidad',
     icon: <BookOpen size={16} />,
-    label: 'Contabilidad',
-    sublabel: 'PUC · Comprobantes · Balance · Libro diario',
+    label: 'Contabilidad NIIF',
+    sublabel: 'Comprobantes · Libro diario · Balance NIIF · PUC',
     available: true,
     badge: 'ACTIVO'
   },

@@ -187,8 +187,8 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
       {/* Encabezado */}
       <div className="erp-ventas-header">
         <div>
-          <h1><TrendingUp size={28} color="var(--primary-color, #6366f1)" /> Ventas, Ingresos y Egresos</h1>
-          <p>Control financiero completo · Ventas reales desde tus pedidos aprobados</p>
+          <h1><TrendingUp size={28} color="var(--primary-color, #6366f1)" /> Ventas, Facturación y Rendimiento Comercial</h1>
+          <p>Supervisión comercial de ventas reales y pedidos facturados</p>
         </div>
         <button className="erp-btn erp-btn-ghost" onClick={loadAll}>
           <RefreshCw size={16} /> Actualizar
@@ -207,20 +207,20 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
         </div>
 
         <div className="erp-kpi-card gastos">
-          <p className="erp-kpi-label"><TrendingDown size={14} /> Gastos del Mes</p>
+          <p className="erp-kpi-label"><TrendingDown size={14} /> Gastos de Operación</p>
           <h2 className="erp-kpi-value">{resumen ? fmt(resumen.totalEgresosMes) : '...'}</h2>
-          <p className="erp-kpi-sub">{egresos.length} registros de egreso</p>
+          <p className="erp-kpi-sub">{egresos.length} egresos registrados</p>
           <span className="erp-kpi-today" style={{ background: '#fee2e2', color: '#b91c1c' }}>
             Hoy: {resumen ? fmt(resumen.totalEgresosHoy) : '-'}
           </span>
         </div>
 
         <div className="erp-kpi-card utilidad">
-          <p className="erp-kpi-label"><DollarSign size={14} /> Ganancia del Mes</p>
+          <p className="erp-kpi-label"><DollarSign size={14} /> Utilidad Bruta Mes</p>
           <h2 className="erp-kpi-value" style={{ color: (resumen?.utilidadMes ?? 0) >= 0 ? '#059669' : '#dc2626' }}>
             {resumen ? fmt(resumen.utilidadMes) : '...'}
           </h2>
-          <p className="erp-kpi-sub">Ventas − Gastos registrados</p>
+          <p className="erp-kpi-sub">Ventas − Gastos directos</p>
           <span className="erp-kpi-today" style={{ background: '#d1fae5', color: '#065f46' }}>
             Hoy: {resumen ? fmt(resumen.utilidadHoy) : '-'}
           </span>
@@ -229,9 +229,9 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
         <div className="erp-kpi-card pedidos">
           <p className="erp-kpi-label"><ShoppingBag size={14} /> Ticket Promedio</p>
           <h2 className="erp-kpi-value">{resumen ? fmt(resumen.ticketPromedio) : '...'}</h2>
-          <p className="erp-kpi-sub">Por pedido este mes</p>
-          <span className="erp-kpi-today" style={{ background: '#fef3c7', color: '#92400e' }}>
-            Hoy: {resumen?.pedidosHoy ?? 0} pedidos
+          <p className="erp-kpi-sub">Valor promedio por venta</p>
+          <span className="erp-kpi-today" style={{ background: '#e0f2fe', color: '#0369a1' }}>
+            Total {ventas.length} pedidos
           </span>
         </div>
       </div>
@@ -239,16 +239,16 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
       {/* Tabs */}
       <div className="erp-ventas-tabs">
         <button className={`erp-ventas-tab ${tab === 'dashboard' ? 'active' : ''}`} onClick={() => setTab('dashboard')}>
-          <BarChart2 size={16} /> Gráfico del Mes
+          <BarChart2 size={16} /> Dashboard Comercial
         </button>
         <button className={`erp-ventas-tab ${tab === 'ventas' ? 'active' : ''}`} onClick={() => setTab('ventas')}>
-          <ClipboardList size={16} /> Historial de Ventas
+          <ClipboardList size={16} /> Pedidos & Facturas Reales
         </button>
         <button className={`erp-ventas-tab ${tab === 'egresos' ? 'active' : ''}`} onClick={() => setTab('egresos')}>
-          <CreditCard size={16} /> Gastos y Egresos
+          <CreditCard size={16} /> Egresos de Operación
         </button>
         <button className={`erp-ventas-tab ${tab === 'productos' ? 'active' : ''}`} onClick={() => setTab('productos')}>
-          <Star size={16} /> Top Productos
+          <Star size={16} /> Ranking de Productos
         </button>
       </div>
 

@@ -224,14 +224,14 @@ export const ERPTesoreriaModule: React.FC<Props> = ({ tenantId }) => {
       {/* ── Tabs ── */}
       <div className="teso-tabs">
         {([
-          ['resumen',  <Wallet size={15} />,         'Resumen de Caja'],
-          ['ingresos', <ArrowDownCircle size={15} />, 'Ingresos'],
-          ['egresos',  <ArrowUpCircle size={15} />,   'Egresos / Gastos'],
-          ['cxc',      <Users size={15} />,            'Cartera Clientes'],
-          ['cxp',      <ShoppingCart size={15} />,     'Pagos Proveedores'],
-          ['cuentas',  <Landmark size={15} />,         'Mis Cuentas'],
-        ] as [Tab, React.ReactNode, string][]).map(([t, icon, label]) => (
-          <button key={t} className={`teso-tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
+          ['resumen',  <Wallet size={15} />,         'Resumen de Cajas & Bancos'],
+          ['ingresos', <ArrowDownCircle size={15} />, 'Entradas de Tesorería'],
+          ['egresos',  <ArrowUpCircle size={15} />,   'Salidas de Tesorería'],
+          ['cxc',      <Users size={15} />,            'Cartera Clientes (CxC)'],
+          ['cxp',      <ShoppingCart size={15} />,     'Proveedores (CxP)'],
+          ['cuentas',  <Landmark size={15} />,         'Gestión de Cuentas Bancarias']
+        ] as const).map(([t, icon, label]) => (
+          <button key={t} className={`teso-tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t as Tab)}>
             {icon} {label}
           </button>
         ))}

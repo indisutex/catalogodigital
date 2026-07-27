@@ -2649,7 +2649,7 @@ export default function Admin() {
       mayoristasRanking,
       topSellingProducts,
     };
-  }, [pedidos, asesores, productos]);
+  }, [pedidos, asesores, productos, mayoristas]);
 
   const getAdvisorStats = (a: any) => {
     if (!a) return null;

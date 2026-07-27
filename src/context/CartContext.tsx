@@ -12,11 +12,12 @@ export interface CartItem extends Producto {
 export type BuyerType = 'detal' | 'mayorista' | '50_unidades' | null;
 
 export const getEffectivePrice = (producto: Producto, buyerType: BuyerType, markup: number = 0, ajustesProductos?: any, descuentoPromo: number = 0, ignoreDiscounts: boolean = false): number => {
-  let price = producto.precio;
+  if (!producto) return 0;
+  let price = Number(producto.precio) || 0;
   if (buyerType === 'mayorista' && producto.precio_por_mayor) {
-    price = producto.precio_por_mayor;
+    price = Number(producto.precio_por_mayor) || price;
   } else if (buyerType === '50_unidades' && producto.precio_50_unidades) {
-    price = producto.precio_50_unidades;
+    price = Number(producto.precio_50_unidades) || price;
   }
 
   let finalPrice = price;
