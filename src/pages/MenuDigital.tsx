@@ -1378,39 +1378,37 @@ export default function MenuDigital() {
                       <div className="detail-tallas" style={{ width: '100%' }}>
                         <p className="detail-section-label" style={{ marginBottom: '0.4rem' }}>Estampado / Temática</p>
                         
-                        {/* Interactive Pill Buttons for Estampados */}
-                        <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
-                          {estampados.map(est => {
-                            const isSelected = selectedEstampado === est;
-                            return (
-                              <button
-                                key={est}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedEstampado(est);
-                                  const imgIdx = allImages.findIndex(img => (img.estampado || img.ref)?.trim().toUpperCase() === est.toUpperCase());
-                                  if (imgIdx !== -1) {
-                                    setCarouselIdx(imgIdx);
-                                  }
-                                }}
-                                style={{
-                                  padding: '0.45rem 0.85rem',
-                                  borderRadius: '20px',
-                                  border: isSelected ? '2px solid var(--primary)' : '1px solid #cbd5e1',
-                                  background: isSelected ? 'var(--primary)' : '#fff',
-                                  color: isSelected ? '#fff' : '#334155',
-                                  fontWeight: isSelected ? 700 : 500,
-                                  fontSize: '0.82rem',
-                                  cursor: 'pointer',
-                                  transition: 'all 0.15s ease',
-                                  boxShadow: isSelected ? '0 2px 6px rgba(243, 107, 142, 0.3)' : 'none'
-                                }}
-                              >
-                                {est}
-                              </button>
-                            );
-                          })}
-                        </div>
+                        {/* Dropdown Menu for Estampados */}
+                        <select
+                          value={selectedEstampado}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setSelectedEstampado(val);
+                            const imgIdx = allImages.findIndex(img => (img.estampado || img.ref)?.trim().toUpperCase() === val.toUpperCase());
+                            if (imgIdx !== -1) {
+                              setCarouselIdx(imgIdx);
+                            }
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '0.6rem 0.85rem',
+                            borderRadius: '12px',
+                            border: '1.5px solid var(--primary, #f36b8e)',
+                            background: '#ffffff',
+                            color: '#0f172a',
+                            fontWeight: 700,
+                            fontSize: '0.88rem',
+                            cursor: 'pointer',
+                            outline: 'none',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
+                          }}
+                        >
+                          {estampados.map(est => (
+                            <option key={est} value={est}>
+                              🎨 {est}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     );
                   })()}
