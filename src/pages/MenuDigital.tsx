@@ -658,32 +658,31 @@ export default function MenuDigital() {
           )
         )}
 
-        {/* Botón Circular PQRS / Soporte (Signo de Interrogación en la Esquina Superior del Hero) */}
+        {/* Botón Circular PQRS / Soporte (Izquierda Inferior, Simétrico al botón de sonido) */}
         <button
           onClick={() => setIsPqrsOpen(true)}
           style={{
             position: 'absolute',
-            top: '0.85rem',
-            left: '0.85rem',
-            zIndex: 35,
-            background: 'rgba(255, 255, 255, 0.92)',
+            bottom: '3.8rem',
+            left: '0.75rem',
+            zIndex: 30,
+            background: 'rgba(0,0,0,0.45)',
             border: 'none',
             borderRadius: '50%',
-            width: '38px',
-            height: '38px',
+            width: '36px',
+            height: '36px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
-            backdropFilter: 'blur(6px)',
-            color: configuracion?.color_primario || '#f36b8e',
-            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
-            transition: 'transform 0.2s ease, background 0.2s ease'
+            backdropFilter: 'blur(4px)',
+            color: '#fff',
+            transition: 'background 0.2s'
           }}
           className="hero-pqrs-btn"
           title="¿Dudas o Reclamos? Envía tu PQRS"
         >
-          <HelpCircle size={22} />
+          <HelpCircle size={18} />
         </button>
         <div className="header-bottom-bar" style={{
           position: 'absolute',
