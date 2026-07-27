@@ -411,12 +411,15 @@ export default function MenuDigital() {
         const [catRes, subcatRes, confRes] = await Promise.all([
           supabase.from('categorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
           supabase.from('subcategorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
-          supabase.from('configuracion').select('*').eq('tenant_id', tenant).limit(1).single()
+          supabase.from('configuracion').select('*').eq('tenant_id', tenant)
         ]);
         
         if (catRes.data) setCategorias(catRes.data);
         if (subcatRes.data) setSubcategorias(subcatRes.data);
-        if (confRes.data) setConfiguracion(confRes.data);
+        if (confRes.data && confRes.data.length > 0) {
+          const bestConfig = confRes.data.find(c => c.logo_url || c.video_hero_url) || confRes.data[0];
+          setConfiguracion(bestConfig);
+        }
 
         // Fetch products in chunks of 1000 to bypass Supabase defaults
         let allProducts: any[] = [];

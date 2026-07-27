@@ -1484,7 +1484,7 @@ export default function Admin() {
       const [catRes, subcatRes, confRes, pedRes, leadRes, cliRes, aseRes, matRes, mayRes, pqrsRes] = await Promise.all([
         supabase.from('categorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
         supabase.from('subcategorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
-        supabase.from('configuracion').select('*').eq('tenant_id', tenant).limit(1).single(),
+        supabase.from('configuracion').select('*').eq('tenant_id', tenant),
         supabase.from('pedidos').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
         supabase.from('leads').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
         supabase.from('clientes_exitosos').select('*').eq('tenant_id', tenant).order('total_compras', { ascending: false }),
@@ -1558,10 +1558,11 @@ export default function Admin() {
 
       setProductos(allProducts);
       
-      if (confRes.data) {
+      if (confRes.data && confRes.data.length > 0) {
+        const bestConfig = confRes.data.find(c => c.logo_url || c.video_hero_url) || confRes.data[0];
         setConfiguracion(prev => {
           if (!prev || activeTabRef.current !== 'config') {
-            return confRes.data;
+            return bestConfig;
           }
           return prev;
         });
@@ -1575,7 +1576,7 @@ export default function Admin() {
           descripcion_hero: 'CATÁLOGO DIGITAL',
           tenant_id: tenant
         };
-        const { data: newConf } = await supabase.from('configuracion').insert([defaultConfig]).select().single();
+        const { data: newConf } = await supabase.from('configuracion').insert([defaultConfig]).select().maybeSingle();
         if (newConf) setConfiguracion(newConf);
       }
     } catch (err: any) {
