@@ -684,89 +684,21 @@ export default function MenuDigital() {
         >
           <HelpCircle size={18} />
         </button>
-        <div className="header-bottom-bar" style={{
+        {/* ── HERO OVERLAY (Logo Centrado y Botones Especiales) ── */}
+        <div className="hero-content-overlay" style={{
           position: 'absolute',
-          top: '4.8rem',
-          transform: 'translateY(-50%)',
+          top: 0,
+          left: 0,
           width: '100%',
-          padding: '0 2rem',
-          boxSizing: 'border-box',
           display: 'flex',
-          justifyContent: 'space-between',
+          flexDirection: 'column',
+          alignItems: 'center',
+          paddingTop: '0.85rem',
           zIndex: 20,
-          pointerEvents: 'none' /* so the space between doesn't block clicks */
+          pointerEvents: 'none'
         }}>
-          {/* Enlace Especial Dropshipper en la Esquina Inferior Izquierda */}
-          {(ajustesProductos?.botones_extra?.dropshipper_enabled ?? true) && (
-            <a 
-              href={ajustesProductos?.botones_extra?.dropshipper_link || configuracion?.link_dropshipper || (() => {
-                let clean = (overrideWhatsApp || configuracion?.whatsapp || '').replace(/\D/g, '');
-                if (clean.length === 10) clean = '57' + clean;
-                return `https://wa.me/${clean}?text=Hola,%20soy%20dropshipper,%20me%20interesa%20trabajar%20con%20ustedes`;
-              })()} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="special-header-btn"
-            style={{ 
-              background: configuracion?.color_primario || '#f36b8e', 
-              color: '#ffffff', 
-              padding: '0.3rem 0.75rem', 
-              borderRadius: '20px', 
-              fontSize: '0.82rem', 
-              fontFamily: "'Bebas Neue', sans-serif",
-              letterSpacing: '0.8px',
-              fontWeight: 400, 
-              textDecoration: 'none', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.25rem', 
-              border: 'none',
-              boxShadow: '0 4px 10px rgba(0, 0, 0, 0.3)',
-              pointerEvents: 'auto'
-            }}
-          >
-            {ajustesProductos?.botones_extra?.dropshipper_text || '🚀 ¿Dropshipper?'}
-          </a>
-          )}
-
-          {/* Enlace Especial Ganar Dinero en la Esquina Inferior Derecha */}
-          {(ajustesProductos?.botones_extra?.earn_money_enabled ?? true) && (
-            <a 
-              href={ajustesProductos?.botones_extra?.earn_money_link || configuracion?.link_ganar_dinero || (() => {
-                let clean = (overrideWhatsApp || configuracion?.whatsapp || '').replace(/\D/g, '');
-                if (clean.length === 10) clean = '57' + clean;
-                return `https://wa.me/${clean}?text=Hola,%20quiero%20saber%20cómo%20ganar%20dinero%20con%20ustedes`;
-              })()} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="ganar-dinero-pulse special-header-btn"
-            style={{ 
-              background: configuracion?.color_primario || '#f36b8e', 
-              color: '#ffffff', 
-              padding: '0.3rem 0.75rem', 
-              borderRadius: '20px', 
-              fontSize: '0.82rem', 
-              fontFamily: "'Bebas Neue', sans-serif",
-              letterSpacing: '0.8px',
-              fontWeight: 400, 
-              textDecoration: 'none', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '0.25rem', 
-              border: 'none',
-              boxShadow: '0 4px 10px rgba(0, 0, 0, 0.3)',
-              pointerEvents: 'auto'
-            }}
-          >
-            {ajustesProductos?.botones_extra?.earn_money_text || '💸 Ganar Dinero'}
-          </a>
-          )}
-        </div>
-
-
-
-        <div className="hero-content-overlay" style={{ paddingTop: '1.5rem' }}>
-          <div className="menu-app-logo" style={{ marginTop: '-1rem' }}>
+          {/* Logo del Negocio */}
+          <div className="menu-app-logo" style={{ pointerEvents: 'auto', marginBottom: '0.5rem' }}>
             {(mayoristaBranding?.logo || configuracion?.logo_url) ? (
               <img
                 src={mayoristaBranding?.logo || configuracion?.logo_url}
@@ -779,6 +711,81 @@ export default function MenuDigital() {
                   {(mayoristaBranding?.nombre || configuracion?.nombre_negocio || 'T').substring(0, 1).toUpperCase()}
                 </span>
               </div>
+            )}
+          </div>
+
+          {/* Fila de Botones Especiales Flotantes (Dropshipper & Ganar Dinero) */}
+          <div className="header-buttons-row" style={{
+            display: 'flex',
+            gap: '0.5rem',
+            justifyContent: 'center',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            padding: '0 0.5rem',
+            pointerEvents: 'auto'
+          }}>
+            {(ajustesProductos?.botones_extra?.dropshipper_enabled ?? true) && (
+              <a 
+                href={ajustesProductos?.botones_extra?.dropshipper_link || configuracion?.link_dropshipper || (() => {
+                  let clean = (overrideWhatsApp || configuracion?.whatsapp || '').replace(/\D/g, '');
+                  if (clean.length === 10) clean = '57' + clean;
+                  return `https://wa.me/${clean}?text=Hola,%20soy%20dropshipper,%20me%20interesa%20trabajar%20con%20ustedes`;
+                })()} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="special-header-btn"
+                style={{ 
+                  background: configuracion?.color_primario || '#f36b8e', 
+                  color: '#ffffff', 
+                  padding: '0.3rem 0.8rem', 
+                  borderRadius: '20px', 
+                  fontSize: '0.8rem', 
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  letterSpacing: '0.8px',
+                  fontWeight: 400, 
+                  textDecoration: 'none', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '0.25rem', 
+                  border: 'none',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.35)',
+                  backdropFilter: 'blur(4px)'
+                }}
+              >
+                {ajustesProductos?.botones_extra?.dropshipper_text || '🚀 ¿Dropshipper?'}
+              </a>
+            )}
+
+            {(ajustesProductos?.botones_extra?.earn_money_enabled ?? true) && (
+              <a 
+                href={ajustesProductos?.botones_extra?.earn_money_link || configuracion?.link_ganar_dinero || (() => {
+                  let clean = (overrideWhatsApp || configuracion?.whatsapp || '').replace(/\D/g, '');
+                  if (clean.length === 10) clean = '57' + clean;
+                  return `https://wa.me/${clean}?text=Hola,%20quiero%20saber%20cómo%20ganar%20dinero%20con%20ustedes`;
+                })()} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="ganar-dinero-pulse special-header-btn"
+                style={{ 
+                  background: configuracion?.color_primario || '#f36b8e', 
+                  color: '#ffffff', 
+                  padding: '0.3rem 0.8rem', 
+                  borderRadius: '20px', 
+                  fontSize: '0.8rem', 
+                  fontFamily: "'Bebas Neue', sans-serif",
+                  letterSpacing: '0.8px',
+                  fontWeight: 400, 
+                  textDecoration: 'none', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '0.25rem', 
+                  border: 'none',
+                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.35)',
+                  backdropFilter: 'blur(4px)'
+                }}
+              >
+                {ajustesProductos?.botones_extra?.earn_money_text || '💸 Ganar Dinero'}
+              </a>
             )}
           </div>
         </div>
