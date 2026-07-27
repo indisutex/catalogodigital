@@ -1293,15 +1293,45 @@ export default function MenuDigital() {
 
                 {allImages.length > 1 && (
                   <>
-                    <button className="carousel-btn carousel-btn-left" style={{ pointerEvents: 'auto' }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCarouselIdx(safeIdx === 0 ? allImages.length - 1 : safeIdx - 1); }}>
+                    <button 
+                      className="carousel-btn carousel-btn-left" 
+                      style={{ pointerEvents: 'auto' }} 
+                      onClick={(e) => { 
+                        e.preventDefault(); 
+                        e.stopPropagation(); 
+                        const nextIdx = safeIdx === 0 ? allImages.length - 1 : safeIdx - 1;
+                        setCarouselIdx(nextIdx);
+                        const estName = (allImages[nextIdx]?.estampado || allImages[nextIdx]?.ref)?.trim().toUpperCase();
+                        if (estName) setSelectedEstampado(estName);
+                      }}
+                    >
                       <ChevronLeft size={24} style={{ pointerEvents: 'none' }} />
                     </button>
-                    <button className="carousel-btn carousel-btn-right" style={{ pointerEvents: 'auto' }} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCarouselIdx((safeIdx + 1) % allImages.length); }}>
+                    <button 
+                      className="carousel-btn carousel-btn-right" 
+                      style={{ pointerEvents: 'auto' }} 
+                      onClick={(e) => { 
+                        e.preventDefault(); 
+                        e.stopPropagation(); 
+                        const nextIdx = (safeIdx + 1) % allImages.length;
+                        setCarouselIdx(nextIdx);
+                        const estName = (allImages[nextIdx]?.estampado || allImages[nextIdx]?.ref)?.trim().toUpperCase();
+                        if (estName) setSelectedEstampado(estName);
+                      }}
+                    >
                       <ChevronRight size={24} style={{ pointerEvents: 'none' }} />
                     </button>
                     <div className="carousel-dots">
-                      {allImages.map((_, i) => (
-                        <button key={i} className={`carousel-dot${i === safeIdx ? ' active' : ''}`} onClick={() => setCarouselIdx(i)} />
+                      {allImages.map((img, i) => (
+                        <button 
+                          key={i} 
+                          className={`carousel-dot${i === safeIdx ? ' active' : ''}`} 
+                          onClick={() => {
+                            setCarouselIdx(i);
+                            const estName = (img.estampado || img.ref)?.trim().toUpperCase();
+                            if (estName) setSelectedEstampado(estName);
+                          }} 
+                        />
                       ))}
                     </div>
                   </>
@@ -1378,7 +1408,11 @@ export default function MenuDigital() {
                           onChange={(e) => {
                             const val = e.target.value;
                             setSelectedEstampado(val);
-                            const imgIdx = allImages.findIndex(img => (img.estampado || img.ref)?.trim().toUpperCase() === val.toUpperCase());
+                            const valClean = val.trim().toUpperCase();
+                            const imgIdx = allImages.findIndex(img => {
+                              const est = (img.estampado || img.ref || '').trim().toUpperCase();
+                              return est === valClean || (est && valClean && (est.includes(valClean) || valClean.includes(est)));
+                            });
                             if (imgIdx !== -1) {
                               setCarouselIdx(imgIdx);
                             }
