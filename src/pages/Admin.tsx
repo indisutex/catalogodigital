@@ -907,10 +907,10 @@ export default function Admin() {
 
   const filteredPosCustomers = useMemo(() => {
     const q = (posCustomerSearch || '').trim().toLowerCase();
-    if (!q || q.length < 1) return [];
+    if (!q) return posCustomerOptions.slice(0, 100);
     return posCustomerOptions.filter(c =>
       c.nombre.toLowerCase().includes(q) || c.telefono.includes(q)
-    ).slice(0, 8);
+    ).slice(0, 100);
   }, [posCustomerOptions, posCustomerSearch]);
 
 
@@ -10396,45 +10396,62 @@ export default function Admin() {
                         </div>
                       </div>
 
-                      {/* Customer Data with Search & Auto-fill */}
+                      {/* Customer Data with Search & Full List Selection */}
                       <div style={{ background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '16px', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.65rem', position: 'relative' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
                           <h4 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 800, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                             👤 Datos del Cliente
                           </h4>
-                          {selectedPosCustomer ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#dcfce7', border: '1px solid #86efac', padding: '0.2rem 0.6rem', borderRadius: '99px' }}>
-                              <span style={{ fontSize: '0.72rem', color: '#15803d', fontWeight: 800 }}>
-                                ✓ Cliente Guardado
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setSelectedPosCustomer(null);
-                                  setPosCustomerPhone('');
-                                  setPosCustomerName('');
-                                  setPosCustomerAddress('');
-                                  setPosCustomerCity('');
-                                  setPosCustomerSearch('');
-                                }}
-                                style={{ border: 'none', background: 'transparent', color: '#dc2626', fontWeight: 800, cursor: 'pointer', fontSize: '0.75rem', padding: '0 2px' }}
-                                title="Limpiar y crear cliente nuevo"
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          ) : (
-                            <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600 }}>
-                              💡 Busca un cliente guardado o ingresa uno nuevo
-                            </span>
-                          )}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <button
+                              type="button"
+                              onClick={() => setShowPosCustomerDropdown(prev => !prev)}
+                              style={{
+                                border: '1px solid #0284c7',
+                                background: '#f0f9ff',
+                                color: '#0369a1',
+                                fontSize: '0.74rem',
+                                fontWeight: 700,
+                                padding: '0.25rem 0.6rem',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.3rem'
+                              }}
+                            >
+                              📋 {showPosCustomerDropdown ? 'Ocultar Lista' : `Ver Lista (${posCustomerOptions.length})`}
+                            </button>
+                            {selectedPosCustomer ? (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#dcfce7', border: '1px solid #86efac', padding: '0.2rem 0.6rem', borderRadius: '99px' }}>
+                                <span style={{ fontSize: '0.72rem', color: '#15803d', fontWeight: 800 }}>
+                                  ✓ Cliente Guardado
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedPosCustomer(null);
+                                    setPosCustomerPhone('');
+                                    setPosCustomerName('');
+                                    setPosCustomerAddress('');
+                                    setPosCustomerCity('');
+                                    setPosCustomerSearch('');
+                                  }}
+                                  style={{ border: 'none', background: 'transparent', color: '#dc2626', fontWeight: 800, cursor: 'pointer', fontSize: '0.75rem', padding: '0 2px' }}
+                                  title="Limpiar y crear cliente nuevo"
+                                >
+                                  ✕
+                                </button>
+                              </div>
+                            ) : null}
+                          </div>
                         </div>
 
                         {/* Search Input Bar for Saved Clients */}
                         <div style={{ position: 'relative' }}>
                           <input
                             type="text"
-                            placeholder="🔍 Buscar cliente guardado por Nombre o Teléfono..."
+                            placeholder="🔍 Escribe nombre/teléfono o haz clic en 'Ver Lista' para elegir..."
                             value={posCustomerSearch}
                             onFocus={() => setShowPosCustomerDropdown(true)}
                             onChange={e => {
@@ -10456,8 +10473,8 @@ export default function Admin() {
                             }}
                           />
 
-                          {/* Autocomplete Dropdown List */}
-                          {showPosCustomerDropdown && filteredPosCustomers.length > 0 && (
+                          {/* Autocomplete / Full Customer Dropdown List */}
+                          {showPosCustomerDropdown && (
                             <div
                               style={{
                                 position: 'absolute',
@@ -10466,56 +10483,70 @@ export default function Admin() {
                                 right: 0,
                                 zIndex: 100,
                                 background: '#ffffff',
-                                border: '1px solid #cbd5e1',
+                                border: '1.5px solid #0284c7',
                                 borderRadius: '12px',
                                 marginTop: '4px',
-                                boxShadow: '0 10px 25px -5px rgba(0,0,0,0.15)',
-                                maxHeight: '220px',
+                                boxShadow: '0 12px 28px -5px rgba(0,0,0,0.2)',
+                                maxHeight: '250px',
                                 overflowY: 'auto'
                               }}
                             >
-                              <div style={{ padding: '0.35rem 0.75rem', fontSize: '0.68rem', fontWeight: 800, color: '#64748b', background: '#f1f5f9', borderBottom: '1px solid #e2e8f0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                                Clientes Encontrados ({filteredPosCustomers.length}) — Haz clic para seleccionar
-                              </div>
-                              {filteredPosCustomers.map((cust, idx) => (
-                                <div
-                                  key={cust.id || idx}
-                                  onClick={() => {
-                                    setPosCustomerPhone(cust.telefono);
-                                    setPosCustomerName(cust.nombre);
-                                    setPosCustomerAddress(cust.direccion || '');
-                                    setPosCustomerCity(cust.ciudad || '');
-                                    setSelectedPosCustomer(cust);
-                                    setPosCustomerSearch('');
-                                    setShowPosCustomerDropdown(false);
-                                  }}
-                                  style={{
-                                    padding: '0.55rem 0.75rem',
-                                    borderBottom: idx === filteredPosCustomers.length - 1 ? 'none' : '1px solid #f1f5f9',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    transition: 'background 0.15s'
-                                  }}
-                                  onMouseEnter={e => (e.currentTarget.style.background = '#f0f9ff')}
-                                  onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
+                              <div style={{ padding: '0.4rem 0.75rem', fontSize: '0.7rem', fontWeight: 800, color: '#0369a1', background: '#e0f2fe', borderBottom: '1px solid #bae6fd', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span>📋 Clientes Disponibles ({filteredPosCustomers.length})</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowPosCustomerDropdown(false)}
+                                  style={{ border: 'none', background: 'transparent', color: '#0369a1', fontWeight: 800, cursor: 'pointer', fontSize: '0.8rem' }}
                                 >
-                                  <div>
-                                    <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#0f172a' }}>
-                                      👤 {cust.nombre}
-                                    </div>
-                                    {(cust.direccion || cust.ciudad) && (
-                                      <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '1px' }}>
-                                        📍 {[cust.direccion, cust.ciudad].filter(Boolean).join(', ')}
-                                      </div>
-                                    )}
-                                  </div>
-                                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0284c7', background: '#e0f2fe', padding: '0.15rem 0.5rem', borderRadius: '6px' }}>
-                                    📞 {cust.telefono}
-                                  </div>
+                                  ✕ Cerrar
+                                </button>
+                              </div>
+
+                              {filteredPosCustomers.length === 0 ? (
+                                <div style={{ padding: '1rem', textAlign: 'center', color: '#64748b', fontSize: '0.8rem' }}>
+                                  No se encontraron clientes con "{posCustomerSearch}"
                                 </div>
-                              ))}
+                              ) : (
+                                filteredPosCustomers.map((cust, idx) => (
+                                  <div
+                                    key={cust.id || idx}
+                                    onClick={() => {
+                                      setPosCustomerPhone(cust.telefono);
+                                      setPosCustomerName(cust.nombre);
+                                      setPosCustomerAddress(cust.direccion || '');
+                                      setPosCustomerCity(cust.ciudad || '');
+                                      setSelectedPosCustomer(cust);
+                                      setPosCustomerSearch('');
+                                      setShowPosCustomerDropdown(false);
+                                    }}
+                                    style={{
+                                      padding: '0.55rem 0.75rem',
+                                      borderBottom: idx === filteredPosCustomers.length - 1 ? 'none' : '1px solid #f1f5f9',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'center',
+                                      transition: 'background 0.15s'
+                                    }}
+                                    onMouseEnter={e => (e.currentTarget.style.background = '#f0f9ff')}
+                                    onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
+                                  >
+                                    <div>
+                                      <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#0f172a' }}>
+                                        👤 {cust.nombre}
+                                      </div>
+                                      {(cust.direccion || cust.ciudad) && (
+                                        <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '1px' }}>
+                                          📍 {[cust.direccion, cust.ciudad].filter(Boolean).join(', ')}
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0284c7', background: '#e0f2fe', padding: '0.15rem 0.5rem', borderRadius: '6px' }}>
+                                      📞 {cust.telefono}
+                                    </div>
+                                  </div>
+                                ))
+                              )}
                             </div>
                           )}
                         </div>
