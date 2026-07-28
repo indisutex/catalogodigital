@@ -48,6 +48,7 @@ export interface Subcategoria {
 
 export interface Configuracion {
   id: string;
+  tenant_id?: string;
   nombre_negocio: string;
   whatsapp: string;
   logo_url?: string;

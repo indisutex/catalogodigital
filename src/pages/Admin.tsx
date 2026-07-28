@@ -3708,34 +3708,40 @@ export default function Admin() {
     });
 
     return (
-      <div className="admin-login-wrapper">
-        <div className="admin-login-card" style={{ maxWidth: selectedCompany ? '400px' : '550px' }}>
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}>
+      <div className="admin-login-wrapper" style={{ minHeight: '100vh', background: 'radial-gradient(circle at 50% 0%, #f1f5f9 0%, #e2e8f0 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem 1rem' }}>
+        <div className="admin-login-card" style={{ maxWidth: selectedCompany ? '420px' : '580px', width: '100%', background: '#ffffff', borderRadius: '24px', padding: '2.25rem 2rem', boxShadow: '0 20px 40px -15px rgba(15, 23, 42, 0.1)', border: '1px solid rgba(255,255,255,0.8)' }}>
+          <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.25rem' }}>
               {!imageErrors['main'] ? (
-                <div style={{ width: '100px', height: '100px', borderRadius: '50%', overflow: 'hidden', border: '3px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'white' }}>
-                  <img 
-                    src="/indisutex-logo.png" 
-                    alt="Indisutex Logo" 
-                    style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(1.5)' }} 
-                    onError={() => setImageErrors(prev => ({ ...prev, main: true }))} 
-                  />
+                <div style={{ width: '90px', height: '90px', borderRadius: '50%', padding: '4px', background: 'linear-gradient(135deg, #6366f1, #0ea5e9)', boxShadow: '0 10px 25px rgba(99, 102, 241, 0.25)' }}>
+                  <div style={{ width: '100%', height: '100%', borderRadius: '50%', overflow: 'hidden', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <img 
+                      src="/indisutex-logo.png" 
+                      alt="Indisutex Logo" 
+                      style={{ width: '100%', height: '100%', objectFit: 'contain', transform: 'scale(1.35)' }} 
+                      onError={() => setImageErrors(prev => ({ ...prev, main: true }))} 
+                    />
+                  </div>
                 </div>
               ) : (
-                <div style={{ width: '100px', height: '100px', borderRadius: '50%', background: '#0ea5e9', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', fontWeight: 'bold' }}>IN</div>
+                <div style={{ width: '85px', height: '85px', borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1, #0ea5e9)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px', fontWeight: '800', boxShadow: '0 10px 25px rgba(99, 102, 241, 0.25)' }}>IN</div>
               )}
             </div>
-            <h1>Indisutex Admin</h1>
-            <p>Selecciona tu empresa para gestionar el catálogo</p>
+            <h1 style={{ fontSize: '1.65rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.5px', margin: 0, fontFamily: "'Plus Jakarta Sans', system-ui, sans-serif" }}>
+              Indisutex Cloud
+            </h1>
+            <p style={{ margin: '0.4rem 0 0 0', color: '#64748b', fontSize: '0.88rem', fontWeight: 500 }}>
+              Selecciona tu marca para acceder a la gestión de tienda
+            </p>
           </div>
           
           {!selectedCompany ? (
-            <div className="company-selector">
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+            <div className="company-selector" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
                 {companies.map(company => (
                   <button 
                     key={company.id}
-                    className="company-btn"
+                    className="company-btn hover-lift"
                     onClick={() => {
                       setTenantId(company.id);
                       setSelectedCompany(company.id);
@@ -3743,52 +3749,66 @@ export default function Admin() {
                       window.history.replaceState(null, '', newPath);
                     }}
                     style={{
-                      background: 'white', border: '2px solid #eee', borderRadius: '12px', padding: '1rem',
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.8rem', cursor: 'pointer',
-                      transition: 'all 0.2s'
+                      background: '#ffffff',
+                      border: '1.5px solid #e2e8f0',
+                      borderRadius: '16px',
+                      padding: '1.25rem 1rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '0.85rem',
+                      cursor: 'pointer',
+                      transition: 'all 0.25s ease',
+                      boxShadow: '0 4px 6px -1px rgba(0,0,0,0.02)',
+                      outline: 'none'
                     }}
                   >
                     {!imageErrors[company.id] ? (
-                      <img 
-                        src={company.logo} 
-                        alt={company.name} 
-                        style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover' }} 
-                        onError={() => setImageErrors(prev => ({ ...prev, [company.id]: true }))} 
-                      />
+                      <div style={{ width: '68px', height: '68px', borderRadius: '50%', padding: '3px', background: 'linear-gradient(135deg, #f1f5f9, #e2e8f0)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}>
+                        <img 
+                          src={company.logo} 
+                          alt={company.name} 
+                          style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} 
+                          onError={() => setImageErrors(prev => ({ ...prev, [company.id]: true }))} 
+                        />
+                      </div>
                     ) : (
-                      <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#f1f5f9', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', fontWeight: 'bold' }}>
+                      <div style={{ width: '68px', height: '68px', borderRadius: '50%', background: 'linear-gradient(135deg, #f1f5f9, #cbd5e1)', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '800', boxShadow: '0 4px 12px rgba(0,0,0,0.04)' }}>
                         {company.name.substring(0, 2).toUpperCase()}
                       </div>
                     )}
-                    <span style={{ fontWeight: 700, color: '#333', fontSize: '0.9rem', textAlign: 'center' }}>{company.name}</span>
+                    <span style={{ fontWeight: 800, color: '#1e293b', fontSize: '0.95rem', textAlign: 'center', textTransform: 'capitalize', letterSpacing: '-0.2px' }}>
+                      {company.name}
+                    </span>
                   </button>
                 ))}
               </div>
-              <div style={{ marginTop: '1.5rem' }}>
+
+              <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 <button 
-                  className="company-btn"
+                  className="company-btn hover-lift"
                   onClick={() => {
                     window.location.href = '/superadmin';
                   }}
                   style={{
                     width: '100%',
-                    background: 'linear-gradient(135deg, #0f172a, #1e293b)',
-                    color: 'white',
+                    background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+                    color: '#ffffff',
                     border: 'none',
-                    borderRadius: '12px', 
-                    padding: '1.25rem',
+                    borderRadius: '14px', 
+                    padding: '1rem 1.25rem',
                     display: 'flex', 
                     alignItems: 'center', 
                     justifyContent: 'center',
-                    gap: '0.8rem', 
+                    gap: '0.75rem', 
                     cursor: 'pointer',
-                    transition: 'all 0.2s',
+                    transition: 'all 0.25s ease',
                     fontWeight: 800,
-                    fontSize: '1rem',
-                    boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
+                    fontSize: '0.93rem',
+                    boxShadow: '0 10px 20px rgba(15, 23, 42, 0.2)'
                   }}
                 >
-                  <Building2 size={20} style={{ color: '#38bdf8' }} /> Administrar Superior (Indisutex)
+                  <Building2 size={20} style={{ color: '#38bdf8' }} /> Panel SuperAdmin (Multi-Tienda)
                 </button>
               </div>
             </div>

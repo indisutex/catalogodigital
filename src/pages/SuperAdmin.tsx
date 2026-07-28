@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import type { Pedido, Producto } from '../types';
+import type { Pedido, Producto, Configuracion } from '../types';
 import './SuperAdmin.css';
-import { Shield, TrendingUp, Package, Clock, LogOut, Building, CheckCircle, Activity, Filter, X, MessageCircle, MapPin, Users } from 'lucide-react';
+import { Shield, TrendingUp, Package, Clock, LogOut, Building, CheckCircle, Activity, Filter, X, MessageCircle, MapPin, Users, Plus, Trash2, Edit, ExternalLink, Upload } from 'lucide-react';
 
 const SUPER_PIN = '9999';
 
@@ -14,6 +14,7 @@ export default function SuperAdmin() {
   const [loading, setLoading] = useState(false);
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [productos, setProductos] = useState<Producto[]>([]);
+  const [configuracionesList, setConfiguracionesList] = useState<Configuracion[]>([]);
   const [errorMsg, setErrorMsg] = useState('');
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
@@ -38,11 +39,28 @@ export default function SuperAdmin() {
       setShowSuccessScreen(false);
     }
   }, [selectedPedido]);
-  const [viewMode, setViewMode] = useState<'dashboard' | 'crm'>(() => {
-    return (localStorage.getItem('superadmin_view_mode') as 'dashboard' | 'crm') || 'dashboard';
+
+  const [viewMode, setViewMode] = useState<'dashboard' | 'crm' | 'tiendas'>(() => {
+    return (localStorage.getItem('superadmin_view_mode') as any) || 'dashboard';
   });
   const [leads, setLeads] = useState<any[]>([]);
   const [asesores, setAsesores] = useState<any[]>([]);
+
+  // Modales de Gestión de Tiendas Multi-Tenant
+  const [showCrearTiendaModal, setShowCrearTiendaModal] = useState(false);
+  const [editingTienda, setEditingTienda] = useState<Configuracion | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+
+  const [tiendaForm, setTiendaForm] = useState({
+    nombre_negocio: '',
+    tenant_id: '',
+    whatsapp: '573185637317',
+    admin_nombre: 'Administrador',
+    admin_pin: '0000',
+    color_primario: '#6366f1',
+    descripcion_hero: 'CATÁLOGO DIGITAL OFICIAL',
+    logo_url: ''
+  });
 
   useEffect(() => {
     localStorage.setItem('superadmin_view_mode', viewMode);
@@ -75,7 +93,16 @@ export default function SuperAdmin() {
         setProductos(dataProductos as Producto[]);
       }
 
-      // 3. Cargar Leads (CRM - Carts Abandonados)
+      // 3. Cargar Configuraciones de Tiendas / Tenants
+      const { data: dataConfigs } = await supabase
+        .from('configuracion')
+        .select('*');
+
+      if (dataConfigs) {
+        setConfiguracionesList(dataConfigs as Configuracion[]);
+      }
+
+      // 4. Cargar Leads (CRM - Carts Abandonados)
       const { data: dataLeads, error: errorLeads } = await supabase
         .from('leads')
         .select('*')
@@ -86,7 +113,7 @@ export default function SuperAdmin() {
         setLeads(dataLeads);
       }
 
-      // 4. Cargar Asesores y Mayoristas
+      // 5. Cargar Asesores y Mayoristas
       const { data: dataAsesores, error: errorAsesores } = await supabase
         .from('asesores')
         .select('*');
@@ -125,6 +152,134 @@ export default function SuperAdmin() {
     localStorage.removeItem('superadmin_auth');
     setIsAuthenticated(false);
     setPin('');
+  };
+
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>, isEdit: boolean = false) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingLogo(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `logo_${Date.now()}.${fileExt}`;
+      const filePath = `archivos/${fileName}`;
+      const { error: uploadError } = await supabase.storage
+        .from('archivos')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data: publicUrlData } = supabase.storage
+        .from('archivos')
+        .getPublicUrl(filePath);
+
+      const logoUrl = publicUrlData.publicUrl;
+      if (isEdit && editingTienda) {
+        setEditingTienda({ ...editingTienda, logo_url: logoUrl });
+      } else {
+        setTiendaForm(prev => ({ ...prev, logo_url: logoUrl }));
+      }
+      showToast('Logo subido correctamente ✓', 'success');
+    } catch (err: any) {
+      showToast('Error al subir logo: ' + err.message, 'error');
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  const handleCrearTienda = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!tiendaForm.nombre_negocio.trim() || !tiendaForm.tenant_id.trim()) {
+      showToast('Ingresa el nombre y el identificador (slug) de la tienda', 'error');
+      return;
+    }
+    const cleanTenant = tiendaForm.tenant_id.trim().toLowerCase().replace(/[^a-z0-9_]/g, '_');
+    
+    // Check duplicate tenant_id
+    const existing = configuracionesList.find(c => c.tenant_id === cleanTenant);
+    if (existing) {
+      showToast(`Ya existe una tienda con el identificador '${cleanTenant}'`, 'error');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const newConfig = {
+        tenant_id: cleanTenant,
+        nombre_negocio: tiendaForm.nombre_negocio.trim(),
+        whatsapp: tiendaForm.whatsapp.trim() || '573185637317',
+        admin_nombre: tiendaForm.admin_nombre.trim() || 'Administrador',
+        admin_pin: tiendaForm.admin_pin.trim() || '0000',
+        color_primario: tiendaForm.color_primario || '#6366f1',
+        descripcion_hero: tiendaForm.descripcion_hero || 'CATÁLOGO DIGITAL OFICIAL',
+        logo_url: tiendaForm.logo_url || null,
+        metodos_pago: null,
+        descuento_promocional: 0
+      };
+
+      const { error } = await supabase.from('configuracion').insert(newConfig);
+      if (error) throw error;
+
+      showToast(`¡Tienda "${tiendaForm.nombre_negocio}" creada exitosamente! ✓`, 'success');
+      setShowCrearTiendaModal(false);
+      setTiendaForm({
+        nombre_negocio: '',
+        tenant_id: '',
+        whatsapp: '573185637317',
+        admin_nombre: 'Administrador',
+        admin_pin: '0000',
+        color_primario: '#6366f1',
+        descripcion_hero: 'CATÁLOGO DIGITAL OFICIAL',
+        logo_url: ''
+      });
+      cargarDatosGlobales();
+    } catch (err: any) {
+      showToast('Error al crear la tienda: ' + err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGuardarEditTienda = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingTienda) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase.from('configuracion').update({
+        nombre_negocio: editingTienda.nombre_negocio,
+        whatsapp: editingTienda.whatsapp,
+        color_primario: editingTienda.color_primario,
+        logo_url: editingTienda.logo_url,
+        admin_nombre: editingTienda.admin_nombre,
+        admin_pin: editingTienda.admin_pin || '0000',
+        descripcion_hero: editingTienda.descripcion_hero
+      }).eq('id', editingTienda.id);
+
+      if (error) throw error;
+
+      showToast('Tienda actualizada correctamente ✓', 'success');
+      setEditingTienda(null);
+      cargarDatosGlobales();
+    } catch (err: any) {
+      showToast('Error al guardar tienda: ' + err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEliminarTienda = async (configId: string, tenantName: string, tenantIdStr: string) => {
+    if (!window.confirm(`⚠️ ¿Estás seguro de eliminar la tienda "${tenantName}" (${tenantIdStr})?\nEsta acción eliminará su registro de configuración.`)) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase.from('configuracion').delete().eq('id', configId);
+      if (error) throw error;
+
+      showToast(`Tienda "${tenantName}" eliminada ✓`, 'success');
+      cargarDatosGlobales();
+    } catch (err: any) {
+      showToast('Error al eliminar la tienda: ' + err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAtenderPedido = async (ped: Pedido) => {
@@ -483,6 +638,29 @@ export default function SuperAdmin() {
           <p className="sidebar-nav-label" style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: '#94a3b8', margin: '0 0 0.5rem 0', paddingLeft: '0.5rem' }}>Navegación</p>
           
           <button 
+            className={`nav-item ${viewMode === 'tiendas' ? 'active' : ''}`}
+            onClick={() => setViewMode('tiendas')}
+            style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.75rem', 
+              width: '100%', 
+              padding: '0.75rem 1rem', 
+              background: viewMode === 'tiendas' ? 'rgba(99, 102, 241, 0.08)' : 'transparent', 
+              border: 'none', 
+              borderRadius: '12px', 
+              color: viewMode === 'tiendas' ? '#6366f1' : '#64748b', 
+              fontSize: '0.9rem', 
+              fontWeight: 600, 
+              cursor: 'pointer', 
+              textAlign: 'left',
+              transition: 'all 0.2s'
+            }}
+          >
+            <Building size={18} /> Gestión de Tiendas ({configuracionesList.length})
+          </button>
+
+          <button 
             className={`nav-item ${viewMode === 'dashboard' ? 'active' : ''}`}
             onClick={() => setViewMode('dashboard')}
             style={{ 
@@ -602,7 +780,140 @@ export default function SuperAdmin() {
           </div>
         </div>
 
-        {viewMode === 'dashboard' ? (
+        {viewMode === 'tiendas' ? (
+          <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* Header Top Bar */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', background: '#ffffff', padding: '1.25rem 1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Building size={22} color="#6366f1" /> Tiendas y Marcas Registradas ({configuracionesList.length})
+                </h3>
+                <p style={{ margin: '0.25rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Administra, crea y clona nuevas tiendas para otros negocios en el sistema multi-tenant</p>
+              </div>
+
+              <button
+                onClick={() => {
+                  setTiendaForm({
+                    nombre_negocio: '',
+                    tenant_id: '',
+                    whatsapp: '573185637317',
+                    admin_nombre: 'Administrador',
+                    admin_pin: '0000',
+                    color_primario: '#6366f1',
+                    descripcion_hero: 'CATÁLOGO DIGITAL OFICIAL',
+                    logo_url: ''
+                  });
+                  setShowCrearTiendaModal(true);
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.75rem 1.25rem',
+                  borderRadius: '12px',
+                  fontWeight: 700,
+                  fontSize: '0.9rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <Plus size={18} /> Crear Nueva Tienda
+              </button>
+            </div>
+
+            {/* Store Cards Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
+              {configuracionesList.map(cfg => {
+                const prodCount = productos.filter(p => p.tenant_id === cfg.tenant_id).length;
+                const pedCount = pedidos.filter(p => p.tenant_id === cfg.tenant_id).length;
+                const catalogUrl = `${window.location.origin}/${cfg.tenant_id}`;
+                const adminUrl = `${window.location.origin}/${cfg.tenant_id}/admin`;
+
+                return (
+                  <div key={cfg.id} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                    {/* Header info */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      {cfg.logo_url ? (
+                        <img src={cfg.logo_url} alt={cfg.nombre_negocio} style={{ width: '56px', height: '56px', borderRadius: '14px', objectFit: 'cover', border: '1px solid #e2e8f0' }} />
+                      ) : (
+                        <div style={{ width: '56px', height: '56px', borderRadius: '14px', background: 'linear-gradient(135deg, #e0e7ff, #c7d2fe)', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.2rem' }}>
+                          {cfg.nombre_negocio ? cfg.nombre_negocio.substring(0, 2).toUpperCase() : 'TN'}
+                        </div>
+                      )}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {cfg.nombre_negocio || cfg.tenant_id}
+                        </h4>
+                        <span style={{ fontSize: '0.75rem', color: '#6366f1', background: '#e0e7ff', padding: '0.15rem 0.5rem', borderRadius: '6px', fontWeight: 700, display: 'inline-block', marginTop: '0.2rem' }}>
+                          /{cfg.tenant_id}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Badges and Details */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', background: '#f8fafc', padding: '0.75rem', borderRadius: '10px', fontSize: '0.8rem', color: '#475569' }}>
+                      <div>
+                        <span style={{ color: '#94a3b8', display: 'block', fontSize: '0.7rem', fontWeight: 600 }}>PRODUCTOS</span>
+                        <strong style={{ color: '#0f172a' }}>📦 {prodCount} refs</strong>
+                      </div>
+                      <div>
+                        <span style={{ color: '#94a3b8', display: 'block', fontSize: '0.7rem', fontWeight: 600 }}>PEDIDOS</span>
+                        <strong style={{ color: '#0f172a' }}>🛍️ {pedCount} pedidos</strong>
+                      </div>
+                      <div style={{ gridColumn: 'span 2' }}>
+                        <span style={{ color: '#94a3b8', display: 'block', fontSize: '0.7rem', fontWeight: 600 }}>WHATSAPP</span>
+                        <strong>💬 {cfg.whatsapp || 'Sin asignar'}</strong>
+                      </div>
+                    </div>
+
+                    {/* Actions Toolbar */}
+                    <div style={{ display: 'flex', gap: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid #f1f5f9' }}>
+                      <a
+                        href={catalogUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', color: '#334155', textDecoration: 'none', fontSize: '0.78rem', fontWeight: 700 }}
+                        title="Abrir Catálogo Digital"
+                      >
+                        <ExternalLink size={14} /> Catálogo
+                      </a>
+
+                      <a
+                        href={adminUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', padding: '0.5rem', borderRadius: '8px', border: '1px solid #c7d2fe', background: '#e0e7ff', color: '#4338ca', textDecoration: 'none', fontSize: '0.78rem', fontWeight: 700 }}
+                        title="Abrir Panel Admin"
+                      >
+                        <Shield size={14} /> Admin
+                      </a>
+
+                      <button
+                        onClick={() => setEditingTienda(cfg)}
+                        style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', color: '#0284c7', cursor: 'pointer' }}
+                        title="Editar Tienda"
+                      >
+                        <Edit size={15} />
+                      </button>
+
+                      <button
+                        onClick={() => handleEliminarTienda(cfg.id, cfg.nombre_negocio, cfg.tenant_id || '')}
+                        style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #fca5a5', background: '#fee2e2', color: '#dc2626', cursor: 'pointer' }}
+                        title="Eliminar Tienda"
+                      >
+                        <Trash2 size={15} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : viewMode === 'dashboard' ? (
           <>
             {/* Métricas Globales */}
             <div className="super-metrics-grid">
@@ -1411,6 +1722,178 @@ export default function SuperAdmin() {
             <button onClick={() => setPagoModalUrl(null)} style={{ display: 'block', margin: '1rem auto 0', padding: '0.5rem 2rem', background: 'white', border: 'none', borderRadius: '20px', fontWeight: 700, cursor: 'pointer' }}>
               Cerrar Vista
             </button>
+          </div>
+        </div>
+      )}
+      {/* MODAL CREAR NUEVA TIENDA */}
+      {showCrearTiendaModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '1rem' }}>
+          <div style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '520px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', overflow: 'hidden' }}>
+            <div style={{ padding: '1.25rem 1.5rem', background: 'linear-gradient(135deg, #6366f1, #4f46e5)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Building size={20} /> Crear Nueva Tienda Multi-Tenant
+              </h3>
+              <button onClick={() => setShowCrearTiendaModal(false)} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCrearTienda} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '0.3rem' }}>Nombre de la Tienda / Marca *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej. Pijamas Lucerito, Moda Express..."
+                  value={tiendaForm.nombre_negocio}
+                  onChange={e => {
+                    const val = e.target.value;
+                    const autoSlug = val.toLowerCase().trim().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_');
+                    setTiendaForm(prev => ({ ...prev, nombre_negocio: val, tenant_id: autoSlug }));
+                  }}
+                  style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '0.3rem' }}>Identificador (URL Slug / tenant_id) *</label>
+                <div style={{ display: 'flex', alignItems: 'center', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '10px', overflow: 'hidden' }}>
+                  <span style={{ padding: '0.6rem 0.6rem 0.6rem 0.8rem', fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>{window.location.host}/</span>
+                  <input
+                    type="text"
+                    required
+                    placeholder="pijamas_lucerito"
+                    value={tiendaForm.tenant_id}
+                    onChange={e => setTiendaForm(prev => ({ ...prev, tenant_id: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_') }))}
+                    style={{ flex: 1, padding: '0.6rem 0.8rem 0.6rem 0', border: 'none', background: 'transparent', fontSize: '0.9rem', outline: 'none', fontWeight: 700, color: '#4f46e5' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '0.3rem' }}>WhatsApp de Ventas</label>
+                  <input
+                    type="text"
+                    placeholder="573185637317"
+                    value={tiendaForm.whatsapp}
+                    onChange={e => setTiendaForm(prev => ({ ...prev, whatsapp: e.target.value }))}
+                    style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '0.3rem' }}>PIN Admin Tienda</label>
+                  <input
+                    type="text"
+                    placeholder="0000"
+                    value={tiendaForm.admin_pin}
+                    onChange={e => setTiendaForm(prev => ({ ...prev, admin_pin: e.target.value }))}
+                    style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '0.3rem' }}>Logo de la Tienda</label>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    placeholder="https://... o subir imagen"
+                    value={tiendaForm.logo_url}
+                    onChange={e => setTiendaForm(prev => ({ ...prev, logo_url: e.target.value }))}
+                    style={{ flex: 1, padding: '0.6rem 0.8rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                  />
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.6rem 0.8rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '10px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>
+                    <Upload size={14} /> {uploadingLogo ? 'Subiendo...' : 'Subir'}
+                    <input type="file" accept="image/*" onChange={e => handleLogoUpload(e, false)} style={{ display: 'none' }} />
+                  </label>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button type="button" onClick={() => setShowCrearTiendaModal(false)} style={{ padding: '0.6rem 1.2rem', borderRadius: '10px', border: '1px solid #cbd5e1', background: 'white', fontWeight: 600, cursor: 'pointer' }}>
+                  Cancelar
+                </button>
+                <button type="submit" disabled={loading} style={{ padding: '0.6rem 1.5rem', borderRadius: '10px', border: 'none', background: '#4f46e5', color: 'white', fontWeight: 700, cursor: 'pointer' }}>
+                  {loading ? 'Creando...' : 'Crear Tienda'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL EDITAR TIENDA */}
+      {editingTienda && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '1rem' }}>
+          <div style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '520px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', overflow: 'hidden' }}>
+            <div style={{ padding: '1.25rem 1.5rem', background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Edit size={20} /> Editar Tienda ({editingTienda.tenant_id})
+              </h3>
+              <button onClick={() => setEditingTienda(null)} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <form onSubmit={handleGuardarEditTienda} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '0.3rem' }}>Nombre de la Tienda *</label>
+                <input
+                  type="text"
+                  required
+                  value={editingTienda.nombre_negocio}
+                  onChange={e => setEditingTienda({ ...editingTienda, nombre_negocio: e.target.value })}
+                  style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '0.3rem' }}>WhatsApp de Ventas</label>
+                  <input
+                    type="text"
+                    value={editingTienda.whatsapp || ''}
+                    onChange={e => setEditingTienda({ ...editingTienda, whatsapp: e.target.value })}
+                    style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '0.3rem' }}>PIN Admin</label>
+                  <input
+                    type="text"
+                    value={editingTienda.admin_pin || '0000'}
+                    onChange={e => setEditingTienda({ ...editingTienda, admin_pin: e.target.value })}
+                    style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '0.3rem' }}>Logo URL</label>
+                <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    value={editingTienda.logo_url || ''}
+                    onChange={e => setEditingTienda({ ...editingTienda, logo_url: e.target.value })}
+                    style={{ flex: 1, padding: '0.6rem 0.8rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.85rem' }}
+                  />
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.6rem 0.8rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '10px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}>
+                    <Upload size={14} /> {uploadingLogo ? 'Subiendo...' : 'Subir'}
+                    <input type="file" accept="image/*" onChange={e => handleLogoUpload(e, true)} style={{ display: 'none' }} />
+                  </label>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                <button type="button" onClick={() => setEditingTienda(null)} style={{ padding: '0.6rem 1.2rem', borderRadius: '10px', border: '1px solid #cbd5e1', background: 'white', fontWeight: 600, cursor: 'pointer' }}>
+                  Cancelar
+                </button>
+                <button type="submit" disabled={loading} style={{ padding: '0.6rem 1.5rem', borderRadius: '10px', border: 'none', background: '#0284c7', color: 'white', fontWeight: 700, cursor: 'pointer' }}>
+                  {loading ? 'Guardando...' : 'Guardar Cambios'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
