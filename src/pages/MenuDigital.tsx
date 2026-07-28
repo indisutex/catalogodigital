@@ -949,9 +949,9 @@ export default function MenuDigital() {
                       ref={el => { if (el && el.paused) el.play().catch(() => {}); }}
                     />
                   ) : producto.imagen_url ? (
-                    <img src={producto.imagen_url} alt={producto.nombre} loading="lazy" />
+                    <img src={producto.imagen_url} alt={producto.nombre} loading="lazy" decoding="async" />
                   ) : (producto.imagenes_extra && producto.imagenes_extra.length > 0 && decodeExtraImage(producto.imagenes_extra[0]).url) ? (
-                    <img src={decodeExtraImage(producto.imagenes_extra[0]).url} alt={producto.nombre} loading="lazy" />
+                    <img src={decodeExtraImage(producto.imagenes_extra[0]).url} alt={producto.nombre} loading="lazy" decoding="async" />
                   ) : (
                     <div className="img-placeholder"></div>
                   )}
