@@ -863,11 +863,55 @@ export default function Admin() {
   const [posCustomerName, setPosCustomerName] = useState('');
   const [posCustomerAddress, setPosCustomerAddress] = useState('');
   const [posCustomerCity, setPosCustomerCity] = useState('');
+  const [posCustomerSearch, setPosCustomerSearch] = useState('');
+  const [showPosCustomerDropdown, setShowPosCustomerDropdown] = useState(false);
+  const [selectedPosCustomer, setSelectedPosCustomer] = useState<any | null>(null);
   const [posAsesor, setPosAsesor] = useState('');
   const [posPaymentMethod, setPosPaymentMethod] = useState<'efectivo' | 'transferencia' | 'tarjeta'>('efectivo');
   const [posPriceTier, setPosPriceTier] = useState<'detal' | 'por_mayor' | 'precio_50_unidades'>('detal');
   const [posCheckoutSuccess, setPosCheckoutSuccess] = useState(false);
   const [posLastInvoice, setPosLastInvoice] = useState<any | null>(null);
+
+  const posCustomerOptions = useMemo(() => {
+    const map: Record<string, { id?: string; nombre: string; telefono: string; direccion?: string; ciudad?: string }> = {};
+    (clientes || []).forEach((c: any) => {
+      if (c.telefono) {
+        const cleanTel = String(c.telefono).trim();
+        map[cleanTel] = {
+          id: c.id,
+          nombre: c.nombre || 'Cliente',
+          telefono: cleanTel,
+          ciudad: c.ciudad || '',
+          direccion: c.direccion || ''
+        };
+      }
+    });
+    (pedidos || []).forEach((p: any) => {
+      if (p.cliente_telefono) {
+        const cleanTel = String(p.cliente_telefono).trim();
+        if (!map[cleanTel]) {
+          map[cleanTel] = {
+            nombre: p.cliente_nombre || 'Cliente',
+            telefono: cleanTel,
+            direccion: p.direccion || '',
+            ciudad: p.ciudad || ''
+          };
+        } else {
+          if (!map[cleanTel].direccion && p.direccion) map[cleanTel].direccion = p.direccion;
+          if (!map[cleanTel].ciudad && p.ciudad) map[cleanTel].ciudad = p.ciudad;
+        }
+      }
+    });
+    return Object.values(map);
+  }, [clientes, pedidos]);
+
+  const filteredPosCustomers = useMemo(() => {
+    const q = (posCustomerSearch || '').trim().toLowerCase();
+    if (!q || q.length < 1) return [];
+    return posCustomerOptions.filter(c =>
+      c.nombre.toLowerCase().includes(q) || c.telefono.includes(q)
+    ).slice(0, 8);
+  }, [posCustomerOptions, posCustomerSearch]);
 
 
   // Asesor Transfer & Product Migration States
@@ -9917,6 +9961,9 @@ export default function Admin() {
                         setPosCustomerName('');
                         setPosCustomerAddress('');
                         setPosCustomerCity('');
+                        setPosCustomerSearch('');
+                        setShowPosCustomerDropdown(false);
+                        setSelectedPosCustomer(null);
                         setPosAsesor('');
                         setPosCheckoutSuccess(false);
                         setPosLastInvoice(null);
@@ -10349,21 +10396,154 @@ export default function Admin() {
                         </div>
                       </div>
 
-                      {/* Customer Data */}
-                      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-                        <h4 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 800, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                          👤 Datos del Cliente
-                        </h4>
+                      {/* Customer Data with Search & Auto-fill */}
+                      <div style={{ background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '16px', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '0.65rem', position: 'relative' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
+                          <h4 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 800, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            👤 Datos del Cliente
+                          </h4>
+                          {selectedPosCustomer ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#dcfce7', border: '1px solid #86efac', padding: '0.2rem 0.6rem', borderRadius: '99px' }}>
+                              <span style={{ fontSize: '0.72rem', color: '#15803d', fontWeight: 800 }}>
+                                ✓ Cliente Guardado
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSelectedPosCustomer(null);
+                                  setPosCustomerPhone('');
+                                  setPosCustomerName('');
+                                  setPosCustomerAddress('');
+                                  setPosCustomerCity('');
+                                  setPosCustomerSearch('');
+                                }}
+                                style={{ border: 'none', background: 'transparent', color: '#dc2626', fontWeight: 800, cursor: 'pointer', fontSize: '0.75rem', padding: '0 2px' }}
+                                title="Limpiar y crear cliente nuevo"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          ) : (
+                            <span style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 600 }}>
+                              💡 Busca un cliente guardado o ingresa uno nuevo
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Search Input Bar for Saved Clients */}
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            type="text"
+                            placeholder="🔍 Buscar cliente guardado por Nombre o Teléfono..."
+                            value={posCustomerSearch}
+                            onFocus={() => setShowPosCustomerDropdown(true)}
+                            onChange={e => {
+                              setPosCustomerSearch(e.target.value);
+                              setShowPosCustomerDropdown(true);
+                            }}
+                            style={{
+                              width: '100%',
+                              boxSizing: 'border-box',
+                              padding: '0.55rem 0.75rem',
+                              borderRadius: '10px',
+                              border: '1.5px solid #94a3b8',
+                              fontSize: '0.82rem',
+                              outline: 'none',
+                              background: '#ffffff',
+                              fontWeight: 600,
+                              color: '#0f172a',
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.04)'
+                            }}
+                          />
+
+                          {/* Autocomplete Dropdown List */}
+                          {showPosCustomerDropdown && filteredPosCustomers.length > 0 && (
+                            <div
+                              style={{
+                                position: 'absolute',
+                                top: '100%',
+                                left: 0,
+                                right: 0,
+                                zIndex: 100,
+                                background: '#ffffff',
+                                border: '1px solid #cbd5e1',
+                                borderRadius: '12px',
+                                marginTop: '4px',
+                                boxShadow: '0 10px 25px -5px rgba(0,0,0,0.15)',
+                                maxHeight: '220px',
+                                overflowY: 'auto'
+                              }}
+                            >
+                              <div style={{ padding: '0.35rem 0.75rem', fontSize: '0.68rem', fontWeight: 800, color: '#64748b', background: '#f1f5f9', borderBottom: '1px solid #e2e8f0', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                Clientes Encontrados ({filteredPosCustomers.length}) — Haz clic para seleccionar
+                              </div>
+                              {filteredPosCustomers.map((cust, idx) => (
+                                <div
+                                  key={cust.id || idx}
+                                  onClick={() => {
+                                    setPosCustomerPhone(cust.telefono);
+                                    setPosCustomerName(cust.nombre);
+                                    setPosCustomerAddress(cust.direccion || '');
+                                    setPosCustomerCity(cust.ciudad || '');
+                                    setSelectedPosCustomer(cust);
+                                    setPosCustomerSearch('');
+                                    setShowPosCustomerDropdown(false);
+                                  }}
+                                  style={{
+                                    padding: '0.55rem 0.75rem',
+                                    borderBottom: idx === filteredPosCustomers.length - 1 ? 'none' : '1px solid #f1f5f9',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    transition: 'background 0.15s'
+                                  }}
+                                  onMouseEnter={e => (e.currentTarget.style.background = '#f0f9ff')}
+                                  onMouseLeave={e => (e.currentTarget.style.background = '#ffffff')}
+                                >
+                                  <div>
+                                    <div style={{ fontWeight: 800, fontSize: '0.85rem', color: '#0f172a' }}>
+                                      👤 {cust.nombre}
+                                    </div>
+                                    {(cust.direccion || cust.ciudad) && (
+                                      <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '1px' }}>
+                                        📍 {[cust.direccion, cust.ciudad].filter(Boolean).join(', ')}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0284c7', background: '#e0f2fe', padding: '0.15rem 0.5rem', borderRadius: '6px' }}>
+                                    📞 {cust.telefono}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: 0 }}>
                             <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Teléfono *</label>
-                            <input type="text" required placeholder="Ej: 3122564284" value={posCustomerPhone} onChange={e => setPosCustomerPhone(e.target.value)}
+                            <input type="text" required placeholder="Ej: 3122564284" value={posCustomerPhone}
+                              onChange={e => {
+                                setPosCustomerPhone(e.target.value);
+                                if (!posCustomerSearch) {
+                                  setPosCustomerSearch(e.target.value);
+                                  setShowPosCustomerDropdown(true);
+                                }
+                              }}
                               style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '0.85rem', outline: 'none', background: 'white', transition: 'border 0.2s' }}
                             />
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: 0 }}>
                             <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nombre *</label>
-                            <input type="text" required placeholder="Nombre del cliente" value={posCustomerName} onChange={e => setPosCustomerName(e.target.value)}
+                            <input type="text" required placeholder="Nombre del cliente" value={posCustomerName}
+                              onChange={e => {
+                                setPosCustomerName(e.target.value);
+                                if (!posCustomerSearch) {
+                                  setPosCustomerSearch(e.target.value);
+                                  setShowPosCustomerDropdown(true);
+                                }
+                              }}
                               style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '0.85rem', outline: 'none', background: 'white', transition: 'border 0.2s' }}
                             />
                           </div>
