@@ -7645,6 +7645,13 @@ export default function Admin() {
                         meta_pixel_id: configuracion.meta_pixel_id,
                         clarity_project_id: configuracion.clarity_project_id
                       }).eq('id', configuracion.id);
+                      try {
+                        localStorage.setItem('master_tracking_config', JSON.stringify({
+                          google_analytics_id: configuracion.google_analytics_id,
+                          meta_pixel_id: configuracion.meta_pixel_id,
+                          clarity_project_id: configuracion.clarity_project_id
+                        }));
+                      } catch (e) {}
                       setLoading(false);
                       if (error) showToast('Error al guardar credenciales: ' + error.message, 'error');
                       else showToast('Configuración del desarrollador guardada ✓');
@@ -9935,6 +9942,20 @@ export default function Admin() {
                               return list;
                             })();
 
+                            const allEstampados = (() => {
+                              const legacyEstampados = item.producto.estampados?.split(',').map((e: string) => e.trim()).filter(Boolean) || [];
+                              const extraImagesRefs = (item.producto.imagenes_extra || []).map((u: string) => {
+                                const d = decodeExtraImage(u);
+                                return (d.estampado || d.ref)?.trim();
+                              }).filter(Boolean);
+                              const estMap = new Map<string, string>();
+                              [...legacyEstampados, ...extraImagesRefs].forEach((e: string) => {
+                                const k = e.toLowerCase();
+                                if (k && !estMap.has(k)) estMap.set(k, e);
+                              });
+                              return Array.from(estMap.values());
+                            })();
+
                             const currentSelectedImg = item.selected_image_url || (() => {
                               const matched = allProductImages.find(img => img.ref && img.ref.toLowerCase() === (item.estampado || '').toLowerCase());
                               return matched ? matched.url : item.producto.imagen_url;
@@ -9980,17 +10001,6 @@ export default function Admin() {
                                       );
                                     })()}
                                     {(() => {
-                                      const legacyEstampados = item.producto.estampados?.split(',').map((e: string) => e.trim()).filter(Boolean) || [];
-                                      const extraImagesRefs = (item.producto.imagenes_extra || []).map((u: string) => {
-                                        const d = decodeExtraImage(u);
-                                        return (d.estampado || d.ref)?.trim();
-                                      }).filter(Boolean);
-                                      const estMap = new Map<string, string>();
-                                      [...legacyEstampados, ...extraImagesRefs].forEach((e: string) => {
-                                        const k = e.toLowerCase();
-                                        if (k && !estMap.has(k)) estMap.set(k, e);
-                                      });
-                                      const allEstampados = Array.from(estMap.values());
                                       if (allEstampados.length === 0) {
                                         return (
                                           <input
@@ -10007,7 +10017,8 @@ export default function Admin() {
                                           value={item.estampado || ''}
                                           onChange={e => {
                                             const val = e.target.value;
-                                            const matchedImg = allProductImages.find(img => img.ref && img.ref.toLowerCase() === val.toLowerCase());
+                                            const valClean = val.toLowerCase().trim();
+                                            const matchedImg = allProductImages.find(img => img.ref && img.ref.toLowerCase().trim() === valClean) || allProductImages[allEstampados.findIndex(es => es.toLowerCase().trim() === valClean)];
                                             setPosCart(prev => prev.map((it, i) => i === idx ? { ...it, estampado: val, selected_image_url: matchedImg ? matchedImg.url : it.selected_image_url } : it));
                                           }}
                                           style={{ fontSize: '0.74rem', padding: '0.15rem 0.4rem', borderRadius: '6px', border: '1.5px solid #cbd5e1', background: 'white', fontWeight: 600, color: '#334155', outline: 'none', maxWidth: '120px' }}
@@ -10032,10 +10043,11 @@ export default function Admin() {
                                             alt={imgObj.ref || `Foto ${iIdx + 1}`}
                                             title={imgObj.ref || `Foto ${iIdx + 1}`}
                                             onClick={() => {
+                                              const targetEstampado = imgObj.ref?.trim() || allEstampados[iIdx] || (iIdx === 0 && allEstampados.length > 0 ? allEstampados[0] : '');
                                               setPosCart(prev => prev.map((it, i) => i === idx ? {
                                                 ...it,
                                                 selected_image_url: imgObj.url,
-                                                estampado: imgObj.ref || it.estampado
+                                                estampado: targetEstampado || it.estampado || ''
                                               } : it));
                                             }}
                                             style={{

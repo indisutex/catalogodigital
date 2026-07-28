@@ -246,6 +246,46 @@ export default function MenuDigital() {
         document.documentElement.style.setProperty('--primary-rgb', `${r}, ${g}, ${b}`);
       }
     }
+
+    // Dynamic Analytics & Pixel Tracking
+    try {
+      const masterTracking = JSON.parse(localStorage.getItem('master_tracking_config') || '{}');
+      const clarityId = configuracion?.clarity_project_id || masterTracking.clarity_project_id || 'qawomw67u5';
+      const gaId = configuracion?.google_analytics_id || masterTracking.google_analytics_id;
+      const pixelId = configuracion?.meta_pixel_id || masterTracking.meta_pixel_id;
+
+      if (clarityId && typeof window !== 'undefined' && !(window as any).clarity) {
+        (function(c: any, l: any, a: any, r: any, i: any, t?: any, y?: any) {
+          c[a] = c[a] || function() { (c[a].q = c[a].q || []).push(arguments); };
+          t = l.createElement(r); t.async = 1; t.src = "https://www.clarity.ms/tag/" + i;
+          y = l.getElementsByTagName(r)[0]; if (y && y.parentNode) y.parentNode.insertBefore(t, y);
+        })(window, document, "clarity", "script", clarityId);
+      }
+      if (gaId && typeof window !== 'undefined' && !document.getElementById('ga-gtag-script')) {
+        const gaScript = document.createElement('script');
+        gaScript.id = 'ga-gtag-script';
+        gaScript.async = true;
+        gaScript.src = `https://www.googletagmanager.com/gtag/js?id=${gaId}`;
+        document.head.appendChild(gaScript);
+        (window as any).dataLayer = (window as any).dataLayer || [];
+        function gtag(...args: any[]) { ((window as any).dataLayer).push(args); }
+        gtag('js', new Date());
+        gtag('config', gaId);
+      }
+      if (pixelId && typeof window !== 'undefined' && !(window as any).fbq) {
+        (function(f: any, b: any, e: any, v: any, n?: any, t?: any, s?: any) {
+          if (f.fbq) return; n = f.fbq = function() {
+            n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
+          };
+          if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
+          n.queue = []; t = b.createElement(e); t.async = !0;
+          t.src = v; s = b.getElementsByTagName(e)[0];
+          if (s && s.parentNode) s.parentNode.insertBefore(t, s);
+        })(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
+        (window as any).fbq('init', pixelId);
+        (window as any).fbq('track', 'PageView');
+      }
+    } catch (e) {}
   }, [configuracion, mayoristaBranding]);
   
   // Product Detail Popup
@@ -991,9 +1031,8 @@ export default function MenuDigital() {
                   ) : (
                     <div className="img-placeholder"></div>
                   )}
-                  <div className="sku-badge">Ref: {producto.nombre}</div>
                   {producto.es_producto_familiar && (
-                    <div className="sku-badge" style={{ top: '2rem', background: '#0284c7' }}>👨‍👩‍👧‍👦 Opción Familiar</div>
+                    <div className="sku-badge" style={{ top: '0.5rem', background: '#0284c7' }}>👨‍👩‍👧‍👦 Opción Familiar</div>
                   )}
                   
                   <button 
@@ -1251,6 +1290,18 @@ export default function MenuDigital() {
                 )}
 
                 <div className="cart-footer">
+                  {/* Trust & Urgency Badges inside Cart */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '0.85rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#fef2f2', border: '1px solid #fee2e2', color: '#991b1b', padding: '0.45rem 0.65rem', borderRadius: '8px', fontSize: '0.76rem', fontWeight: 700 }}>
+                      <span>🔥</span>
+                      <span>Quedan muy pocas unidades de las referencias seleccionadas</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#f0fdf4', border: '1px solid #dcfce7', color: '#166534', padding: '0.45rem 0.65rem', borderRadius: '8px', fontSize: '0.76rem', fontWeight: 600 }}>
+                      <span>🛡️</span>
+                      <span>Compra 100% protegida y despachada por WhatsApp</span>
+                    </div>
+                  </div>
+
                   <div className="cart-total">
                     <span>Total:</span>
                     <span>${total.toLocaleString('es-CO')}</span>
@@ -1316,11 +1367,11 @@ export default function MenuDigital() {
                 ) : (
                   <div className="detail-carousel-placeholder" />
                 )}
-                <div className="sku-badge" style={{ fontSize: '0.6rem', padding: '0.15rem 0.4rem', left: '0.5rem', right: 'auto' }}>
-                  Ref: {detailProduct.nombre}
+                <div className="sku-badge" style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', left: '0.5rem', right: 'auto', background: 'rgba(15, 23, 42, 0.88)', color: 'white', fontWeight: 700 }}>
+                  Ref: {detailProduct.nombre} {(detailProduct.referencia || detailProduct.sku) ? `(${detailProduct.referencia || detailProduct.sku})` : ''}
                 </div>
                 {currentImgRef && (
-                  <div className="sku-badge" style={{ fontSize: '0.6rem', padding: '0.15rem 0.4rem', left: '0.5rem', top: '2rem', right: 'auto', background: 'rgba(14, 165, 233, 0.9)' }}>
+                  <div className="sku-badge" style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', left: '0.5rem', top: '2.2rem', right: 'auto', background: 'rgba(14, 165, 233, 0.95)', color: 'white', fontWeight: 700 }}>
                     Estampado: {currentImgRef}
                   </div>
                 )}
@@ -1505,17 +1556,7 @@ export default function MenuDigital() {
                 </div>
 
 
-                {/* Scarcity & Trust Badges (Shrine inspired) */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', margin: '0.85rem 0' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#fef2f2', border: '1px solid #fee2e2', color: '#991b1b', padding: '0.4rem 0.6rem', borderRadius: '8px', fontSize: '0.74rem', fontWeight: 700 }}>
-                    <span>🔥</span>
-                    <span>Quedan muy pocas unidades de esta referencia</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#f0fdf4', border: '1px solid #dcfce7', color: '#166534', padding: '0.4rem 0.6rem', borderRadius: '8px', fontSize: '0.74rem', fontWeight: 600 }}>
-                    <span>🛡️</span>
-                    <span>Compra protegida y despachada por WhatsApp</span>
-                  </div>
-                </div>
+                <div style={{ marginTop: '0.85rem' }} />
 
                 {/* ── ADD TO CART ── */}
                 <button className="detail-add-btn" onClick={handleAddFromDetail}>
