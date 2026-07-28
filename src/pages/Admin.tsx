@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase, getTenantId, setTenantId } from '../lib/supabase';
+import { updatePWAManifestAndIcons } from '../lib/pwa';
 import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista, PQRS } from '../types';
@@ -477,17 +478,25 @@ export default function Admin() {
   }, [role, mayoristas]);
 
   useEffect(() => {
+    let titleStr = 'Indisutex Admin';
+    let logoUrl: string | undefined = undefined;
+
+    const activeMayorista = role === 'mayorista' ? currentMayorista : null;
+    if (activeMayorista?.logo_url) {
+      logoUrl = activeMayorista.logo_url;
+    }
+
     if (selectedCompany) {
       const compName = selectedCompany.charAt(0).toUpperCase() + selectedCompany.slice(1);
-      let titleStr = `${compName} Admin`;
+      titleStr = `${compName} Admin`;
       const activeAsesor = role === 'mayorista' ? currentMayorista : currentAsesor;
       if (activeAsesor) {
         titleStr += ` - ${activeAsesor.nombre}`;
       }
-      document.title = titleStr;
-    } else {
-      document.title = 'Indisutex Admin';
     }
+
+    document.title = titleStr;
+    updatePWAManifestAndIcons(logoUrl, titleStr);
   }, [selectedCompany, currentAsesor, currentMayorista, role]);
 
   const getMotivationalPhrase = (asesorId: string) => {

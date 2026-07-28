@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
 import { supabase, getTenantId } from '../lib/supabase';
+import { updatePWAManifestAndIcons } from '../lib/pwa';
 import type { Producto, Categoria, Subcategoria, Configuracion } from '../types';
 import { Loader2, Search, Plus, ShoppingBag, X, ShoppingCart, Volume2, VolumeX, Package, HelpCircle } from 'lucide-react';
 import { useCart, getEffectivePrice } from '../context/CartContext';
@@ -220,29 +221,25 @@ export default function MenuDigital() {
   }, []);
   
   useEffect(() => {
-    if (configuracion) {
-      if (configuracion.nombre_negocio) {
-        document.title = configuracion.nombre_negocio;
-      } else {
-        document.title = 'Catálogo Digital';
+    const storeName = mayoristaBranding?.nombre || configuracion?.nombre_negocio || 'Catálogo Digital';
+    const storeLogo = mayoristaBranding?.logo || configuracion?.logo_url;
+
+    document.title = storeName;
+    updatePWAManifestAndIcons(storeLogo, storeName);
+
+    if (configuracion?.color_primario) {
+      document.documentElement.style.setProperty('--primary', configuracion.color_primario);
+      document.documentElement.style.setProperty('--primary-color', configuracion.color_primario);
+      localStorage.setItem(`admin_primary_color_${getTenantId()}`, configuracion.color_primario);
+      const hex = configuracion.color_primario.replace('#', '');
+      if (hex.length === 6) {
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        document.documentElement.style.setProperty('--primary-rgb', `${r}, ${g}, ${b}`);
       }
-      
-      if (configuracion.color_primario) {
-        document.documentElement.style.setProperty('--primary', configuracion.color_primario);
-        document.documentElement.style.setProperty('--primary-color', configuracion.color_primario);
-        localStorage.setItem(`admin_primary_color_${getTenantId()}`, configuracion.color_primario);
-        const hex = configuracion.color_primario.replace('#', '');
-        if (hex.length === 6) {
-          const r = parseInt(hex.substring(0, 2), 16);
-          const g = parseInt(hex.substring(2, 4), 16);
-          const b = parseInt(hex.substring(4, 6), 16);
-          document.documentElement.style.setProperty('--primary-rgb', `${r}, ${g}, ${b}`);
-        }
-      }
-    } else {
-      document.title = 'Catálogo Digital';
     }
-  }, [configuracion]);
+  }, [configuracion, mayoristaBranding]);
   
   // Product Detail Popup
   const [detailProduct, setDetailProduct] = useState<Producto | null>(null);

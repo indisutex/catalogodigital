@@ -1,0 +1,25 @@
+{
+  "name": "Catálogo Digital — Indisutex",
+  "short_name": "Indisutex",
+  "description": "Catálogo Digital e Interactivo de Indisutex",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#e91e8c",
+  "icons": [
+    {
+      "src": "/indisutex-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/indisutex-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
