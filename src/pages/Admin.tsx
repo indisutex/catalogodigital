@@ -4207,6 +4207,7 @@ export default function Admin() {
       {/* MAIN */}
       <div className="admin-main">
         {/* TOP BAR */}
+        {activeTab !== 'erp' && (
         <div className="admin-topbar">
           <button 
             type="button" 
@@ -4480,6 +4481,7 @@ export default function Admin() {
             </button>
           </div>
         </div>
+        )}
 
         <div className="admin-content">
 
@@ -7179,7 +7181,7 @@ export default function Admin() {
           {/* ── ERP EMPRESARIAL UNIFICADO ── */}
 
           {activeTab === 'erp' && (
-            <ERPMainModule tenantId={selectedCompany || getTenantId()} />
+            <ERPMainModule tenantId={selectedCompany || getTenantId()} onToggleSidebar={toggleSidebar} />
           )}
 
           {/* ── CONFIG TAB ── */}

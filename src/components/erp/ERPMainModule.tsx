@@ -8,11 +8,12 @@ import { ERPComprasModule }      from './ERPComprasModule';
 import { ERPCRMModule }          from './ERPCRMModule';
 import {
   BarChart2, Landmark, BookOpen, Building2,
-  ShoppingCart, Package, Users, ChevronRight
+  ShoppingCart, Package, Users, ChevronRight, Menu
 } from 'lucide-react';
 
 interface Props {
   tenantId: string;
+  onToggleSidebar?: () => void;
 }
 
 type ERPTab =
@@ -92,7 +93,7 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
-export const ERPMainModule: React.FC<Props> = ({ tenantId }) => {
+export const ERPMainModule: React.FC<Props> = ({ tenantId, onToggleSidebar }) => {
   const [activeTab, setActiveTab] = useState<ERPTab>('ventas');
 
   return (
@@ -100,6 +101,32 @@ export const ERPMainModule: React.FC<Props> = ({ tenantId }) => {
 
       {/* ── Barra de navegación superior ── */}
       <nav className="erp-main-topbar">
+        {onToggleSidebar && (
+          <button 
+            type="button" 
+            className="sidebar-collapse-toggle"
+            onClick={onToggleSidebar}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'transparent',
+              color: '#475569',
+              border: 'none',
+              borderRadius: '8px',
+              width: '36px',
+              height: '36px',
+              cursor: 'pointer',
+              marginRight: '0.5rem',
+              flexShrink: 0,
+              padding: 0
+            }}
+            title="Mostrar / Ocultar Menú Lateral"
+          >
+            <Menu size={20} style={{ color: '#475569' }} />
+          </button>
+        )}
+
         <div className="erp-main-brand">
           <BarChart2 size={20} color="var(--primary-color, #6366f1)" />
           <div>
