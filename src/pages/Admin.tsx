@@ -10350,7 +10350,6 @@ export default function Admin() {
                                   total: totalSale,
                                   productos: serializedProducts,
                                   linea_whatsapp: posAsesor ? `pos_${posAsesor}` : 'pos',
-                                  asesor: posAsesor || 'Caja General',
                                   tenant_id: tenant,
                                   estado: 'completado',
                                   atendido: true,
