@@ -868,7 +868,7 @@ export default function Admin() {
   const [posPriceTier, setPosPriceTier] = useState<'detal' | 'por_mayor' | 'precio_50_unidades'>('detal');
   const [posCheckoutSuccess, setPosCheckoutSuccess] = useState(false);
   const [posLastInvoice, setPosLastInvoice] = useState<any | null>(null);
-  const [posInvoiceNumber, setPosInvoiceNumber] = useState<string>('');
+
 
   // Asesor Transfer & Product Migration States
   const [movingAsesor, setMovingAsesor] = useState<Asesor | null>(null);
@@ -9590,48 +9590,92 @@ export default function Admin() {
           {activeTab === 'pos' && (
             <div className="pos-layout">
               {posCheckoutSuccess ? (
-                /* SUCCESS RECEIPT SCREEN */
-                <div className="pos-success-screen" style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '24px', padding: '2rem', maxWidth: '560px', margin: '2rem auto', textAlign: 'center', boxShadow: '0 20px 40px -12px rgba(0,0,0,0.1)' }}>
-                  <div style={{ width: '64px', height: '64px', background: '#dcfce7', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.25rem auto' }}>
-                    <span style={{ fontSize: '2rem' }}>✅</span>
+                /* ─── SUCCESS & INVOICE SCREEN ─── */
+                <div style={{ maxWidth: '640px', margin: '1.5rem auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+
+                  {/* Header success badge */}
+                  <div style={{ background: 'linear-gradient(135deg, #052e16 0%, #14532d 100%)', borderRadius: '20px', padding: '1.5rem 2rem', display: 'flex', alignItems: 'center', gap: '1rem', color: 'white' }}>
+                    <div style={{ width: '52px', height: '52px', background: 'rgba(255,255,255,0.15)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem', flexShrink: 0 }}>✅</div>
+                    <div>
+                      <div style={{ fontWeight: 800, fontSize: '1.15rem', letterSpacing: '-0.01em' }}>¡Venta Completada con Éxito!</div>
+                      <div style={{ fontSize: '0.82rem', opacity: 0.8, marginTop: '0.2rem' }}>Stock actualizado · Registrada en pedidos · Lista para imprimir</div>
+                    </div>
                   </div>
-                  <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 800, fontSize: '1.4rem', color: '#14532d' }}>¡Venta Completada con Éxito!</h3>
-                  <p style={{ margin: '0 0 1.5rem 0', color: '#475569', fontSize: '0.88rem' }}>El inventario ha sido actualizado y la venta se registró en el historial de pedidos.</p>
 
-                  {/* Factura Detalle */}
+                  {/* Factura principal */}
                   {posLastInvoice && (
-                    <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1.25rem', textAlign: 'left', marginBottom: '1.5rem', fontFamily: 'monospace', fontSize: '0.85rem' }}>
-                      <div style={{ borderBottom: '1px dashed #cbd5e1', paddingBottom: '0.75rem', marginBottom: '0.75rem', textAlign: 'center' }}>
-                        <strong style={{ fontSize: '1rem', textTransform: 'uppercase' }}>{configuracion?.nombre_negocio || 'Indisutex'}</strong>
-                        <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.75rem' }}>COMPROBANTE DE VENTA POS</p>
-                        <p style={{ margin: '0.1rem 0 0 0', color: '#64748b', fontSize: '0.72rem' }}>Fecha: {new Date(posLastInvoice.created_at).toLocaleString()}</p>
+                    <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 8px 32px -8px rgba(0,0,0,0.08)' }}>
+                      {/* Factura header con logo */}
+                      <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', padding: '1.5rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          {configuracion?.logo_url ? (
+                            <img src={configuracion.logo_url} alt="Logo" style={{ height: '48px', maxWidth: '160px', objectFit: 'contain', filter: 'brightness(0) invert(1)', marginBottom: '0.4rem' }} />
+                          ) : (
+                            <div style={{ fontWeight: 800, fontSize: '1.4rem', color: 'white', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{configuracion?.nombre_negocio || 'Indisutex'}</div>
+                          )}
+                          <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.72rem', marginTop: '0.25rem' }}>COMPROBANTE DE VENTA POS</div>
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ color: '#94a3b8', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>No. Factura</div>
+                          <div style={{ color: 'white', fontWeight: 800, fontSize: '1.1rem', fontFamily: 'monospace' }}>{posLastInvoice.numero_factura}</div>
+                          <div style={{ color: '#64748b', fontSize: '0.7rem', marginTop: '0.2rem' }}>{new Date(posLastInvoice.created_at).toLocaleString()}</div>
+                        </div>
                       </div>
 
-                      <div style={{ marginBottom: '0.75rem' }}>
-                        <strong>Cliente:</strong> {posLastInvoice.cliente_nombre}<br />
-                        <strong>Teléfono:</strong> {posLastInvoice.cliente_telefono}<br />
-                        <strong>Asesora / Vendedora:</strong> {posLastInvoice.asesor || 'Caja General'}<br />
-                        {posLastInvoice.direccion && <><strong>Dirección:</strong> {posLastInvoice.direccion}, {posLastInvoice.ciudad}<br /></>}
-                        <strong>Método de Pago:</strong> {posLastInvoice.metodo_pago.toUpperCase()}<br />
-                      </div>
-
-                      <div style={{ borderTop: '1px dashed #cbd5e1', borderBottom: '1px dashed #cbd5e1', padding: '0.5rem 0', margin: '0.75rem 0' }}>
-                        {posLastInvoice.productos.map((item: any, idx: number) => (
-                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
-                            <span>
-                              {item.cantidad}x {item.nombre} 
-                              {(item.referencia || item.producto?.referencia) ? ` [Ref: ${item.referencia || item.producto?.referencia}]` : ''} 
-                              {item.talla ? ` (${item.talla})` : ''} 
-                              {item.estampado ? ` [Estampado: ${item.estampado}]` : ''}
-                            </span>
-                            <span>${(item.precio * item.cantidad).toLocaleString()}</span>
+                      {/* Body de la factura */}
+                      <div style={{ padding: '1.5rem 2rem' }}>
+                        {/* Info cliente + QR side by side */}
+                        <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1.25rem', alignItems: 'flex-start' }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', fontWeight: 700, marginBottom: '0.5rem' }}>Datos del Cliente</div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0f172a' }}>{posLastInvoice.cliente_nombre}</div>
+                              <div style={{ fontSize: '0.83rem', color: '#475569' }}>📱 {posLastInvoice.cliente_telefono}</div>
+                              {posLastInvoice.direccion && <div style={{ fontSize: '0.83rem', color: '#475569' }}>📍 {posLastInvoice.direccion}{posLastInvoice.ciudad ? `, ${posLastInvoice.ciudad}` : ''}</div>}
+                              <div style={{ fontSize: '0.83rem', color: '#475569' }}>👤 Asesor: <strong>{posLastInvoice.asesor || 'Caja General'}</strong></div>
+                              <div style={{ fontSize: '0.83rem', color: '#475569' }}>💳 Pago: <strong style={{ textTransform: 'uppercase' }}>{posLastInvoice.metodo_pago}</strong></div>
+                            </div>
                           </div>
-                        ))}
-                      </div>
+                          {/* QR Code usando Google Charts API */}
+                          <div style={{ textAlign: 'center', flexShrink: 0 }}>
+                            <img
+                              src={`https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=${encodeURIComponent(`FACTURA:${posLastInvoice.numero_factura}|TIENDA:${configuracion?.nombre_negocio || 'Indisutex'}|CLIENTE:${posLastInvoice.cliente_nombre}|TOTAL:${posLastInvoice.total}|FECHA:${posLastInvoice.created_at}`)}`}
+                              alt="QR Verificación"
+                              style={{ width: 90, height: 90, borderRadius: '8px', border: '1px solid #e2e8f0' }}
+                            />
+                            <div style={{ fontSize: '0.62rem', color: '#94a3b8', marginTop: '0.3rem' }}>Verificar pedido</div>
+                          </div>
+                        </div>
 
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', fontSize: '1rem', marginTop: '0.5rem' }}>
-                        <span>TOTAL PAGADO:</span>
-                        <span style={{ color: '#10b981' }}>${posLastInvoice.total.toLocaleString()}</span>
+                        {/* Separador */}
+                        <div style={{ borderTop: '1px dashed #cbd5e1', margin: '0.75rem 0' }} />
+
+                        {/* Tabla de productos */}
+                        <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#94a3b8', fontWeight: 700, marginBottom: '0.6rem' }}>Detalle de Productos</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                          {posLastInvoice.productos.map((item: any, idx: number) => (
+                            <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '0.5rem 0.75rem', background: idx % 2 === 0 ? '#f8fafc' : 'transparent', borderRadius: '8px' }}>
+                              <span style={{ flex: 1, fontSize: '0.85rem', color: '#1e293b' }}>
+                                <span style={{ fontWeight: 700, color: '#6366f1', marginRight: '0.4rem' }}>{item.cantidad}x</span>
+                                {item.nombre}
+                                {(item.referencia || item.producto?.referencia) ? <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}> [{item.referencia || item.producto?.referencia}]</span> : ''}
+                                {item.talla ? <span style={{ background: '#e0e7ff', color: '#4338ca', borderRadius: '4px', padding: '0 4px', fontSize: '0.72rem', marginLeft: '4px' }}>{item.talla}</span> : ''}
+                                {item.estampado ? <span style={{ background: '#fef3c7', color: '#92400e', borderRadius: '4px', padding: '0 4px', fontSize: '0.72rem', marginLeft: '4px' }}>{item.estampado}</span> : ''}
+                              </span>
+                              <span style={{ fontWeight: 700, fontSize: '0.88rem', color: '#0f172a', marginLeft: '1rem' }}>${(item.precio * item.cantidad).toLocaleString()}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Total */}
+                        <div style={{ borderTop: '2px solid #0f172a', marginTop: '0.75rem', paddingTop: '0.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a' }}>TOTAL PAGADO</span>
+                          <span style={{ fontWeight: 900, fontSize: '1.5rem', color: '#10b981', fontFamily: 'monospace' }}>${posLastInvoice.total.toLocaleString()} <span style={{ fontSize: '0.9rem', fontWeight: 600, color: '#64748b' }}>COP</span></span>
+                        </div>
+
+                        <div style={{ textAlign: 'center', marginTop: '1rem', color: '#94a3b8', fontSize: '0.72rem' }}>
+                          Gracias por su compra · {configuracion?.nombre_negocio || 'Indisutex'}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -10353,7 +10397,6 @@ export default function Admin() {
 
                               // 4. Update local states
                               const invoiceNum = `POS-${Date.now().toString(36).toUpperCase().slice(-6)}`;
-                              setPosInvoiceNumber(invoiceNum);
                               setPosLastInvoice({
                                 created_at: new Date().toISOString(),
                                 numero_factura: invoiceNum,
