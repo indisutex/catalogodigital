@@ -55,7 +55,7 @@ export interface ERPComprobanteContable {
   fecha: string;
   concepto: string;
   referencia_origen?: string;
-  origen_modulo?: 'ventas' | 'compras' | 'pos' | 'tesoreria' | 'nomina' | 'manual';
+  origen_modulo?: 'ventas' | 'compras' | 'pos' | 'tesoreria' | 'nomina' | 'inventario' | 'manual';
   estado: 'Borrador' | 'Asentado' | 'Anulado';
   creado_por?: string;
   created_at: string;

@@ -3,6 +3,9 @@ import './ERPMainModule.css';
 import { ERPVentasModule }      from './ERPVentasModule';
 import { ERPTesoreriaModule }   from './ERPTesoreriaModule';
 import { ERPContabilidadModule } from './ERPContabilidadModule';
+import { ERPInventarioModule }   from './ERPInventarioModule';
+import { ERPComprasModule }      from './ERPComprasModule';
+import { ERPCRMModule }          from './ERPCRMModule';
 import {
   BarChart2, Landmark, BookOpen, Building2,
   ShoppingCart, Package, Users, ChevronRight
@@ -16,10 +19,10 @@ type ERPTab =
   | 'ventas'
   | 'tesoreria'
   | 'contabilidad'
-  | 'inventario'   // Fase 5 - próximamente
-  | 'compras'      // Fase 6 - próximamente
-  | 'nomina'       // Fase 7 - próximamente
-  | 'crm';         // Fase 6 - próximamente
+  | 'inventario'
+  | 'compras'
+  | 'nomina'
+  | 'crm';
 
 interface NavItem {
   key: ERPTab;
@@ -59,25 +62,25 @@ const NAV_ITEMS: NavItem[] = [
     key: 'inventario',
     icon: <Package size={16} />,
     label: 'Inventario',
-    sublabel: 'Kardex · Bodegas · Stock · Costo promedio',
-    available: false,
-    badge: 'FASE 5'
+    sublabel: 'Kardex · Valorización · Stock · Ajustes',
+    available: true,
+    badge: 'ACTIVO'
   },
   {
     key: 'compras',
     icon: <ShoppingCart size={16} />,
     label: 'Compras',
-    sublabel: 'Órdenes de compra · Proveedores · CxP auto',
-    available: false,
-    badge: 'FASE 6'
+    sublabel: 'Facturas proveedor · Órdenes compra · CxP',
+    available: true,
+    badge: 'ACTIVO'
   },
   {
     key: 'crm',
     icon: <Users size={16} />,
     label: 'CRM',
-    sublabel: 'Clientes · Pipeline · Comisiones asesores',
-    available: false,
-    badge: 'FASE 6'
+    sublabel: 'Clientes VIP · Comisiones asesores · Historial',
+    available: true,
+    badge: 'ACTIVO'
   },
   {
     key: 'nomina',
@@ -85,7 +88,7 @@ const NAV_ITEMS: NavItem[] = [
     label: 'Nómina',
     sublabel: 'Liquidación · PILA · Colillas · Primas',
     available: false,
-    badge: 'FASE 7'
+    badge: 'PRÓXIMAMENTE'
   },
 ];
 
@@ -146,8 +149,20 @@ export const ERPMainModule: React.FC<Props> = ({ tenantId }) => {
           <ERPContabilidadModule tenantId={tenantId} onNavigateTab={(tab) => setActiveTab(tab as any)} />
         )}
 
+        {activeTab === 'inventario' && (
+          <ERPInventarioModule tenantId={tenantId} onNavigateTab={(tab) => setActiveTab(tab as any)} />
+        )}
+
+        {activeTab === 'compras' && (
+          <ERPComprasModule tenantId={tenantId} onNavigateTab={(tab) => setActiveTab(tab as any)} />
+        )}
+
+        {activeTab === 'crm' && (
+          <ERPCRMModule tenantId={tenantId} onNavigateTab={(tab) => setActiveTab(tab as any)} />
+        )}
+
         {/* Módulos próximos — pantalla de "coming soon" */}
-        {!['ventas', 'tesoreria', 'contabilidad'].includes(activeTab) && (
+        {!['ventas', 'tesoreria', 'contabilidad', 'inventario', 'compras', 'crm'].includes(activeTab) && (
           <div style={{
             display: 'flex',
             flexDirection: 'column',
