@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../../lib/supabase';
 import { ERPVentasService, type ERPResumenFinanciero, type ERPEgreso } from '../../lib/erpVentasService';
 import type { Pedido } from '../../types';
 import './ERPVentasModule.css';
@@ -63,6 +64,7 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
   const [egresos, setEgresos] = useState<ERPEgreso[]>([]);
   const [topProductos, setTopProductos] = useState<{ nombre: string; cantidad: number; total: number }[]>([]);
   const [cuentasTesoreria, setCuentasTesoreria] = useState<ERPCuentaBancaria[]>([]);
+  const [metodosPagoList, setMetodosPagoList] = useState<string[]>(METODOS_PAGO);
 
   // Modal para ver factura detallada de un pedido
   const [selectedVentaModal, setSelectedVentaModal] = useState<Pedido | null>(null);
@@ -100,6 +102,23 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
       setEgresos(egr);
       setTopProductos(top);
       setCuentasTesoreria(ctas);
+
+      // Cargar métodos de pago de la configuración del negocio
+      try {
+        const { data: configObj } = await supabase.from('configuracion').select('metodos_pago').eq('tenant_id', tenantId).maybeSingle();
+        if (configObj?.metodos_pago) {
+          const raw = typeof configObj.metodos_pago === 'string' ? JSON.parse(configObj.metodos_pago) : configObj.metodos_pago;
+          if (Array.isArray(raw)) {
+            const customList: string[] = raw.map((m: any) => {
+              if (typeof m === 'string') return m;
+              return m.banco ? `${m.banco}${m.tipo ? ` (${m.tipo})` : ''}${m.numero ? ` - ${m.numero}` : ''}` : null;
+            }).filter((m): m is string => Boolean(m));
+            if (customList.length > 0) {
+              setMetodosPagoList(Array.from(new Set([...customList, ...METODOS_PAGO])));
+            }
+          }
+        }
+      } catch (_) {}
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -536,7 +555,7 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
                 <div>
                   <label className="erp-form-label">Método de Pago:</label>
                   <select className="erp-select" value={egresoForm.metodo_pago} onChange={e => setEgresoForm({ ...egresoForm, metodo_pago: e.target.value })}>
-                    {METODOS_PAGO.map(m => <option key={m} value={m}>{m}</option>)}
+                    {metodosPagoList.map(m => <option key={m} value={m}>{m}</option>)}
                   </select>
                 </div>
                 {cuentasTesoreria.length > 0 && (

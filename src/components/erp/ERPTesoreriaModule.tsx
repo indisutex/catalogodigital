@@ -90,9 +90,13 @@ export const ERPTesoreriaModule: React.FC<Props> = ({ tenantId, onNavigateTab })
       let configPaymentMethods: string[] = [];
       if (configObj?.metodos_pago) {
         try {
-          configPaymentMethods = Array.isArray(configObj.metodos_pago) 
-            ? configObj.metodos_pago 
-            : JSON.parse(configObj.metodos_pago);
+          const raw = typeof configObj.metodos_pago === 'string' ? JSON.parse(configObj.metodos_pago) : configObj.metodos_pago;
+          if (Array.isArray(raw)) {
+            configPaymentMethods = raw.map((m: any) => {
+              if (typeof m === 'string') return m;
+              return m.banco ? `${m.banco}${m.tipo ? ` (${m.tipo})` : ''}${m.numero ? ` - ${m.numero}` : ''}` : null;
+            }).filter((m): m is string => Boolean(m));
+          }
         } catch (_) {
           if (typeof configObj.metodos_pago === 'string') {
             configPaymentMethods = configObj.metodos_pago.split(',').map((s: string) => s.trim());
