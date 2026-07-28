@@ -3,12 +3,22 @@
  * Allows each company (Majestic, Saramantha, Lucerito, Mayoristas, etc.) to have its own PWA icon & app name 
  * when the user clicks "Instalar aplicación" on Desktop or Mobile.
  */
-export function updatePWAManifestAndIcons(logoUrl?: string | null, storeName?: string | null) {
+export function updatePWAManifestAndIcons(logoUrl?: string | null, storeName?: string | null, themeColor?: string | null) {
   try {
     const name = storeName?.trim() || 'Catálogo Digital';
     const icon = logoUrl?.trim() || '/indisutex-logo.png';
+    const activeColor = themeColor?.trim() || '#6366f1';
 
-    // 1. Update Favicon (<link rel="icon">)
+    // 1. Update <meta name="theme-color"> tag in <head>
+    let metaTheme = document.querySelector<HTMLMetaElement>('meta[name="theme-color"]');
+    if (!metaTheme) {
+      metaTheme = document.createElement('meta');
+      metaTheme.name = 'theme-color';
+      document.head.appendChild(metaTheme);
+    }
+    metaTheme.content = activeColor;
+
+    // 2. Update Favicon (<link rel="icon">)
     let faviconEl = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
     if (!faviconEl) {
       faviconEl = document.createElement('link');
@@ -18,7 +28,7 @@ export function updatePWAManifestAndIcons(logoUrl?: string | null, storeName?: s
     faviconEl.type = 'image/png';
     faviconEl.href = icon;
 
-    // 2. Update Apple Touch Icon (<link rel="apple-touch-icon">)
+    // 3. Update Apple Touch Icon (<link rel="apple-touch-icon">)
     let appleIconEl = document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]');
     if (!appleIconEl) {
       appleIconEl = document.createElement('link');
@@ -29,7 +39,7 @@ export function updatePWAManifestAndIcons(logoUrl?: string | null, storeName?: s
 
     const iconType = icon.toLowerCase().endsWith('.svg') ? 'image/svg+xml' : 'image/png';
 
-    // 3. Generate dynamic PWA Manifest using Blob URL
+    // 4. Generate dynamic PWA Manifest using Blob URL
     const manifestData = {
       name: `${name} — Catálogo Digital`,
       short_name: name,
@@ -39,7 +49,7 @@ export function updatePWAManifestAndIcons(logoUrl?: string | null, storeName?: s
       display: 'standalone',
       orientation: 'portrait-primary',
       background_color: '#ffffff',
-      theme_color: '#e91e8c',
+      theme_color: activeColor,
       icons: [
         {
           src: icon,

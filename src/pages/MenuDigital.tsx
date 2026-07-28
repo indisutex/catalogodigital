@@ -232,7 +232,7 @@ export default function MenuDigital() {
       window.history.replaceState(null, '', `/${tenant}${window.location.search}${window.location.hash}`);
     }
 
-    updatePWAManifestAndIcons(storeLogo, storeName);
+    updatePWAManifestAndIcons(storeLogo, storeName, configuracion?.color_primario);
 
     if (configuracion?.color_primario) {
       document.documentElement.style.setProperty('--primary', configuracion.color_primario);
@@ -254,6 +254,7 @@ export default function MenuDigital() {
   const [selectedTalla, setSelectedTalla] = useState<string>('');
   const [selectedEstampado, setSelectedEstampado] = useState<string>('');
   const [selectedCantidad, setSelectedCantidad] = useState(1);
+  const [selectedMiembroFamilia, setSelectedMiembroFamilia] = useState<'nino' | 'hombre' | 'mujer' | ''>('');
 
   // Prevenir scroll del body cuando algún modal está abierto
   useEffect(() => {
@@ -291,6 +292,22 @@ export default function MenuDigital() {
     setSelectedTalla('');
     setSelectedEstampado('');
     setSelectedCantidad(1);
+    if (producto.es_producto_familiar && producto.precios_familia) {
+      if (producto.precios_familia.nino) setSelectedMiembroFamilia('nino');
+      else if (producto.precios_familia.hombre) setSelectedMiembroFamilia('hombre');
+      else if (producto.precios_familia.mujer) setSelectedMiembroFamilia('mujer');
+      else setSelectedMiembroFamilia('');
+    } else {
+      setSelectedMiembroFamilia('');
+    }
+  };
+
+  const getActiveUnitPrice = (prod: Producto, miembro?: 'nino' | 'hombre' | 'mujer' | '') => {
+    if (prod.es_producto_familiar && prod.precios_familia && miembro) {
+      const famPrice = prod.precios_familia[miembro];
+      if (famPrice && famPrice > 0) return famPrice;
+    }
+    return prod.precio;
   };
 
   const handleAddFromDetail = () => {
@@ -303,13 +320,28 @@ export default function MenuDigital() {
       return;
     }
     if (estampados.length > 0 && !selectedEstampado) {
-      alert('Por favor selecciona un estampado / temática');
+      alert('Por favor selecciona un estampado');
+      return;
+    }
+    if (detailProduct.es_producto_familiar && !selectedMiembroFamilia) {
+      alert('Por favor selecciona la opción de la familia (Niño, Hombre o Mujer)');
       return;
     }
 
-    addToCart(detailProduct, selectedTalla || undefined, selectedEstampado || undefined, selectedCantidad);
+    const unitPrice = getActiveUnitPrice(detailProduct, selectedMiembroFamilia);
+    const miembroLabel = selectedMiembroFamilia === 'nino' ? 'Niño/a' : selectedMiembroFamilia === 'hombre' ? 'Hombre' : selectedMiembroFamilia === 'mujer' ? 'Mujer' : '';
+
+    const productToAdd = {
+      ...detailProduct,
+      precio: unitPrice,
+      nombre: miembroLabel ? `${detailProduct.nombre} (${miembroLabel})` : detailProduct.nombre
+    };
+
+    addToCart(productToAdd, selectedTalla, selectedEstampado, selectedCantidad);
     setDetailProduct(null);
   };
+
+
   
   const { items, addToCart, removeFromCart, updateQuantity, total, clearCart, buyerType, setBuyerType, markupPorcentaje, setMarkupPorcentaje, ajustesProductos, setAjustesProductos, descuentoPromocional, setDescuentoPromocional } = useCart();
 
@@ -960,6 +992,9 @@ export default function MenuDigital() {
                     <div className="img-placeholder"></div>
                   )}
                   <div className="sku-badge">Ref: {producto.nombre}</div>
+                  {producto.es_producto_familiar && (
+                    <div className="sku-badge" style={{ top: '2rem', background: '#0284c7' }}>👨‍👩‍👧‍👦 Opción Familiar</div>
+                  )}
                   
                   <button 
                     className="item-add-btn" 
@@ -973,7 +1008,9 @@ export default function MenuDigital() {
                 <div className="item-details">
                   <h4>{producto.nombre}</h4>
                   <p className="item-price">
-                    {((producto.descuento !== undefined && producto.descuento > 0) || descuentoPromocional > 0) ? (
+                    {producto.es_producto_familiar ? (
+                      <span style={{ color: '#0284c7', fontWeight: 800 }}>Desde ${getEffectivePrice(producto, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional).toLocaleString('es-CO')}</span>
+                    ) : ((producto.descuento !== undefined && producto.descuento > 0) || descuentoPromocional > 0) ? (
                       <>
                         <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.82em', marginRight: '0.4rem', fontWeight: 500 }}>
                           ${getEffectivePrice(producto, buyerType, markupPorcentaje, ajustesProductos, 0, true).toLocaleString('es-CO')}
@@ -1297,17 +1334,97 @@ export default function MenuDigital() {
                     {((detailProduct.descuento !== undefined && detailProduct.descuento > 0) || descuentoPromocional > 0) ? (
                       <>
                         <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.82em', marginRight: '0.5rem', fontWeight: 500 }}>
-                          ${getEffectivePrice(detailProduct, buyerType, markupPorcentaje, ajustesProductos, 0, true).toLocaleString('es-CO')}
+                          ${getActiveUnitPrice(detailProduct, selectedMiembroFamilia).toLocaleString('es-CO')}
                         </span>
-                        ${getEffectivePrice(detailProduct, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional).toLocaleString('es-CO')}
+                        ${getEffectivePrice({ ...detailProduct, precio: getActiveUnitPrice(detailProduct, selectedMiembroFamilia) }, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional).toLocaleString('es-CO')}
                       </>
                     ) : (
-                      `$${getEffectivePrice(detailProduct, buyerType, markupPorcentaje, ajustesProductos).toLocaleString('es-CO')}`
+                      `$${getEffectivePrice({ ...detailProduct, precio: getActiveUnitPrice(detailProduct, selectedMiembroFamilia) }, buyerType, markupPorcentaje, ajustesProductos).toLocaleString('es-CO')}`
                     )}
                   </p>
                 </div>
                 {detailProduct.descripcion && (
                   <p className="detail-desc">{detailProduct.descripcion}</p>
+                )}
+
+                {/* ── PRODUCTO FAMILIAR OPTION SELECTOR ── */}
+                {detailProduct.es_producto_familiar && detailProduct.precios_familia && (
+                  <div className="detail-tallas" style={{ width: '100%', background: '#f0f9ff', padding: '0.75rem', borderRadius: '12px', border: '1px solid #bae6fd', marginBottom: '0.85rem' }}>
+                    <p className="detail-section-label" style={{ color: '#0369a1', fontWeight: 800, marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      👨‍👩‍👧‍👦 Opción del Producto Familiar:
+                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.4rem' }}>
+                      {detailProduct.precios_familia.nino !== undefined && detailProduct.precios_familia.nino !== null && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedMiembroFamilia('nino')}
+                          style={{
+                            padding: '0.55rem 0.25rem',
+                            borderRadius: '10px',
+                            border: selectedMiembroFamilia === 'nino' ? '2px solid #0284c7' : '1px solid #cbd5e1',
+                            background: selectedMiembroFamilia === 'nino' ? '#e0f2fe' : '#ffffff',
+                            color: selectedMiembroFamilia === 'nino' ? '#0369a1' : '#334155',
+                            fontWeight: selectedMiembroFamilia === 'nino' ? 800 : 600,
+                            fontSize: '0.8rem',
+                            cursor: 'pointer',
+                            textAlign: 'center',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          <div>👦 Niño/a</div>
+                          <div style={{ fontSize: '0.75rem', color: selectedMiembroFamilia === 'nino' ? '#0284c7' : '#64748b' }}>
+                            ${detailProduct.precios_familia.nino.toLocaleString('es-CO')}
+                          </div>
+                        </button>
+                      )}
+                      {detailProduct.precios_familia.hombre !== undefined && detailProduct.precios_familia.hombre !== null && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedMiembroFamilia('hombre')}
+                          style={{
+                            padding: '0.55rem 0.25rem',
+                            borderRadius: '10px',
+                            border: selectedMiembroFamilia === 'hombre' ? '2px solid #0284c7' : '1px solid #cbd5e1',
+                            background: selectedMiembroFamilia === 'hombre' ? '#e0f2fe' : '#ffffff',
+                            color: selectedMiembroFamilia === 'hombre' ? '#0369a1' : '#334155',
+                            fontWeight: selectedMiembroFamilia === 'hombre' ? 800 : 600,
+                            fontSize: '0.8rem',
+                            cursor: 'pointer',
+                            textAlign: 'center',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          <div>👨 Hombre</div>
+                          <div style={{ fontSize: '0.75rem', color: selectedMiembroFamilia === 'hombre' ? '#0284c7' : '#64748b' }}>
+                            ${detailProduct.precios_familia.hombre.toLocaleString('es-CO')}
+                          </div>
+                        </button>
+                      )}
+                      {detailProduct.precios_familia.mujer !== undefined && detailProduct.precios_familia.mujer !== null && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedMiembroFamilia('mujer')}
+                          style={{
+                            padding: '0.55rem 0.25rem',
+                            borderRadius: '10px',
+                            border: selectedMiembroFamilia === 'mujer' ? '2px solid #0284c7' : '1px solid #cbd5e1',
+                            background: selectedMiembroFamilia === 'mujer' ? '#e0f2fe' : '#ffffff',
+                            color: selectedMiembroFamilia === 'mujer' ? '#0369a1' : '#334155',
+                            fontWeight: selectedMiembroFamilia === 'mujer' ? 800 : 600,
+                            fontSize: '0.8rem',
+                            cursor: 'pointer',
+                            textAlign: 'center',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          <div>👩 Mujer</div>
+                          <div style={{ fontSize: '0.75rem', color: selectedMiembroFamilia === 'mujer' ? '#0284c7' : '#64748b' }}>
+                            ${detailProduct.precios_familia.mujer.toLocaleString('es-CO')}
+                          </div>
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 )}
 
                 {/* ── ESTAMPADOS + TALLAS + CANTIDAD ── */}
@@ -1403,7 +1520,7 @@ export default function MenuDigital() {
                 {/* ── ADD TO CART ── */}
                 <button className="detail-add-btn" onClick={handleAddFromDetail}>
                   <ShoppingCart size={18} />
-                  Añadir al carrito • ${(getEffectivePrice(detailProduct, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * selectedCantidad).toLocaleString('es-CO')}
+                  Añadir al carrito • ${(getEffectivePrice({ ...detailProduct, precio: getActiveUnitPrice(detailProduct, selectedMiembroFamilia) }, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * selectedCantidad).toLocaleString('es-CO')}
                 </button>
               </div>
             </div>

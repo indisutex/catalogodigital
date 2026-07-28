@@ -1436,7 +1436,7 @@ export default function Admin() {
       window.history.replaceState(null, '', `${expectedPath}${window.location.search}${window.location.hash}`);
     }
 
-    updatePWAManifestAndIcons(logoUrl, titleStr);
+    updatePWAManifestAndIcons(logoUrl, titleStr, configuracion?.color_primario);
 
     if (configuracion) {
       if (configuracion.color_primario) {
