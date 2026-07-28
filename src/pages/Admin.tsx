@@ -9702,13 +9702,30 @@ export default function Admin() {
                       onClick={() => {
                         if (!posLastInvoice) return;
                         const paperWidth = configuracion?.impresora_termica_ancho || '58mm';
-                        const pageWidth = paperWidth === '80mm' ? '80mm' : '58mm';
-                        const bodyWidth = paperWidth === '80mm' ? '72mm' : '50mm';
+                        const pageWidth  = paperWidth === '80mm' ? '80mm' : '58mm';
+                        const bodyWidth  = paperWidth === '80mm' ? '74mm' : '52mm';
+
+                        const qrData = encodeURIComponent(
+                          `FACTURA:${posLastInvoice.numero_factura}|TIENDA:${configuracion?.nombre_negocio || 'Indisutex'}|CLIENTE:${posLastInvoice.cliente_nombre}|TOTAL:${posLastInvoice.total}|FECHA:${posLastInvoice.created_at}`
+                        );
+                        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=70x70&data=${qrData}`;
+
+                        const logoHtml = configuracion?.logo_url
+                          ? `<img src="${configuracion.logo_url}" crossorigin="anonymous" style="max-width:100%;max-height:22mm;object-fit:contain;margin-bottom:2mm;" /><br/>`
+                          : '';
+
+                        const subtotal = posLastInvoice.productos.reduce((acc: number, i: any) => acc + (i.precio * i.cantidad), 0);
 
                         const itemsHtml = posLastInvoice.productos.map((i: any) => `
-                          <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
-                            <span style="flex:1; padding-right:4px;">${i.cantidad}x ${i.nombre}${i.referencia ? ` [${i.referencia}]` : ''}${i.talla ? ` (${i.talla})` : ''}${i.estampado ? ` [${i.estampado}]` : ''}</span>
-                            <span style="font-weight:bold; white-space:nowrap;">$${(i.precio * i.cantidad).toLocaleString()}</span>
+                          <div style="margin-bottom:3mm;">
+                            <div style="font-weight:bold;font-size:8.5pt;">${i.cantidad}x ${i.nombre}</div>
+                            ${i.referencia ? `<div style="font-size:7.5pt;color:#444;">Ref: ${i.referencia}</div>` : ''}
+                            ${i.talla     ? `<div style="font-size:7.5pt;color:#444;">Talla: ${i.talla}</div>` : ''}
+                            ${i.estampado ? `<div style="font-size:7.5pt;color:#444;">Estampado: ${i.estampado}</div>` : ''}
+                            <div style="display:flex;justify-content:space-between;font-size:8pt;margin-top:1mm;">
+                              <span>Precio unit: $${(i.precio).toLocaleString()}</span>
+                              <span style="font-weight:bold;">$${(i.precio * i.cantidad).toLocaleString()}</span>
+                            </div>
                           </div>
                         `).join('');
 
@@ -9716,12 +9733,9 @@ export default function Admin() {
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Ticket POS</title>
+  <title>Ticket ${posLastInvoice.numero_factura}</title>
   <style>
-    @page {
-      size: ${pageWidth} auto;
-      margin: 2mm 0;
-    }
+    @page { size: ${pageWidth} auto; margin: 3mm 0; }
     * { box-sizing: border-box; }
     body {
       font-family: 'Courier New', Courier, monospace;
@@ -9729,58 +9743,107 @@ export default function Admin() {
       margin: 0 auto;
       padding: 0 2mm;
       color: #000;
-      font-size: 9pt;
-      line-height: 1.35;
+      font-size: 8.5pt;
+      line-height: 1.4;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
     }
     .center { text-align: center; }
-    .right { text-align: right; }
-    .bold { font-weight: bold; }
-    .line { border-top: 1px dashed #000; margin: 4px 0; }
-    .total-row { font-size: 11pt; font-weight: bold; display:flex; justify-content:space-between; margin-top:4px; }
-    .header-biz { font-size: 13pt; font-weight: bold; text-transform: uppercase; }
-    .sub { font-size: 8pt; color: #333; }
-    .no-factura { font-size: 8pt; border: 1px solid #000; display:inline-block; padding: 1px 4px; margin-top:2px; }
+    .right  { text-align: right; }
+    .bold   { font-weight: bold; }
+    .line-solid { border-top: 1px solid #000; margin: 2.5mm 0; }
+    .line-dash  { border-top: 1px dashed #000; margin: 2.5mm 0; }
+    .biz-name { font-size: 13pt; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; }
+    .factura-box { border: 1px solid #000; display:inline-block; padding: 1px 5px; font-size:7.5pt; margin-top:1mm; }
+    .info-row { display:flex; justify-content:space-between; font-size:7.5pt; }
+    .total-row { display:flex; justify-content:space-between; font-size:12pt; font-weight:900; margin:2mm 0; }
+    .tag { background:#000; color:#fff; font-size:7pt; padding:1px 4px; border-radius:2px; }
+    .footer-txt { font-size:7pt; color:#444; }
+    .qr-section { display:flex; align-items:center; justify-content:space-between; gap:3mm; margin:3mm 0; }
+    .qr-info { font-size:7pt; color:#333; flex:1; }
   </style>
 </head>
 <body>
-  <div class="center">
-    <div class="header-biz">${configuracion?.nombre_negocio || 'Indisutex'}</div>
-    <div class="sub">COMPROBANTE DE VENTA POS</div>
-    <div class="sub">${new Date(posLastInvoice.created_at).toLocaleString()}</div>
-    <div class="no-factura">${posLastInvoice.numero_factura || ''}</div>
+
+  <!-- LOGO -->
+  <div class="center" style="margin-bottom:2mm;">
+    ${logoHtml}
+    <div class="biz-name">${configuracion?.nombre_negocio || 'Indisutex'}</div>
+    ${configuracion?.whatsapp ? `<div style="font-size:7.5pt;">WhatsApp: ${configuracion.whatsapp}</div>` : ''}
   </div>
-  <div class="line"></div>
-  <div><span class="bold">Cliente:</span> ${posLastInvoice.cliente_nombre}</div>
-  <div><span class="bold">Tel:</span> ${posLastInvoice.cliente_telefono}</div>
-  <div><span class="bold">Asesor:</span> ${posLastInvoice.asesor || 'Caja General'}</div>
-  <div><span class="bold">Pago:</span> ${posLastInvoice.metodo_pago.toUpperCase()}</div>
-  ${posLastInvoice.direccion ? `<div class="sub">Dir: ${posLastInvoice.direccion}</div>` : ''}
-  <div class="line"></div>
+
+  <div class="line-solid"></div>
+
+  <!-- TIPO DE DOCUMENTO E ID -->
+  <div class="center">
+    <span class="tag">COMPROBANTE DE VENTA</span>
+    <br/>
+    <span class="factura-box"># ${posLastInvoice.numero_factura}</span>
+    <div style="font-size:7.5pt;margin-top:1.5mm;">${new Date(posLastInvoice.created_at).toLocaleString('es-CO', { dateStyle: 'full', timeStyle: 'short' })}</div>
+  </div>
+
+  <div class="line-dash"></div>
+
+  <!-- DATOS CLIENTE -->
+  <div style="margin-bottom:2mm;">
+    <div class="bold" style="font-size:8pt;margin-bottom:1mm;">▌ DATOS DEL CLIENTE</div>
+    <div><span class="bold">Nombre:</span>  ${posLastInvoice.cliente_nombre}</div>
+    <div><span class="bold">Teléfono:</span> ${posLastInvoice.cliente_telefono}</div>
+    ${posLastInvoice.direccion ? `<div><span class="bold">Dirección:</span> ${posLastInvoice.direccion}${posLastInvoice.ciudad ? ', ' + posLastInvoice.ciudad : ''}</div>` : ''}
+    <div><span class="bold">Asesor:</span>  ${posLastInvoice.asesor || 'Caja General'}</div>
+    <div><span class="bold">Pago:</span>    ${posLastInvoice.metodo_pago.toUpperCase()}</div>
+  </div>
+
+  <div class="line-dash"></div>
+
+  <!-- PRODUCTOS -->
+  <div class="bold" style="font-size:8pt;margin-bottom:1.5mm;">▌ DETALLE DE PRODUCTOS</div>
   ${itemsHtml}
-  <div class="line"></div>
+
+  <div class="line-solid"></div>
+
+  <!-- TOTALES -->
+  <div class="info-row"><span>Subtotal:</span><span>$${subtotal.toLocaleString()} COP</span></div>
+  <div class="info-row"><span>Descuento:</span><span>$0</span></div>
   <div class="total-row">
     <span>TOTAL:</span>
     <span>$${posLastInvoice.total.toLocaleString()} COP</span>
   </div>
-  <div class="line"></div>
-  <div class="center sub" style="margin-top:6px;">¡Gracias por tu compra!</div>
-  <div class="center sub">${configuracion?.nombre_negocio || ''}</div>
-  <br/><br/>
+
+  <div class="line-solid"></div>
+
+  <!-- QR + INFO VERIFICACIÓN -->
+  <div class="qr-section">
+    <div class="qr-info">
+      <div class="bold" style="font-size:7.5pt;">Escanea para verificar</div>
+      <div>Factura: ${posLastInvoice.numero_factura}</div>
+      <div style="margin-top:2mm;">Este comprobante es válido como prueba de su compra.</div>
+    </div>
+    <img src="${qrUrl}" width="60" height="60" style="flex-shrink:0;" />
+  </div>
+
+  <div class="line-dash"></div>
+
+  <!-- FOOTER -->
+  <div class="center footer-txt" style="margin-top:2mm;">
+    <div style="font-size:8.5pt;font-weight:bold;">¡Gracias por su compra!</div>
+    <div>${configuracion?.nombre_negocio || 'Indisutex'}</div>
+    ${configuracion?.whatsapp ? `<div>WhatsApp: ${configuracion.whatsapp}</div>` : ''}
+    <div style="margin-top:2mm;">──────────────</div>
+    <div style="font-size:6.5pt;margin-top:1mm;">Conserve este recibo como garantía</div>
+  </div>
+  <br/><br/><br/>
+
 </body>
 </html>`;
 
-                        const printWin = window.open('', '_blank', `width=300,height=500`);
+                        const printWin = window.open('', '_blank', 'width=320,height=560');
                         if (printWin) {
                           printWin.document.open();
                           printWin.document.write(receiptHtml);
                           printWin.document.close();
                           printWin.focus();
-                          // Esperar a que cargue el contenido antes de imprimir
-                          setTimeout(() => {
-                            printWin.print();
-                          }, 800);
+                          setTimeout(() => { printWin.print(); }, 1200);
                         }
                       }}
                     >
