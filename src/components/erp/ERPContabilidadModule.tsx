@@ -26,7 +26,11 @@ import {
   DollarSign,
   Package,
   Search,
-  X
+  X,
+  Printer,
+  Download,
+  Send,
+  Check
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
@@ -37,7 +41,7 @@ interface Props {
 
 export const ERPContabilidadModule: React.FC<Props> = ({ tenantId, onNavigateTab }) => {
   // Pestañas principales simplificadas para el usuario
-  const [activeTab, setActiveTab] = useState<'resumen' | 'terceros' | 'movimientos' | 'puc_avanzado'>('resumen');
+  const [activeTab, setActiveTab] = useState<'resumen' | 'terceros' | 'movimientos' | 'facturacion' | 'reportes' | 'puc_avanzado'>('resumen');
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -47,9 +51,11 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId, onNavigateTab
   const [comprobantesList, setComprobantesList] = useState<ERPComprobanteContable[]>([]);
   const [balanceList, setBalanceList] = useState<ERPBalancePruebaItem[]>([]);
   const [inventarioList, setInventarioList] = useState<any[]>([]);
+  const [pedidosList, setPedidosList] = useState<any[]>([]);
 
-  // Filtro de búsqueda y modo de vista (Fácil vs Técnico)
+  // Filtros de búsqueda y cartera
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [carteraFilter, setCarteraFilter] = useState<'todos' | 'pendientes' | 'completados'>('todos');
   const [modoVista, setModoVista] = useState<'facil' | 'tecnico'>('facil');
 
   // Modales
@@ -99,12 +105,13 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId, onNavigateTab
     setLoading(true);
     setErrorMsg(null);
     try {
-      const [pucData, tercerosData, diarioData, balanceData, prodsRes] = await Promise.all([
+      const [pucData, tercerosData, diarioData, balanceData, prodsRes, pedsRes] = await Promise.all([
         ERPContabilidadService.fetchPUC(tenantId),
         ERPContabilidadService.fetchTerceros(tenantId),
         ERPContabilidadService.fetchLibroDiario(tenantId),
         ERPContabilidadService.fetchBalancePrueba(tenantId),
-        supabase.from('productos').select('*').eq('tenant_id', tenantId)
+        supabase.from('productos').select('*').eq('tenant_id', tenantId),
+        supabase.from('pedidos').select('*').eq('tenant_id', tenantId).order('created_at', { ascending: false })
       ]);
 
       setPucList(pucData);
@@ -112,6 +119,7 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId, onNavigateTab
       setComprobantesList(diarioData);
       setBalanceList(balanceData);
       setInventarioList(prodsRes.data || []);
+      setPedidosList(pedsRes.data || []);
     } catch (err: any) {
       setErrorMsg(err.message || 'Error al cargar información del ERP');
     } finally {
@@ -189,9 +197,9 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId, onNavigateTab
     }
   };
 
-  // Exportar Balance a Excel
+  // Exportar Libro Contable a Excel completo
   const exportBalanceExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(balanceList.map(b => ({
+    const wsBalance = XLSX.utils.json_to_sheet(balanceList.map(b => ({
       'Código Cuenta': b.cuenta_codigo,
       'Nombre de Cuenta': b.cuenta_nombre,
       'Naturaleza': b.naturaleza,
@@ -199,9 +207,127 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId, onNavigateTab
       'Total Salidas (Crédito)': b.total_credito,
       'Saldo Final': b.saldo_nuevo
     })));
+    const wsTerceros = XLSX.utils.json_to_sheet(tercerosList.map(t => ({
+      'Documento': `${t.tipo_documento} ${t.numero_documento}`,
+      'Nombre / Razón Social': t.razon_social,
+      'Teléfono': t.telefono || '',
+      'Ciudad': t.ciudad || '',
+      'Correo': t.email || ''
+    })));
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Informe_Financiero');
-    XLSX.writeFile(wb, `Informe_Financiero_${tenantId}.xlsx`);
+    XLSX.utils.book_append_sheet(wb, wsBalance, 'Balance_NIIF');
+    XLSX.utils.book_append_sheet(wb, wsTerceros, 'Directorio_Clientes');
+    XLSX.writeFile(wb, `ERP_Informe_Contable_${tenantId}.xlsx`);
+  };
+
+  // Marcar pedido/cartera como cobrado y asentar en caja
+  const handleMarcarCobrado = async (pedido: any) => {
+    try {
+      setLoading(true);
+      await supabase
+        .from('pedidos')
+        .update({ estado: 'completado', atendido: true })
+        .eq('id', pedido.id);
+
+      await ERPContabilidadService.contabilizarVentaAutomatica(tenantId, pedido);
+      alert(`✅ Venta #${pedido.id.substring(0, 8)} marcada como Cobrada e ingresada a Caja General.`);
+      loadData();
+    } catch (err: any) {
+      alert('Error al asentar cobro: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Enviar recordatorio por WhatsApp
+  const handleSendWhatsAppPaymentReminder = (pedido: any) => {
+    const tel = (pedido.cliente_telefono || '').replace(/\D/g, '');
+    const msg = `¡Hola ${pedido.cliente_nombre}! 👋\nTe recordamos cordialmente que tienes una factura/pedido pendiente por valor de *$${Number(pedido.total).toLocaleString('es-CO')} COP* en *${tenantId.toUpperCase()}*.\n\n¿Nos confirmas por favor si requieres los datos bancarios para realizar la transferencia? ¡Muchas gracias! 😊`;
+    window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
+  // Imprimir Informe Financiero Ejecutivo (PyG)
+  const handlePrintFinancialReport = () => {
+    const printWin = window.open('', '_blank', 'width=800,height=900');
+    if (!printWin) return;
+
+    const reportHtml = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Estado de Resultados PyG - ${tenantId}</title>
+          <style>
+            body { font-family: Arial, sans-serif; padding: 24px; color: #0f172a; line-height: 1.5; }
+            h1 { font-size: 20px; text-transform: uppercase; margin-bottom: 4px; }
+            .subtitle { color: #64748b; font-size: 13px; margin-bottom: 20px; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+            .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px; }
+            .card { background: #f8fafc; border: 1px solid #cbd5e1; padding: 12px; border-radius: 8px; }
+            .card label { font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: bold; }
+            .card .val { font-size: 18px; font-weight: bold; margin-top: 4px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 12px; }
+            th, td { border: 1px solid #cbd5e1; padding: 8px; text-align: left; }
+            th { background: #f1f5f9; text-transform: uppercase; }
+            .text-right { text-align: right; }
+          </style>
+        </head>
+        <body>
+          <h1>INFORME FINANCIERO Y ESTADO DE RESULTADOS (PyG)</h1>
+          <div class="subtitle">Empresa / Tenant: <strong>${tenantId.toUpperCase()}</strong> | Fecha de Emisión: ${new Date().toLocaleDateString()}</div>
+          
+          <div class="grid">
+            <div class="card">
+              <label>Total Ingresos Ventas</label>
+              <div class="val" style="color:#0284c7;">$${totalIngresos.toLocaleString('es-CO')}</div>
+            </div>
+            <div class="card">
+              <label>Total Costos y Gastos</label>
+              <div class="val" style="color:#dc2626;">$${totalGastos.toLocaleString('es-CO')}</div>
+            </div>
+            <div class="card">
+              <label>Utilidad Neta</label>
+              <div class="val" style="color:${utilidadNeta >= 0 ? '#16a34a' : '#dc2626'};">$${utilidadNeta.toLocaleString('es-CO')}</div>
+            </div>
+          </div>
+
+          <h3>Desglose del Balance de Prueba por Cuentas NIIF</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Código PUC</th>
+                <th>Nombre de la Cuenta</th>
+                <th>Naturaleza</th>
+                <th class="text-right">Entradas (Débito)</th>
+                <th class="text-right">Salidas (Crédito)</th>
+                <th class="text-right">Saldo Final</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${balanceList.map(b => `
+                <tr>
+                  <td><strong>${b.cuenta_codigo}</strong></td>
+                  <td>${b.cuenta_nombre}</td>
+                  <td>${b.naturaleza}</td>
+                  <td class="text-right">$${b.total_debito.toLocaleString()}</td>
+                  <td class="text-right">$${b.total_credito.toLocaleString()}</td>
+                  <td class="text-right"><strong>$${b.saldo_nuevo.toLocaleString()}</strong></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+
+          <div style="margin-top:40px; border-top:1px solid #cbd5e1; padding-top:10px; font-size:11px; color:#64748b; text-align:center;">
+            Generado automáticamente por el Sistema ERP Contable Indisutex NIIF
+          </div>
+        </body>
+      </html>
+    `;
+
+    printWin.document.write(reportHtml);
+    printWin.document.close();
+    printWin.focus();
+    setTimeout(() => {
+      printWin.print();
+    }, 250);
   };
 
   // Totales Financieros amigables
@@ -421,31 +547,43 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId, onNavigateTab
       </div>
 
       {/* Pestañas Contables NIIF */}
-      <div className="erp-nav-tabs">
+      <div className="erp-nav-tabs" style={{ overflowX: 'auto', flexWrap: 'nowrap' }}>
         <button 
           className={`erp-tab-btn ${activeTab === 'resumen' ? 'active' : ''}`}
           onClick={() => setActiveTab('resumen')}
         >
-          <Wallet size={18} /> Balance de Caja & Bancos
+          <Wallet size={18} /> Balance de Caja
         </button>
         <button 
-          className={`erp-tab-btn ${activeTab === 'terceros' ? 'active' : ''}`}
-          onClick={() => setActiveTab('terceros')}
+          className={`erp-tab-btn ${activeTab === 'facturacion' ? 'active' : ''}`}
+          onClick={() => setActiveTab('facturacion')}
         >
-          <Users size={18} /> Directorio de Terceros ({tercerosList.length})
+          <Receipt size={18} /> Facturación & Cartera ({pedidosList.filter(p => p.estado !== 'completado').length} Pendientes)
+        </button>
+        <button 
+          className={`erp-tab-btn ${activeTab === 'reportes' ? 'active' : ''}`}
+          onClick={() => setActiveTab('reportes')}
+        >
+          <Printer size={18} /> Informe PyG & Reportes
         </button>
         <button 
           className={`erp-tab-btn ${activeTab === 'movimientos' ? 'active' : ''}`}
           onClick={() => setActiveTab('movimientos')}
         >
-          <BarChart3 size={18} /> Libro Diario & Comprobantes
+          <BarChart3 size={18} /> Libro Diario
+        </button>
+        <button 
+          className={`erp-tab-btn ${activeTab === 'terceros' ? 'active' : ''}`}
+          onClick={() => setActiveTab('terceros')}
+        >
+          <Users size={18} /> Terceros NIIF ({tercerosList.length})
         </button>
         <button 
           className={`erp-tab-btn ${activeTab === 'puc_avanzado' ? 'active' : ''}`}
           onClick={() => setActiveTab('puc_avanzado')}
           style={{ marginLeft: 'auto', background: activeTab === 'puc_avanzado' ? undefined : '#f1f5f9' }}
         >
-          <BookOpen size={18} /> Plan Único de Cuentas (PUC)
+          <BookOpen size={18} /> Plan PUC
         </button>
       </div>
 
@@ -493,6 +631,168 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId, onNavigateTab
               <p style={{ margin: 0, fontSize: '0.85rem', color: '#1e40af', lineHeight: 1.5 }}>
                 Cada vez que un cliente realiza un pedido o un asesor aprueba un pago, el dinero se suma automáticamente a tus ingresos y a la caja. No necesitas registrar asientos ni números complicados; todo el cálculo se actualiza solo en tiempo real.
               </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pestaña: Facturación & Cartera (Cuentas por Cobrar) */}
+      {activeTab === 'facturacion' && (
+        <div className="erp-card-table">
+          <div className="erp-table-header" style={{ flexWrap: 'wrap', gap: '0.75rem' }}>
+            <div>
+              <h3 style={{ margin: 0 }}>Gestión de Facturación & Cartera por Cobrar</h3>
+              <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>
+                Control de pedidos emitidos, saldos pendientes y cobranzas a clientes
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className={`erp-btn-primary ${carteraFilter === 'todos' ? '' : 'btn-secondary'}`}
+                style={{ background: carteraFilter === 'todos' ? '#0f172a' : '#f1f5f9', color: carteraFilter === 'todos' ? '#fff' : '#334155' }}
+                onClick={() => setCarteraFilter('todos')}
+              >
+                Todas las Ventas
+              </button>
+              <button
+                type="button"
+                className="erp-btn-primary"
+                style={{ background: carteraFilter === 'pendientes' ? '#d97706' : '#fffbe6', color: carteraFilter === 'pendientes' ? '#fff' : '#b45309', border: '1px solid #fde68a' }}
+                onClick={() => setCarteraFilter('pendientes')}
+              >
+                🟡 Pendientes por Cobrar ({pedidosList.filter(p => p.estado !== 'completado').length})
+              </button>
+              <button
+                type="button"
+                className="erp-btn-primary"
+                style={{ background: carteraFilter === 'completados' ? '#16a34a' : '#f0fdf4', color: carteraFilter === 'completados' ? '#fff' : '#15803d', border: '1px solid #bbf7d0' }}
+                onClick={() => setCarteraFilter('completados')}
+              >
+                🟢 Cobrados ({pedidosList.filter(p => p.estado === 'completado').length})
+              </button>
+            </div>
+          </div>
+
+          <table className="erp-table">
+            <thead>
+              <tr>
+                <th>N° Pedido / Factura</th>
+                <th>Cliente</th>
+                <th>Teléfono / WhatsApp</th>
+                <th>Fecha</th>
+                <th>Total Facturado</th>
+                <th>Estado de Pago</th>
+                <th style={{ textAlign: 'right' }}>Acciones de Cobro</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pedidosList
+                .filter(p => {
+                  if (carteraFilter === 'pendientes') return p.estado !== 'completado';
+                  if (carteraFilter === 'completados') return p.estado === 'completado';
+                  return true;
+                })
+                .map((p) => {
+                  const isPagado = p.estado === 'completado';
+                  return (
+                    <tr key={p.id}>
+                      <td><strong>#{p.id.substring(0, 8)}</strong></td>
+                      <td style={{ fontWeight: 600, color: '#0f172a' }}>{p.cliente_nombre || 'Cliente General'}</td>
+                      <td>{p.cliente_telefono || '-'}</td>
+                      <td style={{ fontSize: '0.8rem', color: '#64748b' }}>{new Date(p.created_at).toLocaleDateString()}</td>
+                      <td style={{ fontWeight: 800, color: '#0f172a' }}>${Number(p.total).toLocaleString('es-CO')} COP</td>
+                      <td>
+                        <span
+                          style={{
+                            background: isPagado ? '#dcfce7' : '#fef3c7',
+                            color: isPagado ? '#166534' : '#b45309',
+                            padding: '0.25rem 0.65rem',
+                            borderRadius: '99px',
+                            fontSize: '0.75rem',
+                            fontWeight: 800,
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.3rem'
+                          }}
+                        >
+                          {isPagado ? '✓ Cobrado / Pagado' : '⏳ Pendiente por Cobrar'}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
+                          {!isPagado && (
+                            <button
+                              type="button"
+                              onClick={() => handleSendWhatsAppPaymentReminder(p)}
+                              style={{ background: '#25D366', color: 'white', border: 'none', padding: '0.4rem 0.75rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                            >
+                              <Send size={12} /> Cobrar WhatsApp
+                            </button>
+                          )}
+                          {!isPagado ? (
+                            <button
+                              type="button"
+                              onClick={() => handleMarcarCobrado(p)}
+                              style={{ background: '#10b981', color: 'white', border: 'none', padding: '0.4rem 0.75rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                            >
+                              <Check size={12} /> Marcar Pagado
+                            </button>
+                          ) : (
+                            <span style={{ fontSize: '0.78rem', color: '#16a34a', fontWeight: 700 }}>✅ Asentado en Caja</span>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Pestaña: Informe PyG & Reportes Financieros */}
+      {activeTab === 'reportes' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div className="erp-card-table">
+            <div className="erp-table-header">
+              <div>
+                <h3 style={{ margin: 0 }}>Estado de Resultados NIIF (Pérdidas y Ganancias - PyG)</h3>
+                <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>Resumen consolidado de rentabilidad e ingresos del negocio</p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                <button className="erp-btn-primary" onClick={handlePrintFinancialReport} style={{ background: '#0f172a' }}>
+                  <Printer size={16} /> Imprimir Estado PyG
+                </button>
+                <button className="erp-btn-primary" onClick={exportBalanceExcel} style={{ background: '#166534' }}>
+                  <Download size={16} /> Exportar Libro Excel
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem', marginTop: '1rem' }}>
+              <div style={{ background: '#f0f9ff', border: '1.5px solid #bae6fd', borderRadius: '16px', padding: '1.25rem' }}>
+                <span style={{ fontSize: '0.78rem', color: '#0369a1', fontWeight: 800, textTransform: 'uppercase' }}>🛒 Total Ventas (Clase 4)</span>
+                <h2 style={{ fontSize: '1.6rem', color: '#0369a1', margin: '0.4rem 0 0 0', fontWeight: 800 }}>
+                  ${totalIngresos.toLocaleString('es-CO')}
+                </h2>
+              </div>
+
+              <div style={{ background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '16px', padding: '1.25rem' }}>
+                <span style={{ fontSize: '0.78rem', color: '#991b1b', fontWeight: 800, textTransform: 'uppercase' }}>📉 Costos y Gastos (Clase 5 y 6)</span>
+                <h2 style={{ fontSize: '1.6rem', color: '#991b1b', margin: '0.4rem 0 0 0', fontWeight: 800 }}>
+                  ${totalGastos.toLocaleString('es-CO')}
+                </h2>
+              </div>
+
+              <div style={{ background: utilidadNeta >= 0 ? '#f0fdf4' : '#fef2f2', border: `1.5px solid ${utilidadNeta >= 0 ? '#bbf7d0' : '#fecaca'}`, borderRadius: '16px', padding: '1.25rem' }}>
+                <span style={{ fontSize: '0.78rem', color: utilidadNeta >= 0 ? '#166534' : '#991b1b', fontWeight: 800, textTransform: 'uppercase' }}>💰 Ganancia / Utilidad Neta</span>
+                <h2 style={{ fontSize: '1.6rem', color: utilidadNeta >= 0 ? '#16a34a' : '#dc2626', margin: '0.4rem 0 0 0', fontWeight: 800 }}>
+                  ${utilidadNeta.toLocaleString('es-CO')}
+                </h2>
+              </div>
             </div>
           </div>
         </div>
