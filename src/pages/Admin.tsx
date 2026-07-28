@@ -3697,8 +3697,8 @@ export default function Admin() {
       { id: 'lovely', name: 'Lovely', logo: '/lovely-logo.jpg' },
     ];
     
-    // Mezclar las bases con las de la base de datos
-    const companies = baseCompanies.map(base => {
+    // Mezclar las bases con las de la base de datos (excluyendo la cuenta matriz indisutex)
+    const companies = baseCompanies.filter(b => b.id !== 'indisutex').map(base => {
       const dbMatch = dbCompanies.find(c => c.tenant_id === base.id);
       return {
         id: base.id,

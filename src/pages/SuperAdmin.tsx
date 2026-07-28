@@ -786,7 +786,7 @@ export default function SuperAdmin() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', background: '#ffffff', padding: '1.25rem 1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
               <div>
                 <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <Building size={22} color="#6366f1" /> Tiendas y Marcas Registradas ({configuracionesList.length})
+                  <Building size={22} color="#6366f1" /> Tiendas y Marcas Registradas ({configuracionesList.filter(cfg => cfg.tenant_id !== 'indisutex').length})
                 </h3>
                 <p style={{ margin: '0.25rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Administra, crea y clona nuevas tiendas para otros negocios en el sistema multi-tenant</p>
               </div>
@@ -827,7 +827,7 @@ export default function SuperAdmin() {
 
             {/* Store Cards Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem' }}>
-              {configuracionesList.map(cfg => {
+              {configuracionesList.filter(cfg => cfg.tenant_id !== 'indisutex').map(cfg => {
                 const prodCount = productos.filter(p => p.tenant_id === cfg.tenant_id).length;
                 const pedCount = pedidos.filter(p => p.tenant_id === cfg.tenant_id).length;
                 const catalogUrl = `${window.location.origin}/${cfg.tenant_id}`;
