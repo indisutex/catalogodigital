@@ -43,7 +43,7 @@ const badgeClass = (est: string) => {
 };
 
 // ────────────────────────────────────────────────────────────
-export const ERPTesoreriaModule: React.FC<Props> = ({ tenantId, onNavigateTab }) => {
+export const ERPTesoreriaModule: React.FC<Props> = ({ tenantId }) => {
   const [tab, setTab] = useState<Tab>('resumen');
   const [loading, setLoading] = useState(true);
   const [error, setError]   = useState<string | null>(null);
@@ -230,96 +230,7 @@ export const ERPTesoreriaModule: React.FC<Props> = ({ tenantId, onNavigateTab })
         <button className="teso-btn teso-btn-ghost" onClick={loadAll}><RefreshCw size={15} /> Actualizar</button>
       </div>
 
-      {/* ── BARRA DE HERRAMIENTAS Y NAVEGACIÓN RÁPIDA ERP ── */}
-      <div style={{
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-        borderRadius: '16px',
-        padding: '1.15rem 1.25rem',
-        marginBottom: '1.5rem',
-        boxShadow: '0 8px 24px rgba(15, 23, 42, 0.15)',
-        color: '#ffffff'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: '#94a3b8' }}>
-            ⚡ Accesos Directos a Módulos ERP
-          </span>
-          <span style={{ fontSize: '0.75rem', color: '#e2e8f0', background: 'rgba(255,255,255,0.1)', padding: '0.2rem 0.65rem', borderRadius: '12px', fontWeight: 600 }}>
-            Conexión en Tiempo Real
-          </span>
-        </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '0.75rem' }}>
-          <button
-            type="button"
-            onClick={() => setTab('ingresos')}
-            style={{ background: 'rgba(255, 255, 255, 0.07)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '12px', padding: '0.75rem', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '0.65rem', cursor: 'pointer', textAlign: 'left' }}
-          >
-            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: '#10b981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <TrendingUp size={16} />
-            </div>
-            <div>
-              <div style={{ fontSize: '0.82rem', fontWeight: 700 }}>Ingresos</div>
-              <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Recaudos Caja</div>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setTab('egresos')}
-            style={{ background: 'rgba(255, 255, 255, 0.07)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '12px', padding: '0.75rem', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '0.65rem', cursor: 'pointer', textAlign: 'left' }}
-          >
-            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: '#ef4444', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <TrendingDown size={16} />
-            </div>
-            <div>
-              <div style={{ fontSize: '0.82rem', fontWeight: 700 }}>Egresos</div>
-              <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Pagos & Gastos</div>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setTab('cxc')}
-            style={{ background: 'rgba(255, 255, 255, 0.07)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '12px', padding: '0.75rem', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '0.65rem', cursor: 'pointer', textAlign: 'left' }}
-          >
-            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: '#8b5cf6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <DollarSign size={16} />
-            </div>
-            <div>
-              <div style={{ fontSize: '0.82rem', fontWeight: 700 }}>Cartera CxC</div>
-              <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Clientes</div>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onNavigateTab ? onNavigateTab('compras') : setTab('cxp')}
-            style={{ background: 'rgba(255, 255, 255, 0.07)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '12px', padding: '0.75rem', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '0.65rem', cursor: 'pointer', textAlign: 'left' }}
-          >
-            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: '#f59e0b', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <ShoppingCart size={16} />
-            </div>
-            <div>
-              <div style={{ fontSize: '0.82rem', fontWeight: 700 }}>Proveedores CxP</div>
-              <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Facturas Compra</div>
-            </div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => onNavigateTab ? onNavigateTab('contabilidad') : null}
-            style={{ background: 'rgba(255, 255, 255, 0.07)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '12px', padding: '0.75rem', color: '#ffffff', display: 'flex', alignItems: 'center', gap: '0.65rem', cursor: 'pointer', textAlign: 'left' }}
-          >
-            <div style={{ width: '34px', height: '34px', borderRadius: '8px', background: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Landmark size={16} />
-            </div>
-            <div>
-              <div style={{ fontSize: '0.82rem', fontWeight: 700 }}>Contabilidad NIIF</div>
-              <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Libro Diario & PUC</div>
-            </div>
-          </button>
-        </div>
-      </div>
 
       {/* ── KPI Cards ── */}
       <div className="teso-kpi-grid">
