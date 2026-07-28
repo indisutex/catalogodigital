@@ -9603,17 +9603,25 @@ export default function Admin() {
                   </div>
 
                   {/* Factura principal */}
-                  {posLastInvoice && (
+                  {posLastInvoice && (() => {
+                    const activeStoreLogo = (role === 'mayorista' ? currentMayorista?.logo_url : null) || configuracion?.logo_url || '';
+                    const formattedLogoUrl = activeStoreLogo
+                      ? (activeStoreLogo.startsWith('http') || activeStoreLogo.startsWith('data:') ? activeStoreLogo : `${window.location.origin}${activeStoreLogo.startsWith('/') ? '' : '/'}${activeStoreLogo}`)
+                      : '';
+                    const activeStoreName = (role === 'mayorista' ? currentMayorista?.nombre : null) || configuracion?.nombre_negocio || getTenantId().toUpperCase();
+
+                    return (
                     <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 8px 32px -8px rgba(0,0,0,0.08)' }}>
                       {/* Factura header con logo */}
                       <div style={{ background: configuracion?.color_primario || '#4f46e5', padding: '1.5rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          {configuracion?.logo_url ? (
-                            <img src={configuracion.logo_url} alt="Logo" style={{ height: '56px', maxWidth: '180px', objectFit: 'contain', marginBottom: '0.4rem', background: 'white', borderRadius: '8px', padding: '4px 8px' }} />
-                          ) : (
-                            <div style={{ fontWeight: 800, fontSize: '1.4rem', color: 'white', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{configuracion?.nombre_negocio || 'Indisutex'}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                          {formattedLogoUrl && (
+                            <img src={formattedLogoUrl} alt="Logo" style={{ height: '52px', maxWidth: '160px', objectFit: 'contain', background: 'white', borderRadius: '8px', padding: '4px 8px' }} />
                           )}
-                          <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.72rem', marginTop: '0.25rem' }}>COMPROBANTE DE VENTA POS</div>
+                          <div>
+                            <div style={{ fontWeight: 800, fontSize: '1.25rem', color: 'white', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{activeStoreName}</div>
+                            <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.72rem', marginTop: '0.15rem' }}>COMPROBANTE DE VENTA POS</div>
+                          </div>
                         </div>
                         <div style={{ textAlign: 'right' }}>
                           <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>No. Factura</div>
@@ -9639,7 +9647,7 @@ export default function Admin() {
                           {/* QR Code usando Google Charts API */}
                           <div style={{ textAlign: 'center', flexShrink: 0 }}>
                             <img
-                              src={`https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=${encodeURIComponent(`FACTURA:${posLastInvoice.numero_factura}|TIENDA:${configuracion?.nombre_negocio || 'Indisutex'}|CLIENTE:${posLastInvoice.cliente_nombre}|TOTAL:${posLastInvoice.total}|FECHA:${posLastInvoice.created_at}`)}`}
+                              src={`https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=${encodeURIComponent(`FACTURA:${posLastInvoice.numero_factura}|TIENDA:${activeStoreName}|CLIENTE:${posLastInvoice.cliente_nombre}|TOTAL:${posLastInvoice.total}|FECHA:${posLastInvoice.created_at}`)}`}
                               alt="QR Verificación"
                               style={{ width: 90, height: 90, borderRadius: '8px', border: '1px solid #e2e8f0' }}
                             />
@@ -9674,11 +9682,12 @@ export default function Admin() {
                         </div>
 
                         <div style={{ textAlign: 'center', marginTop: '1rem', color: '#94a3b8', fontSize: '0.72rem' }}>
-                          Gracias por su compra · {configuracion?.nombre_negocio || 'Indisutex'}
+                          Gracias por su compra · {activeStoreName}
                         </div>
                       </div>
                     </div>
-                  )}
+                    );
+                  })()}
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     {/* Botón Imprimir Ticket Térmico */}
@@ -9701,17 +9710,23 @@ export default function Admin() {
                       }}
                       onClick={() => {
                         if (!posLastInvoice) return;
+                        const activeStoreLogo = (role === 'mayorista' ? currentMayorista?.logo_url : null) || configuracion?.logo_url || '';
+                        const formattedLogoUrl = activeStoreLogo
+                          ? (activeStoreLogo.startsWith('http') || activeStoreLogo.startsWith('data:') ? activeStoreLogo : `${window.location.origin}${activeStoreLogo.startsWith('/') ? '' : '/'}${activeStoreLogo}`)
+                          : '';
+                        const activeStoreName = (role === 'mayorista' ? currentMayorista?.nombre : null) || configuracion?.nombre_negocio || getTenantId().toUpperCase();
+
                         const paperWidth = configuracion?.impresora_termica_ancho || '58mm';
                         const pageWidth  = paperWidth === '80mm' ? '80mm' : '58mm';
                         const bodyWidth  = paperWidth === '80mm' ? '74mm' : '52mm';
 
                         const qrData = encodeURIComponent(
-                          `FACTURA:${posLastInvoice.numero_factura}|TIENDA:${configuracion?.nombre_negocio || 'Indisutex'}|CLIENTE:${posLastInvoice.cliente_nombre}|TOTAL:${posLastInvoice.total}|FECHA:${posLastInvoice.created_at}`
+                          `FACTURA:${posLastInvoice.numero_factura}|TIENDA:${activeStoreName}|CLIENTE:${posLastInvoice.cliente_nombre}|TOTAL:${posLastInvoice.total}|FECHA:${posLastInvoice.created_at}`
                         );
                         const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=70x70&data=${qrData}`;
 
-                        const logoHtml = configuracion?.logo_url
-                          ? `<img src="${configuracion.logo_url}" crossorigin="anonymous" style="max-width:100%;max-height:22mm;object-fit:contain;margin-bottom:2mm;" /><br/>`
+                        const logoHtml = formattedLogoUrl
+                          ? `<img id="store-logo" src="${formattedLogoUrl}" style="max-width:100%;max-height:24mm;object-fit:contain;margin-bottom:2mm;display:block;margin-left:auto;margin-right:auto;" /><br/>`
                           : '';
 
                         const subtotal = posLastInvoice.productos.reduce((acc: number, i: any) => acc + (i.precio * i.cantidad), 0);
@@ -9762,13 +9777,21 @@ export default function Admin() {
     .qr-section { display:flex; align-items:center; justify-content:space-between; gap:3mm; margin:3mm 0; }
     .qr-info { font-size:7pt; color:#333; flex:1; }
   </style>
+  <script>
+    function triggerPrint() {
+      setTimeout(function() {
+        window.print();
+      }, 300);
+    }
+    window.onload = triggerPrint;
+  </script>
 </head>
 <body>
 
   <!-- LOGO -->
   <div class="center" style="margin-bottom:2mm;">
     ${logoHtml}
-    <div class="biz-name">${configuracion?.nombre_negocio || 'Indisutex'}</div>
+    <div class="biz-name">${activeStoreName}</div>
     ${configuracion?.whatsapp ? `<div style="font-size:7.5pt;">WhatsApp: ${configuracion.whatsapp}</div>` : ''}
   </div>
 
@@ -9827,7 +9850,7 @@ export default function Admin() {
   <!-- FOOTER -->
   <div class="center footer-txt" style="margin-top:2mm;">
     <div style="font-size:8.5pt;font-weight:bold;">¡Gracias por su compra!</div>
-    <div>${configuracion?.nombre_negocio || 'Indisutex'}</div>
+    <div>${activeStoreName}</div>
     ${configuracion?.whatsapp ? `<div>WhatsApp: ${configuracion.whatsapp}</div>` : ''}
     <div style="margin-top:2mm;">──────────────</div>
     <div style="font-size:6.5pt;margin-top:1mm;">Conserve este recibo como garantía</div>
@@ -9843,7 +9866,6 @@ export default function Admin() {
                           printWin.document.write(receiptHtml);
                           printWin.document.close();
                           printWin.focus();
-                          setTimeout(() => { printWin.print(); }, 1200);
                         }
                       }}
                     >
