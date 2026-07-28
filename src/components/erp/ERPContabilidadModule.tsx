@@ -1,30 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ERPContabilidadService } from '../../lib/erpContabilidadService';
-import type { 
-  ERPCuentaPUC, 
-  ERPTercero, 
-  ERPComprobanteContable, 
-  ERPBalancePruebaItem 
+import type {
+  ERPCuentaPUC,
+  ERPTercero,
+  ERPComprobanteContable,
+  ERPBalancePruebaItem
 } from '../../types/erp';
 import './ERPContabilidadModule.css';
-import { 
-  Wallet, 
-  Users, 
-  ArrowUpRight, 
-  ArrowDownRight, 
-  BarChart3, 
-  Plus, 
+import {
+  Wallet,
+  Users,
+  ArrowUpRight,
+  ArrowDownRight,
+  BarChart3,
+  Plus,
   RefreshCw,
   AlertCircle,
   FileSpreadsheet,
   CheckCircle2,
   HelpCircle,
   BookOpen,
-  ArrowRightLeft,
-  Receipt,
-  DollarSign,
-  Package,
   Search,
   X,
   Printer,
@@ -39,7 +35,7 @@ interface Props {
   onNavigateTab?: (tab: 'ventas' | 'tesoreria' | 'contabilidad' | 'inventario') => void;
 }
 
-export const ERPContabilidadModule: React.FC<Props> = ({ tenantId, onNavigateTab }) => {
+export const ERPContabilidadModule: React.FC<Props> = ({ tenantId }) => {
   // Pestañas principales simplificadas para el usuario
   const [activeTab, setActiveTab] = useState<'resumen' | 'terceros' | 'movimientos' | 'facturacion' | 'reportes' | 'puc_avanzado'>('resumen');
   const [loading, setLoading] = useState<boolean>(true);
@@ -338,13 +334,13 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId, onNavigateTab
   const saldoCaja = balanceList.filter(b => b.cuenta_codigo === '110505').reduce((s, i) => s + i.saldo_nuevo, 0);
   const saldoBancos = balanceList.filter(b => b.cuenta_codigo.startsWith('1110')).reduce((s, i) => s + i.saldo_nuevo, 0);
 
-  const filteredPuc = pucList.filter(p => 
-    p.codigo.toLowerCase().includes(searchTerm.toLowerCase()) || 
+  const filteredPuc = pucList.filter(p =>
+    p.codigo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.nombre.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const filteredTerceros = tercerosList.filter(t => 
-    t.numero_documento.includes(searchTerm) || 
+  const filteredTerceros = tercerosList.filter(t =>
+    t.numero_documento.includes(searchTerm) ||
     t.razon_social.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -361,161 +357,7 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId, onNavigateTab
         </button>
       </div>
 
-      {/* ── BARRA DE HERRAMIENTAS Y ACCESOS RÁPIDOS ERP ── */}
-      <div style={{
-        background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-        borderRadius: '16px',
-        padding: '1.15rem 1.25rem',
-        marginBottom: '1.5rem',
-        boxShadow: '0 8px 24px rgba(15, 23, 42, 0.15)',
-        color: '#ffffff'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-          <span style={{ fontSize: '0.78rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-            ⚡ Herramientas y Módulos de Gestión ERP
-          </span>
-          <span style={{ fontSize: '0.75rem', color: '#e2e8f0', background: 'rgba(255,255,255,0.1)', padding: '0.2rem 0.65rem', borderRadius: '12px', fontWeight: 600 }}>
-            Acceso Rápido Unificado
-          </span>
-        </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.75rem' }}>
-          {/* 1. Movimientos */}
-          <button
-            type="button"
-            onClick={() => onNavigateTab ? onNavigateTab('tesoreria') : setActiveTab('resumen')}
-            style={{
-              background: 'rgba(255, 255, 255, 0.07)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              borderRadius: '12px',
-              padding: '0.85rem',
-              color: '#ffffff',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-              cursor: 'pointer',
-              textAlign: 'left',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#0284c7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <ArrowRightLeft size={18} />
-            </div>
-            <div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>Movimientos</div>
-              <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Ingresos & Egresos</div>
-            </div>
-          </button>
-
-          {/* 2. Facturación */}
-          <button
-            type="button"
-            onClick={() => onNavigateTab ? onNavigateTab('ventas') : setActiveTab('movimientos')}
-            style={{
-              background: 'rgba(255, 255, 255, 0.07)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              borderRadius: '12px',
-              padding: '0.85rem',
-              color: '#ffffff',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-              cursor: 'pointer',
-              textAlign: 'left',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#10b981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Receipt size={18} />
-            </div>
-            <div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>Facturación</div>
-              <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Ventas & Comprobantes</div>
-            </div>
-          </button>
-
-          {/* 3. Cobros & Cartera */}
-          <button
-            type="button"
-            onClick={() => onNavigateTab ? onNavigateTab('tesoreria') : setActiveTab('resumen')}
-            style={{
-              background: 'rgba(255, 255, 255, 0.07)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              borderRadius: '12px',
-              padding: '0.85rem',
-              color: '#ffffff',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-              cursor: 'pointer',
-              textAlign: 'left',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#8b5cf6', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <DollarSign size={18} />
-            </div>
-            <div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>Cobros & CxC</div>
-              <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Cartera de Clientes</div>
-            </div>
-          </button>
-
-          {/* 4. Inventario & Stock */}
-          <button
-            type="button"
-            onClick={() => setShowInventarioModal(true)}
-            style={{
-              background: 'rgba(255, 255, 255, 0.07)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              borderRadius: '12px',
-              padding: '0.85rem',
-              color: '#ffffff',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-              cursor: 'pointer',
-              textAlign: 'left',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#f59e0b', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Package size={18} />
-            </div>
-            <div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>Inventario</div>
-              <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{inventarioList.length} Productos</div>
-            </div>
-          </button>
-
-          {/* 5. Clientes */}
-          <button
-            type="button"
-            onClick={() => setActiveTab('terceros')}
-            style={{
-              background: 'rgba(255, 255, 255, 0.07)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              borderRadius: '12px',
-              padding: '0.85rem',
-              color: '#ffffff',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-              cursor: 'pointer',
-              textAlign: 'left',
-              transition: 'all 0.2s ease'
-            }}
-          >
-            <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#ec4899', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              <Users size={18} />
-            </div>
-            <div>
-              <div style={{ fontSize: '0.85rem', fontWeight: 700 }}>Clientes</div>
-              <div style={{ fontSize: '0.72rem', color: '#94a3b8' }}>{tercerosList.length} Terceros NIIF</div>
-            </div>
-          </button>
-        </div>
-      </div>
 
       {/* Tarjetas de Resumen Contable NIIF */}
       <div className="erp-metrics-grid">
@@ -548,37 +390,37 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId, onNavigateTab
 
       {/* Pestañas Contables NIIF */}
       <div className="erp-nav-tabs" style={{ overflowX: 'auto', flexWrap: 'nowrap' }}>
-        <button 
+        <button
           className={`erp-tab-btn ${activeTab === 'resumen' ? 'active' : ''}`}
           onClick={() => setActiveTab('resumen')}
         >
           <Wallet size={18} /> Balance de Caja
         </button>
-        <button 
+        <button
           className={`erp-tab-btn ${activeTab === 'facturacion' ? 'active' : ''}`}
           onClick={() => setActiveTab('facturacion')}
         >
           <Receipt size={18} /> Facturación & Cartera ({pedidosList.filter(p => p.estado !== 'completado').length} Pendientes)
         </button>
-        <button 
+        <button
           className={`erp-tab-btn ${activeTab === 'reportes' ? 'active' : ''}`}
           onClick={() => setActiveTab('reportes')}
         >
           <Printer size={18} /> Informe PyG & Reportes
         </button>
-        <button 
+        <button
           className={`erp-tab-btn ${activeTab === 'movimientos' ? 'active' : ''}`}
           onClick={() => setActiveTab('movimientos')}
         >
           <BarChart3 size={18} /> Libro Diario
         </button>
-        <button 
+        <button
           className={`erp-tab-btn ${activeTab === 'terceros' ? 'active' : ''}`}
           onClick={() => setActiveTab('terceros')}
         >
           <Users size={18} /> Terceros NIIF ({tercerosList.length})
         </button>
-        <button 
+        <button
           className={`erp-tab-btn ${activeTab === 'puc_avanzado' ? 'active' : ''}`}
           onClick={() => setActiveTab('puc_avanzado')}
           style={{ marginLeft: 'auto', background: activeTab === 'puc_avanzado' ? undefined : '#f1f5f9' }}
@@ -802,7 +644,7 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId, onNavigateTab
       {activeTab === 'terceros' && (
         <div className="erp-card-table">
           <div className="erp-table-header">
-            <input 
+            <input
               type="text"
               placeholder="Buscar por documento o nombre del cliente..."
               className="erp-search-input"
@@ -857,8 +699,8 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId, onNavigateTab
             <div>
               <h3 style={{ margin: 0 }}>Historial General de Ventas y Movimientos</h3>
               <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.82rem', color: '#64748b' }}>
-                {modoVista === 'facil' 
-                  ? '💡 Modo Sencillo: Muestra tus ventas e ingresos de forma clara sin tecnicismos.' 
+                {modoVista === 'facil'
+                  ? '💡 Modo Sencillo: Muestra tus ventas e ingresos de forma clara sin tecnicismos.'
                   : '📐 Modo Técnico: Muestra los códigos PUC (110505, 413505) y asientos contables NIIF.'}
               </p>
             </div>
@@ -1049,7 +891,7 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId, onNavigateTab
               <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.85rem', color: '#64748b' }}>Estructura oficial para contadores e informes tributarios DIAN</p>
             </div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <input 
+              <input
                 type="text"
                 placeholder="Buscar cuenta por código o nombre..."
                 className="erp-search-input"
@@ -1182,7 +1024,7 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId, onNavigateTab
                 <label>Concepto / Motivo:</label>
                 <input type="text" required className="erp-form-input" value={comprobanteForm.concepto} onChange={(e) => setComprobanteForm({ ...comprobanteForm, concepto: e.target.value })} placeholder="Ej: Pago de transporte o servicio..." />
               </div>
-              
+
               <h4 style={{ margin: '1rem 0 0.5rem 0', fontSize: '0.9rem' }}>Detalle de Operación</h4>
               {asientosForm.map((line, idx) => (
                 <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 1fr 1fr', gap: '0.5rem', marginBottom: '0.5rem' }}>
@@ -1267,8 +1109,8 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId, onNavigateTab
                   {inventarioList
                     .filter(p => (p.nombre || '').toLowerCase().includes(inventarioSearch.toLowerCase()))
                     .map((item, i) => {
-                      const estampadosCount = Array.isArray(item.imagenes) 
-                        ? new Set(item.imagenes.map((img: any) => img.estampado || img.ref).filter(Boolean)).size 
+                      const estampadosCount = Array.isArray(item.imagenes)
+                        ? new Set(item.imagenes.map((img: any) => img.estampado || img.ref).filter(Boolean)).size
                         : 0;
 
                       return (

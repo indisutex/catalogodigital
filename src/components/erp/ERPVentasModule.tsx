@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ERPVentasService, type ERPResumenFinanciero, type ERPEgreso } from '../../lib/erpVentasService';
-import type { Pedido } from '../../types';
+import type { Pedido, Asesor } from '../../types';
 import './ERPVentasModule.css';
 import { ERPTesoreriaService, type ERPCuentaBancaria } from '../../lib/erpTesoreriaService';
 
@@ -65,6 +65,11 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
   const [topProductos, setTopProductos] = useState<{ nombre: string; cantidad: number; total: number }[]>([]);
   const [cuentasTesoreria, setCuentasTesoreria] = useState<ERPCuentaBancaria[]>([]);
   const [metodosPagoList, setMetodosPagoList] = useState<string[]>(METODOS_PAGO);
+  const [asesoresList, setAsesoresList] = useState<Asesor[]>([]);
+
+  // Filtros de ventas por origen y asesor
+  const [origenFilter, setOrigenFilter] = useState<'todos' | 'pos' | 'catalogo'>('todos');
+  const [asesorFilter, setAsesorFilter] = useState<string>('todos');
 
   // Modal para ver factura detallada de un pedido
   const [selectedVentaModal, setSelectedVentaModal] = useState<Pedido | null>(null);
@@ -103,6 +108,12 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
       setTopProductos(top);
       setCuentasTesoreria(ctas);
 
+      // Cargar asesores de la tienda
+      try {
+        const { data: asData } = await supabase.from('asesores').select('*').eq('tenant_id', tenantId);
+        if (asData) setAsesoresList(asData);
+      } catch (_) {}
+
       // Cargar métodos de pago de la configuración del negocio
       try {
         const { data: configObj } = await supabase.from('configuracion').select('metodos_pago').eq('tenant_id', tenantId).maybeSingle();
@@ -128,57 +139,46 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
-  const handleGuardarEgreso = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!egresoForm.concepto || !egresoForm.monto) return;
-    try {
-      const montoNum = Number(egresoForm.monto);
-      await ERPVentasService.registrarEgreso({
-        tenant_id: tenantId,
-        fecha: egresoForm.fecha,
-        categoria: egresoForm.categoria,
-        concepto: egresoForm.concepto,
-        proveedor_nombre: egresoForm.proveedor_nombre,
-        monto: montoNum,
-        metodo_pago: egresoForm.metodo_pago,
-        notas: egresoForm.notas
-      });
-
-      // Si seleccionó una cuenta de tesorería, registrar también movimiento y descontar saldo
-      if (egresoForm.cuenta_id) {
-        await ERPTesoreriaService.registrarMovimiento({
-          tenant_id: tenantId,
-          cuenta_id: egresoForm.cuenta_id,
-          tipo: 'Egreso',
-          categoria: egresoForm.categoria,
-          concepto: egresoForm.concepto,
-          monto: montoNum,
-          fecha: egresoForm.fecha,
-          notas: egresoForm.notas
-        });
-
-        const cta = cuentasTesoreria.find(c => c.id === egresoForm.cuenta_id);
-        if (cta) {
-          await ERPTesoreriaService.actualizarSaldoCuenta(cta.id, Number(cta.saldo_actual) - montoNum);
-        }
-      }
-
-      setShowEgresoModal(false);
-      setEgresoForm({ fecha: new Date().toISOString().split('T')[0], categoria: 'Transporte y Envíos', concepto: '', proveedor_nombre: '', monto: '', metodo_pago: 'Efectivo', cuenta_id: '', notas: '' });
-      loadAll();
-    } catch (err: any) { alert(err.message); }
+  // Resolver nombre de Asesor y Canal (POS / Catálogo)
+  const getVentaAsesorInfo = (v: Pedido) => {
+    const isPos = v.origen === 'pos' || (Boolean(v.linea_whatsapp) && v.linea_whatsapp.startsWith('pos'));
+    let asesorNombre = '';
+    if (v.linea_whatsapp && v.linea_whatsapp.startsWith('pos_')) {
+      asesorNombre = v.linea_whatsapp.replace('pos_', '');
+    } else if (v.linea_whatsapp === 'pos') {
+      asesorNombre = 'Caja Directa';
+    } else if (v.linea_whatsapp) {
+      const matched = asesoresList.find(a => a.telefono === v.linea_whatsapp);
+      asesorNombre = matched ? matched.nombre : `Línea ${v.linea_whatsapp}`;
+    } else {
+      asesorNombre = 'Caja General';
+    }
+    return { isPos, asesorNombre };
   };
 
+  const filteredVentas = ventas.filter(v => {
+    const info = getVentaAsesorInfo(v);
+    if (origenFilter === 'pos' && !info.isPos) return false;
+    if (origenFilter === 'catalogo' && info.isPos) return false;
+    if (asesorFilter !== 'todos' && info.asesorNombre.toLowerCase() !== asesorFilter.toLowerCase()) return false;
+    return true;
+  });
+
   const exportarVentasExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(ventas.map(v => ({
-      Fecha: v.created_at?.split('T')[0],
-      'No. Pedido': v.id.substring(0, 8).toUpperCase(),
-      Cliente: v.cliente_nombre,
-      Teléfono: v.cliente_telefono,
-      Ciudad: v.ciudad,
-      Total: v.total,
-      Estado: v.estado || 'aprobado'
-    })));
+    const ws = XLSX.utils.json_to_sheet(filteredVentas.map(v => {
+      const info = getVentaAsesorInfo(v);
+      return {
+        Fecha: v.created_at?.split('T')[0],
+        'No. Pedido': v.id.substring(0, 8).toUpperCase(),
+        Cliente: v.cliente_nombre,
+        Teléfono: v.cliente_telefono,
+        Ciudad: v.ciudad,
+        Canal: info.isPos ? 'POS' : 'Catálogo Digital',
+        Asesor: info.asesorNombre,
+        Total: v.total,
+        Estado: v.estado || 'aprobado'
+      };
+    }));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Ventas');
     XLSX.writeFile(wb, `Ventas_${tenantId}_${desde}_${hasta}.xlsx`);
@@ -339,10 +339,34 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
       {/* ── Tab: Historial de Ventas ── */}
       {tab === 'ventas' && (
         <div className="erp-panel">
-          <div className="erp-panel-header">
+          <div className="erp-panel-header" style={{ flexWrap: 'wrap', gap: '1rem' }}>
             <h3>🛍️ Historial de Ventas</h3>
-            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-              <div className="erp-filtros">
+            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+              <div className="erp-filtros" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                {/* Filtro Origen */}
+                <select
+                  value={origenFilter}
+                  onChange={e => setOrigenFilter(e.target.value as any)}
+                  style={{ padding: '0.4rem 0.75rem', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '0.82rem', fontWeight: 600, color: '#0f172a', background: 'white' }}
+                >
+                  <option value="todos">🌐 Todos los Canales</option>
+                  <option value="pos">💻 Ventas POS</option>
+                  <option value="catalogo">📱 Catálogo Digital</option>
+                </select>
+
+                {/* Filtro Asesor */}
+                <select
+                  value={asesorFilter}
+                  onChange={e => setAsesorFilter(e.target.value)}
+                  style={{ padding: '0.4rem 0.75rem', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontSize: '0.82rem', fontWeight: 600, color: '#0f172a', background: 'white' }}
+                >
+                  <option value="todos">👥 Todos los Asesores</option>
+                  <option value="caja directa">🏪 Caja Directa / POS</option>
+                  {asesoresList.map(a => (
+                    <option key={a.id} value={a.nombre}>👤 {a.nombre}</option>
+                  ))}
+                </select>
+
                 <input type="date" value={desde} onChange={e => setDesde(e.target.value)} />
                 <span style={{ color: '#94a3b8' }}>→</span>
                 <input type="date" value={hasta} onChange={e => setHasta(e.target.value)} />
@@ -355,10 +379,10 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
 
           {loading ? (
             <p style={{ color: '#94a3b8', padding: '2rem', textAlign: 'center' }}>Cargando historial de ventas...</p>
-          ) : ventas.length === 0 ? (
+          ) : filteredVentas.length === 0 ? (
             <div className="erp-empty">
               <Package size={48} />
-              <p>No hay ventas aprobadas en el periodo.<br />Si ya tienes ventas anteriores, ejecuta primero el script de migración en Supabase.</p>
+              <p>No hay ventas registradas con los filtros seleccionados en este periodo.</p>
             </div>
           ) : (
             <table className="erp-ventas-table">
@@ -368,44 +392,63 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
                   <th>Fecha</th>
                   <th>Cliente</th>
                   <th>Ciudad</th>
+                  <th>Canal / Asesor</th>
                   <th>Estado</th>
                   <th style={{ textAlign: 'right' }}>Total</th>
                   <th style={{ textAlign: 'center' }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {ventas.map(v => (
-                  <tr key={v.id} style={{ cursor: 'pointer' }} onClick={() => setSelectedVentaModal(v)}>
-                    <td><strong style={{ fontFamily: 'monospace', color: '#6366f1' }}>{v.id.substring(0, 8).toUpperCase()}</strong></td>
-                    <td>{v.created_at?.split('T')[0]}</td>
-                    <td>
-                      <div style={{ fontWeight: 600, color: '#0f172a' }}>{v.cliente_nombre}</div>
-                      <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{v.cliente_telefono}</div>
-                    </td>
-                    <td>{v.ciudad}</td>
-                    <td>
-                      <span className={`erp-estado-badge ${estadoClass(v.estado)}`}>
-                        {v.estado || 'Aprobado'}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'right', fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: '1rem', color: '#059669' }}>
-                      {fmt(v.total)}
-                    </td>
-                    <td style={{ textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-                      <button className="erp-btn-sm erp-btn-detail" onClick={() => setSelectedVentaModal(v)}>
-                        <Eye size={14} /> Ver Factura
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {filteredVentas.map(v => {
+                  const info = getVentaAsesorInfo(v);
+                  return (
+                    <tr key={v.id} style={{ cursor: 'pointer' }} onClick={() => setSelectedVentaModal(v)}>
+                      <td><strong style={{ fontFamily: 'monospace', color: '#6366f1' }}>{v.id.substring(0, 8).toUpperCase()}</strong></td>
+                      <td>{v.created_at?.split('T')[0]}</td>
+                      <td>
+                        <div style={{ fontWeight: 600, color: '#0f172a' }}>{v.cliente_nombre}</div>
+                        <div style={{ fontSize: '0.78rem', color: '#64748b' }}>{v.cliente_telefono}</div>
+                      </td>
+                      <td>{v.ciudad}</td>
+                      <td>
+                        <span style={{
+                          fontSize: '0.76rem',
+                          fontWeight: 700,
+                          padding: '0.25rem 0.65rem',
+                          borderRadius: '12px',
+                          background: info.isPos ? '#ede9fe' : '#e0f2fe',
+                          color: info.isPos ? '#6d28d9' : '#0369a1',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem'
+                        }}>
+                          {info.isPos ? '💻 POS' : '📱 Catálogo'} ({info.asesorNombre})
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`erp-estado-badge ${estadoClass(v.estado)}`}>
+                          {v.estado || 'Aprobado'}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'right', fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: '1rem', color: '#059669' }}>
+                        {fmt(v.total)}
+                      </td>
+                      <td style={{ textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                        <button className="erp-btn-sm erp-btn-detail" onClick={() => setSelectedVentaModal(v)}>
+                          <Eye size={14} /> Ver Factura
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
               <tfoot>
                 <tr>
-                  <td colSpan={5} style={{ textAlign: 'right', fontWeight: 700, padding: '0.9rem 1rem', background: '#f8fafc', color: '#0f172a', fontSize: '0.88rem' }}>
-                    TOTAL PERIODO ({ventas.length} pedidos):
+                  <td colSpan={6} style={{ textAlign: 'right', fontWeight: 700, padding: '0.9rem 1rem', background: '#f8fafc', color: '#0f172a', fontSize: '0.88rem' }}>
+                    TOTAL PERIODO ({filteredVentas.length} ventas):
                   </td>
                   <td style={{ textAlign: 'right', fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: '1.1rem', color: '#6366f1', background: '#f8fafc', padding: '0.9rem 1rem' }}>
-                    {fmt(ventas.reduce((s, v) => s + Number(v.total), 0))}
+                    {fmt(filteredVentas.reduce((s, v) => s + Number(v.total), 0))}
                   </td>
                   <td style={{ background: '#f8fafc' }}></td>
                 </tr>
