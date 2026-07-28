@@ -1281,7 +1281,7 @@ export default function Admin() {
 
   // Filtros y Ordenamiento para la pestaña de Pedidos
   const [orderFilterStatus, setOrderFilterStatus] = useState<string>('todos');
-  const [orderFilterOrigin, setOrderFilterOrigin] = useState<string>('todos');
+  const [orderFilterOrigin, setOrderFilterOrigin] = useState<string>('catalogo');
   const [orderFilterAsesor, setOrderFilterAsesor] = useState<string>('todos');
   const [orderSearchQuery, setOrderSearchQuery] = useState<string>('');
   const [orderFilterDate, setOrderFilterDate] = useState<string>('');
@@ -9594,8 +9594,8 @@ export default function Admin() {
                 <div style={{ maxWidth: '640px', margin: '1.5rem auto', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
 
                   {/* Header success badge */}
-                  <div style={{ background: 'linear-gradient(135deg, #052e16 0%, #14532d 100%)', borderRadius: '20px', padding: '1.5rem 2rem', display: 'flex', alignItems: 'center', gap: '1rem', color: 'white' }}>
-                    <div style={{ width: '52px', height: '52px', background: 'rgba(255,255,255,0.15)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem', flexShrink: 0 }}>✅</div>
+                  <div style={{ background: configuracion?.color_primario || '#14532d', borderRadius: '20px', padding: '1.5rem 2rem', display: 'flex', alignItems: 'center', gap: '1rem', color: 'white' }}>
+                    <div style={{ width: '52px', height: '52px', background: 'rgba(255,255,255,0.2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.6rem', flexShrink: 0 }}>✅</div>
                     <div>
                       <div style={{ fontWeight: 800, fontSize: '1.15rem', letterSpacing: '-0.01em' }}>¡Venta Completada con Éxito!</div>
                       <div style={{ fontSize: '0.82rem', opacity: 0.8, marginTop: '0.2rem' }}>Stock actualizado · Registrada en pedidos · Lista para imprimir</div>
@@ -9606,19 +9606,19 @@ export default function Admin() {
                   {posLastInvoice && (
                     <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 8px 32px -8px rgba(0,0,0,0.08)' }}>
                       {/* Factura header con logo */}
-                      <div style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', padding: '1.5rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ background: configuracion?.color_primario || '#4f46e5', padding: '1.5rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
                           {configuracion?.logo_url ? (
-                            <img src={configuracion.logo_url} alt="Logo" style={{ height: '48px', maxWidth: '160px', objectFit: 'contain', filter: 'brightness(0) invert(1)', marginBottom: '0.4rem' }} />
+                            <img src={configuracion.logo_url} alt="Logo" style={{ height: '56px', maxWidth: '180px', objectFit: 'contain', marginBottom: '0.4rem', background: 'white', borderRadius: '8px', padding: '4px 8px' }} />
                           ) : (
                             <div style={{ fontWeight: 800, fontSize: '1.4rem', color: 'white', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{configuracion?.nombre_negocio || 'Indisutex'}</div>
                           )}
-                          <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.72rem', marginTop: '0.25rem' }}>COMPROBANTE DE VENTA POS</div>
+                          <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.72rem', marginTop: '0.25rem' }}>COMPROBANTE DE VENTA POS</div>
                         </div>
                         <div style={{ textAlign: 'right' }}>
-                          <div style={{ color: '#94a3b8', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>No. Factura</div>
+                          <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.08em' }}>No. Factura</div>
                           <div style={{ color: 'white', fontWeight: 800, fontSize: '1.1rem', fontFamily: 'monospace' }}>{posLastInvoice.numero_factura}</div>
-                          <div style={{ color: '#64748b', fontSize: '0.7rem', marginTop: '0.2rem' }}>{new Date(posLastInvoice.created_at).toLocaleString()}</div>
+                          <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', marginTop: '0.2rem' }}>{new Date(posLastInvoice.created_at).toLocaleString()}</div>
                         </div>
                       </div>
 
@@ -10452,7 +10452,10 @@ export default function Admin() {
 
           {/* ── PEDIDOS TAB ── */}
           {activeTab === 'pedidos' && (() => {
-            const pedItems = filteredPedidos.map(p => ({ ...p, isLead: false }));
+            // Pedidos del catálogo digital únicamente (excluir POS del tab de pedidos)
+            const pedItems = filteredPedidos
+              .filter(p => (p.origen || 'catalogo') !== 'pos')
+              .map(p => ({ ...p, isLead: false }));
             const leadItems = orderFilterStatus === 'comprobante' || orderFilterStatus === 'esperando_pago'
               ? []
               : leadsFiltrados.map(l => ({ ...l, isLead: true, cliente_nombre: l.nombre || 'Borrador Anónimo', cliente_telefono: l.telefono || 'Sin número', direccion: l.direccion || '', estado: 'abandonado' }));
@@ -10630,9 +10633,9 @@ export default function Admin() {
                             onChange={e => setOrderFilterOrigin(e.target.value)}
                             className="filter-select-input"
                           >
-                            <option value="todos">Todos los Orígenes</option>
-                            <option value="catalogo">📱 Catálogo</option>
-                            <option value="pos">💻 POS</option>
+                            <option value="catalogo">📱 Solo Catálogo Digital</option>
+                            <option value="pos">🖥️ Solo Ventas POS</option>
+                            <option value="todos">🔀 Todos los Orígenes</option>
                           </select>
                         </div>
 
