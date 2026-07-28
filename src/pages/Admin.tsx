@@ -9702,64 +9702,85 @@ export default function Admin() {
                       onClick={() => {
                         if (!posLastInvoice) return;
                         const paperWidth = configuracion?.impresora_termica_ancho || '58mm';
-                        const widthPx = paperWidth === '80mm' ? '300px' : '210px';
+                        const pageWidth = paperWidth === '80mm' ? '80mm' : '58mm';
+                        const bodyWidth = paperWidth === '80mm' ? '72mm' : '50mm';
+
                         const itemsHtml = posLastInvoice.productos.map((i: any) => `
-                          <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:11px;">
-                            <span style="flex:1; padding-right:4px;">${i.cantidad}x ${i.nombre} ${i.referencia ? `[Ref: ${i.referencia}]` : ''} ${i.talla ? `(${i.talla})` : ''} ${i.estampado ? `[${i.estampado}]` : ''}</span>
-                            <span style="font-weight:bold;">$${(i.precio * i.cantidad).toLocaleString()}</span>
+                          <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
+                            <span style="flex:1; padding-right:4px;">${i.cantidad}x ${i.nombre}${i.referencia ? ` [${i.referencia}]` : ''}${i.talla ? ` (${i.talla})` : ''}${i.estampado ? ` [${i.estampado}]` : ''}</span>
+                            <span style="font-weight:bold; white-space:nowrap;">$${(i.precio * i.cantidad).toLocaleString()}</span>
                           </div>
                         `).join('');
 
-                        const receiptHtml = `
-                          <!DOCTYPE html>
-                          <html>
-                            <head>
-                              <title>Ticket POS ${configuracion?.nombre_negocio || 'Indisutex'}</title>
-                              <style>
-                                @page { margin: 0; size: auto; }
-                                body { font-family: 'Courier New', Courier, monospace; width: ${widthPx}; margin: 0 auto; padding: 8px; color: #000; font-size: 11px; line-height: 1.3; }
-                                .center { text-align: center; }
-                                .divider { border-bottom: 1px dashed #000; margin: 6px 0; }
-                                .bold { font-weight: bold; }
-                                .total { font-size: 14px; font-weight: bold; margin-top: 6px; }
-                              </style>
-                            </head>
-                            <body>
-                              <div class="center">
-                                <div class="bold" style="font-size:14px; text-transform:uppercase;">${configuracion?.nombre_negocio || 'Indisutex'}</div>
-                                <div>COMPROBANTE DE VENTA POS</div>
-                                <div style="font-size:10px;">${new Date(posLastInvoice.created_at).toLocaleString()}</div>
-                              </div>
-                              <div class="divider"></div>
-                              <div>
-                                <div><strong>Cliente:</strong> ${posLastInvoice.cliente_nombre}</div>
-                                <div><strong>Teléfono:</strong> ${posLastInvoice.cliente_telefono}</div>
-                                <div><strong>Asesora:</strong> ${posLastInvoice.asesor || 'Caja General'}</div>
-                                <div><strong>Pago:</strong> ${posLastInvoice.metodo_pago.toUpperCase()}</div>
-                              </div>
-                              <div class="divider"></div>
-                              ${itemsHtml}
-                              <div class="divider"></div>
-                              <div class="total center">
-                                TOTAL: $${posLastInvoice.total.toLocaleString()} COP
-                              </div>
-                              <div class="divider"></div>
-                              <div class="center" style="font-size:10px; margin-top:8px;">
-                                ¡Gracias por tu compra! 😊
-                              </div>
-                            </body>
-                          </html>
-                        `;
+                        const receiptHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Ticket POS</title>
+  <style>
+    @page {
+      size: ${pageWidth} auto;
+      margin: 2mm 0;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      width: ${bodyWidth};
+      margin: 0 auto;
+      padding: 0 2mm;
+      color: #000;
+      font-size: 9pt;
+      line-height: 1.35;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .center { text-align: center; }
+    .right { text-align: right; }
+    .bold { font-weight: bold; }
+    .line { border-top: 1px dashed #000; margin: 4px 0; }
+    .total-row { font-size: 11pt; font-weight: bold; display:flex; justify-content:space-between; margin-top:4px; }
+    .header-biz { font-size: 13pt; font-weight: bold; text-transform: uppercase; }
+    .sub { font-size: 8pt; color: #333; }
+    .no-factura { font-size: 8pt; border: 1px solid #000; display:inline-block; padding: 1px 4px; margin-top:2px; }
+  </style>
+</head>
+<body>
+  <div class="center">
+    <div class="header-biz">${configuracion?.nombre_negocio || 'Indisutex'}</div>
+    <div class="sub">COMPROBANTE DE VENTA POS</div>
+    <div class="sub">${new Date(posLastInvoice.created_at).toLocaleString()}</div>
+    <div class="no-factura">${posLastInvoice.numero_factura || ''}</div>
+  </div>
+  <div class="line"></div>
+  <div><span class="bold">Cliente:</span> ${posLastInvoice.cliente_nombre}</div>
+  <div><span class="bold">Tel:</span> ${posLastInvoice.cliente_telefono}</div>
+  <div><span class="bold">Asesor:</span> ${posLastInvoice.asesor || 'Caja General'}</div>
+  <div><span class="bold">Pago:</span> ${posLastInvoice.metodo_pago.toUpperCase()}</div>
+  ${posLastInvoice.direccion ? `<div class="sub">Dir: ${posLastInvoice.direccion}</div>` : ''}
+  <div class="line"></div>
+  ${itemsHtml}
+  <div class="line"></div>
+  <div class="total-row">
+    <span>TOTAL:</span>
+    <span>$${posLastInvoice.total.toLocaleString()} COP</span>
+  </div>
+  <div class="line"></div>
+  <div class="center sub" style="margin-top:6px;">¡Gracias por tu compra!</div>
+  <div class="center sub">${configuracion?.nombre_negocio || ''}</div>
+  <br/><br/>
+</body>
+</html>`;
 
-                        const printWin = window.open('', '_blank', 'width=420,height=600');
+                        const printWin = window.open('', '_blank', `width=300,height=500`);
                         if (printWin) {
+                          printWin.document.open();
                           printWin.document.write(receiptHtml);
                           printWin.document.close();
                           printWin.focus();
+                          // Esperar a que cargue el contenido antes de imprimir
                           setTimeout(() => {
                             printWin.print();
-                            printWin.close();
-                          }, 300);
+                          }, 800);
                         }
                       }}
                     >
