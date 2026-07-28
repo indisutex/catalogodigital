@@ -9927,28 +9927,31 @@ export default function Admin() {
                             const allProductImages = (() => {
                               const list: { url: string; ref: string }[] = [];
                               const seenUrls = new Set<string>();
-                              if (item.producto.imagen_url) {
-                                list.push({ url: item.producto.imagen_url, ref: '' });
-                                seenUrls.add(item.producto.imagen_url.trim());
-                              }
+
                               (item.producto.imagenes_extra || []).forEach((str: string) => {
                                 const decoded = decodeExtraImage(str);
                                 if (decoded.url && !seenUrls.has(decoded.url.trim())) {
                                   seenUrls.add(decoded.url.trim());
-                                  list.push({ url: decoded.url, ref: (decoded.estampado || decoded.ref || '').trim() });
+                                  list.push({ url: decoded.url.trim(), ref: (decoded.estampado || decoded.ref || '').trim() });
                                 }
                               });
+
+                              if (item.producto.imagen_url && !seenUrls.has(item.producto.imagen_url.trim())) {
+                                seenUrls.add(item.producto.imagen_url.trim());
+                                list.push({ url: item.producto.imagen_url.trim(), ref: '' });
+                              }
+
                               return list;
                             })();
 
                             const allEstampados = (() => {
-                              const legacyEstampados = item.producto.estampados?.split(',').map((e: string) => e.trim()).filter(Boolean) || [];
                               const extraImagesRefs = (item.producto.imagenes_extra || []).map((u: string) => {
                                 const d = decodeExtraImage(u);
                                 return (d.estampado || d.ref)?.trim();
                               }).filter(Boolean);
+                              const legacyEstampados = item.producto.estampados?.split(',').map((e: string) => e.trim()).filter(Boolean) || [];
                               const estMap = new Map<string, string>();
-                              [...legacyEstampados, ...extraImagesRefs].forEach((e: string) => {
+                              [...extraImagesRefs, ...legacyEstampados].forEach((e: string) => {
                                 const k = e.toLowerCase();
                                 if (k && !estMap.has(k)) estMap.set(k, e);
                               });
@@ -10042,7 +10045,7 @@ export default function Admin() {
                                             alt={imgObj.ref || `Foto ${iIdx + 1}`}
                                             title={imgObj.ref || `Foto ${iIdx + 1}`}
                                             onClick={() => {
-                                              const targetEstampado = imgObj.ref?.trim() || allEstampados[iIdx] || (iIdx === 0 && allEstampados.length > 0 ? allEstampados[0] : '');
+                                              const targetEstampado = imgObj.ref?.trim() || (allEstampados[iIdx] !== undefined ? allEstampados[iIdx] : '');
                                               setPosCart(prev => prev.map((it, i) => i === idx ? {
                                                 ...it,
                                                 selected_image_url: imgObj.url,
