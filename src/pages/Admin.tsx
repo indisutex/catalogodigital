@@ -868,6 +868,7 @@ export default function Admin() {
   const [posPriceTier, setPosPriceTier] = useState<'detal' | 'por_mayor' | 'precio_50_unidades'>('detal');
   const [posCheckoutSuccess, setPosCheckoutSuccess] = useState(false);
   const [posLastInvoice, setPosLastInvoice] = useState<any | null>(null);
+  const [posInvoiceNumber, setPosInvoiceNumber] = useState<string>('');
 
   // Asesor Transfer & Product Migration States
   const [movingAsesor, setMovingAsesor] = useState<Asesor | null>(null);
@@ -10329,93 +10330,6 @@ export default function Admin() {
                               const extExist = existList && existList.length > 0 ? existList[0] : null;
 
                               if (extExist) {
-                                const newInvoiceData = {
-                                  created_at: new Date().toISOString(),
-                                  cliente_nombre: posCustomerName.trim(),
-                                  cliente_telefono: telLimpio,
-                                  direccion: posCustomerAddress.trim(),
-                                  ciudad: posCustomerCity.trim(),
-                                  total: totalSale,
-                                  productos: serializedProducts,
-                                  metodo_pago: posPaymentMethod,
-                                  asesor: posAsesor || 'Caja General'
-                                };
-                                setPosLastInvoice(newInvoiceData);
-
-                                setPosCheckoutSuccess(true);
-                                showToast('Venta POS registrada y stock actualizado ✓', 'success');
-
-                                // 5. Impresión automática en impresora térmica y envío simultáneo por WhatsApp
-                                setTimeout(() => {
-                                  const paperWidth = configuracion?.impresora_termica_ancho || '58mm';
-                                  const widthPx = paperWidth === '80mm' ? '300px' : '210px';
-                                  const itemsHtml = serializedProducts.map((i: any) => `
-                                    <div style="display:flex; justify-content:space-between; margin-bottom:4px; font-size:11px;">
-                                      <span style="flex:1; padding-right:4px;">${i.cantidad}x ${i.nombre} ${i.referencia ? `[Ref: ${i.referencia}]` : ''} ${i.talla ? `(${i.talla})` : ''} ${i.estampado ? `[${i.estampado}]` : ''}</span>
-                                      <span style="font-weight:bold;">$${(i.precio * i.cantidad).toLocaleString()}</span>
-                                    </div>
-                                  `).join('');
-
-                                  const receiptHtml = `
-                                    <!DOCTYPE html>
-                                    <html>
-                                      <head>
-                                        <title>Ticket POS ${configuracion?.nombre_negocio || 'Indisutex'}</title>
-                                        <style>
-                                          @page { margin: 0; size: auto; }
-                                          body { font-family: 'Courier New', Courier, monospace; width: ${widthPx}; margin: 0 auto; padding: 8px; color: #000; font-size: 11px; line-height: 1.3; }
-                                          .center { text-align: center; }
-                                          .divider { border-bottom: 1px dashed #000; margin: 6px 0; }
-                                          .bold { font-weight: bold; }
-                                          .total { font-size: 14px; font-weight: bold; margin-top: 6px; }
-                                        </style>
-                                      </head>
-                                      <body>
-                                        <div class="center">
-                                          <div class="bold" style="font-size:14px; text-transform:uppercase;">${configuracion?.nombre_negocio || 'Indisutex'}</div>
-                                          <div>COMPROBANTE DE VENTA POS</div>
-                                          <div style="font-size:10px;">${new Date().toLocaleString()}</div>
-                                        </div>
-                                        <div class="divider"></div>
-                                        <div>
-                                          <div><strong>Cliente:</strong> ${newInvoiceData.cliente_nombre}</div>
-                                          <div><strong>Teléfono:</strong> ${newInvoiceData.cliente_telefono}</div>
-                                          <div><strong>Asesora:</strong> ${newInvoiceData.asesor}</div>
-                                          <div><strong>Pago:</strong> ${newInvoiceData.metodo_pago.toUpperCase()}</div>
-                                        </div>
-                                        <div class="divider"></div>
-                                        ${itemsHtml}
-                                        <div class="divider"></div>
-                                        <div class="total center">
-                                          TOTAL: $${newInvoiceData.total.toLocaleString()} COP
-                                        </div>
-                                        <div class="divider"></div>
-                                        <div class="center" style="font-size:10px; margin-top:8px;">
-                                          ¡Gracias por tu compra! 😊
-                                        </div>
-                                      </body>
-                                    </html>
-                                  `;
-
-                                  const printWin = window.open('', '_blank', 'width=420,height=600');
-                                  if (printWin) {
-                                    printWin.document.write(receiptHtml);
-                                    printWin.document.close();
-                                    printWin.focus();
-                                    setTimeout(() => {
-                                      printWin.print();
-                                      printWin.close();
-                                    }, 300);
-                                  }
-
-                                  // Envío a WhatsApp
-                                  if (telLimpio) {
-                                    const itemsStr = serializedProducts.map((i: any) => `- ${i.cantidad}x ${i.nombre} ${i.talla ? `(${i.talla})` : ''}`).join('\n');
-                                    const msg = `¡Hola ${newInvoiceData.cliente_nombre}! 👋\nMuchas gracias por tu compra en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Detalle de tu compra:*\n${itemsStr}\n\n*Total Pagado: ${newInvoiceData.total.toLocaleString()} COP*\n*Método de Pago: ${newInvoiceData.metodo_pago.toUpperCase()}*\n\n¡Esperamos que disfrutes tus productos! 😊`;
-                                    window.open(formatWhatsAppLink(telLimpio, msg), '_blank');
-                                  }
-                                }, 300);
-                                
                                 await supabase
                                   .from('clientes_exitosos')
                                   .update({
@@ -10438,8 +10352,11 @@ export default function Admin() {
                               }
 
                               // 4. Update local states
+                              const invoiceNum = `POS-${Date.now().toString(36).toUpperCase().slice(-6)}`;
+                              setPosInvoiceNumber(invoiceNum);
                               setPosLastInvoice({
                                 created_at: new Date().toISOString(),
+                                numero_factura: invoiceNum,
                                 cliente_nombre: posCustomerName.trim(),
                                 cliente_telefono: telLimpio,
                                 direccion: posCustomerAddress.trim(),
