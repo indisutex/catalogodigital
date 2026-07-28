@@ -4876,91 +4876,96 @@ export default function Admin() {
               ) : (
                 /* PRODUCT LIST PANEL */
                 <div className="admin-panel">
-                  <div className="panel-header">
-                    <div>
-                      <h3><Package size={16} /> Inventario ({filteredProducts.length})</h3>
-                      <p>Todos los productos publicados en tu tienda</p>
-                    </div>
-                    <div className="panel-header-actions" style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                      <button 
-                        className="btn-primary hover-lift" 
-                        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', height: '38px', padding: '0 1.1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.83rem', boxShadow: '0 2px 6px rgba(99,102,241,0.25)' }}
-                        onClick={() => { setBulkForms([{ ...emptyProduct }]); setIsAddingProduct(true); }}
-                      >
-                        <Plus size={16} /> Nuevo Producto
-                      </button>
-                      <button 
-                        className="btn-secondary hover-lift" 
-                        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', height: '38px', border: '1.5px solid #bae6fd', color: '#0284c7', background: '#f0f9ff', padding: '0 1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem' }}
-                        onClick={() => { setShowMigrateProductsModal(true); setSelectedSourceTenant(''); setSourceProducts([]); setSelectedProductIdsToMigrate([]); }}
-                        title="Copiar masivamente productos de otra tienda o empresa"
-                      >
-                        <PackageCheck size={16} color="#0ea5e9" /> Migrar de Empresa
-                      </button>
-                      <button 
-                        className="btn-secondary hover-lift" 
-                        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', height: '38px', border: '1.5px solid #fecaca', color: '#dc2626', background: '#fef2f2', padding: '0 1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem' }}
-                        onClick={() => setShowToolsModal(true)}
-                      >
-                        🔧 Depurar Catálogo
-                      </button>
+                  <div className="panel-header" style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', alignItems: 'stretch' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '1rem' }}>
+                      <div>
+                        <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <Package size={18} style={{ color: '#6366f1' }} /> Inventario ({filteredProducts.length})
+                        </h3>
+                        <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.83rem' }}>Todos los productos publicados en tu tienda</p>
+                      </div>
+                      <div className="panel-header-actions" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <button 
+                          className="btn-primary hover-lift" 
+                          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', height: '38px', padding: '0 1.1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.83rem', boxShadow: '0 2px 6px rgba(99,102,241,0.25)' }}
+                          onClick={() => { setBulkForms([{ ...emptyProduct }]); setIsAddingProduct(true); }}
+                        >
+                          <Plus size={16} /> Nuevo Producto
+                        </button>
+                        <button 
+                          className="btn-secondary hover-lift" 
+                          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', height: '38px', border: '1.5px solid #bae6fd', color: '#0284c7', background: '#f0f9ff', padding: '0 1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem' }}
+                          onClick={() => { setShowMigrateProductsModal(true); setSelectedSourceTenant(''); setSourceProducts([]); setSelectedProductIdsToMigrate([]); }}
+                          title="Copiar masivamente productos de otra tienda o empresa"
+                        >
+                          <PackageCheck size={16} color="#0ea5e9" /> Migrar de Empresa
+                        </button>
+                        <button 
+                          className="btn-secondary hover-lift" 
+                          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', height: '38px', border: '1.5px solid #fecaca', color: '#dc2626', background: '#fef2f2', padding: '0 1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem' }}
+                          onClick={() => setShowToolsModal(true)}
+                        >
+                          🔧 Depurar Catálogo
+                        </button>
 
-                      {/* Control Promocional */}
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', border: '1.5px solid #fed7aa', background: '#fff7ed', padding: '0 0.8rem', borderRadius: '10px', fontSize: '0.82rem', height: '38px' }}>
-                        <span style={{ fontWeight: 800, color: '#c2410c', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                          <Tag size={14} /> Promo:
-                        </span>
-                        <select
-                          value={configuracion?.descuento_promocional || 0}
-                          onChange={async (e) => {
-                            if (!configuracion) return;
-                            const desc = Number(e.target.value);
-                            const { error } = await supabase
-                              .from('configuracion')
-                              .update({ descuento_promocional: desc })
-                              .eq('id', configuracion.id);
-                            
-                            if (error) {
-                              showToast('Error al aplicar descuento: ' + error.message, 'error');
-                            } else {
-                              setConfiguracion({ ...configuracion, descuento_promocional: desc });
-                              showToast(desc > 0 ? `Descuento del ${desc}% aplicado a todo el catálogo ✓` : 'Descuento promocional desactivado ✓');
-                            }
-                          }}
-                          style={{ border: '1px solid #fdba74', borderRadius: '6px', padding: '0.2rem 0.4rem', outline: 'none', background: 'white', color: '#c2410c', fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' }}
-                        >
-                          <option value={0}>Sin Descuento</option>
-                          <option value={5}>Bajar 5%</option>
-                          <option value={10}>Bajar 10%</option>
-                          <option value={20}>Bajar 20%</option>
-                        </select>
-                      </div>
-                      
-                      <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', width: '100%' }}>
-                        <div className="search-input-container" style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 1, minWidth: '160px' }}>
-                          <span style={{ position: 'absolute', left: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center' }}>
-                            <Search size={15} />
+                        {/* Control Promocional */}
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', border: '1.5px solid #fed7aa', background: '#fff7ed', padding: '0 0.8rem', borderRadius: '10px', fontSize: '0.82rem', height: '38px' }}>
+                          <span style={{ fontWeight: 800, color: '#c2410c', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <Tag size={14} /> Promo:
                           </span>
-                          <input
-                            className="search-bar"
-                            style={{ width: '100%', padding: '0.55rem 1rem 0.55rem 2.25rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', transition: 'all 0.2s', margin: 0 }}
-                            placeholder="Buscar producto..."
-                            value={searchQuery}
-                            onChange={e => setSearchQuery(e.target.value)}
-                          />
+                          <select
+                            value={configuracion?.descuento_promocional || 0}
+                            onChange={async (e) => {
+                              if (!configuracion) return;
+                              const desc = Number(e.target.value);
+                              const { error } = await supabase
+                                .from('configuracion')
+                                .update({ descuento_promocional: desc })
+                                .eq('id', configuracion.id);
+                              
+                              if (error) {
+                                showToast('Error al aplicar descuento: ' + error.message, 'error');
+                              } else {
+                                setConfiguracion({ ...configuracion, descuento_promocional: desc });
+                                showToast(desc > 0 ? `Descuento del ${desc}% aplicado a todo el catálogo ✓` : 'Descuento promocional desactivado ✓');
+                              }
+                            }}
+                            style={{ border: '1px solid #fdba74', borderRadius: '6px', padding: '0.2rem 0.4rem', outline: 'none', background: 'white', color: '#c2410c', fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' }}
+                          >
+                            <option value={0}>Sin Descuento</option>
+                            <option value={5}>Bajar 5%</option>
+                            <option value={10}>Bajar 10%</option>
+                            <option value={20}>Bajar 20%</option>
+                          </select>
                         </div>
-                        <select
-                          value={productSort}
-                          onChange={e => setProductSort(e.target.value)}
-                          style={{ padding: '0.55rem 0.8rem', borderRadius: '10px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', color: '#475569', cursor: 'pointer' }}
-                        >
-                          <option value="recientes">Más recientes</option>
-                          <option value="alfabetico">A-Z</option>
-                          <option value="visibles">Solo Visibles</option>
-                          <option value="ocultos">Solo Ocultos</option>
-                          <option value="con_fotos">Con fotos</option>
-                        </select>
                       </div>
+                    </div>
+
+                    {/* Fila secundaria: Búsqueda y Ordenamiento */}
+                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', width: '100%', background: '#f8fafc', padding: '0.6rem 0.8rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                      <div className="search-input-container" style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 1, minWidth: '200px' }}>
+                        <span style={{ position: 'absolute', left: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center' }}>
+                          <Search size={16} />
+                        </span>
+                        <input
+                          className="search-bar"
+                          style={{ width: '100%', padding: '0.5rem 1rem 0.5rem 2.25rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white' }}
+                          placeholder="Buscar producto por nombre, referencia o categoría..."
+                          value={searchQuery}
+                          onChange={e => setSearchQuery(e.target.value)}
+                        />
+                      </div>
+                      <select
+                        value={productSort}
+                        onChange={e => setProductSort(e.target.value)}
+                        style={{ padding: '0.5rem 0.85rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', color: '#334155', fontWeight: 600, cursor: 'pointer', height: '36px' }}
+                      >
+                        <option value="recientes">Más recientes</option>
+                        <option value="alfabetico">A-Z</option>
+                        <option value="visibles">Solo Visibles</option>
+                        <option value="ocultos">Solo Ocultos</option>
+                        <option value="con_fotos">Con fotos</option>
+                      </select>
                     </div>
                   </div>
                 <div className="panel-body">
@@ -12625,10 +12630,6 @@ function SidebarContent({
               <span className="nav-icon"><Settings size={14} /></span> Configuración
               {activeTab === 'config' && <span className="active-dot"></span>}
             </button>
-            <button className={`nav-item ${activeTab === 'siigo' ? 'active' : ''}`} onClick={() => handleSelectTab('siigo')}>
-              <span className="nav-icon"><Code size={14} /></span> Desarrollador
-              {activeTab === 'siigo' && <span className="active-dot"></span>}
-            </button>
             <button className={`nav-item ${activeTab === 'pqrs' ? 'active' : ''}`} onClick={() => handleSelectTab('pqrs')} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingRight: '0.75rem' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span className="nav-icon"><LifeBuoy size={14} /></span> Soporte / PQRS
@@ -12639,6 +12640,10 @@ function SidebarContent({
                 </span>
               )}
               {activeTab === 'pqrs' && listaPqrs.filter(p => p.estado === 'pendiente').length === 0 && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'siigo' ? 'active' : ''}`} onClick={() => handleSelectTab('siigo')}>
+              <span className="nav-icon"><Code size={14} /></span> Desarrollador
+              {activeTab === 'siigo' && <span className="active-dot"></span>}
             </button>
           </>
         )}
