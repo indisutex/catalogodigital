@@ -27,6 +27,8 @@ export function updatePWAManifestAndIcons(logoUrl?: string | null, storeName?: s
     }
     appleIconEl.href = icon;
 
+    const iconType = icon.toLowerCase().endsWith('.svg') ? 'image/svg+xml' : 'image/png';
+
     // 3. Generate dynamic PWA Manifest using Blob URL
     const manifestData = {
       name: `${name} — Catálogo Digital`,
@@ -41,9 +43,27 @@ export function updatePWAManifestAndIcons(logoUrl?: string | null, storeName?: s
       icons: [
         {
           src: icon,
-          sizes: '192x192 512x512 1024x1024',
-          type: 'image/png',
-          purpose: 'any maskable'
+          sizes: '192x192',
+          type: iconType,
+          purpose: 'any'
+        },
+        {
+          src: icon,
+          sizes: '512x512',
+          type: iconType,
+          purpose: 'any'
+        },
+        {
+          src: icon,
+          sizes: '192x192',
+          type: iconType,
+          purpose: 'maskable'
+        },
+        {
+          src: icon,
+          sizes: '512x512',
+          type: iconType,
+          purpose: 'maskable'
         }
       ]
     };

@@ -221,16 +221,23 @@ export default function MenuDigital() {
   }, []);
   
   useEffect(() => {
-    const storeName = mayoristaBranding?.nombre || configuracion?.nombre_negocio || 'Catálogo Digital';
+    const tenant = getTenantId();
+    const storeName = mayoristaBranding?.nombre || configuracion?.nombre_negocio || (tenant ? tenant.charAt(0).toUpperCase() + tenant.slice(1) : 'Catálogo Digital');
     const storeLogo = mayoristaBranding?.logo || configuracion?.logo_url;
 
     document.title = storeName;
+
+    // Actualizar URL en la barra de navegación para incluir el slug permanente del tenant
+    if (window.location.pathname === '/' || window.location.pathname === '/menu') {
+      window.history.replaceState(null, '', `/${tenant}${window.location.search}${window.location.hash}`);
+    }
+
     updatePWAManifestAndIcons(storeLogo, storeName);
 
     if (configuracion?.color_primario) {
       document.documentElement.style.setProperty('--primary', configuracion.color_primario);
       document.documentElement.style.setProperty('--primary-color', configuracion.color_primario);
-      localStorage.setItem(`admin_primary_color_${getTenantId()}`, configuracion.color_primario);
+      localStorage.setItem(`admin_primary_color_${tenant}`, configuracion.color_primario);
       const hex = configuracion.color_primario.replace('#', '');
       if (hex.length === 6) {
         const r = parseInt(hex.substring(0, 2), 16);

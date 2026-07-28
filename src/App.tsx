@@ -25,6 +25,8 @@ function App() {
           {/* La nueva interfaz estilo app será la página principal */}
           <Route path="/" element={<MenuDigital />} />
           <Route path="/menu" element={<MenuDigital />} />
+          <Route path="/:tenant" element={<MenuDigital />} />
+          <Route path="/:tenant/menu" element={<MenuDigital />} />
           
           {/* Panel de Administración */}
           <Route path="/admin" element={<ErrorBoundary><Admin /></ErrorBoundary>} />

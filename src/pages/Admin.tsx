@@ -477,27 +477,7 @@ export default function Admin() {
     return null;
   }, [role, mayoristas]);
 
-  useEffect(() => {
-    let titleStr = 'Indisutex Admin';
-    let logoUrl: string | undefined = undefined;
 
-    const activeMayorista = role === 'mayorista' ? currentMayorista : null;
-    if (activeMayorista?.logo_url) {
-      logoUrl = activeMayorista.logo_url;
-    }
-
-    if (selectedCompany) {
-      const compName = selectedCompany.charAt(0).toUpperCase() + selectedCompany.slice(1);
-      titleStr = `${compName} Admin`;
-      const activeAsesor = role === 'mayorista' ? currentMayorista : currentAsesor;
-      if (activeAsesor) {
-        titleStr += ` - ${activeAsesor.nombre}`;
-      }
-    }
-
-    document.title = titleStr;
-    updatePWAManifestAndIcons(logoUrl, titleStr);
-  }, [selectedCompany, currentAsesor, currentMayorista, role]);
 
   const getMotivationalPhrase = (asesorId: string) => {
     const phrases = [
@@ -1427,16 +1407,33 @@ export default function Admin() {
   }, [pedidosViewMode]);
 
   useEffect(() => {
-    if (configuracion?.nombre_negocio) {
-      document.title = `${configuracion.nombre_negocio} - Panel Administrativo`;
-    } else {
-      document.title = 'Panel Administrativo';
+    const tenant = getTenantId();
+    const activeMayorista = role === 'mayorista' ? currentMayorista : null;
+    const logoUrl = activeMayorista?.logo_url || configuracion?.logo_url;
+    
+    let compTitle = configuracion?.nombre_negocio;
+    if (!compTitle && selectedCompany) {
+      compTitle = selectedCompany.charAt(0).toUpperCase() + selectedCompany.slice(1);
     }
+    if (!compTitle) {
+      compTitle = tenant ? tenant.charAt(0).toUpperCase() + tenant.slice(1) : 'Indisutex';
+    }
+    
+    const titleStr = `${compTitle} Admin`;
+    document.title = titleStr;
+
+    // Actualizar enlace permanente en la barra de navegación (ej: /sublimados_majestic/admin)
+    const expectedPath = `/${tenant}/admin`;
+    if (window.location.pathname === '/admin' || (window.location.pathname.endsWith('/admin') && !window.location.pathname.startsWith(`/${tenant}`))) {
+      window.history.replaceState(null, '', `${expectedPath}${window.location.search}${window.location.hash}`);
+    }
+
+    updatePWAManifestAndIcons(logoUrl, titleStr);
 
     if (configuracion) {
       if (configuracion.color_primario) {
         document.documentElement.style.setProperty('--primary-color', configuracion.color_primario);
-        localStorage.setItem(`admin_primary_color_${getTenantId()}`, configuracion.color_primario);
+        localStorage.setItem(`admin_primary_color_${tenant}`, configuracion.color_primario);
         // Extraer RGB para transparencias rgba()
         const hex = configuracion.color_primario.replace('#', '');
         if (hex.length === 6) {
@@ -1450,10 +1447,10 @@ export default function Admin() {
       } else {
         document.documentElement.style.setProperty('--primary-color', '#6366f1');
         document.documentElement.style.setProperty('--primary-rgb', '99, 102, 241');
-        localStorage.removeItem(`admin_primary_color_${getTenantId()}`);
+        localStorage.removeItem(`admin_primary_color_${tenant}`);
       }
     }
-  }, [configuracion]);
+  }, [configuracion, selectedCompany, currentMayorista, role]);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {

@@ -11,13 +11,10 @@ export const getTenantId = () => {
   // First check URL path (slug)
   const pathname = window.location.pathname.replace(/^\/+/g, '').trim();
   const firstPart = pathname.split('/')[0].toLowerCase();
-  const validTenants = [
-    'saramantha', 'sublimados_majestic', 'pijamas_lucerito', 
-    'sublimados-majestic', 'pijamas-lucerito', 'indisutex',
-    'lovely'
-  ];
   
-  if (firstPart && validTenants.includes(firstPart)) {
+  const systemRoutes = ['admin', 'superadmin', 'pago', 'menu', 'dist', 'assets', 'api', 'sw.js', 'manifest.json'];
+  
+  if (firstPart && !systemRoutes.includes(firstPart)) {
     const normalised = firstPart.replace(/-/g, '_');
     setTenantId(normalised);
     return normalised;
@@ -27,16 +24,17 @@ export const getTenantId = () => {
   const urlParams = new URLSearchParams(window.location.search);
   const urlTenant = urlParams.get('tienda');
   if (urlTenant) {
-    setTenantId(urlTenant);
-    return urlTenant;
+    const normalised = urlTenant.replace(/-/g, '_');
+    setTenantId(normalised);
+    return normalised;
   }
   
   // Then check localStorage
   const stored = localStorage.getItem('tenant_id');
   if (stored) return stored;
   
-  // Fallback to env or default
-  return import.meta.env.VITE_TENANT_ID || 'saramantha';
+  // Fallback to default
+  return import.meta.env.VITE_TENANT_ID || 'sublimados_majestic';
 };
 
 export const setTenantId = (id: string) => {
