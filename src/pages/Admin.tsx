@@ -157,6 +157,10 @@ type ProductFormData = {
   estampados: string;
   stock: number;
   descuento: string;
+  es_producto_familiar?: boolean;
+  precio_nino?: string;
+  precio_hombre?: string;
+  precio_mujer?: string;
 };
 
 const emptyProduct: ProductFormData = {
@@ -174,7 +178,11 @@ const emptyProduct: ProductFormData = {
   tallas: '',
   estampados: '',
   stock: 0,
-  descuento: ''
+  descuento: '',
+  es_producto_familiar: false,
+  precio_nino: '',
+  precio_hombre: '',
+  precio_mujer: ''
 };
 
 type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor' | 'material_apoyo' | 'material_asesor' | 'productos_asesor' | 'productos_mayorista' | 'ranking_mayorista' | 'pqrs' | 'contabilidad' | 'erp';
@@ -1775,6 +1783,12 @@ export default function Admin() {
       const allEstampadosList = Array.from(new Set(allImgs.map(img => ((img as any).estampado || img.ref)?.trim()).filter(Boolean)));
       const estampadosStr = allEstampadosList.length > 0 ? allEstampadosList.join(', ') : (f.estampados || null);
 
+      const preciosFam = f.es_producto_familiar ? {
+        nino: parseFloat(f.precio_nino || '0') || null,
+        hombre: parseFloat(f.precio_hombre || '0') || null,
+        mujer: parseFloat(f.precio_mujer || '0') || null
+      } : null;
+
       return {
         nombre: f.nombre,
         referencia: f.referencia || f.sku || null,
@@ -1791,6 +1805,8 @@ export default function Admin() {
         estampados: estampadosStr,
         stock: f.stock || 0,
         descuento: parseInt(f.descuento) || 0,
+        es_producto_familiar: !!f.es_producto_familiar,
+        precios_familia: preciosFam,
         tenant_id: getTenantId()
       };
     });
@@ -2239,6 +2255,12 @@ export default function Admin() {
     // Always overwrite — never fall back to old estampados in DB. If no images have estampados/refs, clear it.
     const estampadosStr = allEstampadosList.length > 0 ? allEstampadosList.join(', ') : null;
 
+    const preciosFam = editingProduct.es_producto_familiar ? {
+      nino: typeof (editingProduct.precios_familia as any)?.nino === 'string' ? parseFloat((editingProduct.precios_familia as any).nino) || null : (editingProduct.precios_familia?.nino ?? null),
+      hombre: typeof (editingProduct.precios_familia as any)?.hombre === 'string' ? parseFloat((editingProduct.precios_familia as any).hombre) || null : (editingProduct.precios_familia?.hombre ?? null),
+      mujer: typeof (editingProduct.precios_familia as any)?.mujer === 'string' ? parseFloat((editingProduct.precios_familia as any).mujer) || null : (editingProduct.precios_familia?.mujer ?? null),
+    } : null;
+
     const { error } = await supabase.from('productos').update({
       nombre: editingProduct.nombre,
       referencia: editingProduct.referencia || editingProduct.sku || null,
@@ -2254,7 +2276,9 @@ export default function Admin() {
       tallas: editingProduct.tallas,
       estampados: estampadosStr,
       stock: editingProduct.stock,
-      descuento: editingProduct.descuento || 0
+      descuento: editingProduct.descuento || 0,
+      es_producto_familiar: !!editingProduct.es_producto_familiar,
+      precios_familia: preciosFam
     }).eq('id', editingProduct.id);
     setLoading(false);
     if (error) showToast('Error al actualizar', 'error');

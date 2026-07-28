@@ -20,6 +20,12 @@ export interface Producto {
   created_at: string;
   oculto?: boolean;
   descuento?: number;
+  es_producto_familiar?: boolean;
+  precios_familia?: {
+    nino?: number | null;
+    hombre?: number | null;
+    mujer?: number | null;
+  } | null;
 }
 
 export interface Categoria {
