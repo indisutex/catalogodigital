@@ -4881,17 +4881,17 @@ export default function Admin() {
                       <h3><Package size={16} /> Inventario ({filteredProducts.length})</h3>
                       <p>Todos los productos publicados en tu tienda</p>
                     </div>
-                    <div className="panel-header-actions">
+                    <div className="panel-header-actions" style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
                       <button 
                         className="btn-primary hover-lift" 
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1.1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem' }}
+                        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', height: '38px', padding: '0 1.1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.83rem', boxShadow: '0 2px 6px rgba(99,102,241,0.25)' }}
                         onClick={() => { setBulkForms([{ ...emptyProduct }]); setIsAddingProduct(true); }}
                       >
                         <Plus size={16} /> Nuevo Producto
                       </button>
                       <button 
                         className="btn-secondary hover-lift" 
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', border: '1px solid #bae6fd', color: '#0369a1', background: '#f0f9ff', padding: '0.55rem 1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.82rem' }}
+                        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', height: '38px', border: '1.5px solid #bae6fd', color: '#0284c7', background: '#f0f9ff', padding: '0 1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem' }}
                         onClick={() => { setShowMigrateProductsModal(true); setSelectedSourceTenant(''); setSourceProducts([]); setSelectedProductIdsToMigrate([]); }}
                         title="Copiar masivamente productos de otra tienda o empresa"
                       >
@@ -4899,16 +4899,16 @@ export default function Admin() {
                       </button>
                       <button 
                         className="btn-secondary hover-lift" 
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', border: '1px solid #fca5a5', color: '#b91c1c', background: '#fee2e2', padding: '0.55rem 1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.82rem' }}
+                        style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', height: '38px', border: '1.5px solid #fecaca', color: '#dc2626', background: '#fef2f2', padding: '0 1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem' }}
                         onClick={() => setShowToolsModal(true)}
                       >
                         🔧 Depurar Catálogo
                       </button>
 
                       {/* Control Promocional */}
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', border: '1px solid #fed7aa', background: '#fff7ed', padding: '0.45rem 0.8rem', borderRadius: '10px', fontSize: '0.82rem', height: '36px' }}>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', border: '1.5px solid #fed7aa', background: '#fff7ed', padding: '0 0.8rem', borderRadius: '10px', fontSize: '0.82rem', height: '38px' }}>
                         <span style={{ fontWeight: 800, color: '#c2410c', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                          <Tag size={13} /> Promo:
+                          <Tag size={14} /> Promo:
                         </span>
                         <select
                           value={configuracion?.descuento_promocional || 0}
@@ -4927,7 +4927,7 @@ export default function Admin() {
                               showToast(desc > 0 ? `Descuento del ${desc}% aplicado a todo el catálogo ✓` : 'Descuento promocional desactivado ✓');
                             }
                           }}
-                          style={{ border: '1px solid #fdba74', borderRadius: '6px', padding: '0.15rem 0.3rem', outline: 'none', background: 'white', color: '#c2410c', fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' }}
+                          style={{ border: '1px solid #fdba74', borderRadius: '6px', padding: '0.2rem 0.4rem', outline: 'none', background: 'white', color: '#c2410c', fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' }}
                         >
                           <option value={0}>Sin Descuento</option>
                           <option value={5}>Bajar 5%</option>
@@ -12601,17 +12601,6 @@ function SidebarContent({
               <span className="nav-icon"><ShoppingBag size={14} /></span> Pedidos
               {activeTab === 'pedidos' && <span className="active-dot"></span>}
             </button>
-            <button className={`nav-item ${activeTab === 'pqrs' ? 'active' : ''}`} onClick={() => handleSelectTab('pqrs')} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingRight: '0.75rem' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span className="nav-icon"><LifeBuoy size={14} /></span> Soporte / PQRS
-              </span>
-              {listaPqrs.filter(p => p.estado === 'pendiente').length > 0 && (
-                <span style={{ background: '#ef4444', color: 'white', fontSize: '0.7rem', padding: '1px 6px', borderRadius: '10px', fontWeight: 800 }}>
-                  {listaPqrs.filter(p => p.estado === 'pendiente').length}
-                </span>
-              )}
-              {activeTab === 'pqrs' && listaPqrs.filter(p => p.estado === 'pendiente').length === 0 && <span className="active-dot"></span>}
-            </button>
             <button className={`nav-item ${activeTab === 'clientes' ? 'active' : ''}`} onClick={() => handleSelectTab('clientes')}>
               <span className="nav-icon"><User size={14} /></span> Clientes
               {activeTab === 'clientes' && <span className="active-dot"></span>}
@@ -12624,10 +12613,6 @@ function SidebarContent({
               <span className="nav-icon"><Users size={14} /></span> Mayoristas
               {activeTab === 'mayoristas' && <span className="active-dot"></span>}
             </button>
-            <button className={`nav-item ${activeTab === 'siigo' ? 'active' : ''}`} onClick={() => handleSelectTab('siigo')}>
-              <span className="nav-icon"><Code size={14} /></span> Desarrollador
-              {activeTab === 'siigo' && <span className="active-dot"></span>}
-            </button>
             <button className={`nav-item ${activeTab === 'material_apoyo' ? 'active' : ''}`} onClick={() => handleSelectTab('material_apoyo')}>
               <span className="nav-icon"><Upload size={14} /></span> Material de Apoyo
               {activeTab === 'material_apoyo' && <span className="active-dot"></span>}
@@ -12639,6 +12624,21 @@ function SidebarContent({
             <button className={`nav-item ${activeTab === 'config' ? 'active' : ''}`} onClick={() => handleSelectTab('config')}>
               <span className="nav-icon"><Settings size={14} /></span> Configuración
               {activeTab === 'config' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'siigo' ? 'active' : ''}`} onClick={() => handleSelectTab('siigo')}>
+              <span className="nav-icon"><Code size={14} /></span> Desarrollador
+              {activeTab === 'siigo' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'pqrs' ? 'active' : ''}`} onClick={() => handleSelectTab('pqrs')} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingRight: '0.75rem' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span className="nav-icon"><LifeBuoy size={14} /></span> Soporte / PQRS
+              </span>
+              {listaPqrs.filter(p => p.estado === 'pendiente').length > 0 && (
+                <span style={{ background: '#ef4444', color: 'white', fontSize: '0.7rem', padding: '1px 6px', borderRadius: '10px', fontWeight: 800 }}>
+                  {listaPqrs.filter(p => p.estado === 'pendiente').length}
+                </span>
+              )}
+              {activeTab === 'pqrs' && listaPqrs.filter(p => p.estado === 'pendiente').length === 0 && <span className="active-dot"></span>}
             </button>
           </>
         )}

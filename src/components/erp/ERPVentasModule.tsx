@@ -139,6 +139,47 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
+  const handleGuardarEgreso = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!egresoForm.concepto || !egresoForm.monto) return;
+    try {
+      const montoNum = Number(egresoForm.monto);
+      await ERPVentasService.registrarEgreso({
+        tenant_id: tenantId,
+        fecha: egresoForm.fecha,
+        categoria: egresoForm.categoria,
+        concepto: egresoForm.concepto,
+        proveedor_nombre: egresoForm.proveedor_nombre,
+        monto: montoNum,
+        metodo_pago: egresoForm.metodo_pago,
+        notas: egresoForm.notas
+      });
+
+      // Si seleccionó una cuenta de tesorería, registrar también movimiento y descontar saldo
+      if (egresoForm.cuenta_id) {
+        await ERPTesoreriaService.registrarMovimiento({
+          tenant_id: tenantId,
+          cuenta_id: egresoForm.cuenta_id,
+          tipo: 'Egreso',
+          categoria: egresoForm.categoria,
+          concepto: egresoForm.concepto,
+          monto: montoNum,
+          fecha: egresoForm.fecha,
+          notas: egresoForm.notas
+        });
+
+        const cta = cuentasTesoreria.find(c => c.id === egresoForm.cuenta_id);
+        if (cta) {
+          await ERPTesoreriaService.actualizarSaldoCuenta(cta.id, Number(cta.saldo_actual) - montoNum);
+        }
+      }
+
+      setShowEgresoModal(false);
+      setEgresoForm({ fecha: new Date().toISOString().split('T')[0], categoria: 'Transporte y Envíos', concepto: '', proveedor_nombre: '', monto: '', metodo_pago: 'Efectivo', cuenta_id: '', notas: '' });
+      loadAll();
+    } catch (err: any) { alert(err.message); }
+  };
+
   // Resolver nombre de Asesor y Canal (POS / Catálogo)
   const getVentaAsesorInfo = (v: Pedido) => {
     const isPos = v.origen === 'pos' || (Boolean(v.linea_whatsapp) && v.linea_whatsapp.startsWith('pos'));

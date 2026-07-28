@@ -21,6 +21,8 @@ import {
   CheckCircle2,
   HelpCircle,
   BookOpen,
+  Receipt,
+  Package,
   Search,
   X,
   Printer,

@@ -362,18 +362,20 @@
 }
 
 .item-details h4, .item-name {
-  font-size: 0.84rem !important;
+  font-size: 0.76rem !important;
   font-weight: 700 !important;
   color: #0f172a !important;
   margin: 0 0 0.35rem 0 !important;
-  line-height: 1.35 !important;
-  text-transform: capitalize;
+  line-height: 1.25 !important;
+  letter-spacing: -0.15px;
+  text-transform: uppercase;
   display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
   text-overflow: ellipsis;
+  word-break: break-word;
 }
 
 .item-price {
