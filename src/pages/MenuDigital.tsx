@@ -1117,30 +1117,29 @@ export default function MenuDigital() {
               </button>
             </div>
 
-            {/* Shrine Free Shipping Progress Bar */}
-            {items.length > 0 && (
-              <div className="shrine-shipping-bar" style={{ padding: '0.75rem 1.5rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+            {/* Wholesale Discount 6-Product Progress Bar */}
+            {items.length > 0 && (configuracion?.descuento_mayor_carrito_activo ?? true) && (buyerType === 'detal' || buyerType === null) && (
+              <div className="shrine-shipping-bar" style={{ padding: '0.45rem 1rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                 {(() => {
-                  const limit = 150000; // $150.000 COP
-                  const diff = limit - total;
-                  const pct = Math.min(100, (total / limit) * 100);
+                  const remaining = Math.max(0, 6 - totalUnits);
+                  const pct = Math.min(100, (totalUnits / 6) * 100);
                   return (
                     <div>
-                      <p style={{ margin: '0 0 0.4rem 0', fontSize: '0.82rem', fontWeight: 700, color: '#334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        {diff > 0 ? (
+                      <p style={{ margin: '0 0 0.35rem 0', fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        {remaining > 0 ? (
                           <>
-                            <span>Te faltan <strong style={{ color: '#0ea5e9' }}>${diff.toLocaleString('es-CO')}</strong> para envío gratis</span>
-                            <span>🚚</span>
+                            <span>Agrega <strong style={{ color: '#059669' }}>{remaining} {remaining === 1 ? 'producto más' : 'productos más'}</strong> para obtener <strong style={{ color: '#059669' }}>Precio al por mayor</strong></span>
+                            <span style={{ fontSize: '0.85rem' }}>📦 {totalUnits}/6</span>
                           </>
                         ) : (
                           <>
-                            <span style={{ color: '#10b981' }}>🎉 ¡Felicidades! Tienes Envío Gratis</span>
-                            <span>🚚</span>
+                            <span style={{ color: '#059669', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>🎉 <strong>¡Felicidades! Precio al Por Mayor Aplicado</strong></span>
+                            <span>🎁</span>
                           </>
                         )}
                       </p>
                       <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-                        <div style={{ height: '100%', width: `${pct}%`, background: pct >= 100 ? '#10b981' : '#0ea5e9', transition: 'width 0.3s ease' }} />
+                        <div style={{ height: '100%', width: `${pct}%`, background: pct >= 100 ? 'linear-gradient(90deg, #10b981, #059669)' : 'linear-gradient(90deg, #34d399, #10b981)', transition: 'width 0.3s ease' }} />
                       </div>
                     </div>
                   );
@@ -1231,23 +1230,6 @@ export default function MenuDigital() {
             ) : (
               <>
                 <div className="cart-items">
-                  {items.length > 0 && isBulkDiscountApplied && (
-                    <div className="bulk-discount-banner">
-                      <span style={{ fontSize: '1.4rem' }}>🎁</span>
-                      <div>
-                        <div style={{ fontWeight: 800, fontSize: '0.9rem' }}>¡Descuento al Por Mayor Aplicado!</div>
-                        <div style={{ opacity: 0.95, fontSize: '0.78rem' }}>Por acumular 6 o más productos, ¡tus artículos en el carrito ahora tienen precio al por mayor!</div>
-                      </div>
-                    </div>
-                  )}
-
-                  {items.length > 0 && !isBulkDiscountApplied && (buyerType === 'detal' || buyerType === null) && (configuracion?.descuento_mayor_carrito_activo ?? true) && (
-                    <div className="bulk-discount-progress">
-                      <span>💡</span>
-                      <span>Agrega <strong>{6 - totalUnits}</strong> {6 - totalUnits === 1 ? 'producto más' : 'productos más'} para obtener automáticamente <strong>precios al por mayor</strong> en tu carrito.</span>
-                    </div>
-                  )}
-
                   {items.length === 0 ? (
                     <p className="empty-cart">Tu carrito está vacío.</p>
                   ) : (
@@ -1293,40 +1275,40 @@ export default function MenuDigital() {
                   )}
                 </div>
 
-                {/* Seccion de Upsell / Recomendados */}
+                {/* Seccion de Upsell / Recomendados (Compacto) */}
                 {items.length > 0 && recommendedProducts.length > 0 && (
-                  <div style={{ margin: '1rem', padding: '1rem', backgroundColor: '#fff0f6', borderRadius: '12px', border: '1px solid #fbcfe8' }}>
-                    <h4 style={{ color: '#be185d', fontSize: '0.95rem', margin: '0 0 1rem 0', fontWeight: 700, textAlign: 'center', fontFamily: 'Outfit, sans-serif' }}>
+                  <div style={{ margin: '0.35rem 0.75rem 0.5rem', padding: '0.45rem 0.65rem', backgroundColor: '#fff0f6', borderRadius: '10px', border: '1px solid #fbcfe8' }}>
+                    <h4 style={{ color: '#be185d', fontSize: '0.78rem', margin: '0 0 0.35rem 0', fontWeight: 800, textAlign: 'center', fontFamily: 'Outfit, sans-serif' }}>
                       También te pueden interesar:
                     </h4>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                       {recommendedProducts.map((p: Producto) => (
-                        <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', backgroundColor: 'white', padding: '0.75rem', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                          <div style={{ width: '50px', height: '50px', flexShrink: 0, borderRadius: '6px', overflow: 'hidden', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'white', padding: '0.35rem 0.5rem', borderRadius: '6px', boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
+                          <div style={{ width: '38px', height: '38px', flexShrink: 0, borderRadius: '4px', overflow: 'hidden', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             {p.imagen_url ? (
                               <img src={p.imagen_url} alt={p.nombre} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             ) : (p.imagenes_extra && p.imagenes_extra.length > 0 && decodeExtraImage(p.imagenes_extra[0]).url) ? (
                               <img src={decodeExtraImage(p.imagenes_extra[0]).url} alt={p.nombre} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             ) : (
-                              <Package size={20} color="#94a3b8" />
+                              <Package size={16} color="#94a3b8" />
                             )}
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <h5 style={{ margin: '0 0 0.25rem 0', fontSize: '0.85rem', color: '#1e293b', lineHeight: '1.2', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{p.nombre}</h5>
-                            <p style={{ margin: 0, color: '#e11d48', fontWeight: 800, fontSize: '0.9rem' }}>
+                            <h5 style={{ margin: 0, fontSize: '0.78rem', color: '#1e293b', lineHeight: '1.15', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.nombre}</h5>
+                            <p style={{ margin: '1px 0 0 0', color: '#e11d48', fontWeight: 800, fontSize: '0.82rem' }}>
                               ${getEffectivePrice(p, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional).toLocaleString('es-CO')}
                             </p>
                           </div>
                           <button
                             onClick={() => {
                               const pTalla = p.tallas?.split(',')[0]?.trim();
-                               const imgEstampados = (p.imagenes_extra || []).map(u => { const d = decodeExtraImage(u); return (d.estampado || d.ref)?.trim(); }).filter(Boolean);
-                               const legacyEstampados = p.estampados?.split(',').map(e => e.trim()).filter(Boolean) || [];
-                               const allEstampados = imgEstampados.length > 0 ? Array.from(new Set(imgEstampados)) : legacyEstampados;
+                              const imgEstampados = (p.imagenes_extra || []).map(u => { const d = decodeExtraImage(u); return (d.estampado || d.ref)?.trim(); }).filter(Boolean);
+                              const legacyEstampados = p.estampados?.split(',').map(e => e.trim()).filter(Boolean) || [];
+                              const allEstampados = imgEstampados.length > 0 ? Array.from(new Set(imgEstampados)) : legacyEstampados;
                               const pEstampado = allEstampados[0] || undefined;
                               addToCart(p, pTalla, pEstampado, 1);
                             }}
-                            style={{ backgroundColor: '#e11d48', color: 'white', border: 'none', padding: '0.4rem 0.75rem', borderRadius: '6px', fontSize: '0.85rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                            style={{ backgroundColor: '#e11d48', color: 'white', border: 'none', padding: '0.25rem 0.55rem', borderRadius: '5px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
                           >
                             + Agregar
                           </button>
@@ -1336,20 +1318,15 @@ export default function MenuDigital() {
                   </div>
                 )}
 
-                <div className="cart-footer">
-                  {/* Trust & Urgency Badges inside Cart */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', marginBottom: '0.85rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#fef2f2', border: '1px solid #fee2e2', color: '#991b1b', padding: '0.45rem 0.65rem', borderRadius: '8px', fontSize: '0.76rem', fontWeight: 700 }}>
-                      <span>🔥</span>
-                      <span>Quedan muy pocas unidades de las referencias seleccionadas</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#f0fdf4', border: '1px solid #dcfce7', color: '#166534', padding: '0.45rem 0.65rem', borderRadius: '8px', fontSize: '0.76rem', fontWeight: 600 }}>
-                      <span>🛡️</span>
-                      <span>Compra 100% protegida y despachada por WhatsApp</span>
-                    </div>
+                <div className="cart-footer" style={{ padding: '0.65rem 0.85rem' }}>
+                  {/* Trust & Urgency Badges inside Cart (Compact 1-row) */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.35rem', marginBottom: '0.5rem', background: '#f8fafc', padding: '0.35rem 0.6rem', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.72rem', color: '#334155', fontWeight: 600 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>🔥 <strong>Pocas unidades</strong></span>
+                    <span style={{ color: '#cbd5e1' }}>•</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>🛡️ <strong>Despacho protegido</strong></span>
                   </div>
 
-                  <div className="cart-total">
+                  <div className="cart-total" style={{ margin: '0 0 0.45rem 0', fontSize: '1.1rem' }}>
                     <span>Total:</span>
                     <span>${total.toLocaleString('es-CO')}</span>
                   </div>
@@ -1357,6 +1334,7 @@ export default function MenuDigital() {
                     className="checkout-btn" 
                     disabled={items.length === 0}
                     onClick={() => setIsCheckoutMode(true)}
+                    style={{ padding: '0.75rem', fontSize: '0.95rem', borderRadius: '12px' }}
                   >
                     Continuar Pedido
                   </button>
