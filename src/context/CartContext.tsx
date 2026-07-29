@@ -81,6 +81,11 @@ interface CartContextType {
   setAjustesProductos: (val: any) => void;
   descuentoPromocional: number;
   setDescuentoPromocional: (val: number) => void;
+  isBulkDiscountEnabled: boolean;
+  setIsBulkDiscountEnabled: (val: boolean) => void;
+  totalUnits: number;
+  isBulkDiscountApplied: boolean;
+  effectiveCartBuyerType: BuyerType;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -111,6 +116,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   });
 
   const [descuentoPromocional, setDescuentoPromocional] = useState<number>(0);
+  const [isBulkDiscountEnabled, setIsBulkDiscountEnabled] = useState<boolean>(true);
 
   useEffect(() => {
     const tenantId = getTenantId() || 'saramantha';
@@ -170,10 +176,37 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = () => setItems([]);
 
-  const total = items.reduce((sum, item) => sum + (getEffectivePrice(item, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * item.cantidad), 0);
+  const totalUnits = items.reduce((sum, item) => sum + item.cantidad, 0);
+  const isBulkDiscountApplied = isBulkDiscountEnabled && (buyerType === 'detal' || buyerType === null) && totalUnits >= 6;
+  const effectiveCartBuyerType: BuyerType = isBulkDiscountApplied ? 'mayorista' : buyerType;
+
+  const total = items.reduce(
+    (sum, item) => sum + (getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * item.cantidad),
+    0
+  );
 
   return (
-    <CartContext.Provider value={{ items, addToCart, removeFromCart, updateQuantity, clearCart, total, buyerType, setBuyerType, markupPorcentaje, setMarkupPorcentaje, ajustesProductos, setAjustesProductos, descuentoPromocional, setDescuentoPromocional }}>
+    <CartContext.Provider value={{ 
+      items, 
+      addToCart, 
+      removeFromCart, 
+      updateQuantity, 
+      clearCart, 
+      total, 
+      buyerType, 
+      setBuyerType, 
+      markupPorcentaje, 
+      setMarkupPorcentaje, 
+      ajustesProductos, 
+      setAjustesProductos, 
+      descuentoPromocional, 
+      setDescuentoPromocional,
+      isBulkDiscountEnabled,
+      setIsBulkDiscountEnabled,
+      totalUnits,
+      isBulkDiscountApplied,
+      effectiveCartBuyerType
+    }}>
       {children}
     </CartContext.Provider>
   );

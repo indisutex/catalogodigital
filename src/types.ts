@@ -65,6 +65,7 @@ export interface Configuracion {
   meta_pixel_id?: string;
   clarity_project_id?: string;
   preguntar_tipo_cliente?: boolean;
+  descuento_mayor_carrito_activo?: boolean;
   admin_nombre?: string;
   admin_foto_url?: string;
   admin_pin?: string;

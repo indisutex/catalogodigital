@@ -7319,6 +7319,7 @@ export default function Admin() {
                       admin_foto_url: configuracion.admin_foto_url,
                       admin_pin: configuracion.admin_pin || '0000',
                       preguntar_tipo_cliente: configuracion.preguntar_tipo_cliente || false,
+                      descuento_mayor_carrito_activo: configuracion.descuento_mayor_carrito_activo ?? true,
                       metodos_pago: configuracion.metodos_pago,
                       impresora_termica_ancho: configuracion.impresora_termica_ancho || '58mm',
                       formato_ticket_pos: configuracion.formato_ticket_pos || 'termico'
@@ -7327,7 +7328,8 @@ export default function Admin() {
                     try {
                       localStorage.setItem(`config_extra_${configuracion.id}`, JSON.stringify({
                         impresora_termica_ancho: updateData.impresora_termica_ancho,
-                        formato_ticket_pos: updateData.formato_ticket_pos
+                        formato_ticket_pos: updateData.formato_ticket_pos,
+                        descuento_mayor_carrito_activo: updateData.descuento_mayor_carrito_activo
                       }));
                     } catch (e) {}
                     
@@ -7337,6 +7339,7 @@ export default function Admin() {
                       const fallbackData = { ...updateData };
                       delete fallbackData.impresora_termica_ancho;
                       delete fallbackData.formato_ticket_pos;
+                      delete fallbackData.descuento_mayor_carrito_activo;
                       if (error.message && error.message.includes('color_primario')) {
                         delete fallbackData.color_primario;
                       }
@@ -7505,7 +7508,7 @@ export default function Admin() {
                             />
                           </div>
                         </div>
-                        <div className="form-field full">
+                        <div className="form-field full" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                           <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', margin: 0 }}>
                             <input 
                               type="checkbox" 
@@ -7514,6 +7517,15 @@ export default function Admin() {
                               style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer', accentColor: configuracion.color_primario || '#6366f1' }}
                             />
                             Mostrar pantalla "¿Qué tipo de cliente eres?" al inicio
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', margin: 0 }}>
+                            <input 
+                              type="checkbox" 
+                              checked={configuracion.descuento_mayor_carrito_activo ?? true} 
+                              onChange={e => setConfiguracion({ ...configuracion, descuento_mayor_carrito_activo: e.target.checked })} 
+                              style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer', accentColor: configuracion.color_primario || '#6366f1' }}
+                            />
+                            🎁 Activar descuento al por mayor automático en el carrito (al acumular 6 o más productos en compras al detal)
                           </label>
                         </div>
                       </div>

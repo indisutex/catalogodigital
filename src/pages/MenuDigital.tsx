@@ -120,7 +120,7 @@ export default function MenuDigital() {
         // Primero buscar en asesores
         const { data: asesoresData } = await supabase
           .from('asesores')
-          .select('id, telefono, porcentaje_ganancia, ajustes_productos')
+          .select('id, nombre, telefono, porcentaje_ganancia, ajustes_productos, foto_url')
           .eq('tenant_id', tenant);
 
         const cleanQuery = phone.replace(/\D/g, '');
@@ -137,6 +137,13 @@ export default function MenuDigital() {
           if (match) {
             setMarkupPorcentaje(Number((match as any).porcentaje_ganancia) || 0);
             setAjustesProductos((match as any).ajustes_productos || {});
+            if ((match as any).foto_url || (match as any).nombre) {
+              setMayoristaBranding({
+                nombre: (match as any).nombre || '',
+                logo: (match as any).foto_url || '',
+                video: ''
+              });
+            }
             return;
           }
         }
@@ -383,11 +390,19 @@ export default function MenuDigital() {
 
 
   
-  const { items, addToCart, removeFromCart, updateQuantity, total, clearCart, buyerType, setBuyerType, markupPorcentaje, setMarkupPorcentaje, ajustesProductos, setAjustesProductos, descuentoPromocional, setDescuentoPromocional } = useCart();
+  const { 
+    items, addToCart, removeFromCart, updateQuantity, total, clearCart, 
+    buyerType, setBuyerType, markupPorcentaje, setMarkupPorcentaje, 
+    ajustesProductos, setAjustesProductos, descuentoPromocional, setDescuentoPromocional,
+    setIsBulkDiscountEnabled, totalUnits, isBulkDiscountApplied, effectiveCartBuyerType 
+  } = useCart();
 
   useEffect(() => {
     setDescuentoPromocional(configuracion?.descuento_promocional || 0);
-  }, [configuracion, setDescuentoPromocional]);
+    if (configuracion) {
+      setIsBulkDiscountEnabled(configuracion.descuento_mayor_carrito_activo ?? true);
+    }
+  }, [configuracion, setDescuentoPromocional, setIsBulkDiscountEnabled]);
 
   const [formData, setFormData] = useState({
     nombre: '',
@@ -572,17 +587,20 @@ export default function MenuDigital() {
     // Construir el mensaje para WhatsApp
     let buyerLabel = '';
     if (buyerType === 'mayorista') buyerLabel = 'Mayorista';
-    if (buyerType === 'detal') buyerLabel = 'Al detal';
+    if (buyerType === 'detal' || buyerType === null) buyerLabel = isBulkDiscountApplied ? 'Al detal (Con descuento por mayor aplicable)' : 'Al detal';
     if (buyerType === '50_unidades') buyerLabel = '50+ unidades';
 
     let mensaje = `Hola, mi nombre es ${formData.nombre}.\n`;
     mensaje += `*Tipo de compra:* ${buyerLabel}\n`;
+    if (isBulkDiscountApplied) {
+      mensaje += `🎁 *¡Descuento al Por Mayor Aplicado!* (Llevas 6 o más productos)\n`;
+    }
     mensaje += `*Teléfono:* ${formData.telefono}\n`;
     mensaje += `*Dirección:* ${formData.direccion}, ${formData.ciudad}\n\n`;
     
     mensaje += `*PRODUCTOS:*\n`;
     const mensajeProductos = items.map(item => 
-      `- ${item.cantidad}x ${item.nombre} ${item.talla ? `(Talla: ${item.talla}) ` : ''}${item.estampado ? `(Estampado: ${item.estampado}) ` : ''}- $${(getEffectivePrice(item, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * item.cantidad).toLocaleString('es-CO')}`
+      `- ${item.cantidad}x ${item.nombre} ${item.talla ? `(Talla: ${item.talla}) ` : ''}${item.estampado ? `(Estampado: ${item.estampado}) ` : ''}- $${(getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * item.cantidad).toLocaleString('es-CO')}`
     ).join('\n');
     mensaje += mensajeProductos;
     
@@ -1213,6 +1231,23 @@ export default function MenuDigital() {
             ) : (
               <>
                 <div className="cart-items">
+                  {items.length > 0 && isBulkDiscountApplied && (
+                    <div className="bulk-discount-banner">
+                      <span style={{ fontSize: '1.4rem' }}>🎁</span>
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: '0.9rem' }}>¡Descuento al Por Mayor Aplicado!</div>
+                        <div style={{ opacity: 0.95, fontSize: '0.78rem' }}>Por acumular 6 o más productos, ¡tus artículos en el carrito ahora tienen precio al por mayor!</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {items.length > 0 && !isBulkDiscountApplied && (buyerType === 'detal' || buyerType === null) && (configuracion?.descuento_mayor_carrito_activo ?? true) && (
+                    <div className="bulk-discount-progress">
+                      <span>💡</span>
+                      <span>Agrega <strong>{6 - totalUnits}</strong> {6 - totalUnits === 1 ? 'producto más' : 'productos más'} para obtener automáticamente <strong>precios al por mayor</strong> en tu carrito.</span>
+                    </div>
+                  )}
+
                   {items.length === 0 ? (
                     <p className="empty-cart">Tu carrito está vacío.</p>
                   ) : (
@@ -1231,7 +1266,19 @@ export default function MenuDigital() {
                           <h4>{item.nombre}</h4>
                           {item.talla && <p style={{fontSize: '0.8rem', color: '#666', margin: '2px 0'}}>Talla: {item.talla}</p>}
                           {item.estampado && <p style={{fontSize: '0.8rem', color: '#666', margin: '2px 0'}}>Estampado: {item.estampado}</p>}
-                          <p className="cart-item-price">${(getEffectivePrice(item, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * item.cantidad).toLocaleString('es-CO')}</p>
+                          <p className="cart-item-price">
+                            {isBulkDiscountApplied && getEffectivePrice(item, 'detal', markupPorcentaje, ajustesProductos, descuentoPromocional) > getEffectivePrice(item, 'mayorista', markupPorcentaje, ajustesProductos, descuentoPromocional) ? (
+                              <>
+                                <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.85em', marginRight: '0.4rem' }}>
+                                  ${(getEffectivePrice(item, 'detal', markupPorcentaje, ajustesProductos, descuentoPromocional) * item.cantidad).toLocaleString('es-CO')}
+                                </span>
+                                ${(getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * item.cantidad).toLocaleString('es-CO')}
+                                <span style={{ marginLeft: '0.4rem', fontSize: '0.68rem', background: '#dcfce7', color: '#166534', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 700 }}>Al por mayor</span>
+                              </>
+                            ) : (
+                              `$${(getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * item.cantidad).toLocaleString('es-CO')}`
+                            )}
+                          </p>
                           <div className="cart-item-qty">
                             <button onClick={() => updateQuantity(item.id, item.cantidad - 1, item.talla, item.estampado)}>-</button>
                             <span>{item.cantidad}</span>
