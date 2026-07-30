@@ -561,12 +561,13 @@ export default function MenuDigital() {
 
   const imageFitStyle = configuracion?.tarjeta_imagen_fit || 'cover';
   const imagePosStyle = configuracion?.tarjeta_imagen_posicion || 'top';
-  const imageAspectStyle = configuracion?.tarjeta_imagen_aspecto || '3/4';
+  const imageAspectStyle = configuracion?.tarjeta_imagen_aspecto || '4/5';
 
   const cardImageStyle = useMemo(() => {
-    let aspect = '3 / 4';
+    let aspect = '4 / 5';
     if (imageAspectStyle === '1/1') aspect = '1 / 1';
     else if (imageAspectStyle === '3/4') aspect = '3 / 4';
+    else if (imageAspectStyle === '4/5') aspect = '4 / 5';
     else if (imageAspectStyle === '4/3') aspect = '4 / 3';
     else if (imageAspectStyle === '16/9') aspect = '16 / 9';
     else if (imageAspectStyle === 'auto') aspect = 'auto';

@@ -7755,11 +7755,12 @@ export default function Admin() {
                             <div>
                               <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.35rem', display: 'block' }}>Proporción / Tamaño del Marco</label>
                               <select
-                                value={configuracion.tarjeta_imagen_aspecto || '3/4'}
+                                value={configuracion.tarjeta_imagen_aspecto || '4/5'}
                                 onChange={e => setConfiguracion({ ...configuracion, tarjeta_imagen_aspecto: e.target.value as any })}
                                 style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: 600, background: 'white' }}
                               >
-                                <option value="3/4">📱 Retrato / Vertical 3:4 (Recomendado Moda/Pijamas)</option>
+                                <option value="4/5">📱 Retrato Ancho 4:5 (Más Ancho - RECOMENDADO Collages/Moda)</option>
+                                <option value="3/4">📱 Retrato Esbelto 3:4</option>
                                 <option value="auto-fit">⚡ Auto-Tamaño Inteligente (Encuadre dinámico por foto)</option>
                                 <option value="1/1">⏹️ Cuadrado (1:1)</option>
                                 <option value="4/3">🖥️ Horizontal (4:3)</option>
