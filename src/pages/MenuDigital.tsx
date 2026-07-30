@@ -903,7 +903,7 @@ export default function MenuDigital() {
       </div>
 
       <div className="menu-app-body">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', width: '100%' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', marginBottom: '0.5rem', width: '100%' }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="categories-carousel" style={{ paddingBottom: '0.25rem' }}>
           <div 
