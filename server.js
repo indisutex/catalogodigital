@@ -18,7 +18,13 @@ app.use(express.static(path.join(__dirname, 'dist')));
 app.use((req, res) => {
   const indexPath = path.join(__dirname, 'dist', 'index.html');
   if (fs.existsSync(indexPath)) {
-    res.sendFile(indexPath);
+    try {
+      const html = fs.readFileSync(indexPath, 'utf-8');
+      res.setHeader('Content-Type', 'text/html');
+      res.send(html);
+    } catch (e) {
+      res.status(500).send(`Error interno leyendo el archivo: ${e.message}`);
+    }
   } else {
     res.status(404).send(`Error de Despliegue: No se encuentra el archivo compilado en ${indexPath}. Por favor, asegúrate de haber subido la carpeta 'dist'.`);
   }
