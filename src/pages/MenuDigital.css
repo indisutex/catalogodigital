@@ -713,23 +713,23 @@
   align-self: center;
 }
 
-/* Product List */
 .menu-list {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
+  gap: 0.5rem;
 }
 
 @media (max-width: 900px) {
   .menu-list {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
   }
 }
 
 @media (max-width: 480px) {
   .menu-list {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.65rem;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.45rem;
   }
 }
 
@@ -1830,8 +1830,8 @@
 /* ── Very small phones (≤ 360px) ── */
 @media (max-width: 360px) {
   .menu-list {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.5rem;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.38rem;
   }
   .menu-list-item {
     border-radius: 14px;
