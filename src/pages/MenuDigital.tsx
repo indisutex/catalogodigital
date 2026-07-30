@@ -116,6 +116,7 @@ export default function MenuDigital() {
   const [showTipoModal, setShowTipoModal] = useState(false);
   const [isGameModalOpen, setIsGameModalOpen] = useState(false);
   const [showTemuBanner, setShowTemuBanner] = useState(false);
+  const [isBurgerOpen, setIsBurgerOpen] = useState(false);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -726,111 +727,122 @@ export default function MenuDigital() {
           )
         )}
 
-        {/* Controles Flotantes Derecha: Juego + Tipo de Compra + Sonido */}
-        <div className="hero-right-controls">
-          <button
-            onClick={() => setIsGameModalOpen(true)}
-            className="hero-tipo-compra-pill"
-            style={{ 
-              background: 'linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%)', 
-              boxShadow: '0 4px 15px rgba(217, 70, 239, 0.45)',
-              border: '1px solid rgba(255, 255, 255, 0.85)'
-            }}
-            title="¡Juega La Noche Perfecta y gana 30% de descuento!"
-          >
-            <span style={{ fontSize: '0.85rem' }}>🎮</span>
-            <span className="hero-tipo-label" style={{ color: '#ffffff', fontWeight: 900 }}>Juegos & Premios</span>
-          </button>
-
-          <button
-            onClick={() => setShowTipoModal(true)}
-            className="hero-tipo-compra-pill"
-            style={{ background: configuracion?.color_primario || 'var(--primary, #0ea5e9)' }}
-            title="Cambiar tipo de compra"
-          >
-            <RefreshCw size={11} className="hero-tipo-icon" />
-            <span className="hero-tipo-label">Tipo:</span>
-            <span className="hero-tipo-badge">
-              {buyerType === 'mayorista' ? 'Mayorista' : buyerType === '50_unidades' ? '50+ Unid' : 'Detal'}
-            </span>
-            <span className="hero-tipo-cambiar">Cambiar</span>
-          </button>
-
-          {isMediaVideo(mayoristaBranding?.video || configuracion?.video_hero_url) && (
-            <button
-              onClick={() => {
-                const newMuted = !heroMuted;
-                setHeroMuted(newMuted);
-                if (heroVideoRef.current) {
-                  heroVideoRef.current.muted = newMuted;
-                  if (!newMuted) heroVideoRef.current.play().catch(() => {});
-                }
-              }}
-              className="hero-sound-btn"
-              title={heroMuted ? 'Activar sonido' : 'Silenciar'}
-            >
-              {heroMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-            </button>
-          )}
-        </div>
-
-        {/* Botón Flotante Info & PQRS / Ubicación */}
-        <button
-          onClick={() => setIsPqrsOpen(true)}
-          className="hero-pqrs-btn"
-          style={{ background: configuracion?.color_primario || 'var(--primary, #0284c7)' }}
-          title="Ubicación del Negocio, Teléfono, Correo e Info & PQRS"
-        >
-          <HelpCircle size={16} className="hero-pqrs-icon" />
-          <span className="hero-pqrs-text">Info & PQRS</span>
-        </button>
-        {/* ── HERO TOP HEADER ROW ── */}
-        <div className="header-bottom-bar" style={{
+        {/* ── HERO TOP HEADER ROW WITH HAMBURGER MENU & LOGO ── */}
+        <div className="header-top-nav" style={{
           position: 'absolute',
           top: '0.85rem',
           left: 0,
           width: '100%',
-          padding: '0 0.5rem',
+          padding: '0 0.8rem',
           boxSizing: 'border-box',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          zIndex: 25,
+          zIndex: 35,
           pointerEvents: 'none'
         }}>
-          {/* Top Left: Dropshipper Button */}
-          {(ajustesProductos?.botones_extra?.dropshipper_enabled ?? true) ? (
-            <a 
-              href={ajustesProductos?.botones_extra?.dropshipper_link || configuracion?.link_dropshipper || (() => {
-                let clean = (overrideWhatsApp || configuracion?.whatsapp || '').replace(/\D/g, '');
-                if (clean.length === 10) clean = '57' + clean;
-                return `https://wa.me/${clean}?text=Hola,%20soy%20dropshipper,%20me%20interesa%20trabajar%20con%20ustedes`;
-              })()} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="special-header-btn"
-              style={{ 
-                background: configuracion?.color_primario || '#f36b8e', 
-                color: '#ffffff', 
-                padding: '0.25rem 0.55rem', 
-                borderRadius: '20px', 
-                fontSize: '0.74rem', 
-                fontFamily: "'Bebas Neue', sans-serif",
-                letterSpacing: '0.5px',
-                fontWeight: 400, 
-                textDecoration: 'none', 
-                display: 'inline-flex', 
-                alignItems: 'center', 
-                gap: '0.2rem', 
-                border: 'none',
-                boxShadow: '0 4px 10px rgba(0, 0, 0, 0.35)',
-                pointerEvents: 'auto',
-                whiteSpace: 'nowrap'
-              }}
+          {/* Top Left: Thick Colorful Hamburger Button */}
+          <div style={{ pointerEvents: 'auto', position: 'relative' }}>
+            <button
+              className={`hero-burger-btn ${isBurgerOpen ? 'active' : ''}`}
+              onClick={() => setIsBurgerOpen(!isBurgerOpen)}
+              title="Menú de Opciones"
             >
-              {ajustesProductos?.botones_extra?.dropshipper_text || '🚀 ¿Dropshipper?'}
-            </a>
-          ) : <div />}
+              <span className="burger-line line-1"></span>
+              <span className="burger-line line-2"></span>
+              <span className="burger-line line-3"></span>
+            </button>
+
+            {/* Expanded Hamburger Drawer Menu */}
+            {isBurgerOpen && (
+              <div className="hero-burger-dropdown">
+                <div className="burger-dropdown-header">
+                  <span>MENÚ DE OPCIONES</span>
+                  <button onClick={() => setIsBurgerOpen(false)} className="burger-close-icon"><X size={16} /></button>
+                </div>
+
+                <div className="burger-dropdown-content">
+                  {/* Botón Dropshipper */}
+                  {(ajustesProductos?.botones_extra?.dropshipper_enabled ?? true) && (
+                    <a 
+                      href={ajustesProductos?.botones_extra?.dropshipper_link || configuracion?.link_dropshipper || (() => {
+                        let clean = (overrideWhatsApp || configuracion?.whatsapp || '').replace(/\D/g, '');
+                        if (clean.length === 10) clean = '57' + clean;
+                        return `https://wa.me/${clean}?text=Hola,%20soy%20dropshipper,%20me%20interesa%20trabajar%20con%20ustedes`;
+                      })()} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="burger-menu-item btn-dropshipper"
+                      onClick={() => setIsBurgerOpen(false)}
+                    >
+                      <span>🚀</span> {ajustesProductos?.botones_extra?.dropshipper_text || '¿Dropshipper?'}
+                    </a>
+                  )}
+
+                  {/* Botón Ganar Dinero */}
+                  {(ajustesProductos?.botones_extra?.earn_money_enabled ?? true) && (
+                    <a 
+                      href={ajustesProductos?.botones_extra?.earn_money_link || configuracion?.link_ganar_dinero || (() => {
+                        let clean = (overrideWhatsApp || configuracion?.whatsapp || '').replace(/\D/g, '');
+                        if (clean.length === 10) clean = '57' + clean;
+                        return `https://wa.me/${clean}?text=Hola,%20quiero%20saber%20cómo%20ganar%20dinero%20con%20ustedes`;
+                      })()} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="burger-menu-item btn-ganar-dinero"
+                      onClick={() => setIsBurgerOpen(false)}
+                    >
+                      <span>💸</span> {ajustesProductos?.botones_extra?.earn_money_text || 'Ganar Dinero'}
+                    </a>
+                  )}
+
+                  {/* Botón Juegos & Premios */}
+                  <button
+                    onClick={() => { setIsBurgerOpen(false); setIsGameModalOpen(true); }}
+                    className="burger-menu-item btn-juegos"
+                  >
+                    <span>🎮</span> Juegos & Premios
+                  </button>
+
+                  {/* Botón Tipo de Compra */}
+                  <button
+                    onClick={() => { setIsBurgerOpen(false); setShowTipoModal(true); }}
+                    className="burger-menu-item btn-tipo-compra"
+                    style={{ background: configuracion?.color_primario || 'var(--primary, #0ea5e9)' }}
+                  >
+                    <RefreshCw size={14} />
+                    <span>Tipo: <strong>{buyerType === 'mayorista' ? 'Mayorista' : buyerType === '50_unidades' ? '50+ Unid' : 'Detal'}</strong></span>
+                  </button>
+
+                  {/* Botón Info & PQRS */}
+                  <button
+                    onClick={() => { setIsBurgerOpen(false); setIsPqrsOpen(true); }}
+                    className="burger-menu-item btn-pqrs"
+                  >
+                    <HelpCircle size={14} /> Info & PQRS / Ubicación
+                  </button>
+
+                  {/* Botón Sonido Video */}
+                  {isMediaVideo(mayoristaBranding?.video || configuracion?.video_hero_url) && (
+                    <button
+                      onClick={() => {
+                        const newMuted = !heroMuted;
+                        setHeroMuted(newMuted);
+                        if (heroVideoRef.current) {
+                          heroVideoRef.current.muted = newMuted;
+                          if (!newMuted) heroVideoRef.current.play().catch(() => {});
+                        }
+                      }}
+                      className="burger-menu-item btn-sound"
+                    >
+                      {heroMuted ? <VolumeX size={14} /> : <Volume2 size={14} />}
+                      <span>{heroMuted ? 'Activar Sonido Video' : 'Silenciar Video'}</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Top Center: Logo del Negocio */}
           <div className="menu-app-logo" style={{ pointerEvents: 'auto', margin: '0 0.2rem' }}>
@@ -852,39 +864,7 @@ export default function MenuDigital() {
             )}
           </div>
 
-          {/* Top Right: Ganar Dinero Button */}
-          {(ajustesProductos?.botones_extra?.earn_money_enabled ?? true) ? (
-            <a 
-              href={ajustesProductos?.botones_extra?.earn_money_link || configuracion?.link_ganar_dinero || (() => {
-                let clean = (overrideWhatsApp || configuracion?.whatsapp || '').replace(/\D/g, '');
-                if (clean.length === 10) clean = '57' + clean;
-                return `https://wa.me/${clean}?text=Hola,%20quiero%20saber%20cómo%20ganar%20dinero%20con%20ustedes`;
-              })()} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="ganar-dinero-pulse special-header-btn"
-              style={{ 
-                background: configuracion?.color_primario || '#f36b8e', 
-                color: '#ffffff', 
-                padding: '0.25rem 0.55rem', 
-                borderRadius: '20px', 
-                fontSize: '0.74rem', 
-                fontFamily: "'Bebas Neue', sans-serif",
-                letterSpacing: '0.5px',
-                fontWeight: 400, 
-                textDecoration: 'none', 
-                display: 'inline-flex', 
-                alignItems: 'center', 
-                gap: '0.2rem', 
-                border: 'none',
-                boxShadow: '0 4px 10px rgba(0, 0, 0, 0.35)',
-                pointerEvents: 'auto',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              {ajustesProductos?.botones_extra?.earn_money_text || '💸 Ganar Dinero'}
-            </a>
-          ) : <div />}
+          <div style={{ width: '44px' }} /> {/* Spacer for symmetry */}
         </div>
 
         {/* ── TICKER STRIP ── */}
