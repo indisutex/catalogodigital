@@ -101,64 +101,56 @@ export const ERPMainModule: React.FC<Props> = ({ tenantId, onToggleSidebar }) =>
 
       {/* ── Barra de navegación superior ── */}
       <nav className="erp-main-topbar">
-        {onToggleSidebar && (
-          <button 
-            type="button" 
-            className="sidebar-collapse-toggle"
-            onClick={onToggleSidebar}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'transparent',
-              color: '#475569',
-              border: 'none',
-              borderRadius: '8px',
-              width: '36px',
-              height: '36px',
-              cursor: 'pointer',
-              marginRight: '0.5rem',
-              flexShrink: 0,
-              padding: 0
-            }}
-            title="Mostrar / Ocultar Menú Lateral"
-          >
-            <Menu size={20} style={{ color: '#475569' }} />
-          </button>
-        )}
+        <div className="erp-topbar-left">
+          {onToggleSidebar && (
+            <button 
+              type="button" 
+              className="sidebar-collapse-toggle erp-topbar-menu-btn"
+              onClick={onToggleSidebar}
+              title="Mostrar / Ocultar Menú Lateral"
+            >
+              <Menu size={20} />
+            </button>
+          )}
 
-        <div className="erp-main-brand">
-          <BarChart2 size={20} color="var(--primary-color, #6366f1)" />
-          <div>
-            <span>ERP Empresarial</span>
-            <small>Sistema Integrado</small>
+          <div className="erp-main-brand">
+            <div className="erp-brand-icon">
+              <BarChart2 size={18} color="#ffffff" />
+            </div>
+            <div className="erp-brand-text">
+              <span className="erp-brand-title">ERP Empresarial</span>
+              <small className="erp-brand-subtitle">Sistema Integrado</small>
+            </div>
           </div>
         </div>
 
-        {NAV_ITEMS.map(item => (
-          <button
-            key={item.key}
-            className={`erp-nav-tab ${activeTab === item.key ? 'active' : ''} ${!item.available ? 'disabled' : ''}`}
-            onClick={() => item.available && setActiveTab(item.key)}
-            title={item.sublabel}
-            style={{ opacity: item.available ? 1 : 0.45, cursor: item.available ? 'pointer' : 'not-allowed' }}
-          >
-            {item.icon}
-            {item.label}
-            {item.badge && (
-              <span
-                className="erp-nav-badge"
-                style={{
-                  background: item.available
-                    ? 'var(--primary-color, #6366f1)'
-                    : '#334155'
-                }}
-              >
-                {item.badge}
-              </span>
-            )}
-          </button>
-        ))}
+        <div className="erp-nav-scroll-container">
+          {NAV_ITEMS.map(item => (
+            <button
+              key={item.key}
+              className={`erp-nav-tab ${activeTab === item.key ? 'active' : ''} ${!item.available ? 'disabled' : ''}`}
+              onClick={() => item.available && setActiveTab(item.key)}
+              title={item.sublabel}
+              style={{ opacity: item.available ? 1 : 0.45, cursor: item.available ? 'pointer' : 'not-allowed' }}
+            >
+              <span className="erp-nav-icon">{item.icon}</span>
+              <span className="erp-nav-label">{item.label}</span>
+              {item.badge && (
+                <span
+                  className="erp-nav-badge"
+                  style={{
+                    background: item.available
+                      ? (activeTab === item.key ? 'rgba(255,255,255,0.25)' : 'var(--primary-color, #6366f1)')
+                      : '#334155',
+                    color: '#ffffff'
+                  }}
+                >
+                  {item.badge}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
       </nav>
 
       {/* ── Contenido del módulo activo ── */}

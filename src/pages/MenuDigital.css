@@ -265,6 +265,7 @@
 }
 
 /* ── Hero Info & PQRS Floating Button ── */
+/* ── Hero Info & PQRS Floating Button ── */
 .hero-pqrs-btn {
   position: absolute;
   bottom: 3.8rem;
@@ -274,13 +275,13 @@
   align-items: center;
   gap: 0.45rem;
   padding: 0.48rem 0.95rem;
-  background: linear-gradient(135deg, var(--primary, #059669) 0%, #10b981 100%);
+  background: var(--primary, #0284c7);
   color: #ffffff;
   border: 1.5px solid rgba(255, 255, 255, 0.7);
   border-radius: 9999px;
   cursor: pointer;
   backdrop-filter: blur(8px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 0 12px rgba(var(--primary-rgb, 16, 185, 129), 0.5);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 0 12px rgba(var(--primary-rgb, 2, 132, 199), 0.5);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   animation: hero-pqrs-float 3s infinite ease-in-out;
 }
@@ -288,7 +289,7 @@
 .hero-pqrs-btn:hover {
   transform: translateY(-3px) scale(1.06);
   box-shadow: 0 6px 22px rgba(0, 0, 0, 0.4), 0 0 18px rgba(255, 255, 255, 0.7);
-  background: linear-gradient(135deg, #047857 0%, var(--primary, #059669) 100%);
+  filter: brightness(0.9);
 }
 
 .hero-pqrs-btn:active {
@@ -310,11 +311,11 @@
 @keyframes hero-pqrs-float {
   0%, 100% {
     transform: translateY(0);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 0 12px rgba(var(--primary-rgb, 16, 185, 129), 0.4);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 0 12px rgba(var(--primary-rgb, 2, 132, 199), 0.4);
   }
   50% {
     transform: translateY(-5px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 20px rgba(var(--primary-rgb, 16, 185, 129), 0.7);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 20px rgba(var(--primary-rgb, 2, 132, 199), 0.7);
   }
 }
 
@@ -341,78 +342,57 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  margin-bottom: 0.85rem;
-  padding: 0 0.5rem;
+  margin-bottom: 0.5rem;
+  padding: 0 0.25rem;
 }
 
 .btn-change-buyer-type {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.45rem 0.95rem;
-  background: linear-gradient(135deg, var(--primary, #059669) 0%, #10b981 100%);
+  gap: 0.3rem;
+  padding: 0.25rem 0.65rem;
+  background: var(--primary, #0284c7);
   color: #ffffff;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 9999px;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  animation: buyer-btn-pulse 2.2s infinite ease-in-out;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
 }
 
-.btn-change-buyer-type::after {
-  content: '';
-  position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: linear-gradient(
-    60deg,
-    transparent 30%,
-    rgba(255, 255, 255, 0.35) 50%,
-    transparent 70%
-  );
-  transform: rotate(30deg);
-  animation: buyer-btn-shimmer 3.5s infinite;
-  pointer-events: none;
-}
-
 .btn-change-buyer-type:hover {
-  transform: translateY(-2px) scale(1.03);
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.55), 0 0 14px rgba(255, 255, 255, 0.5);
-  background: linear-gradient(135deg, #047857 0%, var(--primary, #059669) 100%);
+  transform: translateY(-1px);
+  filter: brightness(0.9);
 }
 
 .btn-change-buyer-type:active {
-  transform: translateY(0) scale(0.97);
+  transform: translateY(0);
 }
 
 .btn-change-buyer-type .buyer-badge {
   background: rgba(255, 255, 255, 0.28);
   backdrop-filter: blur(4px);
-  padding: 0.15rem 0.6rem;
-  border-radius: 12px;
+  padding: 0.08rem 0.45rem;
+  border-radius: 8px;
   font-weight: 800;
-  font-size: 0.78rem;
-  letter-spacing: 0.3px;
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.4);
+  font-size: 0.7rem;
+  letter-spacing: 0.2px;
   color: #ffffff;
 }
 
 .btn-change-buyer-type .change-text {
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   opacity: 0.95;
   text-decoration: underline;
-  text-underline-offset: 2px;
+  text-underline-offset: 1px;
 }
 
 .btn-change-buyer-type .change-icon {
-  transition: transform 0.5s ease;
+  transition: transform 0.4s ease;
   flex-shrink: 0;
 }
 

@@ -787,6 +787,7 @@ export default function MenuDigital() {
         <button
           onClick={() => setIsPqrsOpen(true)}
           className="hero-pqrs-btn"
+          style={{ background: configuracion?.color_primario || 'var(--primary, #0284c7)' }}
           title="Ubicación del Negocio, Teléfono, Correo e Info & PQRS"
         >
           <HelpCircle size={16} className="hero-pqrs-icon" />
@@ -926,14 +927,15 @@ export default function MenuDigital() {
             <button
               onClick={() => setBuyerType(null)}
               className="btn-change-buyer-type"
+              style={{ background: configuracion?.color_primario || 'var(--primary, #0284c7)' }}
               title="Haz clic para cambiar el tipo de compra"
             >
-              <RefreshCw size={14} className="change-icon" />
-              <span>Tipo de compra:</span>
+              <RefreshCw size={12} className="change-icon" />
+              <span>Tipo:</span>
               <span className="buyer-badge">
                 {buyerType === 'detal' ? 'Detal' : buyerType === 'mayorista' ? 'Mayorista' : '50 Unds'}
               </span>
-              <span className="change-text">Cambiar 🔄</span>
+              <span className="change-text">Cambiar</span>
             </button>
           </div>
         )}

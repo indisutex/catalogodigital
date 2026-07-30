@@ -582,15 +582,132 @@
   margin-top: 0.4rem;
 }
 
-/* ── Responsive ── */
+/* ── Responsive Mobile Enhancements ── */
 @media (max-width: 768px) {
-  .erp-kpi-grid { grid-template-columns: 1fr 1fr; }
+  .erp-ventas-container {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .erp-ventas-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem;
+    border-radius: 14px;
+    margin-bottom: 1rem;
+  }
+
+  .erp-ventas-header h1 {
+    font-size: 1.15rem;
+    line-height: 1.3;
+  }
+
+  .erp-ventas-header p {
+    font-size: 0.8rem;
+  }
+
+  .erp-ventas-header .erp-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .erp-kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+  }
+
+  .erp-kpi-card {
+    padding: 0.85rem 0.75rem;
+    border-radius: 14px;
+  }
+
+  .erp-kpi-label {
+    font-size: 0.68rem;
+    gap: 0.25rem;
+    margin-bottom: 0.35rem;
+  }
+
+  .erp-kpi-value {
+    font-size: 1.25rem;
+    letter-spacing: -0.02em;
+  }
+
+  .erp-kpi-sub {
+    font-size: 0.7rem;
+    margin-top: 0.35rem;
+  }
+
+  .erp-kpi-today {
+    font-size: 0.68rem;
+    padding: 0.15rem 0.45rem;
+    margin-top: 0.35rem;
+  }
+
+  .erp-ventas-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: 0.4rem;
+    margin-bottom: 1rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 0.4rem;
+  }
+
+  .erp-ventas-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .erp-ventas-tab {
+    flex-shrink: 0;
+    white-space: nowrap;
+    font-size: 0.78rem;
+    padding: 0.5rem 0.85rem;
+    border-radius: 999px;
+  }
+
+  .erp-panel {
+    padding: 1rem 0.85rem;
+    border-radius: 14px;
+  }
+
+  .erp-panel-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .erp-filtros {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .erp-filtros select,
+  .erp-filtros input {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
   .erp-egreso-grid { grid-template-columns: 1fr; }
   .erp-factura-totales { flex-direction: column; align-items: stretch; }
   .erp-factura-box-total { min-width: 100%; margin-left: 0; }
+
+  /* Table overflow control */
+  .erp-ventas-table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 @media (max-width: 480px) {
-  .erp-kpi-grid { grid-template-columns: 1fr; }
+  .erp-kpi-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
 }
+
 

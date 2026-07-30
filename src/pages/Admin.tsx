@@ -5423,102 +5423,109 @@ export default function Admin() {
                           <p>Usa los botones de arriba para empezar</p>
                         </div>
                       ) : (
-                        categoriasData.map(c => (
-                          <div key={c.id} className="category-row">
-                            {/* Thumbnail: imagen si existe, de lo contrario emoji */}
-                            {c.imagen_url ? (
-                              <img
-                                src={c.imagen_url}
-                                alt={c.nombre}
-                                style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #f36b8e' }}
-                              />
-                            ) : (
-                              <div className="cat-color-dot" style={{ background: c.color || '#333' }}>{c.icono}</div>
-                            )}
-                            <div className="cat-row-info">
-                              <h4>{c.nombre}</h4>
-                              <p>/{c.slug} · {productos.filter(p => p.categoria === c.slug || p.categoria === c.nombre).length} productos</p>
+                        categoriasData.map(c => {
+                          const prodCount = productos.filter(p => p.categoria === c.slug || p.categoria === c.nombre).length;
+                          return (
+                            <div key={c.id} className="category-card-modern">
+                              {/* Avatar con botón de subida flotante */}
+                              <div className="cat-avatar-container">
+                                {c.imagen_url ? (
+                                  <img
+                                    src={c.imagen_url}
+                                    alt={c.nombre}
+                                    className="cat-avatar-image"
+                                  />
+                                ) : (
+                                  <div className="cat-avatar-badge" style={{ background: c.color || 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
+                                    {c.icono || '🛍️'}
+                                  </div>
+                                )}
+                                <label className="cat-upload-trigger" title="Subir / cambiar foto de categoría">
+                                  <Upload size={11} />
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    style={{ display: 'none' }}
+                                    onChange={async (ev) => {
+                                      const file = ev.target.files?.[0];
+                                      if (!file) return;
+                                      setLoading(true);
+                                      try {
+                                        let uploadFile = file;
+                                        if (file.type.startsWith('image/')) {
+                                          uploadFile = await compressImage(file) as File;
+                                        }
+                                        const ext = uploadFile.name.split('.').pop() || 'jpg';
+                                        const fileName = `cat_${c.id}_${Date.now()}.${ext}`;
+                                        const { error: upErr } = await supabase.storage
+                                          .from('archivos')
+                                          .upload(fileName, uploadFile, { upsert: true });
+                                        if (upErr) {
+                                          showToast(`Error Storage: ${upErr.message}`, 'error');
+                                          return;
+                                        }
+                                        const { data: urlData } = supabase.storage
+                                          .from('archivos')
+                                          .getPublicUrl(fileName);
+                                        const { error: dbErr } = await supabase
+                                          .from('categorias')
+                                          .update({ imagen_url: urlData.publicUrl })
+                                          .eq('id', c.id);
+                                        if (dbErr) {
+                                          showToast(`Error DB: ${dbErr.message}`, 'error');
+                                          return;
+                                        }
+                                        await cargarDatos();
+                                        showToast('Imagen de categoría actualizada ✓');
+                                      } catch (err: any) {
+                                        showToast(`Error inesperado: ${err?.message || err}`, 'error');
+                                      } finally {
+                                        setLoading(false);
+                                      }
+                                    }}
+                                  />
+                                </label>
+                              </div>
+
+                              <div className="cat-details-col">
+                                <div className="cat-title-line">
+                                  <h4>{c.nombre}</h4>
+                                  <span className="cat-slug-pill">/{c.slug}</span>
+                                </div>
+                                <div className="cat-meta-line">
+                                  <span className="cat-count-badge">
+                                    <Package size={12} /> {prodCount} {prodCount === 1 ? 'producto' : 'productos'}
+                                  </span>
+                                </div>
+                              </div>
+
+                              <div className="cat-actions-group">
+                                <button 
+                                  className="cat-btn cat-btn-link" 
+                                  onClick={() => {
+                                    const link = `${window.location.origin}/${getTenantId()}?categoria=${c.slug}`;
+                                    navigator.clipboard.writeText(link);
+                                    showToast('Enlace de categoría copiado ✓', 'success');
+                                  }}
+                                  title="Copiar enlace permanente"
+                                >
+                                  <Link size={12} /> Enlace
+                                </button>
+                                <button className="cat-btn cat-btn-edit" onClick={() => setEditingCategory(c)}>
+                                  <Pencil size={12} /> Editar
+                                </button>
+                                <button className="cat-btn cat-btn-delete" onClick={async () => {
+                                  if (!window.confirm('¿Eliminar categoría?')) return;
+                                  await supabase.from('categorias').delete().eq('id', c.id);
+                                  cargarDatos();
+                                  showToast('Categoría eliminada');
+                                }} title="Eliminar categoría">
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
                             </div>
-                            {/* Botón subir imagen de categoría */}
-                            <label
-                              title="Subir imagen"
-                              style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 30, height: 30, borderRadius: '50%', background: '#f0f0f0', border: '1px solid #ddd' }}
-                            >
-                              <Upload size={13} />
-                              <input
-                                type="file"
-                                accept="image/*"
-                                style={{ display: 'none' }}
-                                onChange={async (ev) => {
-                                  const file = ev.target.files?.[0];
-                                  if (!file) return;
-                                  setLoading(true);
-                                  try {
-                                    let uploadFile = file;
-                                    if (file.type.startsWith('image/')) {
-                                      uploadFile = await compressImage(file) as File;
-                                    }
-                                    // PASO 1: subir al storage
-                                    const ext = uploadFile.name.split('.').pop() || 'jpg';
-                                    const fileName = `cat_${c.id}_${Date.now()}.${ext}`;
-                                    const { error: upErr } = await supabase.storage
-                                      .from('archivos')
-                                      .upload(fileName, uploadFile, { upsert: true });
-                                    if (upErr) {
-                                      showToast(`Error Storage: ${upErr.message}`, 'error');
-                                      return;
-                                    }
-
-                                    // PASO 2: obtener URL pública
-                                    const { data: urlData } = supabase.storage
-                                      .from('archivos')
-                                      .getPublicUrl(fileName);
-
-                                    // PASO 3: guardar URL en la tabla categorias
-                                    const { error: dbErr } = await supabase
-                                      .from('categorias')
-                                      .update({ imagen_url: urlData.publicUrl })
-                                      .eq('id', c.id);
-                                    if (dbErr) {
-                                      showToast(`Error DB: ${dbErr.message}`, 'error');
-                                      return;
-                                    }
-
-                                    await cargarDatos();
-                                    showToast('Imagen de categoría actualizada ✓');
-                                  } catch (err: any) {
-                                    showToast(`Error inesperado: ${err?.message || err}`, 'error');
-                                  } finally {
-                                    setLoading(false);
-                                  }
-                                }}
-                              />
-                            </label>
-                            <button 
-                              className="btn-edit" 
-                              onClick={() => {
-                                const link = `${window.location.origin}/${getTenantId()}?categoria=${c.slug}`;
-                                navigator.clipboard.writeText(link);
-                                showToast('Enlace de categoría copiado ✓', 'success');
-                              }}
-                              style={{ display: 'flex', alignItems: 'center', gap: '0.2rem' }}
-                              title="Copiar enlace permanente"
-                            >
-                              <Link size={11} /> Enlace
-                            </button>
-                            <button className="btn-edit" onClick={() => setEditingCategory(c)}>
-                              <Pencil size={11} /> Editar
-                            </button>
-                            <button className="btn-danger" onClick={async () => {
-                              if (!window.confirm('¿Eliminar categoría?')) return;
-                              await supabase.from('categorias').delete().eq('id', c.id);
-                              cargarDatos();
-                              showToast('Categoría eliminada');
-                            }}>
-                              <Trash2 size={12} />
-                            </button>
-                          </div>
-                        ))
+                          );
+                        })
                       )}
 
                       <hr className="divider" style={{ margin: '2rem 0 1.5rem' }} />
@@ -5534,33 +5541,45 @@ export default function Admin() {
                           subcategoriasData.map(s => {
                             const parentCat = categoriasData.find(c => c.id === s.categoria_id);
                             return (
-                              <div key={s.id} className="category-row">
-                                <div className="cat-color-dot" style={{ background: parentCat?.color || '#888' }}>
-                                  {parentCat?.icono || '📂'}
+                              <div key={s.id} className="category-card-modern subcat-card">
+                                <div className="cat-avatar-container">
+                                  <div className="cat-avatar-badge subcat-icon" style={{ background: parentCat?.color || 'linear-gradient(135deg, #059669, #10b981)' }}>
+                                    {parentCat?.icono || '📂'}
+                                  </div>
                                 </div>
-                                <div className="cat-row-info">
-                                  <h4>{s.nombre}</h4>
-                                  <p>/{s.slug} · en {parentCat?.nombre || 'Categoría eliminada'}</p>
+
+                                <div className="cat-details-col">
+                                  <div className="cat-title-line">
+                                    <h4>{s.nombre}</h4>
+                                    <span className="cat-slug-pill">/{s.slug}</span>
+                                  </div>
+                                  <div className="cat-meta-line">
+                                    <span className="cat-parent-badge">
+                                      📁 En {parentCat?.nombre || 'Categoría eliminada'}
+                                    </span>
+                                  </div>
                                 </div>
-                                <button 
-                                  className="btn-edit" 
-                                  onClick={() => {
-                                    const parentCat = categoriasData.find(c => c.id === s.categoria_id);
-                                    const link = `${window.location.origin}/${getTenantId()}?categoria=${parentCat?.slug || ''}&subcategoria=${s.slug}`;
-                                    navigator.clipboard.writeText(link);
-                                    showToast('Enlace de subcategoría copiado ✓', 'success');
-                                  }}
-                                  style={{ padding: '0.4rem 0.6rem', height: 30, display: 'flex', alignItems: 'center', gap: '0.2rem', borderRadius: 8, background: '#f1f5f9', border: 'none', cursor: 'pointer', fontSize: '0.75rem' }}
-                                  title="Copiar enlace permanente"
-                                >
-                                  <Link size={11} /> Enlace
-                                </button>
-                                <button className="btn-edit" onClick={() => setEditingSubcategory(s)} style={{ padding: '0.4rem 0.6rem', height: 30, display: 'flex', alignItems: 'center', gap: '0.2rem', borderRadius: 8, background: '#f1f5f9', border: 'none', cursor: 'pointer', fontSize: '0.75rem' }}>
-                                  <Pencil size={11} /> Editar
-                                </button>
-                                <button className="btn-danger" onClick={() => handleDeleteSubcategory(s.id)}>
-                                  <Trash2 size={12} />
-                                </button>
+
+                                <div className="cat-actions-group">
+                                  <button 
+                                    className="cat-btn cat-btn-link" 
+                                    onClick={() => {
+                                      const parentCat = categoriasData.find(c => c.id === s.categoria_id);
+                                      const link = `${window.location.origin}/${getTenantId()}?categoria=${parentCat?.slug || ''}&subcategoria=${s.slug}`;
+                                      navigator.clipboard.writeText(link);
+                                      showToast('Enlace de subcategoría copiado ✓', 'success');
+                                    }}
+                                    title="Copiar enlace permanente"
+                                  >
+                                    <Link size={12} /> Enlace
+                                  </button>
+                                  <button className="cat-btn cat-btn-edit" onClick={() => setEditingSubcategory(s)}>
+                                    <Pencil size={12} /> Editar
+                                  </button>
+                                  <button className="cat-btn cat-btn-delete" onClick={() => handleDeleteSubcategory(s.id)} title="Eliminar subcategoría">
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
                               </div>
                             );
                           })
