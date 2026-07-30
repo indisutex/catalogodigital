@@ -903,37 +903,9 @@ export default function MenuDigital() {
       </div>
 
       <div className="menu-app-body">
-        <div className="explore-header">
-          <h2>EXPLORAR CATÁLOGO DIGITAL</h2>
-          <button
-            className="search-icon-btn"
-            onClick={() => { setSearchVisible(v => !v); if (searchVisible) setBusqueda(''); }}
-            aria-label="Buscar"
-          >
-            <Search size={18} />
-          </button>
-        </div>
-
-        {/* Search bar */}
-        {searchVisible && (
-          <div className="search-bar-wrap">
-            <Search size={16} className="search-bar-icon" />
-            <input
-              className="search-bar-input"
-              type="text"
-              autoFocus
-              placeholder="Buscar producto, categoría..."
-              value={busqueda}
-              onChange={e => setBusqueda(e.target.value)}
-            />
-            {busqueda && (
-              <button className="search-bar-clear" onClick={() => setBusqueda('')}>×</button>
-            )}
-          </div>
-        )}
-
-        {/* Categories Carousel */}
-        <div className="categories-carousel">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', width: '100%' }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="categories-carousel" style={{ paddingBottom: '0.25rem' }}>
           <div 
             className={`category-card ${filtroCategoria === 'todos' ? 'active' : ''}`}
             onClick={() => selectCategoria('todos')}
@@ -966,7 +938,34 @@ export default function MenuDigital() {
             </div>
           ))}
         </div>
+          </div>
+          <button
+            className="search-icon-btn"
+            onClick={() => { setSearchVisible(v => !v); if (searchVisible) setBusqueda(''); }}
+            aria-label="Buscar"
+            style={{ margin: 0 }}
+          >
+            <Search size={18} />
+          </button>
+        </div>
 
+        {/* Search bar */}
+        {searchVisible && (
+          <div className="search-bar-wrap">
+            <Search size={16} className="search-bar-icon" />
+            <input
+              className="search-bar-input"
+              type="text"
+              autoFocus
+              placeholder="Buscar producto, categoría..."
+              value={busqueda}
+              onChange={e => setBusqueda(e.target.value)}
+            />
+            {busqueda && (
+              <button className="search-bar-clear" onClick={() => setBusqueda('')}>×</button>
+            )}
+          </div>
+        )}
         {/* Subcategories Filter Chips */}
         {filtroCategoria !== 'todos' && subcategorias.filter(s => s.categoria_id === categorias.find(c => c.slug === filtroCategoria)?.id).length > 0 && (
           <div style={{display: 'flex', gap: '0.5rem', marginBottom: '1.5rem', overflowX: 'auto', paddingBottom: '0.5rem', paddingLeft: '0.5rem'}}>
