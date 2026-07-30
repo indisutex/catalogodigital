@@ -136,17 +136,3 @@ export interface PQRS {
   evidencia_url?: string;
   estado: string;
 }
-
-export interface GanadorJuego {
-  id: string;
-  tenant_id: string;
-  created_at: string;
-  nombre_cliente: string;
-  telefono_cliente: string;
-  ciudad?: string;
-  direccion?: string;
-  juego: string;
-  premio: string;
-  tipo_premio: 'producto_gratis' | 'cupon_descuento' | 'envio_gratis';
-  estado: 'pendiente' | 'entregado';
-}

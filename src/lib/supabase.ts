@@ -8,7 +8,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export const getTenantId = () => {
-  // 1. Detectar por ruta URL (/:tenant) — ej: pijamasalmayor.com/saramantha
+  // First check URL path (slug)
   const pathname = window.location.pathname.replace(/^\/+/g, '').trim();
   const firstPart = pathname.split('/')[0].toLowerCase();
   
@@ -20,7 +20,7 @@ export const getTenantId = () => {
     return normalised;
   }
 
-  // 2. Query param ?tienda=xxx
+  // Then check URL params
   const urlParams = new URLSearchParams(window.location.search);
   const urlTenant = urlParams.get('tienda');
   if (urlTenant) {
@@ -29,11 +29,11 @@ export const getTenantId = () => {
     return normalised;
   }
   
-  // 3. localStorage (última sesión)
+  // Then check localStorage
   const stored = localStorage.getItem('tenant_id');
   if (stored) return stored;
   
-  // 4. Fallback al tenant por defecto
+  // Fallback to default
   return import.meta.env.VITE_TENANT_ID || 'sublimados_majestic';
 };
 

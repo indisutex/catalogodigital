@@ -1,9 +1,9 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase, getTenantId, setTenantId } from '../lib/supabase';
 import { updatePWAManifestAndIcons } from '../lib/pwa';
 import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
-import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista, PQRS, GanadorJuego } from '../types';
+import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista, PQRS } from '../types';
 import './Admin.css';
 import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Filter, Link, LifeBuoy, PackageCheck, ArrowRightLeft, BarChart2 } from 'lucide-react';
 
@@ -185,7 +185,7 @@ const emptyProduct: ProductFormData = {
   precio_mujer: ''
 };
 
-type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor' | 'material_apoyo' | 'material_asesor' | 'productos_asesor' | 'productos_mayorista' | 'ranking_mayorista' | 'pqrs' | 'contabilidad' | 'erp' | 'ganadores_juego';
+type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor' | 'material_apoyo' | 'material_asesor' | 'productos_asesor' | 'productos_mayorista' | 'ranking_mayorista' | 'pqrs' | 'contabilidad' | 'erp';
 
 type Toast = { message: string; type: 'success' | 'error' } | null;
 
@@ -7330,11 +7330,6 @@ export default function Admin() {
           )}
 
 
-          {/* ── GANADORES MINI JUEGO ── */}
-          {activeTab === 'ganadores_juego' && (
-            <GanadoresJuegoPanel tenantId={selectedCompany || getTenantId()} />
-          )}
-
           {/* ── ERP EMPRESARIAL UNIFICADO ── */}
 
           {activeTab === 'erp' && (
@@ -13000,10 +12995,6 @@ function SidebarContent({
               <span className="nav-icon"><Upload size={14} /></span> Material de Apoyo
               {activeTab === 'material_apoyo' && <span className="active-dot"></span>}
             </button>
-            <button className={`nav-item ${activeTab === 'ganadores_juego' ? 'active' : ''}`} onClick={() => handleSelectTab('ganadores_juego')}>
-              <span className="nav-icon">🏆</span> Ganadores Mini Juego
-              {activeTab === 'ganadores_juego' && <span className="active-dot"></span>}
-            </button>
             <button className={`nav-item ${activeTab === 'erp' ? 'active' : ''}`} onClick={() => handleSelectTab('erp')}>
               <span className="nav-icon"><BarChart2 size={14} /></span> ERP Empresarial
               {activeTab === 'erp' && <span className="active-dot"></span>}
@@ -13091,140 +13082,3 @@ function SidebarContent({
   );
 }
 
-// ── PANEL GANADORES MINI JUEGO ──────────────────────────────────────────────
-function GanadoresJuegoPanel({ tenantId }: { tenantId: string }) {
-  const [ganadores, setGanadores] = useState<GanadorJuego[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filtro, setFiltro] = useState<'todos' | 'pendiente' | 'entregado'>('todos');
-
-  const cargar = useCallback(async () => {
-    setLoading(true);
-    try {
-      const { obtenerGanadoresJuegos } = await import('../lib/ganadoresService');
-      const data = await obtenerGanadoresJuegos(tenantId);
-      setGanadores(data);
-    } catch (e) {
-      console.error('Error cargando ganadores:', e);
-    } finally {
-      setLoading(false);
-    }
-  }, [tenantId]);
-
-  useEffect(() => { cargar(); }, [cargar]);
-
-  const marcarEntregado = async (id: string) => {
-    const { actualizarEstadoGanador } = await import('../lib/ganadoresService');
-    await actualizarEstadoGanador(id, 'entregado', tenantId);
-    setGanadores(prev => prev.map(g => g.id === id ? { ...g, estado: 'entregado' } : g));
-  };
-
-  const eliminar = async (id: string) => {
-    if (!confirm('¿Eliminar este registro?')) return;
-    const { eliminarGanadorJuego } = await import('../lib/ganadoresService');
-    await eliminarGanadorJuego(id, tenantId);
-    setGanadores(prev => prev.filter(g => g.id !== id));
-  };
-
-  const visibles = ganadores.filter(g => filtro === 'todos' || g.estado === filtro);
-  const pendientes = ganadores.filter(g => g.estado === 'pendiente').length;
-
-  return (
-    <div className="admin-panel" style={{ padding: '1.5rem' }}>
-      <div className="panel-header" style={{ marginBottom: '1.5rem' }}>
-        <div>
-          <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
-            🏆 Ganadores Mini Juego
-          </h3>
-          <p style={{ margin: '0.25rem 0 0', color: '#64748b', fontSize: '0.85rem' }}>
-            Clientes que ganaron premios en los minijuegos del catálogo
-          </p>
-        </div>
-        <button onClick={cargar} style={{ background: '#f1f5f9', border: 'none', borderRadius: '8px', padding: '0.5rem 1rem', cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem' }}>
-          🔄 Actualizar
-        </button>
-      </div>
-
-      {/* Filtros */}
-      <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.2rem', flexWrap: 'wrap' }}>
-        {(['todos', 'pendiente', 'entregado'] as const).map(f => (
-          <button
-            key={f}
-            onClick={() => setFiltro(f)}
-            style={{
-              padding: '0.4rem 1rem', borderRadius: '20px', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.82rem',
-              background: filtro === f ? '#6366f1' : '#f1f5f9',
-              color: filtro === f ? 'white' : '#475569',
-            }}
-          >
-            {f === 'todos' ? `Todos (${ganadores.length})` : f === 'pendiente' ? `⏳ Pendientes (${pendientes})` : `✅ Entregados (${ganadores.length - pendientes})`}
-          </button>
-        ))}
-      </div>
-
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>Cargando ganadores...</div>
-      ) : visibles.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>🎮</div>
-          <p>No hay ganadores {filtro !== 'todos' ? `con estado "${filtro}"` : 'registrados aún'}</p>
-        </div>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {visibles.map(g => (
-            <div key={g.id} style={{
-              background: g.estado === 'entregado' ? '#f0fdf4' : '#fff',
-              border: `1px solid ${g.estado === 'entregado' ? '#86efac' : '#e2e8f0'}`,
-              borderRadius: '12px', padding: '1rem 1.25rem',
-              display: 'grid', gridTemplateColumns: '1fr auto', gap: '0.75rem', alignItems: 'start'
-            }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem', flexWrap: 'wrap' }}>
-                  <strong style={{ fontSize: '0.95rem' }}>{g.nombre_cliente}</strong>
-                  <span style={{
-                    fontSize: '0.72rem', padding: '2px 8px', borderRadius: '10px', fontWeight: 700,
-                    background: g.estado === 'entregado' ? '#dcfce7' : '#fef9c3',
-                    color: g.estado === 'entregado' ? '#16a34a' : '#a16207',
-                  }}>
-                    {g.estado === 'entregado' ? '✅ Entregado' : '⏳ Pendiente'}
-                  </span>
-                </div>
-                <div style={{ fontSize: '0.83rem', color: '#475569', display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
-                  <span>📱 {g.telefono_cliente}</span>
-                  {g.ciudad && <span>🏙️ {g.ciudad}</span>}
-                  {g.direccion && <span>🏠 {g.direccion}</span>}
-                </div>
-                <div style={{ fontSize: '0.82rem', marginTop: '0.4rem', display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
-                  <span style={{ background: '#ede9fe', color: '#7c3aed', padding: '2px 8px', borderRadius: '8px', fontWeight: 600 }}>
-                    🎮 {g.juego}
-                  </span>
-                  <span style={{ background: '#fef3c7', color: '#b45309', padding: '2px 8px', borderRadius: '8px', fontWeight: 600 }}>
-                    🎁 {g.premio}
-                  </span>
-                  <span style={{ color: '#94a3b8', fontSize: '0.78rem' }}>
-                    {new Date(g.created_at).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                  </span>
-                </div>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                {g.estado === 'pendiente' && (
-                  <button
-                    onClick={() => marcarEntregado(g.id)}
-                    style={{ background: '#10b981', color: 'white', border: 'none', borderRadius: '8px', padding: '0.4rem 0.75rem', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', whiteSpace: 'nowrap' }}
-                  >
-                    ✅ Marcar Entregado
-                  </button>
-                )}
-                <button
-                  onClick={() => eliminar(g.id)}
-                  style={{ background: '#fee2e2', color: '#ef4444', border: 'none', borderRadius: '8px', padding: '0.4rem 0.75rem', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem' }}
-                >
-                  🗑️ Eliminar
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
