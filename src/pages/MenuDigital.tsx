@@ -412,10 +412,16 @@ export default function MenuDigital() {
 
   useEffect(() => {
     if (!cargando) {
-      const timer = setTimeout(() => {
-        setShowTemuBanner(true);
-      }, 500);
-      return () => clearTimeout(timer);
+      try {
+        const tenant = getTenantId();
+        const dismissed = sessionStorage.getItem(`temu_banner_dismissed_${tenant}`);
+        if (!dismissed) {
+          const timer = setTimeout(() => {
+            setShowTemuBanner(true);
+          }, 800);
+          return () => clearTimeout(timer);
+        }
+      } catch (e) {}
     }
   }, [cargando]);
 
