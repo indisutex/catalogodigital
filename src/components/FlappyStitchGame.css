@@ -1,0 +1,240 @@
+/* ── FLAPPY STITCH GAME (SUPERVIVENCIA) STYLES ── */
+
+.stitch-game-container {
+  width: 100%;
+  max-width: 420px;
+  height: 520px;
+  background: radial-gradient(circle at 50% 20%, #1e1b4b 0%, #0f172a 75%, #020617 100%);
+  border-radius: 24px;
+  border: 2px solid var(--primary, #38bdf8);
+  box-shadow: 0 0 30px rgba(var(--primary-rgb, 56, 189, 248), 0.35), 0 20px 50px rgba(0, 0, 0, 0.8);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  color: #ffffff;
+  font-family: 'Outfit', system-ui, sans-serif;
+  user-select: none;
+  margin: 0 auto;
+}
+
+/* Header HUD */
+.stitch-hud {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  right: 1rem;
+  z-index: 40;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+}
+
+.stitch-score-badge {
+  background: rgba(15, 23, 42, 0.88);
+  border: 2px solid var(--primary, #38bdf8);
+  backdrop-filter: blur(8px);
+  padding: 0.35rem 0.9rem;
+  border-radius: 9999px;
+  font-size: 1.25rem;
+  font-weight: 900;
+  color: #ffffff;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.stitch-next-milestone {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(8px);
+  padding: 0.35rem 0.8rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #fef08a;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Game World Canvas / Area */
+.stitch-world {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+/* Background Stars animation */
+.stitch-star {
+  position: absolute;
+  background: #ffffff;
+  border-radius: 50%;
+  opacity: 0.6;
+  animation: star-twinkle 2s infinite ease-in-out alternate;
+}
+
+@keyframes star-twinkle {
+  0% { opacity: 0.2; transform: scale(0.8); }
+  100% { opacity: 0.9; transform: scale(1.2); }
+}
+
+/* Stitch Character Sprite */
+.stitch-character {
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  z-index: 30;
+  transition: transform 0.06s ease-out;
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.5));
+}
+
+.stitch-avatar-box {
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, #3b82f6 0%, #1d4ed8 100%);
+  border: 2px solid #93c5fd;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.65rem;
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);
+  position: relative;
+}
+
+.stitch-pyjama-cap {
+  position: absolute;
+  top: -8px;
+  right: -4px;
+  font-size: 0.95rem;
+}
+
+/* Pillow Obstacles */
+.pillow-obstacle {
+  position: absolute;
+  width: 54px;
+  background: linear-gradient(135deg, #ffffff 0%, #e2e8f0 100%);
+  border: 3px solid #cbd5e1;
+  border-radius: 14px;
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.12), 0 8px 20px rgba(0, 0, 0, 0.4);
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pillow-texture {
+  font-size: 1.4rem;
+  opacity: 0.85;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+.pillow-top {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 16px;
+  border-top: none;
+}
+
+.pillow-bottom {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  border-bottom: none;
+}
+
+/* Ground Line */
+.stitch-ground {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 20px;
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  border-top: 3px solid var(--primary, #38bdf8);
+  z-index: 25;
+}
+
+/* Screens: Intro, Game Over */
+.stitch-screen-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  background: rgba(15, 23, 42, 0.93);
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.4rem;
+  text-align: center;
+}
+
+.stitch-title {
+  font-size: 1.7rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #ffffff 0%, var(--primary, #38bdf8) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0.3rem 0;
+}
+
+.stitch-rewards-list {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 16px;
+  padding: 0.75rem 0.9rem;
+  width: 100%;
+  margin: 0.6rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.reward-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0.3rem 0.6rem;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.22);
+  color: #94a3b8;
+}
+
+.reward-row.unlocked {
+  background: rgba(56, 189, 248, 0.25);
+  border: 1px solid var(--primary, #38bdf8);
+  color: #ffffff;
+}
+
+.stitch-btn-tap {
+  width: 100%;
+  padding: 0.85rem;
+  background: var(--primary, #0ea5e9);
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 1.05rem;
+  border-radius: 9999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 25px rgba(var(--primary-rgb, 14, 165, 233), 0.5);
+  cursor: pointer;
+  margin-top: 0.6rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: transform 0.15s ease;
+}
+
+.stitch-btn-tap:active {
+  transform: scale(0.96);
+}

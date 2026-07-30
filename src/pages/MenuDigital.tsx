@@ -6,7 +6,8 @@ import { Loader2, Search, Plus, ShoppingBag, X, ShoppingCart, Volume2, VolumeX, 
 import { useCart, getEffectivePrice } from '../context/CartContext';
 import PqrsModal from '../components/PqrsModal';
 import { getOptimizedImageUrl } from '../lib/imageOptimizer';
-import { NochePerfectaGameModal, PromoWelcomeBanner as TemuWelcomeBanner } from '../components/NochePerfectaGameModal';
+import { PromoWelcomeBanner as TemuWelcomeBanner } from '../components/NochePerfectaGameModal';
+import { JuegosHubModal } from '../components/JuegosHubModal';
 import './MenuDigital.css';
 
 // Ejecutar sincrónicamente para evitar parpadeo de color
@@ -736,8 +737,8 @@ export default function MenuDigital() {
             }}
             title="¡Juega La Noche Perfecta y gana 30% de descuento!"
           >
-            <span style={{ fontSize: '0.85rem' }}>😴</span>
-            <span className="hero-tipo-label" style={{ color: '#ffffff', fontWeight: 900 }}>Pijama Gratis</span>
+            <span style={{ fontSize: '0.85rem' }}>🎮</span>
+            <span className="hero-tipo-label" style={{ color: '#ffffff', fontWeight: 900 }}>Juegos & Premios</span>
           </button>
 
           <button
@@ -1670,21 +1671,38 @@ export default function MenuDigital() {
         }}
       />
 
-      {/* ── Modal Juego La Noche Perfecta ── */}
-      <NochePerfectaGameModal
+      {/* ── Modal Centro de Juegos Hub ── */}
+      <JuegosHubModal
         isOpen={isGameModalOpen}
         onClose={() => setIsGameModalOpen(false)}
-        onApplyCoupon={() => {
+        onApplyCoupon={(porcentaje) => setDescuentoPromocional(porcentaje)}
+        onApplyFreeShipping={() => {
+          try {
+            const shippingGift: Producto = {
+              id: 'regalo-envio-gratis-' + Date.now(),
+              nombre: '🚚 REGALO: Envío Gratis en tu Pedido',
+              precio: 0,
+              categoria: 'regalo',
+              subcategoria: 'regalo',
+              stock: 999,
+              imagen_url: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=400',
+              descripcion: '¡Ganado en el juego Supervivencia Stitch!',
+              created_at: new Date().toISOString()
+            };
+            addToCart(shippingGift, 'Única', 'Estándar', 1);
+          } catch (e) {}
+        }}
+        onAddFreeGift={(nombreGift) => {
           try {
             const giftItem: Producto = {
-              id: 'regalo-pijama-short-tira-' + Date.now(),
-              nombre: '🎁 REGALO: Pijama Short Tira',
+              id: 'regalo-juego-' + Date.now(),
+              nombre: nombreGift,
               precio: 0,
               categoria: 'regalo',
               subcategoria: 'regalo',
               stock: 999,
               imagen_url: 'https://images.unsplash.com/photo-1596814234568-19ebcc1af3fa?auto=format&fit=crop&q=80&w=400',
-              descripcion: '¡Premio de bienvenida ganado en el juego La Noche Perfecta!',
+              descripcion: '¡Premio ganado en el centro de juegos!',
               created_at: new Date().toISOString()
             };
             addToCart(giftItem, 'Única', 'Estándar', 1);
