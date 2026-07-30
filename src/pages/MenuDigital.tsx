@@ -6,6 +6,7 @@ import { Loader2, Search, Plus, ShoppingBag, X, ShoppingCart, Volume2, VolumeX, 
 import { useCart, getEffectivePrice } from '../context/CartContext';
 import PqrsModal from '../components/PqrsModal';
 import { getOptimizedImageUrl } from '../lib/imageOptimizer';
+import { NochePerfectaGameModal, TemuWelcomeBanner } from '../components/NochePerfectaGameModal';
 import './MenuDigital.css';
 
 // Ejecutar sincrónicamente para evitar parpadeo de color
@@ -112,6 +113,8 @@ export default function MenuDigital() {
   const [overrideWhatsApp, setOverrideWhatsApp] = useState<string | null>(null);
   const [heroMuted, setHeroMuted] = useState(true);
   const [showTipoModal, setShowTipoModal] = useState(false);
+  const [isGameModalOpen, setIsGameModalOpen] = useState(false);
+  const [showTemuBanner, setShowTemuBanner] = useState(false);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -405,6 +408,20 @@ export default function MenuDigital() {
       setIsBulkDiscountEnabled(configuracion.descuento_mayor_carrito_activo ?? true);
     }
   }, [configuracion, setDescuentoPromocional, setIsBulkDiscountEnabled]);
+
+  useEffect(() => {
+    try {
+      const tenant = getTenantId();
+      const hasWon = localStorage.getItem(`noche_perfecta_coupon_won_${tenant}`);
+      const dismissed = sessionStorage.getItem(`temu_banner_dismissed_${tenant}`);
+      if (!hasWon && !dismissed) {
+        const timer = setTimeout(() => {
+          setShowTemuBanner(true);
+        }, 1200);
+        return () => clearTimeout(timer);
+      }
+    } catch (e) {}
+  }, []);
 
   const [formData, setFormData] = useState({
     nombre: '',
@@ -706,8 +723,22 @@ export default function MenuDigital() {
           )
         )}
 
-        {/* Controles Flotantes Derecha: Tipo de Compra + Sonido */}
+        {/* Controles Flotantes Derecha: Juego + Tipo de Compra + Sonido */}
         <div className="hero-right-controls">
+          <button
+            onClick={() => setIsGameModalOpen(true)}
+            className="hero-tipo-compra-pill"
+            style={{ 
+              background: 'linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%)', 
+              boxShadow: '0 4px 15px rgba(217, 70, 239, 0.45)',
+              border: '1px solid rgba(255, 255, 255, 0.85)'
+            }}
+            title="¡Juega La Noche Perfecta y gana 30% de descuento!"
+          >
+            <span style={{ fontSize: '0.85rem' }}>😴</span>
+            <span className="hero-tipo-label" style={{ color: '#ffffff', fontWeight: 900 }}>Pijama Gratis</span>
+          </button>
+
           <button
             onClick={() => setShowTipoModal(true)}
             className="hero-tipo-compra-pill"
@@ -1624,6 +1655,42 @@ export default function MenuDigital() {
           </div>
         </div>
       )}
+      {/* ── Modal Aviso de Bienvenida Estilo Temu ── */}
+      <TemuWelcomeBanner
+        isOpen={showTemuBanner}
+        onClose={() => {
+          setShowTemuBanner(false);
+          try { sessionStorage.setItem(`temu_banner_dismissed_${getTenantId()}`, 'true'); } catch (e) {}
+        }}
+        onStartGame={() => {
+          setShowTemuBanner(false);
+          try { sessionStorage.setItem(`temu_banner_dismissed_${getTenantId()}`, 'true'); } catch (e) {}
+          setIsGameModalOpen(true);
+        }}
+      />
+
+      {/* ── Modal Juego La Noche Perfecta ── */}
+      <NochePerfectaGameModal
+        isOpen={isGameModalOpen}
+        onClose={() => setIsGameModalOpen(false)}
+        onApplyCoupon={() => {
+          try {
+            const giftItem: Producto = {
+              id: 'regalo-pijama-short-tira-' + Date.now(),
+              nombre: '🎁 REGALO: Pijama Short Tira',
+              precio: 0,
+              categoria: 'regalo',
+              subcategoria: 'regalo',
+              stock: 999,
+              imagen_url: 'https://images.unsplash.com/photo-1596814234568-19ebcc1af3fa?auto=format&fit=crop&q=80&w=400',
+              descripcion: '¡Premio de bienvenida ganado en el juego La Noche Perfecta!',
+              created_at: new Date().toISOString()
+            };
+            addToCart(giftItem, 'Única', 'Estándar', 1);
+          } catch (e) {}
+        }}
+        tenantId={getTenantId()}
+      />
     </div>
   );
 }

@@ -1,0 +1,474 @@
+/* ── Modal & Overlay ── */
+.noche-game-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(10, 15, 30, 0.92);
+  backdrop-filter: blur(12px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  font-family: 'Outfit', sans-serif;
+  user-select: none;
+  animation: game-fade-in 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.noche-game-card {
+  width: 100%;
+  max-width: 440px;
+  height: 90vh;
+  max-height: 680px;
+  background: linear-gradient(180deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  border-radius: 24px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 30px rgba(99, 102, 241, 0.25);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Stars background animation */
+.noche-stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: 
+    radial-gradient(2px 2px at 20px 30px, #ffffff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 40px 70px, #ffffff, rgba(0,0,0,0)),
+    radial-gradient(1px 1px at 90px 40px, #ffffff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 160px 120px, #ffffff, rgba(0,0,0,0)),
+    radial-gradient(1.5px 1.5px at 230px 80px, #ffffff, rgba(0,0,0,0)),
+    radial-gradient(2px 2px at 300px 150px, #ffffff, rgba(0,0,0,0));
+  background-repeat: repeat;
+  background-size: 350px 350px;
+  opacity: 0.5;
+  animation: stars-twinkle 4s ease-in-out infinite alternate;
+}
+
+.noche-game-close {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  z-index: 30;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.noche-game-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.08);
+}
+
+/* ── Screen Content Layouts ── */
+.noche-screen-intro,
+.noche-screen-cooldown,
+.noche-screen-result {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  text-align: center;
+  z-index: 10;
+  color: #ffffff;
+}
+
+.noche-title {
+  font-size: 1.6rem;
+  font-weight: 800;
+  margin: 0.5rem 0 0.3rem;
+  background: linear-gradient(135deg, #a5f3fc 0%, #c084fc 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  line-height: 1.25;
+}
+
+.noche-subtitle {
+  font-size: 0.88rem;
+  color: #cbd5e1;
+  margin-bottom: 1.2rem;
+  line-height: 1.45;
+}
+
+.noche-rules-box {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 1rem;
+  margin-bottom: 1.4rem;
+  width: 100%;
+  text-align: left;
+}
+
+.noche-rules-title {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #a7f3d0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 0.5rem;
+}
+
+.noche-rules-list {
+  font-size: 0.8rem;
+  color: #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.noche-btn-start,
+.noche-btn-action {
+  width: 100%;
+  padding: 0.85rem;
+  border-radius: 9999px;
+  border: none;
+  background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4);
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.noche-btn-start:hover,
+.noche-btn-action:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 10px 25px rgba(168, 85, 247, 0.6);
+}
+
+/* ── HUD (Game Playing Top Header) ── */
+.noche-hud {
+  padding: 0.85rem 1rem 0.5rem;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  background: rgba(15, 23, 42, 0.7);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.noche-hud-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.noche-badge-level {
+  background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+  color: #0f172a;
+  font-weight: 800;
+  font-size: 0.78rem;
+  padding: 0.25rem 0.65rem;
+  border-radius: 9999px;
+  letter-spacing: 0.4px;
+}
+
+.noche-timer-text {
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: #fbbf24;
+  font-family: monospace;
+}
+
+.noche-stamina-bar-bg {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.noche-stamina-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #34d399 0%, #a7f3d0 100%);
+  transition: width 0.3s ease;
+  border-radius: 9999px;
+}
+
+/* ── Playing Area & Character ── */
+.noche-play-area {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.noche-character-wrap {
+  position: absolute;
+  bottom: 2.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 10;
+}
+
+.noche-character-emoji {
+  font-size: 4.5rem;
+  filter: drop-shadow(0 10px 15px rgba(0,0,0,0.5));
+  animation: sleeping-float 3s ease-in-out infinite alternate;
+}
+
+.noche-zzz-container {
+  position: absolute;
+  top: -1.2rem;
+  right: -0.8rem;
+  display: flex;
+  gap: 0.2rem;
+}
+
+.noche-zzz {
+  font-weight: 900;
+  color: #a7f3d0;
+  font-size: 1.2rem;
+  animation: zzz-float 2s infinite ease-out;
+}
+
+.noche-zzz:nth-child(2) { animation-delay: 0.4s; font-size: 1.4rem; }
+.noche-zzz:nth-child(3) { animation-delay: 0.8s; font-size: 1.6rem; }
+
+/* ── Obstacle Elements ── */
+.noche-obstacle {
+  position: absolute;
+  z-index: 30;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: obstacle-pop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  touch-action: manipulation;
+}
+
+.noche-obstacle-bubble {
+  width: 58px;
+  height: 58px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(8px);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(244, 63, 94, 0.4);
+  position: relative;
+  transition: transform 0.1s ease;
+}
+
+.noche-obstacle-bubble:active {
+  transform: scale(0.85);
+}
+
+.noche-obstacle-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 3px solid #f43f5e;
+  animation: ring-shrink linear forwards;
+}
+
+/* ── Cooldown Clock Display ── */
+.noche-cooldown-timer {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 1rem;
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: #38bdf8;
+  letter-spacing: 1px;
+  margin: 1rem 0;
+  font-family: monospace;
+}
+
+.noche-coupon-box {
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.2) 0%, rgba(16, 185, 129, 0.3) 100%);
+  border: 1.5px dashed #34d399;
+  border-radius: 16px;
+  padding: 1rem;
+  margin-bottom: 1.2rem;
+  width: 100%;
+}
+
+.noche-coupon-code {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: #6ee7b7;
+  letter-spacing: 2px;
+  margin-top: 0.3rem;
+}
+
+/* ── Keyframe Animations ── */
+@keyframes game-fade-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes stars-twinkle {
+  0% { opacity: 0.3; }
+  100% { opacity: 0.8; }
+}
+
+@keyframes sleeping-float {
+  0% { transform: translateX(-50%) translateY(0); }
+  100% { transform: translateX(-50%) translateY(-8px); }
+}
+
+@keyframes zzz-float {
+  0% { opacity: 0; transform: translateY(0) scale(0.8); }
+  50% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-25px) scale(1.2); }
+}
+
+@keyframes obstacle-pop {
+  0% { transform: scale(0); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ── TEMU-STYLE GAMIFIED WELCOME POPUP ── */
+.temu-welcome-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99998;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  font-family: 'Outfit', sans-serif;
+  user-select: none;
+  animation: temu-pop-in 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.temu-welcome-card {
+  width: 100%;
+  max-width: 380px;
+  background: linear-gradient(145deg, #1e1b4b 0%, #31104b 50%, #0f172a 100%);
+  border: 3px solid #f59e0b;
+  border-radius: 28px;
+  padding: 1.8rem 1.4rem 1.4rem;
+  box-shadow: 0 0 40px rgba(245, 158, 11, 0.6), 0 20px 60px rgba(0, 0, 0, 0.9);
+  position: relative;
+  text-align: center;
+  color: #ffffff;
+  overflow: hidden;
+}
+
+.temu-banner-badge {
+  display: inline-block;
+  background: linear-gradient(90deg, #ff4500 0%, #ff8c00 100%);
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 0.82rem;
+  padding: 0.35rem 1rem;
+  border-radius: 9999px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  box-shadow: 0 4px 15px rgba(255, 69, 0, 0.5);
+  animation: temu-badge-bounce 1.5s infinite alternate ease-in-out;
+  margin-bottom: 0.75rem;
+}
+
+.temu-welcome-title {
+  font-size: 1.8rem;
+  font-weight: 900;
+  line-height: 1.15;
+  margin: 0.4rem 0 0.5rem;
+  background: linear-gradient(135deg, #fbbf24 0%, #f43f5e 50%, #a855f7 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 2px 10px rgba(251, 191, 36, 0.3);
+}
+
+.temu-discount-tag {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  font-size: 2.8rem;
+  font-weight: 900;
+  color: #facc15;
+  margin: 0.5rem 0;
+  letter-spacing: -1px;
+  text-shadow: 0 4px 20px rgba(250, 204, 21, 0.6);
+  animation: temu-pulse 2s infinite ease-in-out;
+}
+
+.temu-glow-btn {
+  width: 100%;
+  padding: 0.95rem;
+  border-radius: 9999px;
+  border: 2px solid #fef08a;
+  background: linear-gradient(135deg, #ff4500 0%, #ff1493 50%, #8a2be2 100%);
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 1.05rem;
+  cursor: pointer;
+  box-shadow: 0 8px 25px rgba(255, 20, 147, 0.7), 0 0 20px rgba(255, 69, 0, 0.5);
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  letter-spacing: 0.5px;
+  margin-top: 1rem;
+}
+
+.temu-glow-btn:hover {
+  transform: scale(1.04);
+  box-shadow: 0 12px 35px rgba(255, 20, 147, 0.9), 0 0 30px rgba(255, 215, 0, 0.8);
+}
+
+.temu-dismiss-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 0.85rem;
+  text-decoration: underline;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.temu-dismiss-btn:hover {
+  opacity: 1;
+  color: #cbd5e1;
+}
+
+@keyframes temu-pop-in {
+  0% { opacity: 0; transform: scale(0.6) rotate(-4deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+@keyframes temu-badge-bounce {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-4px); }
+}
+
+@keyframes temu-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
