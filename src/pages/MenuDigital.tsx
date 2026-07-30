@@ -732,14 +732,7 @@ export default function MenuDigital() {
           className="burger-menu-btn"
           aria-label="Abrir menú"
         >
-          <Menu size={28} strokeWidth={3} className="burger-menu-icon" style={{ stroke: 'url(#burger-gradient)' }} />
-          {/* SVG Gradient definition for the icon */}
-          <svg width="0" height="0">
-            <linearGradient id="burger-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop stopColor="#d946ef" offset="0%" />
-              <stop stopColor="#8b5cf6" offset="100%" />
-            </linearGradient>
-          </svg>
+          <Menu size={28} strokeWidth={3} className="burger-menu-icon" color="var(--primary, #000)" />
         </button>
 
         {/* ── CENTRAL LOGO ── */}
