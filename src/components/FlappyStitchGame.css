@@ -238,3 +238,100 @@
 .stitch-btn-tap:active {
   transform: scale(0.96);
 }
+
+/* Instructions Card */
+.stitch-instructions-card {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1.5px solid rgba(56, 189, 248, 0.35);
+  border-radius: 16px;
+  padding: 0.9rem;
+  margin: 0.7rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  text-align: left;
+  width: 100%;
+}
+
+.instruction-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+}
+
+.step-num {
+  background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%);
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 900;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(56, 189, 248, 0.4);
+}
+
+.step-text {
+  font-size: 0.82rem;
+  color: #e2e8f0;
+  line-height: 1.35;
+}
+
+.step-text strong {
+  color: #38bdf8;
+}
+
+.step-text em {
+  color: #fef08a;
+  font-style: normal;
+  font-weight: 800;
+}
+
+/* Hovering safe animation before first jump */
+.stitch-hovering {
+  animation: stitch-float-bounce 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes stitch-float-bounce {
+  0% { transform: translateY(-8px) rotate(-4deg); }
+  100% { transform: translateY(8px) rotate(4deg); }
+}
+
+/* Ready State Overlay Banner */
+.stitch-ready-banner {
+  position: absolute;
+  top: 48%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 45;
+  background: rgba(15, 23, 42, 0.92);
+  border: 2px solid #38bdf8;
+  border-radius: 20px;
+  padding: 0.9rem 1.2rem;
+  text-align: center;
+  box-shadow: 0 0 30px rgba(56, 189, 248, 0.5), 0 10px 30px rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(8px);
+  width: 82%;
+  animation: banner-pulse-border 1.5s infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes banner-pulse-border {
+  0% { box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); border-color: #38bdf8; }
+  100% { box-shadow: 0 0 35px rgba(56, 189, 248, 0.85); border-color: #93c5fd; }
+}
+
+.stitch-pulse-finger {
+  font-size: 2.2rem;
+  margin-bottom: 0.2rem;
+  animation: finger-tap 0.8s infinite alternate ease-in-out;
+}
+
+@keyframes finger-tap {
+  0% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(-6px) scale(1.15); }
+}
+

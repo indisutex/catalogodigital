@@ -1,21 +1,79 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Sparkles, Trophy, ArrowLeft } from 'lucide-react';
+import { Trophy, ArrowLeft, HelpCircle, Play } from 'lucide-react';
 import './FlappyStitchGame.css';
 
-interface RewardTier {
+export interface RewardTier {
   pts: number;
   label: string;
   type: 'discount' | 'shipping' | 'special';
   val: number;
 }
 
-const REWARD_TIERS: RewardTier[] = [
+export const REWARD_TIERS: RewardTier[] = [
   { pts: 50, label: '5% DE DESCUENTO', type: 'discount', val: 5 },
   { pts: 100, label: 'ENVÍO GRATIS', type: 'shipping', val: 0 },
   { pts: 200, label: '10% DE DESCUENTO', type: 'discount', val: 10 },
   { pts: 500, label: '20% DE DESCUENTO', type: 'discount', val: 20 },
   { pts: 1000, label: '🎁 PREMIO ESPECIAL (PIJAMA PREMIUM)', type: 'special', val: 100 }
 ];
+
+export const StitchAvatarSVG: React.FC<{ size?: number; className?: string; style?: React.CSSProperties }> = ({
+  size = 48,
+  className = '',
+  style = {}
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 100 100"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    style={{ display: 'inline-block', verticalAlign: 'middle', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.4))', ...style }}
+  >
+    {/* Left Ear */}
+    <path d="M32 45 C15 35 2 20 5 8 C7 0 22 10 35 32 Z" fill="#2563eb" stroke="#1d4ed8" strokeWidth="2" />
+    <path d="M30 42 C18 34 8 22 10 12 C12 6 22 14 32 32 Z" fill="#ec4899" opacity="0.88" />
+    {/* Ear Notch */}
+    <path d="M12 22 L7 25 L14 28 Z" fill="#0f172a" />
+
+    {/* Right Ear */}
+    <path d="M68 45 C85 35 98 20 95 8 C93 0 78 10 65 32 Z" fill="#2563eb" stroke="#1d4ed8" strokeWidth="2" />
+    <path d="M70 42 C82 34 92 22 90 12 C88 6 78 14 68 32 Z" fill="#ec4899" opacity="0.88" />
+
+    {/* Stitch Head */}
+    <ellipse cx="50" cy="52" rx="26" ry="22" fill="#2563eb" stroke="#1e40af" strokeWidth="2.5" />
+
+    {/* Muzzle / Light Blue Patch */}
+    <ellipse cx="50" cy="58" rx="17" ry="12" fill="#bae6fd" />
+
+    {/* Left Eye Patch & Eye */}
+    <ellipse cx="40" cy="48" rx="7.5" ry="9" fill="#1e3a8a" />
+    <ellipse cx="40.5" cy="48" rx="5.5" ry="7" fill="#0f172a" />
+    <circle cx="39" cy="45" r="2.2" fill="#ffffff" />
+    <circle cx="42" cy="51" r="1" fill="#ffffff" />
+
+    {/* Right Eye Patch & Eye */}
+    <ellipse cx="60" cy="48" rx="7.5" ry="9" fill="#1e3a8a" />
+    <ellipse cx="59.5" cy="48" rx="5.5" ry="7" fill="#0f172a" />
+    <circle cx="58" cy="45" r="2.2" fill="#ffffff" />
+    <circle cx="61" cy="51" r="1" fill="#ffffff" />
+
+    {/* Cute Dark Nose */}
+    <path d="M46 54 Q50 51 54 54 Q50 58 46 54 Z" fill="#1e1b4b" />
+
+    {/* Grin / Mouth with fangs */}
+    <path d="M42 63 Q50 69 58 63" stroke="#0f172a" strokeWidth="2" fill="none" strokeLinecap="round" />
+    <polygon points="44,63 45.5,65 47,63" fill="#ffffff" />
+    <polygon points="53,63 54.5,65 56,63" fill="#ffffff" />
+
+    {/* Sleeping Cap / Nightcap */}
+    <path d="M38 34 Q50 20 62 34 Q50 30 38 34 Z" fill="#6366f1" />
+    <path d="M60 30 Q72 32 78 44 Q70 42 60 30 Z" fill="#4f46e5" />
+    <circle cx="79" cy="45" r="4.5" fill="#fef08a" />
+    <path d="M48 27 A3 3 0 1 0 52 30 A2.5 2.5 0 1 1 48 27 Z" fill="#fef08a" />
+  </svg>
+);
 
 interface PillowObstacle {
   id: number;
@@ -36,7 +94,7 @@ export const FlappyStitchGame: React.FC<FlappyStitchGameProps> = ({
   onRewardEarned,
   tenantId = 'default'
 }) => {
-  const [gameState, setGameState] = useState<'intro' | 'playing' | 'gameover' | 'cooldown'>('intro');
+  const [gameState, setGameState] = useState<'intro' | 'instructions' | 'ready' | 'playing' | 'gameover' | 'cooldown'>('intro');
   const [score, setScore] = useState<number>(0);
   const [highScore, setHighScore] = useState<number>(0);
 
@@ -45,8 +103,8 @@ export const FlappyStitchGame: React.FC<FlappyStitchGameProps> = ({
   const WORLD_WIDTH = 380;
   const GRAVITY = 0.42;
   const JUMP_IMPULSE = -7.5;
-  const STITCH_SIZE = 42;
-  const GAP_SIZE = 145; // clearance gap between pillows
+  const STITCH_SIZE = 44;
+  const GAP_SIZE = 150; // clearance gap between pillows
   const PILLOW_WIDTH = 54;
 
   const [stitchY, setStitchY] = useState<number>(180);
@@ -91,10 +149,21 @@ export const FlappyStitchGame: React.FC<FlappyStitchGameProps> = ({
     return false;
   }, [lastPlayedKey]);
 
+  // Forward ref for Game Loop
+  const gameLoopRef = useRef<() => void>(() => {});
+
   // Jump Action
   const jump = useCallback(() => {
-    if (gameState !== 'playing') return;
-    velocityYRef.current = JUMP_IMPULSE;
+    if (gameState === 'ready') {
+      setGameState('playing');
+      velocityYRef.current = JUMP_IMPULSE;
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = requestAnimationFrame(gameLoopRef.current);
+      return;
+    }
+    if (gameState === 'playing') {
+      velocityYRef.current = JUMP_IMPULSE;
+    }
   }, [gameState]);
 
   // Handle Keyboard (Space / ArrowUp)
@@ -184,7 +253,7 @@ export const FlappyStitchGame: React.FC<FlappyStitchGameProps> = ({
     const lastPillow = updatedPillows[updatedPillows.length - 1];
     const spawnDistance = Math.max(170, 220 - Math.floor(scoreRef.current / 100) * 10);
     if (!lastPillow || lastPillow.x < WORLD_WIDTH - spawnDistance) {
-      const minPillow = 50;
+      const minPillow = 45;
       const maxPillow = WORLD_HEIGHT - GAP_SIZE - minPillow;
       const topH = Math.floor(Math.random() * (maxPillow - minPillow + 1)) + minPillow;
       const bottomH = WORLD_HEIGHT - GAP_SIZE - topH;
@@ -210,7 +279,12 @@ export const FlappyStitchGame: React.FC<FlappyStitchGameProps> = ({
     animationFrameRef.current = requestAnimationFrame(gameLoop);
   }, []);
 
-  const startGame = () => {
+  useEffect(() => {
+    gameLoopRef.current = gameLoop;
+  }, [gameLoop]);
+
+  // Setup ready state with initial pillow and hovering position
+  const prepareReadyState = () => {
     if (checkCooldown()) {
       setGameState('cooldown');
       return;
@@ -218,14 +292,22 @@ export const FlappyStitchGame: React.FC<FlappyStitchGameProps> = ({
     setScore(0);
     scoreRef.current = 0;
     stitchYRef.current = 180;
-    velocityYRef.current = -3;
+    velocityYRef.current = 0;
     setStitchY(180);
-    pillowsRef.current = [];
-    setPillows([]);
-    setGameState('playing');
 
-    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    animationFrameRef.current = requestAnimationFrame(gameLoop);
+    const initialTopH = 110;
+    const initialBottomH = WORLD_HEIGHT - GAP_SIZE - initialTopH;
+    const initialPillow: PillowObstacle = {
+      id: 1,
+      x: WORLD_WIDTH + 40,
+      topHeight: initialTopH,
+      bottomHeight: initialBottomH,
+      passed: false
+    };
+    lastPillowIdRef.current = 1;
+    pillowsRef.current = [initialPillow];
+    setPillows([initialPillow]);
+    setGameState('ready');
   };
 
   useEffect(() => {
@@ -260,17 +342,16 @@ export const FlappyStitchGame: React.FC<FlappyStitchGameProps> = ({
 
         {/* Stitch Avatar */}
         <div 
-          className="stitch-character"
+          className={`stitch-character ${gameState === 'ready' ? 'stitch-hovering' : ''}`}
           style={{
             top: `${stitchY}px`,
             left: '60px',
-            transform: `rotate(${Math.min(Math.max(velocityYRef.current * 3.5, -25), 65)}deg)`
+            transform: gameState === 'ready' 
+              ? 'rotate(-5deg)'
+              : `rotate(${Math.min(Math.max(velocityYRef.current * 3.5, -25), 65)}deg)`
           }}
         >
-          <div className="stitch-avatar-box">
-            👾
-            <span className="stitch-pyjama-cap">🌙</span>
-          </div>
+          <StitchAvatarSVG size={50} />
         </div>
 
         {/* Pillow Obstacles */}
@@ -303,15 +384,30 @@ export const FlappyStitchGame: React.FC<FlappyStitchGameProps> = ({
 
         {/* Ground */}
         <div className="stitch-ground" />
+
+        {/* Ready Overlay Banner */}
+        {gameState === 'ready' && (
+          <div className="stitch-ready-banner">
+            <div className="stitch-pulse-finger">👆</div>
+            <div style={{ fontSize: '1rem', fontWeight: 900, color: '#ffffff', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              ¡Toca la pantalla para empezar a volar!
+            </div>
+            <div style={{ fontSize: '0.78rem', color: '#93c5fd', marginTop: '0.2rem' }}>
+              (O presiona la barra ESPACIO en PC)
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── INTRO SCREEN ── */}
       {gameState === 'intro' && (
         <div className="stitch-screen-overlay">
-          <div style={{ fontSize: '3.6rem', animation: 'star-twinkle 1.5s infinite alternate' }}>👾🌙</div>
+          <div style={{ margin: '0.5rem 0' }}>
+            <StitchAvatarSVG size={90} />
+          </div>
           <h2 className="stitch-title">Supervivencia Stitch</h2>
           <p style={{ fontSize: '0.85rem', color: '#cbd5e1', margin: '0.2rem 0 0.6rem', lineHeight: '1.4' }}>
-            Ayuda a Stitch en pijama a volar entre las almohadas. ¡Cada almohada esquivada te otorga 1 punto!
+            Ayuda a Stitch en pijama a volar entre las almohadas para ganar premios en tu compra.
           </p>
 
           <div className="stitch-rewards-list">
@@ -326,8 +422,43 @@ export const FlappyStitchGame: React.FC<FlappyStitchGameProps> = ({
             ))}
           </div>
 
-          <button className="stitch-btn-tap" onClick={startGame}>
-            <Sparkles size={20} /> ¡VOLAR Y JUGAR AHORA!
+          <button className="stitch-btn-tap" onClick={() => setGameState('instructions')}>
+            <HelpCircle size={20} /> ¡VER INSTRUCCIONES Y EMPEZAR!
+          </button>
+        </div>
+      )}
+
+      {/* ── INSTRUCTIONS SCREEN ── */}
+      {gameState === 'instructions' && (
+        <div className="stitch-screen-overlay" style={{ padding: '1.2rem' }}>
+          <div style={{ fontSize: '2.5rem', marginBottom: '0.2rem' }}>📖</div>
+          <h2 className="stitch-title" style={{ fontSize: '1.4rem' }}>¿Cómo se juega?</h2>
+          
+          <div className="stitch-instructions-card">
+            <div className="instruction-step">
+              <div className="step-num">1</div>
+              <div className="step-text">
+                <strong>Controla el vuelo:</strong> Toca la pantalla o presiona <strong>ESPACIO</strong> para dar cada aletazo y subir.
+              </div>
+            </div>
+
+            <div className="instruction-step">
+              <div className="step-num">2</div>
+              <div className="step-text">
+                <strong>Esquiva las almohadas:</strong> Pasa libremente por el centro. No toques las almohadas ni caigas al suelo.
+              </div>
+            </div>
+
+            <div className="instruction-step">
+              <div className="step-num">3</div>
+              <div className="step-text">
+                <strong>Inicio seguro:</strong> Al tocar iniciar, Stitch <em>flotará en el aire</em> sin caer hasta que des tu primer salto.
+              </div>
+            </div>
+          </div>
+
+          <button className="stitch-btn-tap" onClick={prepareReadyState} style={{ background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)' }}>
+            <Play size={20} fill="#ffffff" /> ¡ENTENDIDO, LISTO PARA VOLAR!
           </button>
         </div>
       )}
@@ -406,3 +537,4 @@ export const FlappyStitchGame: React.FC<FlappyStitchGameProps> = ({
     </div>
   );
 };
+

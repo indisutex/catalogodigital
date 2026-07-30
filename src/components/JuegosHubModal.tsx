@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { X, ArrowRight } from 'lucide-react';
 import { NochePerfectaGameModal } from './NochePerfectaGameModal';
-import { FlappyStitchGame } from './FlappyStitchGame';
+import { FlappyStitchGame, StitchAvatarSVG } from './FlappyStitchGame';
 import './JuegosHubModal.css';
 
 interface JuegosHubModalProps {
@@ -93,8 +93,8 @@ export const JuegosHubModal: React.FC<JuegosHubModalProps> = ({
 
               {/* Card Juego 2: Supervivencia Stitch */}
               <div className="juego-card-item" onClick={() => setActiveScreen('stitch')}>
-                <div className="juego-card-icon" style={{ background: 'linear-gradient(135deg, #0284c7 0%, #3b82f6 100%)' }}>
-                  👾
+                <div className="juego-card-icon" style={{ background: 'linear-gradient(135deg, #0284c7 0%, #3b82f6 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <StitchAvatarSVG size={36} />
                 </div>
                 <div className="juego-card-info">
                   <div className="juego-card-name">2. 🌙 Supervivencia Stitch</div>
