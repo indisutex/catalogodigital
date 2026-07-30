@@ -755,19 +755,20 @@
 
 .item-img {
   width: 100%;
-  height: auto;
+  height: 200px;
   flex-shrink: 0;
   border-radius: 0;
-  overflow: visible;
-  background-color: #f8fafc;
+  overflow: hidden;
+  background-color: #f0f0f0;
   position: relative;
 }
 
 .item-img img {
   width: 100%;
-  height: auto;
+  height: 100%;
   display: block;
-  object-fit: contain;
+  object-fit: cover;
+  object-position: center top;
   transition: transform 0.4s ease;
 }
 
