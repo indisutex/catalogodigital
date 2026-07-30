@@ -564,6 +564,18 @@ export default function MenuDigital() {
   const imageAspectStyle = configuracion?.tarjeta_imagen_aspecto || '1/1';
 
   const cardImageStyle = useMemo(() => {
+    if (imageAspectStyle === 'auto-fit') {
+      return {
+        objectFit: imageFitStyle === 'cover' ? ('contain' as any) : (imageFitStyle as any),
+        objectPosition: imagePosStyle as any,
+        aspectRatio: 'auto',
+        maxHeight: '360px',
+        width: '100%',
+        height: 'auto',
+        borderRadius: '12px'
+      };
+    }
+
     let aspect = '1 / 1';
     if (imageAspectStyle === '3/4') aspect = '3 / 4';
     else if (imageAspectStyle === '4/3') aspect = '4 / 3';

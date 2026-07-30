@@ -7759,6 +7759,7 @@ export default function Admin() {
                                 onChange={e => setConfiguracion({ ...configuracion, tarjeta_imagen_aspecto: e.target.value as any })}
                                 style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: 600, background: 'white' }}
                               >
+                                <option value="auto-fit">⚡ Auto-Tamaño Inteligente (Detección y encuadre automático por foto)</option>
                                 <option value="1/1">⏹️ Cuadrado (1:1)</option>
                                 <option value="3/4">📱 Retrato / Vertical (3:4)</option>
                                 <option value="4/3">🖥️ Horizontal (4:3)</option>

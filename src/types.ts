@@ -78,7 +78,7 @@ export interface Configuracion {
   formato_ticket_pos?: 'termico' | 'estandar';
   tarjeta_imagen_fit?: 'cover' | 'contain' | 'fill' | 'scale-down';
   tarjeta_imagen_posicion?: 'center' | 'top' | 'bottom' | 'left' | 'right';
-  tarjeta_imagen_aspecto?: '1/1' | '3/4' | '4/3' | '16/9' | 'auto';
+  tarjeta_imagen_aspecto?: '1/1' | '3/4' | '4/3' | '16/9' | 'auto' | 'auto-fit';
 }
 
 export interface Pedido {
