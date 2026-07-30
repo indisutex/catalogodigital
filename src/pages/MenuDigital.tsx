@@ -410,18 +410,19 @@ export default function MenuDigital() {
   }, [configuracion, setDescuentoPromocional, setIsBulkDiscountEnabled]);
 
   useEffect(() => {
-    try {
-      const tenant = getTenantId();
-      const hasWon = localStorage.getItem(`noche_perfecta_coupon_won_${tenant}`);
-      const dismissed = sessionStorage.getItem(`temu_banner_dismissed_${tenant}`);
-      if (!hasWon && !dismissed) {
-        const timer = setTimeout(() => {
-          setShowTemuBanner(true);
-        }, 1200);
-        return () => clearTimeout(timer);
-      }
-    } catch (e) {}
-  }, []);
+    if (!cargando) {
+      try {
+        const tenant = getTenantId();
+        const hasWon = localStorage.getItem(`noche_perfecta_coupon_won_${tenant}`);
+        if (!hasWon) {
+          const timer = setTimeout(() => {
+            setShowTemuBanner(true);
+          }, 600);
+          return () => clearTimeout(timer);
+        }
+      } catch (e) {}
+    }
+  }, [cargando]);
 
   const [formData, setFormData] = useState({
     nombre: '',
