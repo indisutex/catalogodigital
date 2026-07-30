@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Trophy, Heart, ArrowLeft, Clock, Zap, Play } from 'lucide-react';
+import { Trophy, ArrowLeft, Clock, Zap, Play } from 'lucide-react';
 import './CortaRegalosGame.css';
 import {
   DEFAULT_CONFIG,
@@ -184,7 +184,6 @@ export const CortaRegalosGame: React.FC<CortaRegalosGameProps> = ({
   // ── Slice detection ──
   const detectSlice = useCallback((trail: TrailPoint[]) => {
     if (trail.length < 2) return;
-    const { h } = canvasSizeRef.current;
     const now = Date.now();
     const freshTrail = trail.filter(p => now - p.t < TRAIL_DURATION);
     if (freshTrail.length < 2) return;
@@ -336,14 +335,14 @@ export const CortaRegalosGame: React.FC<CortaRegalosGameProps> = ({
       });
 
       // Update halves
-      halvesRef.current = halvesRef.current.filter(h_ => {
-        h_.vy += GRAVITY * 0.7;
-        h_.x += h_.vx;
-        h_.y += h_.vy;
-        h_.rotation += h_.rotationSpeed;
-        h_.life -= dt * 1.8;
-        h_.alpha = Math.max(0, h_.life);
-        return h_.life > 0 && h_.y < h + 100;
+      halvesRef.current = halvesRef.current.filter(half_ => {
+        half_.vy += GRAVITY * 0.7;
+        half_.x += half_.vx;
+        half_.y += half_.vy;
+        half_.rotation += half_.rotationSpeed;
+        half_.life -= dt * 1.8;
+        half_.alpha = Math.max(0, half_.life);
+        return half_.life > 0 && half_.y < canvasSizeRef.current.h + 100;
       });
 
       // Update particles
