@@ -10,7 +10,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && mkdir tmp 2>null || true && echo restart > tmp/restart.txt",
     "lint": "oxlint",
     "preview": "vite preview"
   },
