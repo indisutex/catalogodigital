@@ -7,26 +7,8 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Faltan las credenciales de Supabase en el archivo .env');
 }
 
-// Mapa de dominios propios → tenant ID
-// Agregar aquí cada dominio personalizado de cada cliente
-const DOMAIN_TENANT_MAP: Record<string, string> = {
-  'pijamasalmayor.com': 'sublimados_majestic',
-  'www.pijamasalmayor.com': 'sublimados_majestic',
-  // Agregar más dominios aquí cuando sea necesario:
-  // 'saramantha.com': 'saramantha',
-  // 'indisutex.com': 'indisutex',
-};
-
 export const getTenantId = () => {
-  // 1. Primero: detectar por dominio propio (custom domain)
-  const hostname = window.location.hostname.toLowerCase();
-  if (DOMAIN_TENANT_MAP[hostname]) {
-    const tenantFromDomain = DOMAIN_TENANT_MAP[hostname];
-    setTenantId(tenantFromDomain);
-    return tenantFromDomain;
-  }
-
-  // 2. Luego: detectar por ruta URL (/:tenant)
+  // 1. Detectar por ruta URL (/:tenant) — ej: pijamasalmayor.com/saramantha
   const pathname = window.location.pathname.replace(/^\/+/g, '').trim();
   const firstPart = pathname.split('/')[0].toLowerCase();
   
@@ -38,7 +20,7 @@ export const getTenantId = () => {
     return normalised;
   }
 
-  // 3. Luego: query param ?tienda=xxx
+  // 2. Query param ?tienda=xxx
   const urlParams = new URLSearchParams(window.location.search);
   const urlTenant = urlParams.get('tienda');
   if (urlTenant) {
@@ -47,11 +29,11 @@ export const getTenantId = () => {
     return normalised;
   }
   
-  // 4. Luego: localStorage
+  // 3. localStorage (última sesión)
   const stored = localStorage.getItem('tenant_id');
   if (stored) return stored;
   
-  // 5. Fallback al tenant por defecto
+  // 4. Fallback al tenant por defecto
   return import.meta.env.VITE_TENANT_ID || 'sublimados_majestic';
 };
 
