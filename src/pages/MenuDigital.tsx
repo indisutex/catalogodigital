@@ -110,6 +110,7 @@ export default function MenuDigital() {
   const [isCheckoutMode, setIsCheckoutMode] = useState(false);
   const [overrideWhatsApp, setOverrideWhatsApp] = useState<string | null>(null);
   const [heroMuted, setHeroMuted] = useState(true);
+  const [showTipoModal, setShowTipoModal] = useState(false);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -676,61 +677,11 @@ export default function MenuDigital() {
     setFormData({ nombre: '', telefono: '', direccion: '', ciudad: '' });
   };
 
-  if (buyerType === null && !cargando && configuracion?.preguntar_tipo_cliente) {
-    const storeLogo = mayoristaBranding?.logo || configuracion?.logo_url;
-    return (
-      <div className="welcome-tipo-overlay">
-        <div className="welcome-tipo-card">
-          <div className="welcome-logo-badge">
-            {storeLogo ? (
-              <img src={storeLogo} alt="Logo" className="welcome-logo-img" />
-            ) : (
-              <span className="welcome-logo-icon">🛍️</span>
-            )}
-          </div>
-          <h1 className="welcome-title">
-            Bienvenido a <span className="highlight-name">{mayoristaBranding?.nombre || configuracion?.nombre_negocio || 'Nuestro Catálogo'}</span>
-          </h1>
-          <p className="welcome-subtitle">
-            Por favor, selecciona tu tipo de compra para mostrarte los precios y catálogo correcto:
-          </p>
-
-          <div className="welcome-buttons-list">
-            <button onClick={() => setBuyerType('detal')} className="welcome-btn btn-detal">
-              <span className="btn-icon">🛍️</span>
-              <div className="btn-text-wrap">
-                <span className="btn-title">Compras al detal</span>
-                <span className="btn-desc">Para compras individuales y al por menor</span>
-              </div>
-            </button>
-
-            <button onClick={() => setBuyerType('mayorista')} className="welcome-btn btn-mayorista">
-              <span className="btn-icon">📦</span>
-              <div className="btn-text-wrap">
-                <span className="btn-title">Soy mayorista</span>
-                <span className="btn-desc">Precios especiales para distribuidores</span>
-              </div>
-            </button>
-
-            <button onClick={() => setBuyerType('50_unidades')} className="welcome-btn btn-bulk">
-              <span className="btn-icon">🏭</span>
-              <div className="btn-text-wrap">
-                <span className="btn-title">Compras por 50 unidades</span>
-                <span className="btn-desc">Descuentos por volumen alto</span>
-              </div>
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="menu-app-container">
       <div className={`menu-app-header ${isMediaVideo(mayoristaBranding?.video || configuracion?.video_hero_url) ? 'has-video' : ''}`} style={{ position: 'relative' }}>
         {(mayoristaBranding?.video || configuracion?.video_hero_url) && (
           isMediaVideo(mayoristaBranding?.video || configuracion?.video_hero_url) ? (
-          <>
             <video 
               src={mayoristaBranding?.video || configuracion?.video_hero_url} 
               autoPlay 
@@ -741,38 +692,6 @@ export default function MenuDigital() {
               ref={heroVideoRef}
               onCanPlay={el => { const v = (el.target as HTMLVideoElement); v.muted = heroMuted; v.play().catch(() => {}); }}
             />
-            <button
-              onClick={() => {
-                const newMuted = !heroMuted;
-                setHeroMuted(newMuted);
-                if (heroVideoRef.current) {
-                  heroVideoRef.current.muted = newMuted;
-                  if (!newMuted) heroVideoRef.current.play().catch(() => {});
-                }
-              }}
-              style={{
-                position: 'absolute',
-                bottom: '3.8rem',
-                right: '0.75rem',
-                zIndex: 30,
-                background: 'rgba(0,0,0,0.45)',
-                border: 'none',
-                borderRadius: '50%',
-                width: '36px',
-                height: '36px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                backdropFilter: 'blur(4px)',
-                color: '#fff',
-                transition: 'background 0.2s'
-              }}
-              title={heroMuted ? 'Activar sonido' : 'Silenciar'}
-            >
-              {heroMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
-            </button>
-          </>
           ) : (
             <img 
               src={mayoristaBranding?.video || configuracion?.video_hero_url}
@@ -782,6 +701,40 @@ export default function MenuDigital() {
             />
           )
         )}
+
+        {/* Controles Flotantes Derecha: Tipo de Compra + Sonido */}
+        <div className="hero-right-controls">
+          <button
+            onClick={() => setShowTipoModal(true)}
+            className="hero-tipo-compra-pill"
+            style={{ background: configuracion?.color_primario || 'var(--primary, #0ea5e9)' }}
+            title="Cambiar tipo de compra"
+          >
+            <RefreshCw size={13} className="hero-tipo-icon" />
+            <span className="hero-tipo-label">Tipo:</span>
+            <span className="hero-tipo-badge">
+              {buyerType === 'mayorista' ? 'Mayorista' : buyerType === '50_unidades' ? '50+ Unid' : 'Detal'}
+            </span>
+            <span className="hero-tipo-cambiar">Cambiar</span>
+          </button>
+
+          {isMediaVideo(mayoristaBranding?.video || configuracion?.video_hero_url) && (
+            <button
+              onClick={() => {
+                const newMuted = !heroMuted;
+                setHeroMuted(newMuted);
+                if (heroVideoRef.current) {
+                  heroVideoRef.current.muted = newMuted;
+                  if (!newMuted) heroVideoRef.current.play().catch(() => {});
+                }
+              }}
+              className="hero-sound-btn"
+              title={heroMuted ? 'Activar sonido' : 'Silenciar'}
+            >
+              {heroMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+            </button>
+          )}
+        </div>
 
         {/* Botón Flotante Info & PQRS / Ubicación */}
         <button
@@ -1607,6 +1560,69 @@ export default function MenuDigital() {
           </div>
         );
       })()}
+
+      {/* ── Modal Selección Tipo de Compra ── */}
+      {(showTipoModal || (buyerType === null && !cargando && (configuracion?.preguntar_tipo_cliente ?? false))) && (
+        <div className="welcome-tipo-overlay" onClick={() => setShowTipoModal(false)}>
+          <div className="welcome-tipo-card" onClick={e => e.stopPropagation()} style={{ position: 'relative' }}>
+            <button 
+              onClick={() => setShowTipoModal(false)}
+              className="welcome-tipo-close-btn"
+              title="Cerrar"
+            >
+              <X size={18} />
+            </button>
+            <div className="welcome-logo-badge">
+              {(mayoristaBranding?.logo || configuracion?.logo_url) ? (
+                <img src={mayoristaBranding?.logo || configuracion?.logo_url} alt="Logo" className="welcome-logo-img" />
+              ) : (
+                <span className="welcome-logo-icon">🛍️</span>
+              )}
+            </div>
+            <h1 className="welcome-title">
+              Selecciona tu <span className="highlight-name">Tipo de Compra</span>
+            </h1>
+            <p className="welcome-subtitle">
+              Por favor, selecciona tu modalidad para mostrarte los precios y catálogo correcto:
+            </p>
+
+            <div className="welcome-buttons-list">
+              <button 
+                onClick={() => { setBuyerType('detal'); setShowTipoModal(false); }} 
+                className={`welcome-btn btn-detal ${buyerType === 'detal' || buyerType === null ? 'active' : ''}`}
+              >
+                <span className="btn-icon">🛍️</span>
+                <div className="btn-text-wrap">
+                  <span className="btn-title">Compras al detal</span>
+                  <span className="btn-desc">Para compras individuales y al por menor</span>
+                </div>
+              </button>
+
+              <button 
+                onClick={() => { setBuyerType('mayorista'); setShowTipoModal(false); }} 
+                className={`welcome-btn btn-mayorista ${buyerType === 'mayorista' ? 'active' : ''}`}
+              >
+                <span className="btn-icon">📦</span>
+                <div className="btn-text-wrap">
+                  <span className="btn-title">Soy mayorista</span>
+                  <span className="btn-desc">Precios especiales para distribuidores</span>
+                </div>
+              </button>
+
+              <button 
+                onClick={() => { setBuyerType('50_unidades'); setShowTipoModal(false); }} 
+                className={`welcome-btn btn-bulk ${buyerType === '50_unidades' ? 'active' : ''}`}
+              >
+                <span className="btn-icon">🏭</span>
+                <div className="btn-text-wrap">
+                  <span className="btn-title">Compras por 50 unidades</span>
+                  <span className="btn-desc">Descuentos por volumen alto</span>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
