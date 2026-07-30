@@ -564,17 +564,15 @@ export default function MenuDigital() {
   const imageAspectStyle = configuracion?.tarjeta_imagen_aspecto || '3/4';
 
   const cardImageStyle = useMemo(() => {
-    if (imageAspectStyle === 'auto-fit') {
+    if (imageAspectStyle === 'auto-fit' || imageFitStyle === 'contain') {
       return {
         objectFit: 'contain' as const,
-        objectPosition: 'center' as const,
-        aspectRatio: 'auto',
-        maxHeight: '380px',
-        maxWidth: '100%',
-        width: 'auto',
+        objectPosition: imagePosStyle as any,
+        width: '100%',
         height: 'auto',
-        margin: '0 auto',
-        display: 'block'
+        maxHeight: '420px',
+        display: 'block',
+        margin: '0 auto'
       };
     }
 
@@ -584,20 +582,6 @@ export default function MenuDigital() {
     else if (imageAspectStyle === '4/3') aspect = '4 / 3';
     else if (imageAspectStyle === '16/9') aspect = '16 / 9';
     else if (imageAspectStyle === 'auto') aspect = 'auto';
-
-    if (imageFitStyle === 'contain') {
-      return {
-        objectFit: 'contain' as const,
-        objectPosition: imagePosStyle as any,
-        aspectRatio: aspect,
-        maxWidth: '100%',
-        maxHeight: '100%',
-        width: 'auto',
-        height: 'auto',
-        margin: '0 auto',
-        display: 'block'
-      };
-    }
 
     return {
       objectFit: imageFitStyle as any,
