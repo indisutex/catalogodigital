@@ -210,9 +210,19 @@ export const NochePerfectaGameModal: React.FC<NochePerfectaGameModalProps> = ({
             <div className="noche-rules-box">
               <div className="noche-rules-title">🎮 ¿Cómo jugar?</div>
               <div className="noche-rules-list">
-                <span>• Toca los obstáculos (⏰, 📱, 🐶, ⚡, 👶, ☕) antes de que lo despierten.</span>
-                <span>• Cada nivel (1 al 10) aumenta la velocidad.</span>
-                <span>• ¡Solo si completas el <strong>Nivel 10</strong> ganas la Pijama Short Tira!</span>
+                <span style={{ fontWeight: 700, color: '#fef08a' }}>• Toca estos 6 obstáculos antes de que despierten al personaje:</span>
+                
+                <div className="noche-obstacles-preview-grid">
+                  <div className="obs-chip"><span className="obs-icon">⏰</span> Despertador</div>
+                  <div className="obs-chip"><span className="obs-icon">📱</span> Celular</div>
+                  <div className="obs-chip"><span className="obs-icon">🐶</span> Perro</div>
+                  <div className="obs-chip"><span className="obs-icon">⚡</span> Trueno</div>
+                  <div className="obs-chip"><span className="obs-icon">👶</span> Bebé</div>
+                  <div className="obs-chip"><span className="obs-icon">☕</span> Café</div>
+                </div>
+
+                <span>• Cada nivel (1 al 10) aumenta la velocidad de reacción.</span>
+                <span>• ¡Solo si completas el <strong>Nivel 10 (60s)</strong> ganas la Pijama Short Tira!</span>
                 <span>• Tienes 1 intento cada 2 días.</span>
               </div>
             </div>
@@ -250,6 +260,30 @@ export const NochePerfectaGameModal: React.FC<NochePerfectaGameModalProps> = ({
 
             <button className="noche-btn-action" onClick={onClose} style={{ background: '#334155' }}>
               Volver al Catálogo
+            </button>
+
+            <button 
+              onClick={() => {
+                try {
+                  localStorage.removeItem(lastPlayedKey);
+                  localStorage.removeItem(couponWonKey);
+                  setGameState('intro');
+                } catch(e){}
+              }} 
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#94a3b8',
+                fontSize: '0.78rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                marginTop: '1.2rem',
+                textDecoration: 'underline',
+                opacity: 0.8
+              }}
+              title="Borrar contador para volver a probar el juego"
+            >
+              🔄 Reiniciar tiempo de espera (Modo Pruebas)
             </button>
           </div>
         )}
@@ -291,7 +325,8 @@ export const NochePerfectaGameModal: React.FC<NochePerfectaGameModalProps> = ({
                   onTouchStart={e => handleTapObstacle(obs.id, e)}
                 >
                   <div className="noche-obstacle-bubble">
-                    {obs.emoji}
+                    <span className="noche-obs-emoji">{obs.emoji}</span>
+                    <span className="noche-obs-name">{obs.name}</span>
                     <div
                       className="noche-obstacle-ring"
                       style={{ animationDuration: `${obs.duration}ms` }}

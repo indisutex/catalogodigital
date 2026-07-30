@@ -246,6 +246,34 @@
 .noche-zzz:nth-child(2) { animation-delay: 0.4s; font-size: 1.4rem; }
 .noche-zzz:nth-child(3) { animation-delay: 0.8s; font-size: 1.6rem; }
 
+/* ── Visual Obstacle Grid in Rules Box ── */
+.noche-obstacles-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem;
+  margin: 0.4rem 0 0.6rem;
+}
+
+.obs-chip {
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  padding: 0.35rem 0.4rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.obs-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.5));
+}
+
 /* ── Obstacle Elements ── */
 .noche-obstacle {
   position: absolute;
@@ -259,30 +287,50 @@
 }
 
 .noche-obstacle-bubble {
-  width: 58px;
-  height: 58px;
-  background: rgba(255, 255, 255, 0.18);
-  border: 2px solid rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(8px);
+  width: 68px;
+  height: 68px;
+  background: #ffffff;
+  border: 3px solid var(--primary, #0ea5e9);
   border-radius: 50%;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: 1.8rem;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(244, 63, 94, 0.4);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5), 0 0 20px rgba(var(--primary-rgb, 14, 165, 233), 0.6);
   position: relative;
   transition: transform 0.1s ease;
+  overflow: hidden;
+  padding: 0.2rem;
 }
 
 .noche-obstacle-bubble:active {
   transform: scale(0.85);
 }
 
+.noche-obs-emoji {
+  font-size: 1.75rem;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
+}
+
+.noche-obs-name {
+  font-size: 0.56rem;
+  font-weight: 900;
+  color: #0f172a;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+  margin-top: 1px;
+  white-space: nowrap;
+  max-width: 95%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .noche-obstacle-ring {
   position: absolute;
-  inset: -4px;
+  inset: -3px;
   border-radius: 50%;
-  border: 3px solid #f43f5e;
+  border: 3.5px solid #f43f5e;
   animation: ring-shrink linear forwards;
 }
 
