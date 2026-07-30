@@ -512,7 +512,12 @@ export default function MenuDigital() {
         if (subcatRes.data) setSubcategorias(subcatRes.data);
         if (confRes.data && confRes.data.length > 0) {
           const bestConfig = confRes.data.find(c => c.logo_url || c.video_hero_url) || confRes.data[0];
-          setConfiguracion(bestConfig);
+          let extraConfig = {};
+          try {
+            const savedExtra = localStorage.getItem(`config_extra_${bestConfig.id}`);
+            if (savedExtra) extraConfig = JSON.parse(savedExtra);
+          } catch (e) {}
+          setConfiguracion({ ...bestConfig, ...extraConfig });
         }
 
         // Fetch products in chunks of 1000 to bypass Supabase defaults

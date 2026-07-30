@@ -1648,6 +1648,12 @@ export default function Admin() {
             const parsed = JSON.parse(localExtra);
             if (!bestConfig.impresora_termica_ancho) bestConfig.impresora_termica_ancho = parsed.impresora_termica_ancho;
             if (!bestConfig.formato_ticket_pos) bestConfig.formato_ticket_pos = parsed.formato_ticket_pos;
+            if (!bestConfig.tarjeta_imagen_fit) bestConfig.tarjeta_imagen_fit = parsed.tarjeta_imagen_fit;
+            if (!bestConfig.tarjeta_imagen_posicion) bestConfig.tarjeta_imagen_posicion = parsed.tarjeta_imagen_posicion;
+            if (!bestConfig.tarjeta_imagen_aspecto) bestConfig.tarjeta_imagen_aspecto = parsed.tarjeta_imagen_aspecto;
+            if (!bestConfig.direccion && parsed.direccion) bestConfig.direccion = parsed.direccion;
+            if (!bestConfig.email && parsed.email) bestConfig.email = parsed.email;
+            if (!bestConfig.telefono && parsed.telefono) bestConfig.telefono = parsed.telefono;
           }
           const masterTrackingStr = localStorage.getItem('master_tracking_config');
           const masterTracking = masterTrackingStr ? JSON.parse(masterTrackingStr) : {};
@@ -7385,22 +7391,32 @@ export default function Admin() {
                         descuento_mayor_carrito_activo: updateData.descuento_mayor_carrito_activo,
                         tarjeta_imagen_fit: updateData.tarjeta_imagen_fit,
                         tarjeta_imagen_posicion: updateData.tarjeta_imagen_posicion,
-                        tarjeta_imagen_aspecto: updateData.tarjeta_imagen_aspecto
+                        tarjeta_imagen_aspecto: updateData.tarjeta_imagen_aspecto,
+                        direccion: updateData.direccion,
+                        email: updateData.email,
+                        telefono: updateData.telefono
                       }));
                     } catch (e) {}
                     
-                    let { error } = await supabase.from('configuracion').update(updateData).eq('id', configuracion.id);
-                    
-                    if (error) {
-                      const fallbackData = { ...updateData };
-                      delete fallbackData.impresora_termica_ancho;
-                      delete fallbackData.formato_ticket_pos;
-                      delete fallbackData.descuento_mayor_carrito_activo;
-                      if (error.message && error.message.includes('color_primario')) {
-                        delete fallbackData.color_primario;
+                    let payload = { ...updateData };
+                    let error: any = null;
+                    let retries = 0;
+
+                    while (retries < 15) {
+                      const res = await supabase.from('configuracion').update(payload).eq('id', configuracion.id);
+                      error = res.error;
+                      if (!error) break;
+
+                      const match = error.message
+                        ? (error.message.match(/Could not find the '([^']+)' column/i) || error.message.match(/column "([^"]+)"/i))
+                        : null;
+
+                      if (match && match[1] && payload[match[1]] !== undefined) {
+                        delete payload[match[1]];
+                        retries++;
+                      } else {
+                        break;
                       }
-                      const retryRes = await supabase.from('configuracion').update(fallbackData).eq('id', configuracion.id);
-                      error = retryRes.error;
                     }
 
                     if (error) {
