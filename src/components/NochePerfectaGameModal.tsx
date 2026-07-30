@@ -423,3 +423,5 @@ export const PromoWelcomeBanner: React.FC<PromoWelcomeBannerProps> = ({
     </div>
   );
 };
+
+export const TemuWelcomeBanner = PromoWelcomeBanner;
