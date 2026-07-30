@@ -19,28 +19,30 @@ const LoadingFallback = () => (
 
 function App() {
   return (
-    <Router>
-      <Suspense fallback={<LoadingFallback />}>
-        <Routes>
-          {/* La nueva interfaz estilo app será la página principal */}
-          <Route path="/" element={<MenuDigital />} />
-          <Route path="/menu" element={<MenuDigital />} />
-          <Route path="/:tenant" element={<MenuDigital />} />
-          <Route path="/:tenant/menu" element={<MenuDigital />} />
-          
-          {/* Panel de Administración */}
-          <Route path="/admin" element={<ErrorBoundary><Admin /></ErrorBoundary>} />
-          <Route path="/:tenant/admin" element={<ErrorBoundary><Admin /></ErrorBoundary>} />
-          <Route path="/superadmin" element={<ErrorBoundary><SuperAdmin /></ErrorBoundary>} />
+    <ErrorBoundary>
+      <Router>
+        <Suspense fallback={<LoadingFallback />}>
+          <Routes>
+            {/* La nueva interfaz estilo app será la página principal */}
+            <Route path="/" element={<MenuDigital />} />
+            <Route path="/menu" element={<MenuDigital />} />
+            <Route path="/:tenant" element={<MenuDigital />} />
+            <Route path="/:tenant/menu" element={<MenuDigital />} />
+            
+            {/* Panel de Administración */}
+            <Route path="/admin" element={<Admin />} />
+            <Route path="/:tenant/admin" element={<Admin />} />
+            <Route path="/superadmin" element={<SuperAdmin />} />
 
-          {/* Pago Nequi - página pública para subir comprobante */}
-          <Route path="/pago/:pedidoId" element={<PagoNequi />} />
+            {/* Pago Nequi - página pública para subir comprobante */}
+            <Route path="/pago/:pedidoId" element={<PagoNequi />} />
 
-          {/* Fallback para URLs antiguas como /products */}
-          <Route path="*" element={<MenuDigital />} />
-        </Routes>
-      </Suspense>
-    </Router>
+            {/* Fallback para URLs antiguas como /products */}
+            <Route path="*" element={<MenuDigital />} />
+          </Routes>
+        </Suspense>
+      </Router>
+    </ErrorBoundary>
   );
 }
 

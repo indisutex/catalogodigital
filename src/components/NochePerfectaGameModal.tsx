@@ -321,8 +321,7 @@ export const NochePerfectaGameModal: React.FC<NochePerfectaGameModalProps> = ({
                   key={obs.id}
                   className="noche-obstacle"
                   style={{ left: `${obs.x}%`, top: `${obs.y}%` }}
-                  onClick={e => handleTapObstacle(obs.id, e)}
-                  onTouchStart={e => handleTapObstacle(obs.id, e)}
+                  onPointerDown={e => handleTapObstacle(obs.id, e)}
                 >
                   <div className="noche-obstacle-bubble">
                     <span className="noche-obs-emoji">{obs.emoji}</span>
