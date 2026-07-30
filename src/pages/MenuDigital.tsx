@@ -747,10 +747,11 @@ export default function MenuDigital() {
               className={`hero-burger-btn ${isBurgerOpen ? 'active' : ''}`}
               onClick={() => setIsBurgerOpen(!isBurgerOpen)}
               title="Menú de Opciones"
+              style={{ borderColor: configuracion?.color_primario || 'var(--primary, #38bdf8)' }}
             >
-              <span className="burger-line line-1"></span>
-              <span className="burger-line line-2"></span>
-              <span className="burger-line line-3"></span>
+              <span className="burger-line line-1" style={{ background: configuracion?.color_primario || 'var(--primary, #38bdf8)' }}></span>
+              <span className="burger-line line-2" style={{ background: configuracion?.color_primario || 'var(--primary, #38bdf8)' }}></span>
+              <span className="burger-line line-3" style={{ background: configuracion?.color_primario || 'var(--primary, #38bdf8)' }}></span>
             </button>
 
             {/* Expanded Hamburger Drawer Menu */}
@@ -758,7 +759,7 @@ export default function MenuDigital() {
               <div className="hero-burger-dropdown">
                 <div className="burger-dropdown-header">
                   <span>MENÚ DE OPCIONES</span>
-                  <button onClick={() => setIsBurgerOpen(false)} className="burger-close-icon"><X size={16} /></button>
+                  <button onClick={() => setIsBurgerOpen(false)} className="burger-close-icon"><X size={14} /></button>
                 </div>
 
                 <div className="burger-dropdown-content">
@@ -810,8 +811,8 @@ export default function MenuDigital() {
                     className="burger-menu-item btn-tipo-compra"
                     style={{ background: configuracion?.color_primario || 'var(--primary, #0ea5e9)' }}
                   >
-                    <RefreshCw size={14} />
-                    <span>Tipo: <strong>{buyerType === 'mayorista' ? 'Mayorista' : buyerType === '50_unidades' ? '50+ Unid' : 'Detal'}</strong></span>
+                    <RefreshCw size={13} />
+                    <span>Modo de compra: <strong>{buyerType === 'mayorista' ? 'Mayorista' : buyerType === '50_unidades' ? '50+ Unid' : 'Detal'}</strong></span>
                   </button>
 
                   {/* Botón Info & PQRS */}
