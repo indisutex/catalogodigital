@@ -109,6 +109,32 @@ export const FlappyStitchGame: React.FC<FlappyStitchGameProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [jump]);
 
+  const handleGameOverRef = useRef<() => void>(() => {});
+
+  const handleGameOver = useCallback(() => {
+    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+    setGameState('gameover');
+
+    const finalScore = scoreRef.current;
+    try {
+      localStorage.setItem(lastPlayedKey, Date.now().toString());
+      if (finalScore > highScore) {
+        setHighScore(finalScore);
+        localStorage.setItem(highScoreKey, finalScore.toString());
+      }
+    } catch (e) {}
+
+    // Find highest unlocked reward
+    const unlocked = [...REWARD_TIERS].reverse().find(t => finalScore >= t.pts);
+    if (unlocked) {
+      onRewardEarned(unlocked);
+    }
+  }, [highScore, highScoreKey, lastPlayedKey, onRewardEarned]);
+
+  useEffect(() => {
+    handleGameOverRef.current = handleGameOver;
+  }, [handleGameOver]);
+
   // Game Loop
   const gameLoop = useCallback(() => {
     // Apply gravity to Stitch
@@ -118,7 +144,7 @@ export const FlappyStitchGame: React.FC<FlappyStitchGameProps> = ({
 
     // Collision check ground or ceiling
     if (stitchYRef.current <= 0 || stitchYRef.current >= WORLD_HEIGHT - STITCH_SIZE) {
-      handleGameOver();
+      handleGameOverRef.current();
       return;
     }
 
@@ -144,7 +170,7 @@ export const FlappyStitchGame: React.FC<FlappyStitchGameProps> = ({
         const topCollision = stitchYRef.current < p.topHeight;
         const bottomCollision = stitchYRef.current + STITCH_SIZE > WORLD_HEIGHT - p.bottomHeight;
         if (topCollision || bottomCollision) {
-          handleGameOver();
+          handleGameOverRef.current();
           return;
         }
       }
@@ -183,26 +209,6 @@ export const FlappyStitchGame: React.FC<FlappyStitchGameProps> = ({
 
     animationFrameRef.current = requestAnimationFrame(gameLoop);
   }, []);
-
-  const handleGameOver = () => {
-    if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-    setGameState('gameover');
-
-    const finalScore = scoreRef.current;
-    try {
-      localStorage.setItem(lastPlayedKey, Date.now().toString());
-      if (finalScore > highScore) {
-        setHighScore(finalScore);
-        localStorage.setItem(highScoreKey, finalScore.toString());
-      }
-    } catch (e) {}
-
-    // Find highest unlocked reward
-    const unlocked = [...REWARD_TIERS].reverse().find(t => finalScore >= t.pts);
-    if (unlocked) {
-      onRewardEarned(unlocked);
-    }
-  };
 
   const startGame = () => {
     if (checkCooldown()) {
@@ -245,7 +251,7 @@ export const FlappyStitchGame: React.FC<FlappyStitchGameProps> = ({
       </div>
 
       {/* ── WORLD CANVAS ── */}
-      <div className="stitch-world" onClick={jump} onTouchStart={jump}>
+      <div className="stitch-world" onPointerDown={(e) => { e.preventDefault(); jump(); }}>
         {/* Background stars */}
         <div className="stitch-star" style={{ top: '15%', left: '20%', width: '4px', height: '4px' }} />
         <div className="stitch-star" style={{ top: '40%', left: '70%', width: '6px', height: '6px' }} />
