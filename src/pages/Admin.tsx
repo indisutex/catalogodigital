@@ -7726,12 +7726,12 @@ export default function Admin() {
                             <div>
                               <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.35rem', display: 'block' }}>Ajuste de Imagen (Object Fit)</label>
                               <select
-                                value={configuracion.tarjeta_imagen_fit || 'cover'}
+                                value={configuracion.tarjeta_imagen_fit || 'contain'}
                                 onChange={e => setConfiguracion({ ...configuracion, tarjeta_imagen_fit: e.target.value as any })}
                                 style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: 600, background: 'white' }}
                               >
-                                <option value="cover">📐 Cover (Recortar y llenar tarjeta - Recomendado)</option>
-                                <option value="contain">🖼️ Fit / Contain (Imagen completa sin recortar)</option>
+                                <option value="contain">🖼️ Fit / Contain (Imagen completa sin recortar rostro ni prendas - RECOMENDADO)</option>
+                                <option value="cover">📐 Cover (Recortar y llenar tarjeta)</option>
                                 <option value="fill">↔️ Fill (Estirar al 100% del marco)</option>
                                 <option value="scale-down">🔎 Scale Down (Escalar respetando tamaño real)</option>
                               </select>
@@ -7740,12 +7740,12 @@ export default function Admin() {
                             <div>
                               <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.35rem', display: 'block' }}>Posición de Enfoque</label>
                               <select
-                                value={configuracion.tarjeta_imagen_posicion || 'center'}
+                                value={configuracion.tarjeta_imagen_posicion || 'top'}
                                 onChange={e => setConfiguracion({ ...configuracion, tarjeta_imagen_posicion: e.target.value as any })}
                                 style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: 600, background: 'white' }}
                               >
+                                <option value="top">⬆️ Arriba (Top - Priorizar rostro y cabeza)</option>
                                 <option value="center">🎯 Centro (Center)</option>
-                                <option value="top">⬆️ Arriba (Top - Enfoque superior)</option>
                                 <option value="bottom">⬇️ Abajo (Bottom)</option>
                                 <option value="left">⬅️ Izquierda (Left)</option>
                                 <option value="right">➡️ Derecha (Right)</option>
@@ -7755,13 +7755,13 @@ export default function Admin() {
                             <div>
                               <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.35rem', display: 'block' }}>Proporción / Tamaño del Marco</label>
                               <select
-                                value={configuracion.tarjeta_imagen_aspecto || 'auto-fit'}
+                                value={configuracion.tarjeta_imagen_aspecto || '3/4'}
                                 onChange={e => setConfiguracion({ ...configuracion, tarjeta_imagen_aspecto: e.target.value as any })}
                                 style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: 600, background: 'white' }}
                               >
-                                <option value="auto-fit">⚡ Auto-Tamaño Inteligente (Detección y encuadre automático por foto)</option>
+                                <option value="3/4">📱 Retrato / Vertical 3:4 (Recomendado Moda/Pijamas)</option>
+                                <option value="auto-fit">⚡ Auto-Tamaño Inteligente (Encuadre dinámico por foto)</option>
                                 <option value="1/1">⏹️ Cuadrado (1:1)</option>
-                                <option value="3/4">📱 Retrato / Vertical (3:4)</option>
                                 <option value="4/3">🖥️ Horizontal (4:3)</option>
                                 <option value="16/9">📺 Panorámico (16:9)</option>
                                 <option value="auto">↕️ Tamaño Completo / Full Size (Alto Automático)</option>
