@@ -412,16 +412,10 @@ export default function MenuDigital() {
 
   useEffect(() => {
     if (!cargando) {
-      try {
-        const tenant = getTenantId();
-        const hasWon = localStorage.getItem(`noche_perfecta_coupon_won_${tenant}`);
-        if (!hasWon) {
-          const timer = setTimeout(() => {
-            setShowTemuBanner(true);
-          }, 600);
-          return () => clearTimeout(timer);
-        }
-      } catch (e) {}
+      const timer = setTimeout(() => {
+        setShowTemuBanner(true);
+      }, 500);
+      return () => clearTimeout(timer);
     }
   }, [cargando]);
 
