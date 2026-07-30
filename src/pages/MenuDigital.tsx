@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useMemo } from 'react';
 import { supabase, getTenantId } from '../lib/supabase';
 import { updatePWAManifestAndIcons } from '../lib/pwa';
 import type { Producto, Categoria, Subcategoria, Configuracion } from '../types';
-import { Loader2, Search, Plus, ShoppingBag, X, ShoppingCart, Volume2, VolumeX, Package, HelpCircle } from 'lucide-react';
+import { Loader2, Search, Plus, ShoppingBag, X, ShoppingCart, Volume2, VolumeX, Package, HelpCircle, RefreshCw } from 'lucide-react';
 import { useCart, getEffectivePrice } from '../context/CartContext';
 import PqrsModal from '../components/PqrsModal';
 import './MenuDigital.css';
@@ -677,19 +677,50 @@ export default function MenuDigital() {
   };
 
   if (buyerType === null && !cargando && configuracion?.preguntar_tipo_cliente) {
+    const storeLogo = mayoristaBranding?.logo || configuracion?.logo_url;
     return (
-      <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', backgroundColor: configuracion?.color_primario || '#10b981', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', zIndex: 9999, color: '#fff', padding: '2rem', textAlign: 'center' }}>
-        <h1 style={{ fontSize: '2rem', marginBottom: '1rem', fontWeight: 800 }}>Bienvenido a {mayoristaBranding?.nombre || configuracion?.nombre_negocio || 'Nuestro Catálogo'}</h1>
-        <p style={{ marginBottom: '2.5rem', fontSize: '1.2rem', opacity: 0.9 }}>Por favor, selecciona tu tipo de compra para mostrarte los precios correctos:</p>
-        <button onClick={() => setBuyerType('detal')} style={{ padding: '1.2rem 2rem', fontSize: '1.1rem', margin: '0.6rem', width: '100%', maxWidth: '350px', backgroundColor: '#fff', color: configuracion?.color_primario || '#10b981', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', transition: 'transform 0.2s' }}>
-          🛍️ Compras al detal
-        </button>
-        <button onClick={() => setBuyerType('mayorista')} style={{ padding: '1.2rem 2rem', fontSize: '1.1rem', margin: '0.6rem', width: '100%', maxWidth: '350px', backgroundColor: '#fff', color: configuracion?.color_primario || '#10b981', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', transition: 'transform 0.2s' }}>
-          📦 Soy mayorista
-        </button>
-        <button onClick={() => setBuyerType('50_unidades')} style={{ padding: '1.2rem 2rem', fontSize: '1.1rem', margin: '0.6rem', width: '100%', maxWidth: '350px', backgroundColor: '#fff', color: configuracion?.color_primario || '#10b981', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', transition: 'transform 0.2s' }}>
-          🏭 Compras por 50 unidades
-        </button>
+      <div className="welcome-tipo-overlay">
+        <div className="welcome-tipo-card">
+          <div className="welcome-logo-badge">
+            {storeLogo ? (
+              <img src={storeLogo} alt="Logo" className="welcome-logo-img" />
+            ) : (
+              <span className="welcome-logo-icon">🛍️</span>
+            )}
+          </div>
+          <h1 className="welcome-title">
+            Bienvenido a <span className="highlight-name">{mayoristaBranding?.nombre || configuracion?.nombre_negocio || 'Nuestro Catálogo'}</span>
+          </h1>
+          <p className="welcome-subtitle">
+            Por favor, selecciona tu tipo de compra para mostrarte los precios y catálogo correcto:
+          </p>
+
+          <div className="welcome-buttons-list">
+            <button onClick={() => setBuyerType('detal')} className="welcome-btn btn-detal">
+              <span className="btn-icon">🛍️</span>
+              <div className="btn-text-wrap">
+                <span className="btn-title">Compras al detal</span>
+                <span className="btn-desc">Para compras individuales y al por menor</span>
+              </div>
+            </button>
+
+            <button onClick={() => setBuyerType('mayorista')} className="welcome-btn btn-mayorista">
+              <span className="btn-icon">📦</span>
+              <div className="btn-text-wrap">
+                <span className="btn-title">Soy mayorista</span>
+                <span className="btn-desc">Precios especiales para distribuidores</span>
+              </div>
+            </button>
+
+            <button onClick={() => setBuyerType('50_unidades')} className="welcome-btn btn-bulk">
+              <span className="btn-icon">🏭</span>
+              <div className="btn-text-wrap">
+                <span className="btn-title">Compras por 50 unidades</span>
+                <span className="btn-desc">Descuentos por volumen alto</span>
+              </div>
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -752,31 +783,14 @@ export default function MenuDigital() {
           )
         )}
 
-        {/* Botón Circular PQRS / Soporte (Izquierda Inferior, Simétrico al botón de sonido) */}
+        {/* Botón Flotante Info & PQRS / Ubicación */}
         <button
           onClick={() => setIsPqrsOpen(true)}
-          style={{
-            position: 'absolute',
-            bottom: '3.8rem',
-            left: '0.75rem',
-            zIndex: 30,
-            background: 'rgba(0,0,0,0.45)',
-            border: 'none',
-            borderRadius: '50%',
-            width: '36px',
-            height: '36px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            backdropFilter: 'blur(4px)',
-            color: '#fff',
-            transition: 'background 0.2s'
-          }}
           className="hero-pqrs-btn"
-          title="¿Dudas o Reclamos? Envía tu PQRS"
+          title="Ubicación del Negocio, Teléfono, Correo e Info & PQRS"
         >
-          <HelpCircle size={18} />
+          <HelpCircle size={16} className="hero-pqrs-icon" />
+          <span className="hero-pqrs-text">Info & PQRS</span>
         </button>
         {/* ── HERO TOP HEADER ROW ── */}
         <div className="header-bottom-bar" style={{
@@ -907,27 +921,25 @@ export default function MenuDigital() {
       </div>
 
       <div className="menu-app-body">
-        <div className="explore-header" style={{ position: 'relative' }}>
-          <h2>EXPLORAR CATÁLOGO DIGITAL</h2>
-          {configuracion?.preguntar_tipo_cliente && buyerType && (
+        {configuracion?.preguntar_tipo_cliente && buyerType && (
+          <div className="buyer-type-bar">
             <button
               onClick={() => setBuyerType(null)}
-              style={{
-                position: 'absolute',
-                top: '-25px',
-                right: '0',
-                background: 'none',
-                border: 'none',
-                color: configuracion?.color_primario || '#10b981',
-                fontSize: '0.75rem',
-                textDecoration: 'underline',
-                cursor: 'pointer',
-                padding: '0'
-              }}
+              className="btn-change-buyer-type"
+              title="Haz clic para cambiar el tipo de compra"
             >
-              Cambiar tipo de compra ({buyerType === 'detal' ? 'Detal' : buyerType === 'mayorista' ? 'Mayorista' : '50 Unds'})
+              <RefreshCw size={14} className="change-icon" />
+              <span>Tipo de compra:</span>
+              <span className="buyer-badge">
+                {buyerType === 'detal' ? 'Detal' : buyerType === 'mayorista' ? 'Mayorista' : '50 Unds'}
+              </span>
+              <span className="change-text">Cambiar 🔄</span>
             </button>
-          )}
+          </div>
+        )}
+
+        <div className="explore-header">
+          <h2>EXPLORAR CATÁLOGO DIGITAL</h2>
           <button
             className="search-icon-btn"
             onClick={() => { setSearchVisible(v => !v); if (searchVisible) setBusqueda(''); }}
@@ -1086,7 +1098,7 @@ export default function MenuDigital() {
       </div>
 
       {/* PQRS Modal */}
-      {isPqrsOpen && <PqrsModal onClose={() => setIsPqrsOpen(false)} />}
+      {isPqrsOpen && <PqrsModal onClose={() => setIsPqrsOpen(false)} configuracion={configuracion} />}
 
       {/* Floating Cart Button */}
       {totalItems > 0 && !isCartOpen && (

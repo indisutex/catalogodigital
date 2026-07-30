@@ -60,6 +60,9 @@ export interface Configuracion {
   siigo_access_key?: string;
   siigo_sincronizado_at?: string;
   color_primario?: string;
+  direccion?: string;
+  email?: string;
+  telefono?: string;
   envios_99_api_key?: string;
   google_analytics_id?: string;
   meta_pixel_id?: string;

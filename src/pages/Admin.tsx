@@ -1244,6 +1244,21 @@ export default function Admin() {
     }
   }, [activeTab, editingProduct, editingCategory, selectedPedido, isAddingProduct, isAddingCategory]);
 
+  // Lock body scroll when mobile sidebar menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.touchAction = 'none';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.touchAction = '';
+    };
+  }, [isMobileMenuOpen]);
+
   // Sync URL to State on initial data load
   useEffect(() => {
     if (hasRestoredModals.current) return;
@@ -4006,7 +4021,7 @@ export default function Admin() {
                      <div className="form-field full">
                         <label>Tallas</label>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.5rem' }}>
-                          {['Única', 'Plus', 'Oversize', 'S', 'M', 'L', 'XL', 'XXL'].map(sz => {
+                          {['Única', 'Plus', 'Oversize', 'S', 'M', 'L', '2/4', '6/8', '10/12', '14/16'].map(sz => {
                             const currentTallas = (editingProduct.tallas || '').split(',').map(s => s.trim()).filter(Boolean);
                             const selected = currentTallas.includes(sz);
                             return (
@@ -4418,22 +4433,10 @@ export default function Admin() {
               )
             )}
             {activeTab === 'categorias' && (
-              isAddingCategory || isAddingSubcategory ? (
+              (isAddingCategory || isAddingSubcategory) && (
                 <button className="btn-secondary" onClick={() => { setIsAddingCategory(false); setIsAddingSubcategory(false); }}>
                   <X size={14} /> Volver a la Lista
                 </button>
-              ) : (
-                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                  <button className="btn-primary" onClick={() => setIsAddingCategory(true)}>
-                    <Plus size={14} /> Nueva Categoría
-                  </button>
-                  <button className="btn-primary" onClick={() => setIsAddingSubcategory(true)} style={{ background: '#10b981' }}>
-                    <Plus size={14} /> Nueva Subcategoría
-                  </button>
-                  <button className="btn-primary" onClick={() => setShowCopyCategoriesModal(true)} style={{ background: '#6366f1' }}>
-                    <Copy size={14} /> Copiar Categorías a Otra Tienda
-                  </button>
-                </div>
               )
             )}
             {(role === 'asesor' || role === 'mayorista') && (
@@ -4718,7 +4721,7 @@ export default function Admin() {
                               <div className="form-field full">
                                 <label>Tallas (opcionales)</label>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '0.5rem' }}>
-                                  {['Única', 'Plus', 'Oversize', 'S', 'M', 'L', 'XL', 'XXL'].map(sz => {
+                                  {['Única', 'Plus', 'Oversize', 'S', 'M', 'L', '2/4', '6/8', '10/12', '14/16'].map(sz => {
                                     const currentTallas = (form.tallas || '').split(',').map(s => s.trim()).filter(Boolean);
                                     const selected = currentTallas.includes(sz);
                                     return (
@@ -5381,10 +5384,35 @@ export default function Admin() {
               {!isAddingCategory && !isAddingSubcategory && (
                 <>
                   <div className="admin-panel">
-                    <div className="panel-header">
+                    <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                       <div>
-                        <h3><Tag size={16} /> Categorías y Subcategorías</h3>
-                        <p>Visualiza y administra la estructura del catálogo</p>
+                        <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <Tag size={16} style={{ color: '#6366f1' }} /> Categorías y Subcategorías
+                        </h3>
+                        <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.83rem' }}>Visualiza y administra la estructura del catálogo</p>
+                      </div>
+                      <div className="panel-header-actions">
+                        <button 
+                          className="btn-primary hover-lift" 
+                          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', height: '38px', padding: '0 1.1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.83rem' }}
+                          onClick={() => setIsAddingCategory(true)}
+                        >
+                          <Plus size={16} /> Nueva Categoría
+                        </button>
+                        <button 
+                          className="btn-secondary hover-lift" 
+                          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', height: '38px', border: '1.5px solid #a7f3d0', color: '#047857', background: '#ecfdf5', padding: '0 1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem' }}
+                          onClick={() => setIsAddingSubcategory(true)}
+                        >
+                          <Plus size={16} /> Nueva Subcategoría
+                        </button>
+                        <button 
+                          className="btn-secondary hover-lift" 
+                          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', height: '38px', border: '1.5px solid #c7d2fe', color: '#4338ca', background: '#eef2ff', padding: '0 1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem' }}
+                          onClick={() => setShowCopyCategoriesModal(true)}
+                        >
+                          <Copy size={16} /> Copiar Categorías
+                        </button>
                       </div>
                     </div>
                     <div className="panel-body">
@@ -7309,6 +7337,9 @@ export default function Admin() {
                     const updateData: any = {
                       nombre_negocio: configuracion.nombre_negocio,
                       whatsapp: configuracion.whatsapp,
+                      direccion: configuracion.direccion || null,
+                      email: configuracion.email || null,
+                      telefono: configuracion.telefono || null,
                       logo_url: configuracion.logo_url,
                       descripcion_hero: configuracion.descripcion_hero,
                       link_dropshipper: configuracion.link_dropshipper,
@@ -7419,6 +7450,18 @@ export default function Admin() {
                         <div className="form-field">
                           <label>Número WhatsApp (sin +)</label>
                           <input required value={configuracion.whatsapp} onChange={e => setConfiguracion({ ...configuracion, whatsapp: e.target.value })} placeholder="573185637317" />
+                        </div>
+                        <div className="form-field">
+                          <label>Teléfono Principal / Fijo (opcional)</label>
+                          <input value={configuracion.telefono || ''} onChange={e => setConfiguracion({ ...configuracion, telefono: e.target.value })} placeholder="Ej: 6041234567 / 3001234567" />
+                        </div>
+                        <div className="form-field">
+                          <label>Correo Electrónico Principal (opcional)</label>
+                          <input type="email" value={configuracion.email || ''} onChange={e => setConfiguracion({ ...configuracion, email: e.target.value })} placeholder="contacto@miempresa.com" />
+                        </div>
+                        <div className="form-field full">
+                          <label>Dirección / Ubicación del Negocio Local (opcional)</label>
+                          <input value={configuracion.direccion || ''} onChange={e => setConfiguracion({ ...configuracion, direccion: e.target.value })} placeholder="Ej: Calle 10 # 5-20, Centro, Medellín, Colombia" />
                         </div>
                         <div className="form-field full">
                           <label>Cuentas Bancarias / Métodos de Pago</label>
