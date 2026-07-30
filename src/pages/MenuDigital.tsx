@@ -415,7 +415,8 @@ export default function MenuDigital() {
       try {
         const tenant = getTenantId();
         const dismissed = sessionStorage.getItem(`temu_banner_dismissed_${tenant}`);
-        if (!dismissed) {
+        const isAskingTipo = buyerType === null && (configuracion?.preguntar_tipo_cliente ?? false);
+        if (!dismissed && !isAskingTipo && !showTipoModal) {
           const timer = setTimeout(() => {
             setShowTemuBanner(true);
           }, 800);
@@ -423,7 +424,7 @@ export default function MenuDigital() {
         }
       } catch (e) {}
     }
-  }, [cargando]);
+  }, [cargando, buyerType, configuracion, showTipoModal]);
 
   const [formData, setFormData] = useState({
     nombre: '',

@@ -52,6 +52,34 @@ export const JuegosHubModal: React.FC<JuegosHubModalProps> = ({
   return (
     <div className="juegos-modal-overlay" onClick={onClose}>
       <div className="juegos-hub-card" onClick={e => e.stopPropagation()}>
+        {/* Botón Volver a la lista de juegos */}
+        {activeScreen !== 'hub' && (
+          <button 
+            onClick={() => setActiveScreen('hub')}
+            style={{
+              position: 'absolute',
+              top: '0.9rem',
+              left: '0.9rem',
+              background: 'rgba(255, 255, 255, 0.15)',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
+              color: '#fff',
+              borderRadius: '20px',
+              padding: '0.3rem 0.75rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              cursor: 'pointer',
+              zIndex: 60,
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+            }}
+            title="Volver al menú de juegos"
+          >
+            ← Cambiar de Juego
+          </button>
+        )}
+
         {/* Botón Cerrar */}
         <button 
           onClick={onClose}
