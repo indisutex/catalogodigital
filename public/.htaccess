@@ -1,14 +1,11 @@
-DirectoryIndex index.php index.html
-
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
+  RewriteRule ^index\.html$ - [L]
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule ^(.*)$ /index.php [QSA,L]
+  RewriteRule . /index.html [L]
 </IfModule>
-
-FallbackResource /index.php
 
 <IfModule mod_expires.c>
   ExpiresActive On
