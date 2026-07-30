@@ -561,10 +561,10 @@ export default function MenuDigital() {
 
   const imageFitStyle = configuracion?.tarjeta_imagen_fit || 'cover';
   const imagePosStyle = configuracion?.tarjeta_imagen_posicion || 'top';
-  const imageAspectStyle = configuracion?.tarjeta_imagen_aspecto || '4/5';
+  const imageAspectStyle = configuracion?.tarjeta_imagen_aspecto || '1/1';
 
   const cardImageStyle = useMemo(() => {
-    let aspect = '4 / 5';
+    let aspect = '1 / 1';
     if (imageAspectStyle === '1/1') aspect = '1 / 1';
     else if (imageAspectStyle === '3/4') aspect = '3 / 4';
     else if (imageAspectStyle === '4/5') aspect = '4 / 5';
@@ -572,20 +572,9 @@ export default function MenuDigital() {
     else if (imageAspectStyle === '16/9') aspect = '16 / 9';
     else if (imageAspectStyle === 'auto') aspect = 'auto';
 
-    if (imageFitStyle === 'cover') {
-      return {
-        objectFit: 'cover' as const,
-        objectPosition: (imagePosStyle || 'top') as any,
-        aspectRatio: aspect,
-        width: '100%',
-        height: '100%',
-        display: 'block'
-      };
-    }
-
     return {
-      objectFit: imageFitStyle as any,
-      objectPosition: (imagePosStyle || 'center') as any,
+      objectFit: (imageFitStyle || 'cover') as any,
+      objectPosition: (imagePosStyle || 'top') as any,
       aspectRatio: aspect,
       width: '100%',
       height: '100%',

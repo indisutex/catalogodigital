@@ -789,21 +789,18 @@
 
 .item-img {
   width: 100%;
-  height: auto;
-  min-height: 140px;
+  aspect-ratio: 1 / 1;
   flex-shrink: 0;
-  border-radius: 0;
   overflow: hidden;
   background-color: #f8fafc;
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .item-img img, .item-img video {
   width: 100%;
   height: 100%;
+  object-fit: cover;
+  object-position: center top;
   display: block;
   transition: transform 0.4s ease;
 }
