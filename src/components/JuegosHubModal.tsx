@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { X, ArrowRight } from 'lucide-react';
 import { NochePerfectaGameModal } from './NochePerfectaGameModal';
 import { FlappyStitchGame, StitchAvatarSVG } from './FlappyStitchGame';
+import { CortaRegalosGame } from './CortaRegalosGame/CortaRegalosGame';
+import type { Premio } from './CortaRegalosGame/types';
 import './JuegosHubModal.css';
 
 interface JuegosHubModalProps {
@@ -11,7 +13,7 @@ interface JuegosHubModalProps {
   onApplyFreeShipping: () => void;
   onAddFreeGift: (nombre: string) => void;
   tenantId?: string;
-  initialGame?: 'hub' | 'noche' | 'stitch';
+  initialGame?: 'hub' | 'noche' | 'stitch' | 'corta';
 }
 
 export const JuegosHubModal: React.FC<JuegosHubModalProps> = ({
@@ -23,7 +25,7 @@ export const JuegosHubModal: React.FC<JuegosHubModalProps> = ({
   tenantId = 'default',
   initialGame = 'hub'
 }) => {
-  const [activeScreen, setActiveScreen] = useState<'hub' | 'noche' | 'stitch'>(initialGame);
+  const [activeScreen, setActiveScreen] = useState<'hub' | 'noche' | 'stitch' | 'corta'>(initialGame);
 
   if (!isOpen) return null;
 
@@ -34,6 +36,16 @@ export const JuegosHubModal: React.FC<JuegosHubModalProps> = ({
       onApplyFreeShipping();
     } else if (reward.type === 'special') {
       onAddFreeGift('🎁 PREMIO ESPECIAL: Pijama Premium Stitch');
+    }
+  };
+
+  const handleCortaReward = (premio: Premio) => {
+    if (premio.tipo === 'descuento') {
+      onApplyCoupon(premio.valor);
+    } else if (premio.tipo === 'envio_gratis') {
+      onApplyFreeShipping();
+    } else if (premio.tipo === 'producto_gratis' || premio.tipo === 'cupon') {
+      onAddFreeGift(`🎁 ${premio.nombre}`);
     }
   };
 
@@ -105,6 +117,24 @@ export const JuegosHubModal: React.FC<JuegosHubModalProps> = ({
                 </div>
                 <ArrowRight size={20} color="#38bdf8" />
               </div>
+
+              {/* Card Juego 3: Corta los Regalos ✂️ (NEW) */}
+              <div className="juego-card-item juego-card-new" onClick={() => setActiveScreen('corta')}>
+                <div className="juego-card-icon" style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #db2777 100%)', fontSize: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  ✂️
+                </div>
+                <div className="juego-card-info">
+                  <div className="juego-card-name">
+                    3. ✂️ Corta los Regalos
+                    <span className="juego-new-badge">NUEVO</span>
+                  </div>
+                  <div className="juego-card-desc">Desliza para cortar regalos al vuelo estilo Fruit Ninja. ¡Evita las bombas!</div>
+                  <div className="juego-card-prize-badge" style={{ borderColor: '#f472b6', color: '#f472b6' }}>
+                    🎊 Descuentos hasta 20% + Envío Gratis
+                  </div>
+                </div>
+                <ArrowRight size={20} color="#f472b6" />
+              </div>
             </div>
           </>
         )}
@@ -126,6 +156,15 @@ export const JuegosHubModal: React.FC<JuegosHubModalProps> = ({
           <FlappyStitchGame
             onClose={() => setActiveScreen('hub')}
             onRewardEarned={handleStitchReward}
+            tenantId={tenantId}
+          />
+        )}
+
+        {/* ── SCREEN: JUEGO CORTA LOS REGALOS ── */}
+        {activeScreen === 'corta' && (
+          <CortaRegalosGame
+            onClose={() => setActiveScreen('hub')}
+            onRewardEarned={handleCortaReward}
             tenantId={tenantId}
           />
         )}

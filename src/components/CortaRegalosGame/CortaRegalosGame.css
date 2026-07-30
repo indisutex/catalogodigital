@@ -1,0 +1,454 @@
+/* ── CORTA LOS REGALOS — Game Styles ── */
+
+/* Container */
+.corta-game-container {
+  width: 100%;
+  max-width: 440px;
+  height: 560px;
+  background: radial-gradient(ellipse at 50% 10%, #1e1b4b 0%, #0f0c29 60%, #020617 100%);
+  border-radius: 24px;
+  border: 2px solid rgba(139, 92, 246, 0.6);
+  box-shadow:
+    0 0 40px rgba(139, 92, 246, 0.3),
+    0 0 80px rgba(139, 92, 246, 0.1),
+    0 20px 60px rgba(0, 0, 0, 0.9);
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  color: #ffffff;
+  font-family: 'Outfit', system-ui, sans-serif;
+  user-select: none;
+  margin: 0 auto;
+}
+
+/* Canvas Wrapper */
+.corta-canvas-wrapper {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.corta-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 22px;
+}
+
+/* ── HUD ── */
+.corta-hud {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 0.7rem 0.75rem 0;
+  pointer-events: none;
+  gap: 0.4rem;
+}
+
+.corta-hud-left {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 80px;
+}
+
+.corta-score-badge {
+  background: rgba(15, 12, 41, 0.85);
+  border: 1.5px solid rgba(139, 92, 246, 0.7);
+  backdrop-filter: blur(6px);
+  padding: 0.3rem 0.7rem;
+  border-radius: 9999px;
+  font-size: 1.05rem;
+  font-weight: 900;
+  color: #ffffff;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+  white-space: nowrap;
+}
+
+.corta-next-prize {
+  background: rgba(139, 92, 246, 0.25);
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  backdrop-filter: blur(4px);
+  padding: 0.2rem 0.5rem;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #c4b5fd;
+  white-space: nowrap;
+}
+
+.corta-hud-center {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.corta-timer-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.corta-timer-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.4s linear, background 0.5s ease;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.corta-timer-label {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.corta-hud-right {
+  display: flex;
+  gap: 2px;
+  align-items: flex-start;
+}
+
+.corta-life-icon {
+  font-size: 1.1rem;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+  transition: filter 0.3s ease, opacity 0.3s ease;
+}
+
+.corta-life-icon.dead {
+  filter: grayscale(1) brightness(0.4);
+  opacity: 0.5;
+}
+
+/* ── Combo Display ── */
+.corta-combo-display {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  background: linear-gradient(135deg, #7c3aed, #db2777);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: 16px;
+  padding: 0.6rem 1.2rem;
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 0 30px rgba(167, 139, 250, 0.7), 0 8px 25px rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  letter-spacing: 0.5px;
+  pointer-events: none;
+  animation: combo-pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes combo-pop {
+  0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+.corta-combo-zap {
+  color: #fef08a;
+  filter: drop-shadow(0 0 8px #fef08a);
+}
+
+/* ── Countdown ── */
+.corta-countdown-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  background: rgba(10, 8, 30, 0.75);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.corta-countdown-num {
+  font-size: 7rem;
+  font-weight: 900;
+  color: #ffffff;
+  text-shadow: 0 0 40px rgba(139, 92, 246, 0.9), 0 0 80px rgba(139, 92, 246, 0.4);
+  animation: countdown-pulse 0.85s ease-out;
+}
+
+@keyframes countdown-pulse {
+  0% { transform: scale(2); opacity: 0; }
+  40% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ── Overlay Screens ── */
+.corta-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 55;
+  background: rgba(10, 8, 30, 0.95);
+  backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 1.2rem 1.4rem;
+  overflow-y: auto;
+  scrollbar-width: none;
+  gap: 0.55rem;
+}
+
+.corta-overlay::-webkit-scrollbar { display: none; }
+
+.corta-intro-emoji {
+  font-size: 3.4rem;
+  margin-top: 0.3rem;
+  animation: float-gentle 2.5s ease-in-out infinite alternate;
+}
+
+@keyframes float-gentle {
+  0% { transform: translateY(-6px) rotate(-4deg); }
+  100% { transform: translateY(6px) rotate(4deg); }
+}
+
+.corta-title {
+  font-size: 1.7rem;
+  font-weight: 900;
+  background: linear-gradient(135deg, #ffffff 0%, #a78bfa 50%, #ec4899 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.corta-subtitle {
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  text-align: center;
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* ── Prizes Panel ── */
+.corta-prizes-panel {
+  background: rgba(15, 12, 41, 0.7);
+  border: 1.5px solid rgba(139, 92, 246, 0.35);
+  border-radius: 16px;
+  padding: 0.7rem 0.9rem;
+  width: 100%;
+}
+
+.corta-prizes-title {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #fef08a;
+  text-align: center;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.5px;
+}
+
+.corta-prize-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  padding: 0.3rem 0.5rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  margin-bottom: 0.25rem;
+}
+
+.corta-prize-pts {
+  color: #a78bfa;
+  font-weight: 900;
+  font-size: 0.78rem;
+}
+
+.corta-highscore-badge {
+  background: rgba(251, 191, 36, 0.15);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  border-radius: 9999px;
+  padding: 0.3rem 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #fbbf24;
+}
+
+/* ── Buttons ── */
+.corta-btn-primary {
+  width: 100%;
+  padding: 0.8rem;
+  background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 1rem;
+  border-radius: 9999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 8px 25px rgba(124, 58, 237, 0.5);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  font-family: 'Outfit', system-ui, sans-serif;
+}
+
+.corta-btn-primary:hover { transform: scale(1.02); box-shadow: 0 10px 30px rgba(124, 58, 237, 0.65); }
+.corta-btn-primary:active { transform: scale(0.97); }
+
+.corta-btn-secondary {
+  width: 100%;
+  padding: 0.7rem;
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.9rem;
+  border-radius: 9999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: background 0.15s ease, transform 0.15s ease;
+  font-family: 'Outfit', system-ui, sans-serif;
+}
+
+.corta-btn-secondary:hover { background: rgba(255, 255, 255, 0.18); transform: scale(1.01); }
+.corta-btn-secondary:active { transform: scale(0.97); }
+
+.corta-btn-ghost {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.5rem;
+  border-radius: 8px;
+  font-family: 'Outfit', system-ui, sans-serif;
+  transition: color 0.2s ease;
+}
+
+.corta-btn-ghost:hover { color: #94a3b8; }
+
+/* ── Instructions ── */
+.corta-steps-card {
+  background: rgba(15, 12, 41, 0.7);
+  border: 1.5px solid rgba(139, 92, 246, 0.3);
+  border-radius: 16px;
+  padding: 0.85rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.corta-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.corta-step-num {
+  background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 900;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.5);
+}
+
+.corta-step-text {
+  font-size: 0.82rem;
+  color: #e2e8f0;
+  line-height: 1.4;
+}
+
+.corta-step-text strong { color: #a78bfa; }
+
+.corta-objects-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: center;
+  padding: 0.4rem 0;
+}
+
+.corta-obj-chip {
+  font-size: 1.4rem;
+  padding: 0.25rem 0.4rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  cursor: default;
+  transition: transform 0.15s ease;
+}
+
+.corta-obj-chip:hover { transform: scale(1.15); }
+.corta-obj-chip.negativo { border-color: rgba(239, 68, 68, 0.4); }
+
+/* ── Game Over ── */
+.corta-final-score {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  border-radius: 18px;
+  padding: 0.85rem 1.2rem;
+  text-align: center;
+  width: 100%;
+}
+
+.corta-won-prize {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.25) 0%, rgba(219, 39, 119, 0.2) 100%);
+  border: 2px solid rgba(167, 139, 250, 0.6);
+  border-radius: 18px;
+  padding: 0.9rem;
+  text-align: center;
+  width: 100%;
+  animation: prize-glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes prize-glow {
+  0% { box-shadow: 0 0 15px rgba(124, 58, 237, 0.3); }
+  100% { box-shadow: 0 0 35px rgba(219, 39, 119, 0.5); }
+}
+
+.corta-no-prize {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
+  padding: 0.8rem;
+  text-align: center;
+  width: 100%;
+  font-size: 0.83rem;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+
+.corta-no-prize strong { color: #a78bfa; }

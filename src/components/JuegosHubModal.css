@@ -118,3 +118,41 @@
   0% { opacity: 0; transform: scale(0.92); }
   100% { opacity: 1; transform: scale(1); }
 }
+
+/* ── New game badge ── */
+.juego-new-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 0.45rem;
+  background: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
+  color: #fff;
+  font-size: 0.55rem;
+  font-weight: 900;
+  letter-spacing: 0.6px;
+  padding: 0.15rem 0.4rem;
+  border-radius: 6px;
+  vertical-align: middle;
+  box-shadow: 0 2px 8px rgba(219, 39, 119, 0.5);
+  animation: new-badge-pulse 1.8s ease-in-out infinite alternate;
+}
+
+@keyframes new-badge-pulse {
+  0% { box-shadow: 0 2px 8px rgba(219, 39, 119, 0.4); }
+  100% { box-shadow: 0 2px 18px rgba(219, 39, 119, 0.9); }
+}
+
+.juego-card-new {
+  border-color: rgba(167, 139, 250, 0.5);
+  background: rgba(124, 58, 237, 0.12);
+  animation: card-new-shimmer 3s linear infinite;
+}
+
+.juego-card-new:hover {
+  border-color: #f472b6 !important;
+  box-shadow: 0 8px 30px rgba(244, 114, 182, 0.4) !important;
+}
+
+@keyframes card-new-shimmer {
+  0%, 100% { background: rgba(124, 58, 237, 0.12); }
+  50% { background: rgba(219, 39, 119, 0.1); }
+}
