@@ -16,8 +16,8 @@ app.use(express.static(distPath, {
   etag: true
 }));
 
-// Fallback SPA para todas las rutas (ej: /admin, /sublimados_majestic, etc.)
-app.get('*', (req, res) => {
+// Fallback SPA compatible con Express 5 / path-to-regexp (sin asterisco libre)
+app.use((req, res) => {
   res.sendFile(path.resolve(distPath, 'index.html'));
 });
 
