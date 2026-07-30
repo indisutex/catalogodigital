@@ -710,7 +710,7 @@ export default function MenuDigital() {
             style={{ background: configuracion?.color_primario || 'var(--primary, #0ea5e9)' }}
             title="Cambiar tipo de compra"
           >
-            <RefreshCw size={13} className="hero-tipo-icon" />
+            <RefreshCw size={11} className="hero-tipo-icon" />
             <span className="hero-tipo-label">Tipo:</span>
             <span className="hero-tipo-badge">
               {buyerType === 'mayorista' ? 'Mayorista' : buyerType === '50_unidades' ? '50+ Unid' : 'Detal'}
@@ -875,24 +875,6 @@ export default function MenuDigital() {
       </div>
 
       <div className="menu-app-body">
-        {configuracion?.preguntar_tipo_cliente && buyerType && (
-          <div className="buyer-type-bar">
-            <button
-              onClick={() => setBuyerType(null)}
-              className="btn-change-buyer-type"
-              style={{ background: configuracion?.color_primario || 'var(--primary, #0284c7)' }}
-              title="Haz clic para cambiar el tipo de compra"
-            >
-              <RefreshCw size={12} className="change-icon" />
-              <span>Tipo:</span>
-              <span className="buyer-badge">
-                {buyerType === 'detal' ? 'Detal' : buyerType === 'mayorista' ? 'Mayorista' : '50 Unds'}
-              </span>
-              <span className="change-text">Cambiar</span>
-            </button>
-          </div>
-        )}
-
         <div className="explore-header">
           <h2>EXPLORAR CATÁLOGO DIGITAL</h2>
           <button
