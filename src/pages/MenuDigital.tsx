@@ -561,7 +561,7 @@ export default function MenuDigital() {
 
   const imageFitStyle = configuracion?.tarjeta_imagen_fit || 'cover';
   const imagePosStyle = configuracion?.tarjeta_imagen_posicion || 'center';
-  const imageAspectStyle = configuracion?.tarjeta_imagen_aspecto || '1/1';
+  const imageAspectStyle = configuracion?.tarjeta_imagen_aspecto || 'auto-fit';
 
   const cardImageStyle = useMemo(() => {
     if (imageAspectStyle === 'auto-fit') {
