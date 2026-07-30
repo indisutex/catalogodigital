@@ -570,9 +570,11 @@ export default function MenuDigital() {
         objectPosition: 'center' as const,
         aspectRatio: 'auto',
         maxHeight: '380px',
-        width: '100%',
+        maxWidth: '100%',
+        width: 'auto',
         height: 'auto',
-        borderRadius: '12px 12px 0 0'
+        margin: '0 auto',
+        display: 'block'
       };
     }
 
@@ -582,6 +584,20 @@ export default function MenuDigital() {
     else if (imageAspectStyle === '4/3') aspect = '4 / 3';
     else if (imageAspectStyle === '16/9') aspect = '16 / 9';
     else if (imageAspectStyle === 'auto') aspect = 'auto';
+
+    if (imageFitStyle === 'contain') {
+      return {
+        objectFit: 'contain' as const,
+        objectPosition: imagePosStyle as any,
+        aspectRatio: aspect,
+        maxWidth: '100%',
+        maxHeight: '100%',
+        width: 'auto',
+        height: 'auto',
+        margin: '0 auto',
+        display: 'block'
+      };
+    }
 
     return {
       objectFit: imageFitStyle as any,
