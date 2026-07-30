@@ -412,19 +412,23 @@ export default function MenuDigital() {
   }, [configuracion, setDescuentoPromocional, setIsBulkDiscountEnabled]);
 
   useEffect(() => {
-    if (!cargando) {
-      try {
-        const tenant = getTenantId();
-        const dismissed = sessionStorage.getItem(`temu_banner_dismissed_${tenant}`);
-        if (!dismissed) {
-          const timer = setTimeout(() => {
-            setShowTemuBanner(true);
-          }, 800);
-          return () => clearTimeout(timer);
-        }
-      } catch (e) {}
-    }
-  }, [cargando]);
+    if (cargando) return;
+    
+    const isTipoModalVisible = showTipoModal || (buyerType === null && (configuracion?.preguntar_tipo_cliente ?? false));
+    
+    if (isTipoModalVisible) return;
+
+    try {
+      const tenant = getTenantId();
+      const dismissed = sessionStorage.getItem(`temu_banner_dismissed_${tenant}`);
+      if (!dismissed) {
+        const timer = setTimeout(() => {
+          setShowTemuBanner(true);
+        }, 1200);
+        return () => clearTimeout(timer);
+      }
+    } catch (e) {}
+  }, [cargando, buyerType, showTipoModal, configuracion]);
 
   const [formData, setFormData] = useState({
     nombre: '',
