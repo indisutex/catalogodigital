@@ -7755,7 +7755,7 @@ export default function Admin() {
                             <div>
                               <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.35rem', display: 'block' }}>Proporción / Tamaño del Marco</label>
                               <select
-                                value={configuracion.tarjeta_imagen_aspecto || '1/1'}
+                                value={configuracion.tarjeta_imagen_aspecto || 'auto-fit'}
                                 onChange={e => setConfiguracion({ ...configuracion, tarjeta_imagen_aspecto: e.target.value as any })}
                                 style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: 600, background: 'white' }}
                               >
