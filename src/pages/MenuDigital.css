@@ -755,7 +755,7 @@
 
 .item-img {
   width: 100%;
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 3 / 4;
   flex-shrink: 0;
   overflow: hidden;
   background-color: #f8fafc;
