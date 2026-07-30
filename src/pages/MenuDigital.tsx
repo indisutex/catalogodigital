@@ -5,6 +5,7 @@ import type { Producto, Categoria, Subcategoria, Configuracion } from '../types'
 import { Loader2, Search, Plus, ShoppingBag, X, ShoppingCart, Volume2, VolumeX, Package, HelpCircle, RefreshCw } from 'lucide-react';
 import { useCart, getEffectivePrice } from '../context/CartContext';
 import PqrsModal from '../components/PqrsModal';
+import { getOptimizedImageUrl } from '../lib/imageOptimizer';
 import './MenuDigital.css';
 
 // Ejecutar sincrónicamente para evitar parpadeo de color
@@ -694,10 +695,13 @@ export default function MenuDigital() {
             />
           ) : (
             <img 
-              src={mayoristaBranding?.video || configuracion?.video_hero_url}
+              src={getOptimizedImageUrl(mayoristaBranding?.video || configuracion?.video_hero_url, 1000, 80)}
               className="hero-background-video"
               alt="Hero"
               style={{ objectFit: 'cover' }}
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
             />
           )
         )}
@@ -798,9 +802,12 @@ export default function MenuDigital() {
           <div className="menu-app-logo" style={{ pointerEvents: 'auto', margin: '0 0.2rem' }}>
             {(mayoristaBranding?.logo || configuracion?.logo_url) ? (
               <img
-                src={mayoristaBranding?.logo || configuracion?.logo_url}
+                src={getOptimizedImageUrl(mayoristaBranding?.logo || configuracion?.logo_url, 160, 85)}
                 alt="Logo"
                 className="store-logo-round"
+                loading="eager"
+                fetchPriority="high"
+                decoding="async"
               />
             ) : (
               <div className="store-logo-round store-logo-placeholder">
@@ -977,7 +984,7 @@ export default function MenuDigital() {
           ) : productosFiltrados.length === 0 ? (
             <p className="no-items">No hay productos aquí.</p>
           ) : (
-            productosFiltrados.map(producto => (
+            productosFiltrados.map((producto, idx) => (
               <div key={producto.id} className="menu-list-item" onClick={() => openDetail(producto)} style={{cursor:'pointer'}}>
                 <div className="item-img">
                   {producto.video_url ? (
@@ -992,9 +999,21 @@ export default function MenuDigital() {
                       ref={el => { if (el && el.paused) el.play().catch(() => {}); }}
                     />
                   ) : producto.imagen_url ? (
-                    <img src={producto.imagen_url} alt={producto.nombre} loading="lazy" decoding="async" />
+                    <img
+                      src={getOptimizedImageUrl(producto.imagen_url, 500, 75)}
+                      alt={producto.nombre}
+                      loading={idx < 4 ? "eager" : "lazy"}
+                      fetchPriority={idx < 4 ? "high" : "auto"}
+                      decoding="async"
+                    />
                   ) : (producto.imagenes_extra && producto.imagenes_extra.length > 0 && decodeExtraImage(producto.imagenes_extra[0]).url) ? (
-                    <img src={decodeExtraImage(producto.imagenes_extra[0]).url} alt={producto.nombre} loading="lazy" decoding="async" />
+                    <img
+                      src={getOptimizedImageUrl(decodeExtraImage(producto.imagenes_extra[0]).url, 500, 75)}
+                      alt={producto.nombre}
+                      loading={idx < 4 ? "eager" : "lazy"}
+                      fetchPriority={idx < 4 ? "high" : "auto"}
+                      decoding="async"
+                    />
                   ) : (
                     <div className="img-placeholder"></div>
                   )}
@@ -1186,9 +1205,9 @@ export default function MenuDigital() {
                       <div key={`${item.id}-${item.talla || 'none'}-${item.estampado || 'none'}`} className="cart-item">
                         <div className="cart-item-img">
                           {item.imagen_url ? (
-                            <img src={item.imagen_url} alt={item.nombre} loading="lazy" />
+                            <img src={getOptimizedImageUrl(item.imagen_url, 150, 75)} alt={item.nombre} loading="lazy" decoding="async" />
                           ) : (item.imagenes_extra && item.imagenes_extra.length > 0 && decodeExtraImage(item.imagenes_extra[0]).url) ? (
-                            <img src={decodeExtraImage(item.imagenes_extra[0]).url} alt={item.nombre} loading="lazy" />
+                            <img src={getOptimizedImageUrl(decodeExtraImage(item.imagenes_extra[0]).url, 150, 75)} alt={item.nombre} loading="lazy" decoding="async" />
                           ) : (
                             <div className="img-placeholder-small"></div>
                           )}
@@ -1235,9 +1254,9 @@ export default function MenuDigital() {
                         <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'white', padding: '0.35rem 0.5rem', borderRadius: '6px', boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
                           <div style={{ width: '38px', height: '38px', flexShrink: 0, borderRadius: '4px', overflow: 'hidden', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             {p.imagen_url ? (
-                              <img src={p.imagen_url} alt={p.nombre} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              <img src={getOptimizedImageUrl(p.imagen_url, 150, 75)} alt={p.nombre} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             ) : (p.imagenes_extra && p.imagenes_extra.length > 0 && decodeExtraImage(p.imagenes_extra[0]).url) ? (
-                              <img src={decodeExtraImage(p.imagenes_extra[0]).url} alt={p.nombre} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              <img src={getOptimizedImageUrl(decodeExtraImage(p.imagenes_extra[0]).url, 150, 75)} alt={p.nombre} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             ) : (
                               <Package size={16} color="#94a3b8" />
                             )}
@@ -1337,7 +1356,7 @@ export default function MenuDigital() {
                 {detailProduct.video_url ? (
                   <video src={detailProduct.video_url} autoPlay loop muted playsInline preload="metadata" className="detail-carousel-img" ref={el => { if (el && el.paused) el.play().catch(() => {}); }} />
                 ) : allImages.length > 0 ? (
-                  <img src={allImages[safeIdx].url} alt={detailProduct.nombre} className="detail-carousel-img" loading="lazy" />
+                  <img src={getOptimizedImageUrl(allImages[safeIdx].url, 800, 80)} alt={detailProduct.nombre} className="detail-carousel-img" loading="eager" fetchPriority="high" decoding="async" />
                 ) : (
                   <div className="detail-carousel-placeholder" />
                 )}

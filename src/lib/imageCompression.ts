@@ -1,7 +1,7 @@
-export async function compressImage(file: File, maxWidth = 1000, quality = 0.7): Promise<File> {
+export async function compressImage(file: File, maxWidth = 1000, quality = 0.75): Promise<File> {
   return new Promise((resolve, reject) => {
-    // Si no es imagen, no la comprimimos
-    if (!file.type.startsWith('image/')) {
+    // Si no es imagen (o si ya es un SVG / GIF animado pequeño), no la comprimimos
+    if (!file.type.startsWith('image/') || file.type.includes('svg') || file.type.includes('gif')) {
       resolve(file);
       return;
     }
@@ -30,19 +30,35 @@ export async function compressImage(file: File, maxWidth = 1000, quality = 0.7):
         }
         ctx.drawImage(img, 0, 0, width, height);
 
+        // Intentar guardar como webp para máxima eficiencia, fallback a jpeg
         canvas.toBlob(
-          (blob) => {
-            if (blob) {
-              const newFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
-                type: 'image/jpeg',
+          (webpBlob) => {
+            if (webpBlob && webpBlob.size > 0) {
+              const newFile = new File([webpBlob], file.name.replace(/\.[^/.]+$/, "") + ".webp", {
+                type: 'image/webp',
                 lastModified: Date.now(),
               });
               resolve(newFile);
             } else {
-              resolve(file);
+              // Fallback a JPEG
+              canvas.toBlob(
+                (jpgBlob) => {
+                  if (jpgBlob) {
+                    const newFile = new File([jpgBlob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                      type: 'image/jpeg',
+                      lastModified: Date.now(),
+                    });
+                    resolve(newFile);
+                  } else {
+                    resolve(file);
+                  }
+                },
+                'image/jpeg',
+                quality
+              );
             }
           },
-          'image/jpeg',
+          'image/webp',
           quality
         );
       };
