@@ -358,13 +358,13 @@ export const NochePerfectaGameModal: React.FC<NochePerfectaGameModalProps> = ({
   );
 };
 
-interface TemuWelcomeBannerProps {
+interface PromoWelcomeBannerProps {
   isOpen: boolean;
   onClose: () => void;
   onStartGame: () => void;
 }
 
-export const TemuWelcomeBanner: React.FC<TemuWelcomeBannerProps> = ({
+export const PromoWelcomeBanner: React.FC<PromoWelcomeBannerProps> = ({
   isOpen,
   onClose,
   onStartGame
@@ -372,8 +372,8 @@ export const TemuWelcomeBanner: React.FC<TemuWelcomeBannerProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="temu-welcome-overlay" onClick={onClose}>
-      <div className="temu-welcome-card" onClick={e => e.stopPropagation()}>
+    <div className="promo-welcome-overlay" onClick={onClose}>
+      <div className="promo-welcome-card" onClick={e => e.stopPropagation()}>
         <button 
           onClick={onClose}
           style={{
@@ -396,11 +396,11 @@ export const TemuWelcomeBanner: React.FC<TemuWelcomeBannerProps> = ({
           <X size={18} />
         </button>
 
-        <div className="temu-banner-badge">
+        <div className="promo-banner-badge">
           🎁 REGALO DE BIENVENIDA 🎁
         </div>
 
-        <h2 className="temu-welcome-title">
+        <h2 className="promo-welcome-title">
           ¡Juega y Gana Tu Pijama Gratis!
         </h2>
 
@@ -408,15 +408,15 @@ export const TemuWelcomeBanner: React.FC<TemuWelcomeBannerProps> = ({
           Demuestra tu habilidad en el juego 😴 <strong>"La Noche Perfecta"</strong> y gana una <strong>Pijama Short Tira GRATIS</strong> con tu compra hoy.
         </p>
 
-        <div className="temu-discount-tag" style={{ fontSize: '1.65rem' }}>
+        <div className="promo-discount-tag" style={{ fontSize: '1.65rem' }}>
           🎁 PIJAMA SHORT TIRA
         </div>
 
-        <button className="temu-glow-btn" onClick={onStartGame}>
+        <button className="promo-glow-btn" onClick={onStartGame}>
           <Sparkles size={22} /> 🔥 ¡JUGAR Y GANAR MI PIJAMA! 🔥
         </button>
 
-        <button className="temu-dismiss-btn" onClick={onClose}>
+        <button className="promo-dismiss-btn" onClick={onClose}>
           Continuar al catálogo sin jugar
         </button>
       </div>

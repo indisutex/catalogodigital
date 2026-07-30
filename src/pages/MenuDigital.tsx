@@ -6,7 +6,7 @@ import { Loader2, Search, Plus, ShoppingBag, X, ShoppingCart, Volume2, VolumeX, 
 import { useCart, getEffectivePrice } from '../context/CartContext';
 import PqrsModal from '../components/PqrsModal';
 import { getOptimizedImageUrl } from '../lib/imageOptimizer';
-import { NochePerfectaGameModal, TemuWelcomeBanner } from '../components/NochePerfectaGameModal';
+import { NochePerfectaGameModal, PromoWelcomeBanner as TemuWelcomeBanner } from '../components/NochePerfectaGameModal';
 import './MenuDigital.css';
 
 // Ejecutar sincrónicamente para evitar parpadeo de color
