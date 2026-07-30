@@ -184,7 +184,6 @@ export default function MenuDigital() {
 
         setMarkupPorcentaje(0);
         setAjustesProductos({});
-        setAjustesProductos({});
       } catch (err) {
         console.error("Error loading wholesaler markup: ", err);
       }
@@ -555,48 +554,70 @@ export default function MenuDigital() {
 
 
 
-  const catActual = categorias.find(c => c.slug === filtroCategoria);
-  let productosFiltrados = (filtroCategoria === 'todos' 
-    ? productos 
-    : productos.filter(p => {
-        const pCat = (p.categoria || '').toLowerCase().trim();
-        return pCat === filtroCategoria.toLowerCase().trim()
-          || pCat === (catActual?.nombre || '').toLowerCase().trim()
-          || pCat === (catActual?.slug || '').toLowerCase().trim();
-      })).filter(p => !p.oculto);
+  const imageFitStyle = configuracion?.tarjeta_imagen_fit || 'cover';
+  const imagePosStyle = configuracion?.tarjeta_imagen_posicion || 'center';
+  const imageAspectStyle = configuracion?.tarjeta_imagen_aspecto || '1/1';
 
-  if (filtroCategoria !== 'todos' && filtroSubcategoria !== 'todas') {
-    const subcatActual = subcategorias.find(s => s.slug === filtroSubcategoria);
-    productosFiltrados = productosFiltrados.filter(p => {
-      const pSub = (p.subcategoria || '').toLowerCase().trim();
-      return pSub === filtroSubcategoria.toLowerCase().trim()
-        || pSub === (subcatActual?.nombre || '').toLowerCase().trim()
-        || pSub === (subcatActual?.slug || '').toLowerCase().trim();
-    });
-  }
+  const cardImageStyle = useMemo(() => {
+    let aspect = '1 / 1';
+    if (imageAspectStyle === '3/4') aspect = '3 / 4';
+    else if (imageAspectStyle === '4/3') aspect = '4 / 3';
+    else if (imageAspectStyle === '16/9') aspect = '16 / 9';
+    else if (imageAspectStyle === 'auto') aspect = 'auto';
 
-  // Ocultar productos desactivados por el mayorista/asesor
-  if (ajustesProductos) {
-    productosFiltrados = productosFiltrados.filter(p => {
-      const productSetting = ajustesProductos[p.id];
-      const isHiddenObject = productSetting && typeof productSetting === 'object' && productSetting.oculto;
-      const isHiddenArray = ajustesProductos.hidden_products?.includes(p.id);
-      return !isHiddenObject && !isHiddenArray;
-    });
-  }
+    return {
+      objectFit: imageFitStyle as any,
+      objectPosition: imagePosStyle as any,
+      aspectRatio: aspect,
+      width: '100%',
+      height: imageAspectStyle === 'auto' ? 'auto' : '100%'
+    };
+  }, [imageFitStyle, imagePosStyle, imageAspectStyle]);
 
-  // Text search filter (diacritics-insensitive and searches references)
-  if (busqueda.trim()) {
-    const cleanStr = (str: string) => 
-      (str || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
-    const q = cleanStr(busqueda);
-    productosFiltrados = productosFiltrados.filter(p =>
-      cleanStr(p.nombre || '').includes(q) ||
-      cleanStr(p.descripcion || '').includes(q) ||
-      cleanStr(p.categoria || '').includes(q) ||
-      cleanStr(p.referencia || '').includes(q)
-    );
-  }
+  const productosFiltrados = useMemo(() => {
+    const catActual = categorias.find(c => c.slug === filtroCategoria);
+    let list = (filtroCategoria === 'todos' 
+      ? productos 
+      : productos.filter(p => {
+          const pCat = (p.categoria || '').toLowerCase().trim();
+          return pCat === filtroCategoria.toLowerCase().trim()
+            || pCat === (catActual?.nombre || '').toLowerCase().trim()
+            || pCat === (catActual?.slug || '').toLowerCase().trim();
+        })).filter(p => !p.oculto);
+
+    if (filtroCategoria !== 'todos' && filtroSubcategoria !== 'todas') {
+      const subcatActual = subcategorias.find(s => s.slug === filtroSubcategoria);
+      list = list.filter(p => {
+        const pSub = (p.subcategoria || '').toLowerCase().trim();
+        return pSub === filtroSubcategoria.toLowerCase().trim()
+          || pSub === (subcatActual?.nombre || '').toLowerCase().trim()
+          || pSub === (subcatActual?.slug || '').toLowerCase().trim();
+      });
+    }
+
+    if (ajustesProductos) {
+      list = list.filter(p => {
+        const productSetting = ajustesProductos[p.id];
+        const isHiddenObject = productSetting && typeof productSetting === 'object' && productSetting.oculto;
+        const isHiddenArray = ajustesProductos.hidden_products?.includes(p.id);
+        return !isHiddenObject && !isHiddenArray;
+      });
+    }
+
+    if (busqueda.trim()) {
+      const cleanStr = (str: string) => 
+        (str || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+      const q = cleanStr(busqueda);
+      list = list.filter(p =>
+        cleanStr(p.nombre || '').includes(q) ||
+        cleanStr(p.descripcion || '').includes(q) ||
+        cleanStr(p.categoria || '').includes(q) ||
+        cleanStr(p.referencia || '').includes(q)
+      );
+    }
+
+    return list;
+  }, [productos, filtroCategoria, filtroSubcategoria, categorias, subcategorias, ajustesProductos, busqueda]);
 
   const totalItems = items.reduce((sum, item) => sum + item.cantidad, 0);
 
@@ -1006,7 +1027,7 @@ export default function MenuDigital() {
           ) : (
             productosFiltrados.map((producto, idx) => (
               <div key={producto.id} className="menu-list-item" onClick={() => openDetail(producto)} style={{cursor:'pointer'}}>
-                <div className="item-img">
+                <div className="item-img" style={{ aspectRatio: cardImageStyle.aspectRatio !== 'auto' ? cardImageStyle.aspectRatio : undefined }}>
                   {producto.video_url ? (
                     <video 
                       src={producto.video_url} 
@@ -1015,7 +1036,7 @@ export default function MenuDigital() {
                       muted 
                       playsInline 
                       preload="metadata"
-                      style={{width: '100%', height: '100%', objectFit: 'cover'}}
+                      style={cardImageStyle}
                       ref={el => { if (el && el.paused) el.play().catch(() => {}); }}
                     />
                   ) : producto.imagen_url ? (
@@ -1025,6 +1046,7 @@ export default function MenuDigital() {
                       loading={idx < 4 ? "eager" : "lazy"}
                       fetchPriority={idx < 4 ? "high" : "auto"}
                       decoding="async"
+                      style={cardImageStyle}
                     />
                   ) : (producto.imagenes_extra && producto.imagenes_extra.length > 0 && decodeExtraImage(producto.imagenes_extra[0]).url) ? (
                     <img
@@ -1033,9 +1055,10 @@ export default function MenuDigital() {
                       loading={idx < 4 ? "eager" : "lazy"}
                       fetchPriority={idx < 4 ? "high" : "auto"}
                       decoding="async"
+                      style={cardImageStyle}
                     />
                   ) : (
-                    <div className="img-placeholder"></div>
+                    <div className="img-placeholder" style={cardImageStyle}></div>
                   )}
                   {producto.es_producto_familiar && (
                     <div className="sku-badge" style={{ top: '0.5rem', background: '#0284c7' }}>👨‍👩‍👧‍👦 Opción Familiar</div>

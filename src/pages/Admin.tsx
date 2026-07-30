@@ -7372,14 +7372,20 @@ export default function Admin() {
                       descuento_mayor_carrito_activo: configuracion.descuento_mayor_carrito_activo ?? true,
                       metodos_pago: configuracion.metodos_pago,
                       impresora_termica_ancho: configuracion.impresora_termica_ancho || '58mm',
-                      formato_ticket_pos: configuracion.formato_ticket_pos || 'termico'
+                      formato_ticket_pos: configuracion.formato_ticket_pos || 'termico',
+                      tarjeta_imagen_fit: configuracion.tarjeta_imagen_fit || 'cover',
+                      tarjeta_imagen_posicion: configuracion.tarjeta_imagen_posicion || 'center',
+                      tarjeta_imagen_aspecto: configuracion.tarjeta_imagen_aspecto || '1/1'
                     };
 
                     try {
                       localStorage.setItem(`config_extra_${configuracion.id}`, JSON.stringify({
                         impresora_termica_ancho: updateData.impresora_termica_ancho,
                         formato_ticket_pos: updateData.formato_ticket_pos,
-                        descuento_mayor_carrito_activo: updateData.descuento_mayor_carrito_activo
+                        descuento_mayor_carrito_activo: updateData.descuento_mayor_carrito_activo,
+                        tarjeta_imagen_fit: updateData.tarjeta_imagen_fit,
+                        tarjeta_imagen_posicion: updateData.tarjeta_imagen_posicion,
+                        tarjeta_imagen_aspecto: updateData.tarjeta_imagen_aspecto
                       }));
                     } catch (e) {}
                     
@@ -7693,6 +7699,58 @@ export default function Admin() {
                           ) : (
                             <span style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.25rem' }}>* Sube tu video en formato .mp4 para que funcione en todos los dispositivos</span>
                           )}
+                        </div>
+
+                        {/* 🖼️ Presentación Visual de Imágenes de Productos */}
+                        <div className="form-field full" style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '14px', border: '1px solid #e2e8f0', marginTop: '0.5rem' }}>
+                          <label style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            🖼️ Presentación y Ajuste de Imágenes del Catálogo
+                          </label>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+                            <div>
+                              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.35rem', display: 'block' }}>Ajuste de Imagen (Object Fit)</label>
+                              <select
+                                value={configuracion.tarjeta_imagen_fit || 'cover'}
+                                onChange={e => setConfiguracion({ ...configuracion, tarjeta_imagen_fit: e.target.value as any })}
+                                style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: 600, background: 'white' }}
+                              >
+                                <option value="cover">📐 Cover (Recortar y llenar tarjeta - Recomendado)</option>
+                                <option value="contain">🖼️ Fit / Contain (Imagen completa sin recortar)</option>
+                                <option value="fill">↔️ Fill (Estirar al 100% del marco)</option>
+                                <option value="scale-down">🔎 Scale Down (Escalar respetando tamaño real)</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.35rem', display: 'block' }}>Posición de Enfoque</label>
+                              <select
+                                value={configuracion.tarjeta_imagen_posicion || 'center'}
+                                onChange={e => setConfiguracion({ ...configuracion, tarjeta_imagen_posicion: e.target.value as any })}
+                                style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: 600, background: 'white' }}
+                              >
+                                <option value="center">🎯 Centro (Center)</option>
+                                <option value="top">⬆️ Arriba (Top - Enfoque superior)</option>
+                                <option value="bottom">⬇️ Abajo (Bottom)</option>
+                                <option value="left">⬅️ Izquierda (Left)</option>
+                                <option value="right">➡️ Derecha (Right)</option>
+                              </select>
+                            </div>
+
+                            <div>
+                              <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.35rem', display: 'block' }}>Proporción / Tamaño del Marco</label>
+                              <select
+                                value={configuracion.tarjeta_imagen_aspecto || '1/1'}
+                                onChange={e => setConfiguracion({ ...configuracion, tarjeta_imagen_aspecto: e.target.value as any })}
+                                style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: 600, background: 'white' }}
+                              >
+                                <option value="1/1">⏹️ Cuadrado (1:1)</option>
+                                <option value="3/4">📱 Retrato / Vertical (3:4)</option>
+                                <option value="4/3">🖥️ Horizontal (4:3)</option>
+                                <option value="16/9">📺 Panorámico (16:9)</option>
+                                <option value="auto">↕️ Tamaño Completo / Full Size (Alto Automático)</option>
+                              </select>
+                            </div>
+                          </div>
                         </div>
 
                         {/* Descripción Hero */}

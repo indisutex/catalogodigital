@@ -92,9 +92,13 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>(() => {
-    const tenantId = getTenantId() || 'saramantha';
-    const saved = localStorage.getItem(`indisutex_cart_${tenantId}`);
-    return saved ? JSON.parse(saved) : [];
+    try {
+      const tenantId = getTenantId() || 'saramantha';
+      const saved = localStorage.getItem(`indisutex_cart_${tenantId}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
   });
 
   const [buyerType, setBuyerType] = useState<BuyerType>(() => {
@@ -110,9 +114,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   });
 
   const [ajustesProductos, setAjustesProductos] = useState<any>(() => {
-    const tenantId = getTenantId() || 'saramantha';
-    const saved = sessionStorage.getItem(`indisutex_ajustes_productos_${tenantId}`);
-    return saved ? JSON.parse(saved) : {};
+    try {
+      const tenantId = getTenantId() || 'saramantha';
+      const saved = sessionStorage.getItem(`indisutex_ajustes_productos_${tenantId}`);
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
   });
 
   const [descuentoPromocional, setDescuentoPromocional] = useState<number>(0);

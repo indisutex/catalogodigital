@@ -95,11 +95,11 @@ export default function Home() {
                     <span>( 5 reviews )</span>
                   </div>
                   <div className="product-bottom-row">
-                    <p className="product-price">${producto.precio.toFixed(2)}</p>
+                    <p className="product-price">${(producto.precio ?? 0).toLocaleString('es-CO')}</p>
                     <button 
                       className="btn-whatsapp"
                       onClick={() => {
-                        const msg = `Hola! Me interesa pedir:\n\n*${producto.nombre}*\nPrecio: $${producto.precio}`;
+                        const msg = `Hola! Me interesa pedir:\n\n*${producto.nombre}*\nPrecio: $${(producto.precio ?? 0).toLocaleString('es-CO')}`;
                         window.open(`https://wa.me/1234567890?text=${encodeURIComponent(msg)}`, '_blank');
                       }}
                     >
