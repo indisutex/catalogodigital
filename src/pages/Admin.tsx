@@ -7726,12 +7726,12 @@ export default function Admin() {
                             <div>
                               <label style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', marginBottom: '0.35rem', display: 'block' }}>Ajuste de Imagen (Object Fit)</label>
                               <select
-                                value={configuracion.tarjeta_imagen_fit || 'contain'}
+                                value={configuracion.tarjeta_imagen_fit || 'cover'}
                                 onChange={e => setConfiguracion({ ...configuracion, tarjeta_imagen_fit: e.target.value as any })}
                                 style={{ width: '100%', padding: '0.6rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', fontWeight: 600, background: 'white' }}
                               >
-                                <option value="contain">🖼️ Fit / Contain (Imagen completa sin recortar rostro ni prendas - RECOMENDADO)</option>
-                                <option value="cover">📐 Cover (Recortar y llenar tarjeta)</option>
+                                <option value="cover">📐 Cover (Llenar tarjeta de borde a borde sin franjas laterales - RECOMENDADO)</option>
+                                <option value="contain">🖼️ Fit / Contain (Imagen completa con marco)</option>
                                 <option value="fill">↔️ Fill (Estirar al 100% del marco)</option>
                                 <option value="scale-down">🔎 Scale Down (Escalar respetando tamaño real)</option>
                               </select>

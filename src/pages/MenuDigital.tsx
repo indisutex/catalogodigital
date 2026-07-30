@@ -559,23 +559,11 @@ export default function MenuDigital() {
 
 
 
-  const imageFitStyle = configuracion?.tarjeta_imagen_fit || 'contain';
+  const imageFitStyle = configuracion?.tarjeta_imagen_fit || 'cover';
   const imagePosStyle = configuracion?.tarjeta_imagen_posicion || 'top';
   const imageAspectStyle = configuracion?.tarjeta_imagen_aspecto || '3/4';
 
   const cardImageStyle = useMemo(() => {
-    if (imageAspectStyle === 'auto-fit' || imageFitStyle === 'contain') {
-      return {
-        objectFit: 'contain' as const,
-        objectPosition: imagePosStyle as any,
-        width: '100%',
-        height: 'auto',
-        maxHeight: '420px',
-        display: 'block',
-        margin: '0 auto'
-      };
-    }
-
     let aspect = '3 / 4';
     if (imageAspectStyle === '1/1') aspect = '1 / 1';
     else if (imageAspectStyle === '3/4') aspect = '3 / 4';
@@ -583,12 +571,24 @@ export default function MenuDigital() {
     else if (imageAspectStyle === '16/9') aspect = '16 / 9';
     else if (imageAspectStyle === 'auto') aspect = 'auto';
 
+    if (imageFitStyle === 'cover') {
+      return {
+        objectFit: 'cover' as const,
+        objectPosition: (imagePosStyle || 'top') as any,
+        aspectRatio: aspect,
+        width: '100%',
+        height: '100%',
+        display: 'block'
+      };
+    }
+
     return {
       objectFit: imageFitStyle as any,
-      objectPosition: imagePosStyle as any,
+      objectPosition: (imagePosStyle || 'center') as any,
       aspectRatio: aspect,
       width: '100%',
-      height: imageAspectStyle === 'auto' ? 'auto' : '100%'
+      height: '100%',
+      display: 'block'
     };
   }, [imageFitStyle, imagePosStyle, imageAspectStyle]);
 
