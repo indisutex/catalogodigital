@@ -1419,14 +1419,17 @@ export default function MenuDigital() {
                 ) : (
                   <div className="detail-carousel-placeholder" />
                 )}
-                <div className="sku-badge" style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', left: '0.5rem', right: 'auto', background: 'rgba(15, 23, 42, 0.88)', color: 'white', fontWeight: 700 }}>
-                  Ref: {detailProduct.nombre} {(detailProduct.referencia || detailProduct.sku) ? `(${detailProduct.referencia || detailProduct.sku})` : ''}
-                </div>
-                {currentImgRef && (
-                  <div className="sku-badge" style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', left: '0.5rem', top: '2.2rem', right: 'auto', background: 'rgba(14, 165, 233, 0.95)', color: 'white', fontWeight: 700 }}>
-                    Estampado: {currentImgRef}
+                {/* ── LABELS REFERENCIA Y ESTAMPADO (ABAJO IZQUIERDO) ── */}
+                <div style={{ position: 'absolute', bottom: '0.6rem', left: '0.6rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', zIndex: 10, alignItems: 'flex-start', pointerEvents: 'none' }}>
+                  <div className="sku-badge" style={{ position: 'relative', top: 'auto', left: 'auto', right: 'auto', bottom: 'auto', fontSize: '0.68rem', padding: '0.22rem 0.55rem', background: 'rgba(15, 23, 42, 0.88)', color: 'white', fontWeight: 700, borderRadius: '6px', backdropFilter: 'blur(4px)', boxShadow: '0 2px 8px rgba(0,0,0,0.25)' }}>
+                    Ref: {detailProduct.nombre} {(detailProduct.referencia || detailProduct.sku) ? `(${detailProduct.referencia || detailProduct.sku})` : ''}
                   </div>
-                )}
+                  {currentImgRef && (
+                    <div className="sku-badge" style={{ position: 'relative', top: 'auto', left: 'auto', right: 'auto', bottom: 'auto', fontSize: '0.68rem', padding: '0.22rem 0.55rem', background: 'rgba(14, 165, 233, 0.95)', color: 'white', fontWeight: 700, borderRadius: '6px', backdropFilter: 'blur(4px)', boxShadow: '0 2px 8px rgba(0,0,0,0.25)' }}>
+                      Estampado: {currentImgRef}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* ── INFO ── */}
