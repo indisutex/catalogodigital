@@ -579,12 +579,13 @@ export default function MenuDigital() {
     else if (imageAspectStyle === 'auto') aspect = 'auto';
 
     return {
-      objectFit: (imageFitStyle || 'cover') as any,
-      objectPosition: (imagePosStyle || 'top') as any,
+      objectFit: (imageFitStyle || 'contain') as any,
+      objectPosition: (imagePosStyle || 'center') as any,
       aspectRatio: aspect,
       width: '100%',
       height: '100%',
-      display: 'block'
+      display: 'block',
+      backgroundColor: '#ffffff'
     };
   }, [imageFitStyle, imagePosStyle, imageAspectStyle]);
 
@@ -1048,7 +1049,7 @@ export default function MenuDigital() {
           ) : (
             productosFiltrados.map((producto, idx) => (
               <div key={producto.id} className="menu-list-item" onClick={() => openDetail(producto)} style={{cursor:'pointer'}}>
-                <div className="item-img" style={{ aspectRatio: cardImageStyle.aspectRatio !== 'auto' ? cardImageStyle.aspectRatio : undefined }}>
+                <div className="item-img" style={{ aspectRatio: cardImageStyle.aspectRatio !== 'auto' ? cardImageStyle.aspectRatio : undefined, position: 'relative', overflow: 'hidden', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {producto.video_url ? (
                     <video 
                       src={producto.video_url} 

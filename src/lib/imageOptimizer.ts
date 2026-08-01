@@ -28,6 +28,7 @@ export function getOptimizedImageUrl(
         parsed.pathname = renderPath;
         parsed.searchParams.set('width', width.toString());
         parsed.searchParams.set('quality', quality.toString());
+        parsed.searchParams.set('resize', 'contain');
         return parsed.toString();
       }
     }
