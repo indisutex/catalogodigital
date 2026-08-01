@@ -307,7 +307,7 @@ export default function MenuDigital() {
   const [selectedTalla, setSelectedTalla] = useState<string>('');
   const [selectedEstampado, setSelectedEstampado] = useState<string>('');
   const [selectedCantidad, setSelectedCantidad] = useState(1);
-  const [selectedMiembroFamilia, setSelectedMiembroFamilia] = useState<'nino' | 'hombre' | 'mujer' | ''>('');
+  const [selectedMiembroFamilia, setSelectedMiembroFamilia] = useState<string>('');
 
   // Prevenir scroll del body cuando algún modal está abierto
   useEffect(() => {
@@ -355,14 +355,23 @@ export default function MenuDigital() {
     }
   };
 
-  const getActiveUnitPrice = (prod: Producto, miembro?: 'nino' | 'hombre' | 'mujer' | '', talla?: string) => {
-    if (prod.es_producto_familiar && prod.precios_familia && miembro) {
-      if (talla && (prod.precios_familia as any)?.precios_tallas && (prod.precios_familia as any)?.precios_tallas[talla]) {
-        const customPrice = Number((prod.precios_familia as any).precios_tallas[talla]);
+  const getActiveUnitPrice = (prod: Producto, miembro?: string, talla?: string) => {
+    if (prod.es_producto_familiar && prod.precios_familia) {
+      const preciosMap = (prod.precios_familia as any)?.precios_tallas || {};
+      
+      if (miembro === 'dama_unica' && (prod.precios_familia as any).dama_unica) return (prod.precios_familia as any).dama_unica;
+      if (miembro === 'dama_plus' && (prod.precios_familia as any).dama_plus) return (prod.precios_familia as any).dama_plus;
+      if (miembro === 'caballero_unica' && (prod.precios_familia as any).caballero_unica) return (prod.precios_familia as any).caballero_unica;
+      if (miembro === 'unisex_2xl' && (prod.precios_familia as any).unisex_2xl) return (prod.precios_familia as any).unisex_2xl;
+
+      if (talla && preciosMap[talla]) {
+        const customPrice = Number(preciosMap[talla]);
         if (customPrice > 0) return customPrice;
       }
-      const famPrice = prod.precios_familia[miembro];
-      if (famPrice && famPrice > 0) return famPrice;
+
+      if (miembro === 'nino') return (prod.precios_familia as any).nino || preciosMap['2/4'] || 22000;
+      if (miembro === 'hombre') return (prod.precios_familia as any).hombre || (prod.precios_familia as any).caballero_unica || 31000;
+      if (miembro === 'mujer') return (prod.precios_familia as any).mujer || (prod.precios_familia as any).dama_unica || 26000;
     }
     return prod.precio;
   };
@@ -381,12 +390,19 @@ export default function MenuDigital() {
       return;
     }
     if (detailProduct.es_producto_familiar && !selectedMiembroFamilia) {
-      alert('Por favor selecciona la opción de la familia (Niño, Hombre o Mujer)');
+      alert('Por favor selecciona la opción de la familia');
       return;
     }
 
     const unitPrice = getActiveUnitPrice(detailProduct, selectedMiembroFamilia, selectedTalla);
-    const miembroLabel = selectedMiembroFamilia === 'nino' ? 'Niño/a' : selectedMiembroFamilia === 'hombre' ? 'Hombre' : selectedMiembroFamilia === 'mujer' ? 'Mujer' : '';
+    let miembroLabel = '';
+    if (selectedMiembroFamilia === 'dama_unica') miembroLabel = 'Dama Única';
+    else if (selectedMiembroFamilia === 'dama_plus') miembroLabel = 'Dama Plus';
+    else if (selectedMiembroFamilia === 'caballero_unica') miembroLabel = 'Caballero Única';
+    else if (selectedMiembroFamilia === 'unisex_2xl') miembroLabel = '2XL Unisex';
+    else if (selectedMiembroFamilia === 'nino') miembroLabel = 'Niños';
+    else if (selectedMiembroFamilia === 'hombre') miembroLabel = 'Hombre';
+    else if (selectedMiembroFamilia === 'mujer') miembroLabel = 'Mujer';
 
     const productToAdd = {
       ...detailProduct,
@@ -1485,80 +1501,46 @@ export default function MenuDigital() {
 
                 {/* ── PRODUCTO FAMILIAR OPTION SELECTOR ── */}
                 {detailProduct.es_producto_familiar && detailProduct.precios_familia && (
-                  <div className="detail-tallas" style={{ width: '100%', background: '#f0f9ff', padding: '0.75rem', borderRadius: '12px', border: '1px solid #bae6fd', marginBottom: '0.85rem' }}>
-                    <p className="detail-section-label" style={{ color: '#0369a1', fontWeight: 800, marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                      👨‍👩‍👧‍👦 Opción del Producto Familiar:
+                  <div className="detail-tallas" style={{ width: '100%', background: '#f0f9ff', padding: '0.85rem', borderRadius: '14px', border: '1.5px solid #bae6fd', marginBottom: '0.85rem' }}>
+                    <p className="detail-section-label" style={{ color: '#0369a1', fontWeight: 800, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.88rem' }}>
+                      👨‍👩‍👧‍👦 Selecciona la Opción Familiar:
                     </p>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.4rem' }}>
-                      {detailProduct.precios_familia.nino !== undefined && detailProduct.precios_familia.nino !== null && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(105px, 1fr))', gap: '0.4rem' }}>
+                      {[
+                        { key: 'dama_unica', label: '👩 Dama Única', price: (detailProduct.precios_familia as any).dama_unica || (detailProduct.precios_familia as any).precios_tallas?.['Dama Única'] || 26000 },
+                        { key: 'dama_plus', label: '👩 Dama Plus', price: (detailProduct.precios_familia as any).dama_plus || (detailProduct.precios_familia as any).precios_tallas?.['Dama Plus'] || 30000 },
+                        { key: 'caballero_unica', label: '👨 Caballero Única', price: (detailProduct.precios_familia as any).caballero_unica || (detailProduct.precios_familia as any).precios_tallas?.['Caballero Única'] || 31000 },
+                        { key: 'unisex_2xl', label: '🧑 2XL Unisex', price: (detailProduct.precios_familia as any).unisex_2xl || (detailProduct.precios_familia as any).precios_tallas?.['2XL Unisex'] || 36000 },
+                        { key: 'nino', label: '👦 Niños (Tallas)', price: (detailProduct.precios_familia as any).nino || (detailProduct.precios_familia as any).precios_tallas?.['2/4'] || 22000 }
+                      ].map(opt => (
                         <button
+                          key={opt.key}
                           type="button"
-                          onClick={() => setSelectedMiembroFamilia('nino')}
+                          onClick={() => {
+                            setSelectedMiembroFamilia(opt.key as any);
+                            if (opt.key === 'nino') setSelectedTalla('2/4');
+                            else setSelectedTalla('Única');
+                          }}
                           style={{
-                            padding: '0.55rem 0.25rem',
+                            padding: '0.55rem 0.3rem',
                             borderRadius: '10px',
-                            border: selectedMiembroFamilia === 'nino' ? '2px solid #0284c7' : '1px solid #cbd5e1',
-                            background: selectedMiembroFamilia === 'nino' ? '#e0f2fe' : '#ffffff',
-                            color: selectedMiembroFamilia === 'nino' ? '#0369a1' : '#334155',
-                            fontWeight: selectedMiembroFamilia === 'nino' ? 800 : 600,
-                            fontSize: '0.8rem',
+                            border: selectedMiembroFamilia === opt.key ? '2px solid #0284c7' : '1px solid #cbd5e1',
+                            background: selectedMiembroFamilia === opt.key ? '#e0f2fe' : '#ffffff',
+                            color: selectedMiembroFamilia === opt.key ? '#0369a1' : '#334155',
+                            fontWeight: selectedMiembroFamilia === opt.key ? 800 : 600,
+                            fontSize: '0.78rem',
                             cursor: 'pointer',
                             textAlign: 'center',
-                            transition: 'all 0.15s ease'
+                            transition: 'all 0.15s ease',
+                            boxShadow: selectedMiembroFamilia === opt.key ? '0 2px 8px rgba(2,132,199,0.2)' : 'none'
                           }}
                         >
-                          <div>👦 Niño/a</div>
-                          <div style={{ fontSize: '0.75rem', color: selectedMiembroFamilia === 'nino' ? '#0284c7' : '#64748b' }}>
-                            ${detailProduct.precios_familia.nino.toLocaleString('es-CO')}
+                          <div style={{ fontWeight: 800 }}>{opt.label}</div>
+                          <div style={{ fontSize: '0.75rem', color: selectedMiembroFamilia === opt.key ? '#0284c7' : '#64748b', marginTop: '0.1rem' }}>
+                            ${opt.price.toLocaleString('es-CO')}
                           </div>
                         </button>
-                      )}
-                      {detailProduct.precios_familia.hombre !== undefined && detailProduct.precios_familia.hombre !== null && (
-                        <button
-                          type="button"
-                          onClick={() => setSelectedMiembroFamilia('hombre')}
-                          style={{
-                            padding: '0.55rem 0.25rem',
-                            borderRadius: '10px',
-                            border: selectedMiembroFamilia === 'hombre' ? '2px solid #0284c7' : '1px solid #cbd5e1',
-                            background: selectedMiembroFamilia === 'hombre' ? '#e0f2fe' : '#ffffff',
-                            color: selectedMiembroFamilia === 'hombre' ? '#0369a1' : '#334155',
-                            fontWeight: selectedMiembroFamilia === 'hombre' ? 800 : 600,
-                            fontSize: '0.8rem',
-                            cursor: 'pointer',
-                            textAlign: 'center',
-                            transition: 'all 0.15s ease'
-                          }}
-                        >
-                          <div>👨 Hombre</div>
-                          <div style={{ fontSize: '0.75rem', color: selectedMiembroFamilia === 'hombre' ? '#0284c7' : '#64748b' }}>
-                            ${detailProduct.precios_familia.hombre.toLocaleString('es-CO')}
-                          </div>
-                        </button>
-                      )}
-                      {detailProduct.precios_familia.mujer !== undefined && detailProduct.precios_familia.mujer !== null && (
-                        <button
-                          type="button"
-                          onClick={() => setSelectedMiembroFamilia('mujer')}
-                          style={{
-                            padding: '0.55rem 0.25rem',
-                            borderRadius: '10px',
-                            border: selectedMiembroFamilia === 'mujer' ? '2px solid #0284c7' : '1px solid #cbd5e1',
-                            background: selectedMiembroFamilia === 'mujer' ? '#e0f2fe' : '#ffffff',
-                            color: selectedMiembroFamilia === 'mujer' ? '#0369a1' : '#334155',
-                            fontWeight: selectedMiembroFamilia === 'mujer' ? 800 : 600,
-                            fontSize: '0.8rem',
-                            cursor: 'pointer',
-                            textAlign: 'center',
-                            transition: 'all 0.15s ease'
-                          }}
-                        >
-                          <div>👩 Mujer</div>
-                          <div style={{ fontSize: '0.75rem', color: selectedMiembroFamilia === 'mujer' ? '#0284c7' : '#64748b' }}>
-                            ${detailProduct.precios_familia.mujer.toLocaleString('es-CO')}
-                          </div>
-                        </button>
-                      )}
+                      ))}
                     </div>
                   </div>
                 )}
