@@ -407,8 +407,11 @@ export default function MenuDigital() {
     setDescuentoPromocional(configuracion?.descuento_promocional || 0);
     if (configuracion) {
       setIsBulkDiscountEnabled(configuracion.descuento_mayor_carrito_activo ?? true);
+      if (!(configuracion.preguntar_tipo_cliente ?? false) && buyerType === null) {
+        setBuyerType('detal');
+      }
     }
-  }, [configuracion, setDescuentoPromocional, setIsBulkDiscountEnabled]);
+  }, [configuracion, buyerType, setBuyerType, setDescuentoPromocional, setIsBulkDiscountEnabled]);
 
   const minijuegosActivos = configuracion?.activar_minijuegos ?? true;
 
