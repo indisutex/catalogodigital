@@ -1323,15 +1323,18 @@ export default function Admin() {
   }
 
   function handleLogout() {
-    localStorage.removeItem(`admin_auth_${getTenantId()}`);
-    localStorage.removeItem(`admin_role_${getTenantId()}`);
-    localStorage.removeItem(`admin_asesor_id_${getTenantId()}`);
-    localStorage.removeItem(`admin_asesor_phone_${getTenantId()}`);
+    const t = getTenantId();
+    localStorage.removeItem(`admin_auth_${t}`);
+    localStorage.removeItem(`admin_role_${t}`);
+    localStorage.removeItem(`admin_asesor_id_${t}`);
+    localStorage.removeItem(`admin_asesor_phone_${t}`);
     localStorage.removeItem('admin_active_tab');
+    localStorage.removeItem('tenant_id');
     setIsAuthenticated(false);
     setRole('admin');
     setLoggedAsesorPhone(null);
     setSelectedCompany(null);
+    setConfiguracion(null);
     setPin('');
     setActiveTab('productos');
   }
@@ -1556,7 +1559,7 @@ export default function Admin() {
     }, 10000);
     
     return () => clearInterval(interval);
-  }, [isAuthenticated]);
+  }, [isAuthenticated, selectedCompany, window.location.pathname]);
 
   async function cargarDatos() {
     try {
@@ -1646,6 +1649,8 @@ export default function Admin() {
           const localExtra = localStorage.getItem(`config_extra_${bestConfig.id}`);
           if (localExtra) {
             const parsed = JSON.parse(localExtra);
+            if (parsed.activar_minijuegos !== undefined) bestConfig.activar_minijuegos = parsed.activar_minijuegos;
+            if (parsed.descuento_mayor_carrito_activo !== undefined) bestConfig.descuento_mayor_carrito_activo = parsed.descuento_mayor_carrito_activo;
             if (!bestConfig.impresora_termica_ancho) bestConfig.impresora_termica_ancho = parsed.impresora_termica_ancho;
             if (!bestConfig.formato_ticket_pos) bestConfig.formato_ticket_pos = parsed.formato_ticket_pos;
             if (!bestConfig.tarjeta_imagen_fit) bestConfig.tarjeta_imagen_fit = parsed.tarjeta_imagen_fit;
@@ -3763,15 +3768,24 @@ export default function Admin() {
       { id: 'lovely', name: 'Lovely', logo: '/lovely-logo.jpg' },
     ];
     
-    // Mezclar las bases con las de la base de datos (excluyendo la cuenta matriz indisutex)
-    const companies = baseCompanies.filter(b => b.id !== 'indisutex').map(base => {
-      const dbMatch = dbCompanies.find(c => c.tenant_id === base.id);
-      return {
-        id: base.id,
-        name: dbMatch?.nombre_negocio || base.name,
-        logo: dbMatch?.logo_url || base.logo
-      };
+    const companyMap = new Map<string, { id: string; name: string; logo: string }>();
+    baseCompanies.forEach(b => companyMap.set(b.id, { id: b.id, name: b.name, logo: b.logo }));
+    
+    dbCompanies.forEach(dbC => {
+      if (dbC.tenant_id && dbC.tenant_id !== 'indisutex') {
+        const existing = companyMap.get(dbC.tenant_id);
+        const nameVal = dbC.nombre_negocio || existing?.name || dbC.tenant_id.replace(/_/g, ' ');
+        const logoVal = dbC.logo_url || existing?.logo || '';
+        companyMap.set(dbC.tenant_id, {
+          id: dbC.tenant_id,
+          name: nameVal,
+          logo: logoVal
+        });
+      }
     });
+
+    const companies = Array.from(companyMap.values());
+    const activeComp = companies.find(c => c.id === selectedCompany) || (selectedCompany ? { id: selectedCompany, name: selectedCompany.replace(/_/g, ' '), logo: '' } : null);
 
     return (
       <div className="admin-login-wrapper" style={{ minHeight: '100vh', background: 'radial-gradient(circle at 50% 0%, #f1f5f9 0%, #e2e8f0 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem 1rem' }}>
@@ -3829,7 +3843,7 @@ export default function Admin() {
                       outline: 'none'
                     }}
                   >
-                    {!imageErrors[company.id] ? (
+                    {!imageErrors[company.id] && company.logo ? (
                       <div style={{ width: '68px', height: '68px', borderRadius: '50%', padding: '3px', background: 'linear-gradient(135deg, #f1f5f9, #e2e8f0)', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}>
                         <img 
                           src={company.logo} 
@@ -3839,7 +3853,7 @@ export default function Admin() {
                         />
                       </div>
                     ) : (
-                      <div style={{ width: '68px', height: '68px', borderRadius: '50%', background: 'linear-gradient(135deg, #f1f5f9, #cbd5e1)', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '800', boxShadow: '0 4px 12px rgba(0,0,0,0.04)' }}>
+                      <div style={{ width: '68px', height: '68px', borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1, #4f46e5)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', fontWeight: '800', boxShadow: '0 4px 12px rgba(99,102,241,0.2)' }}>
                         {company.name.substring(0, 2).toUpperCase()}
                       </div>
                     )}
@@ -3880,29 +3894,29 @@ export default function Admin() {
             </div>
           ) : (
             <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <div style={{ textAlign: 'center', marginBottom: '1rem', background: '#f8fafc', padding: '0.8rem', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', width: '100%' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  {(() => {
-                    const selectedComp = companies.find(c => c.id === selectedCompany);
-                    return selectedComp ? (
-                      <>
-                        <img 
-                          src={selectedComp.logo} 
-                          alt={selectedComp.name} 
-                          style={{ width: '24px', height: '24px', borderRadius: '50%', objectFit: 'cover' }} 
-                          onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                        />
-                        <span style={{ fontWeight: 600, color: '#333' }}>Empresa: {selectedComp.name}</span>
-                      </>
-                    ) : (
-                      <span style={{ fontWeight: 600, color: '#333' }}>Empresa: {selectedCompany}</span>
-                    );
-                  })()}
+              <div style={{ textAlign: 'center', marginBottom: '1rem', background: '#f8fafc', padding: '0.85rem 1rem', borderRadius: '14px', border: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                  {activeComp?.logo && !imageErrors[`pin_${activeComp.id}`] ? (
+                    <img 
+                      src={activeComp.logo} 
+                      alt={activeComp.name} 
+                      style={{ width: '34px', height: '34px', borderRadius: '50%', objectFit: 'cover', border: '1.5px solid #cbd5e1' }} 
+                      onError={() => setImageErrors(prev => ({ ...prev, [`pin_${activeComp.id}`]: true }))} 
+                    />
+                  ) : (
+                    <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1, #4f46e5)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '13px', flexShrink: 0 }}>
+                      {(activeComp?.name || selectedCompany || 'T').substring(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                  <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.92rem', textTransform: 'capitalize' }}>
+                    {activeComp?.name || selectedCompany}
+                  </span>
                 </div>
                 <button type="button" onClick={() => {
                   setSelectedCompany(null);
+                  localStorage.removeItem('tenant_id');
                   window.history.replaceState(null, '', '/admin');
-                }} style={{ background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', flexShrink: 0 }}>Cambiar</button>
+                }} style={{ background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>Cambiar</button>
               </div>
               <input
                 type="password"

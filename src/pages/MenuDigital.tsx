@@ -561,7 +561,7 @@ export default function MenuDigital() {
       }
     }
     cargarDatos();
-  }, []);
+  }, [window.location.pathname, window.location.search]);
 
 
 
