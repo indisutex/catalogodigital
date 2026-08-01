@@ -783,7 +783,7 @@ export default function MenuDigital() {
         <div className="hero-center-logo">
           {(mayoristaBranding?.logo || configuracion?.logo_url) ? (
             <img
-              src={getOptimizedImageUrl(mayoristaBranding?.logo || configuracion?.logo_url, 400, 85)}
+              src={mayoristaBranding?.logo || configuracion?.logo_url || ''}
               alt="Logo"
               className="store-logo-round"
               loading="eager"

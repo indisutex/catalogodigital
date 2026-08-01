@@ -11,8 +11,8 @@ export function getOptimizedImageUrl(
     return '';
   }
 
-  // Si es un Blob local o Data URL (base64), no alteramos
-  if (url.startsWith('blob:') || url.startsWith('data:')) {
+  // Si es un Blob local, Data URL (base64) o un logo, no alteramos para evitar recortes del servidor
+  if (url.startsWith('blob:') || url.startsWith('data:') || url.toLowerCase().includes('logo') || url.toLowerCase().includes('avatar') || url.toLowerCase().includes('brand')) {
     return url;
   }
 
