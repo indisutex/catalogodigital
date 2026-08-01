@@ -355,8 +355,12 @@ export default function MenuDigital() {
     }
   };
 
-  const getActiveUnitPrice = (prod: Producto, miembro?: 'nino' | 'hombre' | 'mujer' | '') => {
+  const getActiveUnitPrice = (prod: Producto, miembro?: 'nino' | 'hombre' | 'mujer' | '', talla?: string) => {
     if (prod.es_producto_familiar && prod.precios_familia && miembro) {
+      if (talla && (prod.precios_familia as any)?.precios_tallas && (prod.precios_familia as any)?.precios_tallas[talla]) {
+        const customPrice = Number((prod.precios_familia as any).precios_tallas[talla]);
+        if (customPrice > 0) return customPrice;
+      }
       const famPrice = prod.precios_familia[miembro];
       if (famPrice && famPrice > 0) return famPrice;
     }
@@ -368,7 +372,7 @@ export default function MenuDigital() {
     const tallas = detailProduct.tallas?.split(',').map(t => t.trim()).filter(Boolean) || [];
     const estampados = detailProduct.estampados?.split(',').map(e => e.trim()).filter(Boolean) || [];
 
-    if (tallas.length > 0 && !selectedTalla) {
+    if (tallas.length > 0 && !selectedTalla && !detailProduct.es_producto_familiar) {
       alert('Por favor selecciona una talla');
       return;
     }
@@ -381,7 +385,7 @@ export default function MenuDigital() {
       return;
     }
 
-    const unitPrice = getActiveUnitPrice(detailProduct, selectedMiembroFamilia);
+    const unitPrice = getActiveUnitPrice(detailProduct, selectedMiembroFamilia, selectedTalla);
     const miembroLabel = selectedMiembroFamilia === 'nino' ? 'Niño/a' : selectedMiembroFamilia === 'hombre' ? 'Hombre' : selectedMiembroFamilia === 'mujer' ? 'Mujer' : '';
 
     const productToAdd = {
@@ -1405,7 +1409,16 @@ export default function MenuDigital() {
         if (allImages.length === 0 && detailProduct.imagen_url) {
           allImages = [{ url: detailProduct.imagen_url, ref: '', estampado: '' }];
         }
-        const rawTallas = detailProduct.tallas?.split(',').map(t => t.trim()).filter(Boolean) || [];
+        let rawTallas = detailProduct.tallas?.split(',').map(t => t.trim()).filter(Boolean) || [];
+        if (detailProduct.es_producto_familiar) {
+          if (selectedMiembroFamilia === 'nino') {
+            const childSizes = ['4', '6', '8', '10', '12', '14', '16'];
+            const customChildSizes = Object.keys((detailProduct.precios_familia as any)?.precios_tallas || {}).filter(k => k !== 'Dama' && k !== 'Caballero');
+            rawTallas = Array.from(new Set([...childSizes, ...customChildSizes]));
+          } else if (selectedMiembroFamilia === 'hombre' || selectedMiembroFamilia === 'mujer') {
+            rawTallas = ['Única'];
+          }
+        }
         const tallasMap = new Map();
         rawTallas.forEach(t => {
           let key = t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
@@ -1457,12 +1470,12 @@ export default function MenuDigital() {
                     {((detailProduct.descuento !== undefined && detailProduct.descuento > 0) || descuentoPromocional > 0) ? (
                       <>
                         <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.82em', marginRight: '0.5rem', fontWeight: 500 }}>
-                          ${getActiveUnitPrice(detailProduct, selectedMiembroFamilia).toLocaleString('es-CO')}
+                          ${getActiveUnitPrice(detailProduct, selectedMiembroFamilia, selectedTalla).toLocaleString('es-CO')}
                         </span>
-                        ${getEffectivePrice({ ...detailProduct, precio: getActiveUnitPrice(detailProduct, selectedMiembroFamilia) }, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional).toLocaleString('es-CO')}
+                        ${getEffectivePrice({ ...detailProduct, precio: getActiveUnitPrice(detailProduct, selectedMiembroFamilia, selectedTalla) }, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional).toLocaleString('es-CO')}
                       </>
                     ) : (
-                      `$${getEffectivePrice({ ...detailProduct, precio: getActiveUnitPrice(detailProduct, selectedMiembroFamilia) }, buyerType, markupPorcentaje, ajustesProductos).toLocaleString('es-CO')}`
+                      `$${getEffectivePrice({ ...detailProduct, precio: getActiveUnitPrice(detailProduct, selectedMiembroFamilia, selectedTalla) }, buyerType, markupPorcentaje, ajustesProductos).toLocaleString('es-CO')}`
                     )}
                   </p>
                 </div>

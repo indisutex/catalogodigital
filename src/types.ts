@@ -25,6 +25,7 @@ export interface Producto {
     nino?: number | null;
     hombre?: number | null;
     mujer?: number | null;
+    precios_tallas?: Record<string, number> | null;
   } | null;
 }
 
