@@ -141,6 +141,8 @@ export const buildUnifiedImages = (prod: Partial<Producto>) => {
   return unified;
 };
 
+type FamilyDetailedPrices = Record<string, { detal?: string; mayor?: string; p50?: string }>;
+
 type ProductFormData = {
   nombre: string;
   referencia?: string;
@@ -158,14 +160,19 @@ type ProductFormData = {
   stock: number;
   descuento: string;
   es_producto_familiar?: boolean;
-  precio_dama_unica?: string;
-  precio_dama_plus?: string;
-  precio_caballero_unica?: string;
-  precio_2xl_unisex?: string;
-  precio_nino?: string;
-  precio_hombre?: string;
-  precio_mujer?: string;
-  precios_tallas?: Record<string, string>;
+  precios_detallados_fam?: FamilyDetailedPrices;
+};
+
+const defaultFamDetailedPrices: FamilyDetailedPrices = {
+  "Dama Única": { detal: "26000", mayor: "", p50: "" },
+  "Dama Plus": { detal: "30000", mayor: "", p50: "" },
+  "Caballero Única": { detal: "31000", mayor: "", p50: "" },
+  "2XL Unisex": { detal: "36000", mayor: "", p50: "" },
+  "2/4": { detal: "22000", mayor: "", p50: "" },
+  "6/8": { detal: "22000", mayor: "", p50: "" },
+  "10/12": { detal: "22000", mayor: "", p50: "" },
+  "14/16": { detal: "23000", mayor: "", p50: "" },
+  "18": { detal: "26000", mayor: "", p50: "" }
 };
 
 const emptyProduct: ProductFormData = {
@@ -185,20 +192,7 @@ const emptyProduct: ProductFormData = {
   stock: 0,
   descuento: '',
   es_producto_familiar: false,
-  precio_dama_unica: '26000',
-  precio_dama_plus: '30000',
-  precio_caballero_unica: '31000',
-  precio_2xl_unisex: '36000',
-  precio_nino: '22000',
-  precio_hombre: '31000',
-  precio_mujer: '26000',
-  precios_tallas: {
-    "2/4": "22000",
-    "6/8": "22000",
-    "10/12": "22000",
-    "14/16": "23000",
-    "18": "26000"
-  }
+  precios_detallados_fam: defaultFamDetailedPrices
 };
 
 type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor' | 'material_apoyo' | 'material_asesor' | 'productos_asesor' | 'productos_mayorista' | 'ranking_mayorista' | 'pqrs' | 'contabilidad' | 'erp';
@@ -1908,32 +1902,31 @@ export default function Admin() {
 
       const isFam = f.es_producto_familiar || f.categoria === 'familiar';
 
-      const pDamaUnica = parseFloat(f.precio_dama_unica || '26000') || 26000;
-      const pDamaPlus = parseFloat(f.precio_dama_plus || '30000') || 30000;
-      const pCaballeroUnica = parseFloat(f.precio_caballero_unica || '31000') || 31000;
-      const p2xlUnisex = parseFloat(f.precio_2xl_unisex || '36000') || 36000;
+      const preciosDetalladosMap: Record<string, { detal: number; mayor?: number; p50?: number }> = {};
+      const preciosTallasMap: Record<string, number> = {};
 
-      const preciosTallasMap: Record<string, number> = {
-        "Dama Única": pDamaUnica,
-        "Dama Plus": pDamaPlus,
-        "Caballero Única": pCaballeroUnica,
-        "2XL Unisex": p2xlUnisex
-      };
-
-      if (f.precios_tallas) {
-        Object.entries(f.precios_tallas).forEach(([k, v]) => {
-          const valNum = parseFloat(String(v));
-          if (!isNaN(valNum) && valNum > 0) preciosTallasMap[k] = valNum;
+      if (f.precios_detallados_fam) {
+        Object.entries(f.precios_detallados_fam).forEach(([k, obj]) => {
+          const dVal = parseFloat(obj.detal || '0');
+          const mVal = parseFloat(obj.mayor || '0');
+          const pVal = parseFloat(obj.p50 || '0');
+          if (dVal > 0 || mVal > 0 || pVal > 0) {
+            preciosDetalladosMap[k] = {
+              detal: dVal > 0 ? dVal : 0,
+              ...(mVal > 0 ? { mayor: mVal } : {}),
+              ...(pVal > 0 ? { p50: pVal } : {})
+            };
+            if (dVal > 0) preciosTallasMap[k] = dVal;
+          }
         });
       }
 
-      if (!preciosTallasMap["2/4"]) preciosTallasMap["2/4"] = 22000;
-      if (!preciosTallasMap["6/8"]) preciosTallasMap["6/8"] = 22000;
-      if (!preciosTallasMap["10/12"]) preciosTallasMap["10/12"] = 22000;
-      if (!preciosTallasMap["14/16"]) preciosTallasMap["14/16"] = 23000;
-      if (!preciosTallasMap["18"]) preciosTallasMap["18"] = 26000;
+      const pDamaUnica = preciosDetalladosMap["Dama Única"]?.detal || 26000;
+      const pDamaPlus = preciosDetalladosMap["Dama Plus"]?.detal || 30000;
+      const pCaballeroUnica = preciosDetalladosMap["Caballero Única"]?.detal || 31000;
+      const p2xlUnisex = preciosDetalladosMap["2XL Unisex"]?.detal || 36000;
 
-      const basePrice = parseFloat(f.precio) || (isFam ? 22000 : 0);
+      const basePrice = parseFloat(f.precio) || (isFam ? (preciosTallasMap["2/4"] || 22000) : 0);
 
       const preciosFam = isFam ? {
         dama_unica: pDamaUnica,
@@ -1943,7 +1936,8 @@ export default function Admin() {
         nino: preciosTallasMap["2/4"] || 22000,
         hombre: pCaballeroUnica,
         mujer: pDamaUnica,
-        precios_tallas: preciosTallasMap
+        precios_tallas: preciosTallasMap,
+        precios_detallados: preciosDetalladosMap
       } : null;
 
       return {
@@ -4830,115 +4824,154 @@ export default function Admin() {
                                 <div className="form-field full" style={{ background: '#f0f9ff', padding: '1.25rem', borderRadius: '16px', border: '2px solid #38bdf8', margin: '0.75rem 0' }}>
                                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
                                     <label style={{ margin: 0, color: '#0369a1', fontSize: '1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                      👨‍👩‍👧‍👦 Configuración de Precios del Producto Familiar
+                                      👨‍👩‍👧‍👦 Precios Detallados por Opción y Talla (Detal, Por Mayor y 50 Unidades)
                                     </label>
                                     <span style={{ fontSize: '0.75rem', background: '#bae6fd', color: '#0369a1', padding: '0.25rem 0.65rem', borderRadius: '20px', fontWeight: 800 }}>
-                                      Precios Individuales por Opción y Talla
+                                      3 Campos de Valor por Cuadro
                                     </span>
                                   </div>
 
                                   <p style={{ margin: '0 0 1.25rem 0', fontSize: '0.82rem', color: '#0284c7', lineHeight: 1.4 }}>
-                                    Ingresa los precios para las opciones de Adulto / Unisex y las Tallas de Niños (Valores precargados):
+                                    Ingresa los 3 valores (Detal, Por Mayor y 50 Unidades) para cada categoría de Adulto / Unisex y cada Talla Infantil:
                                   </p>
 
                                   {/* SECCIÓN ADULTOS / UNISEX */}
                                   <div style={{ marginBottom: '1.25rem' }}>
                                     <label style={{ fontWeight: 800, fontSize: '0.88rem', color: '#0f172a', display: 'block', marginBottom: '0.6rem' }}>
-                                      👔 Precios Adultos / Unisex
+                                      👔 Opciones Adultos / Unisex
                                     </label>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.85rem' }}>
-                                      {/* 👩 Dama Única */}
-                                      <div style={{ background: '#ffffff', padding: '0.85rem', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
-                                        <label style={{ fontWeight: 700, fontSize: '0.82rem', color: '#334155', display: 'block', marginBottom: '0.35rem' }}>
-                                          👩 Dama Única (COP)
-                                        </label>
-                                        <input 
-                                          type="number"
-                                          step="0.01"
-                                          placeholder="26000"
-                                          value={form.precio_dama_unica ?? '26000'}
-                                          onChange={e => updateBulkForm(index, 'precio_dama_unica', e.target.value)}
-                                          style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #94a3b8', fontSize: '0.88rem', fontWeight: 800, color: '#0f172a' }}
-                                        />
-                                      </div>
-
-                                      {/* 👩 Dama Plus */}
-                                      <div style={{ background: '#ffffff', padding: '0.85rem', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
-                                        <label style={{ fontWeight: 700, fontSize: '0.82rem', color: '#334155', display: 'block', marginBottom: '0.35rem' }}>
-                                          👩 Dama Plus (COP)
-                                        </label>
-                                        <input 
-                                          type="number"
-                                          step="0.01"
-                                          placeholder="30000"
-                                          value={form.precio_dama_plus ?? '30000'}
-                                          onChange={e => updateBulkForm(index, 'precio_dama_plus', e.target.value)}
-                                          style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #94a3b8', fontSize: '0.88rem', fontWeight: 800, color: '#0f172a' }}
-                                        />
-                                      </div>
-
-                                      {/* 👨 Caballero Única */}
-                                      <div style={{ background: '#ffffff', padding: '0.85rem', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
-                                        <label style={{ fontWeight: 700, fontSize: '0.82rem', color: '#334155', display: 'block', marginBottom: '0.35rem' }}>
-                                          👨 Caballero Única (COP)
-                                        </label>
-                                        <input 
-                                          type="number"
-                                          step="0.01"
-                                          placeholder="31000"
-                                          value={form.precio_caballero_unica ?? '31000'}
-                                          onChange={e => updateBulkForm(index, 'precio_caballero_unica', e.target.value)}
-                                          style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #94a3b8', fontSize: '0.88rem', fontWeight: 800, color: '#0f172a' }}
-                                        />
-                                      </div>
-
-                                      {/* 🧑 2XL Unisex */}
-                                      <div style={{ background: '#ffffff', padding: '0.85rem', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
-                                        <label style={{ fontWeight: 700, fontSize: '0.82rem', color: '#334155', display: 'block', marginBottom: '0.35rem' }}>
-                                          🧑 2XL Unisex (COP)
-                                        </label>
-                                        <input 
-                                          type="number"
-                                          step="0.01"
-                                          placeholder="36000"
-                                          value={form.precio_2xl_unisex ?? '36000'}
-                                          onChange={e => updateBulkForm(index, 'precio_2xl_unisex', e.target.value)}
-                                          style={{ width: '100%', padding: '0.5rem', borderRadius: '8px', border: '1px solid #94a3b8', fontSize: '0.88rem', fontWeight: 800, color: '#0f172a' }}
-                                        />
-                                      </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0.85rem' }}>
+                                      {[
+                                        { key: 'Dama Única', label: '👩 Dama Única', defaultDetal: '26000' },
+                                        { key: 'Dama Plus', label: '👩 Dama Plus', defaultDetal: '30000' },
+                                        { key: 'Caballero Única', label: '👨 Caballero Única', defaultDetal: '31000' },
+                                        { key: '2XL Unisex', label: '🧑 2XL Unisex', defaultDetal: '36000' }
+                                      ].map(item => {
+                                        const currentObj = form.precios_detallados_fam?.[item.key] || { detal: item.defaultDetal, mayor: '', p50: '' };
+                                        return (
+                                          <div key={item.key} style={{ background: '#ffffff', padding: '0.85rem', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
+                                            <label style={{ fontWeight: 800, fontSize: '0.84rem', color: '#0f172a', display: 'block', marginBottom: '0.45rem' }}>
+                                              {item.label}
+                                            </label>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.35rem' }}>
+                                              <div>
+                                                <span style={{ fontSize: '0.68rem', color: '#475569', fontWeight: 700, display: 'block', marginBottom: '0.15rem' }}>Detal ($)</span>
+                                                <input
+                                                  type="number"
+                                                  step="0.01"
+                                                  placeholder={item.defaultDetal}
+                                                  value={currentObj.detal ?? item.defaultDetal}
+                                                  onChange={e => {
+                                                    const prev = form.precios_detallados_fam || defaultFamDetailedPrices;
+                                                    const updated = { ...prev, [item.key]: { ...(prev[item.key] || {}), detal: e.target.value } };
+                                                    updateBulkForm(index, 'precios_detallados_fam', updated);
+                                                  }}
+                                                  style={{ width: '100%', padding: '0.4rem 0.25rem', borderRadius: '6px', border: '1px solid #94a3b8', fontSize: '0.8rem', fontWeight: 800, color: '#0f172a', textAlign: 'center' }}
+                                                />
+                                              </div>
+                                              <div>
+                                                <span style={{ fontSize: '0.68rem', color: '#0284c7', fontWeight: 700, display: 'block', marginBottom: '0.15rem' }}>Por Mayor</span>
+                                                <input
+                                                  type="number"
+                                                  step="0.01"
+                                                  placeholder="Mayor"
+                                                  value={currentObj.mayor || ''}
+                                                  onChange={e => {
+                                                    const prev = form.precios_detallados_fam || defaultFamDetailedPrices;
+                                                    const updated = { ...prev, [item.key]: { ...(prev[item.key] || {}), mayor: e.target.value } };
+                                                    updateBulkForm(index, 'precios_detallados_fam', updated);
+                                                  }}
+                                                  style={{ width: '100%', padding: '0.4rem 0.25rem', borderRadius: '6px', border: '1px solid #94a3b8', fontSize: '0.8rem', fontWeight: 800, color: '#0284c7', textAlign: 'center' }}
+                                                />
+                                              </div>
+                                              <div>
+                                                <span style={{ fontSize: '0.68rem', color: '#7c3aed', fontWeight: 700, display: 'block', marginBottom: '0.15rem' }}>50 Unid.</span>
+                                                <input
+                                                  type="number"
+                                                  step="0.01"
+                                                  placeholder="50 Unid"
+                                                  value={currentObj.p50 || ''}
+                                                  onChange={e => {
+                                                    const prev = form.precios_detallados_fam || defaultFamDetailedPrices;
+                                                    const updated = { ...prev, [item.key]: { ...(prev[item.key] || {}), p50: e.target.value } };
+                                                    updateBulkForm(index, 'precios_detallados_fam', updated);
+                                                  }}
+                                                  style={{ width: '100%', padding: '0.4rem 0.25rem', borderRadius: '6px', border: '1px solid #94a3b8', fontSize: '0.8rem', fontWeight: 800, color: '#7c3aed', textAlign: 'center' }}
+                                                />
+                                              </div>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
                                     </div>
                                   </div>
 
                                   {/* SECCIÓN NIÑOS */}
                                   <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '12px', border: '1px solid #bae6fd' }}>
                                     <label style={{ fontWeight: 800, fontSize: '0.88rem', color: '#0369a1', display: 'block', marginBottom: '0.6rem' }}>
-                                      👶 Precios Niños por Tallas (2/4, 6/8, 10/12, 14/16, 18)
+                                      👶 Tallas Infantiles Niños (2/4, 6/8, 10/12, 14/16, 18)
                                     </label>
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.6rem' }}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.65rem' }}>
                                       {[
-                                        { talla: '2/4', defaultVal: '22000' },
-                                        { talla: '6/8', defaultVal: '22000' },
-                                        { talla: '10/12', defaultVal: '22000' },
-                                        { talla: '14/16', defaultVal: '23000' },
-                                        { talla: '18', defaultVal: '26000' }
+                                        { key: '2/4', label: 'Talla 2/4', defaultDetal: '22000' },
+                                        { key: '6/8', label: 'Talla 6/8', defaultDetal: '22000' },
+                                        { key: '10/12', label: 'Talla 10/12', defaultDetal: '22000' },
+                                        { key: '14/16', label: 'Talla 14/16', defaultDetal: '23000' },
+                                        { key: '18', label: 'Talla 18', defaultDetal: '26000' }
                                       ].map(item => {
-                                        const valTalla = form.precios_tallas?.[item.talla] ?? item.defaultVal;
+                                        const currentObj = form.precios_detallados_fam?.[item.key] || { detal: item.defaultDetal, mayor: '', p50: '' };
                                         return (
-                                          <div key={item.talla} style={{ background: '#f8fafc', padding: '0.5rem 0.6rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                                            <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#0f172a', display: 'block', marginBottom: '0.2rem' }}>
-                                              Talla {item.talla}
+                                          <div key={item.key} style={{ background: '#f8fafc', padding: '0.65rem', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                                            <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#0f172a', display: 'block', marginBottom: '0.3rem' }}>
+                                              {item.label}
                                             </span>
-                                            <input
-                                              type="number"
-                                              step="0.01"
-                                              placeholder={item.defaultVal}
-                                              value={valTalla}
-                                              onChange={e => {
-                                                const updatedMap = { ...(form.precios_tallas || {}), [item.talla]: e.target.value };
-                                                updateBulkForm(index, 'precios_tallas', updatedMap);
-                                              }}
-                                              style={{ width: '100%', padding: '0.4rem', borderRadius: '6px', border: '1px solid #94a3b8', fontSize: '0.85rem', fontWeight: 800, color: '#0f172a' }}
-                                            />
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.3rem' }}>
+                                              <div>
+                                                <span style={{ fontSize: '0.65rem', color: '#475569', fontWeight: 700, display: 'block', marginBottom: '0.1rem' }}>Detal</span>
+                                                <input
+                                                  type="number"
+                                                  step="0.01"
+                                                  placeholder={item.defaultDetal}
+                                                  value={currentObj.detal ?? item.defaultDetal}
+                                                  onChange={e => {
+                                                    const prev = form.precios_detallados_fam || defaultFamDetailedPrices;
+                                                    const updated = { ...prev, [item.key]: { ...(prev[item.key] || {}), detal: e.target.value } };
+                                                    updateBulkForm(index, 'precios_detallados_fam', updated);
+                                                  }}
+                                                  style={{ width: '100%', padding: '0.35rem 0.2rem', borderRadius: '5px', border: '1px solid #94a3b8', fontSize: '0.78rem', fontWeight: 800, color: '#0f172a', textAlign: 'center' }}
+                                                />
+                                              </div>
+                                              <div>
+                                                <span style={{ fontSize: '0.65rem', color: '#0284c7', fontWeight: 700, display: 'block', marginBottom: '0.1rem' }}>Mayor</span>
+                                                <input
+                                                  type="number"
+                                                  step="0.01"
+                                                  placeholder="Mayor"
+                                                  value={currentObj.mayor || ''}
+                                                  onChange={e => {
+                                                    const prev = form.precios_detallados_fam || defaultFamDetailedPrices;
+                                                    const updated = { ...prev, [item.key]: { ...(prev[item.key] || {}), mayor: e.target.value } };
+                                                    updateBulkForm(index, 'precios_detallados_fam', updated);
+                                                  }}
+                                                  style={{ width: '100%', padding: '0.35rem 0.2rem', borderRadius: '5px', border: '1px solid #94a3b8', fontSize: '0.78rem', fontWeight: 800, color: '#0284c7', textAlign: 'center' }}
+                                                />
+                                              </div>
+                                              <div>
+                                                <span style={{ fontSize: '0.65rem', color: '#7c3aed', fontWeight: 700, display: 'block', marginBottom: '0.1rem' }}>50 U</span>
+                                                <input
+                                                  type="number"
+                                                  step="0.01"
+                                                  placeholder="50 U"
+                                                  value={currentObj.p50 || ''}
+                                                  onChange={e => {
+                                                    const prev = form.precios_detallados_fam || defaultFamDetailedPrices;
+                                                    const updated = { ...prev, [item.key]: { ...(prev[item.key] || {}), p50: e.target.value } };
+                                                    updateBulkForm(index, 'precios_detallados_fam', updated);
+                                                  }}
+                                                  style={{ width: '100%', padding: '0.35rem 0.2rem', borderRadius: '5px', border: '1px solid #94a3b8', fontSize: '0.78rem', fontWeight: 800, color: '#7c3aed', textAlign: 'center' }}
+                                                />
+                                              </div>
+                                            </div>
                                           </div>
                                         );
                                       })}

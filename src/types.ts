@@ -25,7 +25,12 @@ export interface Producto {
     nino?: number | null;
     hombre?: number | null;
     mujer?: number | null;
+    dama_unica?: number | null;
+    dama_plus?: number | null;
+    caballero_unica?: number | null;
+    unisex_2xl?: number | null;
     precios_tallas?: Record<string, number> | null;
+    precios_detallados?: Record<string, { detal?: number; mayor?: number; p50?: number }> | null;
   } | null;
 }
 
