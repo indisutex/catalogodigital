@@ -5376,6 +5376,48 @@ export default function Admin() {
                               
                               <div style={{ marginTop: '0.4rem', padding: '0.6rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                                  {(() => {
+                                   if (p.es_producto_familiar || p.categoria === 'familiar') {
+                                     const fam = p.precios_familia as any || {};
+                                     const preciosDetallados = fam.precios_detallados || {};
+                                     const preciosMap = fam.precios_tallas || {};
+
+                                     const dUnica = preciosDetallados['Dama Única']?.detal || fam.dama_unica || preciosMap['Dama Única'] || 26000;
+                                     const dPlus = preciosDetallados['Dama Plus']?.detal || fam.dama_plus || preciosMap['Dama Plus'] || 30000;
+                                     const cUnica = preciosDetallados['Caballero Única']?.detal || fam.caballero_unica || preciosMap['Caballero Única'] || 31000;
+                                     const u2xl = preciosDetallados['2XL Unisex']?.detal || fam.unisex_2xl || preciosMap['2XL Unisex'] || 36000;
+                                     const n24 = preciosDetallados['2/4']?.detal || fam.nino || preciosMap['2/4'] || 22000;
+
+                                     return (
+                                       <div style={{ background: '#f0f9ff', padding: '0.4rem 0.5rem', borderRadius: '6px', border: '1px solid #bae6fd', fontSize: '0.72rem' }}>
+                                         <div style={{ fontWeight: 800, color: '#0369a1', marginBottom: '0.25rem', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                                           👨‍👩‍👧‍👦 Combo Familiar (Resumen Precios):
+                                         </div>
+                                         <div style={{ color: '#0f172a', display: 'flex', flexDirection: 'column', gap: '0.12rem' }}>
+                                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                             <span>👩 Dama Única:</span>
+                                             <strong>${dUnica.toLocaleString()}</strong>
+                                           </div>
+                                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                             <span>👩 Dama Plus:</span>
+                                             <strong>${dPlus.toLocaleString()}</strong>
+                                           </div>
+                                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                             <span>👨 Caballero Única:</span>
+                                             <strong>${cUnica.toLocaleString()}</strong>
+                                           </div>
+                                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                             <span>🧑 2XL Unisex:</span>
+                                             <strong>${u2xl.toLocaleString()}</strong>
+                                           </div>
+                                           <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                             <span>👶 Niños (2/4 a 18):</span>
+                                             <strong>${n24.toLocaleString()}+</strong>
+                                           </div>
+                                         </div>
+                                       </div>
+                                     );
+                                   }
+
                                    const desc = (p.descuento !== undefined && p.descuento > 0) ? p.descuento : (configuracion?.descuento_promocional || 0);
                                    const precioDetal = p.precio;
                                    const precioMayor = p.precio_por_mayor;

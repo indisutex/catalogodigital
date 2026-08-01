@@ -69,8 +69,8 @@ export const getEffectivePrice = (producto: Producto, buyerType: BuyerType, mark
 interface CartContextType {
   items: CartItem[];
   addToCart: (producto: Producto, talla?: string, estampado?: string, cantidad?: number) => void;
-  removeFromCart: (id: string, talla?: string, estampado?: string) => void;
-  updateQuantity: (id: string, cantidad: number, talla?: string, estampado?: string) => void;
+  removeFromCart: (id: string, talla?: string, estampado?: string, nombre?: string) => void;
+  updateQuantity: (id: string, cantidad: number, talla?: string, estampado?: string, nombre?: string) => void;
   clearCart: () => void;
   total: number;
   buyerType: BuyerType;
@@ -153,11 +153,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const addToCart = (producto: Producto, talla?: string, estampado?: string, cantidad: number = 1) => {
     setItems(prevItems => {
       const existingItem = prevItems.find(
-        item => item.id === producto.id && item.talla === talla && item.estampado === estampado
+        item => item.id === producto.id && item.nombre === producto.nombre && item.talla === talla && item.estampado === estampado
       );
       if (existingItem) {
         return prevItems.map(item =>
-          (item.id === producto.id && item.talla === talla && item.estampado === estampado)
+          (item.id === producto.id && item.nombre === producto.nombre && item.talla === talla && item.estampado === estampado)
             ? { ...item, cantidad: item.cantidad + cantidad }
             : item
         );
@@ -166,18 +166,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const removeFromCart = (id: string, talla?: string, estampado?: string) => {
-    setItems(prevItems => prevItems.filter(item => !(item.id === id && item.talla === talla && item.estampado === estampado)));
+  const removeFromCart = (id: string, talla?: string, estampado?: string, nombre?: string) => {
+    setItems(prevItems => prevItems.filter(item => !(item.id === id && (nombre ? item.nombre === nombre : true) && item.talla === talla && item.estampado === estampado)));
   };
 
-  const updateQuantity = (id: string, cantidad: number, talla?: string, estampado?: string) => {
+  const updateQuantity = (id: string, cantidad: number, talla?: string, estampado?: string, nombre?: string) => {
     if (cantidad < 1) {
-      removeFromCart(id, talla, estampado);
+      removeFromCart(id, talla, estampado, nombre);
       return;
     }
     setItems(prevItems =>
       prevItems.map(item =>
-        (item.id === id && item.talla === talla && item.estampado === estampado) ? { ...item, cantidad } : item
+        (item.id === id && (nombre ? item.nombre === nombre : true) && item.talla === talla && item.estampado === estampado) ? { ...item, cantidad } : item
       )
     );
   };

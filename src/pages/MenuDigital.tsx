@@ -308,6 +308,7 @@ export default function MenuDigital() {
   const [selectedEstampado, setSelectedEstampado] = useState<string>('');
   const [selectedCantidad, setSelectedCantidad] = useState(1);
   const [selectedMiembroFamilia, setSelectedMiembroFamilia] = useState<string>('');
+  const [famOptionQuantities, setFamOptionQuantities] = useState<Record<string, number>>({});
 
   // Prevenir scroll del body cuando algún modal está abierto
   useEffect(() => {
@@ -345,6 +346,17 @@ export default function MenuDigital() {
     setSelectedTalla('');
     setSelectedEstampado('');
     setSelectedCantidad(1);
+    setFamOptionQuantities({
+      dama_unica: 0,
+      dama_plus: 0,
+      caballero_unica: 0,
+      unisex_2xl: 0,
+      '2/4': 0,
+      '6/8': 0,
+      '10/12': 0,
+      '14/16': 0,
+      '18': 0
+    });
     if (producto.es_producto_familiar && producto.precios_familia) {
       if (producto.precios_familia.nino) setSelectedMiembroFamilia('nino');
       else if (producto.precios_familia.hombre) setSelectedMiembroFamilia('hombre');
@@ -414,28 +426,59 @@ export default function MenuDigital() {
     const tallas = detailProduct.tallas?.split(',').map(t => t.trim()).filter(Boolean) || [];
     const estampados = detailProduct.estampados?.split(',').map(e => e.trim()).filter(Boolean) || [];
 
-    if (tallas.length > 0 && !selectedTalla && !detailProduct.es_producto_familiar) {
-      alert('Por favor selecciona una talla');
-      return;
-    }
     if (estampados.length > 0 && !selectedEstampado) {
       alert('Por favor selecciona un estampado');
       return;
     }
-    if (detailProduct.es_producto_familiar && !selectedMiembroFamilia) {
-      alert('Por favor selecciona la opción de la familia');
+
+    if (detailProduct.es_producto_familiar) {
+      const selectedEntries = Object.entries(famOptionQuantities).filter(([_, q]) => q > 0);
+      if (selectedEntries.length === 0) {
+        alert('Por favor selecciona al menos una cantidad en las opciones o tallas');
+        return;
+      }
+
+      selectedEntries.forEach(([key, q]) => {
+        let label = '';
+        let tVal = 'Única';
+        let memberVal = key;
+
+        if (key === 'dama_unica') { label = 'Dama Única'; memberVal = 'dama_unica'; }
+        else if (key === 'dama_plus') { label = 'Dama Plus'; memberVal = 'dama_plus'; }
+        else if (key === 'caballero_unica') { label = 'Caballero Única'; memberVal = 'caballero_unica'; }
+        else if (key === 'unisex_2xl') { label = '2XL Unisex'; memberVal = 'unisex_2xl'; }
+        else {
+          label = `Niño Talla ${key}`;
+          tVal = key;
+          memberVal = 'nino';
+        }
+
+        const unitPrice = getActiveUnitPrice(detailProduct, memberVal, tVal, buyerType);
+        const productToAdd = {
+          ...detailProduct,
+          precio: unitPrice,
+          nombre: `${detailProduct.nombre} (${label})`
+        };
+
+        addToCart(productToAdd, tVal, selectedEstampado, q);
+      });
+
+      setDetailProduct(null);
       return;
     }
 
-    const unitPrice = getActiveUnitPrice(detailProduct, selectedMiembroFamilia, selectedTalla);
+    if (tallas.length > 0 && !selectedTalla) {
+      alert('Por favor selecciona una talla');
+      return;
+    }
+
+    const unitPrice = getActiveUnitPrice(detailProduct, selectedMiembroFamilia, selectedTalla, buyerType);
     let miembroLabel = '';
     if (selectedMiembroFamilia === 'dama_unica') miembroLabel = 'Dama Única';
     else if (selectedMiembroFamilia === 'dama_plus') miembroLabel = 'Dama Plus';
     else if (selectedMiembroFamilia === 'caballero_unica') miembroLabel = 'Caballero Única';
     else if (selectedMiembroFamilia === 'unisex_2xl') miembroLabel = '2XL Unisex';
     else if (selectedMiembroFamilia === 'nino') miembroLabel = 'Niños';
-    else if (selectedMiembroFamilia === 'hombre') miembroLabel = 'Hombre';
-    else if (selectedMiembroFamilia === 'mujer') miembroLabel = 'Mujer';
 
     const productToAdd = {
       ...detailProduct,
@@ -1176,14 +1219,21 @@ export default function MenuDigital() {
 
       {/* Floating Cart Button */}
       {totalItems > 0 && !isCartOpen && (
-        <button className="floating-cart-btn" onClick={() => setIsCartOpen(true)}>
-          <div className="cart-icon-wrapper">
-            <ShoppingBag size={22} />
-            <span className="cart-badge">{totalItems}</span>
-            <span>Ver Carrito</span>
-          </div>
-          <span className="cart-total-float">${total.toLocaleString('es-CO')}</span>
-        </button>
+        <>
+          {buyerType === 'mayorista' && totalUnits < 6 && (
+            <div style={{ position: 'fixed', bottom: '85px', right: '1.25rem', zIndex: 998, background: 'rgba(15, 23, 42, 0.95)', color: 'white', padding: '0.45rem 0.85rem', borderRadius: '20px', fontSize: '0.76rem', fontWeight: 800, boxShadow: '0 4px 14px rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', gap: '0.4rem', border: '1px solid #38bdf8', backdropFilter: 'blur(6px)' }}>
+              <span>📦 Te faltan <strong style={{ color: '#38bdf8' }}>{6 - totalUnits}</strong> {6 - totalUnits === 1 ? 'unidad' : 'unidades'} para compra por mayor (Mín 6 U)</span>
+            </div>
+          )}
+          <button className="floating-cart-btn" onClick={() => setIsCartOpen(true)}>
+            <div className="cart-icon-wrapper">
+              <ShoppingBag size={22} />
+              <span className="cart-badge">{totalItems}</span>
+              <span>Ver Carrito</span>
+            </div>
+            <span className="cart-total-float">${total.toLocaleString('es-CO')}</span>
+          </button>
+        </>
       )}
 
       {/* Cart Modal */}
@@ -1204,27 +1254,27 @@ export default function MenuDigital() {
             </div>
 
             {/* Wholesale Discount 6-Product Progress Bar */}
-            {items.length > 0 && (configuracion?.descuento_mayor_carrito_activo ?? true) && (buyerType === 'detal' || buyerType === null) && (
-              <div className="shrine-shipping-bar" style={{ padding: '0.45rem 1rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+            {items.length > 0 && (
+              <div className="shrine-shipping-bar" style={{ padding: '0.55rem 1rem', background: '#f0fdf4', borderBottom: '1px solid #bbf7d0' }}>
                 {(() => {
                   const remaining = Math.max(0, 6 - totalUnits);
                   const pct = Math.min(100, (totalUnits / 6) * 100);
                   return (
                     <div>
-                      <p style={{ margin: '0 0 0.35rem 0', fontSize: '0.8rem', fontWeight: 700, color: '#334155', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <p style={{ margin: '0 0 0.35rem 0', fontSize: '0.82rem', fontWeight: 700, color: '#065f46', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         {remaining > 0 ? (
                           <>
-                            <span>Agrega <strong style={{ color: '#059669' }}>{remaining} {remaining === 1 ? 'producto más' : 'productos más'}</strong> para obtener <strong style={{ color: '#059669' }}>Precio al por mayor</strong></span>
-                            <span style={{ fontSize: '0.85rem' }}>📦 {totalUnits}/6</span>
+                            <span>Agrega <strong style={{ color: '#047857' }}>{remaining} {remaining === 1 ? 'prenda más' : 'prendas más'}</strong> para completar tu pedido al <strong style={{ color: '#047857' }}>Por Mayor (Mín. 6 U)</strong></span>
+                            <span style={{ fontSize: '0.82rem', background: '#dcfce7', padding: '0.15rem 0.5rem', borderRadius: '12px', color: '#065f46', fontWeight: 800 }}>📦 {totalUnits}/6 U</span>
                           </>
                         ) : (
                           <>
-                            <span style={{ color: '#059669', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>🎉 <strong>¡Felicidades! Precio al Por Mayor Aplicado</strong></span>
-                            <span>🎁</span>
+                            <span style={{ color: '#047857', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>🎉 <strong>¡Mínimo al Por Mayor Cumplido (6+ Unidades)!</strong></span>
+                            <span style={{ fontSize: '0.82rem', background: '#dcfce7', padding: '0.15rem 0.5rem', borderRadius: '12px', color: '#065f46', fontWeight: 800 }}>✅ {totalUnits} U</span>
                           </>
                         )}
                       </p>
-                      <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                      <div style={{ height: '7px', background: '#d1fae5', borderRadius: '4px', overflow: 'hidden' }}>
                         <div style={{ height: '100%', width: `${pct}%`, background: pct >= 100 ? 'linear-gradient(90deg, #10b981, #059669)' : 'linear-gradient(90deg, #34d399, #10b981)', transition: 'width 0.3s ease' }} />
                       </div>
                     </div>
@@ -1348,12 +1398,12 @@ export default function MenuDigital() {
                             )}
                           </p>
                           <div className="cart-item-qty">
-                            <button onClick={() => updateQuantity(item.id, item.cantidad - 1, item.talla, item.estampado)}>-</button>
+                            <button onClick={() => updateQuantity(item.id, item.cantidad - 1, item.talla, item.estampado, item.nombre)}>-</button>
                             <span>{item.cantidad}</span>
-                            <button onClick={() => updateQuantity(item.id, item.cantidad + 1, item.talla, item.estampado)}>+</button>
+                            <button onClick={() => updateQuantity(item.id, item.cantidad + 1, item.talla, item.estampado, item.nombre)}>+</button>
                           </div>
                         </div>
-                        <button className="cart-item-remove" onClick={() => removeFromCart(item.id, item.talla, item.estampado)}>
+                        <button className="cart-item-remove" onClick={() => removeFromCart(item.id, item.talla, item.estampado, item.nombre)}>
                           <X size={20} />
                         </button>
                       </div>
@@ -1532,54 +1582,117 @@ export default function MenuDigital() {
                   <p className="detail-desc">{detailProduct.descripcion}</p>
                 )}
 
-                {/* ── PRODUCTO FAMILIAR OPTION SELECTOR ── */}
-                {detailProduct.es_producto_familiar && detailProduct.precios_familia && (
+                {/* ── PRODUCTO FAMILIAR OPTION SELECTOR WITH QUANTITIES ── */}
+                {detailProduct.es_producto_familiar && detailProduct.precios_familia ? (
                   <div className="detail-tallas" style={{ width: '100%', background: '#f0f9ff', padding: '0.85rem', borderRadius: '14px', border: '1.5px solid #bae6fd', marginBottom: '0.85rem' }}>
-                    <p className="detail-section-label" style={{ color: '#0369a1', fontWeight: 800, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.88rem' }}>
-                      👨‍👩‍👧‍👦 Selecciona la Opción Familiar:
+                    <p className="detail-section-label" style={{ color: '#0369a1', fontWeight: 800, marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.88rem' }}>
+                      👨‍👩‍👧‍👦 Selecciona la Cantidad para cada Opción y Talla:
                     </p>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(105px, 1fr))', gap: '0.4rem' }}>
-                      {[
-                        { key: 'dama_unica', label: '👩 Dama Única' },
-                        { key: 'dama_plus', label: '👩 Dama Plus' },
-                        { key: 'caballero_unica', label: '👨 Caballero Única' },
-                        { key: 'unisex_2xl', label: '🧑 2XL Unisex' },
-                        { key: 'nino', label: '👦 Niños (Tallas)' }
-                      ].map(opt => {
-                        const optPrice = getActiveUnitPrice(detailProduct, opt.key, opt.key === 'nino' ? '2/4' : 'Única', buyerType);
-                        return (
-                          <button
-                            key={opt.key}
-                            type="button"
-                            onClick={() => {
-                              setSelectedMiembroFamilia(opt.key);
-                              if (opt.key === 'nino') setSelectedTalla('2/4');
-                              else setSelectedTalla('Única');
-                            }}
-                            style={{
-                              padding: '0.55rem 0.3rem',
-                              borderRadius: '10px',
-                              border: selectedMiembroFamilia === opt.key ? '2px solid #0284c7' : '1px solid #cbd5e1',
-                              background: selectedMiembroFamilia === opt.key ? '#e0f2fe' : '#ffffff',
-                              color: selectedMiembroFamilia === opt.key ? '#0369a1' : '#334155',
-                              fontWeight: selectedMiembroFamilia === opt.key ? 800 : 600,
-                              fontSize: '0.78rem',
-                              cursor: 'pointer',
-                              textAlign: 'center',
-                              transition: 'all 0.15s ease',
-                              boxShadow: selectedMiembroFamilia === opt.key ? '0 2px 8px rgba(2,132,199,0.2)' : 'none'
-                            }}
-                          >
-                            <div style={{ fontWeight: 800 }}>{opt.label}</div>
-                            <div style={{ fontSize: '0.75rem', color: selectedMiembroFamilia === opt.key ? '#0284c7' : '#64748b', marginTop: '0.1rem' }}>
-                              ${optPrice.toLocaleString('es-CO')}
+
+                    {/* ADULTOS / UNISEX */}
+                    <div style={{ marginBottom: '0.75rem' }}>
+                      <span style={{ fontSize: '0.76rem', fontWeight: 800, color: '#334155', display: 'block', marginBottom: '0.35rem' }}>
+                        👔 Opciones Adultos / Unisex
+                      </span>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(115px, 1fr))', gap: '0.4rem' }}>
+                        {[
+                          { key: 'dama_unica', label: '👩 Dama Única' },
+                          { key: 'dama_plus', label: '👩 Dama Plus' },
+                          { key: 'caballero_unica', label: '👨 Caballero Única' },
+                          { key: 'unisex_2xl', label: '🧑 2XL Unisex' }
+                        ].map(opt => {
+                          const optUnitPrice = getActiveUnitPrice(detailProduct, opt.key, 'Única', buyerType);
+                          const optPrice = getEffectivePrice({ ...detailProduct, precio: optUnitPrice }, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
+                          const qty = famOptionQuantities[opt.key] || 0;
+                          return (
+                            <div
+                              key={opt.key}
+                              style={{
+                                padding: '0.5rem 0.35rem',
+                                borderRadius: '10px',
+                                border: qty > 0 ? '2px solid #0284c7' : '1px solid #cbd5e1',
+                                background: qty > 0 ? '#e0f2fe' : '#ffffff',
+                                textAlign: 'center',
+                                boxShadow: qty > 0 ? '0 2px 8px rgba(2,132,199,0.2)' : 'none'
+                              }}
+                            >
+                              <div style={{ fontWeight: 800, fontSize: '0.76rem', color: '#0f172a' }}>{opt.label}</div>
+                              <div style={{ fontSize: '0.72rem', color: '#0284c7', fontWeight: 800, margin: '0.15rem 0 0.35rem' }}>
+                                ${optPrice.toLocaleString('es-CO')}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => setFamOptionQuantities(prev => ({ ...prev, [opt.key]: Math.max(0, (prev[opt.key] || 0) - 1) }))}
+                                  style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}
+                                >
+                                  −
+                                </button>
+                                <span style={{ fontSize: '0.85rem', fontWeight: 800, minWidth: '16px', textAlign: 'center', color: '#0f172a' }}>{qty}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setFamOptionQuantities(prev => ({ ...prev, [opt.key]: (prev[opt.key] || 0) + 1 }))}
+                                  style={{ width: '24px', height: '24px', borderRadius: '6px', border: 'none', background: '#0284c7', color: 'white', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}
+                                >
+                                  +
+                                </button>
+                              </div>
                             </div>
-                          </button>
-                        );
-                      })}
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* NIÑOS POR TALLAS */}
+                    <div>
+                      <span style={{ fontSize: '0.76rem', fontWeight: 800, color: '#0369a1', display: 'block', marginBottom: '0.35rem' }}>
+                        👶 Tallas Infantiles (Niños)
+                      </span>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '0.4rem' }}>
+                        {['2/4', '6/8', '10/12', '14/16', '18'].map(sz => {
+                          const optUnitPrice = getActiveUnitPrice(detailProduct, 'nino', sz, buyerType);
+                          const optPrice = getEffectivePrice({ ...detailProduct, precio: optUnitPrice }, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
+                          const qty = famOptionQuantities[sz] || 0;
+                          return (
+                            <div
+                              key={sz}
+                              style={{
+                                padding: '0.55rem 0.35rem',
+                                borderRadius: '10px',
+                                border: qty > 0 ? '2px solid #0284c7' : '1px solid #bae6fd',
+                                background: qty > 0 ? '#e0f2fe' : '#ffffff',
+                                textAlign: 'center',
+                                boxShadow: qty > 0 ? '0 2px 8px rgba(2,132,199,0.2)' : 'none'
+                              }}
+                            >
+                              <div style={{ fontWeight: 800, fontSize: '0.76rem', color: '#0f172a' }}>Talla {sz}</div>
+                              <div style={{ fontSize: '0.72rem', color: '#0284c7', fontWeight: 800, margin: '0.15rem 0 0.35rem' }}>
+                                ${optPrice.toLocaleString('es-CO')}
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => setFamOptionQuantities(prev => ({ ...prev, [sz]: Math.max(0, (prev[sz] || 0) - 1) }))}
+                                  style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}
+                                >
+                                  −
+                                </button>
+                                <span style={{ fontSize: '0.85rem', fontWeight: 800, minWidth: '16px', textAlign: 'center', color: '#0f172a' }}>{qty}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => setFamOptionQuantities(prev => ({ ...prev, [sz]: (prev[sz] || 0) + 1 }))}
+                                  style={{ width: '24px', height: '24px', borderRadius: '6px', border: 'none', background: '#0284c7', color: 'white', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
-                )}
+                ) : null}
 
                 {/* ── ESTAMPADOS + TALLAS + CANTIDAD ── */}
                 <div className="detail-controls-row" style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', alignItems: 'stretch' }}>
@@ -1592,7 +1705,6 @@ export default function MenuDigital() {
                       <div className="detail-tallas" style={{ width: '100%' }}>
                         <p className="detail-section-label" style={{ marginBottom: '0.4rem' }}>Estampado / Temática</p>
                         
-                        {/* Dropdown Menu for Estampados */}
                         <select
                           value={selectedEstampado}
                           onChange={(e) => {
@@ -1631,41 +1743,70 @@ export default function MenuDigital() {
                     );
                   })()}
 
-                  <div style={{ display: 'flex', gap: '1rem', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                    {tallas.length > 0 && (
-                      <div className="detail-tallas" style={{ flex: 1 }}>
-                        <p className="detail-section-label">Talla</p>
-                        <div className="tallas-grid">
-                          {tallas.map(t => (
-                            <button
-                              key={t}
-                              className={`talla-chip${selectedTalla === t ? ' active' : ''}`}
-                              onClick={() => setSelectedTalla(t)}
-                            >{t}</button>
-                          ))}
+                  {!detailProduct.es_producto_familiar && (
+                    <div style={{ display: 'flex', gap: '1rem', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      {tallas.length > 0 && (
+                        <div className="detail-tallas" style={{ flex: 1 }}>
+                          <p className="detail-section-label">Talla</p>
+                          <div className="tallas-grid">
+                            {tallas.map(t => (
+                              <button
+                                key={t}
+                                className={`talla-chip${selectedTalla === t ? ' active' : ''}`}
+                                onClick={() => setSelectedTalla(t)}
+                              >{t}</button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="detail-cantidad" style={{ flexGrow: 0, minWidth: '110px' }}>
+                        <p className="detail-section-label">Cantidad</p>
+                        <div className="cantidad-control">
+                          <button className="qty-btn" onClick={() => setSelectedCantidad(q => Math.max(1, q - 1))}>−</button>
+                          <span className="qty-value">{selectedCantidad}</span>
+                          <button className="qty-btn" onClick={() => setSelectedCantidad(q => q + 1)}>+</button>
                         </div>
                       </div>
-                    )}
-
-                    <div className="detail-cantidad" style={{ flexGrow: 0, minWidth: '110px' }}>
-                      <p className="detail-section-label">Cantidad</p>
-                      <div className="cantidad-control">
-                        <button className="qty-btn" onClick={() => setSelectedCantidad(q => Math.max(1, q - 1))}>−</button>
-                        <span className="qty-value">{selectedCantidad}</span>
-                        <button className="qty-btn" onClick={() => setSelectedCantidad(q => q + 1)}>+</button>
-                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
-
 
                 <div style={{ marginTop: '0.85rem' }} />
 
                 {/* ── ADD TO CART ── */}
-                <button className="detail-add-btn" onClick={handleAddFromDetail}>
-                  <ShoppingCart size={18} />
-                  Añadir al carrito • ${(getEffectivePrice({ ...detailProduct, precio: getActiveUnitPrice(detailProduct, selectedMiembroFamilia, selectedTalla, buyerType) }, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * selectedCantidad).toLocaleString('es-CO')}
-                </button>
+                {(() => {
+                  if (detailProduct.es_producto_familiar) {
+                    const totalFamUnits = Object.values(famOptionQuantities).reduce((sum, q) => sum + (q > 0 ? q : 0), 0);
+                    const totalFamPrice = Object.entries(famOptionQuantities).reduce((sum, [key, q]) => {
+                      if (q <= 0) return sum;
+                      let tVal = 'Única';
+                      let memberVal = key;
+                      if (['2/4', '6/8', '10/12', '14/16', '18'].includes(key)) {
+                        tVal = key;
+                        memberVal = 'nino';
+                      }
+                      const uPrice = getActiveUnitPrice(detailProduct, memberVal, tVal, buyerType);
+                      const effPrice = getEffectivePrice({ ...detailProduct, precio: uPrice }, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
+                      return sum + (effPrice * q);
+                    }, 0);
+
+                    return (
+                      <button className="detail-add-btn" onClick={handleAddFromDetail}>
+                        <ShoppingCart size={18} />
+                        {totalFamUnits > 0
+                          ? `Añadir al carrito • $${totalFamPrice.toLocaleString('es-CO')} (${totalFamUnits} prenda${totalFamUnits > 1 ? 's' : ''})`
+                          : 'Añadir al carrito (Selecciona cantidades)'}
+                      </button>
+                    );
+                  }
+                  return (
+                    <button className="detail-add-btn" onClick={handleAddFromDetail}>
+                      <ShoppingCart size={18} />
+                      Añadir al carrito • ${(getEffectivePrice({ ...detailProduct, precio: getActiveUnitPrice(detailProduct, selectedMiembroFamilia, selectedTalla, buyerType) }, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * selectedCantidad).toLocaleString('es-CO')}
+                    </button>
+                  );
+                })()}
               </div>
             </div>
           </div>
