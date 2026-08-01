@@ -410,8 +410,11 @@ export default function MenuDigital() {
     }
   }, [configuracion, setDescuentoPromocional, setIsBulkDiscountEnabled]);
 
+  const minijuegosActivos = configuracion?.activar_minijuegos ?? true;
+
   useEffect(() => {
     if (cargando) return;
+    if (!minijuegosActivos) return;
     
     const isTipoModalVisible = showTipoModal || (buyerType === null && (configuracion?.preguntar_tipo_cliente ?? false));
     
@@ -427,7 +430,7 @@ export default function MenuDigital() {
         return () => clearTimeout(timer);
       }
     } catch (e) {}
-  }, [cargando, buyerType, showTipoModal, configuracion]);
+  }, [cargando, buyerType, showTipoModal, configuracion, minijuegosActivos]);
 
   const [formData, setFormData] = useState({
     nombre: '',
@@ -802,17 +805,19 @@ export default function MenuDigital() {
           
           <div className="burger-menu-content">
             {/* Juegos & Premios */}
-            <button
-              onClick={() => { setIsBurgerMenuOpen(false); setIsGameModalOpen(true); }}
-              className="burger-item-btn"
-              style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%)', color: 'white' }}
-            >
-              <span className="burger-item-icon">🎮</span>
-              <div className="burger-item-text">
-                <strong>Juegos & Premios</strong>
-                <span className="burger-item-sub">Gana descuentos y regalos</span>
-              </div>
-            </button>
+            {minijuegosActivos && (
+              <button
+                onClick={() => { setIsBurgerMenuOpen(false); setIsGameModalOpen(true); }}
+                className="burger-item-btn"
+                style={{ background: 'linear-gradient(135deg, #8b5cf6 0%, #d946ef 100%)', color: 'white' }}
+              >
+                <span className="burger-item-icon">🎮</span>
+                <div className="burger-item-text">
+                  <strong>Juegos & Premios</strong>
+                  <span className="burger-item-sub">Gana descuentos y regalos</span>
+                </div>
+              </button>
+            )}
 
             {/* Tipo de Compra */}
             <button
@@ -1675,59 +1680,62 @@ export default function MenuDigital() {
           </div>
         </div>
       )}
-      {/* ── Modal Aviso de Bienvenida Estilo Temu ── */}
-      <TemuWelcomeBanner
-        isOpen={showTemuBanner}
-        onClose={() => {
-          setShowTemuBanner(false);
-          try { sessionStorage.setItem(`temu_banner_dismissed_${getTenantId()}`, 'true'); } catch (e) {}
-        }}
-        onStartGame={() => {
-          setShowTemuBanner(false);
-          try { sessionStorage.setItem(`temu_banner_dismissed_${getTenantId()}`, 'true'); } catch (e) {}
-          setIsGameModalOpen(true);
-        }}
-      />
+      {/* ── Modal Aviso de Bienvenida Estilo Temu & Hub de Juegos ── */}
+      {minijuegosActivos && (
+        <>
+          <TemuWelcomeBanner
+            isOpen={showTemuBanner}
+            onClose={() => {
+              setShowTemuBanner(false);
+              try { sessionStorage.setItem(`temu_banner_dismissed_${getTenantId()}`, 'true'); } catch (e) {}
+            }}
+            onStartGame={() => {
+              setShowTemuBanner(false);
+              try { sessionStorage.setItem(`temu_banner_dismissed_${getTenantId()}`, 'true'); } catch (e) {}
+              setIsGameModalOpen(true);
+            }}
+          />
 
-      {/* ── Modal Centro de Juegos Hub ── */}
-      <JuegosHubModal
-        isOpen={isGameModalOpen}
-        onClose={() => setIsGameModalOpen(false)}
-        onApplyCoupon={(porcentaje) => setDescuentoPromocional(porcentaje)}
-        onApplyFreeShipping={() => {
-          try {
-            const shippingGift: Producto = {
-              id: 'regalo-envio-gratis-' + Date.now(),
-              nombre: '🚚 REGALO: Envío Gratis en tu Pedido',
-              precio: 0,
-              categoria: 'regalo',
-              subcategoria: 'regalo',
-              stock: 999,
-              imagen_url: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=400',
-              descripcion: '¡Ganado en el juego Supervivencia Stitch!',
-              created_at: new Date().toISOString()
-            };
-            addToCart(shippingGift, 'Única', 'Estándar', 1);
-          } catch (e) {}
-        }}
-        onAddFreeGift={(nombreGift) => {
-          try {
-            const giftItem: Producto = {
-              id: 'regalo-juego-' + Date.now(),
-              nombre: nombreGift,
-              precio: 0,
-              categoria: 'regalo',
-              subcategoria: 'regalo',
-              stock: 999,
-              imagen_url: 'https://images.unsplash.com/photo-1596814234568-19ebcc1af3fa?auto=format&fit=crop&q=80&w=400',
-              descripcion: '¡Premio ganado en el centro de juegos!',
-              created_at: new Date().toISOString()
-            };
-            addToCart(giftItem, 'Única', 'Estándar', 1);
-          } catch (e) {}
-        }}
-        tenantId={getTenantId()}
-      />
+          <JuegosHubModal
+            isOpen={isGameModalOpen}
+            onClose={() => setIsGameModalOpen(false)}
+            onApplyCoupon={(porcentaje) => setDescuentoPromocional(porcentaje)}
+            onApplyFreeShipping={() => {
+              try {
+                const shippingGift: Producto = {
+                  id: 'regalo-envio-gratis-' + Date.now(),
+                  nombre: '🚚 REGALO: Envío Gratis en tu Pedido',
+                  precio: 0,
+                  categoria: 'regalo',
+                  subcategoria: 'regalo',
+                  stock: 999,
+                  imagen_url: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&q=80&w=400',
+                  descripcion: '¡Ganado en el juego Supervivencia Stitch!',
+                  created_at: new Date().toISOString()
+                };
+                addToCart(shippingGift, 'Única', 'Estándar', 1);
+              } catch (e) {}
+            }}
+            onAddFreeGift={(nombreGift) => {
+              try {
+                const giftItem: Producto = {
+                  id: 'regalo-juego-' + Date.now(),
+                  nombre: nombreGift,
+                  precio: 0,
+                  categoria: 'regalo',
+                  subcategoria: 'regalo',
+                  stock: 999,
+                  imagen_url: 'https://images.unsplash.com/photo-1596814234568-19ebcc1af3fa?auto=format&fit=crop&q=80&w=400',
+                  descripcion: '¡Premio ganado en el centro de juegos!',
+                  created_at: new Date().toISOString()
+                };
+                addToCart(giftItem, 'Única', 'Estándar', 1);
+              } catch (e) {}
+            }}
+            tenantId={getTenantId()}
+          />
+        </>
+      )}
     </div>
   );
 }

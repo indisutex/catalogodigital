@@ -69,6 +69,7 @@ export interface Configuracion {
   clarity_project_id?: string;
   preguntar_tipo_cliente?: boolean;
   descuento_mayor_carrito_activo?: boolean;
+  activar_minijuegos?: boolean;
   admin_nombre?: string;
   admin_foto_url?: string;
   admin_pin?: string;

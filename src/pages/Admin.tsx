@@ -7376,6 +7376,7 @@ export default function Admin() {
                       admin_pin: configuracion.admin_pin || '0000',
                       preguntar_tipo_cliente: configuracion.preguntar_tipo_cliente || false,
                       descuento_mayor_carrito_activo: configuracion.descuento_mayor_carrito_activo ?? true,
+                      activar_minijuegos: configuracion.activar_minijuegos ?? true,
                       metodos_pago: configuracion.metodos_pago,
                       impresora_termica_ancho: configuracion.impresora_termica_ancho || '58mm',
                       formato_ticket_pos: configuracion.formato_ticket_pos || 'termico',
@@ -7389,6 +7390,7 @@ export default function Admin() {
                         impresora_termica_ancho: updateData.impresora_termica_ancho,
                         formato_ticket_pos: updateData.formato_ticket_pos,
                         descuento_mayor_carrito_activo: updateData.descuento_mayor_carrito_activo,
+                        activar_minijuegos: updateData.activar_minijuegos,
                         tarjeta_imagen_fit: updateData.tarjeta_imagen_fit,
                         tarjeta_imagen_posicion: updateData.tarjeta_imagen_posicion,
                         tarjeta_imagen_aspecto: updateData.tarjeta_imagen_aspecto,
@@ -7610,6 +7612,15 @@ export default function Admin() {
                               style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer', accentColor: configuracion.color_primario || '#6366f1' }}
                             />
                             🎁 Activar descuento al por mayor automático en el carrito (al acumular 6 o más productos en compras al detal)
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', margin: 0 }}>
+                            <input 
+                              type="checkbox" 
+                              checked={configuracion.activar_minijuegos ?? true} 
+                              onChange={e => setConfiguracion({ ...configuracion, activar_minijuegos: e.target.checked })} 
+                              style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer', accentColor: configuracion.color_primario || '#6366f1' }}
+                            />
+                            🎮 Activar Centro de Minijuegos & Premios en el Catálogo Digital
                           </label>
                         </div>
                       </div>
