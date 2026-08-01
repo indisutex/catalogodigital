@@ -645,6 +645,11 @@ export default function MenuDigital() {
   const handleEnviarPedido = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (buyerType === 'mayorista' && totalUnits < 6) {
+      alert(`Tienes que comprar mínimo 6 unidades para poder comprar en nuestro catálogo mayorista. Actualmente llevas ${totalUnits} ${totalUnits === 1 ? 'unidad' : 'unidades'}. Agrega ${6 - totalUnits} más a tu carrito.`);
+      return;
+    }
+    
     // Construir el mensaje para WhatsApp
     let buyerLabel = '';
     if (buyerType === 'mayorista') buyerLabel = 'Mayorista';
@@ -1357,11 +1362,22 @@ export default function MenuDigital() {
                     <span>Total:</span>
                     <span>${total.toLocaleString('es-CO')}</span>
                   </div>
+                  {buyerType === 'mayorista' && totalUnits < 6 && (
+                    <div style={{ marginBottom: '0.5rem', background: '#fef2f2', border: '1px solid #fecdd3', color: '#991b1b', padding: '0.45rem 0.65rem', borderRadius: '8px', fontSize: '0.76rem', fontWeight: 700, textAlign: 'center' }}>
+                      ⚠️ Mínimo 6 unidades para comprar al por mayor. Agrega {6 - totalUnits} {6 - totalUnits === 1 ? 'unidad más' : 'unidades más'} a tu carrito.
+                    </div>
+                  )}
                   <button 
                     className="checkout-btn" 
                     disabled={items.length === 0}
-                    onClick={() => setIsCheckoutMode(true)}
-                    style={{ padding: '0.75rem', fontSize: '0.95rem', borderRadius: '12px' }}
+                    onClick={() => {
+                      if (buyerType === 'mayorista' && totalUnits < 6) {
+                        alert(`Tienes que comprar mínimo 6 unidades para poder comprar en nuestro catálogo mayorista. Actualmente llevas ${totalUnits} ${totalUnits === 1 ? 'unidad' : 'unidades'}. Agrega ${6 - totalUnits} más a tu carrito o cambia a modo Detal.`);
+                        return;
+                      }
+                      setIsCheckoutMode(true);
+                    }}
+                    style={{ padding: '0.75rem', fontSize: '0.95rem', borderRadius: '12px', background: (buyerType === 'mayorista' && totalUnits < 6) ? '#cbd5e1' : undefined, opacity: (buyerType === 'mayorista' && totalUnits < 6) ? 0.85 : 1 }}
                   >
                     Continuar Pedido
                   </button>
