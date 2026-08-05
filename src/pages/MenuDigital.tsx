@@ -33,40 +33,11 @@ try {
       }
     }
   }
-} catch (e) {}
+} catch (e) {
+  console.error('Error setting initial CSS theme:', e);
+}
 
-
-const decodeExtraImage = (str: string) => {
-  if (!str) return { url: '', ref: '', estampado: '' };
-  let url = str, estampado = '', ref = '';
-  if (str.includes('|EST:')) {
-    const parts = str.split('|EST:');
-    url = parts[0];
-    const rest = parts[1] || '';
-    if (rest.includes('|REF:')) {
-      const sub = rest.split('|REF:');
-      estampado = sub[0] || '';
-      ref = sub[1] || '';
-    } else {
-      estampado = rest;
-    }
-  } else if (str.includes('|REF:')) {
-    const parts = str.split('|REF:');
-    url = parts[0];
-    estampado = parts[1] || ''; // old format: ref field holds estampado name
-  }
-  return { url: url || '', ref: ref || '', estampado: estampado || '' };
-};
-
-const isMediaVideo = (url?: string): boolean => {
-  if (!url) return false;
-  const cleanUrl = url.split('?')[0].split('#')[0].toLowerCase();
-  return (
-    /\.(mp4|webm|mov|ogg|m4v|3gp)$/i.test(cleanUrl) ||
-    cleanUrl.includes('video') ||
-    cleanUrl.includes('mp4')
-  );
-};
+import { decodeExtraImage, isMediaVideo } from '../lib/mediaUtils';
 
 export default function MenuDigital() {
   const [productos, setProductos] = useState<Producto[]>([]);
