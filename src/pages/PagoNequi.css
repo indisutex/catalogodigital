@@ -1,0 +1,325 @@
+.nequi-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: radial-gradient(circle at 10% 20%, rgba(243, 107, 142, 0.12) 0%, transparent 40%),
+              radial-gradient(circle at 90% 80%, rgba(146, 208, 219, 0.15) 0%, transparent 40%),
+              linear-gradient(135deg, #f8fafc 0%, #edf2f7 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  font-family: 'Nunito', sans-serif;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Background floating decorative circles */
+.nequi-page::before {
+  content: '';
+  position: absolute;
+  top: -100px;
+  right: -100px;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(243, 107, 142, 0.2), rgba(235, 185, 81, 0.2));
+  filter: blur(50px);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.nequi-page::after {
+  content: '';
+  position: absolute;
+  bottom: -100px;
+  left: -100px;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(146, 208, 219, 0.25), rgba(106, 201, 185, 0.2));
+  filter: blur(50px);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.nequi-card {
+  position: relative;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 28px;
+  padding: 2.25rem 1.75rem;
+  width: 100%;
+  max-width: 440px;
+  box-shadow: 0 20px 50px rgba(75, 183, 199, 0.12), 0 10px 20px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  transition: transform 0.3s ease;
+}
+
+.nequi-header {
+  text-align: center;
+}
+
+.nequi-icon-wrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #20003c 0%, #4a0072 100%);
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px rgba(74, 0, 114, 0.25);
+  margin-bottom: 1rem;
+  font-size: 1.8rem;
+}
+
+.nequi-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #1e293b;
+  letter-spacing: -0.02em;
+}
+
+.nequi-subtitle {
+  margin: 0;
+  color: #64748b;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+/* Order Summary Box */
+.nequi-order-box {
+  background: rgba(248, 250, 252, 0.9);
+  border-radius: 20px;
+  padding: 1.15rem 1.25rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.nequi-order-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.9rem;
+}
+
+.nequi-order-row .label {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.nequi-order-row .value {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.nequi-order-row .total-price {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #10b981;
+}
+
+.nequi-copy-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  padding: 0.2rem 0.5rem;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  color: #475569;
+  transition: all 0.2s ease;
+}
+
+.nequi-copy-badge:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+/* Dropzone styling */
+.nequi-upload-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 170px;
+  border: 2px dashed #cbd5e1;
+  border-radius: 20px;
+  cursor: pointer;
+  background: rgba(248, 250, 252, 0.6);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 1.5rem;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.nequi-upload-label:hover {
+  border-color: #f36b8e;
+  background: rgba(243, 107, 142, 0.04);
+  transform: translateY(-2px);
+}
+
+.nequi-upload-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #f36b8e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+  transition: all 0.25s ease;
+}
+
+.nequi-upload-label:hover .nequi-upload-icon {
+  background: #f36b8e;
+  color: white;
+  transform: scale(1.1);
+}
+
+/* Preview Box */
+.nequi-preview-container {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+  border: 2px solid #e2e8f0;
+  background: #000;
+  max-height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+}
+
+.nequi-preview-img {
+  width: 100%;
+  max-height: 240px;
+  object-fit: contain;
+}
+
+.nequi-preview-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.nequi-btn-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #f36b8e;
+  cursor: pointer;
+  background: rgba(243, 107, 142, 0.1);
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  transition: all 0.2s ease;
+}
+
+.nequi-btn-change:hover {
+  background: rgba(243, 107, 142, 0.2);
+}
+
+.nequi-submit-btn {
+  width: 100%;
+  padding: 1rem;
+  border: none;
+  border-radius: 999px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  margin-top: 0.5rem;
+}
+
+.nequi-submit-btn.active {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.35);
+}
+
+.nequi-submit-btn.active:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 30px rgba(16, 185, 129, 0.45);
+}
+
+.nequi-submit-btn.disabled {
+  background: #e2e8f0;
+  color: #94a3b8;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Success View Styling */
+.nequi-success-wrapper {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.nequi-success-badge {
+  background: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+  padding: 0.6rem 1.25rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.nequi-shop-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f36b8e 0%, #e05579 100%);
+  color: white;
+  border-radius: 999px;
+  font-size: 1rem;
+  font-weight: 800;
+  text-decoration: none;
+  box-shadow: 0 8px 24px rgba(243, 107, 142, 0.35);
+  transition: all 0.3s ease;
+  margin-top: 1.25rem;
+}
+
+.nequi-shop-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(243, 107, 142, 0.45);
+}
+
+/* Loading Spinner Animation */
+.nequi-spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
