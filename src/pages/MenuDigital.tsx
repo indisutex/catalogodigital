@@ -89,7 +89,9 @@ export default function MenuDigital() {
   const [isGameModalOpen, setIsGameModalOpen] = useState(false);
   const [showTemuBanner, setShowTemuBanner] = useState(false);
   const [isBurgerMenuOpen, setIsBurgerMenuOpen] = useState(false);
+  const [cartJustUpdated, setCartJustUpdated] = useState(false);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
+  const prevUnitsRef = useRef<number>(0);
 
   useEffect(() => {
     async function loadWholesalerMarkup(phone: string) {
@@ -498,6 +500,15 @@ export default function MenuDigital() {
       }
     }
   }, [configuracion, buyerType, setBuyerType, setDescuentoPromocional, setIsBulkDiscountEnabled]);
+
+  useEffect(() => {
+    if (totalUnits > prevUnitsRef.current) {
+      setCartJustUpdated(true);
+      const timer = setTimeout(() => setCartJustUpdated(false), 1500);
+      return () => clearTimeout(timer);
+    }
+    prevUnitsRef.current = totalUnits;
+  }, [totalUnits]);
 
   const getMinijuegosActivos = () => {
     if (configuracion?.activar_minijuegos === false || (configuracion?.activar_minijuegos as any) === 'false') {
@@ -1299,21 +1310,34 @@ export default function MenuDigital() {
 
       {/* Floating Cart Button */}
       {totalItems > 0 && !isCartOpen && (
-        <>
+        <div className="floating-cart-wrapper">
+          {/* Animated Pointing Hand Callout */}
+          <div className="cart-finger-callout" onClick={() => setIsCartOpen(true)}>
+            <span className="finger-emoji">👇</span>
+            <span className="finger-text">¡TOCA AQUÍ PARA COMPLETAR TU PEDIDO!</span>
+          </div>
+
           {buyerType === 'mayorista' && totalUnits < 6 && (
-            <div style={{ position: 'fixed', bottom: '85px', right: '1.25rem', zIndex: 998, background: 'rgba(15, 23, 42, 0.95)', color: 'white', padding: '0.45rem 0.85rem', borderRadius: '20px', fontSize: '0.76rem', fontWeight: 800, boxShadow: '0 4px 14px rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', gap: '0.4rem', border: '1px solid #38bdf8', backdropFilter: 'blur(6px)' }}>
+            <div style={{ position: 'fixed', bottom: '95px', right: '1.25rem', zIndex: 998, background: 'rgba(15, 23, 42, 0.95)', color: 'white', padding: '0.45rem 0.85rem', borderRadius: '20px', fontSize: '0.76rem', fontWeight: 800, boxShadow: '0 4px 14px rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', gap: '0.4rem', border: '1px solid #38bdf8', backdropFilter: 'blur(6px)' }}>
               <span>📦 Te faltan <strong style={{ color: '#38bdf8' }}>{6 - totalUnits}</strong> {6 - totalUnits === 1 ? 'unidad' : 'unidades'} para compra por mayor (Mín 6 U)</span>
             </div>
           )}
-          <button className="floating-cart-btn" onClick={() => setIsCartOpen(true)}>
+
+          <button className={`floating-cart-btn ${cartJustUpdated ? 'just-added-shake' : ''}`} onClick={() => setIsCartOpen(true)}>
             <div className="cart-icon-wrapper">
-              <ShoppingBag size={22} />
-              <span className="cart-badge">{totalItems}</span>
-              <span>Ver Carrito</span>
+              <div className="cart-bag-pulse">
+                <ShoppingBag size={24} />
+                <span className="cart-badge">{totalItems}</span>
+              </div>
+              <span className="cart-btn-label">Ver Carrito</span>
             </div>
-            <span className="cart-total-float">${total.toLocaleString('es-CO')}</span>
+
+            <div className="cart-total-badge-wrap">
+              <span className="cart-total-float">${total.toLocaleString('es-CO')}</span>
+              <span className="cart-arrow-hand">👉</span>
+            </div>
           </button>
-        </>
+        </div>
       )}
 
       {/* Cart Modal */}
