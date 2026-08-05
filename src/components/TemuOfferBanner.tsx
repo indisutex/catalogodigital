@@ -66,21 +66,27 @@ export function TemuStickyHeaderBar() {
   return (
     <div className="temu-sticky-bar">
       <div className="temu-sticky-content">
-        <div className="temu-sticky-text">
+        <div className="temu-sticky-left">
           {totalUnits < 6 ? (
             <>
               <span className="badge-flame">🔥 OFERTA MAYORISTA</span>
-              <span>¡Agrega <strong>{unitsNeededForNextTier}</strong> {unitsNeededForNextTier === 1 ? 'prenda' : 'prendas'} más para <strong>PRECIO POR MAYOR</strong>!</span>
+              <span className="temu-sticky-msg">
+                ¡Agrega <strong>{unitsNeededForNextTier}</strong> {unitsNeededForNextTier === 1 ? 'prenda' : 'prendas'} más para <strong>PRECIO POR MAYOR</strong>!
+              </span>
             </>
           ) : totalUnits < 50 ? (
             <>
               <span className="badge-success">🎉 MAYORISTA ACTIVO</span>
-              <span>¡Agrega <strong>{unitsNeededForNextTier}</strong> prendas más para el <strong>PRECIO DISTRIBUIDOR 50+</strong>!</span>
+              <span className="temu-sticky-msg">
+                ¡Agrega <strong>{unitsNeededForNextTier}</strong> prendas más para el <strong>PRECIO DISTRIBUIDOR 50+</strong>!
+              </span>
             </>
           ) : (
             <>
               <span className="badge-gold">🏆 MÁXIMO DESCUENTO</span>
-              <span>¡Tienes activa la mejor tarifa de 50+ prendas!</span>
+              <span className="temu-sticky-msg">
+                ¡Tienes activa la mejor tarifa de 50+ prendas!
+              </span>
             </>
           )}
         </div>

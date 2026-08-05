@@ -1238,19 +1238,19 @@ export default function MenuDigital() {
 
             {/* Temu Multi-Tier Offer Progress Bar inside Cart */}
             {items.length > 0 && (
-              <div className="shrine-shipping-bar" style={{ padding: '0.65rem 1.1rem', background: 'linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%)', color: '#ffffff', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <div className="shrine-shipping-bar" style={{ padding: '0.65rem 1.1rem', background: '#ffffff', color: '#0f172a', borderBottom: '1.5px solid var(--primary, #6366f1)' }}>
                 {(() => {
                   if (totalUnits < 6) {
                     const remaining = 6 - totalUnits;
                     const pct = Math.min(100, (totalUnits / 6) * 100);
                     return (
                       <div>
-                        <p style={{ margin: '0 0 0.4rem 0', fontSize: '0.82rem', fontWeight: 700, color: '#e0e7ff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span>🔥 Te faltan <strong style={{ color: '#ef4444' }}>{remaining} {remaining === 1 ? 'prenda' : 'prendas'}</strong> para <strong>PRECIO POR MAYOR</strong></span>
-                          <span style={{ fontSize: '0.75rem', background: '#ef4444', padding: '0.15rem 0.5rem', borderRadius: '10px', color: '#ffffff', fontWeight: 800 }}>{totalUnits}/6 U</span>
+                        <p style={{ margin: '0 0 0.4rem 0', fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span>🔥 Te faltan <strong style={{ color: 'var(--primary, #6366f1)' }}>{remaining} {remaining === 1 ? 'prenda' : 'prendas'}</strong> para <strong>PRECIO POR MAYOR</strong></span>
+                          <span style={{ fontSize: '0.75rem', background: 'var(--primary, #6366f1)', padding: '0.15rem 0.5rem', borderRadius: '10px', color: '#ffffff', fontWeight: 800 }}>{totalUnits}/6 U</span>
                         </p>
-                        <div style={{ height: '8px', background: 'rgba(255,255,255,0.15)', borderRadius: '6px', overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${pct}%`, background: 'linear-gradient(90deg, #ef4444, #f97316)', transition: 'width 0.3s ease' }} />
+                        <div style={{ height: '8px', background: '#e2e8f0', borderRadius: '6px', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${pct}%`, background: 'var(--primary, #6366f1)', transition: 'width 0.3s ease' }} />
                         </div>
                       </div>
                     );
@@ -1259,18 +1259,18 @@ export default function MenuDigital() {
                     const pct50 = Math.min(100, Math.round(((totalUnits - 6) / 44) * 100));
                     return (
                       <div>
-                        <p style={{ margin: '0 0 0.4rem 0', fontSize: '0.82rem', fontWeight: 700, color: '#e0e7ff', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span>🎉 <strong>¡Oferta Por Mayor Activa!</strong> Faltan <strong style={{ color: '#fbbf24' }}>{remaining50} U</strong> para <strong>50+ Unidades</strong></span>
+                        <p style={{ margin: '0 0 0.4rem 0', fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span>🎉 <strong>¡Oferta Por Mayor Activa!</strong> Faltan <strong style={{ color: '#f59e0b' }}>{remaining50} U</strong> para <strong>50+ Unidades</strong></span>
                           <span style={{ fontSize: '0.75rem', background: '#10b981', padding: '0.15rem 0.5rem', borderRadius: '10px', color: '#ffffff', fontWeight: 800 }}>{totalUnits}/50 U</span>
                         </p>
-                        <div style={{ height: '8px', background: 'rgba(255,255,255,0.15)', borderRadius: '6px', overflow: 'hidden' }}>
+                        <div style={{ height: '8px', background: '#e2e8f0', borderRadius: '6px', overflow: 'hidden' }}>
                           <div style={{ height: '100%', width: `${pct50}%`, background: 'linear-gradient(90deg, #10b981, #f59e0b)', transition: 'width 0.3s ease' }} />
                         </div>
                       </div>
                     );
                   } else {
                     return (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#fbbf24', fontSize: '0.85rem', fontWeight: 800 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#f59e0b', fontSize: '0.85rem', fontWeight: 800 }}>
                         <span>🏆 ¡MÁXIMO DESCUENTO ACTIVADO (50+ UNIDADES)!</span>
                         <span style={{ background: '#f59e0b', color: '#ffffff', padding: '0.15rem 0.5rem', borderRadius: '10px', fontSize: '0.75rem' }}>✅ {totalUnits} U</span>
                       </div>
