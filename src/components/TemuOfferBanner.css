@@ -1,0 +1,266 @@
+/* Temu-Style Offer Banner & Toast Styles */
+
+@keyframes popupSlideUp {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 20px) scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, 0) scale(1);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 4px rgba(239, 68, 68, 0.4));
+  }
+  50% {
+    transform: scale(1.12);
+    filter: drop-shadow(0 0 10px rgba(239, 68, 68, 0.8));
+  }
+}
+
+@keyframes bounceGolden {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-6px) scale(1.15);
+  }
+}
+
+@keyframes shimmerProgress {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Toast Overlay (Fixed at top or bottom-center) */
+.temu-toast-overlay {
+  position: fixed;
+  bottom: 85px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
+  width: calc(100% - 2rem);
+  max-width: 440px;
+  animation: popupSlideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.temu-toast-card {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+  color: #ffffff;
+  border-radius: 20px;
+  padding: 1.15rem 1.25rem;
+  box-shadow: 0 12px 35px -5px rgba(15, 23, 42, 0.45), 0 0 20px rgba(99, 102, 241, 0.25);
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+
+.temu-toast-overlay.unlocked-mode .temu-toast-card {
+  background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%);
+  border-color: rgba(251, 191, 36, 0.5);
+  box-shadow: 0 12px 35px -5px rgba(79, 70, 229, 0.5), 0 0 25px rgba(251, 191, 36, 0.3);
+}
+
+.temu-toast-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: #ffffff;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.temu-toast-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.temu-toast-header {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin-bottom: 0.85rem;
+}
+
+.temu-toast-icon.icon-pulse {
+  animation: pulseGlow 1.5s infinite;
+}
+
+.temu-toast-icon.icon-bounce {
+  animation: bounceGolden 1.2s infinite;
+}
+
+.temu-toast-title-area {
+  flex: 1;
+  padding-right: 1.25rem;
+}
+
+.temu-toast-title {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.25;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.temu-toast-sub {
+  margin: 0.2rem 0 0 0;
+  font-size: 0.82rem;
+  color: #c7d2fe;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.temu-toast-progress-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.temu-toast-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.73rem;
+  font-weight: 700;
+  color: #a5b4fc;
+}
+
+.temu-toast-progress-bar {
+  height: 10px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.temu-toast-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ef4444 0%, #f97316 50%, #eab308 100%);
+  border-radius: 10px;
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.temu-toast-progress-fill.fill-gold {
+  background: linear-gradient(90deg, #f59e0b 0%, #fbbf24 50%, #fef08a 100%);
+}
+
+.progress-sparkle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: shimmerProgress 1.5s infinite;
+}
+
+/* Sticky Header Progress Bar */
+.temu-sticky-bar {
+  background: linear-gradient(90deg, #1e1b4b 0%, #312e81 100%);
+  color: #ffffff;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  font-family: system-ui, -apple-system, sans-serif;
+}
+
+.temu-sticky-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.temu-sticky-text {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #e0e7ff;
+}
+
+.badge-flame {
+  background: #ef4444;
+  color: #ffffff;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 0.7rem;
+  letter-spacing: 0.3px;
+}
+
+.badge-success {
+  background: #10b981;
+  color: #ffffff;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 0.7rem;
+}
+
+.badge-gold {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  font-weight: 800;
+  font-size: 0.7rem;
+}
+
+.temu-sticky-progress-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.temu-sticky-progress-bar {
+  width: 110px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.temu-sticky-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ef4444, #f97316);
+  border-radius: 6px;
+  transition: width 0.3s ease;
+}
+
+.temu-sticky-progress-fill.fill-green {
+  background: linear-gradient(90deg, #10b981, #059669);
+}
+
+.temu-sticky-progress-fill.fill-gold {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+.temu-sticky-count {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #fbbf24;
+}

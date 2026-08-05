@@ -66,6 +66,15 @@ export const getEffectivePrice = (producto: Producto, buyerType: BuyerType, mark
   return finalPrice;
 };
 
+interface OfferNotification {
+  show: boolean;
+  message: string;
+  submessage?: string;
+  type: 'progress' | 'unlocked';
+  unitsNeeded: number;
+  targetTierName: string;
+}
+
 interface CartContextType {
   items: CartItem[];
   addToCart: (producto: Producto, talla?: string, estampado?: string, cantidad?: number) => void;
@@ -86,6 +95,12 @@ interface CartContextType {
   totalUnits: number;
   isBulkDiscountApplied: boolean;
   effectiveCartBuyerType: BuyerType;
+  nextTierTarget: number;
+  unitsNeededForNextTier: number;
+  tierProgressPercent: number;
+  currentTierName: string;
+  offerNotification: OfferNotification | null;
+  dismissOfferNotification: () => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -125,6 +140,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const [descuentoPromocional, setDescuentoPromocional] = useState<number>(0);
   const [isBulkDiscountEnabled, setIsBulkDiscountEnabled] = useState<boolean>(true);
+  const [offerNotification, setOfferNotification] = useState<OfferNotification | null>(null);
 
   useEffect(() => {
     const tenantId = getTenantId() || 'saramantha';
@@ -150,7 +166,79 @@ export function CartProvider({ children }: { children: ReactNode }) {
     sessionStorage.setItem(`indisutex_markup_${tenantId}`, String(markupPorcentaje));
   }, [markupPorcentaje]);
 
+  const totalUnits = items.reduce((sum, item) => sum + item.cantidad, 0);
+
+  // Offer calculation
+  let nextTierTarget = 6;
+  let currentTierName = 'Detal';
+
+  if (totalUnits < 6) {
+    nextTierTarget = 6;
+    currentTierName = 'Detal';
+  } else if (totalUnits < 50) {
+    nextTierTarget = 50;
+    currentTierName = 'Por Mayor';
+  } else {
+    nextTierTarget = 50;
+    currentTierName = '50+ Unidades';
+  }
+
+  const unitsNeededForNextTier = Math.max(0, nextTierTarget - totalUnits);
+
+  let tierProgressPercent = 0;
+  if (totalUnits < 6) {
+    tierProgressPercent = Math.min(100, Math.round((totalUnits / 6) * 100));
+  } else if (totalUnits < 50) {
+    tierProgressPercent = Math.min(100, Math.round(((totalUnits - 6) / (50 - 6)) * 100));
+  } else {
+    tierProgressPercent = 100;
+  }
+
+  const triggerNotification = (newUnits: number) => {
+    let msg = '';
+    let submsg = '';
+    let type: 'progress' | 'unlocked' = 'progress';
+    let needed = 0;
+    let targetName = 'Por Mayor';
+
+    if (newUnits < 6) {
+      needed = 6 - newUnits;
+      targetName = 'Por Mayor';
+      type = 'progress';
+      msg = `¡Agregado al carrito! 🛍️`;
+      submsg = `Te faltan solo ${needed} ${needed === 1 ? 'prenda' : 'prendas'} para desbloquear el PRECIO POR MAYOR 🔥`;
+    } else if (newUnits === 6) {
+      needed = 0;
+      targetName = 'Por Mayor';
+      type = 'unlocked';
+      msg = `🎉 ¡FELICIDADES! ¡ALCANZASTE EL PRECIO POR MAYOR!`;
+      submsg = `Ahora todas tus prendas se calculan con tarifa mayorista 🔥`;
+    } else if (newUnits < 50) {
+      needed = 50 - newUnits;
+      targetName = '50+ Unidades';
+      type = 'progress';
+      msg = `¡Excelente elección! 🛍️`;
+      submsg = `¡Oferta Por Mayor Activa! Te faltan ${needed} ${needed === 1 ? 'prenda' : 'prendas'} para el SÚPER PRECIO 50+ UNIDADES 🏆`;
+    } else {
+      needed = 0;
+      targetName = '50+ Unidades';
+      type = 'unlocked';
+      msg = `🏆 ¡MÁXIMO DESCUENTO ACTIVADO!`;
+      submsg = `Estás disfrutando la mejor tarifa distribuidor de 50+ unidades.`;
+    }
+
+    setOfferNotification({
+      show: true,
+      message: msg,
+      submessage: submsg,
+      type,
+      unitsNeeded: needed,
+      targetTierName: targetName
+    });
+  };
+
   const addToCart = (producto: Producto, talla?: string, estampado?: string, cantidad: number = 1) => {
+    const newTotalUnits = totalUnits + cantidad;
     setItems(prevItems => {
       const existingItem = prevItems.find(
         item => item.id === producto.id && item.nombre === producto.nombre && item.talla === talla && item.estampado === estampado
@@ -164,6 +252,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
       return [...prevItems, { ...producto, cantidad, talla, estampado }];
     });
+    triggerNotification(newTotalUnits);
   };
 
   const removeFromCart = (id: string, talla?: string, estampado?: string, nombre?: string) => {
@@ -175,16 +264,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
       removeFromCart(id, talla, estampado, nombre);
       return;
     }
+    const targetItem = items.find(i => i.id === id && (nombre ? i.nombre === nombre : true) && i.talla === talla && i.estampado === estampado);
+    const diff = targetItem ? cantidad - targetItem.cantidad : 0;
+    const newTotal = totalUnits + diff;
+    
     setItems(prevItems =>
       prevItems.map(item =>
         (item.id === id && (nombre ? item.nombre === nombre : true) && item.talla === talla && item.estampado === estampado) ? { ...item, cantidad } : item
       )
     );
+    if (diff > 0) {
+      triggerNotification(newTotal);
+    }
   };
 
   const clearCart = () => setItems([]);
+  const dismissOfferNotification = () => setOfferNotification(null);
 
-  const totalUnits = items.reduce((sum, item) => sum + item.cantidad, 0);
   const isBulkDiscountApplied = isBulkDiscountEnabled && (buyerType === 'detal' || buyerType === null) && totalUnits >= 6;
   const effectiveCartBuyerType: BuyerType = isBulkDiscountApplied ? 'mayorista' : buyerType;
 
@@ -213,7 +309,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setIsBulkDiscountEnabled,
       totalUnits,
       isBulkDiscountApplied,
-      effectiveCartBuyerType
+      effectiveCartBuyerType,
+      nextTierTarget,
+      unitsNeededForNextTier,
+      tierProgressPercent,
+      currentTierName,
+      offerNotification,
+      dismissOfferNotification
     }}>
       {children}
     </CartContext.Provider>
