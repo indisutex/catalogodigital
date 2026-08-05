@@ -56,10 +56,20 @@ export const decodeExtraImage = (str: string): { url: string; ref: string; estam
 export const isMediaVideo = (url?: string): boolean => {
   if (!url) return false;
   const cleanUrl = url.split('?')[0].split('#')[0].toLowerCase();
+  if (cleanUrl.startsWith('data:video/') || cleanUrl.startsWith('blob:')) return true;
   return (
-    /\.(mp4|webm|mov|ogg|m4v|3gp)$/i.test(cleanUrl) ||
+    /\.(mp4|webm|mov|ogg|m4v|3gp|m3u8|avi|flv|mkv)$/i.test(cleanUrl) ||
     cleanUrl.includes('video') ||
-    cleanUrl.includes('mp4')
+    cleanUrl.includes('mp4') ||
+    cleanUrl.includes('mov') ||
+    cleanUrl.includes('webm') ||
+    cleanUrl.includes('hero_video') ||
+    cleanUrl.includes('pago_') ||
+    cleanUrl.includes('evidencia_') ||
+    cleanUrl.includes('/archivos/') ||
+    cleanUrl.includes('supabase.co/storage') ||
+    cleanUrl.includes('cloudinary') ||
+    cleanUrl.includes('vimeo')
   );
 };
 

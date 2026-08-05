@@ -1640,6 +1640,21 @@ export default function Admin() {
       
       if (confRes.data && confRes.data.length > 0) {
         const bestConfig = confRes.data.find(c => c.logo_url || c.video_hero_url) || confRes.data[0];
+        let cleanMetodos = bestConfig.metodos_pago || '';
+        let extraFromMetodos: any = {};
+
+        if (cleanMetodos && typeof cleanMetodos === 'string' && cleanMetodos.includes('__EXTRA_CONFIG__')) {
+          const parts = cleanMetodos.split('__EXTRA_CONFIG__');
+          cleanMetodos = parts[0];
+          try {
+            if (parts[1]) extraFromMetodos = JSON.parse(parts[1]);
+          } catch (e) {}
+        }
+
+        bestConfig.metodos_pago = cleanMetodos;
+        if (extraFromMetodos.activar_minijuegos !== undefined) bestConfig.activar_minijuegos = extraFromMetodos.activar_minijuegos;
+        if (extraFromMetodos.descuento_mayor_carrito_activo !== undefined) bestConfig.descuento_mayor_carrito_activo = extraFromMetodos.descuento_mayor_carrito_activo;
+
         try {
           const localExtra = localStorage.getItem(`config_extra_${bestConfig.id}`);
           if (localExtra) {
@@ -7818,6 +7833,18 @@ export default function Admin() {
                     e.preventDefault();
                     setLoading(true);
                     
+                    let baseMetodos = configuracion.metodos_pago || '';
+                    if (baseMetodos.includes('__EXTRA_CONFIG__')) {
+                      baseMetodos = baseMetodos.split('__EXTRA_CONFIG__')[0];
+                    }
+
+                    const extraPayloadJson = JSON.stringify({
+                      activar_minijuegos: configuracion.activar_minijuegos ?? true,
+                      descuento_mayor_carrito_activo: configuracion.descuento_mayor_carrito_activo ?? true,
+                      impresora_termica_ancho: configuracion.impresora_termica_ancho || '58mm',
+                      formato_ticket_pos: configuracion.formato_ticket_pos || 'termico'
+                    });
+
                     const updateData: any = {
                       nombre_negocio: configuracion.nombre_negocio,
                       whatsapp: configuracion.whatsapp,
@@ -7836,7 +7863,7 @@ export default function Admin() {
                       preguntar_tipo_cliente: configuracion.preguntar_tipo_cliente || false,
                       descuento_mayor_carrito_activo: configuracion.descuento_mayor_carrito_activo ?? true,
                       activar_minijuegos: configuracion.activar_minijuegos ?? true,
-                      metodos_pago: configuracion.metodos_pago,
+                      metodos_pago: `${baseMetodos}__EXTRA_CONFIG__${extraPayloadJson}`,
                       impresora_termica_ancho: configuracion.impresora_termica_ancho || '58mm',
                       formato_ticket_pos: configuracion.formato_ticket_pos || 'termico',
                       tarjeta_imagen_fit: configuracion.tarjeta_imagen_fit || 'cover',
@@ -7845,6 +7872,12 @@ export default function Admin() {
                     };
 
                     try {
+                      const currentTenant = configuracion.tenant_id || getTenantId();
+                      localStorage.setItem('config_extra_global_activar_minijuegos', String(updateData.activar_minijuegos));
+                      localStorage.setItem(`config_extra_tenant_${currentTenant}`, JSON.stringify({
+                        ...(JSON.parse(localStorage.getItem(`config_extra_tenant_${currentTenant}`) || '{}')),
+                        activar_minijuegos: updateData.activar_minijuegos
+                      }));
                       localStorage.setItem(`config_extra_${configuracion.id}`, JSON.stringify({
                         impresora_termica_ancho: updateData.impresora_termica_ancho,
                         formato_ticket_pos: updateData.formato_ticket_pos,
@@ -8076,7 +8109,24 @@ export default function Admin() {
                             <input 
                               type="checkbox" 
                               checked={configuracion.activar_minijuegos ?? true} 
-                              onChange={e => setConfiguracion({ ...configuracion, activar_minijuegos: e.target.checked })} 
+                              onChange={e => {
+                                const val = e.target.checked;
+                                setConfiguracion({ ...configuracion, activar_minijuegos: val });
+                                try {
+                                  const tenant = configuracion.tenant_id || getTenantId();
+                                  localStorage.setItem('config_extra_global_activar_minijuegos', String(val));
+                                  localStorage.setItem(`config_extra_tenant_${tenant}`, JSON.stringify({
+                                    ...(JSON.parse(localStorage.getItem(`config_extra_tenant_${tenant}`) || '{}')),
+                                    activar_minijuegos: val
+                                  }));
+                                  if (configuracion.id) {
+                                    localStorage.setItem(`config_extra_${configuracion.id}`, JSON.stringify({
+                                      ...(JSON.parse(localStorage.getItem(`config_extra_${configuracion.id}`) || '{}')),
+                                      activar_minijuegos: val
+                                    }));
+                                  }
+                                } catch (err) {}
+                              }} 
                               style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer', accentColor: configuracion.color_primario || '#6366f1' }}
                             />
                             🎮 Activar Centro de Minijuegos & Premios en el Catálogo Digital

@@ -272,6 +272,24 @@ export default function MenuDigital() {
       }
     } catch (e) {}
   }, [configuracion, mayoristaBranding]);
+
+  const heroVideoUrl = mayoristaBranding?.video || configuracion?.video_hero_url;
+
+  useEffect(() => {
+    const v = heroVideoRef.current;
+    if (v) {
+      v.muted = heroMuted;
+      v.defaultMuted = true;
+      v.playsInline = true;
+      const playPromise = v.play();
+      if (playPromise !== undefined) {
+        playPromise.catch(() => {
+          v.muted = true;
+          v.play().catch(() => {});
+        });
+      }
+    }
+  }, [heroVideoUrl, heroMuted]);
   
   // Product Detail Popup
   const [detailProduct, setDetailProduct] = useState<Producto | null>(null);
@@ -481,7 +499,34 @@ export default function MenuDigital() {
     }
   }, [configuracion, buyerType, setBuyerType, setDescuentoPromocional, setIsBulkDiscountEnabled]);
 
-  const minijuegosActivos = configuracion?.activar_minijuegos ?? true;
+  const getMinijuegosActivos = () => {
+    if (configuracion?.activar_minijuegos === false || (configuracion?.activar_minijuegos as any) === 'false') {
+      return false;
+    }
+    try {
+      const tenant = getTenantId();
+      const globalFlag = localStorage.getItem('config_extra_global_activar_minijuegos');
+      if (globalFlag === 'false') return false;
+
+      const tenantFlag = localStorage.getItem(`config_extra_tenant_${tenant}`);
+      if (tenantFlag) {
+        const parsed = JSON.parse(tenantFlag);
+        if (parsed.activar_minijuegos === false) return false;
+      }
+
+      if (configuracion?.id) {
+        const savedExtra = localStorage.getItem(`config_extra_${configuracion.id}`);
+        if (savedExtra) {
+          const parsed = JSON.parse(savedExtra);
+          if (parsed.activar_minijuegos === false) return false;
+        }
+      }
+    } catch (e) {}
+
+    return configuracion?.activar_minijuegos ?? true;
+  };
+
+  const minijuegosActivos = getMinijuegosActivos();
 
   useEffect(() => {
     if (cargando) return;
@@ -586,12 +631,37 @@ export default function MenuDigital() {
         if (subcatRes.data) setSubcategorias(subcatRes.data);
         if (confRes.data && confRes.data.length > 0) {
           const bestConfig = confRes.data.find(c => c.logo_url || c.video_hero_url) || confRes.data[0];
-          let extraConfig = {};
+          let extraConfig: any = {};
+          let cleanMetodos = bestConfig.metodos_pago || '';
+
+          if (cleanMetodos && typeof cleanMetodos === 'string' && cleanMetodos.includes('__EXTRA_CONFIG__')) {
+            const parts = cleanMetodos.split('__EXTRA_CONFIG__');
+            cleanMetodos = parts[0];
+            try {
+              if (parts[1]) {
+                const parsedExtra = JSON.parse(parts[1]);
+                extraConfig = { ...extraConfig, ...parsedExtra };
+              }
+            } catch (e) {}
+          }
+
           try {
+            const globalMinijuegos = localStorage.getItem('config_extra_global_activar_minijuegos');
+            if (globalMinijuegos !== null) {
+              extraConfig.activar_minijuegos = globalMinijuegos === 'true';
+            }
+            const tenantExtra = localStorage.getItem(`config_extra_tenant_${tenant}`);
+            if (tenantExtra) {
+              const parsed = JSON.parse(tenantExtra);
+              if (parsed.activar_minijuegos !== undefined) extraConfig.activar_minijuegos = parsed.activar_minijuegos;
+            }
             const savedExtra = localStorage.getItem(`config_extra_${bestConfig.id}`);
-            if (savedExtra) extraConfig = JSON.parse(savedExtra);
+            if (savedExtra) {
+              const parsed = JSON.parse(savedExtra);
+              extraConfig = { ...extraConfig, ...parsed };
+            }
           } catch (e) {}
-          setConfiguracion({ ...bestConfig, ...extraConfig });
+          setConfiguracion({ ...bestConfig, ...extraConfig, metodos_pago: cleanMetodos });
         }
 
         // Fetch products in chunks of 1000 to bypass Supabase defaults
@@ -817,14 +887,41 @@ export default function MenuDigital() {
         {(mayoristaBranding?.video || configuracion?.video_hero_url) && (
           isMediaVideo(mayoristaBranding?.video || configuracion?.video_hero_url) ? (
             <video 
-              src={mayoristaBranding?.video || configuracion?.video_hero_url} 
+              key={heroVideoUrl || 'hero-video-key'}
+              src={heroVideoUrl} 
               autoPlay 
               loop 
               muted={heroMuted}
               playsInline 
+              preload="auto"
               className="hero-background-video"
-              ref={heroVideoRef}
-              onCanPlay={el => { const v = (el.target as HTMLVideoElement); v.muted = heroMuted; v.play().catch(() => {}); }}
+              ref={(el) => {
+                (heroVideoRef as any).current = el;
+                if (el) {
+                  el.muted = heroMuted;
+                  el.defaultMuted = true;
+                  el.playsInline = true;
+                  const promise = el.play();
+                  if (promise !== undefined) {
+                    promise.catch(() => {
+                      el.muted = true;
+                      el.play().catch(() => {});
+                    });
+                  }
+                }
+              }}
+              onCanPlay={el => { 
+                const v = (el.target as HTMLVideoElement); 
+                v.muted = heroMuted; 
+                v.defaultMuted = true; 
+                v.play().catch(() => {}); 
+              }}
+              onLoadedData={el => {
+                const v = (el.target as HTMLVideoElement);
+                v.muted = heroMuted;
+                v.defaultMuted = true;
+                v.play().catch(() => {});
+              }}
             />
           ) : (
             <img 
