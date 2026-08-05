@@ -1546,12 +1546,12 @@ export default function MenuDigital() {
                   <div className="detail-carousel-placeholder" />
                 )}
                 {/* ── LABELS REFERENCIA Y ESTAMPADO (ABAJO IZQUIERDO) ── */}
-                <div style={{ position: 'absolute', bottom: '0.6rem', left: '0.6rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', zIndex: 10, alignItems: 'flex-start', pointerEvents: 'none' }}>
-                  <div className="sku-badge" style={{ position: 'relative', top: 'auto', left: 'auto', right: 'auto', bottom: 'auto', fontSize: '0.68rem', padding: '0.22rem 0.55rem', background: 'rgba(15, 23, 42, 0.88)', color: 'white', fontWeight: 700, borderRadius: '6px', backdropFilter: 'blur(4px)', boxShadow: '0 2px 8px rgba(0,0,0,0.25)' }}>
+                <div style={{ position: 'absolute', bottom: '0.65rem', left: '0.65rem', right: '0.65rem', display: 'flex', flexDirection: 'column', gap: '0.4rem', zIndex: 10, alignItems: 'flex-start', pointerEvents: 'none' }}>
+                  <div style={{ fontSize: '0.72rem', padding: '0.28rem 0.65rem', background: 'rgba(15, 23, 42, 0.92)', color: 'white', fontWeight: 700, borderRadius: '8px', backdropFilter: 'blur(4px)', boxShadow: '0 2px 8px rgba(0,0,0,0.3)', maxWidth: '100%', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.3 }}>
                     Ref: {detailProduct.nombre} {(detailProduct.referencia || detailProduct.sku) ? `(${detailProduct.referencia || detailProduct.sku})` : ''}
                   </div>
                   {currentImgRef && (
-                    <div className="sku-badge" style={{ position: 'relative', top: 'auto', left: 'auto', right: 'auto', bottom: 'auto', fontSize: '0.68rem', padding: '0.22rem 0.55rem', background: 'rgba(14, 165, 233, 0.95)', color: 'white', fontWeight: 700, borderRadius: '6px', backdropFilter: 'blur(4px)', boxShadow: '0 2px 8px rgba(0,0,0,0.25)' }}>
+                    <div style={{ fontSize: '0.74rem', padding: '0.3rem 0.7rem', background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: 'white', fontWeight: 800, borderRadius: '8px', backdropFilter: 'blur(4px)', boxShadow: '0 2px 10px rgba(2, 132, 199, 0.4)', maxWidth: '100%', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.3 }}>
                       Estampado: {currentImgRef}
                     </div>
                   )}
