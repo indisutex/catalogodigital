@@ -1217,9 +1217,14 @@
 }
 
 .img-placeholder-small {
-  width: 100%;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.cart-offer-progress-fill {
   height: 100%;
-  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+  border-radius: 6px;
+  transition: width 0.3s ease;
 }
 
 /* NEW classes used in TSX */
@@ -1242,10 +1247,151 @@
 }
 
 .cart-item-price {
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   font-weight: 800;
   color: var(--primary);
   margin: 2px 0 6px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.4rem;
+}
+
+.price-old {
+  text-decoration: line-through;
+  color: #94a3b8;
+  font-size: 0.85em;
+  font-weight: 600;
+}
+
+.price-current {
+  color: #0284c7;
+  font-weight: 800;
+}
+
+.wholesale-badge {
+  font-size: 0.68rem;
+  background: #dcfce7;
+  color: #166534;
+  padding: 0.12rem 0.45rem;
+  border-radius: 6px;
+  font-weight: 800;
+  white-space: nowrap;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+/* ── Cart Upsell Box ── */
+.cart-upsell-box {
+  margin: 0.35rem 0.75rem 0.5rem;
+  padding: 0.5rem 0.65rem;
+  background-color: #fff0f6;
+  border-radius: 12px;
+  border: 1px solid #fbcfe8;
+}
+
+.cart-upsell-title {
+  color: #be185d;
+  font-size: 0.78rem;
+  margin: 0 0 0.35rem 0;
+  font-weight: 800;
+  text-align: center;
+}
+
+.cart-upsell-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.cart-upsell-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #ffffff;
+  padding: 0.35rem 0.5rem;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.cart-upsell-img {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cart-upsell-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cart-upsell-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.cart-upsell-name {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #1e293b;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cart-upsell-price {
+  margin: 1px 0 0 0;
+  color: #e11d48;
+  font-weight: 800;
+  font-size: 0.82rem;
+}
+
+.cart-upsell-add-btn {
+  background-color: #e11d48;
+  color: white;
+  border: none;
+  padding: 0.28rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(225, 29, 72, 0.25);
+  transition: transform 0.15s ease;
+}
+
+.cart-upsell-add-btn:active {
+  transform: scale(0.95);
+}
+
+/* ── Cart Trust Bar ── */
+.cart-trust-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.65rem;
+  margin-bottom: 0.5rem;
+  background: #f8fafc;
+  padding: 0.4rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  font-size: 0.74rem;
+  color: #334155;
+  font-weight: 600;
+}
+
+.trust-sep {
+  color: #cbd5e1;
+  font-weight: 300;
 }
 
 .cart-item-qty {
