@@ -89,9 +89,7 @@ export default function MenuDigital() {
   const [isGameModalOpen, setIsGameModalOpen] = useState(false);
   const [showTemuBanner, setShowTemuBanner] = useState(false);
   const [isBurgerMenuOpen, setIsBurgerMenuOpen] = useState(false);
-  const [cartJustUpdated, setCartJustUpdated] = useState(false);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
-  const prevUnitsRef = useRef<number>(0);
 
   useEffect(() => {
     async function loadWholesalerMarkup(phone: string) {
@@ -500,15 +498,6 @@ export default function MenuDigital() {
       }
     }
   }, [configuracion, buyerType, setBuyerType, setDescuentoPromocional, setIsBulkDiscountEnabled]);
-
-  useEffect(() => {
-    if (totalUnits > prevUnitsRef.current) {
-      setCartJustUpdated(true);
-      const timer = setTimeout(() => setCartJustUpdated(false), 1500);
-      return () => clearTimeout(timer);
-    }
-    prevUnitsRef.current = totalUnits;
-  }, [totalUnits]);
 
   const getMinijuegosActivos = () => {
     if (configuracion?.activar_minijuegos === false || (configuracion?.activar_minijuegos as any) === 'false') {
@@ -1310,34 +1299,21 @@ export default function MenuDigital() {
 
       {/* Floating Cart Button */}
       {totalItems > 0 && !isCartOpen && (
-        <div className="floating-cart-wrapper">
-          {/* Animated Pointing Hand Callout */}
-          <div className="cart-finger-callout" onClick={() => setIsCartOpen(true)}>
-            <span className="finger-emoji">👇</span>
-            <span className="finger-text">¡TOCA AQUÍ PARA COMPLETAR TU PEDIDO!</span>
-          </div>
-
+        <>
           {buyerType === 'mayorista' && totalUnits < 6 && (
-            <div style={{ position: 'fixed', bottom: '95px', right: '1.25rem', zIndex: 998, background: 'rgba(15, 23, 42, 0.95)', color: 'white', padding: '0.45rem 0.85rem', borderRadius: '20px', fontSize: '0.76rem', fontWeight: 800, boxShadow: '0 4px 14px rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', gap: '0.4rem', border: '1px solid #38bdf8', backdropFilter: 'blur(6px)' }}>
+            <div style={{ position: 'fixed', bottom: '85px', right: '1.25rem', zIndex: 998, background: 'rgba(15, 23, 42, 0.95)', color: 'white', padding: '0.45rem 0.85rem', borderRadius: '20px', fontSize: '0.76rem', fontWeight: 800, boxShadow: '0 4px 14px rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', gap: '0.4rem', border: '1px solid #38bdf8', backdropFilter: 'blur(6px)' }}>
               <span>📦 Te faltan <strong style={{ color: '#38bdf8' }}>{6 - totalUnits}</strong> {6 - totalUnits === 1 ? 'unidad' : 'unidades'} para compra por mayor (Mín 6 U)</span>
             </div>
           )}
-
-          <button className={`floating-cart-btn ${cartJustUpdated ? 'just-added-shake' : ''}`} onClick={() => setIsCartOpen(true)}>
+          <button className="floating-cart-btn" onClick={() => setIsCartOpen(true)}>
             <div className="cart-icon-wrapper">
-              <div className="cart-bag-pulse">
-                <ShoppingBag size={24} />
-                <span className="cart-badge">{totalItems}</span>
-              </div>
-              <span className="cart-btn-label">Ver Carrito</span>
+              <ShoppingBag size={22} />
+              <span className="cart-badge">{totalItems}</span>
+              <span>Ver Carrito</span>
             </div>
-
-            <div className="cart-total-badge-wrap">
-              <span className="cart-total-float">${total.toLocaleString('es-CO')}</span>
-              <span className="cart-arrow-hand">👉</span>
-            </div>
+            <span className="cart-total-float">${total.toLocaleString('es-CO')}</span>
           </button>
-        </div>
+        </>
       )}
 
       {/* Cart Modal */}
@@ -1359,21 +1335,19 @@ export default function MenuDigital() {
 
             {/* Temu Multi-Tier Offer Progress Bar inside Cart */}
             {items.length > 0 && (
-              <div className="cart-offer-banner">
+              <div className="shrine-shipping-bar" style={{ padding: '0.65rem 1.1rem', background: '#ffffff', color: '#0f172a', borderBottom: '1.5px solid var(--primary, #6366f1)' }}>
                 {(() => {
                   if (totalUnits < 6) {
                     const remaining = 6 - totalUnits;
                     const pct = Math.min(100, (totalUnits / 6) * 100);
                     return (
                       <div>
-                        <div className="cart-offer-header">
-                          <span className="cart-offer-text">
-                            🔥 Te faltan <strong style={{ color: 'var(--primary, #6366f1)' }}>{remaining} {remaining === 1 ? 'prenda' : 'prendas'}</strong> para <strong>PRECIO POR MAYOR</strong>
-                          </span>
-                          <span className="cart-offer-badge">{totalUnits}/6 U</span>
-                        </div>
-                        <div className="cart-offer-progress-track">
-                          <div className="cart-offer-progress-fill" style={{ width: `${pct}%`, background: 'var(--primary, #6366f1)' }} />
+                        <p style={{ margin: '0 0 0.4rem 0', fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span>🔥 Te faltan <strong style={{ color: 'var(--primary, #6366f1)' }}>{remaining} {remaining === 1 ? 'prenda' : 'prendas'}</strong> para <strong>PRECIO POR MAYOR</strong></span>
+                          <span style={{ fontSize: '0.75rem', background: 'var(--primary, #6366f1)', padding: '0.15rem 0.5rem', borderRadius: '10px', color: '#ffffff', fontWeight: 800 }}>{totalUnits}/6 U</span>
+                        </p>
+                        <div style={{ height: '8px', background: '#e2e8f0', borderRadius: '6px', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${pct}%`, background: 'var(--primary, #6366f1)', transition: 'width 0.3s ease' }} />
                         </div>
                       </div>
                     );
@@ -1382,24 +1356,20 @@ export default function MenuDigital() {
                     const pct50 = Math.min(100, Math.round(((totalUnits - 6) / 44) * 100));
                     return (
                       <div>
-                        <div className="cart-offer-header">
-                          <span className="cart-offer-text">
-                            🎉 <strong>¡Oferta Por Mayor Activa!</strong> Faltan <strong style={{ color: '#f59e0b' }}>{remaining50} U</strong> para <strong>50+ Unidades</strong>
-                          </span>
-                          <span className="cart-offer-badge" style={{ background: '#10b981' }}>{totalUnits}/50 U</span>
-                        </div>
-                        <div className="cart-offer-progress-track">
-                          <div className="cart-offer-progress-fill" style={{ width: `${pct50}%`, background: 'linear-gradient(90deg, #10b981, #f59e0b)' }} />
+                        <p style={{ margin: '0 0 0.4rem 0', fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span>🎉 <strong>¡Oferta Por Mayor Activa!</strong> Faltan <strong style={{ color: '#f59e0b' }}>{remaining50} U</strong> para <strong>50+ Unidades</strong></span>
+                          <span style={{ fontSize: '0.75rem', background: '#10b981', padding: '0.15rem 0.5rem', borderRadius: '10px', color: '#ffffff', fontWeight: 800 }}>{totalUnits}/50 U</span>
+                        </p>
+                        <div style={{ height: '8px', background: '#e2e8f0', borderRadius: '6px', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${pct50}%`, background: 'linear-gradient(90deg, #10b981, #f59e0b)', transition: 'width 0.3s ease' }} />
                         </div>
                       </div>
                     );
                   } else {
                     return (
-                      <div className="cart-offer-header" style={{ marginBottom: 0 }}>
-                        <span className="cart-offer-text" style={{ color: '#d97706', fontWeight: 800 }}>
-                          🏆 ¡MÁXIMO DESCUENTO ACTIVADO (50+ UNIDADES)!
-                        </span>
-                        <span className="cart-offer-badge" style={{ background: '#f59e0b' }}>✅ {totalUnits} U</span>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#f59e0b', fontSize: '0.85rem', fontWeight: 800 }}>
+                        <span>🏆 ¡MÁXIMO DESCUENTO ACTIVADO (50+ UNIDADES)!</span>
+                        <span style={{ background: '#f59e0b', color: '#ffffff', padding: '0.15rem 0.5rem', borderRadius: '10px', fontSize: '0.75rem' }}>✅ {totalUnits} U</span>
                       </div>
                     );
                   }
@@ -1511,18 +1481,14 @@ export default function MenuDigital() {
                           <p className="cart-item-price">
                             {isBulkDiscountApplied && getEffectivePrice(item, 'detal', markupPorcentaje, ajustesProductos, descuentoPromocional) > getEffectivePrice(item, 'mayorista', markupPorcentaje, ajustesProductos, descuentoPromocional) ? (
                               <>
-                                <span className="price-old">
+                                <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.85em', marginRight: '0.4rem' }}>
                                   ${(getEffectivePrice(item, 'detal', markupPorcentaje, ajustesProductos, descuentoPromocional) * item.cantidad).toLocaleString('es-CO')}
                                 </span>
-                                <span className="price-current">
-                                  ${(getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * item.cantidad).toLocaleString('es-CO')}
-                                </span>
-                                <span className="wholesale-badge">Al por mayor</span>
+                                ${(getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * item.cantidad).toLocaleString('es-CO')}
+                                <span style={{ marginLeft: '0.4rem', fontSize: '0.68rem', background: '#dcfce7', color: '#166534', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 700 }}>Al por mayor</span>
                               </>
                             ) : (
-                              <span className="price-current">
-                                ${(getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * item.cantidad).toLocaleString('es-CO')}
-                              </span>
+                              `$${(getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * item.cantidad).toLocaleString('es-CO')}`
                             )}
                           </p>
                           <div className="cart-item-qty">
@@ -1539,27 +1505,27 @@ export default function MenuDigital() {
                   )}
                 </div>
 
-                {/* Seccion de Upsell / Recomendados (Compacto y Responsive) */}
+                {/* Seccion de Upsell / Recomendados (Compacto) */}
                 {items.length > 0 && recommendedProducts.length > 0 && (
-                  <div className="cart-upsell-box">
-                    <h4 className="cart-upsell-title">
+                  <div style={{ margin: '0.35rem 0.75rem 0.5rem', padding: '0.45rem 0.65rem', backgroundColor: '#fff0f6', borderRadius: '10px', border: '1px solid #fbcfe8' }}>
+                    <h4 style={{ color: '#be185d', fontSize: '0.78rem', margin: '0 0 0.35rem 0', fontWeight: 800, textAlign: 'center', fontFamily: 'Outfit, sans-serif' }}>
                       También te pueden interesar:
                     </h4>
-                    <div className="cart-upsell-list">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                       {recommendedProducts.map((p: Producto) => (
-                        <div key={p.id} className="cart-upsell-item">
-                          <div className="cart-upsell-img">
+                        <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'white', padding: '0.35rem 0.5rem', borderRadius: '6px', boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
+                          <div style={{ width: '38px', height: '38px', flexShrink: 0, borderRadius: '4px', overflow: 'hidden', backgroundColor: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             {p.imagen_url ? (
-                              <img src={getOptimizedImageUrl(p.imagen_url, 150, 75)} alt={p.nombre} loading="lazy" decoding="async" />
+                              <img src={getOptimizedImageUrl(p.imagen_url, 150, 75)} alt={p.nombre} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             ) : (p.imagenes_extra && p.imagenes_extra.length > 0 && decodeExtraImage(p.imagenes_extra[0]).url) ? (
-                              <img src={getOptimizedImageUrl(decodeExtraImage(p.imagenes_extra[0]).url, 150, 75)} alt={p.nombre} loading="lazy" decoding="async" />
+                              <img src={getOptimizedImageUrl(decodeExtraImage(p.imagenes_extra[0]).url, 150, 75)} alt={p.nombre} loading="lazy" decoding="async" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             ) : (
                               <Package size={16} color="#94a3b8" />
                             )}
                           </div>
-                          <div className="cart-upsell-info">
-                            <h5 className="cart-upsell-name">{p.nombre}</h5>
-                            <p className="cart-upsell-price">
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <h5 style={{ margin: 0, fontSize: '0.78rem', color: '#1e293b', lineHeight: '1.15', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.nombre}</h5>
+                            <p style={{ margin: '1px 0 0 0', color: '#e11d48', fontWeight: 800, fontSize: '0.82rem' }}>
                               ${getEffectivePrice(p, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional).toLocaleString('es-CO')}
                             </p>
                           </div>
@@ -1572,7 +1538,7 @@ export default function MenuDigital() {
                               const pEstampado = allEstampados[0] || undefined;
                               addToCart(p, pTalla, pEstampado, 1);
                             }}
-                            className="cart-upsell-add-btn"
+                            style={{ backgroundColor: '#e11d48', color: 'white', border: 'none', padding: '0.25rem 0.55rem', borderRadius: '5px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
                           >
                             + Agregar
                           </button>
@@ -1584,10 +1550,10 @@ export default function MenuDigital() {
 
                 <div className="cart-footer" style={{ padding: '0.65rem 0.85rem' }}>
                   {/* Trust & Urgency Badges inside Cart (Compact 1-row) */}
-                  <div className="cart-trust-bar">
-                    <span>🔥 <strong>Pocas unidades</strong></span>
-                    <span className="trust-sep">|</span>
-                    <span>🛡️ <strong>Despacho protegido</strong></span>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.35rem', marginBottom: '0.5rem', background: '#f8fafc', padding: '0.35rem 0.6rem', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.72rem', color: '#334155', fontWeight: 600 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>🔥 <strong>Pocas unidades</strong></span>
+                    <span style={{ color: '#cbd5e1' }}>•</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>🛡️ <strong>Despacho protegido</strong></span>
                   </div>
 
                   <div className="cart-total" style={{ margin: '0 0 0.45rem 0', fontSize: '1.1rem' }}>
