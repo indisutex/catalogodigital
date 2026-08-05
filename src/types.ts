@@ -67,6 +67,7 @@ export interface Configuracion {
   siigo_sincronizado_at?: string;
   color_primario?: string;
   direccion?: string;
+  google_maps_url?: string;
   email?: string;
   telefono?: string;
   envios_99_api_key?: string;

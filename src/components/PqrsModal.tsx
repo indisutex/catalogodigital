@@ -20,6 +20,8 @@ export default function PqrsModal({ onClose, configuracion }: { onClose: () => v
 
   const businessName = configuracion?.nombre_negocio || 'Nuestra Empresa';
   const direccion = configuracion?.direccion || '';
+  const googleMapsUrl = configuracion?.google_maps_url?.trim() || (direccion ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion + ' ' + businessName)}` : '');
+  const embedQuery = encodeURIComponent(direccion ? `${direccion} ${businessName}` : businessName);
   const email = configuracion?.email || '';
   const telefono = configuracion?.telefono || configuracion?.whatsapp || '';
   const whatsapp = (configuracion?.whatsapp || '').replace(/\D/g, '');
@@ -132,21 +134,53 @@ export default function PqrsModal({ onClose, configuracion }: { onClose: () => v
                 </div>
               </div>
 
-              {direccion ? (
-                <div className="info-item">
-                  <div className="info-icon"><MapPin size={18} /></div>
-                  <div className="info-content">
-                    <span className="info-label">Dirección & Ubicación</span>
-                    <span className="info-value">{direccion}</span>
-                    <a 
-                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion + ' ' + businessName)}`} 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="map-link"
-                    >
-                      Ver en Google Maps <ExternalLink size={12} />
-                    </a>
+              {(direccion || googleMapsUrl) ? (
+                <div className="info-item location-item" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                  <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+                    <div className="info-icon"><MapPin size={18} /></div>
+                    <div className="info-content" style={{ flex: 1 }}>
+                      <span className="info-label">Dirección & Ubicación Física</span>
+                      <span className="info-value" style={{ fontWeight: 700, fontSize: '0.95rem' }}>{direccion || 'Punto Físico de Venta'}</span>
+                    </div>
                   </div>
+
+                  {/* Google Maps Interactive Embed Preview */}
+                  <div className="google-maps-preview-container" style={{ marginTop: '0.75rem', borderRadius: '14px', overflow: 'hidden', border: '1.5px solid #cbd5e1', boxShadow: '0 4px 14px rgba(0,0,0,0.06)', background: '#f8fafc' }}>
+                    <iframe
+                      title="Google Maps Location"
+                      width="100%"
+                      height="170"
+                      style={{ border: 0, display: 'block' }}
+                      loading="lazy"
+                      allowFullScreen
+                      src={`https://maps.google.com/maps?q=${embedQuery}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
+                    />
+                  </div>
+
+                  <a 
+                    href={googleMapsUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="map-link-btn"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.45rem',
+                      marginTop: '0.75rem',
+                      padding: '0.7rem 1.25rem',
+                      background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
+                      color: 'white',
+                      borderRadius: '999px',
+                      fontWeight: 800,
+                      fontSize: '0.9rem',
+                      textDecoration: 'none',
+                      boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',
+                      transition: 'all 0.25s ease'
+                    }}
+                  >
+                    <MapPin size={16} /> Abrir en Google Maps / Cómo Llegar <ExternalLink size={14} />
+                  </a>
                 </div>
               ) : (
                 <div className="info-item">

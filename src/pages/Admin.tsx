@@ -1667,9 +1667,11 @@ export default function Admin() {
             if (!bestConfig.tarjeta_imagen_posicion) bestConfig.tarjeta_imagen_posicion = parsed.tarjeta_imagen_posicion;
             if (!bestConfig.tarjeta_imagen_aspecto) bestConfig.tarjeta_imagen_aspecto = parsed.tarjeta_imagen_aspecto;
             if (!bestConfig.direccion && parsed.direccion) bestConfig.direccion = parsed.direccion;
+            if (!bestConfig.google_maps_url && parsed.google_maps_url) bestConfig.google_maps_url = parsed.google_maps_url;
             if (!bestConfig.email && parsed.email) bestConfig.email = parsed.email;
             if (!bestConfig.telefono && parsed.telefono) bestConfig.telefono = parsed.telefono;
           }
+          if (!bestConfig.google_maps_url && extraFromMetodos.google_maps_url) bestConfig.google_maps_url = extraFromMetodos.google_maps_url;
           const masterTrackingStr = localStorage.getItem('master_tracking_config');
           const masterTracking = masterTrackingStr ? JSON.parse(masterTrackingStr) : {};
           if (!bestConfig.google_analytics_id && masterTracking.google_analytics_id) bestConfig.google_analytics_id = masterTracking.google_analytics_id;
@@ -7842,13 +7844,15 @@ export default function Admin() {
                       activar_minijuegos: configuracion.activar_minijuegos ?? true,
                       descuento_mayor_carrito_activo: configuracion.descuento_mayor_carrito_activo ?? true,
                       impresora_termica_ancho: configuracion.impresora_termica_ancho || '58mm',
-                      formato_ticket_pos: configuracion.formato_ticket_pos || 'termico'
+                      formato_ticket_pos: configuracion.formato_ticket_pos || 'termico',
+                      google_maps_url: configuracion.google_maps_url || ''
                     });
 
                     const updateData: any = {
                       nombre_negocio: configuracion.nombre_negocio,
                       whatsapp: configuracion.whatsapp,
                       direccion: configuracion.direccion || null,
+                      google_maps_url: configuracion.google_maps_url || null,
                       email: configuracion.email || null,
                       telefono: configuracion.telefono || null,
                       logo_url: configuracion.logo_url,
@@ -7997,6 +8001,17 @@ export default function Admin() {
                         <div className="form-field full">
                           <label>Dirección / Ubicación del Negocio Local (opcional)</label>
                           <input value={configuracion.direccion || ''} onChange={e => setConfiguracion({ ...configuracion, direccion: e.target.value })} placeholder="Ej: Calle 10 # 5-20, Centro, Medellín, Colombia" />
+                        </div>
+                        <div className="form-field full">
+                          <label>📍 Enlace de Google Maps / Sucursal (opcional)</label>
+                          <input 
+                            value={configuracion.google_maps_url || ''} 
+                            onChange={e => setConfiguracion({ ...configuracion, google_maps_url: e.target.value })} 
+                            placeholder="Ej: https://maps.app.goo.gl/xxx o https://maps.google.com/?q=Medellin" 
+                          />
+                          <span style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.2rem', display: 'block' }}>
+                            Pega aquí el enlace de Google Maps para que tus clientes puedan ver la ubicación interactiva y saber cómo llegar a tu local.
+                          </span>
                         </div>
                         <div className="form-field full">
                           <label>Cuentas Bancarias / Métodos de Pago</label>

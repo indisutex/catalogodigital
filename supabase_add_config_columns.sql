@@ -2,6 +2,7 @@
 
 ALTER TABLE public.configuracion 
 ADD COLUMN IF NOT EXISTS direccion TEXT,
+ADD COLUMN IF NOT EXISTS google_maps_url TEXT,
 ADD COLUMN IF NOT EXISTS email TEXT,
 ADD COLUMN IF NOT EXISTS telefono TEXT,
 ADD COLUMN IF NOT EXISTS link_dropshipper TEXT,
