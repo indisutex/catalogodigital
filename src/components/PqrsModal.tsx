@@ -20,8 +20,52 @@ export default function PqrsModal({ onClose, configuracion }: { onClose: () => v
 
   const businessName = configuracion?.nombre_negocio || 'Nuestra Empresa';
   const direccion = configuracion?.direccion || '';
-  const googleMapsUrl = configuracion?.google_maps_url?.trim() || (direccion ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(direccion + ' ' + businessName)}` : '');
-  const embedQuery = encodeURIComponent(direccion ? `${direccion} ${businessName}` : businessName);
+  const userMapsUrl = configuracion?.google_maps_url || '';
+
+  const buildGoogleMapsUrls = (rawUserUrl?: string, rawAddr?: string, bName?: string) => {
+    let navUrl = rawUserUrl?.trim() || '';
+    let embedUrl = '';
+
+    const cleanAddr = (rawAddr || '')
+      .replace(/#/g, ' No. ')
+      .replace(/[\-–—]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const searchQuery = cleanAddr
+      ? (cleanAddr.toLowerCase().includes('colombia') ? cleanAddr : `${cleanAddr}, Colombia`)
+      : (bName || '');
+
+    if (rawUserUrl) {
+      const trimmed = rawUserUrl.trim();
+      if (trimmed.includes('<iframe')) {
+        const srcMatch = trimmed.match(/src=["']([^"']+)["']/i);
+        if (srcMatch && srcMatch[1]) {
+          embedUrl = srcMatch[1];
+        }
+      } else if (trimmed.includes('google.com/maps/embed') || trimmed.includes('maps.google.com/maps/embed')) {
+        embedUrl = trimmed;
+      } else if (trimmed.includes('@')) {
+        const coordsMatch = trimmed.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+        if (coordsMatch) {
+          const [, lat, lng] = coordsMatch;
+          embedUrl = `https://maps.google.com/maps?q=${lat},${lng}&z=17&ie=UTF8&iwloc=B&output=embed`;
+        }
+      }
+    }
+
+    if (!embedUrl && searchQuery) {
+      embedUrl = `https://maps.google.com/maps?q=${encodeURIComponent(searchQuery)}&t=&z=17&ie=UTF8&iwloc=B&output=embed`;
+    }
+
+    if (!navUrl) {
+      navUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(searchQuery || bName || '')}`;
+    }
+
+    return { navUrl, embedUrl };
+  };
+
+  const { navUrl: googleMapsNavUrl, embedUrl: googleMapsEmbedUrl } = buildGoogleMapsUrls(userMapsUrl, direccion, businessName);
   const email = configuracion?.email || '';
   const telefono = configuracion?.telefono || configuracion?.whatsapp || '';
   const whatsapp = (configuracion?.whatsapp || '').replace(/\D/g, '');
@@ -134,7 +178,7 @@ export default function PqrsModal({ onClose, configuracion }: { onClose: () => v
                 </div>
               </div>
 
-              {(direccion || googleMapsUrl) ? (
+              {(direccion || userMapsUrl) ? (
                 <div className="info-item location-item" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
                   <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
                     <div className="info-icon"><MapPin size={18} /></div>
@@ -145,20 +189,22 @@ export default function PqrsModal({ onClose, configuracion }: { onClose: () => v
                   </div>
 
                   {/* Google Maps Interactive Embed Preview */}
-                  <div className="google-maps-preview-container" style={{ marginTop: '0.75rem', borderRadius: '14px', overflow: 'hidden', border: '1.5px solid #cbd5e1', boxShadow: '0 4px 14px rgba(0,0,0,0.06)', background: '#f8fafc' }}>
-                    <iframe
-                      title="Google Maps Location"
-                      width="100%"
-                      height="170"
-                      style={{ border: 0, display: 'block' }}
-                      loading="lazy"
-                      allowFullScreen
-                      src={`https://maps.google.com/maps?q=${embedQuery}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
-                    />
-                  </div>
+                  {googleMapsEmbedUrl && (
+                    <div className="google-maps-preview-container" style={{ marginTop: '0.75rem', borderRadius: '14px', overflow: 'hidden', border: '1.5px solid #cbd5e1', boxShadow: '0 4px 14px rgba(0,0,0,0.06)', background: '#f8fafc' }}>
+                      <iframe
+                        title="Google Maps Location"
+                        width="100%"
+                        height="180"
+                        style={{ border: 0, display: 'block' }}
+                        loading="lazy"
+                        allowFullScreen
+                        src={googleMapsEmbedUrl}
+                      />
+                    </div>
+                  )}
 
                   <a 
-                    href={googleMapsUrl} 
+                    href={googleMapsNavUrl} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="map-link-btn"
