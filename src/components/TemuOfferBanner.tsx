@@ -118,7 +118,7 @@ export function TemuStickyHeaderBar() {
           {totalUnits < 6 ? (
             <>
               <span className="badge-flame">
-                <HotFlameIcon size={18} /> OFERTA MAYORISTA
+                <HotFlameIcon size={15} /> OFERTA MAYORISTA
               </span>
               <span className="temu-sticky-msg">
                 ¡Agrega <strong>{unitsNeededForNextTier}</strong> {unitsNeededForNextTier === 1 ? 'prenda' : 'prendas'} más para <strong>PRECIO POR MAYOR</strong>!
