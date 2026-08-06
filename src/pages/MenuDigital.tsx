@@ -550,6 +550,8 @@ export default function MenuDigital() {
 
   const [formData, setFormData] = useState({
     nombre: '',
+    cedula: '',
+    email: '',
     telefono: '',
     direccion: '',
     ciudad: ''
@@ -808,6 +810,12 @@ export default function MenuDigital() {
     if (buyerType === '50_unidades') buyerLabel = '50+ unidades';
 
     let mensaje = `Hola, mi nombre es ${formData.nombre}.\n`;
+    if (formData.cedula) {
+      mensaje += `*Cédula:* ${formData.cedula}\n`;
+    }
+    if (formData.email) {
+      mensaje += `*Correo:* ${formData.email}\n`;
+    }
     mensaje += `*Tipo de compra:* ${buyerLabel}\n`;
     mensaje += `*Método de pago:* ${modalidadPago === 'contra_entrega' ? '🚚 Contra Entrega' : '💳 Pago Anticipado'}\n`;
     if (modalidadPago === 'contra_entrega') {
@@ -847,6 +855,8 @@ export default function MenuDigital() {
 
       const { data: newOrder, error: dbErr } = await supabase.from('pedidos').insert({
         cliente_nombre: formData.nombre,
+        cliente_cedula: formData.cedula,
+        cliente_email: formData.email,
         cliente_telefono: formData.telefono,
         direccion: formData.direccion,
         ciudad: formData.ciudad,
@@ -908,7 +918,7 @@ export default function MenuDigital() {
     setIsCartOpen(false);
     setIsCheckoutMode(false);
     clearCart();
-    setFormData({ nombre: '', telefono: '', direccion: '', ciudad: '' });
+    setFormData({ nombre: '', cedula: '', email: '', telefono: '', direccion: '', ciudad: '' });
   };
 
   return (
@@ -1301,22 +1311,54 @@ export default function MenuDigital() {
                     <Plus size={20} />
                   </button>
                 </div>
-                <div className="item-details">
-                  <h4>{producto.nombre}</h4>
-                  <p className="item-price">
-                    {producto.es_producto_familiar ? (
-                      <span style={{ color: '#0284c7', fontWeight: 800 }}>Desde ${getEffectivePrice(producto, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional).toLocaleString('es-CO')}</span>
-                    ) : ((producto.descuento !== undefined && producto.descuento > 0) || descuentoPromocional > 0) ? (
-                      <>
-                        <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.82em', marginRight: '0.4rem', fontWeight: 500 }}>
-                          ${getEffectivePrice(producto, buyerType, markupPorcentaje, ajustesProductos, 0, true).toLocaleString('es-CO')}
+                <div className="item-details" style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                  <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>{producto.nombre}</h4>
+                  
+                  {(() => {
+                    const priceDetal = getEffectivePrice(producto, 'detal', markupPorcentaje, ajustesProductos, descuentoPromocional);
+                    const priceMayor = getEffectivePrice(producto, 'mayorista', markupPorcentaje, ajustesProductos, descuentoPromocional);
+                    const hasWholesalePrice = priceMayor > 0 && priceMayor < priceDetal;
+
+                    if (producto.es_producto_familiar) {
+                      return (
+                        <div style={{ marginTop: '0.1rem' }}>
+                          <span style={{ color: '#0284c7', fontWeight: 800, fontSize: '0.92rem' }}>
+                            Desde ${priceMayor > 0 ? priceMayor.toLocaleString('es-CO') : priceDetal.toLocaleString('es-CO')}
+                          </span>
+                          <span style={{ fontSize: '0.72rem', color: '#64748b', display: 'block' }}>Opción familiar disponible</span>
+                        </div>
+                      );
+                    }
+
+                    if (hasWholesalePrice) {
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', marginTop: '0.1rem' }}>
+                          {/* Precio Mayorista Principal con etiqueta de condición */}
+                          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.35rem' }}>
+                            <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#166534' }}>
+                              ${priceMayor.toLocaleString('es-CO')}
+                            </span>
+                            <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#15803d', background: '#dcfce7', padding: '0.1rem 0.4rem', borderRadius: '4px', whiteSpace: 'nowrap' }}>
+                              Por mayor (a partir de 6 und)
+                            </span>
+                          </div>
+                          {/* Precio al Detal */}
+                          <div style={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 600 }}>
+                            Detal: <span style={{ textDecoration: ((producto.descuento !== undefined && producto.descuento > 0) || descuentoPromocional > 0) ? 'line-through' : 'none', color: '#475569' }}>${priceDetal.toLocaleString('es-CO')}</span>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div style={{ marginTop: '0.1rem' }}>
+                        <span style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>
+                          ${priceDetal.toLocaleString('es-CO')}
                         </span>
-                        ${getEffectivePrice(producto, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional).toLocaleString('es-CO')}
-                      </>
-                    ) : (
-                      `$${getEffectivePrice(producto, buyerType, markupPorcentaje, ajustesProductos).toLocaleString('es-CO')}`
-                    )}
-                  </p>
+                        <span style={{ fontSize: '0.72rem', color: '#64748b', marginLeft: '0.35rem' }}>al detal</span>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             ))
@@ -1417,6 +1459,26 @@ export default function MenuDigital() {
                     value={formData.nombre}
                     onChange={e => setFormData({...formData, nombre: e.target.value})}
                     placeholder="Ej. Juan Pérez"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Número de Cédula / DNI</label>
+                  <input 
+                    type="text" 
+                    required 
+                    value={formData.cedula}
+                    onChange={e => setFormData({...formData, cedula: e.target.value})}
+                    placeholder="Ej. 1098765432"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Correo Electrónico</label>
+                  <input 
+                    type="email" 
+                    required 
+                    value={formData.email}
+                    onChange={e => setFormData({...formData, email: e.target.value})}
+                    placeholder="Ej. cliente@gmail.com"
                   />
                 </div>
                 <div className="form-group">
@@ -1764,18 +1826,42 @@ export default function MenuDigital() {
               <div className="detail-info">
                 <div className="detail-header-row">
                   <h3 className="detail-name">{detailProduct.nombre}</h3>
-                   <p className="detail-price">
-                    {((detailProduct.descuento !== undefined && detailProduct.descuento > 0) || descuentoPromocional > 0) ? (
-                      <>
-                        <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.82em', marginRight: '0.5rem', fontWeight: 500 }}>
-                          ${getActiveUnitPrice(detailProduct, selectedMiembroFamilia, selectedTalla).toLocaleString('es-CO')}
-                        </span>
-                        ${getEffectivePrice({ ...detailProduct, precio: getActiveUnitPrice(detailProduct, selectedMiembroFamilia, selectedTalla) }, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional).toLocaleString('es-CO')}
-                      </>
-                    ) : (
-                      `$${getEffectivePrice({ ...detailProduct, precio: getActiveUnitPrice(detailProduct, selectedMiembroFamilia, selectedTalla) }, buyerType, markupPorcentaje, ajustesProductos).toLocaleString('es-CO')}`
-                    )}
-                  </p>
+                  <div className="detail-price-wrap" style={{ textAlign: 'right' }}>
+                    {(() => {
+                      const activeUnitPriceDetal = getActiveUnitPrice(detailProduct, selectedMiembroFamilia, selectedTalla, 'detal');
+                      const activeUnitPriceMayor = getActiveUnitPrice(detailProduct, selectedMiembroFamilia, selectedTalla, 'mayorista');
+                      const priceDetal = getEffectivePrice({ ...detailProduct, precio: activeUnitPriceDetal }, 'detal', markupPorcentaje, ajustesProductos, descuentoPromocional);
+                      const priceMayor = getEffectivePrice({ ...detailProduct, precio: activeUnitPriceMayor }, 'mayorista', markupPorcentaje, ajustesProductos, descuentoPromocional);
+                      const hasWholesale = priceMayor > 0 && priceMayor < priceDetal;
+
+                      if (hasWholesale) {
+                        return (
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'flex-end' }}>
+                              <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#166534' }}>
+                                ${priceMayor.toLocaleString('es-CO')}
+                              </span>
+                              <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#15803d', background: '#dcfce7', padding: '0.15rem 0.4rem', borderRadius: '6px' }}>
+                                Por mayor (a partir de 6 und)
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
+                              Detal: ${priceDetal.toLocaleString('es-CO')}
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div>
+                          <span style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
+                            ${priceDetal.toLocaleString('es-CO')}
+                          </span>
+                          <span style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: '0.3rem' }}>al detal</span>
+                        </div>
+                      );
+                    })()}
+                  </div>
                 </div>
                 {detailProduct.descripcion && (
                   <p className="detail-desc">{detailProduct.descripcion}</p>

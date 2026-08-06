@@ -95,6 +95,8 @@ export interface Pedido {
   id: string;
   cliente_nombre: string;
   cliente_telefono: string;
+  cliente_cedula?: string;
+  cliente_email?: string;
   direccion: string;
   ciudad: string;
   total: number;
@@ -108,6 +110,8 @@ export interface Pedido {
   numero_guia?: string;
   origen?: string;
   evidencia_despacho_url?: string;
+  evidencia_url?: string;
+  metodo_pago?: string;
   envio_metodo?: string;
 }
 

@@ -3342,12 +3342,16 @@ export default function Admin() {
     return temp;
   }, [leads, pedidos, orderSearchQuery, orderFilterDate, role, loggedAsesorPhone, orderFilterAsesor]);
 
+  const contraEntregaFiltrados = useMemo(() => {
+    return filteredPedidos.filter(p => (p.metodo_pago === 'Contra Entrega' || (p.metodo_pago && p.metodo_pago.toLowerCase().includes('contra'))) && p.estado !== 'completado');
+  }, [filteredPedidos]);
+
   const pendientePagoFiltrados = useMemo(() => {
-    return filteredPedidos.filter(p => (p.estado === 'pendiente' || p.estado === 'atendido' || !p.estado) && !p.pantallazo_url);
+    return filteredPedidos.filter(p => !p.pantallazo_url && p.estado !== 'completado' && p.metodo_pago !== 'Contra Entrega' && !(p.metodo_pago && p.metodo_pago.toLowerCase().includes('contra')));
   }, [filteredPedidos]);
 
   const comprobarPagosFiltrados = useMemo(() => {
-    return filteredPedidos.filter(p => (p.estado === 'pendiente' || p.estado === 'atendido' || !p.estado) && p.pantallazo_url);
+    return filteredPedidos.filter(p => p.pantallazo_url && p.estado !== 'completado');
   }, [filteredPedidos]);
 
   const clientesFiltrados = useMemo(() => {
@@ -11750,12 +11754,14 @@ export default function Admin() {
             const pedItems = filteredPedidos
               .filter(p => (p.origen || 'catalogo') !== 'pos')
               .map(p => ({ ...p, isLead: false }));
-            const leadItems = orderFilterStatus === 'comprobante' || orderFilterStatus === 'esperando_pago'
+            const leadItems = orderFilterStatus === 'comprobante' || orderFilterStatus === 'esperando_pago' || orderFilterStatus === 'contra_entrega'
               ? []
               : leadsFiltrados.map(l => ({ ...l, isLead: true, cliente_nombre: l.nombre || 'Borrador Anónimo', cliente_telefono: l.telefono || 'Sin número', direccion: l.direccion || '', estado: 'abandonado' }));
             
             const combinedList = orderFilterStatus === 'abandonados'
               ? leadsFiltrados.map(l => ({ ...l, isLead: true, cliente_nombre: l.nombre || 'Borrador Anónimo', cliente_telefono: l.telefono || 'Sin número', direccion: l.direccion || '', estado: 'abandonado' })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+              : orderFilterStatus === 'contra_entrega'
+              ? contraEntregaFiltrados.map(p => ({ ...p, isLead: false })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
               : [...pedItems, ...leadItems].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
             return (
@@ -11912,6 +11918,7 @@ export default function Admin() {
                               className="filter-select-input"
                             >
                               <option value="todos">Todos los Pedidos y Leads</option>
+                              <option value="contra_entrega">🚚 Contra Entregas</option>
                               <option value="comprobante">Con Comprobante</option>
                               <option value="esperando_pago">Esperando Pago</option>
                               <option value="exitosas">Ventas Exitosas</option>
@@ -11967,10 +11974,11 @@ export default function Admin() {
 
                     {(() => {
                       const leadsCount = leadsFiltrados.length;
-                      const pendingCount = filteredPedidos.filter(p => !p.pantallazo_url && p.estado !== 'completado').length;
-                      const comprobarCount = filteredPedidos.filter(p => p.pantallazo_url && p.estado !== 'completado').length;
-                      const exitosasCount = filteredPedidos.filter(p => p.estado === 'completado').length;
-                      const totalCount = leadsCount + pendingCount + comprobarCount + exitosasCount;
+                      const contraEntregaCount = contraEntregaFiltrados.length;
+                      const pendingCount = pendientePagoFiltrados.length;
+                      const comprobarCount = comprobarPagosFiltrados.length;
+                      const exitosasCount = clientesFiltrados.length;
+                      const totalCount = leadsCount + contraEntregaCount + pendingCount + comprobarCount + exitosasCount;
 
                       return (
                         <div className="mobile-order-filters">
@@ -11980,6 +11988,14 @@ export default function Admin() {
                             onClick={() => setOrderFilterStatus('abandonados')}
                           >
                             Abandonados <span className="pill-badge bg-red">{leadsCount}</span>
+                          </button>
+                          <button
+                            type="button"
+                            className={`mobile-filter-pill ${orderFilterStatus === 'contra_entrega' ? 'active' : ''}`}
+                            style={{ background: orderFilterStatus === 'contra_entrega' ? '#ea580c' : '#fff7ed', color: orderFilterStatus === 'contra_entrega' ? '#ffffff' : '#c2410c', border: '1px solid #ffedd5' }}
+                            onClick={() => setOrderFilterStatus('contra_entrega')}
+                          >
+                            🚚 Contra Entregas <span className="pill-badge" style={{ background: '#ffedd5', color: '#ea580c' }}>{contraEntregaCount}</span>
                           </button>
                           <button
                             type="button"
@@ -12026,6 +12042,20 @@ export default function Admin() {
                             {leadsFiltrados.map(lead => renderLeadOrOrderCard(lead, true))}
                             {leadsFiltrados.length === 0 && (
                               <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0' }}>No hay carritos abandonados.</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Columna 2: Contra Entregas (Auto-detectado) */}
+                        <div className="kanban-column" style={{ background: '#fff7ed', borderRadius: '12px', border: '1px solid #ffedd5', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}>
+                          <div className="kanban-column-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #ea580c', paddingBottom: '0.5rem' }}>
+                            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#ea580c' }}>🚚 Contra Entregas</h3>
+                            <span className="badge" style={{ background: '#ffedd5', color: '#ea580c', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{contraEntregaFiltrados.length}</span>
+                          </div>
+                          <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
+                            {contraEntregaFiltrados.map(ped => renderLeadOrOrderCard(ped))}
+                            {contraEntregaFiltrados.length === 0 && (
+                              <p className="empty-column-msg" style={{ textAlign: 'center', color: '#9a3412', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0' }}>No hay pedidos contra entrega pendientes.</p>
                             )}
                           </div>
                         </div>
