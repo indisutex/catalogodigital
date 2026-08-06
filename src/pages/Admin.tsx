@@ -542,11 +542,20 @@ export default function Admin() {
                 <span className="advisor-role">{adv.role}</span>
               </div>
             </div>
-            {!isLead && (
-              <span className={`payment-badge-small ${ped.estado === 'completado' ? 'verified' : ped.pantallazo_url ? 'uploaded' : 'pending'}`} style={{ marginTop: '4px', display: 'inline-block' }}>
-                {ped.estado === 'completado' ? '✅ Verificado' : ped.pantallazo_url ? '📸 Comprobante recibido' : '⏳ Esperando comprobante de pago'}
-              </span>
-            )}
+            {!isLead && (() => {
+              const mp = getMetodoPago(ped);
+              const isContra = mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra'));
+              if (ped.estado === 'completado') {
+                return <span className="payment-badge-small verified" style={{ marginTop: '4px', display: 'inline-block' }}>✅ Verificado</span>;
+              }
+              if (isContra) {
+                return <span className="payment-badge-small uploaded" style={{ marginTop: '4px', display: 'inline-block', background: '#fff7ed', color: '#ea580c', borderColor: '#fdba74' }}>🚚 Pago Contra Entrega</span>;
+              }
+              if (ped.pantallazo_url) {
+                return <span className="payment-badge-small uploaded" style={{ marginTop: '4px', display: 'inline-block' }}>📸 Comprobante recibido</span>;
+              }
+              return <span className="payment-badge-small pending" style={{ marginTop: '4px', display: 'inline-block' }}>⏳ Esperando comprobante de pago</span>;
+            })()}
           </div>
         </div>
 
@@ -656,7 +665,10 @@ export default function Admin() {
               >
                 💳 Verificar Pago
               </button>
-            ) : (ped.metodo_pago === 'Contra Entrega' || (ped.metodo_pago && ped.metodo_pago.toLowerCase().includes('contra'))) ? (
+            ) : (() => {
+              const mp = getMetodoPago(ped);
+              return mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra'));
+            })() ? (
               <button 
                 type="button" 
                 className="btn-main-recover"
