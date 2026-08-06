@@ -554,6 +554,7 @@ export default function MenuDigital() {
     direccion: '',
     ciudad: ''
   });
+  const [modalidadPago, setModalidadPago] = useState<'contra_entrega' | 'anticipado'>('contra_entrega');
   const [leadId, setLeadId] = useState<string | null>(null);
 
   const leadIdRef = useRef<string | null>(null);
@@ -808,6 +809,10 @@ export default function MenuDigital() {
 
     let mensaje = `Hola, mi nombre es ${formData.nombre}.\n`;
     mensaje += `*Tipo de compra:* ${buyerLabel}\n`;
+    mensaje += `*Método de pago:* ${modalidadPago === 'contra_entrega' ? '🚚 Contra Entrega' : '💳 Pago Anticipado'}\n`;
+    if (modalidadPago === 'contra_entrega') {
+      mensaje += `📌 *Nota de pago:* Al momento de recibir cancelo el valor de las prendas + el valor del envío.\n`;
+    }
     if (isBulkDiscountApplied) {
       mensaje += `🎁 *¡Descuento al Por Mayor Aplicado!* (Llevas 6 o más productos)\n`;
     }
@@ -846,6 +851,7 @@ export default function MenuDigital() {
         total: total,
         productos: productosProcesados,
         linea_whatsapp: numeroWhatsApp,
+        metodo_pago: modalidadPago === 'contra_entrega' ? 'Contra Entrega' : 'Pago Anticipado',
         tenant_id: getTenantId()
       }).select('id').single();
 
@@ -1443,7 +1449,7 @@ export default function MenuDigital() {
                 </div>
 
                 {configuracion?.metodos_pago && (
-                  <div style={{ background: '#f8fafc', padding: '0.85rem', borderRadius: '12px', border: '1px solid #e2e8f0', marginTop: '0.2rem', marginBottom: '1rem', fontSize: '0.82rem' }}>
+                  <div style={{ background: '#f8fafc', padding: '0.85rem', borderRadius: '12px', border: '1px solid #e2e8f0', marginTop: '0.2rem', marginBottom: '0.75rem', fontSize: '0.82rem' }}>
                     <strong style={{ color: '#1e293b', display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem' }}>💳 Métodos de Pago Disponibles:</strong>
                     {(() => {
                       try {
@@ -1461,6 +1467,81 @@ export default function MenuDigital() {
                     })()}
                   </div>
                 )}
+
+                {/* ── SELECCIÓN DE MÉTODO / MODALIDAD DE PAGO ── */}
+                <div style={{ background: '#ffffff', padding: '0.85rem', borderRadius: '12px', border: '1.5px solid #cbd5e1', marginTop: '0.2rem', marginBottom: '1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                  <label style={{ color: '#0f172a', fontWeight: 800, display: 'block', marginBottom: '0.55rem', fontSize: '0.85rem' }}>
+                    📦 Selecciona tu Método de Pago:
+                  </label>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                    <label 
+                      style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '0.45rem', 
+                        padding: '0.65rem 0.6rem', 
+                        borderRadius: '10px', 
+                        border: `2px solid ${modalidadPago === 'contra_entrega' ? '#ea580c' : '#e2e8f0'}`, 
+                        background: modalidadPago === 'contra_entrega' ? '#fff7ed' : '#f8fafc', 
+                        cursor: 'pointer',
+                        transition: 'all 0.15s'
+                      }}
+                    >
+                      <input 
+                        type="radio" 
+                        name="modalidadPago" 
+                        value="contra_entrega"
+                        checked={modalidadPago === 'contra_entrega'}
+                        onChange={() => setModalidadPago('contra_entrega')}
+                        style={{ accentColor: '#ea580c', width: '16px', height: '16px', cursor: 'pointer' }}
+                      />
+                      <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0f172a' }}>
+                        🚚 Contra entrega
+                      </div>
+                    </label>
+
+                    <label 
+                      style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '0.45rem', 
+                        padding: '0.65rem 0.6rem', 
+                        borderRadius: '10px', 
+                        border: `2px solid ${modalidadPago === 'anticipado' ? '#ea580c' : '#e2e8f0'}`, 
+                        background: modalidadPago === 'anticipado' ? '#fff7ed' : '#f8fafc', 
+                        cursor: 'pointer',
+                        transition: 'all 0.15s'
+                      }}
+                    >
+                      <input 
+                        type="radio" 
+                        name="modalidadPago" 
+                        value="anticipado"
+                        checked={modalidadPago === 'anticipado'}
+                        onChange={() => setModalidadPago('anticipado')}
+                        style={{ accentColor: '#ea580c', width: '16px', height: '16px', cursor: 'pointer' }}
+                      />
+                      <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0f172a' }}>
+                        💳 Pago anticipado
+                      </div>
+                    </label>
+                  </div>
+
+                  {modalidadPago === 'contra_entrega' && (
+                    <div style={{ marginTop: '0.65rem', padding: '0.65rem 0.75rem', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', color: '#1e40af', fontSize: '0.78rem', fontWeight: 600, display: 'flex', alignItems: 'flex-start', gap: '0.45rem', lineHeight: 1.35 }}>
+                      <span style={{ fontSize: '0.95rem', lineHeight: 1 }}>ℹ️</span>
+                      <span>Al momento de recibir cancelas el valor de las prendas + el valor del envío.</span>
+                    </div>
+                  )}
+
+                  {modalidadPago === 'anticipado' && (
+                    <div style={{ marginTop: '0.65rem', padding: '0.65rem 0.75rem', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', color: '#166534', fontSize: '0.78rem', fontWeight: 600, display: 'flex', alignItems: 'flex-start', gap: '0.45rem', lineHeight: 1.35 }}>
+                      <span style={{ fontSize: '0.95rem', lineHeight: 1 }}>✅</span>
+                      <span>Realizas la transferencia previamente a las cuentas indicadas arriba.</span>
+                    </div>
+                  )}
+                </div>
 
                 <div className="cart-footer" style={{ marginTop: 'auto' }}>
                   <div className="cart-total">
