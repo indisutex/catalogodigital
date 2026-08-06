@@ -153,7 +153,7 @@ const emptyProduct: ProductFormData = {
   precios_detallados_fam: defaultFamDetailedPrices
 };
 
-type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor' | 'material_apoyo' | 'material_asesor' | 'productos_asesor' | 'productos_mayorista' | 'ranking_mayorista' | 'pqrs' | 'contabilidad' | 'erp';
+type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'ventas_pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor' | 'material_apoyo' | 'material_asesor' | 'productos_asesor' | 'productos_mayorista' | 'ranking_mayorista' | 'pqrs' | 'contabilidad' | 'erp';
 
 type Toast = { message: string; type: 'success' | 'error' } | null;
 
@@ -1321,6 +1321,9 @@ export default function Admin() {
   const [orderSortBy, setOrderSortBy] = useState<string>('date_desc');
   const [showMobileSearch, setShowMobileSearch] = useState<boolean>(false);
   const [showMobileFilters, setShowMobileFilters] = useState<boolean>(false);
+
+  // Filtros para Ventas POS
+  const [posDateFilter, setPosDateFilter] = useState<string>('');
 
   const [leads, setLeads] = useState<any[]>([]);
   const [pedidosViewMode, setPedidosViewMode] = useState<'lista' | 'kanban'>(() => {
@@ -3358,9 +3361,6 @@ export default function Admin() {
     return filteredPedidos.filter(p => p.estado === 'completado' && p.origen !== 'pos');
   }, [filteredPedidos]);
 
-  const posFiltrados = useMemo(() => {
-    return filteredPedidos.filter(p => p.origen === 'pos');
-  }, [filteredPedidos]);
 
   const filteredClientes = useMemo(() => {
     let list = [...clientes];
@@ -11747,6 +11747,209 @@ export default function Admin() {
             </div>
           )}
 
+          {/* ── VENTAS POS TAB ── */}
+          {activeTab === 'ventas_pos' && (() => {
+            const posList = filteredPedidos.filter(p => (p.origen || '').toLowerCase() === 'pos');
+            
+            const searchFiltered = posList.filter(p => {
+              if (!posSearchQuery) return true;
+              const q = posSearchQuery.toLowerCase();
+              return (
+                (p.cliente_nombre || '').toLowerCase().includes(q) ||
+                (p.cliente_telefono || '').includes(q) ||
+                (p.numero_factura || '').toLowerCase().includes(q) ||
+                (p.asesor || '').toLowerCase().includes(q)
+              );
+            }).filter(p => {
+              if (!posDateFilter) return true;
+              return (p.created_at || '').startsWith(posDateFilter);
+            });
+
+            const totalMontoPos = searchFiltered.reduce((acc, curr) => acc + (curr.total || 0), 0);
+            const totalFacturasPos = searchFiltered.length;
+            const promedioPos = totalFacturasPos > 0 ? Math.round(totalMontoPos / totalFacturasPos) : 0;
+            const hoyStr = new Date().toISOString().split('T')[0];
+            const totalHoyPos = posList.filter(p => (p.created_at || '').startsWith(hoyStr)).reduce((acc, curr) => acc + (curr.total || 0), 0);
+
+            return (
+              <div className="admin-panel" style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.5rem', boxShadow: '0 4px 16px rgba(0,0,0,0.04)' }}>
+                {/* Header */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '1rem' }}>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                      🏪 Historial de Ventas POS
+                    </h3>
+                    <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.88rem' }}>
+                      Facturas y ventas cobradas directamente desde el Punto de Venta (POS)
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('pos')}
+                    style={{
+                      background: 'linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)',
+                      color: 'white',
+                      border: 'none',
+                      padding: '0.6rem 1.2rem',
+                      borderRadius: '10px',
+                      fontWeight: 700,
+                      fontSize: '0.88rem',
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 12px rgba(139, 92, 246, 0.25)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}
+                  >
+                    🖥️ Ir a Caja POS (Nueva Venta)
+                  </button>
+                </div>
+
+                {/* KPI Metrics Cards */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1rem' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Facturas POS</span>
+                    <h4 style={{ margin: '0.2rem 0 0 0', fontSize: '1.4rem', fontWeight: 800, color: '#0f172a' }}>{totalFacturasPos}</h4>
+                  </div>
+                  <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '1rem' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#166534', textTransform: 'uppercase' }}>Total Cobrado POS</span>
+                    <h4 style={{ margin: '0.2rem 0 0 0', fontSize: '1.4rem', fontWeight: 800, color: '#15803d' }}>${totalMontoPos.toLocaleString('es-CO')}</h4>
+                  </div>
+                  <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '12px', padding: '1rem' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#1e40af', textTransform: 'uppercase' }}>Promedio x Venta</span>
+                    <h4 style={{ margin: '0.2rem 0 0 0', fontSize: '1.4rem', fontWeight: 800, color: '#1d4ed8' }}>${promedioPos.toLocaleString('es-CO')}</h4>
+                  </div>
+                  <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: '12px', padding: '1rem' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6b21a8', textTransform: 'uppercase' }}>Ventas POS Hoy</span>
+                    <h4 style={{ margin: '0.2rem 0 0 0', fontSize: '1.4rem', fontWeight: 800, color: '#7e22ce' }}>${totalHoyPos.toLocaleString('es-CO')}</h4>
+                  </div>
+                </div>
+
+                {/* Filters grid */}
+                <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', marginBottom: '1rem', alignItems: 'center' }}>
+                  <div style={{ flex: 1, minWidth: '220px', position: 'relative' }}>
+                    <input
+                      type="text"
+                      placeholder="🔍 Buscar cliente, teléfono, factura o cajero..."
+                      value={posSearchQuery}
+                      onChange={e => setPosSearchQuery(e.target.value)}
+                      style={{ width: '100%', boxSizing: 'border-box', padding: '0.6rem 0.8rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="date"
+                      value={posDateFilter}
+                      onChange={e => setPosDateFilter(e.target.value)}
+                      style={{ padding: '0.55rem 0.8rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
+                    />
+                    {posDateFilter && (
+                      <button onClick={() => setPosDateFilter('')} style={{ marginLeft: '0.4rem', border: 'none', background: '#e2e8f0', borderRadius: '6px', cursor: 'pointer', padding: '0.4rem 0.6rem' }}>✕</button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Sales Table */}
+                <div style={{ overflowX: 'auto', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b', fontWeight: 700 }}>
+                        <th style={{ padding: '0.8rem 1rem' }}>Fecha / Hora</th>
+                        <th style={{ padding: '0.8rem 1rem' }}>Factura #</th>
+                        <th style={{ padding: '0.8rem 1rem' }}>Cliente</th>
+                        <th style={{ padding: '0.8rem 1rem' }}>Cajero / Asesor</th>
+                        <th style={{ padding: '0.8rem 1rem' }}>Método de Pago</th>
+                        <th style={{ padding: '0.8rem 1rem' }}>Productos</th>
+                        <th style={{ padding: '0.8rem 1rem' }}>Total</th>
+                        <th style={{ padding: '0.8rem 1rem', textAlign: 'center' }}>Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {searchFiltered.map(ped => (
+                        <tr key={ped.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '0.8rem 1rem', color: '#64748b', whiteSpace: 'nowrap' }}>
+                            {new Date(ped.created_at).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}
+                          </td>
+                          <td style={{ padding: '0.8rem 1rem', fontWeight: 800, color: '#8b5cf6' }}>
+                            {ped.numero_factura || `POS-${ped.id.slice(0, 6).toUpperCase()}`}
+                          </td>
+                          <td style={{ padding: '0.8rem 1rem', fontWeight: 700, color: '#0f172a' }}>
+                            <div>{ped.cliente_nombre}</div>
+                            <div style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 500 }}>📞 {ped.cliente_telefono}</div>
+                          </td>
+                          <td style={{ padding: '0.8rem 1rem', color: '#475569' }}>
+                            <span style={{ background: '#ede9fe', color: '#6d28d9', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>
+                              🏪 {ped.asesor || 'Caja General'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '0.8rem 1rem', color: '#475569', fontWeight: 600 }}>
+                            💳 {ped.metodo_pago || 'Efectivo'}
+                          </td>
+                          <td style={{ padding: '0.8rem 1rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                              {Array.isArray(ped.productos) && ped.productos.map((prod: any, idx: number) => (
+                                <div key={idx} style={{ background: '#f8fafc', padding: '2px 6px', borderRadius: '4px', border: '1px solid #e2e8f0', fontSize: '0.78rem', color: '#334155' }}>
+                                  <strong>{prod.cantidad}x</strong> {prod.nombre} {prod.talla ? `(${prod.talla})` : ''}
+                                </div>
+                              ))}
+                            </div>
+                          </td>
+                          <td style={{ padding: '0.8rem 1rem', fontWeight: 800, color: '#16a34a', fontSize: '0.95rem' }}>
+                            ${ped.total.toLocaleString('es-CO')}
+                          </td>
+                          <td style={{ padding: '0.8rem 1rem', textAlign: 'center' }}>
+                            <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center' }}>
+                              <button
+                                type="button"
+                                title="Reimprimir Comprobante / Factura"
+                                onClick={() => setPosLastInvoice({
+                                  created_at: ped.created_at,
+                                  numero_factura: ped.numero_factura || `POS-${ped.id.slice(0, 6).toUpperCase()}`,
+                                  cliente_nombre: ped.cliente_nombre,
+                                  cliente_telefono: ped.cliente_telefono,
+                                  direccion: ped.direccion,
+                                  ciudad: ped.ciudad,
+                                  total: ped.total,
+                                  productos: ped.productos,
+                                  metodo_pago: ped.metodo_pago || 'Efectivo',
+                                  asesor: ped.asesor || 'Caja General'
+                                })}
+                                style={{ padding: '0.35rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700 }}
+                              >
+                                🖨️ Factura
+                              </button>
+                              <button
+                                type="button"
+                                title="Enviar WhatsApp"
+                                onClick={() => {
+                                  const cleanPhone = (ped.cliente_telefono || '').replace(/\D/g, '');
+                                  const target = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
+                                  const itemsStr = Array.isArray(ped.productos) ? ped.productos.map((i: any) => `- ${i.cantidad}x ${i.nombre} ${i.talla ? `(${i.talla})` : ''}`).join('\n') : '';
+                                  const msg = `¡Hola ${ped.cliente_nombre}! 👋\nAquí está el resumen de tu compra POS #${ped.numero_factura || ped.id.slice(0,6)}:\n\n${itemsStr}\n\n*Total Pagado: $${ped.total.toLocaleString()} COP*\n*Método: ${ped.metodo_pago || 'Efectivo'}*\n\n¡Gracias por tu compra! 😊`;
+                                  window.open(`https://wa.me/${target}?text=${encodeURIComponent(msg)}`, '_blank');
+                                }}
+                                style={{ padding: '0.35rem 0.6rem', borderRadius: '6px', border: 'none', background: '#25D366', color: 'white', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700 }}
+                              >
+                                💬 WhatsApp
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                      {searchFiltered.length === 0 && (
+                        <tr>
+                          <td colSpan={8} style={{ padding: '2rem', textAlign: 'center', color: '#64748b', fontStyle: 'italic' }}>
+                            No se encontraron ventas POS registradas.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            );
+          })()}
+
 
           {/* ── PEDIDOS TAB ── */}
           {activeTab === 'pedidos' && (() => {
@@ -12101,22 +12304,6 @@ export default function Admin() {
                             )}
                           </div>
                         </div>
-
-                        {/* Columna 5: Ventas POS (Solo admin) */}
-                        {role === 'admin' && (
-                          <div className="kanban-column" style={{ background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}>
-                            <div className="kanban-column-header col-purple" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #8b5cf6', paddingBottom: '0.5rem' }}>
-                              <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#8b5cf6' }}>🏪 Ventas POS</h3>
-                              <span className="badge" style={{ background: '#ede9fe', color: '#8b5cf6', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{posFiltrados.length}</span>
-                            </div>
-                            <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
-                              {posFiltrados.map(ped => renderLeadOrOrderCard(ped))}
-                              {posFiltrados.length === 0 && (
-                                <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0' }}>No hay ventas POS aún.</p>
-                              )}
-                            </div>
-                          </div>
-                        )}
                       </div>
                     ) : (
                       <div className="orders-desktop-table-container" style={{ overflowX: 'auto', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
@@ -14037,8 +14224,16 @@ function SidebarContent({
               {activeTab === 'dashboard' && <span className="active-dot"></span>}
             </button>
             <button className={`nav-item ${activeTab === 'pos' ? 'active' : ''}`} onClick={() => handleSelectTab('pos')}>
-              <span className="nav-icon"><CreditCard size={14} /></span> POS
+              <span className="nav-icon"><CreditCard size={14} /></span> POS (Caja)
               {activeTab === 'pos' && <span className="active-dot"></span>}
+            </button>
+            <button
+              className={`nav-item ${activeTab === 'ventas_pos' ? 'active' : ''}`}
+              onClick={() => handleSelectTab('ventas_pos')}
+              style={{ paddingLeft: '1.75rem', fontSize: '0.82rem' }}
+            >
+              <span className="nav-icon"><ShoppingBag size={13} color="#8b5cf6" /></span> 🏪 Ventas POS
+              {activeTab === 'ventas_pos' && <span className="active-dot"></span>}
             </button>
             <button className={`nav-item ${activeTab === 'productos' ? 'active' : ''}`} onClick={() => handleSelectTab('productos')}>
               <span className="nav-icon"><Package size={14} /></span> Productos

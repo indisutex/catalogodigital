@@ -109,6 +109,8 @@ export interface Pedido {
   estado?: string;
   numero_guia?: string;
   origen?: string;
+  numero_factura?: string;
+  asesor?: string;
   evidencia_despacho_url?: string;
   evidencia_url?: string;
   metodo_pago?: string;

@@ -1334,12 +1334,12 @@ export default function MenuDigital() {
                       return (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', marginTop: '0.1rem' }}>
                           {/* Precio Mayorista Principal con etiqueta de condición */}
-                          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.35rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.3rem' }}>
                             <span style={{ fontSize: '1.05rem', fontWeight: 800, color: '#166534' }}>
                               ${priceMayor.toLocaleString('es-CO')}
                             </span>
-                            <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#15803d', background: '#dcfce7', padding: '0.1rem 0.4rem', borderRadius: '4px', whiteSpace: 'nowrap' }}>
-                              Por mayor (a partir de 6 und)
+                            <span style={{ fontSize: '0.62rem', fontWeight: 700, color: '#15803d', background: '#dcfce7', padding: '0.1rem 0.35rem', borderRadius: '4px', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'inline-block' }}>
+                              Por mayor (6+ unds)
                             </span>
                           </div>
                           {/* Precio al Detal */}
@@ -1414,9 +1414,9 @@ export default function MenuDigital() {
                     const pct = Math.min(100, (totalUnits / 6) * 100);
                     return (
                       <div>
-                        <p style={{ margin: '0 0 0.4rem 0', fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span>🔥 Te faltan <strong style={{ color: 'var(--primary, #6366f1)' }}>{remaining} {remaining === 1 ? 'prenda' : 'prendas'}</strong> para <strong>PRECIO POR MAYOR</strong></span>
-                          <span style={{ fontSize: '0.75rem', background: 'var(--primary, #6366f1)', padding: '0.15rem 0.5rem', borderRadius: '10px', color: '#ffffff', fontWeight: 800 }}>{totalUnits}/6 U</span>
+                        <p style={{ margin: '0 0 0.4rem 0', fontSize: '0.8rem', fontWeight: 700, color: '#1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+                          <span>🔥 Te faltan <strong style={{ color: 'var(--primary, #6366f1)' }}>{remaining} {remaining === 1 ? 'prenda' : 'prendas'}</strong> para <strong>POR MAYOR</strong></span>
+                          <span style={{ fontSize: '0.72rem', background: 'var(--primary, #6366f1)', padding: '0.15rem 0.5rem', borderRadius: '10px', color: '#ffffff', fontWeight: 800, whiteSpace: 'nowrap', flexShrink: 0 }}>{totalUnits}/6 unds</span>
                         </p>
                         <div style={{ height: '8px', background: '#e2e8f0', borderRadius: '6px', overflow: 'hidden' }}>
                           <div style={{ height: '100%', width: `${pct}%`, background: 'var(--primary, #6366f1)', transition: 'width 0.3s ease' }} />
@@ -1428,9 +1428,9 @@ export default function MenuDigital() {
                     const pct50 = Math.min(100, Math.round(((totalUnits - 6) / 44) * 100));
                     return (
                       <div>
-                        <p style={{ margin: '0 0 0.4rem 0', fontSize: '0.82rem', fontWeight: 700, color: '#1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span>🎉 <strong>¡Oferta Por Mayor Activa!</strong> Faltan <strong style={{ color: '#f59e0b' }}>{remaining50} U</strong> para <strong>50+ Unidades</strong></span>
-                          <span style={{ fontSize: '0.75rem', background: '#10b981', padding: '0.15rem 0.5rem', borderRadius: '10px', color: '#ffffff', fontWeight: 800 }}>{totalUnits}/50 U</span>
+                        <p style={{ margin: '0 0 0.4rem 0', fontSize: '0.8rem', fontWeight: 700, color: '#1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
+                          <span>🎉 <strong>¡Por Mayor Activo!</strong> Te faltan <strong style={{ color: '#d97706' }}>{remaining50} prendas</strong> para <strong>50+ Unidades</strong></span>
+                          <span style={{ fontSize: '0.72rem', background: '#10b981', padding: '0.15rem 0.5rem', borderRadius: '10px', color: '#ffffff', fontWeight: 800, whiteSpace: 'nowrap', flexShrink: 0 }}>{totalUnits}/50 unds</span>
                         </p>
                         <div style={{ height: '8px', background: '#e2e8f0', borderRadius: '6px', overflow: 'hidden' }}>
                           <div style={{ height: '100%', width: `${pct50}%`, background: 'linear-gradient(90deg, #10b981, #f59e0b)', transition: 'width 0.3s ease' }} />
@@ -1439,9 +1439,9 @@ export default function MenuDigital() {
                     );
                   } else {
                     return (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#f59e0b', fontSize: '0.85rem', fontWeight: 800 }}>
-                        <span>🏆 ¡MÁXIMO DESCUENTO ACTIVADO (50+ UNIDADES)!</span>
-                        <span style={{ background: '#f59e0b', color: '#ffffff', padding: '0.15rem 0.5rem', borderRadius: '10px', fontSize: '0.75rem' }}>✅ {totalUnits} U</span>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#d97706', fontSize: '0.82rem', fontWeight: 800 }}>
+                        <span>🏆 ¡MÁXIMO DESCUENTO ACTIVADO (50+ PRENDAS)!</span>
+                        <span style={{ background: '#f59e0b', color: '#ffffff', padding: '0.15rem 0.5rem', borderRadius: '10px', fontSize: '0.72rem', whiteSpace: 'nowrap', flexShrink: 0 }}>✅ {totalUnits} unds</span>
                       </div>
                     );
                   }
@@ -1533,23 +1533,24 @@ export default function MenuDigital() {
                 )}
 
                 {/* ── SELECCIÓN DE MÉTODO / MODALIDAD DE PAGO ── */}
-                <div style={{ background: '#ffffff', padding: '0.85rem', borderRadius: '12px', border: '1.5px solid #cbd5e1', marginTop: '0.2rem', marginBottom: '1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                  <label style={{ color: '#0f172a', fontWeight: 800, display: 'block', marginBottom: '0.55rem', fontSize: '0.85rem' }}>
+                <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '14px', border: '1.5px solid #cbd5e1', marginTop: '0.2rem', marginBottom: '1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                  <label style={{ color: '#0f172a', fontWeight: 800, display: 'block', marginBottom: '0.65rem', fontSize: '0.88rem' }}>
                     📦 Selecciona tu Método de Pago:
                   </label>
                   
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
                     <label 
                       style={{ 
                         display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '0.45rem', 
-                        padding: '0.65rem 0.6rem', 
-                        borderRadius: '10px', 
+                        alignItems: 'flex-start', 
+                        gap: '0.65rem', 
+                        padding: '0.75rem 0.85rem', 
+                        borderRadius: '12px', 
                         border: `2px solid ${modalidadPago === 'contra_entrega' ? '#ea580c' : '#e2e8f0'}`, 
                         background: modalidadPago === 'contra_entrega' ? '#fff7ed' : '#f8fafc', 
                         cursor: 'pointer',
-                        transition: 'all 0.15s'
+                        transition: 'all 0.15s ease',
+                        boxShadow: modalidadPago === 'contra_entrega' ? '0 2px 8px rgba(234, 88, 12, 0.12)' : 'none'
                       }}
                     >
                       <input 
@@ -1558,24 +1559,30 @@ export default function MenuDigital() {
                         value="contra_entrega"
                         checked={modalidadPago === 'contra_entrega'}
                         onChange={() => setModalidadPago('contra_entrega')}
-                        style={{ accentColor: '#ea580c', width: '16px', height: '16px', cursor: 'pointer' }}
+                        style={{ accentColor: '#ea580c', width: '18px', height: '18px', marginTop: '2px', cursor: 'pointer', flexShrink: 0 }}
                       />
-                      <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0f172a' }}>
-                        🚚 Contra entrega
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '0.88rem', fontWeight: 800, color: modalidadPago === 'contra_entrega' ? '#ea580c' : '#0f172a' }}>
+                          🚚 Pago contra entrega
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.15rem', fontWeight: 500, lineHeight: 1.35 }}>
+                          Pagas tus productos y el domicilio al recibir.
+                        </div>
                       </div>
                     </label>
 
                     <label 
                       style={{ 
                         display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '0.45rem', 
-                        padding: '0.65rem 0.6rem', 
-                        borderRadius: '10px', 
+                        alignItems: 'flex-start', 
+                        gap: '0.65rem', 
+                        padding: '0.75rem 0.85rem', 
+                        borderRadius: '12px', 
                         border: `2px solid ${modalidadPago === 'anticipado' ? '#ea580c' : '#e2e8f0'}`, 
                         background: modalidadPago === 'anticipado' ? '#fff7ed' : '#f8fafc', 
                         cursor: 'pointer',
-                        transition: 'all 0.15s'
+                        transition: 'all 0.15s ease',
+                        boxShadow: modalidadPago === 'anticipado' ? '0 2px 8px rgba(234, 88, 12, 0.12)' : 'none'
                       }}
                     >
                       <input 
@@ -1584,34 +1591,48 @@ export default function MenuDigital() {
                         value="anticipado"
                         checked={modalidadPago === 'anticipado'}
                         onChange={() => setModalidadPago('anticipado')}
-                        style={{ accentColor: '#ea580c', width: '16px', height: '16px', cursor: 'pointer' }}
+                        style={{ accentColor: '#ea580c', width: '18px', height: '18px', marginTop: '2px', cursor: 'pointer', flexShrink: 0 }}
                       />
-                      <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#0f172a' }}>
-                        💳 Pago anticipado
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '0.88rem', fontWeight: 800, color: modalidadPago === 'anticipado' ? '#ea580c' : '#0f172a' }}>
+                          💳 Pago anticipado
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.15rem', fontWeight: 500, lineHeight: 1.35 }}>
+                          Pagas los productos ahora. El domicilio se cancela al recibir.
+                        </div>
                       </div>
                     </label>
                   </div>
-
-                  {modalidadPago === 'contra_entrega' && (
-                    <div style={{ marginTop: '0.65rem', padding: '0.65rem 0.75rem', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', color: '#1e40af', fontSize: '0.78rem', fontWeight: 600, display: 'flex', alignItems: 'flex-start', gap: '0.45rem', lineHeight: 1.35 }}>
-                      <span style={{ fontSize: '0.95rem', lineHeight: 1 }}>ℹ️</span>
-                      <span>Al momento de recibir cancelas el valor de las prendas + el valor del envío.</span>
-                    </div>
-                  )}
-
-                  {modalidadPago === 'anticipado' && (
-                    <div style={{ marginTop: '0.65rem', padding: '0.65rem 0.75rem', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', color: '#166534', fontSize: '0.78rem', fontWeight: 600, display: 'flex', alignItems: 'flex-start', gap: '0.45rem', lineHeight: 1.35 }}>
-                      <span style={{ fontSize: '0.95rem', lineHeight: 1 }}>ℹ️</span>
-                      <span>Recuerda que al momento de recibir solo cancelas el valor del envío.</span>
-                    </div>
-                  )}
                 </div>
 
                 <div className="cart-footer" style={{ marginTop: 'auto' }}>
-                  <div className="cart-total">
-                    <span>Total a Pagar:</span>
-                    <span>${total.toLocaleString('es-CO')}</span>
+                  <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '0.85rem', marginBottom: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+                    {/* Subtotal Productos */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.88rem', color: '#0f172a', fontWeight: 600 }}>
+                      <span>Productos</span>
+                      <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>${total.toLocaleString('es-CO')}</span>
+                    </div>
+
+                    {/* Envío */}
+                    <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: '0.55rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', color: '#0f172a', fontWeight: 600 }}>
+                        <span>Envío</span>
+                        <span style={{ color: '#d97706', fontWeight: 700, fontSize: '0.78rem', background: '#fef3c7', padding: '0.15rem 0.5rem', borderRadius: '6px' }}>
+                          ⏳ Pendiente de calcular
+                        </span>
+                      </div>
+                      <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.74rem', color: '#64748b', lineHeight: 1.35, fontWeight: 500 }}>
+                        Antes de despachar tu pedido, te enviaremos por WhatsApp el valor exacto del envío para tu confirmación.
+                      </p>
+                    </div>
+
+                    {/* Total pagado por productos */}
+                    <div style={{ borderTop: '1.5px solid #0f172a', paddingTop: '0.55rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#0f172a' }}>Total pagado por productos</span>
+                      <span style={{ fontWeight: 900, fontSize: '1.15rem', color: '#166534' }}>${total.toLocaleString('es-CO')}</span>
+                    </div>
                   </div>
+
                   <button type="submit" className="checkout-btn whatsapp-submit">
                     Enviar Pedido por WhatsApp
                   </button>
@@ -1841,8 +1862,8 @@ export default function MenuDigital() {
                               <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#166534' }}>
                                 ${priceMayor.toLocaleString('es-CO')}
                               </span>
-                              <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#15803d', background: '#dcfce7', padding: '0.15rem 0.4rem', borderRadius: '6px' }}>
-                                Por mayor (a partir de 6 und)
+                              <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#15803d', background: '#dcfce7', padding: '0.15rem 0.4rem', borderRadius: '6px' }}>
+                                Por mayor (6+ unds)
                               </span>
                             </div>
                             <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
