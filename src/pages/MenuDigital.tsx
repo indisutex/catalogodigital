@@ -561,12 +561,15 @@ export default function MenuDigital() {
 
   const leadIdRef = useRef<string | null>(null);
   const isInsertingRef = useRef(false);
+  const isOrderSubmittedRef = useRef(false);
 
   useEffect(() => {
+    if (isOrderSubmittedRef.current) return;
     // Solo guardar el abandonado si llenó todos los datos
     if (!formData.nombre || !formData.telefono || !formData.direccion || !formData.ciudad) return;
 
     const delayDebounceFn = setTimeout(async () => {
+      if (isOrderSubmittedRef.current) return;
       try {
         const tenant = getTenantId();
         const numeroWhatsApp = overrideWhatsApp || configuracion?.whatsapp || '573185637317';
@@ -853,7 +856,7 @@ export default function MenuDigital() {
         };
       });
 
-      const { data: newOrder, error: dbErr } = await supabase.from('pedidos').insert({
+      let insertPayload: any = {
         cliente_nombre: formData.nombre,
         cliente_cedula: formData.cedula,
         cliente_email: formData.email,
@@ -865,7 +868,17 @@ export default function MenuDigital() {
         linea_whatsapp: numeroWhatsApp,
         metodo_pago: modalidadPago === 'contra_entrega' ? 'Contra Entrega' : 'Pago Anticipado',
         tenant_id: getTenantId()
-      }).select('id').single();
+      };
+
+      let { data: newOrder, error: dbErr } = await supabase.from('pedidos').insert(insertPayload).select('id').single();
+
+      if (dbErr && dbErr.message && dbErr.message.includes('metodo_pago')) {
+        console.warn('Columna metodo_pago no encontrada en DB, reintentando insert sin esa columna...');
+        delete insertPayload.metodo_pago;
+        const retry = await supabase.from('pedidos').insert(insertPayload).select('id').single();
+        newOrder = retry.data;
+        dbErr = retry.error;
+      }
 
       if (dbErr) {
         console.error('Error al registrar pedido en base de datos:', dbErr);
@@ -873,9 +886,12 @@ export default function MenuDigital() {
         orderId = newOrder.id;
       }
 
-      if (leadId) {
-        await supabase.from('leads').update({ estado: 'completado' }).eq('id', leadId);
+      isOrderSubmittedRef.current = true;
+      const currentLeadId = leadIdRef.current || leadId;
+      if (currentLeadId) {
+        await supabase.from('leads').update({ estado: 'completado' }).eq('id', currentLeadId);
         setLeadId(null);
+        leadIdRef.current = null;
       }
     } catch (dbErr) {
       console.error('Error al registrar pedido en base de datos:', dbErr);
@@ -921,6 +937,9 @@ export default function MenuDigital() {
     setIsCheckoutMode(false);
     clearCart();
     setFormData({ nombre: '', cedula: '', email: '', telefono: '', direccion: '', ciudad: '' });
+    setTimeout(() => {
+      isOrderSubmittedRef.current = false;
+    }, 2000);
   };
 
   return (
