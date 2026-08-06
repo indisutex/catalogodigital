@@ -2721,9 +2721,22 @@ export default function Admin() {
       if (orderFilterStatus === 'comprobante') {
         result = result.filter(p => !!p.pantallazo_url && p.estado !== 'completado');
       } else if (orderFilterStatus === 'esperando_pago') {
-        result = result.filter(p => !p.pantallazo_url && p.estado !== 'completado');
+        result = result.filter(p =>
+          !p.pantallazo_url &&
+          p.estado !== 'completado' &&
+          p.metodo_pago !== 'Contra Entrega' &&
+          !(p.metodo_pago && p.metodo_pago.toLowerCase().includes('contra'))
+        );
+      } else if (orderFilterStatus === 'contra_entrega') {
+        result = result.filter(p =>
+          (p.metodo_pago === 'Contra Entrega' || (p.metodo_pago && p.metodo_pago.toLowerCase().includes('contra'))) &&
+          p.estado !== 'completado'
+        );
       } else if (orderFilterStatus === 'exitosas') {
         result = result.filter(p => p.estado === 'completado');
+      } else if (orderFilterStatus === 'abandonados') {
+        // Los abandonados son leads, no pedidos — no filtrar aquí
+        result = [];
       }
     }
 
@@ -12958,8 +12971,8 @@ export default function Admin() {
                     </p>
                   </div>
                 )}
-                {/* Evidencia Despacho */}
-                {(selectedPedido.pantallazo_url || selectedPedido.estado === 'completado') && (
+                {/* Evidencia Despacho — visible para Pago Anticipado con comprobante, para Completados, y para Contra Entrega en cualquier estado */}
+                {(selectedPedido.pantallazo_url || selectedPedido.estado === 'completado' || (selectedPedido.metodo_pago && selectedPedido.metodo_pago.toLowerCase().includes('contra'))) && (
                   <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
                     <h4 style={{ margin: '0 0 0.75rem', fontSize: '0.9rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       📦 Evidencia de Despacho (Guía/Paquete)
@@ -13029,7 +13042,7 @@ export default function Admin() {
                     )}
                   </div>
                 )}
-                {!selectedPedido.pantallazo_url && (
+                {!selectedPedido.pantallazo_url && !((selectedPedido.metodo_pago || '').toLowerCase().includes('contra')) && (
                   <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.75rem', textAlign: 'center' }}>
                     <p style={{ color: '#f59e0b', fontWeight: 600, fontSize: '0.85rem', margin: 0 }}>
                       ⏳ Pendiente de comprobante
@@ -13037,8 +13050,8 @@ export default function Admin() {
                   </div>
                 )}
 
-                {/* Seccion 99 Envios y Guía de Envío (para pedidos completados) */}
-                {selectedPedido.estado === 'completado' && (
+                {/* Seccion 99 Envios y Guía de Envío (para pedidos completados O contra entrega pendiente) */}
+                {(selectedPedido.estado === 'completado' || (selectedPedido.metodo_pago && selectedPedido.metodo_pago.toLowerCase().includes('contra'))) && (
                   <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
                     <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                       🚚 Datos de Envío (99 Envíos)
