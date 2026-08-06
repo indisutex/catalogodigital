@@ -3418,7 +3418,11 @@ export default function Admin() {
         if (isLead) {
           await supabase.from('leads').update({ estado: 'contra_entrega' }).eq('id', id);
         }
-        const { error } = await supabase.from('pedidos').update({ metodo_pago: 'Contra Entrega', estado: 'pendiente' }).eq('id', id);
+        let { error } = await supabase.from('pedidos').update({ metodo_pago: 'Contra Entrega', estado: 'pendiente' }).eq('id', id);
+        if (error && error.message && error.message.includes('metodo_pago')) {
+          const retry = await supabase.from('pedidos').update({ estado: 'pendiente' }).eq('id', id);
+          error = retry.error;
+        }
         if (error) {
           console.error(error);
           showToast('Error al actualizar en BD: ' + error.message, 'error');
@@ -3435,7 +3439,11 @@ export default function Admin() {
         setPedidos(prev => prev.map(p => p.id === id ? { ...p, estado: 'pendiente', metodo_pago: 'Pago Anticipado' } : p));
         showToast('Pedido movido a Pendientes 🟡', 'success');
 
-        const { error } = await supabase.from('pedidos').update({ estado: 'pendiente', metodo_pago: 'Pago Anticipado' }).eq('id', id);
+        let { error } = await supabase.from('pedidos').update({ estado: 'pendiente', metodo_pago: 'Pago Anticipado' }).eq('id', id);
+        if (error && error.message && error.message.includes('metodo_pago')) {
+          const retry = await supabase.from('pedidos').update({ estado: 'pendiente' }).eq('id', id);
+          error = retry.error;
+        }
         if (error) console.error(error);
         cargarDatos();
       } else if (targetCol === 'abandonado') {

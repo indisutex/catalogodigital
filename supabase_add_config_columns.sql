@@ -14,3 +14,11 @@ ADD COLUMN IF NOT EXISTS activar_minijuegos BOOLEAN DEFAULT true,
 ADD COLUMN IF NOT EXISTS tarjeta_imagen_fit TEXT DEFAULT 'cover',
 ADD COLUMN IF NOT EXISTS tarjeta_imagen_posicion TEXT DEFAULT 'center',
 ADD COLUMN IF NOT EXISTS tarjeta_imagen_aspecto TEXT DEFAULT '1/1';
+
+-- Agregar columna 'metodo_pago' a la tabla 'pedidos':
+ALTER TABLE public.pedidos 
+ADD COLUMN IF NOT EXISTS metodo_pago TEXT,
+ADD COLUMN IF NOT EXISTS evidencia_despacho_url TEXT,
+ADD COLUMN IF NOT EXISTS numero_guia TEXT,
+ADD COLUMN IF NOT EXISTS origen TEXT,
+ADD COLUMN IF NOT EXISTS atendido BOOLEAN DEFAULT false;
