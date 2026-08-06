@@ -508,7 +508,15 @@ export default function Admin() {
     const parsedProds = getParsedProducts(ped.productos);
 
     return (
-      <div key={ped.id} className={`order-mobile-card ${isLead ? 'lead-abandonado' : ped.estado === 'completado' ? 'order-completado' : ped.pantallazo_url ? 'order-comprobante' : 'order-pendiente'}`} style={{ margin: 0 }}>
+      <div 
+        key={ped.id} 
+        draggable={true}
+        onDragStart={(e) => {
+          e.dataTransfer.setData('text/plain', JSON.stringify({ id: ped.id, isLead }));
+        }}
+        className={`order-mobile-card ${isLead ? 'lead-abandonado' : ped.estado === 'completado' ? 'order-completado' : ped.pantallazo_url ? 'order-comprobante' : 'order-pendiente'}`} 
+        style={{ margin: 0, cursor: 'grab' }}
+      >
         <div className="card-header-row">
           <div className="client-info-block">
             <div className="client-avatar">
@@ -3360,6 +3368,58 @@ export default function Admin() {
   const clientesFiltrados = useMemo(() => {
     return filteredPedidos.filter(p => p.estado === 'completado' && p.origen !== 'pos');
   }, [filteredPedidos]);
+
+  const handleDropKanban = async (e: React.DragEvent, targetCol: string) => {
+    e.preventDefault();
+    try {
+      const dataStr = e.dataTransfer.getData('text/plain');
+      if (!dataStr) return;
+      const { id, isLead } = JSON.parse(dataStr);
+
+      if (targetCol === 'completado') {
+        const targetPed = pedidos.find(p => p.id === id);
+        if (targetPed) {
+          handleAprobarPago(targetPed);
+        } else {
+          showToast('Pedido no encontrado para aprobación', 'error');
+        }
+      } else if (targetCol === 'contra_entrega') {
+        const { error } = await supabase.from('pedidos').update({ metodo_pago: 'Contra Entrega', estado: 'pendiente' }).eq('id', id);
+        if (!error) {
+          showToast('Pedido movido a Contra Entrega 🚚');
+          cargarDatos();
+        }
+      } else if (targetCol === 'comprobante') {
+        const { error } = await supabase.from('pedidos').update({ estado: 'pendiente' }).eq('id', id);
+        if (!error) {
+          showToast('Pedido movido a Comprobantes 📸');
+          cargarDatos();
+        }
+      } else if (targetCol === 'pendiente') {
+        const { error } = await supabase.from('pedidos').update({ estado: 'pendiente', metodo_pago: 'Pago Anticipado' }).eq('id', id);
+        if (!error) {
+          showToast('Pedido movido a Pendientes 🟡');
+          cargarDatos();
+        }
+      } else if (targetCol === 'abandonado') {
+        if (isLead) {
+          const { error } = await supabase.from('leads').update({ estado: 'abandonado' }).eq('id', id);
+          if (!error) {
+            showToast('Lead movido a No Interesados 🔴');
+            cargarDatos();
+          }
+        } else {
+          const { error } = await supabase.from('pedidos').update({ estado: 'abandonado' }).eq('id', id);
+          if (!error) {
+            showToast('Pedido movido a No Interesados 🔴');
+            cargarDatos();
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error al arrastrar pedido:', err);
+    }
+  };
 
 
   const filteredClientes = useMemo(() => {
@@ -12236,7 +12296,12 @@ export default function Admin() {
                             {pedidosViewMode === 'kanban' ? (
                               <div className="super-crm-kanban" style={{ alignItems: 'start' }}>
                         {/* Columna 1: No Interesados (Abandonos) */}
-                        <div className="kanban-column" style={{ background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}>
+                        <div
+                          className="kanban-column"
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={(e) => handleDropKanban(e, 'abandonado')}
+                          style={{ background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}
+                        >
                           <div className="kanban-column-header col-red" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #ef4444', paddingBottom: '0.5rem' }}>
                             <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#ef4444' }}>🔴 No Interesados (Abandonos)</h3>
                             <span className="badge" style={{ background: '#fee2e2', color: '#ef4444', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{leadsFiltrados.length}</span>
@@ -12250,7 +12315,12 @@ export default function Admin() {
                         </div>
 
                         {/* Columna 2: Contra Entregas (Auto-detectado) */}
-                        <div className="kanban-column" style={{ background: '#fff7ed', borderRadius: '12px', border: '1px solid #ffedd5', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}>
+                        <div
+                          className="kanban-column"
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={(e) => handleDropKanban(e, 'contra_entrega')}
+                          style={{ background: '#fff7ed', borderRadius: '12px', border: '1px solid #ffedd5', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}
+                        >
                           <div className="kanban-column-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #ea580c', paddingBottom: '0.5rem' }}>
                             <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#ea580c' }}>🚚 Contra Entregas</h3>
                             <span className="badge" style={{ background: '#ffedd5', color: '#ea580c', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{contraEntregaFiltrados.length}</span>
@@ -12264,7 +12334,12 @@ export default function Admin() {
                         </div>
 
                         {/* Columna 2: Pendientes (Esperando Pago) */}
-                        <div className="kanban-column" style={{ background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}>
+                        <div
+                          className="kanban-column"
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={(e) => handleDropKanban(e, 'pendiente')}
+                          style={{ background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}
+                        >
                           <div className="kanban-column-header col-yellow" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #eab308', paddingBottom: '0.5rem' }}>
                             <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#eab308' }}>🟡 Pendientes (Esperando Pago)</h3>
                             <span className="badge" style={{ background: '#fef9c3', color: '#eab308', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{pendientePagoFiltrados.length}</span>
@@ -12278,7 +12353,12 @@ export default function Admin() {
                         </div>
 
                         {/* Columna 3: Comprobante Recibido (Comprobar Pagos) */}
-                        <div className="kanban-column" style={{ background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}>
+                        <div
+                          className="kanban-column"
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={(e) => handleDropKanban(e, 'comprobante')}
+                          style={{ background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}
+                        >
                           <div className="kanban-column-header col-blue" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #3b82f6', paddingBottom: '0.5rem' }}>
                             <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#3b82f6' }}>📸 Comprobante Recibido</h3>
                             <span className="badge" style={{ background: '#eff6ff', color: '#3b82f6', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{comprobarPagosFiltrados.length}</span>
@@ -12292,7 +12372,12 @@ export default function Admin() {
                         </div>
 
                         {/* Columna 3: Clientes (Venta Exitosa) */}
-                        <div className="kanban-column" style={{ background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}>
+                        <div
+                          className="kanban-column"
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={(e) => handleDropKanban(e, 'completado')}
+                          style={{ background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}
+                        >
                           <div className="kanban-column-header col-green" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #22c55e', paddingBottom: '0.5rem' }}>
                             <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#22c55e' }}>🟢 Clientes (Venta Exitosa)</h3>
                             <span className="badge" style={{ background: '#dcfce7', color: '#22c55e', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{clientesFiltrados.length}</span>
@@ -14079,6 +14164,8 @@ function SidebarContent({
   activeNotificationsCount?: number;
   listaPqrs?: PQRS[];
 }) {
+  const [isPosExpanded, setIsPosExpanded] = useState<boolean>(false);
+
   const handleSelectTab = (tab: TabType) => {
     setActiveTab(tab);
     if (onClose) onClose();
@@ -14223,18 +14310,51 @@ function SidebarContent({
               <span className="nav-icon"><LayoutDashboard size={14} /></span> Dashboard
               {activeTab === 'dashboard' && <span className="active-dot"></span>}
             </button>
-            <button className={`nav-item ${activeTab === 'pos' ? 'active' : ''}`} onClick={() => handleSelectTab('pos')}>
-              <span className="nav-icon"><CreditCard size={14} /></span> POS (Caja)
-              {activeTab === 'pos' && <span className="active-dot"></span>}
-            </button>
-            <button
-              className={`nav-item ${activeTab === 'ventas_pos' ? 'active' : ''}`}
-              onClick={() => handleSelectTab('ventas_pos')}
-              style={{ paddingLeft: '1.75rem', fontSize: '0.82rem' }}
-            >
-              <span className="nav-icon"><ShoppingBag size={13} color="#8b5cf6" /></span> 🏪 Ventas POS
-              {activeTab === 'ventas_pos' && <span className="active-dot"></span>}
-            </button>
+            {/* ── EXPANDABLE POS MENU ── */}
+            <div>
+              <button
+                type="button"
+                className={`nav-item ${activeTab === 'pos' || activeTab === 'ventas_pos' ? 'active' : ''}`}
+                onClick={() => {
+                  const newState = !isPosExpanded;
+                  setIsPosExpanded(newState);
+                  if (newState && activeTab !== 'pos' && activeTab !== 'ventas_pos') {
+                    handleSelectTab('pos');
+                  }
+                }}
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span className="nav-icon"><CreditCard size={14} /></span> POS
+                </span>
+                <span style={{ fontSize: '0.7rem', color: '#94a3b8', transition: 'transform 0.2s ease', transform: (isPosExpanded || activeTab === 'pos' || activeTab === 'ventas_pos') ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                  ▼
+                </span>
+              </button>
+
+              {(isPosExpanded || activeTab === 'pos' || activeTab === 'ventas_pos') && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '0.6rem', marginTop: '2px', marginBottom: '4px', borderLeft: '2px solid #e2e8f0', marginLeft: '0.9rem' }}>
+                  <button
+                    type="button"
+                    className={`nav-item ${activeTab === 'pos' ? 'active' : ''}`}
+                    onClick={() => handleSelectTab('pos')}
+                    style={{ fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
+                  >
+                    <span className="nav-icon"><CreditCard size={13} /></span> 🖥️ Caja POS
+                    {activeTab === 'pos' && <span className="active-dot"></span>}
+                  </button>
+                  <button
+                    type="button"
+                    className={`nav-item ${activeTab === 'ventas_pos' ? 'active' : ''}`}
+                    onClick={() => handleSelectTab('ventas_pos')}
+                    style={{ fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
+                  >
+                    <span className="nav-icon"><ShoppingBag size={13} color="#8b5cf6" /></span> 🏪 Ventas POS
+                    {activeTab === 'ventas_pos' && <span className="active-dot"></span>}
+                  </button>
+                </div>
+              )}
+            </div>
             <button className={`nav-item ${activeTab === 'productos' ? 'active' : ''}`} onClick={() => handleSelectTab('productos')}>
               <span className="nav-icon"><Package size={14} /></span> Productos
               {activeTab === 'productos' && <span className="active-dot"></span>}
