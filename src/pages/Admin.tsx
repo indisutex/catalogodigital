@@ -1556,18 +1556,20 @@ export default function Admin() {
     try {
       const tenant = getTenantId();
 
+      const tenantOrFilter = `tenant_id.eq.${tenant},tenant_id.eq.${tenant.replace(/_/g, '-')},tenant_id.eq.${tenant.replace(/-/g, '_')},tenant_id.is.null`;
+
       // Fetch other data in parallel
       const [catRes, subcatRes, confRes, pedRes, leadRes, cliRes, aseRes, matRes, mayRes, pqrsRes] = await Promise.all([
-        supabase.from('categorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
-        supabase.from('subcategorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
-        supabase.from('configuracion').select('*').eq('tenant_id', tenant),
-        supabase.from('pedidos').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
-        supabase.from('leads').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
-        supabase.from('clientes_exitosos').select('*').eq('tenant_id', tenant).order('total_compras', { ascending: false }),
-        supabase.from('asesores').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
-        supabase.from('material_apoyo').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
-        supabase.from('mayoristas').select('*').eq('tenant_id', tenant).order('created_at', { ascending: false }),
-        supabase.from('pqrs').select('*').or(`tenant_id.eq.${tenant},tenant_id.eq.${tenant.replace(/_/g, '-')},tenant_id.eq.${tenant.replace(/-/g, '_')},tenant_id.is.null`).order('created_at', { ascending: false })
+        supabase.from('categorias').select('*').or(tenantOrFilter).order('orden', { ascending: true }),
+        supabase.from('subcategorias').select('*').or(tenantOrFilter).order('orden', { ascending: true }),
+        supabase.from('configuracion').select('*').or(tenantOrFilter),
+        supabase.from('pedidos').select('*').or(tenantOrFilter).order('created_at', { ascending: false }),
+        supabase.from('leads').select('*').or(tenantOrFilter).order('created_at', { ascending: false }),
+        supabase.from('clientes_exitosos').select('*').or(tenantOrFilter).order('total_compras', { ascending: false }),
+        supabase.from('asesores').select('*').or(tenantOrFilter).order('created_at', { ascending: false }),
+        supabase.from('material_apoyo').select('*').or(tenantOrFilter).order('created_at', { ascending: false }),
+        supabase.from('mayoristas').select('*').or(tenantOrFilter).order('created_at', { ascending: false }),
+        supabase.from('pqrs').select('*').or(tenantOrFilter).order('created_at', { ascending: false })
       ]);
 
       if (catRes.data) {

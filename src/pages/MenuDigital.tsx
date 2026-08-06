@@ -860,31 +860,35 @@ export default function MenuDigital() {
 
       let insertPayload: any = {
         cliente_nombre: formData.nombre,
-        cliente_cedula: formData.cedula,
-        cliente_email: formData.email,
         cliente_telefono: formData.telefono,
         direccion: formData.direccion,
         ciudad: formData.ciudad,
         total: total,
         productos: productosProcesados,
         linea_whatsapp: numeroWhatsApp,
-        metodo_pago: modalidadPago === 'contra_entrega' ? 'Contra Entrega' : 'Pago Anticipado',
         tenant_id: getTenantId()
       };
+      if (formData.cedula) insertPayload.cliente_cedula = formData.cedula;
+      if (formData.email) insertPayload.cliente_email = formData.email;
+      insertPayload.metodo_pago = modalidadPago === 'contra_entrega' ? 'Contra Entrega' : 'Pago Anticipado';
 
       let { data: newOrder, error: dbErr } = await supabase.from('pedidos').insert(insertPayload).select('id').single();
 
-      if (dbErr && dbErr.message && dbErr.message.includes('metodo_pago')) {
-        console.warn('Columna metodo_pago no encontrada en DB, reintentando insert sin esa columna...');
+      if (dbErr) {
+        console.warn('Primer intento de insert falló:', dbErr.message, '- reintentando con payload básico...');
         delete insertPayload.metodo_pago;
+        delete insertPayload.cliente_cedula;
+        delete insertPayload.cliente_email;
         const retry = await supabase.from('pedidos').insert(insertPayload).select('id').single();
-        newOrder = retry.data;
-        dbErr = retry.error;
+        if (!retry.error) {
+          newOrder = retry.data;
+          dbErr = null;
+        } else {
+          console.error('Error en reintento de pedido:', retry.error);
+        }
       }
 
-      if (dbErr) {
-        console.error('Error al registrar pedido en base de datos:', dbErr);
-      } else if (newOrder) {
+      if (newOrder) {
         orderId = newOrder.id;
       }
 
