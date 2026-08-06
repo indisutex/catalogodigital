@@ -1322,7 +1322,7 @@ export default function Admin() {
 
   // Filtros y Ordenamiento para la pestaña de Pedidos
   const [orderFilterStatus, setOrderFilterStatus] = useState<string>('todos');
-  const [orderFilterOrigin, setOrderFilterOrigin] = useState<string>('catalogo');
+  const [orderFilterOrigin, setOrderFilterOrigin] = useState<string>('todos');
   const [orderFilterAsesor, setOrderFilterAsesor] = useState<string>('todos');
   const [orderSearchQuery, setOrderSearchQuery] = useState<string>('');
   const [orderFilterDate, setOrderFilterDate] = useState<string>('');
@@ -2747,22 +2747,24 @@ export default function Admin() {
       });
     }
 
+    const normalizePhone = (phone?: string | null) => {
+      if (!phone) return '';
+      const clean = phone.replace(/\D/g, '');
+      return clean.length >= 10 ? clean.slice(-10) : clean;
+    };
+
     if ((role === 'asesor' || role === 'mayorista') && loggedAsesorPhone) {
       result = result.filter(p => {
         if (!p.linea_whatsapp) return false;
-        const cleanOrder = p.linea_whatsapp.replace(/\D/g, '');
-        const orderPhone = cleanOrder.length === 12 && cleanOrder.startsWith('57') ? cleanOrder.substring(2) : cleanOrder;
-        const advisorPhones = loggedAsesorPhone.split(',').map(phone => {
-          const clean = phone.replace(/\D/g, '');
-          return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
-        }).filter(Boolean);
+        const orderPhone = normalizePhone(p.linea_whatsapp);
+        const advisorPhones = loggedAsesorPhone.split(',').map(phone => normalizePhone(phone)).filter(Boolean);
         return advisorPhones.includes(orderPhone);
       });
     } else if (orderFilterAsesor !== 'todos') {
       result = result.filter(p => {
-        const orderPhone = p.linea_whatsapp?.replace(/\D/g, '');
-        const filterPhones = orderFilterAsesor.split(',').map(phone => phone.replace(/\D/g, '')).filter(Boolean);
-        return orderPhone && filterPhones.includes(orderPhone);
+        const orderPhone = normalizePhone(p.linea_whatsapp);
+        const filterPhones = orderFilterAsesor.split(',').map(phone => normalizePhone(phone)).filter(Boolean);
+        return !!orderPhone && filterPhones.includes(orderPhone);
       });
     }
 
@@ -3345,22 +3347,24 @@ export default function Admin() {
     if (orderFilterDate) {
       temp = temp.filter(l => l.created_at.startsWith(orderFilterDate));
     }
+    const normalizePhone = (phone?: string | null) => {
+      if (!phone) return '';
+      const clean = phone.replace(/\D/g, '');
+      return clean.length >= 10 ? clean.slice(-10) : clean;
+    };
+
     if ((role === 'asesor' || role === 'mayorista') && loggedAsesorPhone) {
       temp = temp.filter(l => {
         if (!l.linea_whatsapp) return false;
-        const cleanLead = l.linea_whatsapp.replace(/\D/g, '');
-        const leadPhone = cleanLead.length === 12 && cleanLead.startsWith('57') ? cleanLead.substring(2) : cleanLead;
-        const advisorPhones = loggedAsesorPhone.split(',').map(phone => {
-          const clean = phone.replace(/\D/g, '');
-          return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
-        }).filter(Boolean);
+        const leadPhone = normalizePhone(l.linea_whatsapp);
+        const advisorPhones = loggedAsesorPhone.split(',').map(phone => normalizePhone(phone)).filter(Boolean);
         return advisorPhones.includes(leadPhone);
       });
     } else if (orderFilterAsesor !== 'todos') {
       temp = temp.filter(l => {
-        const leadPhone = l.linea_whatsapp?.replace(/\D/g, '');
-        const filterPhones = orderFilterAsesor.split(',').map(phone => phone.replace(/\D/g, '')).filter(Boolean);
-        return leadPhone && filterPhones.includes(leadPhone);
+        const leadPhone = normalizePhone(l.linea_whatsapp);
+        const filterPhones = orderFilterAsesor.split(',').map(phone => normalizePhone(phone)).filter(Boolean);
+        return !!leadPhone && filterPhones.includes(leadPhone);
       });
     }
     return temp;

@@ -163,7 +163,7 @@ export default function MenuDigital() {
 
 
     const params = new URLSearchParams(window.location.search);
-    const wsParam = params.get('ws');
+    const wsParam = params.get('ws') || params.get('asesor') || params.get('wa') || params.get('linea') || params.get('telefono');
     let phoneToQuery = '';
     if (wsParam) {
       if (wsParam === 'clear') {
