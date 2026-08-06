@@ -656,6 +656,15 @@ export default function Admin() {
               >
                 💳 Verificar Pago
               </button>
+            ) : (ped.metodo_pago === 'Contra Entrega' || (ped.metodo_pago && ped.metodo_pago.toLowerCase().includes('contra'))) ? (
+              <button 
+                type="button" 
+                className="btn-main-recover"
+                onClick={() => setSelectedPedido(ped)}
+                style={{ background: '#ea580c', color: 'white', border: 'none', fontWeight: 700 }}
+              >
+                🚚 Gestionar Despacho
+              </button>
             ) : (
               <button 
                 type="button" 
@@ -3310,17 +3319,24 @@ export default function Admin() {
   };
 
   const leadsFiltrados = useMemo(() => {
+    const normalizePhone = (phone?: string | null) => {
+      if (!phone) return '';
+      const clean = phone.replace(/\D/g, '');
+      return clean.length >= 10 ? clean.slice(-10) : clean;
+    };
+
     let temp = leads.filter(l => {
-      if (l.estado === 'completado') return false;
-      const cleanLeadPhone = (l.telefono || '').replace(/\D/g, '');
+      if (l.estado === 'completado' || l.estado === 'contra_entrega') return false;
+      const cleanLeadPhone = normalizePhone(l.telefono);
       if (!cleanLeadPhone) return true;
       
-      // Solo consideramos que tiene pedido si existe un pedido creado después del lead (o hasta 5 minutos antes para tolerar retrasos)
+      // Solo consideramos que tiene pedido si existe un pedido creado por el mismo teléfono
       const hasOrder = pedidos.some(p => {
-        if ((p.cliente_telefono || '').replace(/\D/g, '') !== cleanLeadPhone) return false;
+        const cleanOrderPhone = normalizePhone(p.cliente_telefono);
+        if (!cleanOrderPhone || cleanOrderPhone !== cleanLeadPhone) return false;
         const orderTime = new Date(p.created_at).getTime();
         const leadTime = new Date(l.created_at).getTime();
-        return orderTime >= leadTime - 5 * 60 * 1000;
+        return orderTime >= leadTime - 60 * 60 * 1000; // 1 hora de tolerancia
       });
       
       return !hasOrder;
@@ -3347,11 +3363,6 @@ export default function Admin() {
     if (orderFilterDate) {
       temp = temp.filter(l => l.created_at.startsWith(orderFilterDate));
     }
-    const normalizePhone = (phone?: string | null) => {
-      if (!phone) return '';
-      const clean = phone.replace(/\D/g, '');
-      return clean.length >= 10 ? clean.slice(-10) : clean;
-    };
 
     if ((role === 'asesor' || role === 'mayorista') && loggedAsesorPhone) {
       temp = temp.filter(l => {
@@ -3379,7 +3390,7 @@ export default function Admin() {
   }, [filteredPedidos]);
 
   const comprobarPagosFiltrados = useMemo(() => {
-    return filteredPedidos.filter(p => p.pantallazo_url && p.estado !== 'completado');
+    return filteredPedidos.filter(p => p.pantallazo_url && p.estado !== 'completado' && p.metodo_pago !== 'Contra Entrega' && !(p.metodo_pago && p.metodo_pago.toLowerCase().includes('contra')));
   }, [filteredPedidos]);
 
   const clientesFiltrados = useMemo(() => {
@@ -3401,40 +3412,49 @@ export default function Admin() {
           showToast('Pedido no encontrado para aprobación', 'error');
         }
       } else if (targetCol === 'contra_entrega') {
+        setPedidos(prev => prev.map(p => p.id === id ? { ...p, metodo_pago: 'Contra Entrega', estado: 'pendiente' } : p));
+        showToast('Pedido movido a Contra Entrega 🚚', 'success');
+
+        if (isLead) {
+          await supabase.from('leads').update({ estado: 'contra_entrega' }).eq('id', id);
+        }
         const { error } = await supabase.from('pedidos').update({ metodo_pago: 'Contra Entrega', estado: 'pendiente' }).eq('id', id);
-        if (!error) {
-          showToast('Pedido movido a Contra Entrega 🚚');
-          cargarDatos();
+        if (error) {
+          console.error(error);
+          showToast('Error al actualizar en BD: ' + error.message, 'error');
         }
+        cargarDatos();
       } else if (targetCol === 'comprobante') {
+        setPedidos(prev => prev.map(p => p.id === id ? { ...p, estado: 'pendiente' } : p));
+        showToast('Pedido movido a Comprobantes 📸', 'success');
+
         const { error } = await supabase.from('pedidos').update({ estado: 'pendiente' }).eq('id', id);
-        if (!error) {
-          showToast('Pedido movido a Comprobantes 📸');
-          cargarDatos();
-        }
+        if (error) console.error(error);
+        cargarDatos();
       } else if (targetCol === 'pendiente') {
+        setPedidos(prev => prev.map(p => p.id === id ? { ...p, estado: 'pendiente', metodo_pago: 'Pago Anticipado' } : p));
+        showToast('Pedido movido a Pendientes 🟡', 'success');
+
         const { error } = await supabase.from('pedidos').update({ estado: 'pendiente', metodo_pago: 'Pago Anticipado' }).eq('id', id);
-        if (!error) {
-          showToast('Pedido movido a Pendientes 🟡');
-          cargarDatos();
-        }
+        if (error) console.error(error);
+        cargarDatos();
       } else if (targetCol === 'abandonado') {
         if (isLead) {
+          setLeads(prev => prev.map(l => l.id === id ? { ...l, estado: 'abandonado' } : l));
+          showToast('Lead movido a No Interesados 🔴', 'success');
           const { error } = await supabase.from('leads').update({ estado: 'abandonado' }).eq('id', id);
-          if (!error) {
-            showToast('Lead movido a No Interesados 🔴');
-            cargarDatos();
-          }
+          if (error) console.error(error);
         } else {
+          setPedidos(prev => prev.map(p => p.id === id ? { ...p, estado: 'abandonado' } : p));
+          showToast('Pedido movido a No Interesados 🔴', 'success');
           const { error } = await supabase.from('pedidos').update({ estado: 'abandonado' }).eq('id', id);
-          if (!error) {
-            showToast('Pedido movido a No Interesados 🔴');
-            cargarDatos();
-          }
+          if (error) console.error(error);
         }
+        cargarDatos();
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error al arrastrar pedido:', err);
+      showToast('Error al mover tarjeta', 'error');
     }
   };
 
