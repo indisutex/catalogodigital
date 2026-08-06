@@ -811,7 +811,9 @@ export default function MenuDigital() {
     mensaje += `*Tipo de compra:* ${buyerLabel}\n`;
     mensaje += `*Método de pago:* ${modalidadPago === 'contra_entrega' ? '🚚 Contra Entrega' : '💳 Pago Anticipado'}\n`;
     if (modalidadPago === 'contra_entrega') {
-      mensaje += `📌 *Nota de pago:* Al momento de recibir cancelo el valor de las prendas + el valor del envío.\n`;
+      mensaje += `📌 *Nota de pago:* Al momento de recibir cancelas el valor de las prendas + el valor del envío.\n`;
+    } else {
+      mensaje += `📌 *Nota de pago:* Recuerda que al momento de recibir solo cancelas el valor del envío.\n`;
     }
     if (isBulkDiscountApplied) {
       mensaje += `🎁 *¡Descuento al Por Mayor Aplicado!* (Llevas 6 o más productos)\n`;
@@ -1537,8 +1539,8 @@ export default function MenuDigital() {
 
                   {modalidadPago === 'anticipado' && (
                     <div style={{ marginTop: '0.65rem', padding: '0.65rem 0.75rem', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px', color: '#166534', fontSize: '0.78rem', fontWeight: 600, display: 'flex', alignItems: 'flex-start', gap: '0.45rem', lineHeight: 1.35 }}>
-                      <span style={{ fontSize: '0.95rem', lineHeight: 1 }}>✅</span>
-                      <span>Realizas la transferencia previamente a las cuentas indicadas arriba.</span>
+                      <span style={{ fontSize: '0.95rem', lineHeight: 1 }}>ℹ️</span>
+                      <span>Recuerda que al momento de recibir solo cancelas el valor del envío.</span>
                     </div>
                   )}
                 </div>
