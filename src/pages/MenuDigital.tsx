@@ -568,6 +568,17 @@ export default function MenuDigital() {
         const tenant = getTenantId();
         const numeroWhatsApp = overrideWhatsApp || configuracion?.whatsapp || '573185637317';
         
+        const productosProcesados = items.map(item => {
+          const effectivePrice = getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
+          const isWholesale = effectiveCartBuyerType === 'mayorista' || isBulkDiscountApplied || buyerType === 'mayorista';
+          return {
+            ...item,
+            precio_detal: item.precio_detal || item.precio,
+            precio: effectivePrice,
+            precio_aplicado_mayor: isWholesale
+          };
+        });
+
         const currentLeadId = leadIdRef.current || leadId;
 
         if (currentLeadId) {
@@ -579,7 +590,7 @@ export default function MenuDigital() {
               ciudad: formData.ciudad,
               estado: 'abandonado',
               linea_whatsapp: numeroWhatsApp,
-              productos: items,
+              productos: productosProcesados,
               total: total
             })
             .eq('id', currentLeadId);
@@ -596,7 +607,7 @@ export default function MenuDigital() {
               tenant_id: tenant,
               estado: 'abandonado',
               linea_whatsapp: numeroWhatsApp,
-              productos: items,
+              productos: productosProcesados,
               total: total
             })
             .select('id')
@@ -816,13 +827,24 @@ export default function MenuDigital() {
     let orderId = '';
     // Guardar en la base de datos de pedidos
     try {
+      const productosProcesados = items.map(item => {
+        const effectivePrice = getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
+        const isWholesale = effectiveCartBuyerType === 'mayorista' || isBulkDiscountApplied || buyerType === 'mayorista';
+        return {
+          ...item,
+          precio_detal: item.precio_detal || item.precio,
+          precio: effectivePrice,
+          precio_aplicado_mayor: isWholesale
+        };
+      });
+
       const { data: newOrder, error: dbErr } = await supabase.from('pedidos').insert({
         cliente_nombre: formData.nombre,
         cliente_telefono: formData.telefono,
         direccion: formData.direccion,
         ciudad: formData.ciudad,
         total: total,
-        productos: items,
+        productos: productosProcesados,
         linea_whatsapp: numeroWhatsApp,
         tenant_id: getTenantId()
       }).select('id').single();

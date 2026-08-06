@@ -2,6 +2,8 @@ export interface Producto {
   id: string;
   nombre: string;
   precio: number;
+  precio_detal?: number;
+  precio_aplicado_mayor?: boolean;
   imagen_url: string;
   imagenes_extra?: string[];
   categoria: string;

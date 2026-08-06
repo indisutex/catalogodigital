@@ -3674,47 +3674,277 @@ export default function Admin() {
     }
   }
 
-  // --- PURGE PEDIDOS / CLIENTES ---
+  // --- PURGE PEDIDOS / CLIENTES / PRODUCTOS / CATEGORIAS / PQRS / LEADS ---
   const [showPurgeModal, setShowPurgeModal] = useState(false);
-  const [purgeTargets, setPurgeTargets] = useState<{ pedidos: boolean; clientes: boolean; leads: boolean }>({ pedidos: false, clientes: false, leads: false });
+  const [purgeTargets, setPurgeTargets] = useState<{
+    pedidos: boolean;
+    clientes: boolean;
+    leads: boolean;
+    productos: boolean;
+    categorias: boolean;
+    pqrs: boolean;
+  }>({
+    pedidos: false,
+    clientes: false,
+    leads: false,
+    productos: false,
+    categorias: false,
+    pqrs: false
+  });
   const [purgeEstado, setPurgeEstado] = useState<string>('todos');
   const [purgeDesde, setPurgeDesde] = useState('');
   const [purgeHasta, setPurgeHasta] = useState('');
   const [purgeConfirmText, setPurgeConfirmText] = useState('');
   const [purging, setPurging] = useState(false);
-  const [purgePreview, setPurgePreview] = useState<{ pedidos: number; clientes: number; leads: number } | null>(null);
+  const [purgeCardSearch, setPurgeCardSearch] = useState('');
+  const [purgePreview, setPurgePreview] = useState<{
+    pedidos: number;
+    clientes: number;
+    leads: number;
+    productos: number;
+    categorias: number;
+    pqrs: number;
+    items: Array<{
+      id: string;
+      tipo: 'pedidos' | 'clientes' | 'leads' | 'productos' | 'categorias' | 'pqrs';
+      titulo: string;
+      subtitulo?: string;
+      badge?: string;
+      badgeColor?: string;
+      fecha?: string;
+      monto?: number;
+      selected?: boolean;
+    }>;
+  } | null>(null);
+
+  function toggleCardSelection(id: string) {
+    if (!purgePreview) return;
+    setPurgePreview(prev => {
+      if (!prev) return null;
+      const newItems = prev.items.map(item =>
+        item.id === id ? { ...item, selected: item.selected === false ? true : false } : item
+      );
+      return { ...prev, items: newItems };
+    });
+  }
+
+  function toggleAllCardsSelection(selectAll: boolean) {
+    if (!purgePreview) return;
+    setPurgePreview(prev => {
+      if (!prev) return null;
+      const newItems = prev.items.map(item => ({ ...item, selected: selectAll }));
+      return { ...prev, items: newItems };
+    });
+  }
+
+  async function handleEliminarTarjetaEspecifica(itemToDelete: { id: string; tipo: string; titulo: string }) {
+    if (!window.confirm(`¿Estás seguro de eliminar esta tarjeta específica?\n\n"${itemToDelete.titulo}"`)) return;
+    try {
+      const tableMap: Record<string, string> = {
+        pedidos: 'pedidos',
+        clientes: 'clientes_exitosos',
+        leads: 'leads',
+        productos: 'productos',
+        categorias: 'categorias',
+        pqrs: 'pqrs'
+      };
+      const tableName = tableMap[itemToDelete.tipo];
+      if (!tableName) return;
+
+      const { error } = await supabase.from(tableName).delete().eq('id', itemToDelete.id);
+      if (error) throw error;
+
+      showToast(`Tarjeta eliminada con éxito ✓`);
+
+      if (itemToDelete.tipo === 'pedidos') setPedidos(prev => prev.filter(p => p.id !== itemToDelete.id));
+      if (itemToDelete.tipo === 'clientes') setClientes(prev => prev.filter(c => c.id !== itemToDelete.id));
+      if (itemToDelete.tipo === 'productos') setProductos(prev => prev.filter(pr => pr.id !== itemToDelete.id));
+      if (itemToDelete.tipo === 'categorias') setCategoriasData(prev => prev.filter(cat => cat.id !== itemToDelete.id));
+      if (itemToDelete.tipo === 'pqrs') setListaPqrs(prev => prev.filter(pq => pq.id !== itemToDelete.id));
+
+      setPurgePreview(prev => {
+        if (!prev) return null;
+        const newItems = prev.items.filter(item => item.id !== itemToDelete.id);
+        const tipoKey = itemToDelete.tipo as keyof typeof prev;
+        const currentCount = typeof prev[tipoKey] === 'number' ? (prev[tipoKey] as number) : 1;
+        return {
+          ...prev,
+          [tipoKey]: Math.max(0, currentCount - 1),
+          items: newItems
+        };
+      });
+    } catch (err: any) {
+      showToast('Error al eliminar la tarjeta: ' + err.message, 'error');
+    }
+  }
 
   async function calcularPurgePreview() {
     const tenant = getTenantId();
-    let pCount = 0, cCount = 0, lCount = 0;
+    let pCount = 0, cCount = 0, lCount = 0, prodCount = 0, catCount = 0, pqrsCount = 0;
+    const itemsPreview: Array<{
+      id: string;
+      tipo: 'pedidos' | 'clientes' | 'leads' | 'productos' | 'categorias' | 'pqrs';
+      titulo: string;
+      subtitulo?: string;
+      badge?: string;
+      badgeColor?: string;
+      fecha?: string;
+      monto?: number;
+      selected?: boolean;
+    }> = [];
+
     try {
       if (purgeTargets.pedidos) {
-        let q = supabase.from('pedidos').select('id', { count: 'exact', head: true }).eq('tenant_id', tenant);
+        let q = supabase.from('pedidos').select('*').eq('tenant_id', tenant);
         if (purgeEstado !== 'todos') q = q.eq('estado', purgeEstado);
         if (purgeDesde) q = q.gte('created_at', purgeDesde);
         if (purgeHasta) q = q.lte('created_at', purgeHasta + 'T23:59:59');
-        const { count } = await q;
-        pCount = count || 0;
-      }
-      if (purgeTargets.clientes) {
-        let q = supabase.from('clientes_exitosos').select('id', { count: 'exact', head: true }).eq('tenant_id', tenant);
-        if (purgeDesde) q = q.gte('created_at', purgeDesde);
-        if (purgeHasta) q = q.lte('created_at', purgeHasta + 'T23:59:59');
-        const { count } = await q;
-        cCount = count || 0;
-      }
-      if (purgeTargets.leads) {
-        let q = supabase.from('leads').select('id', { count: 'exact', head: true }).eq('tenant_id', tenant);
-        if (purgeEstado !== 'todos') {
-          const dbState = purgeEstado;
-          q = q.eq('estado', dbState);
+        q = q.order('created_at', { ascending: false });
+        const { data, count } = await q;
+        pCount = count || (data ? data.length : 0);
+        if (data) {
+          data.slice(0, 60).forEach((p: any) => {
+            const prodList = Array.isArray(p.productos) ? p.productos : [];
+            const cantTotal = prodList.reduce((acc: number, item: any) => acc + (Number(item.cantidad) || 1), 0);
+            itemsPreview.push({
+              id: p.id,
+              tipo: 'pedidos',
+              titulo: `📦 Pedido #${p.id.slice(0, 6).toUpperCase()} — ${p.cliente_nombre || 'Cliente Anónimo'}`,
+              subtitulo: `${p.cliente_telefono || 'Sin Teléfono'} • ${cantTotal} prenda(s)`,
+              badge: (p.estado || 'pendiente').toUpperCase(),
+              badgeColor: p.estado === 'completado' ? '#166534' : '#0369a1',
+              fecha: p.created_at,
+              monto: p.total,
+              selected: true
+            });
+          });
         }
+      }
+
+      if (purgeTargets.clientes) {
+        let q = supabase.from('clientes_exitosos').select('*').eq('tenant_id', tenant);
         if (purgeDesde) q = q.gte('created_at', purgeDesde);
         if (purgeHasta) q = q.lte('created_at', purgeHasta + 'T23:59:59');
-        const { count } = await q;
-        lCount = count || 0;
+        q = q.order('created_at', { ascending: false });
+        const { data, count } = await q;
+        cCount = count || (data ? data.length : 0);
+        if (data) {
+          data.slice(0, 60).forEach((c: any) => {
+            itemsPreview.push({
+              id: c.id,
+              tipo: 'clientes',
+              titulo: `👤 Cliente: ${c.nombre || 'Sin Nombre'}`,
+              subtitulo: `Tel: ${c.telefono || 'Sin Tel'} • ${c.numero_pedidos || 1} pedido(s)`,
+              badge: 'CLIENTE VERIFICADO',
+              badgeColor: '#16a34a',
+              fecha: c.created_at,
+              monto: c.total_compras,
+              selected: true
+            });
+          });
+        }
       }
-      setPurgePreview({ pedidos: pCount, clientes: cCount, leads: lCount });
+
+      if (purgeTargets.leads) {
+        let q = supabase.from('leads').select('*').eq('tenant_id', tenant);
+        if (purgeEstado !== 'todos') q = q.eq('estado', purgeEstado);
+        if (purgeDesde) q = q.gte('created_at', purgeDesde);
+        if (purgeHasta) q = q.lte('created_at', purgeHasta + 'T23:59:59');
+        q = q.order('created_at', { ascending: false });
+        const { data, count } = await q;
+        lCount = count || (data ? data.length : 0);
+        if (data) {
+          data.slice(0, 60).forEach((l: any) => {
+            itemsPreview.push({
+              id: l.id,
+              tipo: 'leads',
+              titulo: `🛒 Lead Abandonado: ${l.nombre || 'Borrador Anónimo'}`,
+              subtitulo: `Tel: ${l.telefono || 'Sin Teléfono'} • ${l.ciudad || ''}`,
+              badge: (l.estado || 'abandonado').toUpperCase(),
+              badgeColor: '#dc2626',
+              fecha: l.created_at,
+              monto: l.total,
+              selected: true
+            });
+          });
+        }
+      }
+
+      if (purgeTargets.productos) {
+        let q = supabase.from('productos').select('*').eq('tenant_id', tenant);
+        if (purgeDesde) q = q.gte('created_at', purgeDesde);
+        if (purgeHasta) q = q.lte('created_at', purgeHasta + 'T23:59:59');
+        q = q.order('created_at', { ascending: false });
+        const { data, count } = await q;
+        prodCount = count || (data ? data.length : 0);
+        if (data) {
+          data.slice(0, 60).forEach((pr: any) => {
+            itemsPreview.push({
+              id: pr.id,
+              tipo: 'productos',
+              titulo: `🏷️ Producto: ${pr.nombre}`,
+              subtitulo: `Categoría: ${pr.categoria || 'Sin cat'} • Ref: ${pr.referencia || 'N/A'}`,
+              badge: pr.oculto ? 'OCULTO' : 'VISIBLE',
+              badgeColor: pr.oculto ? '#94a3b8' : '#2563eb',
+              fecha: pr.created_at,
+              monto: pr.precio,
+              selected: true
+            });
+          });
+        }
+      }
+
+      if (purgeTargets.categorias) {
+        let q = supabase.from('categorias').select('*').eq('tenant_id', tenant);
+        const { data, count } = await q;
+        catCount = count || (data ? data.length : 0);
+        if (data) {
+          data.slice(0, 60).forEach((cat: any) => {
+            itemsPreview.push({
+              id: cat.id,
+              tipo: 'categorias',
+              titulo: `📁 Categoría: ${cat.nombre}`,
+              subtitulo: `Slug: ${cat.slug}`,
+              badge: 'CATEGORÍA',
+              badgeColor: '#7c3aed',
+              selected: true
+            });
+          });
+        }
+      }
+
+      if (purgeTargets.pqrs) {
+        let q = supabase.from('pqrs').select('*').or(`tenant_id.eq.${tenant},tenant_id.eq.${tenant.replace(/_/g, '-')},tenant_id.eq.${tenant.replace(/-/g, '_')},tenant_id.is.null`);
+        if (purgeDesde) q = q.gte('created_at', purgeDesde);
+        if (purgeHasta) q = q.lte('created_at', purgeHasta + 'T23:59:59');
+        q = q.order('created_at', { ascending: false });
+        const { data, count } = await q;
+        pqrsCount = count || (data ? data.length : 0);
+        if (data) {
+          data.slice(0, 60).forEach((pq: any) => {
+            itemsPreview.push({
+              id: pq.id,
+              tipo: 'pqrs',
+              titulo: `💬 PQRS: ${pq.nombre || 'Cliente'} — ${pq.motivo || 'General'}`,
+              subtitulo: `Tel: ${pq.telefono || 'Sin Tel'} • ${pq.mensaje ? pq.mensaje.slice(0, 40) + '...' : ''}`,
+              badge: (pq.estado || 'pendiente').toUpperCase(),
+              badgeColor: pq.estado === 'resuelto' ? '#166534' : '#d97706',
+              fecha: pq.created_at,
+              selected: true
+            });
+          });
+        }
+      }
+
+      setPurgePreview({
+        pedidos: pCount,
+        clientes: cCount,
+        leads: lCount,
+        productos: prodCount,
+        categorias: catCount,
+        pqrs: pqrsCount,
+        items: itemsPreview
+      });
     } catch (err: any) {
       showToast('Error calculando preview: ' + err.message, 'error');
     }
@@ -3725,8 +3955,9 @@ export default function Admin() {
       showToast('Escribe PURGAR exactamente para confirmar', 'error');
       return;
     }
-    if (!purgeTargets.pedidos && !purgeTargets.clientes && !purgeTargets.leads) {
-      showToast('Selecciona al menos una tabla a limpiar', 'error');
+    const anyTargetSelected = Object.values(purgeTargets).some(Boolean);
+    if (!anyTargetSelected) {
+      showToast('Selecciona al menos un tipo de registro a limpiar', 'error');
       return;
     }
     try {
@@ -3734,44 +3965,105 @@ export default function Admin() {
       const tenant = getTenantId();
       let totalEliminados = 0;
 
-      if (purgeTargets.pedidos) {
-        let q = supabase.from('pedidos').delete({ count: 'exact' }).eq('tenant_id', tenant);
-        if (purgeEstado !== 'todos') q = q.eq('estado', purgeEstado);
-        if (purgeDesde) q = q.gte('created_at', purgeDesde);
-        if (purgeHasta) q = q.lte('created_at', purgeHasta + 'T23:59:59');
-        const { error, count } = await q;
-        if (error) throw error;
-        totalEliminados += count || 0;
-        setPedidos(prev => {
-          let filtered = prev;
-          if (purgeEstado !== 'todos') filtered = filtered.filter(p => p.estado !== purgeEstado);
-          if (purgeDesde) filtered = filtered.filter(p => p.created_at >= purgeDesde);
-          if (purgeHasta) filtered = filtered.filter(p => p.created_at <= purgeHasta + 'T23:59:59');
-          return filtered;
-        });
-      }
-
-      if (purgeTargets.clientes) {
-        let q = supabase.from('clientes_exitosos').delete({ count: 'exact' }).eq('tenant_id', tenant);
-        if (purgeDesde) q = q.gte('created_at', purgeDesde);
-        if (purgeHasta) q = q.lte('created_at', purgeHasta + 'T23:59:59');
-        const { error, count } = await q;
-        if (error) throw error;
-        totalEliminados += count || 0;
-        setClientes([]);
-      }
-
-      if (purgeTargets.leads) {
-        let q = supabase.from('leads').delete({ count: 'exact' }).eq('tenant_id', tenant);
-        if (purgeEstado !== 'todos') {
-          const dbState = purgeEstado;
-          q = q.eq('estado', dbState);
+      // If purgePreview has specific items selected
+      if (purgePreview?.items && purgePreview.items.length > 0) {
+        const selectedCards = purgePreview.items.filter(i => i.selected !== false);
+        if (selectedCards.length === 0) {
+          showToast('No hay tarjetas seleccionadas para eliminar', 'error');
+          setPurging(false);
+          return;
         }
-        if (purgeDesde) q = q.gte('created_at', purgeDesde);
-        if (purgeHasta) q = q.lte('created_at', purgeHasta + 'T23:59:59');
-        const { error, count } = await q;
-        if (error) throw error;
-        totalEliminados += count || 0;
+
+        const tableMap: Record<string, string> = {
+          pedidos: 'pedidos',
+          clientes: 'clientes_exitosos',
+          leads: 'leads',
+          productos: 'productos',
+          categorias: 'categorias',
+          pqrs: 'pqrs'
+        };
+
+        for (const tType of ['pedidos', 'clientes', 'leads', 'productos', 'categorias', 'pqrs'] as const) {
+          const idsToDel = selectedCards.filter(i => i.tipo === tType).map(i => i.id);
+          if (idsToDel.length > 0) {
+            const tableName = tableMap[tType];
+            const { error, count } = await supabase.from(tableName).delete({ count: 'exact' }).in('id', idsToDel);
+            if (error) throw error;
+            totalEliminados += count || idsToDel.length;
+
+            if (tType === 'pedidos') setPedidos(prev => prev.filter(p => !idsToDel.includes(p.id)));
+            if (tType === 'clientes') setClientes(prev => prev.filter(c => !idsToDel.includes(c.id)));
+            if (tType === 'productos') setProductos(prev => prev.filter(pr => !idsToDel.includes(pr.id)));
+            if (tType === 'categorias') setCategoriasData(prev => prev.filter(cat => !idsToDel.includes(cat.id)));
+            if (tType === 'pqrs') setListaPqrs(prev => prev.filter(pq => !idsToDel.includes(pq.id)));
+          }
+        }
+      } else {
+        // Bulk delete by target tables when preview wasn't generated
+        if (purgeTargets.pedidos) {
+          let q = supabase.from('pedidos').delete({ count: 'exact' }).eq('tenant_id', tenant);
+          if (purgeEstado !== 'todos') q = q.eq('estado', purgeEstado);
+          if (purgeDesde) q = q.gte('created_at', purgeDesde);
+          if (purgeHasta) q = q.lte('created_at', purgeHasta + 'T23:59:59');
+          const { error, count } = await q;
+          if (error) throw error;
+          totalEliminados += count || 0;
+          setPedidos(prev => {
+            let filtered = prev;
+            if (purgeEstado !== 'todos') filtered = filtered.filter(p => p.estado !== purgeEstado);
+            if (purgeDesde) filtered = filtered.filter(p => p.created_at >= purgeDesde);
+            if (purgeHasta) filtered = filtered.filter(p => p.created_at <= purgeHasta + 'T23:59:59');
+            return filtered;
+          });
+        }
+
+        if (purgeTargets.clientes) {
+          let q = supabase.from('clientes_exitosos').delete({ count: 'exact' }).eq('tenant_id', tenant);
+          if (purgeDesde) q = q.gte('created_at', purgeDesde);
+          if (purgeHasta) q = q.lte('created_at', purgeHasta + 'T23:59:59');
+          const { error, count } = await q;
+          if (error) throw error;
+          totalEliminados += count || 0;
+          setClientes([]);
+        }
+
+        if (purgeTargets.leads) {
+          let q = supabase.from('leads').delete({ count: 'exact' }).eq('tenant_id', tenant);
+          if (purgeEstado !== 'todos') q = q.eq('estado', purgeEstado);
+          if (purgeDesde) q = q.gte('created_at', purgeDesde);
+          if (purgeHasta) q = q.lte('created_at', purgeHasta + 'T23:59:59');
+          const { error, count } = await q;
+          if (error) throw error;
+          totalEliminados += count || 0;
+        }
+
+        if (purgeTargets.productos) {
+          let q = supabase.from('productos').delete({ count: 'exact' }).eq('tenant_id', tenant);
+          if (purgeDesde) q = q.gte('created_at', purgeDesde);
+          if (purgeHasta) q = q.lte('created_at', purgeHasta + 'T23:59:59');
+          const { error, count } = await q;
+          if (error) throw error;
+          totalEliminados += count || 0;
+          setProductos([]);
+        }
+
+        if (purgeTargets.categorias) {
+          let q = supabase.from('categorias').delete({ count: 'exact' }).eq('tenant_id', tenant);
+          const { error, count } = await q;
+          if (error) throw error;
+          totalEliminados += count || 0;
+          setCategoriasData([]);
+        }
+
+        if (purgeTargets.pqrs) {
+          let q = supabase.from('pqrs').delete({ count: 'exact' }).or(`tenant_id.eq.${tenant},tenant_id.eq.${tenant.replace(/_/g, '-')},tenant_id.eq.${tenant.replace(/-/g, '_')},tenant_id.is.null`);
+          if (purgeDesde) q = q.gte('created_at', purgeDesde);
+          if (purgeHasta) q = q.lte('created_at', purgeHasta + 'T23:59:59');
+          const { error, count } = await q;
+          if (error) throw error;
+          totalEliminados += count || 0;
+          setListaPqrs([]);
+        }
       }
 
       showToast(`✅ Purge completado — ${totalEliminados} registros eliminados`);
@@ -8353,7 +8645,7 @@ export default function Admin() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => { setPurgeTargets({ pedidos: false, clientes: false, leads: false }); setPurgeConfirmText(''); setShowPurgeModal(true); }}
+                      onClick={() => { setPurgeTargets({ pedidos: false, clientes: false, leads: false, productos: false, categorias: false, pqrs: false }); setPurgeConfirmText(''); setPurgePreview(null); setShowPurgeModal(true); }}
                       style={{ padding: '0.65rem 1.4rem', background: '#ef4444', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', whiteSpace: 'nowrap' }}
                     >
                       🧹 Purgar Registros
@@ -12301,20 +12593,48 @@ export default function Admin() {
 
                 <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
                   <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.95rem' }}>Productos Solicitados</h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '130px', overflowY: 'auto', paddingRight: '0.5rem' }}>
-                    {Array.isArray(selectedPedido.productos) && selectedPedido.productos.map((prod: any, idx: number) => (
-                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
-                        <div>
-                          <h5 style={{ margin: 0, color: '#0f172a' }}>{prod.nombre}</h5>
-                          <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                            Cantidad: {prod.cantidad} {prod.talla ? ` | Talla: ${prod.talla}` : ''} {prod.estampado ? ` | Estampado: ${prod.estampado}` : ''}
-                          </span>
-                        </div>
-                        <span style={{ fontWeight: 700, color: '#0f172a' }}>
-                          ${(prod.precio * prod.cantidad).toLocaleString()}
-                        </span>
-                      </div>
-                    ))}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '160px', overflowY: 'auto', paddingRight: '0.5rem' }}>
+                    {(() => {
+                      const prodsList = Array.isArray(selectedPedido.productos) ? selectedPedido.productos : [];
+                      const totalUnitsInOrder = prodsList.reduce((sum: number, p: any) => sum + (Number(p.cantidad) || 1), 0);
+                      const isWholesaleOrder = totalUnitsInOrder >= 6 || (selectedPedido as any).descuento_mayor_aplicado || prodsList.some((p: any) => p.precio_aplicado_mayor);
+
+                      return prodsList.map((prod: any, idx: number) => {
+                        const cant = Number(prod.cantidad) || 1;
+                        let unitPrice = Number(prod.precio) || 0;
+                        
+                        if (isWholesaleOrder) {
+                          if (prod.precio_aplicado_mayor) {
+                            unitPrice = Number(prod.precio) || 0;
+                          } else if (prod.precio_por_mayor && Number(prod.precio_por_mayor) > 0 && Number(prod.precio_por_mayor) < unitPrice) {
+                            unitPrice = Number(prod.precio_por_mayor);
+                          }
+                        }
+
+                        const lineTotal = unitPrice * cant;
+
+                        return (
+                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #f1f5f9' }}>
+                            <div>
+                              <h5 style={{ margin: 0, color: '#0f172a' }}>{prod.nombre}</h5>
+                              <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                                Cantidad: {prod.cantidad} {prod.talla ? ` | Talla: ${prod.talla}` : ''} {prod.estampado ? ` | Estampado: ${prod.estampado}` : ''}
+                              </span>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <span style={{ fontWeight: 700, color: '#0f172a', display: 'block' }}>
+                                ${lineTotal.toLocaleString('es-CO')}
+                              </span>
+                              {isWholesaleOrder && (
+                                <span style={{ fontSize: '0.68rem', color: '#166534', background: '#dcfce7', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 700, display: 'inline-block', marginTop: '0.2rem' }}>
+                                  Valor aplicado por mayor
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
 
@@ -12605,6 +12925,32 @@ export default function Admin() {
                 </div>
               </div>
 
+              {/* Sección 2: Vaciar Catálogo Completo */}
+              <div style={{ background: '#fef2f2', padding: '1.5rem', borderRadius: '12px', border: '1px solid #fee2e2' }}>
+                <h4 style={{ margin: '0 0 0.5rem 0', color: '#991b1b', fontWeight: 800, textAlign: 'left' }}>💥 Vaciar Catálogo Completo</h4>
+                <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: '#991b1b', textAlign: 'left' }}>
+                  Atención: Esta acción eliminará <strong>TODOS</strong> los productos de tu catálogo ({productos.length} productos) de forma permanente.
+                </p>
+
+                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <input 
+                    type="text" 
+                    placeholder="Escribe ELIMINAR TODO" 
+                    value={wipeConfirmText}
+                    onChange={e => setWipeConfirmText(e.target.value)}
+                    style={{ flex: 1, padding: '0.55rem 0.8rem', borderRadius: '8px', border: '1px solid #fca5a5', fontSize: '0.85rem', outline: 'none', minWidth: '200px' }}
+                  />
+                  <button 
+                    className="btn-danger" 
+                    disabled={wipeConfirmText !== 'ELIMINAR TODO' || wipingCatalog}
+                    onClick={handleVaciarCatalogo}
+                    style={{ padding: '0.55rem 1rem', fontSize: '0.85rem', background: '#dc2626', color: 'white', border: 'none', borderRadius: '8px', cursor: (wipeConfirmText !== 'ELIMINAR TODO' || wipingCatalog) ? 'not-allowed' : 'pointer', fontWeight: 700, opacity: (wipeConfirmText !== 'ELIMINAR TODO' || wipingCatalog) ? 0.5 : 1 }}
+                  >
+                    {wipingCatalog ? 'Vaciando...' : '💥 Vaciar Catálogo'}
+                  </button>
+                </div>
+              </div>
+
               {/* Sección 3: Eliminar por Fecha de Creación */}
               <div style={{ background: '#fffbeb', padding: '1.5rem', borderRadius: '12px', border: '1px solid #fef3c7' }}>
                 <h4 style={{ margin: '0 0 0.5rem 0', color: '#b45309', fontWeight: 800, textAlign: 'left' }}>📅 Eliminar Productos por Fecha de Creación</h4>
@@ -12617,47 +12963,18 @@ export default function Admin() {
                     type="date" 
                     value={deleteDate}
                     onChange={e => setDeleteDate(e.target.value)}
-                    style={{ padding: '0.65rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', background: 'white' }}
-                  />
-                  <button 
-                    className="btn-danger"
-                    disabled={!deleteDate || loading}
-                    onClick={handleEliminarPorFecha}
-                    style={{ padding: '0.65rem 1.25rem', fontSize: '0.85rem', fontWeight: 700, borderRadius: '8px', cursor: 'pointer', background: '#d97706', border: 'none', color: 'white', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                  >
-                    🗑️ Eliminar Productos de esta Fecha
-                  </button>
-                </div>
-              </div>
-
-              {/* Sección 2: Vaciar Catálogo */}
-              <div style={{ background: '#fef2f2', padding: '1.5rem', borderRadius: '12px', border: '1px solid #fee2e2' }}>
-                <h4 style={{ margin: '0 0 0.5rem 0', color: '#991b1b', fontWeight: 800 }}>🚨 Acción Crítica: Vaciar Catálogo</h4>
-                <p style={{ margin: '0 0 1rem 0', fontSize: '0.85rem', color: '#991b1b' }}>
-                  Esta acción eliminará <strong>todos los {productos.length} productos</strong> de tu catálogo digital de forma permanente de Supabase. Esto NO afectará tus productos en Siigo Nube.
-                </p>
-
-                <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <input 
-                    type="text" 
-                    placeholder="Escribe ELIMINAR TODO para confirmar" 
-                    value={wipeConfirmText}
-                    onChange={e => setWipeConfirmText(e.target.value)}
-                    style={{ flex: 1, padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #fca5a5', outline: 'none', fontSize: '0.85rem' }}
+                    style={{ padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none' }}
                   />
                   <button
-                    className="btn-primary"
-                    disabled={wipingCatalog || wipeConfirmText !== 'ELIMINAR TODO'}
-                    style={{ padding: '0.6rem 1.2rem', background: '#dc2626', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem' }}
-                    onClick={handleVaciarCatalogo}
+                    className="btn-danger"
+                    onClick={handleEliminarPorFecha}
+                    disabled={!deleteDate}
+                    style={{ padding: '0.5rem 1rem', fontSize: '0.85rem', background: '#dc2626', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700 }}
                   >
-                    {wipingCatalog ? 'Vaciando...' : '⚠️ Vaciar Todo'}
+                    Eliminar productos de esta fecha
                   </button>
                 </div>
               </div>
-
-
-
             </div>
           </div>
         </div>
@@ -12666,34 +12983,37 @@ export default function Admin() {
       {/* ── MODAL PURGE ── */}
       {showPurgeModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-          <div style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '520px', padding: '2rem', boxShadow: '0 25px 50px rgba(0,0,0,0.25)', display: 'flex', flexDirection: 'column', gap: '1.25rem', maxHeight: '90vh', overflowY: 'auto' }}>
+          <div style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '720px', padding: '2rem', boxShadow: '0 25px 50px rgba(0,0,0,0.25)', display: 'flex', flexDirection: 'column', gap: '1.25rem', maxHeight: '90vh', overflowY: 'auto' }}>
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
               <div>
-                <h3 style={{ margin: 0, fontWeight: 800, color: '#0f172a', fontSize: '1.15rem' }}>🧹 Purgar Registros</h3>
-                <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.82rem' }}>Selecciona qué eliminar y aplica filtros opcionales</p>
+                <h3 style={{ margin: 0, fontWeight: 800, color: '#0f172a', fontSize: '1.2rem' }}>🧹 Purgar Registros y Tarjetas</h3>
+                <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.82rem' }}>Selecciona los datos o tarjetas a eliminar y visualiza la vista previa</p>
               </div>
-              <button onClick={() => setShowPurgeModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', fontSize: '1.4rem', lineHeight: 1 }}>×</button>
+              <button onClick={() => setShowPurgeModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', fontSize: '1.5rem', lineHeight: 1 }}>×</button>
             </div>
 
             {/* Paso 1: Qué purgar */}
             <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
-              <p style={{ margin: '0 0 0.75rem 0', fontWeight: 700, fontSize: '0.85rem', color: '#374151' }}>1️⃣ ¿Qué deseas purgar?</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              <p style={{ margin: '0 0 0.75rem 0', fontWeight: 700, fontSize: '0.85rem', color: '#374151' }}>1️⃣ ¿Qué datos o tarjetas deseas purgar?</p>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.6rem' }}>
                 {([
                   { key: 'pedidos', label: '📦 Pedidos', count: pedidos.length },
                   { key: 'clientes', label: '👤 Clientes', count: clientes.length },
-                  { key: 'leads', label: '🛒 Leads / Carritos Abandonados', count: leads.length },
-                ] as { key: 'pedidos' | 'clientes' | 'leads'; label: string; count: number }[]).map(({ key, label, count }) => (
-                  <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', padding: '0.65rem 0.9rem', borderRadius: '8px', border: `2px solid ${purgeTargets[key] ? '#ea580c' : '#e2e8f0'}`, background: purgeTargets[key] ? '#fff7ed' : 'white', transition: 'all 0.15s' }}>
+                  { key: 'leads', label: '🛒 Leads / Carritos', count: leads.length },
+                  { key: 'productos', label: '🏷️ Productos / Catálogo', count: productos.length },
+                  { key: 'categorias', label: '📁 Categorías', count: categoriasData.length },
+                  { key: 'pqrs', label: '💬 PQRS / Mensajes', count: listaPqrs.length }
+                ] as { key: keyof typeof purgeTargets; label: string; count: number }[]).map(({ key, label, count }) => (
+                  <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: 'pointer', padding: '0.6rem 0.8rem', borderRadius: '8px', border: `2px solid ${purgeTargets[key] ? '#ea580c' : '#e2e8f0'}`, background: purgeTargets[key] ? '#fff7ed' : 'white', transition: 'all 0.15s' }}>
                     <input
                       type="checkbox"
                       checked={purgeTargets[key]}
                       onChange={e => { setPurgeTargets(prev => ({ ...prev, [key]: e.target.checked })); setPurgePreview(null); }}
                       style={{ width: '16px', height: '16px', accentColor: '#ea580c' }}
                     />
-                    <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#0f172a' }}>{label}</span>
-                    <span style={{ marginLeft: 'auto', fontSize: '0.78rem', color: '#64748b', background: '#f1f5f9', padding: '0.1rem 0.5rem', borderRadius: '9999px' }}>{count} registros</span>
+                    <span style={{ fontWeight: 600, fontSize: '0.83rem', color: '#0f172a' }}>{label}</span>
+                    <span style={{ marginLeft: 'auto', fontSize: '0.74rem', color: '#64748b', background: '#f1f5f9', padding: '0.1rem 0.45rem', borderRadius: '9999px', fontWeight: 700 }}>{count}</span>
                   </label>
                 ))}
               </div>
@@ -12704,7 +13024,7 @@ export default function Admin() {
               <p style={{ margin: '0 0 0.75rem 0', fontWeight: 700, fontSize: '0.85rem', color: '#374151' }}>2️⃣ Filtros opcionales (dejar vacío = todos)</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 <div>
-                  <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.3rem' }}>Estado</label>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 600, color: '#475569', display: 'block', marginBottom: '0.3rem' }}>Estado (para Pedidos y Leads)</label>
                   <select
                     value={purgeEstado}
                     onChange={e => { setPurgeEstado(e.target.value); setPurgePreview(null); }}
@@ -12732,24 +13052,136 @@ export default function Admin() {
                 </div>
                 <button
                   onClick={calcularPurgePreview}
-                  disabled={!purgeTargets.pedidos && !purgeTargets.clientes && !purgeTargets.leads}
-                  style={{ padding: '0.6rem 1rem', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '0.83rem', opacity: (!purgeTargets.pedidos && !purgeTargets.clientes && !purgeTargets.leads) ? 0.5 : 1 }}
+                  disabled={!Object.values(purgeTargets).some(Boolean)}
+                  style={{ padding: '0.65rem 1rem', background: '#0ea5e9', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', opacity: (!Object.values(purgeTargets).some(Boolean)) ? 0.5 : 1 }}
                 >
-                  🔍 Previsualizar cuántos se eliminarán
+                  🔍 Previsualizar Tarjetas y Registros a Purgar
                 </button>
               </div>
             </div>
 
-            {/* Preview */}
-            {purgePreview && (
-              <div style={{ background: '#fef9c3', borderRadius: '12px', padding: '1rem 1.25rem', border: '1px solid #fde047', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                <p style={{ margin: 0, fontWeight: 700, fontSize: '0.85rem', color: '#713f12' }}>⚠️ Se eliminarán:</p>
-                {purgeTargets.pedidos && <p style={{ margin: 0, fontSize: '0.83rem', color: '#92400e' }}>• <strong>{purgePreview.pedidos}</strong> pedidos</p>}
-                {purgeTargets.clientes && <p style={{ margin: 0, fontSize: '0.83rem', color: '#92400e' }}>• <strong>{purgePreview.clientes}</strong> clientes</p>}
-                {purgeTargets.leads && <p style={{ margin: 0, fontSize: '0.83rem', color: '#92400e' }}>• <strong>{purgePreview.leads}</strong> leads</p>}
-                <p style={{ margin: '0.25rem 0 0 0', fontSize: '0.8rem', color: '#b45309' }}>Total: <strong>{purgePreview.pedidos + purgePreview.clientes + purgePreview.leads}</strong> registros — Esta acción es <strong>irreversible</strong>.</p>
-              </div>
-            )}
+            {/* Vista Previa de Tarjetas a Purgar */}
+            {purgePreview && (() => {
+              const totalRegs = purgePreview.pedidos + purgePreview.clientes + purgePreview.leads + purgePreview.productos + purgePreview.categorias + purgePreview.pqrs;
+              const allItems = purgePreview.items || [];
+              const selectedCount = allItems.filter(i => i.selected !== false).length;
+              const filteredCards = allItems.filter(item => {
+                if (!purgeCardSearch.trim()) return true;
+                const q = purgeCardSearch.toLowerCase();
+                return item.titulo.toLowerCase().includes(q) || (item.subtitulo && item.subtitulo.toLowerCase().includes(q));
+              });
+
+              return (
+                <div style={{ background: '#fef9c3', borderRadius: '12px', padding: '1.25rem', border: '1px solid #fde047', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <p style={{ margin: 0, fontWeight: 800, fontSize: '0.9rem', color: '#713f12' }}>
+                      ⚠️ {selectedCount} de {totalRegs} tarjeta(s) seleccionada(s) para purgar:
+                    </p>
+                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                      <button
+                        onClick={() => toggleAllCardsSelection(true)}
+                        style={{ background: 'white', border: '1px solid #fde047', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700, padding: '0.2rem 0.5rem', cursor: 'pointer', color: '#854d0e' }}
+                      >
+                        ☑️ Seleccionar todas
+                      </button>
+                      <button
+                        onClick={() => toggleAllCardsSelection(false)}
+                        style={{ background: 'white', border: '1px solid #fde047', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700, padding: '0.2rem 0.5rem', cursor: 'pointer', color: '#854d0e' }}
+                      >
+                        ☐ Desmarcar todas
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Detalle por tipos */}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', fontSize: '0.78rem' }}>
+                    {purgeTargets.pedidos && <span style={{ background: 'white', padding: '0.15rem 0.5rem', borderRadius: '4px', border: '1px solid #fef08a' }}>📦 Pedidos: <strong>{purgePreview.pedidos}</strong></span>}
+                    {purgeTargets.clientes && <span style={{ background: 'white', padding: '0.15rem 0.5rem', borderRadius: '4px', border: '1px solid #fef08a' }}>👤 Clientes: <strong>{purgePreview.clientes}</strong></span>}
+                    {purgeTargets.leads && <span style={{ background: 'white', padding: '0.15rem 0.5rem', borderRadius: '4px', border: '1px solid #fef08a' }}>🛒 Leads: <strong>{purgePreview.leads}</strong></span>}
+                    {purgeTargets.productos && <span style={{ background: 'white', padding: '0.15rem 0.5rem', borderRadius: '4px', border: '1px solid #fef08a' }}>🏷️ Productos: <strong>{purgePreview.productos}</strong></span>}
+                    {purgeTargets.categorias && <span style={{ background: 'white', padding: '0.15rem 0.5rem', borderRadius: '4px', border: '1px solid #fef08a' }}>📁 Categorías: <strong>{purgePreview.categorias}</strong></span>}
+                    {purgeTargets.pqrs && <span style={{ background: 'white', padding: '0.15rem 0.5rem', borderRadius: '4px', border: '1px solid #fef08a' }}>💬 PQRS: <strong>{purgePreview.pqrs}</strong></span>}
+                  </div>
+
+                  {/* Listado / Vista Previa de Tarjetas */}
+                  {allItems.length > 0 && (
+                    <div style={{ borderTop: '1px solid #fde047', paddingTop: '0.75rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                        <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#854d0e' }}>
+                          🎴 Selecciona o elimina las tarjetas específicas:
+                        </span>
+                        <input
+                          type="text"
+                          placeholder="Buscar tarjeta..."
+                          value={purgeCardSearch}
+                          onChange={e => setPurgeCardSearch(e.target.value)}
+                          style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem', borderRadius: '6px', border: '1px solid #fde047', outline: 'none', width: '150px' }}
+                        />
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', maxHeight: '250px', overflowY: 'auto', paddingRight: '0.3rem' }}>
+                        {filteredCards.map((item) => (
+                          <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: item.selected !== false ? '#ffffff' : '#fefce8', padding: '0.55rem 0.75rem', borderRadius: '8px', border: `1.5px solid ${item.selected !== false ? '#ea580c' : '#fef08a'}`, opacity: item.selected !== false ? 1 : 0.65, transition: 'all 0.15s' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flex: 1, minWidth: 0, paddingRight: '0.5rem' }}>
+                              <input
+                                type="checkbox"
+                                checked={item.selected !== false}
+                                onChange={() => toggleCardSelection(item.id)}
+                                style={{ width: '17px', height: '17px', accentColor: '#ea580c', cursor: 'pointer' }}
+                                title="Seleccionar esta tarjeta para purgar"
+                              />
+                              <div style={{ minWidth: 0, flex: 1 }}>
+                                <h5 style={{ margin: 0, fontSize: '0.83rem', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {item.titulo}
+                                </h5>
+                                {item.subtitulo && (
+                                  <p style={{ margin: '0.1rem 0 0 0', fontSize: '0.75rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {item.subtitulo}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.15rem' }}>
+                                {item.monto !== undefined && (
+                                  <span style={{ fontWeight: 800, fontSize: '0.83rem', color: '#0f172a' }}>
+                                    ${item.monto.toLocaleString('es-CO')}
+                                  </span>
+                                )}
+                                <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
+                                  {item.badge && (
+                                    <span style={{ fontSize: '0.62rem', background: item.badgeColor ? `${item.badgeColor}15` : '#f1f5f9', color: item.badgeColor || '#475569', border: `1px solid ${item.badgeColor || '#cbd5e1'}`, padding: '0.05rem 0.35rem', borderRadius: '4px', fontWeight: 800 }}>
+                                      {item.badge}
+                                    </span>
+                                  )}
+                                  {item.fecha && (
+                                    <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>
+                                      {new Date(item.fecha).toLocaleDateString('es-CO')}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleEliminarTarjetaEspecifica(item); }}
+                                title="Eliminar únicamente esta tarjeta"
+                                style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', padding: '0.3rem 0.6rem', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700, whiteSpace: 'nowrap' }}
+                              >
+                                🗑️ Eliminar
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        {filteredCards.length === 0 && (
+                          <p style={{ margin: 0, textAlign: 'center', fontSize: '0.78rem', color: '#854d0e', padding: '0.5rem' }}>No se encontraron tarjetas con ese filtro.</p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Paso 3: Confirmar */}
             <div style={{ background: '#fef2f2', borderRadius: '12px', padding: '1.25rem', border: '1px solid #fee2e2' }}>
@@ -12764,8 +13196,8 @@ export default function Admin() {
                 />
                 <button
                   onClick={handlePurge}
-                  disabled={purging || purgeConfirmText !== 'PURGAR' || (!purgeTargets.pedidos && !purgeTargets.clientes && !purgeTargets.leads)}
-                  style={{ padding: '0.6rem 1.3rem', background: purging ? '#94a3b8' : '#dc2626', color: 'white', border: 'none', borderRadius: '8px', cursor: purging ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '0.85rem', opacity: (purgeConfirmText !== 'PURGAR' || (!purgeTargets.pedidos && !purgeTargets.clientes && !purgeTargets.leads)) ? 0.5 : 1 }}
+                  disabled={purging || purgeConfirmText !== 'PURGAR' || !Object.values(purgeTargets).some(Boolean)}
+                  style={{ padding: '0.6rem 1.3rem', background: purging ? '#94a3b8' : '#dc2626', color: 'white', border: 'none', borderRadius: '8px', cursor: purging ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: '0.85rem', opacity: (purgeConfirmText !== 'PURGAR' || !Object.values(purgeTargets).some(Boolean)) ? 0.5 : 1 }}
                 >
                   {purging ? '⏳ Purgando...' : '🗑️ Ejecutar Purge'}
                 </button>

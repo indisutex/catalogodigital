@@ -1511,20 +1511,48 @@ export default function SuperAdmin() {
 
                 <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
                   <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>Productos Solicitados</h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '130px', overflowY: 'auto' }}>
-                    {Array.isArray(selectedPedido.productos) && selectedPedido.productos.map((prod: any, idx: number) => (
-                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '0.5rem 0.75rem', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                        <div>
-                          <h5 style={{ margin: 0, color: '#0f172a', fontWeight: 600 }}>{prod.nombre}</h5>
-                          <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                            Cantidad: {prod.cantidad} {prod.talla ? ` | Talla: ${prod.talla}` : ''}
-                          </span>
-                        </div>
-                        <span style={{ fontWeight: 700, color: '#0f172a' }}>
-                          ${(prod.precio * prod.cantidad).toLocaleString()}
-                        </span>
-                      </div>
-                    ))}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '160px', overflowY: 'auto' }}>
+                    {(() => {
+                      const prodsList = Array.isArray(selectedPedido.productos) ? selectedPedido.productos : [];
+                      const totalUnitsInOrder = prodsList.reduce((sum: number, p: any) => sum + (Number(p.cantidad) || 1), 0);
+                      const isWholesaleOrder = totalUnitsInOrder >= 6 || (selectedPedido as any).descuento_mayor_aplicado || prodsList.some((p: any) => p.precio_aplicado_mayor);
+
+                      return prodsList.map((prod: any, idx: number) => {
+                        const cant = Number(prod.cantidad) || 1;
+                        let unitPrice = Number(prod.precio) || 0;
+                        
+                        if (isWholesaleOrder) {
+                          if (prod.precio_aplicado_mayor) {
+                            unitPrice = Number(prod.precio) || 0;
+                          } else if (prod.precio_por_mayor && Number(prod.precio_por_mayor) > 0 && Number(prod.precio_por_mayor) < unitPrice) {
+                            unitPrice = Number(prod.precio_por_mayor);
+                          }
+                        }
+
+                        const lineTotal = unitPrice * cant;
+
+                        return (
+                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '0.5rem 0.75rem', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
+                            <div>
+                              <h5 style={{ margin: 0, color: '#0f172a', fontWeight: 600 }}>{prod.nombre}</h5>
+                              <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                                Cantidad: {prod.cantidad} {prod.talla ? ` | Talla: ${prod.talla}` : ''} {prod.estampado ? ` | Estampado: ${prod.estampado}` : ''}
+                              </span>
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <span style={{ fontWeight: 700, color: '#0f172a', display: 'block' }}>
+                                ${lineTotal.toLocaleString('es-CO')}
+                              </span>
+                              {isWholesaleOrder && (
+                                <span style={{ fontSize: '0.68rem', color: '#166534', background: '#dcfce7', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 700, display: 'inline-block', marginTop: '0.2rem' }}>
+                                  Valor aplicado por mayor
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
                 </div>
 

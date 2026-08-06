@@ -7,6 +7,8 @@ export interface CartItem extends Producto {
   cantidad: number;
   talla?: string; // Talla seleccionada
   estampado?: string; // Estampado seleccionado
+  precio_detal?: number;
+  precio_aplicado_mayor?: boolean;
 }
 
 export type BuyerType = 'detal' | 'mayorista' | '50_unidades' | null;
