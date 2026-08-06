@@ -3381,16 +3381,32 @@ export default function Admin() {
     return temp;
   }, [leads, pedidos, orderSearchQuery, orderFilterDate, role, loggedAsesorPhone, orderFilterAsesor]);
 
+  const getMetodoPago = (p: Pedido) => {
+    if (p.metodo_pago) return p.metodo_pago;
+    if (Array.isArray(p.productos) && p.productos[0]?._metodo_pago) return p.productos[0]._metodo_pago;
+    if (typeof p.productos === 'object' && (p.productos as any)?._metodo_pago) return (p.productos as any)._metodo_pago;
+    return '';
+  };
+
   const contraEntregaFiltrados = useMemo(() => {
-    return filteredPedidos.filter(p => (p.metodo_pago === 'Contra Entrega' || (p.metodo_pago && p.metodo_pago.toLowerCase().includes('contra'))) && p.estado !== 'completado');
+    return filteredPedidos.filter(p => {
+      const mp = getMetodoPago(p);
+      return (mp === 'Contra Entrega' || (mp && mp.toLowerCase().includes('contra'))) && p.estado !== 'completado';
+    });
   }, [filteredPedidos]);
 
   const pendientePagoFiltrados = useMemo(() => {
-    return filteredPedidos.filter(p => !p.pantallazo_url && p.estado !== 'completado' && p.metodo_pago !== 'Contra Entrega' && !(p.metodo_pago && p.metodo_pago.toLowerCase().includes('contra')));
+    return filteredPedidos.filter(p => {
+      const mp = getMetodoPago(p);
+      return !p.pantallazo_url && p.estado !== 'completado' && mp !== 'Contra Entrega' && !(mp && mp.toLowerCase().includes('contra'));
+    });
   }, [filteredPedidos]);
 
   const comprobarPagosFiltrados = useMemo(() => {
-    return filteredPedidos.filter(p => p.pantallazo_url && p.estado !== 'completado' && p.metodo_pago !== 'Contra Entrega' && !(p.metodo_pago && p.metodo_pago.toLowerCase().includes('contra')));
+    return filteredPedidos.filter(p => {
+      const mp = getMetodoPago(p);
+      return p.pantallazo_url && p.estado !== 'completado' && mp !== 'Contra Entrega' && !(mp && mp.toLowerCase().includes('contra'));
+    });
   }, [filteredPedidos]);
 
   const clientesFiltrados = useMemo(() => {

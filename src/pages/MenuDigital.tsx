@@ -845,6 +845,7 @@ export default function MenuDigital() {
     let orderId = '';
     // Guardar en la base de datos de pedidos
     try {
+      const metodoPagoStr = modalidadPago === 'contra_entrega' ? 'Contra Entrega' : 'Pago Anticipado';
       const productosProcesados = items.map(item => {
         const effectivePrice = getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
         const isWholesale = effectiveCartBuyerType === 'mayorista' || isBulkDiscountApplied || buyerType === 'mayorista';
@@ -852,7 +853,8 @@ export default function MenuDigital() {
           ...item,
           precio_detal: item.precio_detal || item.precio,
           precio: effectivePrice,
-          precio_aplicado_mayor: isWholesale
+          precio_aplicado_mayor: isWholesale,
+          _metodo_pago: metodoPagoStr
         };
       });
 
