@@ -5152,14 +5152,14 @@ export default function Admin() {
               <>
                 {/* Título compacto de sección y contador fijados inmediatamente a la izquierda del hamburger */}
                 <div className="topbar-left-info">
-                  <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>
-                    {activeTab === 'clientes' && '👥'}
-                    {activeTab === 'asesores' && '🧑‍💼'}
-                    {activeTab === 'pedidos' && '🛒'}
-                    {activeTab === 'mayoristas' && '🏭'}
-                    {activeTab === 'productos' && '📦'}
-                    {activeTab === 'material_apoyo' && '📁'}
-                  </span>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '8px', background: '#e0f2fe', color: '#00a6f9', flexShrink: 0 }}>
+                    {activeTab === 'clientes' && <Users size={16} />}
+                    {activeTab === 'asesores' && <User size={16} />}
+                    {activeTab === 'pedidos' && <ShoppingBag size={16} />}
+                    {activeTab === 'mayoristas' && <Building2 size={16} />}
+                    {activeTab === 'productos' && <Package size={16} />}
+                    {activeTab === 'material_apoyo' && <Link size={16} />}
+                  </div>
                   <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap' }}>
                     {activeTab === 'clientes' && 'Clientes'}
                     {activeTab === 'asesores' && 'Asesores'}
@@ -5467,16 +5467,29 @@ export default function Admin() {
               </>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-                <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
-                  {activeTab === 'dashboard' && '📊 Dashboard General'}
-                  {activeTab === 'categorias' && '🗂️ Categorías y Subcategorías'}
-                  {activeTab === 'pos' && '🖥️ Caja POS (Punto de Venta)'}
-                  {activeTab === 'ventas_pos' && '🏪 Historial de Ventas POS'}
-                  {activeTab === 'material_apoyo' && '📁 Material de Apoyo & Google Drive'}
-                  {activeTab === 'config' && '⚙️ Configuración Global'}
-                  {activeTab === 'erp' && '📈 ERP Empresarial'}
-                  {activeTab === 'pqrs' && '💬 Centro de Soporte & PQRS'}
-                  {activeTab === 'productos' && '📦 Agregar Nuevo Producto'}
+                <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '8px', background: '#e0f2fe', color: '#00a6f9', flexShrink: 0 }}>
+                    {activeTab === 'dashboard' && <LayoutDashboard size={16} />}
+                    {activeTab === 'categorias' && <Tag size={16} />}
+                    {activeTab === 'pos' && <Calculator size={16} />}
+                    {activeTab === 'ventas_pos' && <CreditCard size={16} />}
+                    {activeTab === 'material_apoyo' && <Link size={16} />}
+                    {activeTab === 'config' && <Settings size={16} />}
+                    {activeTab === 'erp' && <BarChart2 size={16} />}
+                    {activeTab === 'pqrs' && <MessageSquare size={16} />}
+                    {activeTab === 'productos' && <Package size={16} />}
+                  </div>
+                  <span>
+                    {activeTab === 'dashboard' && 'Dashboard General'}
+                    {activeTab === 'categorias' && 'Categorías y Subcategorías'}
+                    {activeTab === 'pos' && 'Caja POS (Punto de Venta)'}
+                    {activeTab === 'ventas_pos' && 'Historial de Ventas POS'}
+                    {activeTab === 'material_apoyo' && 'Material de Apoyo & Google Drive'}
+                    {activeTab === 'config' && 'Configuración Global'}
+                    {activeTab === 'erp' && 'ERP Empresarial'}
+                    {activeTab === 'pqrs' && 'Centro de Soporte & PQRS'}
+                    {activeTab === 'productos' && 'Agregar Nuevo Producto'}
+                  </span>
                 </h2>
                 <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.82rem', color: '#64748b', fontWeight: 500 }}>
                   {activeTab === 'dashboard' && 'Resumen de métricas, rendimiento y ventas del negocio'}
@@ -9489,74 +9502,122 @@ export default function Admin() {
                     </p>
                   </div>
                 ) : (
-                  <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '2px solid #f1f5f9', background: '#f8fafc' }}>
-                        <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Cliente</th>
-                        <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Celular</th>
-                        <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Pedidos</th>
-                        <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'right' }}>Total Comprado</th>
-                        <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Origen</th>
-                        <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Última Ciudad / Dirección</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredClientes.map(c => {
-                        // Calculate origin dynamically based on order history
-                        const clientOrders = pedidos.filter(p => p.cliente_telefono?.trim() === c.telefono?.trim());
-                        const posCount = clientOrders.filter(p => p.origen === 'pos').length;
-                        const catalogoCount = clientOrders.filter(p => p.origen !== 'pos').length;
-                        
-                        let origenLabel = '📱 Catálogo';
-                        let origenColor = 'rgba(14, 165, 233, 0.08)';
-                        let origenTextColor = '#0284c7';
-                        
-                        if (posCount > 0 && catalogoCount > 0) {
-                          origenLabel = '💻 POS / 📱 Cat';
-                          origenColor = 'rgba(139, 92, 246, 0.08)';
-                          origenTextColor = '#7c3aed';
-                        } else if (posCount > 0) {
-                          origenLabel = '💻 POS';
-                          origenColor = 'rgba(16, 185, 129, 0.08)';
-                          origenTextColor = '#059669';
-                        }
+                  <>
+                    {/* Desktop Table View */}
+                    <div className="desktop-only-table">
+                      <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                        <thead>
+                          <tr style={{ borderBottom: '2px solid #f1f5f9', background: '#f8fafc' }}>
+                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Cliente</th>
+                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Celular</th>
+                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Pedidos</th>
+                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'right' }}>Total Comprado</th>
+                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Origen</th>
+                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Última Ciudad / Dirección</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredClientes.map(c => {
+                            // Calculate origin dynamically based on order history
+                            const clientOrders = pedidos.filter(p => p.cliente_telefono?.trim() === c.telefono?.trim());
+                            const posCount = clientOrders.filter(p => p.origen === 'pos').length;
+                            const catalogoCount = clientOrders.filter(p => p.origen !== 'pos').length;
+                            
+                            let origenLabel = '📱 Catálogo';
+                            let origenColor = 'rgba(14, 165, 233, 0.08)';
+                            let origenTextColor = '#0284c7';
+                            
+                            if (posCount > 0 && catalogoCount > 0) {
+                              origenLabel = '💻 POS / 📱 Cat';
+                              origenColor = 'rgba(139, 92, 246, 0.08)';
+                              origenTextColor = '#7c3aed';
+                            } else if (posCount > 0) {
+                              origenLabel = '💻 POS';
+                              origenColor = 'rgba(16, 185, 129, 0.08)';
+                              origenTextColor = '#059669';
+                            }
 
-                        // Last order address & city
+                            // Last order address & city
+                            const lastOrder = clientOrders[0];
+                            const lastLocation = lastOrder ? `${lastOrder.ciudad || 'POS'} - ${lastOrder.direccion || 'Venta Presencial'}` : 'Sin datos';
+
+                            return (
+                              <tr key={c.id} style={{ borderBottom: '1px solid #f1f5f9' }} className="table-row-hover">
+                                <td style={{ padding: '1rem', fontWeight: 700, color: '#0f172a' }}>{c.nombre || 'Sin Nombre'}</td>
+                                <td style={{ padding: '1rem' }}>
+                                  <a
+                                    href={`https://wa.me/${c.telefono?.replace(/\D/g, '')}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ color: '#10b981', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
+                                  >
+                                    <Phone size={12} /> {c.telefono}
+                                  </a>
+                                </td>
+                                <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 600, color: '#475569' }}>
+                                  {c.numero_pedidos || 0}
+                                </td>
+                                <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 800, color: '#10b981' }}>
+                                  ${(c.total_compras || 0).toLocaleString()}
+                                </td>
+                                <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                  <span style={{ display: 'inline-block', padding: '0.2rem 0.5rem', borderRadius: '20px', fontSize: '0.72rem', fontWeight: 700, background: origenColor, color: origenTextColor }}>
+                                    {origenLabel}
+                                  </span>
+                                </td>
+                                <td style={{ padding: '1rem', fontSize: '0.78rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '250px' }} title={lastLocation}>
+                                  {lastLocation}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Mobile Cards View */}
+                    <div className="mobile-only-cards">
+                      {filteredClientes.map(c => {
+                        const clientOrders = pedidos.filter(p => p.cliente_telefono?.trim() === c.telefono?.trim());
                         const lastOrder = clientOrders[0];
                         const lastLocation = lastOrder ? `${lastOrder.ciudad || 'POS'} - ${lastOrder.direccion || 'Venta Presencial'}` : 'Sin datos';
+                        const cleanPhone = (c.telefono || '').replace(/\D/g, '');
 
                         return (
-                          <tr key={c.id} style={{ borderBottom: '1px solid #f1f5f9' }} className="table-row-hover">
-                            <td style={{ padding: '1rem', fontWeight: 700, color: '#0f172a' }}>{c.nombre || 'Sin Nombre'}</td>
-                            <td style={{ padding: '1rem' }}>
-                              <a
-                                href={`https://wa.me/${c.telefono?.replace(/\D/g, '')}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{ color: '#10b981', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}
-                              >
-                                <Phone size={12} /> {c.telefono}
-                              </a>
-                            </td>
-                            <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 600, color: '#475569' }}>
-                              {c.numero_pedidos || 0}
-                            </td>
-                            <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 800, color: '#10b981' }}>
-                              ${(c.total_compras || 0).toLocaleString()}
-                            </td>
-                            <td style={{ padding: '1rem', textAlign: 'center' }}>
-                              <span style={{ display: 'inline-block', padding: '0.2rem 0.5rem', borderRadius: '20px', fontSize: '0.72rem', fontWeight: 700, background: origenColor, color: origenTextColor }}>
-                                {origenLabel}
-                              </span>
-                            </td>
-                            <td style={{ padding: '1rem', fontSize: '0.78rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '250px' }} title={lastLocation}>
-                              {lastLocation}
-                            </td>
-                          </tr>
+                          <div key={c.id || c.telefono} style={{ background: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', borderLeft: '5px solid #00a6f9', padding: '0.85rem', boxShadow: '0 2px 6px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                              <div>
+                                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>{c.nombre || 'Cliente Registrado'}</h4>
+                                <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>📍 {lastLocation}</span>
+                              </div>
+                              {cleanPhone && (
+                                <a
+                                  href={`https://wa.me/${cleanPhone}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{ padding: '0.35rem 0.65rem', background: '#dcfce7', color: '#15803d', border: '1px solid #86efac', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 800, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', flexShrink: 0 }}
+                                >
+                                  <Phone size={12} /> Contactar
+                                </a>
+                              )}
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', background: '#f8fafc', padding: '0.55rem 0.75rem', borderRadius: '10px' }}>
+                              <div>
+                                <span style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block' }}>Teléfono</span>
+                                <span style={{ fontSize: '0.82rem', color: '#0f172a', fontWeight: 700 }}>{c.telefono}</span>
+                              </div>
+                              <div style={{ textAlign: 'right' }}>
+                                <span style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block' }}>Total Comprado</span>
+                                <span style={{ fontSize: '0.9rem', color: '#10b981', fontWeight: 800 }}>${(c.total_compras || 0).toLocaleString()}</span>
+                                <span style={{ fontSize: '0.68rem', color: '#64748b', display: 'block' }}>📦 {c.numero_pedidos || 0} pedidos</span>
+                              </div>
+                            </div>
+                          </div>
                         );
                       })}
-                    </tbody>
-                  </table>
+                    </div>
+                  </>
                 )}
               </div>
             </div>
@@ -9619,285 +9680,363 @@ export default function Admin() {
                       </p>
                     </div>
                   ) : (
-                    <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                      <thead>
-                        <tr style={{ borderBottom: '2px solid #f1f5f9', background: '#f8fafc' }}>
-                          <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Asesor</th>
-                          <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Línea WhatsApp</th>
-                          <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>PIN de Acceso</th>
-                          <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Pedidos Asignados</th>
-                          <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'right' }}>Total Ventas (Pagados)</th>
-                          <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Alertas</th>
-                          <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Enlace de Catálogo Exclusivo</th>
-                          <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Acciones</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+                    <>
+                      {/* Desktop Table View */}
+                      <div className="desktop-only-table">
+                        <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                          <thead>
+                            <tr style={{ borderBottom: '2px solid #f1f5f9', background: '#f8fafc' }}>
+                              <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Asesor</th>
+                              <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Línea WhatsApp</th>
+                              <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>PIN de Acceso</th>
+                              <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Pedidos Asignados</th>
+                              <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'right' }}>Total Ventas (Pagados)</th>
+                              <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Alertas</th>
+                              <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Enlace de Catálogo Exclusivo</th>
+                              <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Acciones</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {filteredAsesores.map(a => {
+                              // Calculate advisor stats from orders database
+                              const advisorOrders = pedidos.filter(p => {
+                                const orderPhone = p.linea_whatsapp?.replace(/\D/g, '');
+                                const advisorPhones = (a.telefono || '').split(',').map(phone => phone.replace(/\D/g, '')).filter(Boolean);
+                                return orderPhone && advisorPhones.includes(orderPhone);
+                              });
+
+                              // RESTRICT Total Ventas ONLY to verified/completed payments
+                              const completedOrders = advisorOrders.filter(p => p.estado === 'completado');
+                              const totalVentas = completedOrders.reduce((sum, p) => sum + (p.total || 0), 0);
+
+                              const isEditing = editingAsesorId === a.id;
+
+                              return (
+                                <tr key={a.id} style={{ borderBottom: '1px solid #f1f5f9' }} className="table-row-hover">
+                                  <td style={{ padding: '1rem', fontWeight: 700, color: '#0f172a' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                      {a.foto_url ? (
+                                        <img src={a.foto_url} alt={a.nombre} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '1px solid #e2e8f0' }} />
+                                      ) : (
+                                        <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 'bold', color: '#64748b' }}>
+                                          {a.nombre.charAt(0).toUpperCase()}
+                                        </div>
+                                      )}
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                        {isEditing ? (
+                                          <input
+                                            type="text"
+                                            value={editingAsesorNombre}
+                                            onChange={e => setEditingAsesorNombre(e.target.value)}
+                                            style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', width: '130px' }}
+                                          />
+                                        ) : (
+                                          a.nombre
+                                        )}
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '1rem' }}>
+                                    {isEditing ? (
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                                        {editingAsesorTelefonos.map((tel, idx) => (
+                                          <div key={idx} style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                                            <input
+                                              type="text"
+                                              value={tel}
+                                              onChange={e => {
+                                                const newTels = [...editingAsesorTelefonos];
+                                                newTels[idx] = e.target.value;
+                                                setEditingAsesorTelefonos(newTels);
+                                              }}
+                                              placeholder="Ej: 3123456789"
+                                              style={{ padding: '0.25rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', width: '110px' }}
+                                            />
+                                            {editingAsesorTelefonos.length > 1 && (
+                                              <button
+                                                type="button"
+                                                onClick={() => setEditingAsesorTelefonos(editingAsesorTelefonos.filter((_, i) => i !== idx))}
+                                                style={{ background: '#fee2e2', border: 'none', color: '#ef4444', borderRadius: '4px', cursor: 'pointer', padding: '0.25rem' }}
+                                              >
+                                                ✕
+                                              </button>
+                                            )}
+                                          </div>
+                                        ))}
+                                        <button
+                                          type="button"
+                                          onClick={() => setEditingAsesorTelefonos([...editingAsesorTelefonos, ''])}
+                                          style={{ background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', alignSelf: 'flex-start' }}
+                                        >
+                                          + Añadir línea
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                                        {(a.telefono || '').split(',').map(p => p.trim()).filter(Boolean).map((phone, idx) => (
+                                          <a
+                                            key={idx}
+                                            href={`https://wa.me/${phone}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            style={{ color: '#10b981', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem' }}
+                                          >
+                                            <Phone size={12} /> {phone}
+                                          </a>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </td>
+                                  <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                    {isEditing ? (
+                                      <input
+                                        type="text"
+                                        value={editingAsesorPin}
+                                        onChange={e => setEditingAsesorPin(e.target.value)}
+                                        style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', width: '70px', textAlign: 'center' }}
+                                      />
+                                    ) : (
+                                      <span style={{ fontFamily: 'monospace', fontWeight: 600, color: '#475569', background: '#f1f5f9', padding: '0.2rem 0.5rem', borderRadius: '6px' }}>
+                                        {a.pin || '1234'}
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 600, color: '#475569' }}>
+                                    {advisorOrders.length}
+                                  </td>
+                                  <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 800, color: '#10b981' }}>
+                                    ${totalVentas.toLocaleString()}
+                                  </td>
+                                  {(() => {
+                                    const stats = getAdvisorStats(a);
+                                    const notifications = getAdvisorNotifications(a, stats);
+                                    const alerts = notifications.filter(n => n.type === 'danger' || n.type === 'warning' || n.type === 'info');
+                                    
+                                    return (
+                                      <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                        {alerts.length === 0 ? (
+                                          <span style={{ fontSize: '0.78rem', color: '#10b981', background: '#dcfce7', padding: '0.2rem 0.55rem', borderRadius: '20px', fontWeight: 700, whiteSpace: 'nowrap', display: 'inline-block' }}>
+                                            ✅ Al día
+                                          </span>
+                                        ) : (
+                                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'center' }}>
+                                            <span 
+                                              onClick={() => setViewingAdvisorAlerts({ advisor: a, alerts: alerts })}
+                                              style={{ 
+                                                fontSize: '0.74rem', 
+                                                color: 'white', 
+                                                background: alerts.some(n => n.type === 'danger') ? '#ef4444' : '#f59e0b', 
+                                                padding: '0.2rem 0.55rem', 
+                                                borderRadius: '20px', 
+                                                fontWeight: 800,
+                                                boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+                                                cursor: 'pointer',
+                                                transition: 'transform 0.2s ease',
+                                                whiteSpace: 'nowrap',
+                                                display: 'inline-block'
+                                              }}
+                                              onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'}
+                                              onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+                                              title="Haga clic para ver el detalle de las alertas"
+                                            >
+                                              ⚠️ {alerts.length} {alerts.length === 1 ? 'Alerta' : 'Alertas'}
+                                            </span>
+                                          </div>
+                                        )}
+                                      </td>
+                                    );
+                                  })()}
+                                  <td style={{ padding: '1rem' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                                      {(a.telefono || '').split(',').map(p => p.trim()).filter(Boolean).map((phone, idx) => {
+                                        const link = `${window.location.origin}/${getTenantId()}?ws=${phone}`;
+                                        return (
+                                          <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                                            <a
+                                              href={link}
+                                              target="_blank"
+                                              rel="noopener noreferrer"
+                                              style={{ 
+                                                fontSize: '0.78rem', 
+                                                color: '#1e1b4b', 
+                                                fontWeight: 700, 
+                                                display: 'inline-flex', 
+                                                alignItems: 'center', 
+                                                gap: '0.25rem', 
+                                                textDecoration: 'underline', 
+                                                textDecorationColor: '#cbd5e1', 
+                                                transition: 'all 0.2s',
+                                                cursor: 'pointer'
+                                              }}
+                                              onMouseEnter={e => { e.currentTarget.style.color = '#10b981'; e.currentTarget.style.textDecorationColor = '#10b981'; }}
+                                              onMouseLeave={e => { e.currentTarget.style.color = '#1e1b4b'; e.currentTarget.style.textDecorationColor = '#cbd5e1'; }}
+                                              title="Click para ver catálogo de este asesor"
+                                            >
+                                              📲 {phone}
+                                            </a>
+                                            <button
+                                              type="button"
+                                              onClick={() => {
+                                                navigator.clipboard.writeText(link);
+                                                showToast(`Enlace (${phone}) copiado ✓`, 'success');
+                                              }}
+                                              className="btn-secondary"
+                                              style={{ padding: '0.15rem 0.4rem', fontSize: '0.65rem', display: 'inline-flex', alignItems: 'center', gap: '0.2rem', whiteSpace: 'nowrap' }}
+                                            >
+                                              <Copy size={10} /> Copiar
+                                            </button>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  </td>
+                                  <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                    <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
+                                      {isEditing ? (
+                                        <>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleGuardarAsesorEdicion(a.id)}
+                                            className="btn-primary"
+                                            style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', fontWeight: 700 }}
+                                          >
+                                            Guardar
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => setEditingAsesorId(null)}
+                                            className="btn-secondary"
+                                            style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}
+                                          >
+                                            Cancelar
+                                          </button>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <button
+                                            type="button"
+                                            onClick={() => setSelectedAsesorAnalytics(a)}
+                                            className="btn-secondary"
+                                            style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', color: 'var(--primary-color,#6366f1)', borderColor: 'var(--primary-color,#6366f1)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontWeight: 600 }}
+                                            title="Ver analítica del asesor"
+                                          >
+                                            <LayoutDashboard size={12} /> Resumen
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setEditingAsesorId(a.id);
+                                              setEditingAsesorNombre(a.nombre);
+                                              setEditingAsesorTelefonos((a.telefono || '').split(',').map(t => t.trim()).filter(Boolean));
+                                              setEditingAsesorPin(a.pin || '1234');
+                                              setEditingAsesorFotoUrl(a.foto_url || '');
+                                            }}
+                                            className="btn-secondary"
+                                            style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}
+                                          >
+                                            Editar
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => { setMovingAsesor(a); setTargetAsesorTenant(''); }}
+                                            className="btn-secondary"
+                                            style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: '#0284c7', borderColor: '#bae6fd', background: '#f0f9ff', fontWeight: 600 }}
+                                            title="Trasladar asesor a otro negocio"
+                                          >
+                                            <ArrowRightLeft size={12} /> Trasladar
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() => handleEliminarAsesor(a.id)}
+                                            className="btn-secondary"
+                                            style={{ color: '#ef4444', borderColor: '#fee2e2', background: '#fef2f2', padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}
+                                          >
+                                            <Trash2 size={12} />
+                                          </button>
+                                        </>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Mobile Cards View */}
+                      <div className="mobile-only-cards">
                         {filteredAsesores.map(a => {
-                          // Calculate advisor stats from orders database
                           const advisorOrders = pedidos.filter(p => {
                             const orderPhone = p.linea_whatsapp?.replace(/\D/g, '');
                             const advisorPhones = (a.telefono || '').split(',').map(phone => phone.replace(/\D/g, '')).filter(Boolean);
                             return orderPhone && advisorPhones.includes(orderPhone);
                           });
 
-                          // RESTRICT Total Ventas ONLY to verified/completed payments
                           const completedOrders = advisorOrders.filter(p => p.estado === 'completado');
                           const totalVentas = completedOrders.reduce((sum, p) => sum + (p.total || 0), 0);
-
-                          const isEditing = editingAsesorId === a.id;
+                          const firstPhone = (a.telefono || '').split(',')[0]?.trim() || '';
+                          const exclusiveLink = firstPhone ? `${window.location.origin}/${getTenantId()}?ws=${firstPhone}` : '';
 
                           return (
-                            <tr key={a.id} style={{ borderBottom: '1px solid #f1f5f9' }} className="table-row-hover">
-                              <td style={{ padding: '1rem', fontWeight: 700, color: '#0f172a' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div key={a.id} style={{ background: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', borderLeft: '5px solid #00a6f9', padding: '0.85rem', boxShadow: '0 2px 6px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                                   {a.foto_url ? (
-                                    <img src={a.foto_url} alt={a.nombre} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '1px solid #e2e8f0' }} />
+                                    <img src={a.foto_url} alt={a.nombre} style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover' }} />
                                   ) : (
-                                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 'bold', color: '#64748b' }}>
+                                    <div style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundColor: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.05rem', fontWeight: 'bold', color: '#64748b' }}>
                                       {a.nombre.charAt(0).toUpperCase()}
                                     </div>
                                   )}
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                                    {isEditing ? (
-                                      <input
-                                        type="text"
-                                        value={editingAsesorNombre}
-                                        onChange={e => setEditingAsesorNombre(e.target.value)}
-                                        style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', width: '130px' }}
-                                      />
-                                    ) : (
-                                      a.nombre
-                                    )}
+                                  <div>
+                                    <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>{a.nombre}</h4>
+                                    <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>PIN: {a.pin || '1234'}</span>
                                   </div>
                                 </div>
-                              </td>
-                              <td style={{ padding: '1rem' }}>
-                                {isEditing ? (
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                                    {editingAsesorTelefonos.map((tel, idx) => (
-                                      <div key={idx} style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                                        <input
-                                          type="text"
-                                          value={tel}
-                                          onChange={e => {
-                                            const newTels = [...editingAsesorTelefonos];
-                                            newTels[idx] = e.target.value;
-                                            setEditingAsesorTelefonos(newTels);
-                                          }}
-                                          placeholder="Ej: 3123456789"
-                                          style={{ padding: '0.25rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', width: '110px' }}
-                                        />
-                                        {editingAsesorTelefonos.length > 1 && (
-                                          <button
-                                            type="button"
-                                            onClick={() => setEditingAsesorTelefonos(editingAsesorTelefonos.filter((_, i) => i !== idx))}
-                                            style={{ background: '#fee2e2', border: 'none', color: '#ef4444', borderRadius: '4px', cursor: 'pointer', padding: '0.25rem' }}
-                                          >
-                                            ✕
-                                          </button>
-                                        )}
-                                      </div>
-                                    ))}
-                                    <button
-                                      type="button"
-                                      onClick={() => setEditingAsesorTelefonos([...editingAsesorTelefonos, ''])}
-                                      style={{ background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', alignSelf: 'flex-start' }}
-                                    >
-                                      + Añadir línea
-                                    </button>
-                                  </div>
-                                ) : (
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                                    {(a.telefono || '').split(',').map(p => p.trim()).filter(Boolean).map((phone, idx) => (
-                                      <a
-                                        key={idx}
-                                        href={`https://wa.me/${phone}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        style={{ color: '#10b981', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem' }}
-                                      >
-                                        <Phone size={12} /> {phone}
-                                      </a>
-                                    ))}
-                                  </div>
+                                <span style={{ background: '#e0f2fe', color: '#0369a1', fontSize: '0.7rem', fontWeight: 800, padding: '0.2rem 0.55rem', borderRadius: '20px' }}>🧑‍💼 Asesor</span>
+                              </div>
+
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', background: '#f8fafc', padding: '0.6rem', borderRadius: '10px' }}>
+                                <div>
+                                  <span style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block' }}>Líneas WhatsApp</span>
+                                  {(a.telefono || '').split(',').map((phone: string, idx: number) => (
+                                    <a key={idx} href={`https://wa.me/${phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700, fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+                                      <Phone size={11} /> {phone.trim()}
+                                    </a>
+                                  ))}
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                  <span style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block' }}>Ventas Confirmadas</span>
+                                  <span style={{ fontSize: '0.9rem', color: '#10b981', fontWeight: 800 }}>${totalVentas.toLocaleString()}</span>
+                                  <span style={{ fontSize: '0.68rem', color: '#64748b', display: 'block' }}>📦 {advisorOrders.length} pedidos</span>
+                                </div>
+                              </div>
+
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', paddingTop: '0.2rem' }}>
+                                {exclusiveLink && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(exclusiveLink);
+                                      showToast('Enlace de catálogo copiado ✓');
+                                    }}
+                                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.35rem 0.65rem', background: '#f0f9ff', color: '#0284c7', border: '1px solid #bae6fd', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}
+                                  >
+                                    <Copy size={12} /> Catálogo Asesor
+                                  </button>
                                 )}
-                              </td>
-                              <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                {isEditing ? (
-                                  <input
-                                    type="text"
-                                    value={editingAsesorPin}
-                                    onChange={e => setEditingAsesorPin(e.target.value)}
-                                    style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', width: '70px', textAlign: 'center' }}
-                                  />
-                                ) : (
-                                  <span style={{ fontFamily: 'monospace', fontWeight: 600, color: '#475569', background: '#f1f5f9', padding: '0.2rem 0.5rem', borderRadius: '6px' }}>
-                                    {a.pin || '1234'}
-                                  </span>
-                                )}
-                              </td>
-                              <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 600, color: '#475569' }}>
-                                {advisorOrders.length}
-                              </td>
-                              <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 800, color: '#10b981' }}>
-                                ${totalVentas.toLocaleString()}
-                              </td>
-                              {(() => {
-                                const stats = getAdvisorStats(a);
-                                const notifications = getAdvisorNotifications(a, stats);
-                                const alerts = notifications.filter(n => n.type === 'danger' || n.type === 'warning' || n.type === 'info');
-                                
-                                return (
-                                  <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                    {alerts.length === 0 ? (
-                                      <span style={{ fontSize: '0.78rem', color: '#10b981', background: '#dcfce7', padding: '0.2rem 0.55rem', borderRadius: '20px', fontWeight: 700, whiteSpace: 'nowrap', display: 'inline-block' }}>
-                                        ✅ Al día
-                                      </span>
-                                    ) : (
-                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'center' }}>
-                                        <span 
-                                          onClick={() => setViewingAdvisorAlerts({ advisor: a, alerts: alerts })}
-                                          style={{ 
-                                            fontSize: '0.74rem', 
-                                            color: 'white', 
-                                            background: alerts.some(n => n.type === 'danger') ? '#ef4444' : '#f59e0b', 
-                                            padding: '0.2rem 0.55rem', 
-                                            borderRadius: '20px', 
-                                            fontWeight: 800,
-                                            boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                                            cursor: 'pointer',
-                                            transition: 'transform 0.2s ease',
-                                            whiteSpace: 'nowrap',
-                                            display: 'inline-block'
-                                          }}
-                                          onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'}
-                                          onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                                          title="Haga clic para ver el detalle de las alertas"
-                                        >
-                                          ⚠️ {alerts.length} {alerts.length === 1 ? 'Alerta' : 'Alertas'}
-                                        </span>
-                                      </div>
-                                    )}
-                                  </td>
-                                );
-                              })()}
-                              <td style={{ padding: '1rem' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                                  {(a.telefono || '').split(',').map(p => p.trim()).filter(Boolean).map((phone, idx) => {
-                                    const link = `${window.location.origin}/${getTenantId()}?ws=${phone}`;
-                                    return (
-                                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-                                        <a
-                                          href={link}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          style={{ 
-                                            fontSize: '0.78rem', 
-                                            color: '#1e1b4b', 
-                                            fontWeight: 700, 
-                                            display: 'inline-flex', 
-                                            alignItems: 'center', 
-                                            gap: '0.25rem', 
-                                            textDecoration: 'underline', 
-                                            textDecorationColor: '#cbd5e1', 
-                                            transition: 'all 0.2s',
-                                            cursor: 'pointer'
-                                          }}
-                                          onMouseEnter={e => { e.currentTarget.style.color = '#10b981'; e.currentTarget.style.textDecorationColor = '#10b981'; }}
-                                          onMouseLeave={e => { e.currentTarget.style.color = '#1e1b4b'; e.currentTarget.style.textDecorationColor = '#cbd5e1'; }}
-                                          title="Click para ver catálogo de este asesor"
-                                        >
-                                          📲 {phone}
-                                        </a>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            navigator.clipboard.writeText(link);
-                                            showToast(`Enlace (${phone}) copiado ✓`, 'success');
-                                          }}
-                                          className="btn-secondary"
-                                          style={{ padding: '0.15rem 0.4rem', fontSize: '0.65rem', display: 'inline-flex', alignItems: 'center', gap: '0.2rem', whiteSpace: 'nowrap' }}
-                                        >
-                                          <Copy size={10} /> Copiar
-                                        </button>
-                                      </div>
-                                    );
-                                  })}
+                                <div style={{ display: 'flex', gap: '0.35rem', marginLeft: 'auto' }}>
+                                  <button type="button" onClick={() => setSelectedAsesorAnalytics(a)} style={{ padding: '0.35rem 0.55rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', color: '#475569', cursor: 'pointer' }} title="Resumen"><LayoutDashboard size={13} /></button>
+                                  <button type="button" onClick={() => { setEditingAsesorId(a.id); setEditingAsesorNombre(a.nombre); setEditingAsesorTelefonos((a.telefono || '').split(',').map(t => t.trim()).filter(Boolean)); setEditingAsesorPin(a.pin || '1234'); setEditingAsesorFotoUrl(a.foto_url || ''); }} style={{ padding: '0.35rem 0.55rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', color: '#475569', cursor: 'pointer' }} title="Editar"><Pencil size={13} /></button>
+                                  <button type="button" onClick={() => handleEliminarAsesor(a.id)} style={{ padding: '0.35rem 0.55rem', background: '#fef2f2', border: '1px solid #fca5a5', borderRadius: '8px', color: '#dc2626', cursor: 'pointer' }} title="Eliminar"><Trash2 size={13} /></button>
                                 </div>
-                              </td>
-                              <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
-                                  {isEditing ? (
-                                    <>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleGuardarAsesorEdicion(a.id)}
-                                        className="btn-primary"
-                                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', fontWeight: 700 }}
-                                      >
-                                        Guardar
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => setEditingAsesorId(null)}
-                                        className="btn-secondary"
-                                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}
-                                      >
-                                        Cancelar
-                                      </button>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <button
-                                        type="button"
-                                        onClick={() => setSelectedAsesorAnalytics(a)}
-                                        className="btn-secondary"
-                                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', color: 'var(--primary-color,#6366f1)', borderColor: 'var(--primary-color,#6366f1)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontWeight: 600 }}
-                                        title="Ver analítica del asesor"
-                                      >
-                                        <LayoutDashboard size={12} /> Resumen
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setEditingAsesorId(a.id);
-                                          setEditingAsesorNombre(a.nombre);
-                                          setEditingAsesorTelefonos((a.telefono || '').split(',').map(t => t.trim()).filter(Boolean));
-                                          setEditingAsesorPin(a.pin || '1234');
-                                          setEditingAsesorFotoUrl(a.foto_url || '');
-                                        }}
-                                        className="btn-secondary"
-                                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}
-                                      >
-                                        Editar
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => { setMovingAsesor(a); setTargetAsesorTenant(''); }}
-                                        className="btn-secondary"
-                                        style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: '#0284c7', borderColor: '#bae6fd', background: '#f0f9ff', fontWeight: 600 }}
-                                        title="Trasladar asesor a otro negocio"
-                                      >
-                                        <ArrowRightLeft size={12} /> Trasladar
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleEliminarAsesor(a.id)}
-                                        className="btn-secondary"
-                                        style={{ color: '#ef4444', borderColor: '#fee2e2', background: '#fef2f2', padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}
-                                      >
-                                        <Trash2 size={12} />
-                                      </button>
-                                    </>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
+                              </div>
+                            </div>
                           );
                         })}
-                      </tbody>
-                    </table>
+                      </div>
+                    </>
                   )}
                 </div>
               </div>
@@ -9954,12 +10093,7 @@ export default function Admin() {
                                 <button type="button" onClick={() => setNuevoMayoristaTelefonos(nuevoMayoristaTelefonos.filter((_, i) => i !== idx))} style={{ background: '#fee2e2', border: '1px solid #fca5a5', color: '#ef4444', padding: '0', width: '38px', height: '38px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
                               )}
                             </div>
-                          ))}
-                          <button type="button" onClick={() => setNuevoMayoristaTelefonos([...nuevoMayoristaTelefonos, ''])} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', padding: '0.2rem 0' }}>+ Añadir más líneas</button>
-                        </div>
-                        <div className="form-field-item">
-                          <label>PIN de Acceso (6 dígitos)</label>
-                          <input type="text" required maxLength={6} placeholder="Ej: 4321" value={nuevoMayoristaPin} onChange={e => setNuevoMayoristaPin(e.target.value)} />
+<input type="text" required maxLength={6} placeholder="Ej: 4321" value={nuevoMayoristaPin} onChange={e => setNuevoMayoristaPin(e.target.value)} />
                         </div>
                       </div>
                       <div className="form-actions-row">
@@ -9984,20 +10118,191 @@ export default function Admin() {
                         </p>
                       </div>
                     ) : (
-                      <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                        <thead>
-                          <tr style={{ borderBottom: '2px solid #f1f5f9', background: '#f8fafc' }}>
-                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Mayorista</th>
-                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Línea WhatsApp</th>
-                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>PIN de Acceso</th>
-                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Pedidos</th>
-                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'right' }}>Total Ventas (Pagados)</th>
-                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Alertas</th>
-                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Enlace de Catálogo Exclusivo</th>
-                            <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Acciones</th>
-                          </tr>
-                        </thead>
-                        <tbody>
+                      <>
+                        {/* Desktop Table View */}
+                        <div className="desktop-only-table">
+                          <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                            <thead>
+                              <tr style={{ borderBottom: '2px solid #f1f5f9', background: '#f8fafc' }}>
+                                <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Mayorista</th>
+                                <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Línea WhatsApp</th>
+                                <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>PIN de Acceso</th>
+                                <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Pedidos</th>
+                                <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'right' }}>Total Ventas (Pagados)</th>
+                                <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Alertas</th>
+                                <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Enlace de Catálogo Exclusivo</th>
+                                <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Acciones</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {filteredMayoristas.map(m => {
+                                const mOrders = pedidos.filter(p => {
+                                  const op = p.linea_whatsapp?.replace(/\D/g, '');
+                                  const mPhones = (m.telefono || '').split(',').map((ph: string) => ph.replace(/\D/g, '')).filter(Boolean);
+                                  return op && mPhones.includes(op);
+                                });
+                                const totalCompras = mOrders.filter(p => p.estado === 'completado').reduce((s, p) => s + (p.total || 0), 0);
+                                const isEd = editingMayoristaId === m.id;
+                                return (
+                                  <tr key={m.id} style={{ borderBottom: '1px solid #f1f5f9' }} className="table-row-hover">
+                                    <td style={{ padding: '1rem', fontWeight: 700, color: '#0f172a' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        {m.foto_url ? (
+                                          <img src={m.foto_url} alt={m.nombre} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '1px solid #e2e8f0' }} />
+                                        ) : (
+                                          <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #0ea5e9, #6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 'bold', color: 'white' }}>
+                                            {m.nombre.charAt(0).toUpperCase()}
+                                          </div>
+                                        )}
+                                        <div>
+                                          {isEd ? (
+                                            <input type="text" value={editingMayoristaNombre} onChange={e => setEditingMayoristaNombre(e.target.value)}
+                                              style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', width: '130px' }} />
+                                          ) : m.nombre}
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td style={{ padding: '1rem' }}>
+                                      {isEd ? (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                                          {editingMayoristaTelefonos.map((tel, idx) => (
+                                            <div key={idx} style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
+                                              <input type="text" value={tel} onChange={e => { const t = [...editingMayoristaTelefonos]; t[idx] = e.target.value; setEditingMayoristaTelefonos(t); }}
+                                                placeholder="3123456789" style={{ padding: '0.25rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', width: '110px' }} />
+                                              {editingMayoristaTelefonos.length > 1 && (
+                                                <button type="button" onClick={() => setEditingMayoristaTelefonos(editingMayoristaTelefonos.filter((_, i) => i !== idx))}
+                                                  style={{ background: '#fee2e2', border: 'none', color: '#ef4444', borderRadius: '4px', cursor: 'pointer', padding: '0.25rem' }}>✕</button>
+                                              )}
+                                            </div>
+                                          ))}
+                                          <button type="button" onClick={() => setEditingMayoristaTelefonos([...editingMayoristaTelefonos, ''])}
+                                            style={{ background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', alignSelf: 'flex-start' }}>+ Añadir línea</button>
+                                        </div>
+                                      ) : (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                                          {(m.telefono || '').split(',').map((p: string) => p.trim()).filter(Boolean).map((phone: string, idx: number) => (
+                                            <a key={idx} href={`https://wa.me/${phone}`} target="_blank" rel="noopener noreferrer"
+                                              style={{ color: '#10b981', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem' }}>
+                                              <Phone size={12} /> {phone}
+                                            </a>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </td>
+                                    <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                      {isEd ? (
+                                        <input type="text" value={editingMayoristaPin} onChange={e => setEditingMayoristaPin(e.target.value)}
+                                          style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', width: '70px', textAlign: 'center' }} />
+                                      ) : (
+                                        <span style={{ fontFamily: 'monospace', fontWeight: 600, color: '#475569', background: '#f1f5f9', padding: '0.2rem 0.5rem', borderRadius: '6px' }}>{m.pin || '1234'}</span>
+                                      )}
+                                    </td>
+                                    <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 600, color: '#475569' }}>{mOrders.length}</td>
+                                    <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 800, color: '#10b981' }}>${totalCompras.toLocaleString()}</td>
+                                    {(() => {
+                                      const stats = getAdvisorStats(m);
+                                      const notifications = getAdvisorNotifications(m, stats, true);
+                                      const alerts = notifications.filter(n => n.type === 'danger' || n.type === 'warning' || n.type === 'info');
+                                      return (
+                                        <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                          {alerts.length === 0 ? (
+                                            <span style={{ fontSize: '0.78rem', color: '#10b981', background: '#dcfce7', padding: '0.2rem 0.55rem', borderRadius: '20px', fontWeight: 700, whiteSpace: 'nowrap', display: 'inline-block' }}>
+                                              ✅ Al día
+                                            </span>
+                                          ) : (
+                                            <span onClick={() => setViewingAdvisorAlerts({ advisor: m, alerts })} style={{ fontSize: '0.74rem', color: 'white', background: alerts.some(n => n.type === 'danger') ? '#ef4444' : '#f59e0b', padding: '0.2rem 0.55rem', borderRadius: '20px', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', display: 'inline-block' }}>
+                                              ⚠️ {alerts.length} Alerta{alerts.length > 1 ? 's' : ''}
+                                            </span>
+                                          )}
+                                        </td>
+                                      );
+                                    })()}
+                                    <td style={{ padding: '1rem' }}>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                                        {(m.telefono || '').split(',').map((p: string) => p.trim()).filter(Boolean).map((phone: string, idx: number) => {
+                                          const link = `${window.location.origin}/${getTenantId()}?ws=${phone}`;
+                                          return (
+                                            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                                              <a
+                                                href={link}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                style={{ 
+                                                  fontSize: '0.78rem', 
+                                                  color: '#1e1b4b', 
+                                                  fontWeight: 700, 
+                                                  display: 'inline-flex', 
+                                                  alignItems: 'center', 
+                                                  gap: '0.25rem', 
+                                                  textDecoration: 'underline', 
+                                                  textDecorationColor: '#cbd5e1', 
+                                                  transition: 'all 0.2s',
+                                                  cursor: 'pointer'
+                                                }}
+                                                onMouseEnter={e => { e.currentTarget.style.color = '#0ea5e9'; e.currentTarget.style.textDecorationColor = '#0ea5e9'; }}
+                                                onMouseLeave={e => { e.currentTarget.style.color = '#1e1b4b'; e.currentTarget.style.textDecorationColor = '#cbd5e1'; }}
+                                                title="Click para ver catálogo de este mayorista"
+                                              >
+                                                📲 {phone}
+                                              </a>
+                                              <button
+                                                type="button"
+                                                onClick={() => {
+                                                  navigator.clipboard.writeText(link);
+                                                  showToast(`Enlace mayorista copiado ✓`, 'success');
+                                                }}
+                                                className="btn-secondary"
+                                                style={{ padding: '0.15rem 0.4rem', fontSize: '0.65rem', display: 'inline-flex', alignItems: 'center', gap: '0.2rem', whiteSpace: 'nowrap' }}
+                                              >
+                                                <Copy size={10} /> Copiar
+                                              </button>
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
+                                    </td>
+                                    <td style={{ padding: '1rem', textAlign: 'center' }}>
+                                      <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
+                                        {isEd ? (
+                                          <>
+                                            <button type="button" onClick={() => handleGuardarMayorista(m.id)} className="btn-primary"
+                                              style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', fontWeight: 700 }}>Guardar</button>
+                                            <button type="button" onClick={() => setEditingMayoristaId(null)} className="btn-secondary"
+                                              style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}>Cancelar</button>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <button
+                                              type="button"
+                                              onClick={() => setSelectedAsesorAnalytics(m)}
+                                              className="btn-secondary"
+                                              style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', color: 'var(--primary-color,#6366f1)', borderColor: 'var(--primary-color,#6366f1)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontWeight: 600 }}
+                                              title="Ver analítica del mayorista"
+                                            >
+                                              <LayoutDashboard size={12} /> Resumen
+                                            </button>
+                                            <button type="button" onClick={() => {
+                                              setEditingMayoristaId(m.id);
+                                              setEditingMayoristaNombre(m.nombre);
+                                              setEditingMayoristaTelefonos((m.telefono || '').split(',').map((t: string) => t.trim()).filter(Boolean));
+                                              setEditingMayoristaPin(m.pin || '1234');
+                                              setEditingMayoristaFotoUrl(m.foto_url || '');
+                                            }} className="btn-secondary" style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}>Editar</button>
+                                            <button type="button" onClick={() => handleEliminarMayorista(m.id)} className="btn-secondary"
+                                              style={{ color: '#ef4444', borderColor: '#fee2e2', background: '#fef2f2', padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}><Trash2 size={12} /></button>
+                                          </>
+                                        )}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Mobile Cards View */}
+                        <div className="mobile-only-cards">
                           {filteredMayoristas.map(m => {
                             const mOrders = pedidos.filter(p => {
                               const op = p.linea_whatsapp?.replace(/\D/g, '');
@@ -10005,166 +10310,21 @@ export default function Admin() {
                               return op && mPhones.includes(op);
                             });
                             const totalCompras = mOrders.filter(p => p.estado === 'completado').reduce((s, p) => s + (p.total || 0), 0);
-                            const isEd = editingMayoristaId === m.id;
+                            const firstPhone = (m.telefono || '').split(',')[0]?.trim() || '';
+                            const exclusiveLink = firstPhone ? `${window.location.origin}/${getTenantId()}?ws=${firstPhone}` : '';
+
                             return (
-                              <tr key={m.id} style={{ borderBottom: '1px solid #f1f5f9' }} className="table-row-hover">
-                                <td style={{ padding: '1rem', fontWeight: 700, color: '#0f172a' }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                              <div key={m.id} style={{ background: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', borderLeft: '5px solid #6366f1', padding: '0.85rem', boxShadow: '0 2px 6px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
                                     {m.foto_url ? (
-                                      <img src={m.foto_url} alt={m.nombre} style={{ width: '48px', height: '48px', borderRadius: '50%', objectFit: 'cover', border: '1px solid #e2e8f0' }} />
+                                      <img src={m.foto_url} alt={m.nombre} style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover' }} />
                                     ) : (
-                                      <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg, #0ea5e9, #6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 'bold', color: 'white' }}>
+                                      <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: 'linear-gradient(135deg, #0ea5e9, #6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.05rem', fontWeight: 'bold', color: 'white' }}>
                                         {m.nombre.charAt(0).toUpperCase()}
                                       </div>
                                     )}
                                     <div>
-                                      {isEd ? (
-                                        <input type="text" value={editingMayoristaNombre} onChange={e => setEditingMayoristaNombre(e.target.value)}
-                                          style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', width: '130px' }} />
-                                      ) : m.nombre}
-                                    </div>
-                                  </div>
-                                </td>
-                                <td style={{ padding: '1rem' }}>
-                                  {isEd ? (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                                      {editingMayoristaTelefonos.map((tel, idx) => (
-                                        <div key={idx} style={{ display: 'flex', gap: '0.25rem', alignItems: 'center' }}>
-                                          <input type="text" value={tel} onChange={e => { const t = [...editingMayoristaTelefonos]; t[idx] = e.target.value; setEditingMayoristaTelefonos(t); }}
-                                            placeholder="3123456789" style={{ padding: '0.25rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', width: '110px' }} />
-                                          {editingMayoristaTelefonos.length > 1 && (
-                                            <button type="button" onClick={() => setEditingMayoristaTelefonos(editingMayoristaTelefonos.filter((_, i) => i !== idx))}
-                                              style={{ background: '#fee2e2', border: 'none', color: '#ef4444', borderRadius: '4px', cursor: 'pointer', padding: '0.25rem' }}>✕</button>
-                                          )}
-                                        </div>
-                                      ))}
-                                      <button type="button" onClick={() => setEditingMayoristaTelefonos([...editingMayoristaTelefonos, ''])}
-                                        style={{ background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', alignSelf: 'flex-start' }}>+ Añadir línea</button>
-                                    </div>
-                                  ) : (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                                      {(m.telefono || '').split(',').map((p: string) => p.trim()).filter(Boolean).map((phone: string, idx: number) => (
-                                        <a key={idx} href={`https://wa.me/${phone}`} target="_blank" rel="noopener noreferrer"
-                                          style={{ color: '#10b981', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem' }}>
-                                          <Phone size={12} /> {phone}
-                                        </a>
-                                      ))}
-                                    </div>
-                                  )}
-                                </td>
-                                <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                  {isEd ? (
-                                    <input type="text" value={editingMayoristaPin} onChange={e => setEditingMayoristaPin(e.target.value)}
-                                      style={{ padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', width: '70px', textAlign: 'center' }} />
-                                  ) : (
-                                    <span style={{ fontFamily: 'monospace', fontWeight: 600, color: '#475569', background: '#f1f5f9', padding: '0.2rem 0.5rem', borderRadius: '6px' }}>{m.pin || '1234'}</span>
-                                  )}
-                                </td>
-                                <td style={{ padding: '1rem', textAlign: 'center', fontWeight: 600, color: '#475569' }}>{mOrders.length}</td>
-                                <td style={{ padding: '1rem', textAlign: 'right', fontWeight: 800, color: '#10b981' }}>${totalCompras.toLocaleString()}</td>
-                                {(() => {
-                                  const stats = getAdvisorStats(m);
-                                  const notifications = getAdvisorNotifications(m, stats, true);
-                                  const alerts = notifications.filter(n => n.type === 'danger' || n.type === 'warning' || n.type === 'info');
-                                  
-                                  return (
-                                    <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                      {alerts.length === 0 ? (
-                                        <span style={{ fontSize: '0.78rem', color: '#10b981', background: '#dcfce7', padding: '0.2rem 0.55rem', borderRadius: '20px', fontWeight: 700, whiteSpace: 'nowrap', display: 'inline-block' }}>
-                                          ✅ Al día
-                                        </span>
-                                      ) : (
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'center' }}>
-                                          <span 
-                                            onClick={() => setViewingAdvisorAlerts({ advisor: m, alerts: alerts })}
-                                            style={{ 
-                                              fontSize: '0.74rem', 
-                                              color: 'white', 
-                                              background: alerts.some(n => n.type === 'danger') ? '#ef4444' : '#f59e0b', 
-                                              padding: '0.2rem 0.55rem', 
-                                              borderRadius: '20px', 
-                                              fontWeight: 800,
-                                              boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                                              cursor: 'pointer',
-                                              transition: 'transform 0.2s ease',
-                                              whiteSpace: 'nowrap',
-                                              display: 'inline-block'
-                                            }}
-                                            onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.06)'}
-                                            onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                                            title="Haga clic para ver el detalle de las alertas"
-                                          >
-                                            ⚠️ {alerts.length} {alerts.length === 1 ? 'Alerta' : 'Alertas'}
-                                          </span>
-                                        </div>
-                                      )}
-                                    </td>
-                                  );
-                                })()}
-                                <td style={{ padding: '1rem' }}>
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                                    {(m.telefono || '').split(',').map((p: string) => p.trim()).filter(Boolean).map((phone: string, idx: number) => {
-                                      const link = `${window.location.origin}/${getTenantId()}?ws=${phone}&tipo=mayorista`;
-                                      return (
-                                        <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-                                          <a
-                                            href={link}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            style={{ 
-                                              fontSize: '0.78rem', 
-                                              color: '#1e1b4b', 
-                                              fontWeight: 700, 
-                                              display: 'inline-flex', 
-                                              alignItems: 'center', 
-                                              gap: '0.25rem', 
-                                              textDecoration: 'underline', 
-                                              textDecorationColor: '#cbd5e1', 
-                                              transition: 'all 0.2s',
-                                              cursor: 'pointer'
-                                            }}
-                                            onMouseEnter={e => { e.currentTarget.style.color = '#0ea5e9'; e.currentTarget.style.textDecorationColor = '#0ea5e9'; }}
-                                            onMouseLeave={e => { e.currentTarget.style.color = '#1e1b4b'; e.currentTarget.style.textDecorationColor = '#cbd5e1'; }}
-                                            title="Click para ver catálogo de este mayorista"
-                                          >
-                                            📲 {phone}
-                                          </a>
-                                          <button
-                                            type="button"
-                                            onClick={() => {
-                                              navigator.clipboard.writeText(link);
-                                              showToast(`Enlace mayorista copiado ✓`, 'success');
-                                            }}
-                                            className="btn-secondary"
-                                            style={{ padding: '0.15rem 0.4rem', fontSize: '0.65rem', display: 'inline-flex', alignItems: 'center', gap: '0.2rem', whiteSpace: 'nowrap' }}
-                                          >
-                                            <Copy size={10} /> Copiar
-                                          </button>
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                </td>
-                                <td style={{ padding: '1rem', textAlign: 'center' }}>
-                                  <div style={{ display: 'flex', gap: '0.35rem', justifyContent: 'center' }}>
-                                    {isEd ? (
-                                      <>
-                                        <button type="button" onClick={() => handleGuardarMayorista(m.id)} className="btn-primary"
-                                          style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', fontWeight: 700 }}>Guardar</button>
-                                        <button type="button" onClick={() => setEditingMayoristaId(null)} className="btn-secondary"
-                                          style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}>Cancelar</button>
-                                      </>
-                                    ) : (
-                                      <>
-                                        <button
-                                          type="button"
-                                          onClick={() => setSelectedAsesorAnalytics(m)}
-                                          className="btn-secondary"
-                                          style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem', color: 'var(--primary-color,#6366f1)', borderColor: 'var(--primary-color,#6366f1)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontWeight: 600 }}
-                                          title="Ver analítica del mayorista"
-                                        >
-                                          <LayoutDashboard size={12} /> Resumen
-                                        </button>
                                         <button type="button" onClick={() => {
                                           setEditingMayoristaId(m.id);
                                           setEditingMayoristaNombre(m.nombre);

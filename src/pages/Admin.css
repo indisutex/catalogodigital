@@ -17,6 +17,13 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+.desktop-only-table {
+  display: block;
+}
+.mobile-only-cards {
+  display: none;
+}
+
 /* ── LOGIN SCREEN ── */
 .admin-login-wrapper {
   display: flex;
@@ -1826,6 +1833,14 @@ body {
     gap: 0.25rem !important;
   }
 
+  .desktop-only-table {
+    display: none !important;
+  }
+  .mobile-only-cards {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.85rem !important;
+  }
 
   .admin-content {
     padding: 1rem;
