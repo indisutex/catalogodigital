@@ -5072,7 +5072,7 @@ export default function Admin() {
       {/* MAIN */}
       <div className="admin-main">
         {/* TOP BAR */}
-        <div className="admin-topbar" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'flex-start' }}>
+        <div className="admin-topbar">
           <button 
             type="button" 
             className="sidebar-collapse-toggle"
@@ -5105,7 +5105,7 @@ export default function Admin() {
               {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           )}
-          <div className="topbar-title" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: 0, justifyContent: 'flex-start' }}>
+          <div className="topbar-title">
             {((role === 'asesor' && currentAsesor) || (role === 'mayorista' && currentMayorista)) ? (
               (() => {
                 const currentUser = role === 'mayorista' ? currentMayorista : currentAsesor;
@@ -5133,7 +5133,7 @@ export default function Admin() {
             ) : (['clientes','asesores','pedidos','mayoristas','productos','material_apoyo'].includes(activeTab) && !isAddingProduct) ? (
               <>
                 {/* Título compacto de sección y contador fijados inmediatamente a la izquierda del hamburger */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexShrink: 0 }}>
+                <div className="topbar-left-info">
                   <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>
                     {activeTab === 'clientes' && '👥'}
                     {activeTab === 'asesores' && '🧑‍💼'}
@@ -5161,11 +5161,11 @@ export default function Admin() {
                 </div>
 
                 {/* Divisor vertical */}
-                <div style={{ width: '1px', height: '24px', background: '#cbd5e1', flexShrink: 0, margin: '0 0.2rem' }} />
+                <div className="topbar-divider" />
 
                 {/* Buscador y Filtros inline alineados a la derecha */}
                 {activeTab === 'pedidos' ? (
-                  <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-end' }}>
+                  <div className="topbar-filters-wrapper">
                     {/* Buscador de Pedidos Directo */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', minWidth: '190px', flex: '0 1 240px', maxWidth: '280px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', transition: 'all 0.2s' }}>
                       <Search size={15} style={{ color: '#00a6f9', flexShrink: 0 }} />
@@ -5261,7 +5261,7 @@ export default function Admin() {
                     </div>
                   </div>
                 ) : activeTab === 'productos' ? (
-                  <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-end' }}>
+                  <div className="topbar-filters-wrapper">
                     {/* Buscador de Productos Directo */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', minWidth: '190px', flex: '0 1 240px', maxWidth: '280px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', transition: 'all 0.2s' }}>
                       <Search size={15} style={{ color: '#00a6f9', flexShrink: 0 }} />
@@ -5428,7 +5428,7 @@ export default function Admin() {
                     </div>
                   </div>
                 ) : activeTab === 'material_apoyo' ? (
-                  <form onSubmit={handleCrearMaterial} style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-end', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-end' }}>
+                  <form className="topbar-filters-wrapper topbar-form-material" onSubmit={handleCrearMaterial}>
                     {/* Campo 1: Título */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', flex: '1 1 180px', minWidth: '160px', maxWidth: '240px' }}>
                       <input
@@ -5516,7 +5516,7 @@ export default function Admin() {
                     </button>
                   </form>
                 ) : (
-                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-end' }}>
+                  <div className="topbar-filters-wrapper">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', flex: '0 1 260px', maxWidth: '340px', minWidth: '180px', transition: 'border-color 0.2s', marginTop: (activeTab === 'asesores' || activeTab === 'mayoristas') ? '1.25rem' : '0' }}
                       onFocus={e => (e.currentTarget.style.borderColor = '#00a6f9')}
                       onBlur={e => (e.currentTarget.style.borderColor = '#cbd5e1')}
@@ -5557,7 +5557,7 @@ export default function Admin() {
                     </div>
                     
                     {activeTab === 'asesores' && (
-                      <form onSubmit={handleCrearAsesor} style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-end' }}>
+                      <form className="topbar-form-inline" onSubmit={handleCrearAsesor}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', flex: '1 1 180px', minWidth: '160px', maxWidth: '240px' }}>
                           <input type="text" required placeholder="Ej: Carolina Gómez" value={nuevoAsesorNombre} onChange={e => setNuevoAsesorNombre(e.target.value)} style={{ height: '38px', padding: '0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', outline: 'none', background: '#ffffff', color: '#0f172a', fontWeight: 500, fontFamily: "'Outfit', sans-serif" }} />
                         </div>
@@ -5584,7 +5584,7 @@ export default function Admin() {
                     )}
 
                     {activeTab === 'mayoristas' && (
-                      <form onSubmit={handleCrearMayorista} style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-end' }}>
+                      <form className="topbar-form-inline" onSubmit={handleCrearMayorista}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', flex: '1 1 180px', minWidth: '160px', maxWidth: '240px' }}>
                           <input type="text" required placeholder="Ej: Distribuidora López" value={nuevoMayoristaNombre} onChange={e => setNuevoMayoristaNombre(e.target.value)} style={{ height: '38px', padding: '0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', outline: 'none', background: '#ffffff', color: '#0f172a', fontWeight: 500, fontFamily: "'Outfit', sans-serif" }} />
                         </div>
