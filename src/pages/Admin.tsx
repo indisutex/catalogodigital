@@ -5404,50 +5404,98 @@ export default function Admin() {
                     </div>
                   </div>
                 ) : activeTab === 'material_apoyo' ? (
-                  <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-start' }}>
-                    {/* Filtro por Tipo de Recurso */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', height: '38px', padding: '0 0.65rem 0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', background: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-                      <Tag size={15} style={{ color: '#00a6f9', flexShrink: 0 }} />
-                      <select 
-                        value={materialFilter} 
-                        onChange={e => setMaterialFilter(e.target.value)}
-                        style={{ height: '100%', border: 'none', background: 'transparent', outline: 'none', fontSize: '0.8rem', color: '#0f172a', fontWeight: 700, cursor: 'pointer' }}
+                  <form onSubmit={handleCrearMaterial} style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-end', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-start' }}>
+                    {/* Campo 1: Título */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', flex: '1 1 180px', minWidth: '160px', maxWidth: '240px' }}>
+                      <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569', whiteSpace: 'nowrap' }}>Título del Recurso</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Ej: Video Campaña Colección Invierno"
+                        value={nuevoMaterialTitulo}
+                        onChange={e => setNuevoMaterialTitulo(e.target.value)}
+                        style={{ height: '38px', padding: '0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', outline: 'none', background: '#ffffff', color: '#0f172a', fontWeight: 600 }}
+                      />
+                    </div>
+
+                    {/* Campo 2: Descripción */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', flex: '1 1 180px', minWidth: '160px', maxWidth: '240px' }}>
+                      <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569', whiteSpace: 'nowrap' }}>Descripción (Opcional)</label>
+                      <input
+                        type="text"
+                        placeholder="Ej: Video para estados de WhatsApp"
+                        value={nuevoMaterialDesc}
+                        onChange={e => setNuevoMaterialDesc(e.target.value)}
+                        style={{ height: '38px', padding: '0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', outline: 'none', background: '#ffffff', color: '#0f172a', fontWeight: 600 }}
+                      />
+                    </div>
+
+                    {/* Campo 3: Campaña */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', flex: '1 1 160px', minWidth: '140px', maxWidth: '220px' }}>
+                      <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569', whiteSpace: 'nowrap' }}>Campaña (Opcional)</label>
+                      <input
+                        type="text"
+                        placeholder="Ej: Navidad, Día del Padre"
+                        value={nuevoMaterialCampana}
+                        onChange={e => setNuevoMaterialCampana(e.target.value)}
+                        style={{ height: '38px', padding: '0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', outline: 'none', background: '#ffffff', color: '#0f172a', fontWeight: 600 }}
+                      />
+                    </div>
+
+                    {/* Campo 4: Tipo */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', minWidth: '160px' }}>
+                      <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569', whiteSpace: 'nowrap' }}>Tipo de Recurso</label>
+                      <select
+                        value={nuevoMaterialTipo}
+                        onChange={e => setNuevoMaterialTipo(e.target.value as any)}
+                        style={{ height: '38px', padding: '0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', outline: 'none', background: '#ffffff', color: '#0f172a', fontWeight: 700, cursor: 'pointer' }}
                       >
-                        <option value="todos">Todos los Recursos</option>
-                        <option value="video">🎥 Videos</option>
-                        <option value="imagen">🖼️ Imágenes</option>
-                        <option value="documento">📄 Documentos</option>
-                        <option value="carpeta">📁 Carpetas</option>
+                        <option value="video">🎥 Video (Google Drive)</option>
+                        <option value="imagen">🖼️ Imagen / Catálogo</option>
+                        <option value="documento">📄 Documento / PDF</option>
+                        <option value="carpeta">📁 Carpeta Completa</option>
                       </select>
                     </div>
 
-                    {/* Filtro por Campaña */}
-                    {uniqueCampanas.length > 0 && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', height: '38px', padding: '0 0.65rem 0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', background: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-                        <MapPin size={15} style={{ color: '#00a6f9', flexShrink: 0 }} />
-                        <select 
-                          value={campanaFilter} 
-                          onChange={e => setCampanaFilter(e.target.value)}
-                          style={{ height: '100%', border: 'none', background: 'transparent', outline: 'none', fontSize: '0.8rem', color: '#0f172a', fontWeight: 700, cursor: 'pointer' }}
-                        >
-                          <option value="todas">Todas las Campañas</option>
-                          {uniqueCampanas.map(c => (
-                            <option key={c as string} value={c as string}>{c as string}</option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
+                    {/* Campo 5: URL Google Drive */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', flex: '1 1 200px', minWidth: '180px', maxWidth: '280px' }}>
+                      <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569', whiteSpace: 'nowrap' }}>Enlace de Google Drive (Compartido)</label>
+                      <input
+                        type="url"
+                        required
+                        placeholder="https://drive.google.com/..."
+                        value={nuevoMaterialUrl}
+                        onChange={e => setNuevoMaterialUrl(e.target.value)}
+                        style={{ height: '38px', padding: '0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', outline: 'none', background: '#ffffff', color: '#0f172a', fontWeight: 600 }}
+                      />
+                    </div>
 
-                    {/* Botón Registrar Recurso */}
+                    {/* Botón Guardar / Registrar */}
                     <button
-                      type="button"
+                      type="submit"
                       className="btn-primary hover-lift"
-                      onClick={() => setShowRegistrarMaterialModal(true)}
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0 0.9rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                      disabled={loading}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.4rem',
+                        padding: '0 1.1rem',
+                        height: '38px',
+                        borderRadius: '10px',
+                        fontSize: '0.82rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        background: '#00a6f9',
+                        color: '#ffffff',
+                        border: 'none',
+                        boxShadow: '0 2px 6px rgba(0, 166, 249, 0.3)'
+                      }}
                     >
-                      <Plus size={14} /> Registrar Recurso
+                      <Plus size={15} /> {loading ? 'Guardando...' : 'Registrar Recurso'}
                     </button>
-                  </div>
+                  </form>
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', flex: '0 1 260px', maxWidth: '340px', minWidth: '180px', transition: 'border-color 0.2s' }}
                     onFocus={e => (e.currentTarget.style.borderColor = '#00a6f9')}
@@ -9244,86 +9292,6 @@ export default function Admin() {
           {/* ── MATERIAL DE APOYO ADMIN TAB ── */}
           {activeTab === 'material_apoyo' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              {/* Formulario de Subida/Registro */}
-              <div className="admin-panel">
-                <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
-                  <div>
-                    <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}><Upload size={18} /> Registrar Recurso en Google Drive</h3>
-                    <p className="panel-header-subtitle" style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Agrega carpetas, imágenes o videos compartidos desde Google Drive para el equipo</p>
-                  </div>
-                </div>
-                <div className="panel-body">
-                  <form onSubmit={handleCrearMaterial} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', alignItems: 'start' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Título del Recurso</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Ej: Video Campaña Colección Invierno"
-                        value={nuevoMaterialTitulo}
-                        onChange={e => setNuevoMaterialTitulo(e.target.value)}
-                        style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Descripción (Opcional)</label>
-                      <input
-                        type="text"
-                        placeholder="Ej: Video para estados de WhatsApp"
-                        value={nuevoMaterialDesc}
-                        onChange={e => setNuevoMaterialDesc(e.target.value)}
-                        style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Campaña (Opcional)</label>
-                      <input
-                        type="text"
-                        placeholder="Ej: Navidad, Día del Padre"
-                        value={nuevoMaterialCampana}
-                        onChange={e => setNuevoMaterialCampana(e.target.value)}
-                        style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Tipo de Recurso</label>
-                      <select
-                        value={nuevoMaterialTipo}
-                        onChange={e => setNuevoMaterialTipo(e.target.value as any)}
-                        style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none', background: 'white' }}
-                      >
-                        <option value="video">🎥 Video (Google Drive)</option>
-                        <option value="imagen">🖼️ Imagen / Catálogo (Google Drive)</option>
-                        <option value="documento">📄 Documento / PDF (Google Drive)</option>
-                        <option value="carpeta">📁 Carpeta Completa (Google Drive)</option>
-                      </select>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Enlace de Google Drive (Compartido)</label>
-                      <input
-                        type="url"
-                        required
-                        placeholder="https://drive.google.com/..."
-                        value={nuevoMaterialUrl}
-                        onChange={e => setNuevoMaterialUrl(e.target.value)}
-                        style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'transparent', userSelect: 'none' }}>Spacer</div>
-                      <button
-                        type="submit"
-                        className="btn-primary"
-                        disabled={loading}
-                        style={{ padding: '0.62rem', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontWeight: 700, height: '43px' }}
-                      >
-                        <Plus size={16} /> Registrar Recurso
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-
               {/* Listado de Material de Apoyo */}
               <div className="admin-panel">
                 <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
