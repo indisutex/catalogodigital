@@ -2161,6 +2161,7 @@ body {
   /* Left status indicator strips */
   .order-mobile-card.lead-abandonado { border-left: 5px solid #ef4444; }
   .order-mobile-card.order-pendiente { border-left: 5px solid #eab308; }
+  .order-mobile-card.order-contraentrega { border-left: 5px solid #ea580c; }
   .order-mobile-card.order-comprobante { border-left: 5px solid #3b82f6; }
   .order-mobile-card.order-completado { border-left: 5px solid #22c55e; }
   
@@ -2266,6 +2267,7 @@ body {
   }
   .payment-badge-small.verified { background: #dcfce7; color: #15803d; border-color: #86efac; }
   .payment-badge-small.uploaded { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
+  .payment-badge-small.contraentrega { background: #fff7ed; color: #ea580c; border-color: #fdba74; }
   .payment-badge-small.pending { background: #fffbeb; color: #b45309; border-color: #fde68a; }
   
   /* Body Row Layout */

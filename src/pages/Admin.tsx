@@ -505,6 +505,18 @@ export default function Admin() {
     }
     const parsedProds = getParsedProducts(ped.productos);
 
+    const mp = getMetodoPago(ped);
+    const isContra = mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra'));
+    const cardStatusClass = isLead 
+      ? 'lead-abandonado' 
+      : ped.estado === 'completado' 
+      ? 'order-completado' 
+      : isContra 
+      ? 'order-contraentrega' 
+      : ped.pantallazo_url 
+      ? 'order-comprobante' 
+      : 'order-pendiente';
+
     return (
       <div 
         key={ped.id} 
@@ -512,7 +524,7 @@ export default function Admin() {
         onDragStart={(e) => {
           e.dataTransfer.setData('text/plain', JSON.stringify({ id: ped.id, isLead }));
         }}
-        className={`order-mobile-card ${isLead ? 'lead-abandonado' : ped.estado === 'completado' ? 'order-completado' : ped.pantallazo_url ? 'order-comprobante' : 'order-pendiente'}`} 
+        className={`order-mobile-card ${cardStatusClass}`} 
         style={{ margin: 0, cursor: 'grab' }}
       >
         <div className="card-header-row">
@@ -541,13 +553,11 @@ export default function Admin() {
               </div>
             </div>
             {!isLead && (() => {
-              const mp = getMetodoPago(ped);
-              const isContra = mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra'));
               if (ped.estado === 'completado') {
                 return <span className="payment-badge-small verified" style={{ marginTop: '4px', display: 'inline-block' }}>✅ Verificado</span>;
               }
               if (isContra) {
-                return <span className="payment-badge-small uploaded" style={{ marginTop: '4px', display: 'inline-block', background: '#fff7ed', color: '#ea580c', borderColor: '#fdba74' }}>🚚 Pago Contra Entrega</span>;
+                return <span className="payment-badge-small contraentrega" style={{ marginTop: '4px', display: 'inline-block' }}>🚚 Pago Contra Entrega</span>;
               }
               if (ped.pantallazo_url) {
                 return <span className="payment-badge-small uploaded" style={{ marginTop: '4px', display: 'inline-block' }}>📸 Comprobante recibido</span>;
@@ -12435,8 +12445,20 @@ export default function Admin() {
                             adv = { nombre: 'Punto de Venta', role: 'POS', foto_url: '' };
                           }
 
+                          const mp = getMetodoPago(ped);
+                          const isContra = mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra'));
+                          const cardStatusClass = isLead 
+                            ? 'lead-abandonado' 
+                            : ped.estado === 'completado' 
+                            ? 'order-completado' 
+                            : isContra 
+                            ? 'order-contraentrega' 
+                            : ped.pantallazo_url 
+                            ? 'order-comprobante' 
+                            : 'order-pendiente';
+
                           return (
-                            <div key={ped.id} className={`order-mobile-card ${isLead ? 'lead-abandonado' : ped.estado === 'completado' ? 'order-completado' : ped.pantallazo_url ? 'order-comprobante' : 'order-pendiente'}`}>
+                            <div key={ped.id} className={`order-mobile-card ${cardStatusClass}`}>
                               {/* Header Row: Client avatar, details, and status badges */}
                               <div className="card-header-row">
                                 <div className="client-info-block">
@@ -12463,11 +12485,18 @@ export default function Admin() {
                                       <span className="advisor-role">{adv.role}</span>
                                     </div>
                                   </div>
-                                  {!isLead && (
-                                    <span className={`payment-badge-small ${ped.estado === 'completado' ? 'verified' : ped.pantallazo_url ? 'uploaded' : 'pending'}`} style={{ marginTop: '4px', display: 'inline-block' }}>
-                                      {ped.estado === 'completado' ? '✅ Verificado' : ped.pantallazo_url ? '📸 Comprobante recibido' : '⏳ Esperando comprobante de pago'}
-                                    </span>
-                                  )}
+                                  {!isLead && (() => {
+                                    if (ped.estado === 'completado') {
+                                      return <span className="payment-badge-small verified" style={{ marginTop: '4px', display: 'inline-block' }}>✅ Verificado</span>;
+                                    }
+                                    if (isContra) {
+                                      return <span className="payment-badge-small contraentrega" style={{ marginTop: '4px', display: 'inline-block' }}>🚚 Pago Contra Entrega</span>;
+                                    }
+                                    if (ped.pantallazo_url) {
+                                      return <span className="payment-badge-small uploaded" style={{ marginTop: '4px', display: 'inline-block' }}>📸 Comprobante recibido</span>;
+                                    }
+                                    return <span className="payment-badge-small pending" style={{ marginTop: '4px', display: 'inline-block' }}>⏳ Esperando comprobante de pago</span>;
+                                  })()}
                                 </div>
                               </div>
 
