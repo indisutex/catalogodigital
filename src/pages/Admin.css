@@ -2355,8 +2355,8 @@ body {
   
   .mobile-search-filter-toggles {
     display: flex !important;
-    gap: 8px;
-    margin-bottom: 12px;
+    gap: 6px;
+    margin-bottom: 0 !important;
   }
   
   .mobile-search-filter-toggles .toggle-button {

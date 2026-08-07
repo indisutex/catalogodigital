@@ -12125,107 +12125,111 @@ export default function Admin() {
 
             return (
               <div className="admin-panel">
-              <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', width: '100%' }}>
-                <div>
-                  <h3 style={{ margin: 0, whiteSpace: 'nowrap' }}><ShoppingBag size={16} /> Registro de Pedidos</h3>
-                  <p className="panel-header-subtitle" style={{ margin: '0.2rem 0 0 0' }}>Pedidos recibidos desde el catálogo digital y su asignación de línea</p>
-                </div>
-                
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  {/* Botón Refrescar */}
-                  <button
-                    type="button"
-                    onClick={handleManualRefresh}
-                    disabled={isRefreshing}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      background: '#f1f5f9',
-                      color: '#475569',
-                      border: 'none',
-                      borderRadius: '8px',
-                      width: '36px',
-                      height: '36px',
-                      cursor: isRefreshing ? 'not-allowed' : 'pointer',
-                      transition: 'all 0.2s',
-                    }}
-                    title="Sincronizar Datos"
-                  >
-                    <style>{`
-                      @keyframes spin {
-                        0% { transform: rotate(0deg); }
-                        100% { transform: rotate(360deg); }
-                      }
-                      .spin-icon-active {
-                        animation: spin 1s linear infinite;
-                      }
-                    `}</style>
-                    <RefreshCw size={16} className={isRefreshing ? 'spin-icon-active' : ''} />
-                  </button>
-                  {/* Toggles de Búsqueda y Filtros en Móvil */}
-                  <div className="mobile-search-filter-toggles">
-                    <button 
-                      type="button" 
-                      className={`toggle-button ${showMobileSearch ? 'active' : ''}`}
-                      onClick={() => {
-                        setShowMobileSearch(!showMobileSearch);
-                        setShowMobileFilters(false);
+              <div className="panel-header" style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', width: '100%', marginBottom: '0.75rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '0.5rem' }}>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <ShoppingBag size={18} /> Registro de Pedidos
+                  </h3>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
+                    {/* Botón Refrescar */}
+                    <button
+                      type="button"
+                      onClick={handleManualRefresh}
+                      disabled={isRefreshing}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: '#f1f5f9',
+                        color: '#475569',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        width: '34px',
+                        height: '34px',
+                        cursor: isRefreshing ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.2s',
                       }}
+                      title="Sincronizar Datos"
                     >
-                      <Search size={16} />
+                      <style>{`
+                        @keyframes spin {
+                          0% { transform: rotate(0deg); }
+                          100% { transform: rotate(360deg); }
+                        }
+                        .spin-icon-active {
+                          animation: spin 1s linear infinite;
+                        }
+                      `}</style>
+                      <RefreshCw size={15} className={isRefreshing ? 'spin-icon-active' : ''} />
                     </button>
-                    <button 
-                      type="button" 
-                      className={`toggle-button ${showMobileFilters ? 'active' : ''}`}
-                      onClick={() => {
-                        setShowMobileFilters(!showMobileFilters);
-                        setShowMobileSearch(false);
-                      }}
-                    >
-                      <Filter size={16} />
-                    </button>
-                  </div>
+                    {/* Toggles de Búsqueda y Filtros en Móvil */}
+                    <div className="mobile-search-filter-toggles" style={{ display: 'flex', gap: '4px', margin: 0 }}>
+                      <button 
+                        type="button" 
+                        className={`toggle-button ${showMobileSearch ? 'active' : ''}`}
+                        onClick={() => {
+                          setShowMobileSearch(!showMobileSearch);
+                          setShowMobileFilters(false);
+                        }}
+                      >
+                        <Search size={15} />
+                      </button>
+                      <button 
+                        type="button" 
+                        className={`toggle-button ${showMobileFilters ? 'active' : ''}`}
+                        onClick={() => {
+                          setShowMobileFilters(!showMobileFilters);
+                          setShowMobileSearch(false);
+                        }}
+                      >
+                        <Filter size={15} />
+                      </button>
+                    </div>
 
-                  {/* Switcher Vista */}
-                  <div className="desktop-view-mode-switcher" style={{ display: 'flex', gap: '0.25rem', background: '#f1f5f9', padding: '0.25rem', borderRadius: '8px' }}>
-                  <button
-                    type="button"
-                    onClick={() => setPedidosViewMode('lista')}
-                    style={{
-                      border: 'none',
-                      background: pedidosViewMode === 'lista' ? '#ffffff' : 'transparent',
-                      color: pedidosViewMode === 'lista' ? '#0f172a' : '#64748b',
-                      padding: '0.4rem 1rem',
-                      borderRadius: '6px',
-                      fontSize: '0.85rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      boxShadow: pedidosViewMode === 'lista' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
-                    }}
-                  >
-                    📋 Lista
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setPedidosViewMode('kanban')}
-                    style={{
-                      border: 'none',
-                      background: pedidosViewMode === 'kanban' ? '#ffffff' : 'transparent',
-                      color: pedidosViewMode === 'kanban' ? '#0f172a' : '#64748b',
-                      padding: '0.4rem 1rem',
-                      borderRadius: '6px',
-                      fontSize: '0.85rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      boxShadow: pedidosViewMode === 'kanban' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
-                    }}
-                  >
-                    📊 Kanban
-                  </button>
+                    {/* Switcher Vista */}
+                    <div className="desktop-view-mode-switcher" style={{ display: 'flex', gap: '0.25rem', background: '#f1f5f9', padding: '0.25rem', borderRadius: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setPedidosViewMode('lista')}
+                        style={{
+                          border: 'none',
+                          background: pedidosViewMode === 'lista' ? '#ffffff' : 'transparent',
+                          color: pedidosViewMode === 'lista' ? '#0f172a' : '#64748b',
+                          padding: '0.4rem 0.8rem',
+                          borderRadius: '6px',
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          boxShadow: pedidosViewMode === 'lista' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                        }}
+                      >
+                        📋 Lista
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPedidosViewMode('kanban')}
+                        style={{
+                          border: 'none',
+                          background: pedidosViewMode === 'kanban' ? '#ffffff' : 'transparent',
+                          color: pedidosViewMode === 'kanban' ? '#0f172a' : '#64748b',
+                          padding: '0.4rem 0.8rem',
+                          borderRadius: '6px',
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          boxShadow: pedidosViewMode === 'kanban' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                        }}
+                      >
+                        📊 Kanban
+                      </button>
+                    </div>
+                  </div>
                 </div>
+                <p className="panel-header-subtitle" style={{ margin: '0.1rem 0 0 0', fontSize: '0.8rem', color: '#64748b' }}>
+                  Pedidos recibidos desde el catálogo digital y su asignación de línea
+                </p>
               </div>
-            </div>
             <div className="panel-body">
               {pedidos.length === 0 && leads.length === 0 ? (
                 <div className="empty-state">
