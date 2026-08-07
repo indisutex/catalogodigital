@@ -5496,43 +5496,45 @@ export default function Admin() {
                     </button>
                   </form>
                 ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', flex: '0 1 260px', maxWidth: '340px', minWidth: '180px', transition: 'border-color 0.2s' }}
-                    onFocus={e => (e.currentTarget.style.borderColor = '#00a6f9')}
-                    onBlur={e => (e.currentTarget.style.borderColor = '#cbd5e1')}
-                  >
-                    <Search size={15} style={{ color: '#00a6f9', flexShrink: 0 }} />
-                    <input
-                      type="text"
-                      placeholder={
-                        activeTab === 'clientes' ? 'Buscar por nombre o celular...' :
-                        activeTab === 'asesores' ? 'Buscar asesor por nombre...' :
-                        'Buscar mayorista...'
-                      }
-                      value={
-                        activeTab === 'clientes' ? clienteSearchQuery :
-                        activeTab === 'asesores' ? asesorSearchQuery :
-                        mayoristaBuscador
-                      }
-                      onChange={e => {
-                        if (activeTab === 'clientes') setClienteSearchQuery(e.target.value);
-                        else if (activeTab === 'asesores') setAsesorSearchQuery(e.target.value);
-                        else setMayoristaBuscador(e.target.value);
-                      }}
-                      style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '0.83rem', width: '100%', color: '#0f172a', fontWeight: 600 }}
-                    />
-                    {(
-                      (activeTab === 'clientes' && clienteSearchQuery) ||
-                      (activeTab === 'asesores' && asesorSearchQuery) ||
-                      (activeTab === 'mayoristas' && mayoristaBuscador)
-                    ) && (
-                      <button type="button" onClick={() => {
-                        if (activeTab === 'clientes') setClienteSearchQuery('');
-                        else if (activeTab === 'asesores') setAsesorSearchQuery('');
-                        else setMayoristaBuscador('');
-                      }} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', padding: 0 }}>
-                        <X size={13} />
-                      </button>
-                    )}
+                  <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-end' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', flex: '0 1 260px', maxWidth: '340px', minWidth: '180px', transition: 'border-color 0.2s' }}
+                      onFocus={e => (e.currentTarget.style.borderColor = '#00a6f9')}
+                      onBlur={e => (e.currentTarget.style.borderColor = '#cbd5e1')}
+                    >
+                      <Search size={15} style={{ color: '#00a6f9', flexShrink: 0 }} />
+                      <input
+                        type="text"
+                        placeholder={
+                          activeTab === 'clientes' ? 'Buscar por nombre o celular...' :
+                          activeTab === 'asesores' ? 'Buscar asesor por nombre...' :
+                          'Buscar mayorista...'
+                        }
+                        value={
+                          activeTab === 'clientes' ? clienteSearchQuery :
+                          activeTab === 'asesores' ? asesorSearchQuery :
+                          mayoristaBuscador
+                        }
+                        onChange={e => {
+                          if (activeTab === 'clientes') setClienteSearchQuery(e.target.value);
+                          else if (activeTab === 'asesores') setAsesorSearchQuery(e.target.value);
+                          else setMayoristaBuscador(e.target.value);
+                        }}
+                        style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '0.83rem', width: '100%', color: '#0f172a', fontWeight: 600 }}
+                      />
+                      {(
+                        (activeTab === 'clientes' && clienteSearchQuery) ||
+                        (activeTab === 'asesores' && asesorSearchQuery) ||
+                        (activeTab === 'mayoristas' && mayoristaBuscador)
+                      ) && (
+                        <button type="button" onClick={() => {
+                          if (activeTab === 'clientes') setClienteSearchQuery('');
+                          else if (activeTab === 'asesores') setAsesorSearchQuery('');
+                          else setMayoristaBuscador('');
+                        }} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', padding: 0 }}>
+                          <X size={13} />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
 
