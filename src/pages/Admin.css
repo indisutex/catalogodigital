@@ -1798,9 +1798,13 @@ body {
     display: none !important;
   }
   .topbar-filters-wrapper > div {
-    flex: 0 0 auto !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
     height: 36px !important;
     box-sizing: border-box !important;
+  }
+  .topbar-filters-wrapper > div input {
+    min-width: 0 !important;
   }
   .btn-text-desktop {
     display: none !important;
