@@ -5,7 +5,7 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista, PQRS } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, Wrench, Calendar, MapPin, ArrowUpDown, Filter, SlidersHorizontal } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, Wrench, ArrowUpDown, Filter } from 'lucide-react';
 
 import * as XLSX from 'xlsx';
 import { ERPContabilidadService } from '../lib/erpContabilidadService';
@@ -339,6 +339,347 @@ function MiNegocioSettings({
         </div>
       </div>
     </div>
+  );
+}
+
+// ── SIDEBAR COMPONENT ──
+function SidebarContent({
+  activeTab, setActiveTab, productos, configuracion, handleLogout, onClose, role, currentAsesor, activeNotificationsCount = 0
+}: {
+  activeTab: TabType;
+  setActiveTab: (t: TabType) => void;
+  productos: Producto[];
+  configuracion: Configuracion | null;
+  handleLogout: () => void;
+  onClose?: () => void;
+  role: 'admin' | 'asesor' | 'mayorista';
+  currentAsesor?: any;
+  activeNotificationsCount?: number;
+  listaPqrs?: PQRS[];
+}) {
+  const [isPosExpanded, setIsPosExpanded] = useState<boolean>(activeTab === 'pos' || activeTab === 'ventas_pos');
+  const [isProductosExpanded, setIsProductosExpanded] = useState<boolean>(activeTab === 'productos' || activeTab === 'categorias');
+
+  const handleSelectTab = (tab: TabType) => {
+    setActiveTab(tab);
+    if (onClose) onClose();
+  };
+
+  return (
+    <>
+      <div className="sidebar-brand">
+        <div className="brand-icon" style={configuracion?.logo_url ? { background: 'transparent', padding: 0 } : {}}>
+          {configuracion?.logo_url ? (
+            <img src={configuracion.logo_url} alt="Logo" style={{ width: '100%', height: '100%', borderRadius: '8px', objectFit: 'cover' }} />
+          ) : (
+            '🛍️'
+          )}
+        </div>
+        <div className="brand-text">
+          <h2 style={{ textTransform: 'capitalize', fontSize: '1.1rem', color: '#0f172a', fontWeight: 800 }}>
+            {configuracion?.nombre_negocio ? `${configuracion.nombre_negocio} Admin` : 'Admin'}
+          </h2>
+          <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>
+            {role === 'mayorista' ? 'Panel Mayorista' : role === 'asesor' ? 'Panel de Asesor' : 'Panel Administrativo'}
+          </p>
+          {(role === 'asesor' || role === 'mayorista') && currentAsesor && (
+            <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.78rem', fontWeight: 700, color: 'var(--primary-color, #6366f1)' }}>
+              Sesión: {currentAsesor.nombre}
+            </p>
+          )}
+          {(role === 'asesor' || role === 'mayorista') && currentAsesor ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.3rem' }}>
+              {(currentAsesor.telefono || '').split(',').map((p: string) => p.trim()).filter(Boolean).map((phone: string, idx: number) => (
+                <a 
+                  key={idx}
+                  href={`https://wa.me/${phone.replace(/\D/g, '')}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="sidebar-wa-link"
+                  style={{ fontSize: '0.73rem', color: '#10b981', textDecoration: 'none', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}
+                >
+                  <Phone size={11} style={{ strokeWidth: 2.5 }} /> Línea: {phone}
+                </a>
+              ))}
+            </div>
+          ) : configuracion?.whatsapp ? (
+            <a 
+              href={`https://wa.me/${configuracion.whatsapp.replace(/\D/g, '')}`} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="sidebar-wa-link"
+              style={{ fontSize: '0.75rem', color: '#10b981', textDecoration: 'none', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.3rem', whiteSpace: 'nowrap' }}
+            >
+              <Phone size={12} style={{ strokeWidth: 2.5 }} /> Línea: {configuracion.whatsapp}
+            </a>
+          ) : null}
+        </div>
+      </div>
+
+      <nav className="sidebar-nav" style={{ paddingTop: '0.5rem' }}>
+        <div className="sidebar-nav-label">Navegación</div>
+        {role === 'mayorista' ? (
+          <>
+            <button className={`nav-item ${activeTab === 'resumen_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('resumen_asesor')}>
+              <span className="nav-icon"><Home size={14} /></span> Mi Negocio
+              {activeTab === 'resumen_asesor' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'productos_mayorista' ? 'active' : ''}`} onClick={() => handleSelectTab('productos_mayorista')}>
+              <span className="nav-icon"><Package size={14} /></span> Productos
+              {activeTab === 'productos_mayorista' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'pedidos' ? 'active' : ''}`} onClick={() => handleSelectTab('pedidos')}>
+              <span className="nav-icon"><ShoppingBag size={14} /></span> Pedidos
+              {activeTab === 'pedidos' && <span className="active-dot"></span>}
+            </button>
+            <button
+              className={`nav-item ${activeTab === 'notificaciones_asesor' ? 'active' : ''}`}
+              onClick={() => handleSelectTab('notificaciones_asesor')}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingRight: '0.75rem' }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span className="nav-icon"><Bell size={14} /></span> Alertas
+              </span>
+              {activeNotificationsCount > 0 && (
+                <span style={{ background: '#ef4444', color: 'white', fontSize: '0.7rem', padding: '1px 6px', borderRadius: '10px', fontWeight: 800 }}>
+                  {activeNotificationsCount}
+                </span>
+              )}
+              {activeTab === 'notificaciones_asesor' && activeNotificationsCount === 0 && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'ranking_mayorista' ? 'active' : ''}`} onClick={() => handleSelectTab('ranking_mayorista')}>
+              <span className="nav-icon"><Trophy size={14} /></span> Ranking
+              {activeTab === 'ranking_mayorista' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'material_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('material_asesor')}>
+              <span className="nav-icon"><Upload size={14} /></span> Material de Venta
+              {activeTab === 'material_asesor' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'perfil_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('perfil_asesor')}>
+              <span className="nav-icon"><Settings size={14} /></span> Mi Perfil
+              {activeTab === 'perfil_asesor' && <span className="active-dot"></span>}
+            </button>
+          </>
+        ) : role === 'asesor' ? (
+          <>
+            <button className={`nav-item ${activeTab === 'resumen_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('resumen_asesor')}>
+              <span className="nav-icon"><LayoutDashboard size={14} /></span> Resumen
+              {activeTab === 'resumen_asesor' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'pedidos' ? 'active' : ''}`} onClick={() => handleSelectTab('pedidos')}>
+              <span className="nav-icon"><ShoppingBag size={14} /></span> Pedidos
+              {activeTab === 'pedidos' && <span className="active-dot"></span>}
+            </button>
+            <button
+              className={`nav-item ${activeTab === 'notificaciones_asesor' ? 'active' : ''}`}
+              onClick={() => handleSelectTab('notificaciones_asesor')}
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingRight: '0.75rem' }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span className="nav-icon"><Lightbulb size={14} style={{ transform: 'rotate(180deg)' }} /></span> Notificaciones
+              </span>
+              {activeNotificationsCount > 0 && (
+                <span style={{ background: '#ef4444', color: 'white', fontSize: '0.7rem', padding: '1px 6px', borderRadius: '10px', fontWeight: 800 }}>
+                  {activeNotificationsCount}
+                </span>
+              )}
+              {activeTab === 'notificaciones_asesor' && activeNotificationsCount === 0 && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'material_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('material_asesor')}>
+              <span className="nav-icon"><Upload size={14} /></span> Material de Apoyo
+              {activeTab === 'material_asesor' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'productos_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('productos_asesor')}>
+              <span className="nav-icon"><Package size={14} /></span> Mis Productos
+              {activeTab === 'productos_asesor' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'perfil_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('perfil_asesor')}>
+              <span className="nav-icon"><Settings size={14} /></span> Mi Perfil
+              {activeTab === 'perfil_asesor' && <span className="active-dot"></span>}
+            </button>
+          </>
+        ) : (
+          <>
+            <button className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => handleSelectTab('dashboard')}>
+              <span className="nav-icon"><LayoutDashboard size={14} /></span> Dashboard
+              {activeTab === 'dashboard' && <span className="active-dot"></span>}
+            </button>
+            {/* ── EXPANDABLE POS MENU ── */}
+            <div>
+              <button
+                type="button"
+                className={`nav-item ${(activeTab === 'pos' || activeTab === 'ventas_pos') ? 'active' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsPosExpanded(prev => !prev);
+                }}
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', cursor: 'pointer' }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span className="nav-icon"><CreditCard size={14} /></span> POS
+                </span>
+                <span style={{ fontSize: '0.7rem', color: '#94a3b8', transition: 'transform 0.2s ease', transform: isPosExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                  ▼
+                </span>
+              </button>
+
+              {isPosExpanded && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '0.6rem', marginTop: '2px', marginBottom: '4px', borderLeft: '2px solid #e2e8f0', marginLeft: '0.9rem' }}>
+                  <button
+                    type="button"
+                    className={`nav-item ${activeTab === 'pos' ? 'active' : ''}`}
+                    onClick={() => handleSelectTab('pos')}
+                    style={{ fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
+                  >
+                    <span className="nav-icon"><CreditCard size={13} /></span> Caja POS
+                    {activeTab === 'pos' && <span className="active-dot"></span>}
+                  </button>
+                  <button
+                    type="button"
+                    className={`nav-item ${activeTab === 'ventas_pos' ? 'active' : ''}`}
+                    onClick={() => handleSelectTab('ventas_pos')}
+                    style={{ fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
+                  >
+                    <span className="nav-icon"><ShoppingBag size={13} color="#8b5cf6" /></span> Ventas POS
+                    {activeTab === 'ventas_pos' && <span className="active-dot"></span>}
+                  </button>
+                </div>
+              )}
+            </div>
+            {/* ── EXPANDABLE PRODUCTOS MENU ── */}
+            <div>
+              <button
+                type="button"
+                className={`nav-item ${(activeTab === 'productos' || activeTab === 'categorias') ? 'active' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsProductosExpanded(prev => !prev);
+                  if (activeTab !== 'productos' && activeTab !== 'categorias') {
+                    handleSelectTab('productos');
+                  }
+                }}
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', cursor: 'pointer' }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span className="nav-icon"><Package size={14} /></span> Productos
+                </span>
+                <span style={{ fontSize: '0.7rem', color: '#94a3b8', transition: 'transform 0.2s ease', transform: isProductosExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                  ▼
+                </span>
+              </button>
+
+              {isProductosExpanded && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '0.6rem', marginTop: '2px', marginBottom: '4px', borderLeft: '2px solid #e2e8f0', marginLeft: '0.9rem' }}>
+                  <button
+                    type="button"
+                    className={`nav-item ${activeTab === 'productos' ? 'active' : ''}`}
+                    onClick={() => handleSelectTab('productos')}
+                    style={{ fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
+                  >
+                    <span className="nav-icon"><Package size={13} /></span> Inventario
+                    {activeTab === 'productos' && <span className="active-dot"></span>}
+                  </button>
+                  <button
+                    type="button"
+                    className={`nav-item ${activeTab === 'categorias' ? 'active' : ''}`}
+                    onClick={() => handleSelectTab('categorias')}
+                    style={{ fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
+                  >
+                    <span className="nav-icon"><Tag size={13} color="#0284c7" /></span> Categorías
+                    {activeTab === 'categorias' && <span className="active-dot"></span>}
+                  </button>
+                </div>
+              )}
+            </div>
+            <button className={`nav-item ${activeTab === 'pedidos' ? 'active' : ''}`} onClick={() => handleSelectTab('pedidos')}>
+              <span className="nav-icon"><ShoppingBag size={14} /></span> Pedidos
+              {activeTab === 'pedidos' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'clientes' ? 'active' : ''}`} onClick={() => handleSelectTab('clientes')}>
+              <span className="nav-icon"><User size={14} /></span> Clientes
+              {activeTab === 'clientes' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'asesores' ? 'active' : ''}`} onClick={() => handleSelectTab('asesores')}>
+              <span className="nav-icon"><Users size={14} /></span> Asesores
+              {activeTab === 'asesores' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'mayoristas' ? 'active' : ''}`} onClick={() => handleSelectTab('mayoristas')}>
+              <span className="nav-icon"><Users size={14} /></span> Mayoristas
+              {activeTab === 'mayoristas' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'material_apoyo' ? 'active' : ''}`} onClick={() => handleSelectTab('material_apoyo')}>
+              <span className="nav-icon"><Upload size={14} /></span> Material de Apoyo
+              {activeTab === 'material_apoyo' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'erp' ? 'active' : ''}`} onClick={() => handleSelectTab('erp')}>
+              <span className="nav-icon"><BarChart2 size={14} /></span> ERP Empresarial
+              {activeTab === 'erp' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'config' ? 'active' : ''}`} onClick={() => handleSelectTab('config')}>
+              <span className="nav-icon"><Settings size={14} /></span> Configuración
+              {activeTab === 'config' && <span className="active-dot"></span>}
+            </button>
+          </>
+        )}
+      </nav>
+
+      {role !== 'asesor' && (
+        <div className="sidebar-storage-stats">
+          <div className="storage-text">
+            <strong>{productos.length} Productos</strong>
+            <span>límite sugerido 500</span>
+          </div>
+          <div className="storage-bar">
+            <div className="storage-progress" style={{ width: `${Math.min((productos.length / 500) * 100, 100)}%` }}></div>
+          </div>
+        </div>
+      )}
+
+      <div className="sidebar-footer" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', padding: '1.2rem', borderTop: '1px solid #f1f5f9', marginTop: 'auto', flexShrink: 0 }}>
+        <a 
+          href={(role === 'asesor' || role === 'mayorista') && currentAsesor?.telefono 
+            ? `/${getTenantId()}?ws=${currentAsesor.telefono.split(',')[0].trim().replace(/\D/g, '')}${role === 'mayorista' ? '&tipo=mayorista' : ''}` 
+            : `/${getTenantId()}?ws=clear`} 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="btn-primary" 
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', width: '100%', padding: '0.8rem', borderRadius: '8px', textDecoration: 'none', background: 'var(--primary-color, #6366f1)' }}
+        >
+          <Eye size={16} /> Ver Catálogo
+        </a>
+        
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginTop: '0.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className="avatar" style={{ background: ((role === 'asesor' || role === 'mayorista') && currentAsesor?.foto_url) ? 'transparent' : (role === 'admin' && configuracion?.admin_foto_url) ? 'transparent' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', borderRadius: '50%', border: '1px solid #e2e8f0', color: '#64748b', padding: 0, overflow: 'hidden' }}>
+              {(role === 'asesor' || role === 'mayorista') && currentAsesor?.foto_url ? (
+                <img src={currentAsesor.foto_url} alt="Usuario" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (role === 'admin' && configuracion?.admin_foto_url) ? (
+                <img src={configuracion.admin_foto_url} alt="Admin" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              ) : (
+                <User size={24} />
+              )}
+            </div>
+            <div className="user-info">
+              <h4 style={{ fontSize: '0.9rem', margin: 0, color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '160px' }}>
+                {(role === 'asesor' || role === 'mayorista') && currentAsesor ? currentAsesor.nombre : (configuracion?.admin_nombre || 'Administrador')}
+              </h4>
+              <p style={{ fontSize: '0.75rem', color: role === 'mayorista' ? '#0ea5e9' : '#10b981', margin: 0 }}>
+                {role === 'asesor' ? 'Asesor' : role === 'mayorista' ? 'Mayorista' : 'Sesión activa'}
+              </p>
+            </div>
+          </div>
+          <button 
+            onClick={handleLogout}
+            style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '0.6rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
+            title="Cerrar sesión"
+            onMouseEnter={(e) => e.currentTarget.style.background = '#fecaca'}
+            onMouseLeave={(e) => e.currentTarget.style.background = '#fee2e2'}
+          >
+            <LogOut size={16} />
+          </button>
+        </div>
+      </div>
+    </>
   );
 }
 
@@ -5435,9 +5776,9 @@ export default function Admin() {
                         type="button"
                         className="btn-primary hover-lift"
                         onClick={() => setShowCrearAsesorForm(!showCrearAsesorForm)}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0 1rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', background: showCrearAsesorForm ? '#64748b' : '#00a6f9', color: '#ffffff', border: 'none', boxShadow: '0 2px 6px rgba(0, 166, 249, 0.3)' }}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0 0.85rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', background: showCrearAsesorForm ? '#64748b' : '#00a6f9', color: '#ffffff', border: 'none', boxShadow: '0 2px 6px rgba(0, 166, 249, 0.3)' }}
                       >
-                        {showCrearAsesorForm ? <X size={14} /> : <Plus size={14} />} {showCrearAsesorForm ? 'Ocultar Formulario' : 'Nuevo Asesor'}
+                        {showCrearAsesorForm ? <X size={14} /> : <Plus size={14} />} <span className="btn-text-desktop">{showCrearAsesorForm ? 'Ocultar' : 'Nuevo Asesor'}</span>
                       </button>
                     )}
 
@@ -5446,9 +5787,9 @@ export default function Admin() {
                         type="button"
                         className="btn-primary hover-lift"
                         onClick={() => setShowCrearMayoristaForm(!showCrearMayoristaForm)}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0 1rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', background: showCrearMayoristaForm ? '#64748b' : '#00a6f9', color: '#ffffff', border: 'none', boxShadow: '0 2px 6px rgba(0, 166, 249, 0.3)' }}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0 0.85rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', background: showCrearMayoristaForm ? '#64748b' : '#00a6f9', color: '#ffffff', border: 'none', boxShadow: '0 2px 6px rgba(0, 166, 249, 0.3)' }}
                       >
-                        {showCrearMayoristaForm ? <X size={14} /> : <Plus size={14} />} {showCrearMayoristaForm ? 'Ocultar Formulario' : 'Nuevo Mayorista'}
+                        {showCrearMayoristaForm ? <X size={14} /> : <Plus size={14} />} <span className="btn-text-desktop">{showCrearMayoristaForm ? 'Ocultar' : 'Nuevo Mayorista'}</span>
                       </button>
                     )}
 
@@ -5457,9 +5798,9 @@ export default function Admin() {
                         type="button"
                         className="btn-primary hover-lift"
                         onClick={() => setShowCrearMaterialForm(!showCrearMaterialForm)}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0 1rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', background: showCrearMaterialForm ? '#64748b' : '#00a6f9', color: '#ffffff', border: 'none', boxShadow: '0 2px 6px rgba(0, 166, 249, 0.3)' }}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0 0.85rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', background: showCrearMaterialForm ? '#64748b' : '#00a6f9', color: '#ffffff', border: 'none', boxShadow: '0 2px 6px rgba(0, 166, 249, 0.3)' }}
                       >
-                        {showCrearMaterialForm ? <X size={14} /> : <Plus size={14} />} {showCrearMaterialForm ? 'Ocultar Formulario' : 'Nuevo Recurso'}
+                        {showCrearMaterialForm ? <X size={14} /> : <Plus size={14} />} <span className="btn-text-desktop">{showCrearMaterialForm ? 'Ocultar' : 'Nuevo Recurso'}</span>
                       </button>
                     )}
                   </div>
@@ -10093,7 +10434,12 @@ export default function Admin() {
                                 <button type="button" onClick={() => setNuevoMayoristaTelefonos(nuevoMayoristaTelefonos.filter((_, i) => i !== idx))} style={{ background: '#fee2e2', border: '1px solid #fca5a5', color: '#ef4444', padding: '0', width: '38px', height: '38px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
                               )}
                             </div>
-<input type="text" required maxLength={6} placeholder="Ej: 4321" value={nuevoMayoristaPin} onChange={e => setNuevoMayoristaPin(e.target.value)} />
+                          ))}
+                          <button type="button" onClick={() => setNuevoMayoristaTelefonos([...nuevoMayoristaTelefonos, ''])} style={{ background: '#f0f9ff', border: '1px dashed #00a6f9', color: '#00a6f9', padding: '0.35rem 0.65rem', borderRadius: '8px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700, width: '100%', marginTop: '0.25rem' }}>+ Añadir otro teléfono</button>
+                        </div>
+                        <div className="form-field-item">
+                          <label>PIN de Acceso (6 dígitos)</label>
+                          <input type="text" required maxLength={6} placeholder="Ej: 4321" value={nuevoMayoristaPin} onChange={e => setNuevoMayoristaPin(e.target.value)} />
                         </div>
                       </div>
                       <div className="form-actions-row">
@@ -10310,8 +10656,7 @@ export default function Admin() {
                               return op && mPhones.includes(op);
                             });
                             const totalCompras = mOrders.filter(p => p.estado === 'completado').reduce((s, p) => s + (p.total || 0), 0);
-                            const firstPhone = (m.telefono || '').split(',')[0]?.trim() || '';
-                            const exclusiveLink = firstPhone ? `${window.location.origin}/${getTenantId()}?ws=${firstPhone}` : '';
+
 
                             return (
                               <div key={m.id} style={{ background: '#ffffff', borderRadius: '14px', border: '1px solid #e2e8f0', borderLeft: '5px solid #6366f1', padding: '0.85rem', boxShadow: '0 2px 6px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
@@ -10325,24 +10670,38 @@ export default function Admin() {
                                       </div>
                                     )}
                                     <div>
-                                        <button type="button" onClick={() => {
-                                          setEditingMayoristaId(m.id);
-                                          setEditingMayoristaNombre(m.nombre);
-                                          setEditingMayoristaTelefonos((m.telefono || '').split(',').map((t: string) => t.trim()).filter(Boolean));
-                                          setEditingMayoristaPin(m.pin || '1234');
-                                          setEditingMayoristaFotoUrl(m.foto_url || '');
-                                        }} className="btn-secondary" style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}>Editar</button>
-                                        <button type="button" onClick={() => handleEliminarMayorista(m.id)} className="btn-secondary"
-                                          style={{ color: '#ef4444', borderColor: '#fee2e2', background: '#fef2f2', padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}><Trash2 size={12} /></button>
-                                      </>
-                                    )}
+                                      <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 800, color: '#0f172a' }}>{m.nombre}</h4>
+                                      <span style={{ fontSize: '0.72rem', color: '#64748b' }}>PIN: <strong style={{ color: '#0284c7' }}>{m.pin || '1234'}</strong></span>
+                                    </div>
                                   </div>
-                                </td>
-                              </tr>
+                                  <div style={{ display: 'flex', gap: '0.35rem' }}>
+                                    <button type="button" onClick={() => {
+                                      setEditingMayoristaId(m.id);
+                                      setEditingMayoristaNombre(m.nombre);
+                                      setEditingMayoristaTelefonos((m.telefono || '').split(',').map((t: string) => t.trim()).filter(Boolean));
+                                      setEditingMayoristaPin(m.pin || '1234');
+                                      setEditingMayoristaFotoUrl(m.foto_url || '');
+                                    }} className="btn-secondary" style={{ padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}>Editar</button>
+                                    <button type="button" onClick={() => handleEliminarMayorista(m.id)} className="btn-secondary"
+                                      style={{ color: '#ef4444', borderColor: '#fee2e2', background: '#fef2f2', padding: '0.35rem 0.6rem', fontSize: '0.75rem' }}><Trash2 size={12} /></button>
+                                  </div>
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', background: '#f8fafc', padding: '0.55rem 0.75rem', borderRadius: '10px' }}>
+                                  <div>
+                                    <span style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block' }}>Teléfonos</span>
+                                    <span style={{ fontSize: '0.78rem', color: '#0f172a', fontWeight: 600 }}>{m.telefono || 'Sin teléfono'}</span>
+                                  </div>
+                                  <div style={{ textAlign: 'right' }}>
+                                    <span style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block' }}>Total Compras</span>
+                                    <span style={{ fontSize: '0.9rem', color: '#10b981', fontWeight: 800 }}>${totalCompras.toLocaleString()}</span>
+                                  </div>
+                                </div>
+                              </div>
                             );
                           })}
-                        </tbody>
-                      </table>
+                        </div>
+                      </>
                     )}
                   </div>
                 </div>
@@ -12810,8 +13169,9 @@ export default function Admin() {
                 )}
               </div>
             </div>
-          );
-        })()}
+          </div>
+        );
+      })()}
 
         </div>
       </div>
@@ -14423,345 +14783,3 @@ export default function Admin() {
     </div>
   );
 }
-
-// ── SIDEBAR COMPONENT ──
-function SidebarContent({
-  activeTab, setActiveTab, productos, configuracion, handleLogout, onClose, role, currentAsesor, activeNotificationsCount = 0
-}: {
-  activeTab: TabType;
-  setActiveTab: (t: TabType) => void;
-  productos: Producto[];
-  configuracion: Configuracion | null;
-  handleLogout: () => void;
-  onClose?: () => void;
-  role: 'admin' | 'asesor' | 'mayorista';
-  currentAsesor?: any;
-  activeNotificationsCount?: number;
-  listaPqrs?: PQRS[];
-}) {
-  const [isPosExpanded, setIsPosExpanded] = useState<boolean>(activeTab === 'pos' || activeTab === 'ventas_pos');
-  const [isProductosExpanded, setIsProductosExpanded] = useState<boolean>(activeTab === 'productos' || activeTab === 'categorias');
-
-  const handleSelectTab = (tab: TabType) => {
-    setActiveTab(tab);
-    if (onClose) onClose();
-  };
-
-  return (
-    <>
-      <div className="sidebar-brand">
-        <div className="brand-icon" style={configuracion?.logo_url ? { background: 'transparent', padding: 0 } : {}}>
-          {configuracion?.logo_url ? (
-            <img src={configuracion.logo_url} alt="Logo" style={{ width: '100%', height: '100%', borderRadius: '8px', objectFit: 'cover' }} />
-          ) : (
-            '🛍️'
-          )}
-        </div>
-        <div className="brand-text">
-          <h2 style={{ textTransform: 'capitalize', fontSize: '1.1rem', color: '#0f172a', fontWeight: 800 }}>
-            {configuracion?.nombre_negocio ? `${configuracion.nombre_negocio} Admin` : 'Admin'}
-          </h2>
-          <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>
-            {role === 'mayorista' ? 'Panel Mayorista' : role === 'asesor' ? 'Panel de Asesor' : 'Panel Administrativo'}
-          </p>
-          {(role === 'asesor' || role === 'mayorista') && currentAsesor && (
-            <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.78rem', fontWeight: 700, color: 'var(--primary-color, #6366f1)' }}>
-              Sesión: {currentAsesor.nombre}
-            </p>
-          )}
-          {(role === 'asesor' || role === 'mayorista') && currentAsesor ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.3rem' }}>
-              {(currentAsesor.telefono || '').split(',').map((p: string) => p.trim()).filter(Boolean).map((phone: string, idx: number) => (
-                <a 
-                  key={idx}
-                  href={`https://wa.me/${phone.replace(/\D/g, '')}`} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="sidebar-wa-link"
-                  style={{ fontSize: '0.73rem', color: '#10b981', textDecoration: 'none', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}
-                >
-                  <Phone size={11} style={{ strokeWidth: 2.5 }} /> Línea: {phone}
-                </a>
-              ))}
-            </div>
-          ) : configuracion?.whatsapp ? (
-            <a 
-              href={`https://wa.me/${configuracion.whatsapp.replace(/\D/g, '')}`} 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="sidebar-wa-link"
-              style={{ fontSize: '0.75rem', color: '#10b981', textDecoration: 'none', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.3rem', whiteSpace: 'nowrap' }}
-            >
-              <Phone size={12} style={{ strokeWidth: 2.5 }} /> Línea: {configuracion.whatsapp}
-            </a>
-          ) : null}
-        </div>
-      </div>
-
-      <nav className="sidebar-nav" style={{ paddingTop: '0.5rem' }}>
-        <div className="sidebar-nav-label">Navegación</div>
-        {role === 'mayorista' ? (
-          <>
-            <button className={`nav-item ${activeTab === 'resumen_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('resumen_asesor')}>
-              <span className="nav-icon"><Home size={14} /></span> Mi Negocio
-              {activeTab === 'resumen_asesor' && <span className="active-dot"></span>}
-            </button>
-            <button className={`nav-item ${activeTab === 'productos_mayorista' ? 'active' : ''}`} onClick={() => handleSelectTab('productos_mayorista')}>
-              <span className="nav-icon"><Package size={14} /></span> Productos
-              {activeTab === 'productos_mayorista' && <span className="active-dot"></span>}
-            </button>
-            <button className={`nav-item ${activeTab === 'pedidos' ? 'active' : ''}`} onClick={() => handleSelectTab('pedidos')}>
-              <span className="nav-icon"><ShoppingBag size={14} /></span> Pedidos
-              {activeTab === 'pedidos' && <span className="active-dot"></span>}
-            </button>
-            <button
-              className={`nav-item ${activeTab === 'notificaciones_asesor' ? 'active' : ''}`}
-              onClick={() => handleSelectTab('notificaciones_asesor')}
-              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingRight: '0.75rem' }}
-            >
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span className="nav-icon"><Bell size={14} /></span> Alertas
-              </span>
-              {activeNotificationsCount > 0 && (
-                <span style={{ background: '#ef4444', color: 'white', fontSize: '0.7rem', padding: '1px 6px', borderRadius: '10px', fontWeight: 800 }}>
-                  {activeNotificationsCount}
-                </span>
-              )}
-              {activeTab === 'notificaciones_asesor' && activeNotificationsCount === 0 && <span className="active-dot"></span>}
-            </button>
-            <button className={`nav-item ${activeTab === 'ranking_mayorista' ? 'active' : ''}`} onClick={() => handleSelectTab('ranking_mayorista')}>
-              <span className="nav-icon"><Trophy size={14} /></span> Ranking
-              {activeTab === 'ranking_mayorista' && <span className="active-dot"></span>}
-            </button>
-            <button className={`nav-item ${activeTab === 'material_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('material_asesor')}>
-              <span className="nav-icon"><Upload size={14} /></span> Material de Venta
-              {activeTab === 'material_asesor' && <span className="active-dot"></span>}
-            </button>
-            <button className={`nav-item ${activeTab === 'perfil_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('perfil_asesor')}>
-              <span className="nav-icon"><Settings size={14} /></span> Mi Perfil
-              {activeTab === 'perfil_asesor' && <span className="active-dot"></span>}
-            </button>
-          </>
-        ) : role === 'asesor' ? (
-          <>
-            <button className={`nav-item ${activeTab === 'resumen_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('resumen_asesor')}>
-              <span className="nav-icon"><LayoutDashboard size={14} /></span> Resumen
-              {activeTab === 'resumen_asesor' && <span className="active-dot"></span>}
-            </button>
-            <button className={`nav-item ${activeTab === 'pedidos' ? 'active' : ''}`} onClick={() => handleSelectTab('pedidos')}>
-              <span className="nav-icon"><ShoppingBag size={14} /></span> Pedidos
-              {activeTab === 'pedidos' && <span className="active-dot"></span>}
-            </button>
-            <button
-              className={`nav-item ${activeTab === 'notificaciones_asesor' ? 'active' : ''}`}
-              onClick={() => handleSelectTab('notificaciones_asesor')}
-              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingRight: '0.75rem' }}
-            >
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span className="nav-icon"><Lightbulb size={14} style={{ transform: 'rotate(180deg)' }} /></span> Notificaciones
-              </span>
-              {activeNotificationsCount > 0 && (
-                <span style={{ background: '#ef4444', color: 'white', fontSize: '0.7rem', padding: '1px 6px', borderRadius: '10px', fontWeight: 800 }}>
-                  {activeNotificationsCount}
-                </span>
-              )}
-              {activeTab === 'notificaciones_asesor' && activeNotificationsCount === 0 && <span className="active-dot"></span>}
-            </button>
-            <button className={`nav-item ${activeTab === 'material_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('material_asesor')}>
-              <span className="nav-icon"><Upload size={14} /></span> Material de Apoyo
-              {activeTab === 'material_asesor' && <span className="active-dot"></span>}
-            </button>
-            <button className={`nav-item ${activeTab === 'productos_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('productos_asesor')}>
-              <span className="nav-icon"><Package size={14} /></span> Mis Productos
-              {activeTab === 'productos_asesor' && <span className="active-dot"></span>}
-            </button>
-            <button className={`nav-item ${activeTab === 'perfil_asesor' ? 'active' : ''}`} onClick={() => handleSelectTab('perfil_asesor')}>
-              <span className="nav-icon"><Settings size={14} /></span> Mi Perfil
-              {activeTab === 'perfil_asesor' && <span className="active-dot"></span>}
-            </button>
-          </>
-        ) : (
-          <>
-            <button className={`nav-item ${activeTab === 'dashboard' ? 'active' : ''}`} onClick={() => handleSelectTab('dashboard')}>
-              <span className="nav-icon"><LayoutDashboard size={14} /></span> Dashboard
-              {activeTab === 'dashboard' && <span className="active-dot"></span>}
-            </button>
-            {/* ── EXPANDABLE POS MENU ── */}
-            <div>
-              <button
-                type="button"
-                className={`nav-item ${(activeTab === 'pos' || activeTab === 'ventas_pos') ? 'active' : ''}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsPosExpanded(prev => !prev);
-                }}
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', cursor: 'pointer' }}
-              >
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span className="nav-icon"><CreditCard size={14} /></span> POS
-                </span>
-                <span style={{ fontSize: '0.7rem', color: '#94a3b8', transition: 'transform 0.2s ease', transform: isPosExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-                  ▼
-                </span>
-              </button>
-
-              {isPosExpanded && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '0.6rem', marginTop: '2px', marginBottom: '4px', borderLeft: '2px solid #e2e8f0', marginLeft: '0.9rem' }}>
-                  <button
-                    type="button"
-                    className={`nav-item ${activeTab === 'pos' ? 'active' : ''}`}
-                    onClick={() => handleSelectTab('pos')}
-                    style={{ fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
-                  >
-                    <span className="nav-icon"><CreditCard size={13} /></span> Caja POS
-                    {activeTab === 'pos' && <span className="active-dot"></span>}
-                  </button>
-                  <button
-                    type="button"
-                    className={`nav-item ${activeTab === 'ventas_pos' ? 'active' : ''}`}
-                    onClick={() => handleSelectTab('ventas_pos')}
-                    style={{ fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
-                  >
-                    <span className="nav-icon"><ShoppingBag size={13} color="#8b5cf6" /></span> Ventas POS
-                    {activeTab === 'ventas_pos' && <span className="active-dot"></span>}
-                  </button>
-                </div>
-              )}
-            </div>
-            {/* ── EXPANDABLE PRODUCTOS MENU ── */}
-            <div>
-              <button
-                type="button"
-                className={`nav-item ${(activeTab === 'productos' || activeTab === 'categorias') ? 'active' : ''}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsProductosExpanded(prev => !prev);
-                  if (activeTab !== 'productos' && activeTab !== 'categorias') {
-                    handleSelectTab('productos');
-                  }
-                }}
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', cursor: 'pointer' }}
-              >
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span className="nav-icon"><Package size={14} /></span> Productos
-                </span>
-                <span style={{ fontSize: '0.7rem', color: '#94a3b8', transition: 'transform 0.2s ease', transform: isProductosExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
-                  ▼
-                </span>
-              </button>
-
-              {isProductosExpanded && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '0.6rem', marginTop: '2px', marginBottom: '4px', borderLeft: '2px solid #e2e8f0', marginLeft: '0.9rem' }}>
-                  <button
-                    type="button"
-                    className={`nav-item ${activeTab === 'productos' ? 'active' : ''}`}
-                    onClick={() => handleSelectTab('productos')}
-                    style={{ fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
-                  >
-                    <span className="nav-icon"><Package size={13} /></span> Inventario
-                    {activeTab === 'productos' && <span className="active-dot"></span>}
-                  </button>
-                  <button
-                    type="button"
-                    className={`nav-item ${activeTab === 'categorias' ? 'active' : ''}`}
-                    onClick={() => handleSelectTab('categorias')}
-                    style={{ fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
-                  >
-                    <span className="nav-icon"><Tag size={13} color="#0284c7" /></span> Categorías
-                    {activeTab === 'categorias' && <span className="active-dot"></span>}
-                  </button>
-                </div>
-              )}
-            </div>
-            <button className={`nav-item ${activeTab === 'pedidos' ? 'active' : ''}`} onClick={() => handleSelectTab('pedidos')}>
-              <span className="nav-icon"><ShoppingBag size={14} /></span> Pedidos
-              {activeTab === 'pedidos' && <span className="active-dot"></span>}
-            </button>
-            <button className={`nav-item ${activeTab === 'clientes' ? 'active' : ''}`} onClick={() => handleSelectTab('clientes')}>
-              <span className="nav-icon"><User size={14} /></span> Clientes
-              {activeTab === 'clientes' && <span className="active-dot"></span>}
-            </button>
-            <button className={`nav-item ${activeTab === 'asesores' ? 'active' : ''}`} onClick={() => handleSelectTab('asesores')}>
-              <span className="nav-icon"><Users size={14} /></span> Asesores
-              {activeTab === 'asesores' && <span className="active-dot"></span>}
-            </button>
-            <button className={`nav-item ${activeTab === 'mayoristas' ? 'active' : ''}`} onClick={() => handleSelectTab('mayoristas')}>
-              <span className="nav-icon"><Users size={14} /></span> Mayoristas
-              {activeTab === 'mayoristas' && <span className="active-dot"></span>}
-            </button>
-            <button className={`nav-item ${activeTab === 'material_apoyo' ? 'active' : ''}`} onClick={() => handleSelectTab('material_apoyo')}>
-              <span className="nav-icon"><Upload size={14} /></span> Material de Apoyo
-              {activeTab === 'material_apoyo' && <span className="active-dot"></span>}
-            </button>
-            <button className={`nav-item ${activeTab === 'erp' ? 'active' : ''}`} onClick={() => handleSelectTab('erp')}>
-              <span className="nav-icon"><BarChart2 size={14} /></span> ERP Empresarial
-              {activeTab === 'erp' && <span className="active-dot"></span>}
-            </button>
-            <button className={`nav-item ${activeTab === 'config' ? 'active' : ''}`} onClick={() => handleSelectTab('config')}>
-              <span className="nav-icon"><Settings size={14} /></span> Configuración
-              {activeTab === 'config' && <span className="active-dot"></span>}
-            </button>
-          </>
-        )}
-      </nav>
-
-      {role !== 'asesor' && (
-        <div className="sidebar-storage-stats">
-          <div className="storage-text">
-            <strong>{productos.length} Productos</strong>
-            <span>límite sugerido 500</span>
-          </div>
-          <div className="storage-bar">
-            <div className="storage-progress" style={{ width: `${Math.min((productos.length / 500) * 100, 100)}%` }}></div>
-          </div>
-        </div>
-      )}
-
-      <div className="sidebar-footer" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', padding: '1.2rem', borderTop: '1px solid #f1f5f9', marginTop: 'auto', flexShrink: 0 }}>
-        <a 
-          href={(role === 'asesor' || role === 'mayorista') && currentAsesor?.telefono 
-            ? `/${getTenantId()}?ws=${currentAsesor.telefono.split(',')[0].trim().replace(/\D/g, '')}${role === 'mayorista' ? '&tipo=mayorista' : ''}` 
-            : `/${getTenantId()}?ws=clear`} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="btn-primary" 
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', width: '100%', padding: '0.8rem', borderRadius: '8px', textDecoration: 'none', background: 'var(--primary-color, #6366f1)' }}
-        >
-          <Eye size={16} /> Ver Catálogo
-        </a>
-        
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginTop: '0.5rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <div className="avatar" style={{ background: ((role === 'asesor' || role === 'mayorista') && currentAsesor?.foto_url) ? 'transparent' : (role === 'admin' && configuracion?.admin_foto_url) ? 'transparent' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', borderRadius: '50%', border: '1px solid #e2e8f0', color: '#64748b', padding: 0, overflow: 'hidden' }}>
-              {(role === 'asesor' || role === 'mayorista') && currentAsesor?.foto_url ? (
-                <img src={currentAsesor.foto_url} alt="Usuario" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (role === 'admin' && configuracion?.admin_foto_url) ? (
-                <img src={configuracion.admin_foto_url} alt="Admin" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-              ) : (
-                <User size={24} />
-              )}
-            </div>
-            <div className="user-info">
-              <h4 style={{ fontSize: '0.9rem', margin: 0, color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '160px' }}>
-                {(role === 'asesor' || role === 'mayorista') && currentAsesor ? currentAsesor.nombre : (configuracion?.admin_nombre || 'Administrador')}
-              </h4>
-              <p style={{ fontSize: '0.75rem', color: role === 'mayorista' ? '#0ea5e9' : '#10b981', margin: 0 }}>
-                {role === 'asesor' ? 'Asesor' : role === 'mayorista' ? 'Mayorista' : 'Sesión activa'}
-              </p>
-            </div>
-          </div>
-          <button 
-            onClick={handleLogout}
-            style={{ background: '#fee2e2', color: '#ef4444', border: 'none', padding: '0.6rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}
-            title="Cerrar sesión"
-            onMouseEnter={(e) => e.currentTarget.style.background = '#fecaca'}
-            onMouseLeave={(e) => e.currentTarget.style.background = '#fee2e2'}
-          >
-            <LogOut size={16} />
-          </button>
-        </div>
-      </div>
-    </>
-  );
-}
-

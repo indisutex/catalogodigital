@@ -3648,6 +3648,9 @@ button:active { transform: scale(0.95); }
     flex-direction: column;
     gap: 0.85rem;
   }
+  .btn-text-desktop {
+    display: none !important;
+  }
 }
 
 
