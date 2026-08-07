@@ -5102,42 +5102,45 @@ export default function Admin() {
                   </>
                 );
               })()
-            ) : (['clientes','asesores','pedidos','mayoristas','productos'].includes(activeTab) && !isAddingProduct) ? (
-              /* ── Topbar contextual: título compacto + búsqueda inline + acciones ── */
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: 0, flexWrap: 'wrap' }}>
-                {/* Título compacto de sección */}
+            ) : (['clientes','asesores','pedidos','mayoristas','productos','material_apoyo'].includes(activeTab) && !isAddingProduct) ? (
+              /* ── Topbar contextual: título compacto + búsqueda inline + acciones alineados a la izquierda ── */
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: 0, flexWrap: 'wrap', justifyContent: 'flex-start' }}>
+                {/* Título compacto de sección y contador al lado del hamburger */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexShrink: 0 }}>
-                  <span style={{ fontSize: '1rem', lineHeight: 1 }}>
+                  <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>
                     {activeTab === 'clientes' && '👥'}
                     {activeTab === 'asesores' && '🧑‍💼'}
                     {activeTab === 'pedidos' && '🛒'}
                     {activeTab === 'mayoristas' && '🏭'}
                     {activeTab === 'productos' && '📦'}
+                    {activeTab === 'material_apoyo' && '📁'}
                   </span>
-                  <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap' }}>
+                  <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap' }}>
                     {activeTab === 'clientes' && 'Clientes'}
                     {activeTab === 'asesores' && 'Asesores'}
                     {activeTab === 'pedidos' && 'Pedidos'}
                     {activeTab === 'mayoristas' && 'Mayoristas'}
                     {activeTab === 'productos' && 'Catálogo'}
+                    {activeTab === 'material_apoyo' && 'Material de Apoyo'}
                   </span>
-                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, background: '#f1f5f9', padding: '0.15rem 0.5rem', borderRadius: '20px' }}>
+                  <span style={{ fontSize: '0.78rem', color: '#00a6f9', fontWeight: 800, background: '#e0f2fe', padding: '0.15rem 0.55rem', borderRadius: '20px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
                     {activeTab === 'clientes' && clientes.length}
                     {activeTab === 'asesores' && asesores.length}
                     {activeTab === 'pedidos' && pedidos.length}
                     {activeTab === 'mayoristas' && mayoristas.length}
                     {activeTab === 'productos' && filteredProducts.length}
+                    {activeTab === 'material_apoyo' && filteredMateriales.length}
                   </span>
                 </div>
 
-                {/* Divisor */}
-                <div style={{ width: '1px', height: '24px', background: '#e2e8f0', flexShrink: 0 }} />
+                {/* Divisor vertical */}
+                <div style={{ width: '1px', height: '24px', background: '#cbd5e1', flexShrink: 0 }} />
 
-                {/* Buscador y Filtros inline en Top Header */}
+                {/* Buscador y Filtros inline alineados a la izquierda en Top Header */}
                 {activeTab === 'pedidos' ? (
-                  <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexWrap: 'wrap', flex: 1 }}>
+                  <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-start' }}>
                     {/* Buscador de Pedidos Directo */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', minWidth: '190px', flex: '1 1 190px', maxWidth: '280px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', transition: 'all 0.2s' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', minWidth: '190px', flex: '0 1 240px', maxWidth: '280px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', transition: 'all 0.2s' }}>
                       <Search size={15} style={{ color: '#00a6f9', flexShrink: 0 }} />
                       <input 
                         type="text"
@@ -5231,9 +5234,9 @@ export default function Admin() {
                     </div>
                   </div>
                 ) : activeTab === 'productos' ? (
-                  <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexWrap: 'wrap', flex: 1 }}>
+                  <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-start' }}>
                     {/* Buscador de Productos Directo */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', minWidth: '190px', flex: '1 1 190px', maxWidth: '280px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', transition: 'all 0.2s' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', minWidth: '190px', flex: '0 1 240px', maxWidth: '280px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', transition: 'all 0.2s' }}>
                       <Search size={15} style={{ color: '#00a6f9', flexShrink: 0 }} />
                       <input 
                         type="text"
@@ -5397,12 +5400,47 @@ export default function Admin() {
                       )}
                     </div>
                   </div>
+                ) : activeTab === 'material_apoyo' ? (
+                  <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-start' }}>
+                    {/* Filtro por Tipo de Recurso */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', height: '38px', padding: '0 0.65rem 0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', background: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                      <Tag size={15} style={{ color: '#00a6f9', flexShrink: 0 }} />
+                      <select 
+                        value={materialFilter} 
+                        onChange={e => setMaterialFilter(e.target.value)}
+                        style={{ height: '100%', border: 'none', background: 'transparent', outline: 'none', fontSize: '0.8rem', color: '#0f172a', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        <option value="todos">Todos los Recursos</option>
+                        <option value="video">🎥 Videos</option>
+                        <option value="imagen">🖼️ Imágenes</option>
+                        <option value="documento">📄 Documentos</option>
+                        <option value="carpeta">📁 Carpetas</option>
+                      </select>
+                    </div>
+
+                    {/* Filtro por Campaña */}
+                    {uniqueCampanas.length > 0 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', height: '38px', padding: '0 0.65rem 0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', background: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                        <MapPin size={15} style={{ color: '#00a6f9', flexShrink: 0 }} />
+                        <select 
+                          value={campanaFilter} 
+                          onChange={e => setCampanaFilter(e.target.value)}
+                          style={{ height: '100%', border: 'none', background: 'transparent', outline: 'none', fontSize: '0.8rem', color: '#0f172a', fontWeight: 700, cursor: 'pointer' }}
+                        >
+                          <option value="todas">Todas las Campañas</option>
+                          {uniqueCampanas.map(c => (
+                            <option key={c as string} value={c as string}>{c as string}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                  </div>
                 ) : (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '10px', padding: '0.35rem 0.75rem', flex: 1, maxWidth: '340px', minWidth: '180px', transition: 'border-color 0.2s' }}
-                    onFocus={e => (e.currentTarget.style.borderColor = '#6366f1')}
-                    onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', flex: '0 1 260px', maxWidth: '340px', minWidth: '180px', transition: 'border-color 0.2s' }}
+                    onFocus={e => (e.currentTarget.style.borderColor = '#00a6f9')}
+                    onBlur={e => (e.currentTarget.style.borderColor = '#cbd5e1')}
                   >
-                    <Search size={14} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                    <Search size={15} style={{ color: '#00a6f9', flexShrink: 0 }} />
                     <input
                       type="text"
                       placeholder={
@@ -5420,7 +5458,7 @@ export default function Admin() {
                         else if (activeTab === 'asesores') setAsesorSearchQuery(e.target.value);
                         else setMayoristaBuscador(e.target.value);
                       }}
-                      style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '0.83rem', width: '100%', color: '#0f172a' }}
+                      style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '0.83rem', width: '100%', color: '#0f172a', fontWeight: 600 }}
                     />
                     {(
                       (activeTab === 'clientes' && clienteSearchQuery) ||
@@ -5442,7 +5480,7 @@ export default function Admin() {
                 {activeTab === 'productos' && !isAddingProduct && (
                   <button
                     className="btn-primary hover-lift"
-                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.45rem 0.9rem', borderRadius: '9px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0 0.9rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
                     onClick={() => { setBulkForms([{ ...emptyProduct }]); setIsAddingProduct(true); }}
                   >
                     <Plus size={14} /> Nuevo Producto
