@@ -927,8 +927,9 @@ export default function MenuDigital() {
       }
 
       if (orderId) {
-        const uploadLink = `${window.location.origin}/pago/${orderId}`;
-        mensaje += `\n📸 *Sube tu comprobante de pago en el siguiente enlace:* ${uploadLink}\n`;
+        const shortOrderId = orderId.slice(0, 8);
+        const uploadLink = `${window.location.origin}/pago/${shortOrderId}`;
+        mensaje += `\n📸 *Sube tu comprobante de pago aquí:* ${uploadLink}\n`;
       }
     }
 

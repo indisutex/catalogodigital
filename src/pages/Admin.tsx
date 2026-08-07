@@ -687,7 +687,7 @@ export default function Admin() {
                   const prodNames = Array.isArray(ped.productos) && ped.productos.length > 0
                     ? ped.productos.map((p: any) => p.nombre).join(', ')
                     : '';
-                  const uploadLink = `${window.location.origin}/pago/${ped.id}`;
+                  const uploadLink = `${window.location.origin}/pago/${ped.id.slice(0, 8)}`;
                   const metodosInfo = getFormattedMetodosPago();
                   const text = `¡Hola ${nombreCliente || ''}! 👋 Esperamos que estés muy bien. Recordamos que tu pedido de ${prodNames ? `*${prodNames}*` : 'nuestro catálogo'} por valor de *${ped.total.toLocaleString()}* está pendiente de pago.${metodosInfo}\nPor favor, sube tu comprobante de pago en el siguiente enlace para completar tu pedido:\n${uploadLink} 😊`;
                   const targetPhone = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
@@ -2380,7 +2380,7 @@ export default function Admin() {
   };
 
   const handleAtenderPedido = async (ped: Pedido) => {
-    const uploadLink = `${window.location.origin}/pago/${ped.id}`;
+    const uploadLink = `${window.location.origin}/pago/${ped.id.slice(0, 8)}`;
     const msg = `¡Hola ${ped.cliente_nombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: ${ped.total.toLocaleString()} COP*\n\n💳 *Datos del banco:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\nPara poder completar tu pedido, haz la captura de pantalla de tu pago o de transacción y envíala por este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
     window.open(formatWhatsAppLink(ped.cliente_telefono || '', msg), '_blank');
 
@@ -13087,13 +13087,13 @@ export default function Admin() {
                               <input
                                 type="text"
                                 readOnly
-                                value={`${window.location.origin}/pago/${selectedPedido.id}`}
+                                value={`${window.location.origin}/pago/${selectedPedido.id.slice(0, 8)}`}
                                 style={{ flex: 1, minWidth: '180px', padding: '0.45rem 0.65rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.8rem', background: '#ffffff', outline: 'none', color: '#334155' }}
                               />
                               <button
                                 type="button"
                                 onClick={() => {
-                                  navigator.clipboard.writeText(`${window.location.origin}/pago/${selectedPedido.id}`);
+                                  navigator.clipboard.writeText(`${window.location.origin}/pago/${selectedPedido.id.slice(0, 8)}`);
                                   showToast('¡Enlace de pago copiado! ✓', 'success');
                                 }}
                                 style={{ padding: '0.45rem 0.75rem', background: '#f59e0b', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, whiteSpace: 'nowrap' }}
@@ -13101,7 +13101,7 @@ export default function Admin() {
                                 📋 Copiar Enlace
                               </button>
                               <a
-                                href={`${window.location.origin}/pago/${selectedPedido.id}`}
+                                href={`${window.location.origin}/pago/${selectedPedido.id.slice(0, 8)}`}
                                 target="_blank"
                                 rel="noreferrer"
                                 style={{ padding: '0.45rem 0.75rem', background: '#ffffff', color: '#b45309', border: '1px solid #fde68a', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}
@@ -13296,7 +13296,7 @@ export default function Admin() {
                               <button
                                 style={{ flex: 1, padding: '0.65rem 1rem', background: '#25D366', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 700, fontSize: '0.95rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
                                 onClick={() => {
-                                  const uploadLink = `${window.location.origin}/pago/${selectedPedido.id}`;
+                                  const uploadLink = `${window.location.origin}/pago/${selectedPedido.id.slice(0, 8)}`;
                                   let metodosStr = '';
                                   if (configuracion?.metodos_pago) {
                                     try {

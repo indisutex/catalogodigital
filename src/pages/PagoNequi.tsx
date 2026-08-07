@@ -16,7 +16,14 @@ export default function PagoNequi() {
   useEffect(() => {
     async function cargar() {
       if (!pedidoId) return;
-      const { data } = await supabase.from('pedidos').select('*').eq('id', pedidoId).single();
+      const cleanId = pedidoId.trim();
+      let query = supabase.from('pedidos').select('*');
+      if (cleanId.length === 36) {
+        query = query.eq('id', cleanId);
+      } else {
+        query = query.or(`id.eq.${cleanId},id.ilike.${cleanId}%`);
+      }
+      const { data } = await query.limit(1).maybeSingle();
       setPedido(data);
       if (data?.pantallazo_url) setEnviado(true);
       setCargando(false);
@@ -43,13 +50,13 @@ export default function PagoNequi() {
   };
 
   const handleSubir = async () => {
-    if (!file || !pedidoId) return;
+    if (!file || !pedido || !pedido.id) return;
     setSubiendo(true);
     setError('');
     try {
       const compressedFile = await compressImage(file, 1000, 0.7);
       const ext = compressedFile.name.split('.').pop() || 'jpg';
-      const fileName = `pago_${pedidoId}_${Date.now()}.${ext}`;
+      const fileName = `pago_${pedido.id}_${Date.now()}.${ext}`;
       const { error: uploadErr } = await supabase.storage
         .from('archivos')
         .upload(fileName, compressedFile);
@@ -62,7 +69,7 @@ export default function PagoNequi() {
       const { error: updateErr } = await supabase
         .from('pedidos')
         .update({ pantallazo_url: urlData.publicUrl })
-        .eq('id', pedidoId);
+        .eq('id', pedido.id);
       if (updateErr) {
         console.error('Database update error:', updateErr);
         throw new Error(`Error de Base de Datos: ${updateErr.message}`);
