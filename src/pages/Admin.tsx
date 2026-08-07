@@ -428,6 +428,7 @@ export default function Admin() {
   const [nuevoMaterialUrl, setNuevoMaterialUrl] = useState('');
   const [nuevoMaterialCampana, setNuevoMaterialCampana] = useState('');
   const [campanaFilter, setCampanaFilter] = useState<string>('todas');
+  const [showRegistrarMaterialModal, setShowRegistrarMaterialModal] = useState(false);
 
   const uniqueCampanas = useMemo(() => {
     const campanas = materiales.map(m => m.campana).filter(Boolean);
@@ -3630,6 +3631,7 @@ export default function Admin() {
       setNuevoMaterialDesc('');
       setNuevoMaterialUrl('');
       setNuevoMaterialCampana('');
+      setShowRegistrarMaterialModal(false);
       showToast('Material de apoyo agregado ✓', 'success');
     } catch (err: any) {
       console.error(err);
@@ -5434,6 +5436,16 @@ export default function Admin() {
                         </select>
                       </div>
                     )}
+
+                    {/* Botón Registrar Recurso */}
+                    <button
+                      type="button"
+                      className="btn-primary hover-lift"
+                      onClick={() => setShowRegistrarMaterialModal(true)}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0 0.9rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                    >
+                      <Plus size={14} /> Registrar Recurso
+                    </button>
                   </div>
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', flex: '0 1 260px', maxWidth: '340px', minWidth: '180px', transition: 'border-color 0.2s' }}
@@ -13227,6 +13239,109 @@ export default function Admin() {
           </div>
         </div>
       )}
+      {/* MODAL REGISTRAR MATERIAL DE APOYO */}
+      {showRegistrarMaterialModal && (
+        <div className="modal-overlay" onClick={() => setShowRegistrarMaterialModal(false)} style={{ zIndex: 1100 }}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '520px', width: '100%', borderRadius: '18px', padding: '1.75rem', background: '#ffffff', boxShadow: '0 20px 40px rgba(0,0,0,0.18)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.85rem', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#00a6f9' }}>
+                  <Upload size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>Registrar Recurso</h3>
+                  <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b' }}>Google Drive & Material de Apoyo</p>
+                </div>
+              </div>
+              <button onClick={() => setShowRegistrarMaterialModal(false)} style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '32px', height: '32px', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCrearMaterial} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Título del Recurso *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ej: Video Campaña Colección Invierno"
+                  value={nuevoMaterialTitulo}
+                  onChange={e => setNuevoMaterialTitulo(e.target.value)}
+                  style={{ padding: '0.65rem 0.85rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Descripción (Opcional)</label>
+                <input
+                  type="text"
+                  placeholder="Ej: Video para estados de WhatsApp"
+                  value={nuevoMaterialDesc}
+                  onChange={e => setNuevoMaterialDesc(e.target.value)}
+                  style={{ padding: '0.65rem 0.85rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Campaña (Opcional)</label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Navidad, Día del Padre"
+                    value={nuevoMaterialCampana}
+                    onChange={e => setNuevoMaterialCampana(e.target.value)}
+                    style={{ padding: '0.65rem 0.85rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Tipo de Recurso *</label>
+                  <select
+                    value={nuevoMaterialTipo}
+                    onChange={e => setNuevoMaterialTipo(e.target.value as any)}
+                    style={{ padding: '0.65rem 0.85rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.88rem', outline: 'none', background: 'white' }}
+                  >
+                    <option value="video">🎥 Video (Google Drive)</option>
+                    <option value="imagen">🖼️ Imagen / Catálogo</option>
+                    <option value="documento">📄 Documento / PDF</option>
+                    <option value="carpeta">📁 Carpeta Completa</option>
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Enlace de Google Drive *</label>
+                <input
+                  type="url"
+                  required
+                  placeholder="https://drive.google.com/..."
+                  value={nuevoMaterialUrl}
+                  onChange={e => setNuevoMaterialUrl(e.target.value)}
+                  style={{ padding: '0.65rem 0.85rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.65rem', marginTop: '0.75rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowRegistrarMaterialModal(false)}
+                  style={{ padding: '0.65rem 1.2rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', background: '#f8fafc', color: '#475569', fontWeight: 700, cursor: 'pointer', fontSize: '0.85rem' }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="btn-primary"
+                  disabled={loading}
+                  style={{ padding: '0.65rem 1.5rem', borderRadius: '10px', fontWeight: 700, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+                >
+                  <Plus size={16} /> {loading ? 'Guardando...' : 'Guardar Recurso'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* MODAL HERRAMIENTAS DE DEPURACIÓN (DUPLICADOS / VACIAR) */}
       {showToolsModal && (
         <div className="modal-overlay" onClick={() => setShowToolsModal(false)}>
