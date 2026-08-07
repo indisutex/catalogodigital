@@ -5,7 +5,7 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista, PQRS } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, Wrench } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, Wrench, Calendar, MapPin, ArrowUpDown } from 'lucide-react';
 
 import * as XLSX from 'xlsx';
 import { ERPContabilidadService } from '../lib/erpContabilidadService';
@@ -5154,77 +5154,79 @@ export default function Admin() {
                     </div>
 
                     {/* Estado */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', height: '38px', padding: '0 0.65rem 0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', background: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                      <Tag size={15} style={{ color: '#00a6f9', flexShrink: 0 }} />
                       <select 
                         value={orderFilterStatus} 
                         onChange={e => setOrderFilterStatus(e.target.value)}
-                        style={{ height: '38px', padding: '0 0.85rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', background: '#ffffff', outline: 'none', color: '#0f172a', fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}
+                        style={{ height: '100%', border: 'none', background: 'transparent', outline: 'none', fontSize: '0.8rem', color: '#0f172a', fontWeight: 700, cursor: 'pointer' }}
                       >
-                        <option value="todos">🏷️ Todos los Pedidos</option>
-                        <option value="contra_entrega">🚚 Contra Entregas</option>
-                        <option value="esperando_pago">⏳ Esperando Pago</option>
-                        <option value="comprobante">💳 Con Comprobante</option>
-                        <option value="exitosas">✅ Ventas Exitosas</option>
-                        <option value="abandonados">🛒 Abandonados (Leads)</option>
+                        <option value="todos">Todos los Pedidos</option>
+                        <option value="contra_entrega">Contra Entregas</option>
+                        <option value="esperando_pago">Esperando Pago</option>
+                        <option value="comprobante">Con Comprobante</option>
+                        <option value="exitosas">Ventas Exitosas</option>
+                        <option value="abandonados">Abandonados (Leads)</option>
                       </select>
                     </div>
 
                     {/* Fecha */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', height: '38px', padding: '0 0.65rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', background: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', gap: '0.35rem' }}>
-                        <span style={{ fontSize: '0.85rem' }}>📅</span>
-                        <input 
-                          type="date"
-                          value={orderFilterDate}
-                          onChange={e => setOrderFilterDate(e.target.value)}
-                          style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.8rem', color: '#0f172a', fontWeight: 600, cursor: 'pointer' }}
-                        />
-                        {orderFilterDate && (
-                          <button onClick={() => setOrderFilterDate('')} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 800, padding: 0 }}>✕</button>
-                        )}
-                      </div>
+                    <div style={{ display: 'flex', alignItems: 'center', height: '38px', padding: '0 0.65rem 0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', background: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', gap: '0.4rem' }}>
+                      <Calendar size={15} style={{ color: '#00a6f9', flexShrink: 0 }} />
+                      <input 
+                        type="date"
+                        value={orderFilterDate}
+                        onChange={e => setOrderFilterDate(e.target.value)}
+                        style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.8rem', color: '#0f172a', fontWeight: 700, cursor: 'pointer' }}
+                      />
+                      {orderFilterDate && (
+                        <button onClick={() => setOrderFilterDate('')} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 800, padding: 0 }}>✕</button>
+                      )}
                     </div>
 
                     {/* Origen */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', height: '38px', padding: '0 0.65rem 0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', background: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                      <MapPin size={15} style={{ color: '#00a6f9', flexShrink: 0 }} />
                       <select 
                         value={orderFilterOrigin} 
                         onChange={e => setOrderFilterOrigin(e.target.value)}
-                        style={{ height: '38px', padding: '0 0.85rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', background: '#ffffff', outline: 'none', color: '#0f172a', fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}
+                        style={{ height: '100%', border: 'none', background: 'transparent', outline: 'none', fontSize: '0.8rem', color: '#0f172a', fontWeight: 700, cursor: 'pointer' }}
                       >
-                        <option value="todos">📍 Todos los Orígenes</option>
-                        <option value="catalogo">📱 Catálogo Digital</option>
-                        <option value="pos">🖥️ Ventas POS</option>
+                        <option value="todos">Todos los Orígenes</option>
+                        <option value="catalogo">Catálogo Digital</option>
+                        <option value="pos">Ventas POS</option>
                       </select>
                     </div>
 
                     {/* Asesor */}
                     {role === 'admin' && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', height: '38px', padding: '0 0.65rem 0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', background: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                        <User size={15} style={{ color: '#00a6f9', flexShrink: 0 }} />
                         <select 
                           value={orderFilterAsesor} 
                           onChange={e => setOrderFilterAsesor(e.target.value)}
-                          style={{ height: '38px', padding: '0 0.85rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', background: '#ffffff', outline: 'none', color: '#0f172a', fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}
+                          style={{ height: '100%', border: 'none', background: 'transparent', outline: 'none', fontSize: '0.8rem', color: '#0f172a', fontWeight: 700, cursor: 'pointer' }}
                         >
-                          <option value="todos">👤 Todos los Asesores</option>
+                          <option value="todos">Todos los Asesores</option>
                           {asesores.map(a => (
-                            <option key={a.id} value={a.telefono}>👤 {a.nombre}</option>
+                            <option key={a.id} value={a.telefono}>{a.nombre}</option>
                           ))}
                         </select>
                       </div>
                     )}
 
                     {/* Ordenar por */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', height: '38px', padding: '0 0.65rem 0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', background: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                      <ArrowUpDown size={15} style={{ color: '#00a6f9', flexShrink: 0 }} />
                       <select 
                         value={orderSortBy} 
                         onChange={e => setOrderSortBy(e.target.value)}
-                        style={{ height: '38px', padding: '0 0.85rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', background: '#ffffff', outline: 'none', color: '#0f172a', fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}
+                        style={{ height: '100%', border: 'none', background: 'transparent', outline: 'none', fontSize: '0.8rem', color: '#0f172a', fontWeight: 700, cursor: 'pointer' }}
                       >
-                        <option value="date_desc">↕️ Más recientes primero</option>
-                        <option value="date_asc">↕️ Más antiguos primero</option>
-                        <option value="total_desc">💰 Mayor valor</option>
-                        <option value="total_asc">💰 Menor valor</option>
+                        <option value="date_desc">Más recientes primero</option>
+                        <option value="date_asc">Más antiguos primero</option>
+                        <option value="total_desc">Mayor valor</option>
+                        <option value="total_asc">Menor valor</option>
                       </select>
                     </div>
                   </div>
@@ -5248,17 +5250,18 @@ export default function Admin() {
                     </div>
 
                     {/* Ordenar por Productos */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', height: '38px', padding: '0 0.65rem 0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', background: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                      <ArrowUpDown size={15} style={{ color: '#00a6f9', flexShrink: 0 }} />
                       <select
                         value={productSort}
                         onChange={e => setProductSort(e.target.value)}
-                        style={{ height: '38px', padding: '0 0.85rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', background: '#ffffff', outline: 'none', color: '#0f172a', fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}
+                        style={{ height: '100%', border: 'none', background: 'transparent', outline: 'none', fontSize: '0.8rem', color: '#0f172a', fontWeight: 700, cursor: 'pointer' }}
                       >
-                        <option value="recientes">↕️ Más recientes</option>
-                        <option value="alfabetico">🔤 A-Z</option>
-                        <option value="visibles">👁️ Solo Visibles</option>
-                        <option value="ocultos">🙈 Solo Ocultos</option>
-                        <option value="con_fotos">🖼️ Con fotos</option>
+                        <option value="recientes">Más recientes</option>
+                        <option value="alfabetico">A-Z</option>
+                        <option value="visibles">Solo Visibles</option>
+                        <option value="ocultos">Solo Ocultos</option>
+                        <option value="con_fotos">Con fotos</option>
                       </select>
                     </div>
 
