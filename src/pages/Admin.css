@@ -1798,13 +1798,22 @@ body {
     display: none !important;
   }
   .topbar-filters-wrapper > div {
-    flex: 1 1 auto !important;
-    min-width: 0 !important;
+    flex: 0 0 auto !important;
     height: 36px !important;
     box-sizing: border-box !important;
   }
-  .topbar-filters-wrapper > div input {
-    min-width: 0 !important;
+  .search-box-container {
+    width: 38px !important;
+    height: 38px !important;
+    min-width: 38px !important;
+    flex: 0 0 38px !important;
+    padding: 0 !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+  }
+  .search-box-container input,
+  .search-box-container button {
+    display: none !important;
   }
   .btn-text-desktop {
     display: none !important;

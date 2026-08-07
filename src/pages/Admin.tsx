@@ -757,6 +757,7 @@ export default function Admin() {
   const [copyingCategories, setCopyingCategories] = useState(false);
   const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
   const [clientes, setClientes] = useState<any[]>([]);
+  const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [clienteSearchQuery, setClienteSearchQuery] = useState('');
   const [asesores, setAsesores] = useState<Asesor[]>([]);
   const [mayoristas, setMayoristas] = useState<Mayorista[]>([]);
@@ -5428,6 +5429,41 @@ export default function Admin() {
         />
       )}
 
+      {showMobileSearch && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(15, 23, 42, 0.4)', zIndex: 99999, display: 'flex', alignItems: 'flex-start', padding: '1rem', backdropFilter: 'blur(4px)'
+        }}>
+          <div style={{
+            background: '#ffffff', borderRadius: '16px', width: '100%', padding: '1rem', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', display: 'flex', flexDirection: 'column', gap: '1rem'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a' }}>Buscar</h3>
+              <button onClick={() => setShowMobileSearch(false)} style={{ background: '#f1f5f9', border: 'none', padding: '0.4rem', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#64748b' }}><X size={16} /></button>
+            </div>
+            
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '42px', transition: 'all 0.2s' }}>
+              <Search size={15} style={{ color: '#00a6f9', flexShrink: 0 }} />
+              <input 
+                type="text"
+                autoFocus
+                placeholder={activeTab === 'pedidos' ? "Buscar cliente, tel, ciudad..." : activeTab === 'productos' ? "Buscar producto o ref..." : "Buscar..."}
+                value={activeTab === 'pedidos' ? orderSearchQuery : activeTab === 'productos' ? searchQuery : activeTab === 'mayoristas' ? mayoristaBuscador : activeTab === 'asesores' ? asesorSearchQuery : clienteSearchQuery}
+                onChange={e => {
+                  const val = e.target.value;
+                  if (activeTab === 'pedidos') setOrderSearchQuery(val);
+                  else if (activeTab === 'productos') setSearchQuery(val);
+                  else if (activeTab === 'mayoristas') setMayoristaBuscador(val);
+                  else if (activeTab === 'asesores') setAsesorSearchQuery(val);
+                  else setClienteSearchQuery(val);
+                }}
+                style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.9rem', width: '100%', color: '#0f172a', fontWeight: 600 }}
+              />
+            </div>
+            <button onClick={() => setShowMobileSearch(false)} style={{ background: '#00a6f9', color: 'white', border: 'none', padding: '0.75rem', borderRadius: '10px', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', boxShadow: '0 4px 12px rgba(0, 166, 249, 0.3)' }}>Ver Resultados</button>
+          </div>
+        </div>
+      )}
+
       {/* MAIN */}
       <div className="admin-main">
         {/* TOP BAR */}
@@ -5526,7 +5562,10 @@ export default function Admin() {
                 {activeTab === 'pedidos' ? (
                   <div className="topbar-filters-wrapper">
                     {/* Buscador de Pedidos Directo */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', minWidth: '160px', flex: '0 1 240px', maxWidth: '280px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', transition: 'all 0.2s' }}>
+                    <div 
+                      className="search-box-container"
+                      onClick={() => { if (window.innerWidth <= 992) setShowMobileSearch(true); }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', minWidth: '160px', flex: '0 1 240px', maxWidth: '280px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', transition: 'all 0.2s', cursor: 'text' }}>
                       <Search size={15} style={{ color: '#00a6f9', flexShrink: 0 }} />
                       <input 
                         type="text"
@@ -5548,13 +5587,16 @@ export default function Admin() {
                       onClick={() => setShowOrderFilters(!showOrderFilters)}
                       style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0 0.95rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', background: showOrderFilters ? '#64748b' : '#00a6f9', color: '#ffffff', border: 'none', boxShadow: '0 2px 6px rgba(0, 166, 249, 0.3)' }}
                     >
-                      {showOrderFilters ? <X size={14} /> : <Filter size={14} />} {showOrderFilters ? 'Ocultar Filtros' : 'Filtros Avanzados'}
+                      {showOrderFilters ? <X size={14} /> : <Filter size={14} />} <span className="btn-text-desktop">{showOrderFilters ? 'Ocultar Filtros' : 'Filtros Avanzados'}</span>
                     </button>
                   </div>
                 ) : activeTab === 'productos' ? (
                   <div className="topbar-filters-wrapper">
                     {/* Buscador de Productos Directo */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', minWidth: '190px', flex: '0 1 240px', maxWidth: '280px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', transition: 'all 0.2s' }}>
+                    <div 
+                      className="search-box-container"
+                      onClick={() => { if (window.innerWidth <= 992) setShowMobileSearch(true); }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', minWidth: '190px', flex: '0 1 240px', maxWidth: '280px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', transition: 'all 0.2s', cursor: 'text' }}>
                       <Search size={15} style={{ color: '#00a6f9', flexShrink: 0 }} />
                       <input 
                         type="text"
@@ -5731,7 +5773,10 @@ export default function Admin() {
                   </div>
                 ) : (
                   <div className="topbar-filters-wrapper">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', flex: '0 1 260px', maxWidth: '340px', minWidth: '180px', transition: 'border-color 0.2s' }}
+                    <div 
+                      className="search-box-container"
+                      onClick={() => { if (window.innerWidth <= 992) setShowMobileSearch(true); }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', flex: '0 1 260px', maxWidth: '340px', minWidth: '180px', transition: 'border-color 0.2s', cursor: 'text' }}
                       onFocus={e => (e.currentTarget.style.borderColor = '#00a6f9')}
                       onBlur={e => (e.currentTarget.style.borderColor = '#cbd5e1')}
                     >
