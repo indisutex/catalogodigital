@@ -1802,28 +1802,57 @@ body {
     height: 36px !important;
     box-sizing: border-box !important;
   }
-  .topbar-filters-wrapper > div:first-child {
-    flex: 1 0 120px !important;
-    min-width: 100px !important;
-    max-width: 220px !important;
-    height: 36px !important;
-    padding: 0 0.45rem !important;
+  .btn-text-desktop {
+    display: none !important;
   }
-  .topbar-filters-wrapper > div:first-child input {
-    font-size: 0.78rem !important;
+  .topbar-filters-wrapper > button,
+  .topbar-filters-wrapper .btn-primary,
+  .topbar-filters-wrapper .btn-secondary {
+    width: 38px !important;
+    height: 38px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 10px !important;
+    flex: 0 0 38px !important;
+    min-width: 38px !important;
   }
-  .topbar-filters-wrapper select,
-  .topbar-filters-wrapper input[type="date"] {
-    font-size: 0.75rem !important;
-    height: 100% !important;
+
+  .topbar-search-box {
+    width: 38px !important;
+    min-width: 38px !important;
+    flex: 0 0 38px !important;
+    max-width: 38px !important;
+    padding: 0 !important;
+    justify-content: center !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    overflow: hidden !important;
+    background: #ffffff !important;
   }
-  .topbar-filters-wrapper > button {
-    flex: 0 0 auto !important;
-    height: 36px !important;
+
+  .topbar-search-box input {
+    width: 0px !important;
+    opacity: 0 !important;
+    padding: 0 !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  }
+
+  .topbar-search-box:focus-within {
+    width: 170px !important;
+    min-width: 130px !important;
+    flex: 1 1 170px !important;
+    max-width: 200px !important;
     padding: 0 0.55rem !important;
-    font-size: 0.75rem !important;
-    white-space: nowrap !important;
+    box-shadow: 0 4px 12px rgba(0, 166, 249, 0.2) !important;
+    border-color: #00a6f9 !important;
   }
+
+  .topbar-search-box:focus-within input {
+    width: 100% !important;
+    opacity: 1 !important;
+  }
+
   .topbar-actions {
     display: flex !important;
     flex-wrap: nowrap !important;
