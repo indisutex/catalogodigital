@@ -1350,6 +1350,7 @@ export default function Admin() {
   const [orderSortBy, setOrderSortBy] = useState<string>('date_desc');
   const [showMobileSearch, setShowMobileSearch] = useState<boolean>(false);
   const [showMobileFilters, setShowMobileFilters] = useState<boolean>(false);
+  const [configSubTab, setConfigSubTab] = useState<'negocio' | 'bancos' | 'apariencia' | 'pos' | 'sistema'>('negocio');
 
   // Filtros para Ventas POS
   const [posDateFilter, setPosDateFilter] = useState<string>('');
