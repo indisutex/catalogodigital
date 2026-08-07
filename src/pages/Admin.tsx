@@ -13063,36 +13063,69 @@ export default function Admin() {
                       
                       {/* Banner de estado para Contra Entrega o Pendiente */}
                       {isContra ? (
-                        <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.75rem', textAlign: 'center' }}>
-                          <p style={{ color: '#ea580c', fontWeight: 700, fontSize: '0.85rem', margin: 0, background: '#fff7ed', border: '1px solid #ffedd5', padding: '0.55rem 0.85rem', borderRadius: '10px', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-                            🚚 Modalidad: Pago Contra Entrega (El cliente paga al recibir)
-                          </p>
+                        <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.85rem' }}>
+                          <div style={{ background: '#fff7ed', border: '1.5px solid #fdba74', padding: '0.75rem 1rem', borderRadius: '12px', textAlign: 'center', boxShadow: '0 2px 8px rgba(234, 88, 12, 0.08)' }}>
+                            <span style={{ color: '#ea580c', fontWeight: 800, fontSize: '0.9rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                              🚚 Modalidad: Pago Contra Entrega (El cliente paga al recibir)
+                            </span>
+                          </div>
                         </div>
                       ) : !selectedPedido.pantallazo_url ? (
-                        <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.75rem', textAlign: 'center' }}>
-                          <p style={{ color: '#f59e0b', fontWeight: 600, fontSize: '0.85rem', margin: 0 }}>
-                            ⏳ Pendiente de comprobante de pago
-                          </p>
+                        <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.85rem' }}>
+                          <div style={{ background: '#fffbeb', border: '1px solid #fde68a', padding: '0.85rem 1rem', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                            <p style={{ color: '#b45309', fontWeight: 700, fontSize: '0.88rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                              ⏳ Pendiente de comprobante de pago
+                            </p>
+                            <span style={{ fontSize: '0.78rem', color: '#78350f', fontWeight: 600 }}>
+                              🔗 Enlace directo para que el cliente suba su comprobante:
+                            </span>
+                            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                              <input
+                                type="text"
+                                readOnly
+                                value={`${window.location.origin}/pago/${selectedPedido.id}`}
+                                style={{ flex: 1, minWidth: '180px', padding: '0.45rem 0.65rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.8rem', background: '#ffffff', outline: 'none', color: '#334155' }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(`${window.location.origin}/pago/${selectedPedido.id}`);
+                                  showToast('¡Enlace de pago copiado! ✓', 'success');
+                                }}
+                                style={{ padding: '0.45rem 0.75rem', background: '#f59e0b', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, whiteSpace: 'nowrap' }}
+                              >
+                                📋 Copiar Enlace
+                              </button>
+                              <a
+                                href={`${window.location.origin}/pago/${selectedPedido.id}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={{ padding: '0.45rem 0.75rem', background: '#ffffff', color: '#b45309', border: '1px solid #fde68a', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}
+                              >
+                                ↗️ Abrir
+                              </a>
+                            </div>
+                          </div>
                         </div>
                       ) : null}
 
-                      {/* Evidencia Despacho — visible para Pago Anticipado con comprobante, para Completados, y para Contra Entrega en cualquier estado */}
+                      {/* Evidencia de Despacho (Foto del producto / paquete enviado) */}
                       {(selectedPedido.pantallazo_url || selectedPedido.estado === 'completado' || isContra) && (
-                        <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
-                          <h4 style={{ margin: '0 0 0.75rem', fontSize: '0.9rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                            📦 Evidencia de Despacho (Guía/Paquete)
+                        <div style={{ marginTop: '1rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1rem' }}>
+                          <h4 style={{ margin: '0 0 0.65rem 0', fontSize: '0.9rem', color: '#0f172a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            📦 Evidencia de Envío del Producto (Foto del Paquete / Guía)
                           </h4>
                           {selectedPedido.evidencia_despacho_url ? (
                             <div>
-                              <div onClick={() => setPagoModalUrl(selectedPedido.evidencia_despacho_url || null)} style={{ cursor: 'pointer' }}>
+                              <div onClick={() => setPagoModalUrl(selectedPedido.evidencia_despacho_url || null)} style={{ cursor: 'pointer', textAlign: 'center' }}>
                                 <img
                                   src={selectedPedido.evidencia_despacho_url}
                                   alt="Evidencia Despacho"
-                                  style={{ width: '100%', maxHeight: '120px', objectFit: 'contain', borderRadius: '12px', border: '1px solid #e2e8f0' }}
+                                  style={{ width: '100%', maxHeight: '140px', objectFit: 'contain', borderRadius: '10px', border: '1px solid #cbd5e1' }}
                                 />
                               </div>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginTop: '0.5rem' }}>
-                                <p style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 600, margin: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', marginTop: '0.5rem' }}>
+                                <p style={{ fontSize: '0.78rem', color: '#16a34a', fontWeight: 700, margin: 0 }}>
                                   ✅ Evidencia subida
                                 </p>
                                 <button
@@ -13107,16 +13140,16 @@ export default function Admin() {
                                       showToast('Error al eliminar evidencia', 'error');
                                     }
                                   }}
-                                  style={{ background: '#fee2e2', color: '#ef4444', border: '1px solid #fca5a5', borderRadius: '6px', padding: '0.2rem 0.5rem', fontSize: '0.7rem', cursor: 'pointer', fontWeight: 600 }}
+                                  style={{ background: '#fee2e2', color: '#ef4444', border: '1px solid #fca5a5', borderRadius: '6px', padding: '0.2rem 0.6rem', fontSize: '0.72rem', cursor: 'pointer', fontWeight: 700 }}
                                 >
                                   Eliminar / Cambiar
                                 </button>
                               </div>
                             </div>
                           ) : (
-                            <div style={{ textAlign: 'center' }}>
-                              <label className="btn-upload-img" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.65rem 1rem', background: '#f1f5f9', border: '1px dashed #cbd5e1', borderRadius: '12px', cursor: 'pointer', fontWeight: 600, color: '#475569', fontSize: '0.85rem' }}>
-                                {uploadingEvidenciaDespacho ? 'Subiendo...' : '📸 Subir Foto de Despacho'}
+                            <div style={{ textAlign: 'center', padding: '0.5rem 0' }}>
+                              <label className="btn-upload-img" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', width: '100%', padding: '0.75rem 1rem', background: '#ffffff', border: '2px dashed #cbd5e1', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, color: '#3b82f6', fontSize: '0.88rem', transition: 'all 0.2s' }}>
+                                {uploadingEvidenciaDespacho ? 'Subiendo...' : '📸 Subir Foto / Evidencia de Envío del Producto'}
                                 <input type="file" accept="image/*" style={{ display: 'none' }} disabled={uploadingEvidenciaDespacho} onChange={async (e) => {
                                   if (!e.target.files || e.target.files.length === 0) return;
                                   setUploadingEvidenciaDespacho(true);
@@ -13134,7 +13167,7 @@ export default function Admin() {
                                     setSelectedPedido({ ...selectedPedido, evidencia_despacho_url: data.publicUrl });
                                     setPedidos(prev => prev.map(p => p.id === selectedPedido.id ? { ...p, evidencia_despacho_url: data.publicUrl } : p));
                                     
-                                    showToast('Evidencia subida ✓', 'success');
+                                    showToast('Evidencia de despacho subida ✓', 'success');
                                   } catch (err: any) {
                                     showToast('Error al subir evidencia', 'error');
                                   } finally {
@@ -13147,39 +13180,39 @@ export default function Admin() {
                         </div>
                       )}
 
-                      {/* Seccion 99 Envios y Guía de Envío */}
+                      {/* Guía de Envío Manual y 99 Envíos */}
                       {(selectedPedido.estado === 'completado' || isContra) && (
-                        <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
-                          <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                            🚚 Datos de Envío (99 Envíos)
+                        <div style={{ marginTop: '0.75rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1rem' }}>
+                          <h4 style={{ margin: '0 0 0.65rem 0', fontSize: '0.9rem', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            🚚 Guía de Envío (Manual o 99 Envíos)
                           </h4>
                           
                           {numeroGuia ? (
-                            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.5rem 0.75rem', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.6rem 0.85rem', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
                               <div>
-                                <span style={{ fontSize: '0.7rem', color: '#166534', fontWeight: 600, display: 'block', textTransform: 'uppercase' }}>Número de Guía</span>
-                                <strong style={{ fontSize: '0.9rem', color: '#14532d' }}>{numeroGuia}</strong>
+                                <span style={{ fontSize: '0.68rem', color: '#166534', fontWeight: 700, display: 'block', textTransform: 'uppercase' }}>Número de Guía Registrado</span>
+                                <strong style={{ fontSize: '0.95rem', color: '#14532d' }}>{numeroGuia}</strong>
                               </div>
                               <button
                                 type="button"
                                 onClick={() => {
                                   const name = selectedPedido.cliente_nombre;
                                   const business = configuracion?.nombre_negocio || 'Indisutex';
-                                  const msg = `¡Felicidades ${name}! 🎉 Has hecho una compra exitosa con *${business}*.\n\nTu número de guía de envío es: *${numeroGuia}*\n\n¡Muchas gracias por confiar en nosotros! 😊`;
+                                  const msg = `¡Hola ${name}! 👋 Tu pedido en modalidad *Pago Contra Entrega* ya fue enviado. 🚚\n\nTu número de guía de envío es: *${numeroGuia}*\nEmpresa: *${business}*\nTotal a pagar al recibir: *$${selectedPedido.total.toLocaleString()} COP*\n\n¡Gracias por tu compra! 😊`;
                                   window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
                                 }}
-                                style={{ padding: '0.3rem 0.6rem', background: '#25D366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}
+                                style={{ padding: '0.35rem 0.7rem', background: '#25D366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700 }}
                               >
-                                💬 Enviar Guía
+                                💬 Enviar Guía por WA
                               </button>
                             </div>
                           ) : (
-                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.65rem' }}>
                               <button
                                 type="button"
                                 disabled={loadingGuia}
                                 onClick={() => handleGenerarGuia99Envios(selectedPedido.id)}
-                                style={{ flex: 1, padding: '0.5rem', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700 }}
+                                style={{ flex: 1, padding: '0.55rem', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700 }}
                               >
                                 {loadingGuia ? 'Generando...' : '🔌 Generar Guía con 99 Envíos'}
                               </button>
@@ -13189,17 +13222,17 @@ export default function Admin() {
                           <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                             <input
                               type="text"
-                              placeholder="Número de guía manual..."
+                              placeholder="Ingresar número de guía manualmente..."
                               value={numeroGuia}
                               onChange={e => setNumeroGuia(e.target.value)}
-                              style={{ flex: 1, padding: '0.4rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.8rem', outline: 'none' }}
+                              style={{ flex: 1, padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none', background: '#ffffff' }}
                             />
                             <button
                               type="button"
                               onClick={() => handleGuardarGuiaManual(selectedPedido.id, numeroGuia)}
-                              style={{ padding: '0.4rem 0.75rem', background: '#0f172a', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600 }}
+                              style={{ padding: '0.5rem 0.85rem', background: '#0f172a', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 700 }}
                             >
-                              Guardar
+                              Guardar Guía
                             </button>
                           </div>
                         </div>
