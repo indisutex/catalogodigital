@@ -442,6 +442,15 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
               <tbody>
                 {filteredVentas.map(v => {
                   const info = getVentaAsesorInfo(v);
+                  let vProds: any[] = [];
+                  try {
+                    vProds = Array.isArray(v.productos) ? v.productos : JSON.parse((v as any).productos || '[]');
+                  } catch {
+                    vProds = [];
+                  }
+                  const totalUnitsV = vProds.reduce((sum: number, p: any) => sum + (Number(p.cantidad || p.quantity) || 1), 0);
+                  const isWholesaleVenta = totalUnitsV >= 6 || (v as any).tipo_comprador === 'mayorista' || vProds.some((p: any) => p.precio_aplicado_mayor);
+
                   return (
                     <tr key={v.id} style={{ cursor: 'pointer' }} onClick={() => setSelectedVentaModal(v)}>
                       <td><strong style={{ fontFamily: 'monospace', color: '#6366f1' }}>{v.id.substring(0, 8).toUpperCase()}</strong></td>
@@ -452,19 +461,32 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
                       </td>
                       <td>{v.ciudad}</td>
                       <td>
-                        <span style={{
-                          fontSize: '0.76rem',
-                          fontWeight: 700,
-                          padding: '0.25rem 0.65rem',
-                          borderRadius: '12px',
-                          background: info.isPos ? '#ede9fe' : '#e0f2fe',
-                          color: info.isPos ? '#6d28d9' : '#0369a1',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.35rem'
-                        }}>
-                          {info.isPos ? '💻 POS' : '📱 Catálogo'} ({info.asesorNombre})
-                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'flex-start' }}>
+                          <span style={{
+                            fontSize: '0.76rem',
+                            fontWeight: 700,
+                            padding: '0.2rem 0.65rem',
+                            borderRadius: '12px',
+                            background: info.isPos ? '#ede9fe' : '#e0f2fe',
+                            color: info.isPos ? '#6d28d9' : '#0369a1',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem'
+                          }}>
+                            {info.isPos ? '💻 POS' : '📱 Catálogo'} ({info.asesorNombre})
+                          </span>
+                          <span style={{
+                            fontSize: '0.72rem',
+                            fontWeight: 800,
+                            padding: '0.15rem 0.55rem',
+                            borderRadius: '10px',
+                            background: isWholesaleVenta ? '#f3e8ff' : '#ecfdf5',
+                            color: isWholesaleVenta ? '#7e22ce' : '#047857',
+                            border: isWholesaleVenta ? '1px solid #d8b4fe' : '1px solid #a7f3d0'
+                          }}>
+                            {isWholesaleVenta ? '📦 Por Mayor' : '🛍️ Al Detal'}
+                          </span>
+                        </div>
                       </td>
                       <td>
                         <span className={`erp-estado-badge ${estadoClass(v.estado)}`}>
@@ -708,7 +730,33 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
             </div>
 
             {/* Tabla de Productos del Pedido */}
-            <h4 style={{ margin: '1.25rem 0 0.5rem', fontSize: '0.95rem', color: '#0f172a', fontWeight: 800 }}>📦 Detalle de Productos</h4>
+            {(() => {
+              let itemsModal: any[] = [];
+              try {
+                itemsModal = Array.isArray(selectedVentaModal.productos)
+                  ? selectedVentaModal.productos
+                  : JSON.parse((selectedVentaModal as any).productos || '[]');
+              } catch {
+                itemsModal = [];
+              }
+              const totalUnitsModal = itemsModal.reduce((sum: number, p: any) => sum + (Number(p.cantidad || p.quantity) || 1), 0);
+              const isWholesaleModal = totalUnitsModal >= 6 || (selectedVentaModal as any).tipo_comprador === 'mayorista' || itemsModal.some((p: any) => p.precio_aplicado_mayor);
+
+              return (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', margin: '1.25rem 0 0.5rem' }}>
+                  <h4 style={{ margin: 0, fontSize: '0.95rem', color: '#0f172a', fontWeight: 800 }}>📦 Detalle de Productos</h4>
+                  {isWholesaleModal ? (
+                    <span style={{ background: '#f3e8ff', color: '#7e22ce', border: '1px solid #d8b4fe', padding: '0.25rem 0.65rem', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                      📦 Venta Por Mayor ({totalUnitsModal} unds)
+                    </span>
+                  ) : (
+                    <span style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '0.25rem 0.65rem', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                      🛍️ Venta Al Detal ({totalUnitsModal} unds)
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
             <table className="erp-ventas-table erp-factura-table">
               <thead>
                 <tr>

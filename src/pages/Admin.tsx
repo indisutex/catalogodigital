@@ -12107,7 +12107,6 @@ export default function Admin() {
             );
           })()}
 
-
           {/* ── PEDIDOS TAB ── */}
           {activeTab === 'pedidos' && (() => {
             // Pedidos del catálogo digital únicamente (excluir POS del tab de pedidos)
@@ -12126,215 +12125,203 @@ export default function Admin() {
 
             return (
               <div className="admin-panel">
-              <div className="panel-header" style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', width: '100%', marginBottom: '0.75rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '0.5rem' }}>
-                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <ShoppingBag size={18} /> Registro de Pedidos
-                  </h3>
-                  
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
-                    {/* Botón Refrescar */}
-                    <button
-                      type="button"
-                      onClick={handleManualRefresh}
-                      disabled={isRefreshing}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: '#f1f5f9',
-                        color: '#475569',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '8px',
-                        width: '34px',
-                        height: '34px',
-                        cursor: isRefreshing ? 'not-allowed' : 'pointer',
-                        transition: 'all 0.2s',
-                      }}
-                      title="Sincronizar Datos"
-                    >
-                      <style>{`
-                        @keyframes spin {
-                          0% { transform: rotate(0deg); }
-                          100% { transform: rotate(360deg); }
-                        }
-                        .spin-icon-active {
-                          animation: spin 1s linear infinite;
-                        }
-                      `}</style>
-                      <RefreshCw size={15} className={isRefreshing ? 'spin-icon-active' : ''} />
-                    </button>
-                    {/* Toggles de Búsqueda y Filtros en Móvil */}
-                    <div className="mobile-search-filter-toggles" style={{ display: 'flex', gap: '4px', margin: 0 }}>
-                      <button 
-                        type="button" 
-                        className={`toggle-button ${showMobileSearch ? 'active' : ''}`}
-                        onClick={() => {
-                          setShowMobileSearch(!showMobileSearch);
-                          setShowMobileFilters(false);
-                        }}
-                      >
-                        <Search size={15} />
-                      </button>
-                      <button 
-                        type="button" 
-                        className={`toggle-button ${showMobileFilters ? 'active' : ''}`}
-                        onClick={() => {
-                          setShowMobileFilters(!showMobileFilters);
-                          setShowMobileSearch(false);
-                        }}
-                      >
-                        <Filter size={15} />
-                      </button>
+                <div className="panel-header" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.85rem', marginBottom: '0.75rem' }}>
+                  {/* Fila Principal: Título + Buscador Central + Acciones y Vistas */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <div style={{ flexShrink: 0 }}>
+                      <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <ShoppingBag size={18} color="#0ea5e9" /> Registro de Pedidos
+                      </h3>
+                      <p className="panel-header-subtitle" style={{ margin: '0.1rem 0 0 0', fontSize: '0.75rem', color: '#64748b' }}>
+                        Gestión inteligente de pedidos y canal de atención
+                      </p>
                     </div>
 
-                    {/* Switcher Vista */}
-                    <div className="desktop-view-mode-switcher" style={{ display: 'flex', gap: '0.25rem', background: '#f1f5f9', padding: '0.25rem', borderRadius: '8px' }}>
+                    {/* Buscador Integrado en el centro del Header */}
+                    <div style={{ flex: 1, minWidth: '220px', maxWidth: '420px', position: 'relative' }}>
+                      <Search size={15} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                      <input
+                        type="text"
+                        placeholder="Buscar por cliente, teléfono o ciudad..."
+                        value={orderSearchQuery}
+                        onChange={e => setOrderSearchQuery(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '0.45rem 0.75rem 0.45rem 2.2rem',
+                          borderRadius: '10px',
+                          border: '1px solid #cbd5e1',
+                          fontSize: '0.82rem',
+                          background: '#ffffff',
+                          outline: 'none',
+                          color: '#0f172a',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
+                        }}
+                      />
+                      {orderSearchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setOrderSearchQuery('')}
+                          style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontWeight: 700 }}
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Switchers y Refrescar */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
                       <button
                         type="button"
-                        onClick={() => setPedidosViewMode('lista')}
+                        onClick={handleManualRefresh}
+                        disabled={isRefreshing}
                         style={{
-                          border: 'none',
-                          background: pedidosViewMode === 'lista' ? '#ffffff' : 'transparent',
-                          color: pedidosViewMode === 'lista' ? '#0f172a' : '#64748b',
-                          padding: '0.4rem 0.8rem',
-                          borderRadius: '6px',
-                          fontSize: '0.8rem',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          boxShadow: pedidosViewMode === 'lista' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: '#f1f5f9',
+                          color: '#475569',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '8px',
+                          width: '34px',
+                          height: '34px',
+                          cursor: isRefreshing ? 'not-allowed' : 'pointer'
                         }}
+                        title="Sincronizar Datos"
                       >
-                        📋 Lista
+                        <RefreshCw size={15} className={isRefreshing ? 'spin-icon-active' : ''} />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setPedidosViewMode('kanban')}
-                        style={{
-                          border: 'none',
-                          background: pedidosViewMode === 'kanban' ? '#ffffff' : 'transparent',
-                          color: pedidosViewMode === 'kanban' ? '#0f172a' : '#64748b',
-                          padding: '0.4rem 0.8rem',
-                          borderRadius: '6px',
-                          fontSize: '0.8rem',
-                          fontWeight: 600,
-                          cursor: 'pointer',
-                          boxShadow: pedidosViewMode === 'kanban' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
-                        }}
+
+                      {/* Switcher Vista */}
+                      <div className="desktop-view-mode-switcher" style={{ display: 'flex', gap: '0.25rem', background: '#f1f5f9', padding: '0.25rem', borderRadius: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setPedidosViewMode('lista')}
+                          style={{
+                            border: 'none',
+                            background: pedidosViewMode === 'lista' ? '#ffffff' : 'transparent',
+                            color: pedidosViewMode === 'lista' ? '#0f172a' : '#64748b',
+                            padding: '0.35rem 0.75rem',
+                            borderRadius: '6px',
+                            fontSize: '0.8rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            boxShadow: pedidosViewMode === 'lista' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                          }}
+                        >
+                          📋 Lista
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPedidosViewMode('kanban')}
+                          style={{
+                            border: 'none',
+                            background: pedidosViewMode === 'kanban' ? '#ffffff' : 'transparent',
+                            color: pedidosViewMode === 'kanban' ? '#0f172a' : '#64748b',
+                            padding: '0.35rem 0.75rem',
+                            borderRadius: '6px',
+                            fontSize: '0.8rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            boxShadow: pedidosViewMode === 'kanban' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                          }}
+                        >
+                          📊 Kanban
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Fila Secundaria: Filtros Compactos Integrados */}
+                  <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap', background: '#f8fafc', padding: '0.45rem 0.75rem', borderRadius: '10px', border: '1px solid #f1f5f9' }}>
+                    {/* Fecha */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.76rem', fontWeight: 700, color: '#475569' }}>
+                      <span>📅 Fecha:</span>
+                      <input 
+                        type="date"
+                        value={orderFilterDate}
+                        onChange={e => setOrderFilterDate(e.target.value)}
+                        style={{ padding: '0.25rem 0.45rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.78rem', background: '#ffffff', outline: 'none', color: '#0f172a' }}
+                      />
+                      {orderFilterDate && (
+                        <button onClick={() => setOrderFilterDate('')} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 800 }}>✕</button>
+                      )}
+                    </div>
+
+                    {/* Estado (solo en lista) */}
+                    {pedidosViewMode === 'lista' && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.76rem', fontWeight: 700, color: '#475569' }}>
+                        <span>🏷️ Estado:</span>
+                        <select 
+                          value={orderFilterStatus} 
+                          onChange={e => setOrderFilterStatus(e.target.value)}
+                          style={{ padding: '0.25rem 0.45rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.78rem', background: '#ffffff', outline: 'none', color: '#0f172a' }}
+                        >
+                          <option value="todos">Todos los Pedidos y Leads</option>
+                          <option value="contra_entrega">🚚 Contra Entregas</option>
+                          <option value="comprobante">Con Comprobante</option>
+                          <option value="esperando_pago">Esperando Pago</option>
+                          <option value="exitosas">Ventas Exitosas</option>
+                          <option value="abandonados">🛒 Abandonados (Leads)</option>
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Origen */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.76rem', fontWeight: 700, color: '#475569' }}>
+                      <span>📍 Origen:</span>
+                      <select 
+                        value={orderFilterOrigin} 
+                        onChange={e => setOrderFilterOrigin(e.target.value)}
+                        style={{ padding: '0.25rem 0.45rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.78rem', background: '#ffffff', outline: 'none', color: '#0f172a' }}
                       >
-                        📊 Kanban
-                      </button>
+                        <option value="todos">🔀 Todos los Orígenes</option>
+                        <option value="catalogo">📱 Solo Catálogo Digital</option>
+                        <option value="pos">🖥️ Solo Ventas POS</option>
+                      </select>
+                    </div>
+
+                    {/* Asesor */}
+                    {role === 'admin' && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.76rem', fontWeight: 700, color: '#475569' }}>
+                        <span>👤 Asesor:</span>
+                        <select 
+                          value={orderFilterAsesor} 
+                          onChange={e => setOrderFilterAsesor(e.target.value)}
+                          style={{ padding: '0.25rem 0.45rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.78rem', background: '#ffffff', outline: 'none', color: '#0f172a' }}
+                        >
+                          <option value="todos">Todos los Asesores</option>
+                          {asesores.map(a => (
+                            <option key={a.id} value={a.telefono}>👤 {a.nombre}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Ordenar por */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.76rem', fontWeight: 700, color: '#475569', marginLeft: 'auto' }}>
+                      <span>↕️ Orden:</span>
+                      <select 
+                        value={orderSortBy} 
+                        onChange={e => setOrderSortBy(e.target.value)}
+                        style={{ padding: '0.25rem 0.45rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.78rem', background: '#ffffff', outline: 'none', color: '#0f172a' }}
+                      >
+                        <option value="date_desc">Más recientes primero</option>
+                        <option value="date_asc">Más antiguos primero</option>
+                        <option value="total_desc">Mayor valor</option>
+                        <option value="total_asc">Menor valor</option>
+                      </select>
                     </div>
                   </div>
                 </div>
-                <p className="panel-header-subtitle" style={{ margin: '0.1rem 0 0 0', fontSize: '0.8rem', color: '#64748b' }}>
-                  Pedidos recibidos desde el catálogo digital y su asignación de línea
-                </p>
-              </div>
-            <div className="panel-body">
-              {pedidos.length === 0 && leads.length === 0 ? (
-                <div className="empty-state">
-                  <div className="es-icon">📋</div>
-                  <p style={{ marginTop: '1rem' }}>No hay pedidos ni leads registrados todavía</p>
-                </div>
-              ) : (
-                <>
-                    <div className={`orders-search-filter-container ${showMobileSearch ? 'show-search-mobile' : ''} ${showMobileFilters ? 'show-filters-mobile' : ''}`}>
-                      <div className="search-input-container">
-                        <span className="search-icon-wrapper">
-                          <Search size={15} />
-                        </span>
-                        <input
-                          className="search-bar"
-                          placeholder="Buscar por cliente, teléfono o ciudad..."
-                          value={orderSearchQuery}
-                          onChange={e => setOrderSearchQuery(e.target.value)}
-                        />
-                      </div>
 
-                      <div className="filters-grid-container">
-                        <div className="filter-item-col">
-                          <label className="filter-label">Fecha</label>
-                          <div style={{ display: 'flex', gap: '0.25rem', width: '100%', alignItems: 'center' }}>
-                            <input 
-                              type="date"
-                              value={orderFilterDate}
-                              onChange={e => setOrderFilterDate(e.target.value)}
-                              className="filter-select-input"
-                            />
-                            {orderFilterDate && (
-                              <button 
-                                onClick={() => setOrderFilterDate('')}
-                                className="btn-clear-date"
-                              >
-                                ✕
-                              </button>
-                            )}
-                          </div>
-                        </div>
-
-                        {pedidosViewMode === 'lista' && (
-                          <div className="filter-item-col desktop-order-filter-status">
-                            <label className="filter-label">Estado</label>
-                            <select 
-                              value={orderFilterStatus} 
-                              onChange={e => setOrderFilterStatus(e.target.value)}
-                              className="filter-select-input"
-                            >
-                              <option value="todos">Todos los Pedidos y Leads</option>
-                              <option value="contra_entrega">🚚 Contra Entregas</option>
-                              <option value="comprobante">Con Comprobante</option>
-                              <option value="esperando_pago">Esperando Pago</option>
-                              <option value="exitosas">Ventas Exitosas</option>
-                              <option value="abandonados">🛒 Abandonados (Leads)</option>
-                            </select>
-                          </div>
-                        )}
-
-                        <div className="filter-item-col">
-                          <label className="filter-label">Origen</label>
-                          <select 
-                            value={orderFilterOrigin} 
-                            onChange={e => setOrderFilterOrigin(e.target.value)}
-                            className="filter-select-input"
-                          >
-                            <option value="catalogo">📱 Solo Catálogo Digital</option>
-                            <option value="pos">🖥️ Solo Ventas POS</option>
-                            <option value="todos">🔀 Todos los Orígenes</option>
-                          </select>
-                        </div>
-
-                        {role === 'admin' && (
-                          <div className="filter-item-col">
-                            <label className="filter-label">Asesor</label>
-                            <select 
-                              value={orderFilterAsesor} 
-                              onChange={e => setOrderFilterAsesor(e.target.value)}
-                              className="filter-select-input"
-                            >
-                              <option value="todos">Todos los Asesores</option>
-                              {asesores.map(a => (
-                                <option key={a.id} value={a.telefono}>👤 {a.nombre}</option>
-                              ))}
-                            </select>
-                          </div>
-                        )}
-
-                        <div className="filter-item-col">
-                          <label className="filter-label">Ordenar por</label>
-                          <select 
-                            value={orderSortBy} 
-                            onChange={e => setOrderSortBy(e.target.value)}
-                            className="filter-select-input"
-                          >
-                            <option value="date_desc">Más recientes primero</option>
-                            <option value="date_asc">Más antiguos primero</option>
-                            <option value="total_desc">Mayor valor</option>
-                            <option value="total_asc">Menor valor</option>
-                          </select>
-                        </div>
-                      </div>
+                <div className="panel-body">
+                  {pedidos.length === 0 && leads.length === 0 ? (
+                    <div className="empty-state">
+                      <div className="es-icon">📋</div>
+                      <p style={{ marginTop: '1rem' }}>No hay pedidos ni leads registrados todavía</p>
                     </div>
+                  ) : (
+                    <>
 
                     {(() => {
                       const leadsCount = leadsFiltrados.length;
@@ -12995,7 +12982,26 @@ export default function Admin() {
                 </div>
 
                 <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
-                  <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.95rem' }}>Productos Solicitados</h4>
+                  {(() => {
+                    const prodsList = Array.isArray(selectedPedido.productos) ? selectedPedido.productos : [];
+                    const totalUnitsInOrder = prodsList.reduce((sum: number, p: any) => sum + (Number(p.cantidad) || 1), 0);
+                    const isWholesaleOrder = totalUnitsInOrder >= 6 || (selectedPedido as any).descuento_mayor_aplicado || prodsList.some((p: any) => p.precio_aplicado_mayor);
+
+                    return (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                        <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>📦 Productos Solicitados</h4>
+                        {isWholesaleOrder ? (
+                          <span style={{ background: '#f3e8ff', color: '#7e22ce', border: '1px solid #d8b4fe', padding: '0.25rem 0.65rem', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                            📦 Venta Por Mayor ({totalUnitsInOrder} unds)
+                          </span>
+                        ) : (
+                          <span style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '0.25rem 0.65rem', borderRadius: '12px', fontSize: '0.75rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
+                            🛍️ Venta Al Detal ({totalUnitsInOrder} unds)
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })()}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '160px', overflowY: 'auto', paddingRight: '0.5rem' }}>
                     {(() => {
                       const prodsList = Array.isArray(selectedPedido.productos) ? selectedPedido.productos : [];

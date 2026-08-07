@@ -8,7 +8,7 @@ import { ERPComprasModule }      from './ERPComprasModule';
 import { ERPCRMModule }          from './ERPCRMModule';
 import {
   Landmark, BookOpen, Building2,
-  ShoppingCart, Package, Users, ChevronRight
+  ShoppingCart, Package, Users, BarChart2, ChevronRight
 } from 'lucide-react';
 
 interface Props {
@@ -39,56 +39,49 @@ const NAV_ITEMS: NavItem[] = [
     icon: <BarChart2 size={16} />,
     label: 'Ventas & Facturación',
     sublabel: 'Ventas reales · Historial de pedidos · Top productos',
-    available: true,
-    badge: 'ACTIVO'
+    available: true
   },
   {
     key: 'tesoreria',
     icon: <Landmark size={16} />,
     label: 'Tesorería & Bancos',
     sublabel: 'Cajas · Bancos · Cartera CxC · Proveedores CxP',
-    available: true,
-    badge: 'ACTIVO'
+    available: true
   },
   {
     key: 'contabilidad',
     icon: <BookOpen size={16} />,
     label: 'Contabilidad NIIF',
     sublabel: 'Comprobantes · Libro diario · Balance NIIF · PUC',
-    available: true,
-    badge: 'ACTIVO'
+    available: true
   },
   {
     key: 'inventario',
     icon: <Package size={16} />,
     label: 'Inventario',
     sublabel: 'Kardex · Valorización · Stock · Ajustes',
-    available: true,
-    badge: 'ACTIVO'
+    available: true
   },
   {
     key: 'compras',
     icon: <ShoppingCart size={16} />,
     label: 'Compras',
     sublabel: 'Facturas proveedor · Órdenes compra · CxP',
-    available: true,
-    badge: 'ACTIVO'
+    available: true
   },
   {
     key: 'crm',
     icon: <Users size={16} />,
-    label: 'CRM',
+    label: 'CRM & Asesores',
     sublabel: 'Clientes VIP · Comisiones asesores · Historial',
-    available: true,
-    badge: 'ACTIVO'
+    available: true
   },
   {
     key: 'nomina',
     icon: <Building2 size={16} />,
     label: 'Nómina',
     sublabel: 'Liquidación · PILA · Colillas · Primas',
-    available: false,
-    badge: 'PRÓXIMAMENTE'
+    available: false
   },
 ];
 
@@ -96,38 +89,51 @@ export const ERPMainModule: React.FC<Props> = ({ tenantId }) => {
   const [activeTab, setActiveTab] = useState<ERPTab>('ventas');
 
   return (
-    <div className="erp-main-container">
+    <div className="erp-main-container" style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+      {/* ── Header Unificado del Sistema ERP ── */}
+      <div className="admin-panel" style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.1rem 1.25rem', boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <Building2 size={22} color="#0ea5e9" /> Sistema ERP Empresarial Integrado
+            </h3>
+            <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: '#64748b' }}>
+              {NAV_ITEMS.find(n => n.key === activeTab)?.sublabel || 'Gestión integral de finanzas, ventas e inventario'}
+            </p>
+          </div>
 
-      {/* ── Barra de navegación superior ── */}
-      <nav className="erp-main-topbar">
-        <div className="erp-nav-scroll-container">
-          {NAV_ITEMS.map(item => (
-            <button
-              key={item.key}
-              className={`erp-nav-tab ${activeTab === item.key ? 'active' : ''} ${!item.available ? 'disabled' : ''}`}
-              onClick={() => item.available && setActiveTab(item.key)}
-              title={item.sublabel}
-              style={{ opacity: item.available ? 1 : 0.45, cursor: item.available ? 'pointer' : 'not-allowed' }}
-            >
-              <span className="erp-nav-icon">{item.icon}</span>
-              <span className="erp-nav-label">{item.label}</span>
-              {item.badge && (
-                <span
-                  className="erp-nav-badge"
-                  style={{
-                    background: item.available
-                      ? (activeTab === item.key ? 'rgba(255,255,255,0.25)' : 'var(--primary-color, #6366f1)')
-                      : '#334155',
-                    color: '#ffffff'
-                  }}
-                >
-                  {item.badge}
-                </span>
-              )}
-            </button>
-          ))}
+          {/* Navegación por pestañas unificada con el diseño del sitio */}
+          <div style={{ display: 'flex', gap: '0.3rem', background: '#f1f5f9', padding: '0.3rem', borderRadius: '10px', flexWrap: 'wrap' }}>
+            {NAV_ITEMS.map(item => (
+              <button
+                key={item.key}
+                onClick={() => item.available && setActiveTab(item.key)}
+                style={{
+                  border: 'none',
+                  background: activeTab === item.key ? '#ffffff' : 'transparent',
+                  color: activeTab === item.key ? '#0f172a' : item.available ? '#475569' : '#94a3b8',
+                  padding: '0.45rem 0.85rem',
+                  borderRadius: '7px',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  cursor: item.available ? 'pointer' : 'not-allowed',
+                  boxShadow: activeTab === item.key ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  opacity: item.available ? 1 : 0.6
+                }}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+                {!item.available && (
+                  <span style={{ fontSize: '0.65rem', background: '#e2e8f0', color: '#64748b', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: 700 }}>Próximamente</span>
+                )}
+              </button>
+            ))}
+          </div>
         </div>
-      </nav>
+      </div>
 
       {/* ── Contenido del módulo activo ── */}
       <div className="erp-main-content">
