@@ -5047,7 +5047,7 @@ export default function Admin() {
       {/* MAIN */}
       <div className="admin-main">
         {/* TOP BAR */}
-        <div className="admin-topbar">
+        <div className="admin-topbar" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'flex-start' }}>
           <button 
             type="button" 
             className="sidebar-collapse-toggle"
@@ -5063,7 +5063,7 @@ export default function Admin() {
               width: '36px',
               height: '36px',
               cursor: 'pointer',
-              marginRight: '0.75rem',
+              marginRight: '0.1rem',
               transition: 'all 0.2s',
             }}
             title={isSidebarCollapsed ? "Mostrar Menú Lateral" : "Ocultar Menú Lateral"}
@@ -5075,11 +5075,12 @@ export default function Admin() {
               type="button" 
               className="mobile-menu-toggle" 
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              style={{ marginRight: '0.1rem' }}
             >
               {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           )}
-          <div className="topbar-title" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: 0 }}>
+          <div className="topbar-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: 0, justifyContent: 'flex-start' }}>
             {((role === 'asesor' && currentAsesor) || (role === 'mayorista' && currentMayorista)) ? (
               (() => {
                 const currentUser = role === 'mayorista' ? currentMayorista : currentAsesor;
