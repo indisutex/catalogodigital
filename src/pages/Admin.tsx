@@ -1319,6 +1319,8 @@ export default function Admin() {
     setEditingProduct(null);
     setIsAddingProduct(false);
     setEditingCategory(null);
+    setSelectedPedido(null);
+    setPosLastInvoice(null);
     setActiveTab(tab);
   }
 
@@ -5104,24 +5106,35 @@ export default function Admin() {
               })()
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-                <h2 style={{ margin: 0 }}>
-                  {activeTab === 'dashboard' && '📊 Dashboard'}
-                  {activeTab === 'productos' && '📦 Productos'}
-                  {activeTab === 'categorias' && '🗂️ Categorías'}
-                  {activeTab === 'clientes' && '👥 Clientes'}
-                  {activeTab === 'asesores' && '👥 Asesores'}
-                  {activeTab === 'mayoristas' && '👥 Mayoristas'}
-                  {activeTab === 'config' && '⚙️ Configuración'}
+                <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
+                  {activeTab === 'dashboard' && '📊 Dashboard General'}
+                  {activeTab === 'productos' && '📦 Catálogo de Productos'}
+                  {activeTab === 'categorias' && '🗂️ Categorías y Subcategorías'}
+                  {activeTab === 'pedidos' && '🛒 Gestión de Pedidos'}
+                  {activeTab === 'pos' && '🖥️ Caja POS (Punto de Venta)'}
+                  {activeTab === 'ventas_pos' && '🏪 Historial de Ventas POS'}
+                  {activeTab === 'clientes' && '👥 Base de Clientes (Fidelización)'}
+                  {activeTab === 'asesores' && '👥 Equipo de Asesores'}
+                  {activeTab === 'mayoristas' && '👥 Clientes Mayoristas'}
+                  {activeTab === 'material_apoyo' && '📁 Material de Apoyo & Google Drive'}
+                  {activeTab === 'config' && '⚙️ Configuración Global'}
                   {activeTab === 'erp' && '📈 ERP Empresarial'}
+                  {activeTab === 'pqrs' && '💬 Centro de Soporte & PQRS'}
                 </h2>
-                <p style={{ margin: '0.15rem 0 0 0' }}>
-                  {activeTab === 'productos' && `${productos.length} productos en total`}
-                  {activeTab === 'categorias' && `${categoriasData.length} categorías activas`}
-                  {activeTab === 'clientes' && `${clientes.length} clientes en total`}
-                  {activeTab === 'asesores' && `${asesores.length} asesores en tu equipo`}
-                  {activeTab === 'mayoristas' && `${mayoristas.length} mayoristas en tu equipo`}
-                  {activeTab === 'config' && 'Ajustes globales de tu tienda'}
+                <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.82rem', color: '#64748b', fontWeight: 500 }}>
+                  {activeTab === 'dashboard' && 'Resumen de métricas, rendimiento y ventas del negocio'}
+                  {activeTab === 'productos' && `${productos.length} productos registrados en tu tienda`}
+                  {activeTab === 'categorias' && `${categoriasData.length} categorías activas en catálogo`}
+                  {activeTab === 'pedidos' && 'Filtra, aprueba y gestiona el envío de tus pedidos'}
+                  {activeTab === 'pos' && 'Cobra rápidamente a tus clientes en tienda física'}
+                  {activeTab === 'ventas_pos' && 'Historial de facturas y cobros realizados desde POS'}
+                  {activeTab === 'clientes' && `Visualiza y filtra los ${clientes.length} clientes registrados por catálogo y POS`}
+                  {activeTab === 'asesores' && `${asesores.length} asesores en tu equipo con enlaces de comisión`}
+                  {activeTab === 'mayoristas' && `${mayoristas.length} mayoristas registrados con accesos especiales`}
+                  {activeTab === 'material_apoyo' && 'Carpetas, fotos y videos compartidos desde Google Drive para el equipo'}
+                  {activeTab === 'config' && 'Personaliza tu tienda al máximo (datos, pagos, diseño y APIs)'}
                   {activeTab === 'erp' && 'Sistema Integrado de Gestión Empresarial'}
+                  {activeTab === 'pqrs' && 'Gestiona solicitudes, reclamos y dudas de clientes en tiempo real'}
                 </p>
               </div>
             )}
@@ -8274,12 +8287,6 @@ export default function Admin() {
 
           {activeTab === 'config' && (
             <div className="admin-panel">
-              <div className="panel-header">
-                <div>
-                  <h3><Settings size={16} /> Configuración Global</h3>
-                  <p>Personaliza tu tienda al máximo</p>
-                </div>
-              </div>
               <div className="panel-body">
                 {configuracion ? (
                   <>
@@ -14453,6 +14460,7 @@ function SidebarContent({
   listaPqrs?: PQRS[];
 }) {
   const [isPosExpanded, setIsPosExpanded] = useState<boolean>(activeTab === 'pos' || activeTab === 'ventas_pos');
+  const [isProductosExpanded, setIsProductosExpanded] = useState<boolean>(activeTab === 'productos' || activeTab === 'categorias');
 
   const handleSelectTab = (tab: TabType) => {
     setActiveTab(tab);
@@ -14640,14 +14648,51 @@ function SidebarContent({
                 </div>
               )}
             </div>
-            <button className={`nav-item ${activeTab === 'productos' ? 'active' : ''}`} onClick={() => handleSelectTab('productos')}>
-              <span className="nav-icon"><Package size={14} /></span> Productos
-              {activeTab === 'productos' && <span className="active-dot"></span>}
-            </button>
-            <button className={`nav-item ${activeTab === 'categorias' ? 'active' : ''}`} onClick={() => handleSelectTab('categorias')}>
-              <span className="nav-icon"><Tag size={14} /></span> Categorías
-              {activeTab === 'categorias' && <span className="active-dot"></span>}
-            </button>
+            {/* ── EXPANDABLE PRODUCTOS MENU ── */}
+            <div>
+              <button
+                type="button"
+                className={`nav-item ${(activeTab === 'productos' || activeTab === 'categorias') ? 'active' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsProductosExpanded(prev => !prev);
+                  if (activeTab !== 'productos' && activeTab !== 'categorias') {
+                    handleSelectTab('productos');
+                  }
+                }}
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', cursor: 'pointer' }}
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span className="nav-icon"><Package size={14} /></span> Productos
+                </span>
+                <span style={{ fontSize: '0.7rem', color: '#94a3b8', transition: 'transform 0.2s ease', transform: isProductosExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                  ▼
+                </span>
+              </button>
+
+              {isProductosExpanded && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '0.6rem', marginTop: '2px', marginBottom: '4px', borderLeft: '2px solid #e2e8f0', marginLeft: '0.9rem' }}>
+                  <button
+                    type="button"
+                    className={`nav-item ${activeTab === 'productos' ? 'active' : ''}`}
+                    onClick={() => handleSelectTab('productos')}
+                    style={{ fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
+                  >
+                    <span className="nav-icon"><Package size={13} /></span> 📦 Inventario
+                    {activeTab === 'productos' && <span className="active-dot"></span>}
+                  </button>
+                  <button
+                    type="button"
+                    className={`nav-item ${activeTab === 'categorias' ? 'active' : ''}`}
+                    onClick={() => handleSelectTab('categorias')}
+                    style={{ fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
+                  >
+                    <span className="nav-icon"><Tag size={13} color="#0284c7" /></span> 🗂️ Categorías
+                    {activeTab === 'categorias' && <span className="active-dot"></span>}
+                  </button>
+                </div>
+              )}
+            </div>
             <button className={`nav-item ${activeTab === 'pedidos' ? 'active' : ''}`} onClick={() => handleSelectTab('pedidos')}>
               <span className="nav-icon"><ShoppingBag size={14} /></span> Pedidos
               {activeTab === 'pedidos' && <span className="active-dot"></span>}
