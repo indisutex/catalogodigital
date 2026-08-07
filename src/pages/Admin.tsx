@@ -5133,35 +5133,34 @@ export default function Admin() {
                 {/* Divisor */}
                 <div style={{ width: '1px', height: '24px', background: '#e2e8f0', flexShrink: 0 }} />
 
-                {/* Buscador y Filtros inline en Topbar */}
+                {/* Buscador y Filtros inline en Top Header */}
                 {activeTab === 'pedidos' ? (
-                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', flex: 1 }}>
+                  <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexWrap: 'wrap', flex: 1 }}>
                     {/* Buscador de Pedidos Directo */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '8px', padding: '0.25rem 0.6rem', minWidth: '170px', flex: '1 1 170px', maxWidth: '260px' }}>
-                      <Search size={13} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', minWidth: '190px', flex: '1 1 190px', maxWidth: '280px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', transition: 'all 0.2s' }}>
+                      <Search size={15} style={{ color: '#00a6f9', flexShrink: 0 }} />
                       <input 
                         type="text"
-                        placeholder="Buscar cliente, tel..."
+                        placeholder="Buscar cliente, tel, ciudad..."
                         value={orderSearchQuery}
                         onChange={e => setOrderSearchQuery(e.target.value)}
-                        style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.78rem', width: '100%', color: '#0f172a', fontWeight: 600 }}
+                        style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.82rem', width: '100%', color: '#0f172a', fontWeight: 600 }}
                       />
                       {orderSearchQuery && (
                         <button onClick={() => setOrderSearchQuery('')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', padding: 0 }}>
-                          <X size={12} />
+                          <X size={14} />
                         </button>
                       )}
                     </div>
 
                     {/* Estado */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.74rem', fontWeight: 700, color: '#475569' }}>
-                      <span>🏷️</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                       <select 
                         value={orderFilterStatus} 
                         onChange={e => setOrderFilterStatus(e.target.value)}
-                        style={{ padding: '0.2rem 0.4rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.76rem', background: '#ffffff', outline: 'none', color: '#0f172a', fontWeight: 700 }}
+                        style={{ height: '38px', padding: '0 0.85rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', background: '#ffffff', outline: 'none', color: '#0f172a', fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}
                       >
-                        <option value="todos">Todos los Pedidos</option>
+                        <option value="todos">🏷️ Todos los Pedidos</option>
                         <option value="contra_entrega">🚚 Contra Entregas</option>
                         <option value="esperando_pago">⏳ Esperando Pago</option>
                         <option value="comprobante">💳 Con Comprobante</option>
@@ -5171,28 +5170,29 @@ export default function Admin() {
                     </div>
 
                     {/* Fecha */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.74rem', fontWeight: 700, color: '#475569' }}>
-                      <span>📅</span>
-                      <input 
-                        type="date"
-                        value={orderFilterDate}
-                        onChange={e => setOrderFilterDate(e.target.value)}
-                        style={{ padding: '0.2rem 0.4rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.76rem', background: '#ffffff', outline: 'none', color: '#0f172a' }}
-                      />
-                      {orderFilterDate && (
-                        <button onClick={() => setOrderFilterDate('')} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 800 }}>✕</button>
-                      )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', height: '38px', padding: '0 0.65rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', background: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', gap: '0.35rem' }}>
+                        <span style={{ fontSize: '0.85rem' }}>📅</span>
+                        <input 
+                          type="date"
+                          value={orderFilterDate}
+                          onChange={e => setOrderFilterDate(e.target.value)}
+                          style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.8rem', color: '#0f172a', fontWeight: 600, cursor: 'pointer' }}
+                        />
+                        {orderFilterDate && (
+                          <button onClick={() => setOrderFilterDate('')} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 800, padding: 0 }}>✕</button>
+                        )}
+                      </div>
                     </div>
 
                     {/* Origen */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.74rem', fontWeight: 700, color: '#475569' }}>
-                      <span>📍</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                       <select 
                         value={orderFilterOrigin} 
                         onChange={e => setOrderFilterOrigin(e.target.value)}
-                        style={{ padding: '0.2rem 0.4rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.76rem', background: '#ffffff', outline: 'none', color: '#0f172a', fontWeight: 600 }}
+                        style={{ height: '38px', padding: '0 0.85rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', background: '#ffffff', outline: 'none', color: '#0f172a', fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}
                       >
-                        <option value="todos">🔀 Todos Orígenes</option>
+                        <option value="todos">📍 Todos los Orígenes</option>
                         <option value="catalogo">📱 Catálogo Digital</option>
                         <option value="pos">🖥️ Ventas POS</option>
                       </select>
@@ -5200,14 +5200,13 @@ export default function Admin() {
 
                     {/* Asesor */}
                     {role === 'admin' && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.74rem', fontWeight: 700, color: '#475569' }}>
-                        <span>👤</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                         <select 
                           value={orderFilterAsesor} 
                           onChange={e => setOrderFilterAsesor(e.target.value)}
-                          style={{ padding: '0.2rem 0.4rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.76rem', background: '#ffffff', outline: 'none', color: '#0f172a', fontWeight: 600 }}
+                          style={{ height: '38px', padding: '0 0.85rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', background: '#ffffff', outline: 'none', color: '#0f172a', fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}
                         >
-                          <option value="todos">Todos los Asesores</option>
+                          <option value="todos">👤 Todos los Asesores</option>
                           {asesores.map(a => (
                             <option key={a.id} value={a.telefono}>👤 {a.nombre}</option>
                           ))}
@@ -5216,17 +5215,16 @@ export default function Admin() {
                     )}
 
                     {/* Ordenar por */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.74rem', fontWeight: 700, color: '#475569' }}>
-                      <span>↕️</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                       <select 
                         value={orderSortBy} 
                         onChange={e => setOrderSortBy(e.target.value)}
-                        style={{ padding: '0.2rem 0.4rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.76rem', background: '#ffffff', outline: 'none', color: '#0f172a', fontWeight: 600 }}
+                        style={{ height: '38px', padding: '0 0.85rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', background: '#ffffff', outline: 'none', color: '#0f172a', fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}
                       >
-                        <option value="date_desc">Más recientes primero</option>
-                        <option value="date_asc">Más antiguos primero</option>
-                        <option value="total_desc">Mayor valor</option>
-                        <option value="total_asc">Menor valor</option>
+                        <option value="date_desc">↕️ Más recientes primero</option>
+                        <option value="date_asc">↕️ Más antiguos primero</option>
+                        <option value="total_desc">💰 Mayor valor</option>
+                        <option value="total_asc">💰 Menor valor</option>
                       </select>
                     </div>
                   </div>
@@ -5317,20 +5315,22 @@ export default function Admin() {
           <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             {/* Switcher Vista Lista / Kanban en Pedidos */}
             {activeTab === 'pedidos' && (
-              <div style={{ display: 'flex', gap: '0.2rem', background: '#f1f5f9', padding: '0.2rem', borderRadius: '9px', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', gap: '0.2rem', background: '#f1f5f9', padding: '0.2rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', height: '38px', alignItems: 'center' }}>
                 <button
                   type="button"
                   onClick={() => setPedidosViewMode('lista')}
                   style={{
                     border: 'none',
+                    height: '30px',
                     background: pedidosViewMode === 'lista' ? '#ffffff' : 'transparent',
-                    color: pedidosViewMode === 'lista' ? '#0f172a' : '#64748b',
-                    padding: '0.3rem 0.65rem',
-                    borderRadius: '7px',
+                    color: pedidosViewMode === 'lista' ? '#00a6f9' : '#64748b',
+                    padding: '0 0.75rem',
+                    borderRadius: '8px',
                     fontSize: '0.78rem',
                     fontWeight: 800,
                     cursor: 'pointer',
-                    boxShadow: pedidosViewMode === 'lista' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                    boxShadow: pedidosViewMode === 'lista' ? '0 2px 6px rgba(0, 166, 249, 0.2)' : 'none',
+                    transition: 'all 0.2s'
                   }}
                 >
                   📋 Lista
@@ -5340,14 +5340,16 @@ export default function Admin() {
                   onClick={() => setPedidosViewMode('kanban')}
                   style={{
                     border: 'none',
+                    height: '30px',
                     background: pedidosViewMode === 'kanban' ? '#ffffff' : 'transparent',
-                    color: pedidosViewMode === 'kanban' ? '#0f172a' : '#64748b',
-                    padding: '0.3rem 0.65rem',
-                    borderRadius: '7px',
+                    color: pedidosViewMode === 'kanban' ? '#00a6f9' : '#64748b',
+                    padding: '0 0.75rem',
+                    borderRadius: '8px',
                     fontSize: '0.78rem',
                     fontWeight: 800,
                     cursor: 'pointer',
-                    boxShadow: pedidosViewMode === 'kanban' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                    boxShadow: pedidosViewMode === 'kanban' ? '0 2px 6px rgba(0, 166, 249, 0.2)' : 'none',
+                    transition: 'all 0.2s'
                   }}
                 >
                   📊 Kanban
@@ -5364,18 +5366,19 @@ export default function Admin() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                background: '#f1f5f9',
+                background: '#ffffff',
                 color: '#475569',
-                border: 'none',
-                borderRadius: '8px',
-                width: '36px',
-                height: '36px',
+                border: '1.5px solid #cbd5e1',
+                borderRadius: '10px',
+                width: '38px',
+                height: '38px',
                 cursor: isRefreshing ? 'not-allowed' : 'pointer',
                 transition: 'all 0.2s',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
               }}
-              title="Sincronizar Datos"
+              title="Actualizar datos ahora"
             >
-              <RefreshCw size={16} className={isRefreshing ? 'spin-icon-active' : ''} />
+              <RefreshCw size={16} className={isRefreshing ? 'spin-anim' : ''} />
             </button>
             {activeTab === 'productos' && (
               isAddingProduct && (
