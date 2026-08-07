@@ -7,13 +7,12 @@ import { ERPInventarioModule }   from './ERPInventarioModule';
 import { ERPComprasModule }      from './ERPComprasModule';
 import { ERPCRMModule }          from './ERPCRMModule';
 import {
-  BarChart2, Landmark, BookOpen, Building2,
-  ShoppingCart, Package, Users, ChevronRight, Menu
+  Landmark, BookOpen, Building2,
+  ShoppingCart, Package, Users, ChevronRight
 } from 'lucide-react';
 
 interface Props {
   tenantId: string;
-  onToggleSidebar?: () => void;
 }
 
 type ERPTab =

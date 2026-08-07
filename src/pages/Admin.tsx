@@ -14336,7 +14336,7 @@ function SidebarContent({
   activeNotificationsCount?: number;
   listaPqrs?: PQRS[];
 }) {
-  const [isPosExpanded, setIsPosExpanded] = useState<boolean>(false);
+  const [isPosExpanded, setIsPosExpanded] = useState<boolean>(activeTab === 'pos' || activeTab === 'ventas_pos');
 
   const handleSelectTab = (tab: TabType) => {
     setActiveTab(tab);
@@ -14486,25 +14486,22 @@ function SidebarContent({
             <div>
               <button
                 type="button"
-                className={`nav-item ${activeTab === 'pos' || activeTab === 'ventas_pos' ? 'active' : ''}`}
-                onClick={() => {
-                  const newState = !isPosExpanded;
-                  setIsPosExpanded(newState);
-                  if (newState && activeTab !== 'pos' && activeTab !== 'ventas_pos') {
-                    handleSelectTab('pos');
-                  }
+                className={`nav-item ${(activeTab === 'pos' || activeTab === 'ventas_pos') ? 'active' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsPosExpanded(prev => !prev);
                 }}
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', cursor: 'pointer' }}
               >
                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <span className="nav-icon"><CreditCard size={14} /></span> POS
                 </span>
-                <span style={{ fontSize: '0.7rem', color: '#94a3b8', transition: 'transform 0.2s ease', transform: (isPosExpanded || activeTab === 'pos' || activeTab === 'ventas_pos') ? 'rotate(180deg)' : 'rotate(0deg)' }}>
+                <span style={{ fontSize: '0.7rem', color: '#94a3b8', transition: 'transform 0.2s ease', transform: isPosExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>
                   ▼
                 </span>
               </button>
 
-              {(isPosExpanded || activeTab === 'pos' || activeTab === 'ventas_pos') && (
+              {isPosExpanded && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', paddingLeft: '0.6rem', marginTop: '2px', marginBottom: '4px', borderLeft: '2px solid #e2e8f0', marginLeft: '0.9rem' }}>
                   <button
                     type="button"
