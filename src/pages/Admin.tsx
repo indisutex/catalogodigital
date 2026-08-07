@@ -6331,13 +6331,7 @@ export default function Admin() {
               {!isAddingCategory && !isAddingSubcategory && (
                 <>
                   <div className="admin-panel">
-                    <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-                      <div>
-                        <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <Tag size={16} style={{ color: '#6366f1' }} /> Categorías y Subcategorías
-                        </h3>
-                        <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.83rem' }}>Visualiza y administra la estructura del catálogo</p>
-                      </div>
+                    <div className="panel-header" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                       <div className="panel-header-actions">
                         <button 
                           className="btn-primary hover-lift" 
@@ -9620,12 +9614,7 @@ export default function Admin() {
           {/* ── CLIENTES TAB ── */}
           {activeTab === 'clientes' && (
             <div className="admin-panel">
-              <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1rem' }}>
-                <div>
-                  <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}><User size={18} /> Base de Clientes (Fidelización)</h3>
-                  <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Visualiza y filtra los clientes registrados por catálogo y POS</p>
-                </div>
-                
+              <div className="panel-header" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1rem' }}>
                 {/* Search input */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f1f5f9', padding: '0.4rem 0.8rem', borderRadius: '10px', border: '1px solid #e2e8f0', minWidth: '280px' }}>
                   <Search size={16} style={{ color: '#64748b' }} />
@@ -12244,18 +12233,9 @@ export default function Admin() {
             return (
               <div className="admin-panel">
                 <div className="panel-header" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.85rem', marginBottom: '0.75rem' }}>
-                  {/* Fila Principal: Título + Buscador Central + Acciones y Vistas */}
+                  {/* Fila Principal: Buscador + Acciones y Vistas */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '0.75rem', flexWrap: 'wrap' }}>
-                    <div style={{ flexShrink: 0 }}>
-                      <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <ShoppingBag size={18} color="#0ea5e9" /> Registro de Pedidos
-                      </h3>
-                      <p className="panel-header-subtitle" style={{ margin: '0.1rem 0 0 0', fontSize: '0.75rem', color: '#64748b' }}>
-                        Gestión inteligente de pedidos y canal de atención
-                      </p>
-                    </div>
-
-                    {/* Buscador Integrado en el centro del Header */}
+                    {/* Buscador Integrado */}
                     <div style={{ flex: 1, minWidth: '220px', maxWidth: '420px', position: 'relative' }}>
                       <Search size={15} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
                       <input
