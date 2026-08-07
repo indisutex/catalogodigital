@@ -1152,6 +1152,9 @@ export default function Admin() {
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [isAddingSubcategory, setIsAddingSubcategory] = useState(false);
+  const [showCrearAsesorForm, setShowCrearAsesorForm] = useState(false);
+  const [showCrearMayoristaForm, setShowCrearMayoristaForm] = useState(false);
+  const [showCrearMaterialForm, setShowCrearMaterialForm] = useState(false);
   const [uploadMethod, setUploadMethod] = useState<'manual' | 'excel' | 'texto'>('manual');
   const [pastedText, setPastedText] = useState('');
   const [excelProducts, setExcelProducts] = useState<any[]>([]);
@@ -1316,6 +1319,9 @@ export default function Admin() {
   function handleTabChange(tab: TabType) {
     setEditingProduct(null);
     setIsAddingProduct(false);
+    setShowCrearAsesorForm(false);
+    setShowCrearMayoristaForm(false);
+    setShowCrearMaterialForm(false);
     setEditingCategory(null);
     setSelectedPedido(null);
     setPosLastInvoice(null);
@@ -5427,94 +5433,6 @@ export default function Admin() {
                       )}
                     </div>
                   </div>
-                ) : activeTab === 'material_apoyo' ? (
-                  <form className="topbar-filters-wrapper topbar-form-material" onSubmit={handleCrearMaterial}>
-                    {/* Campo 1: Título */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', flex: '1 1 180px', minWidth: '160px', maxWidth: '240px' }}>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Ej: Video Campaña Colección Invierno"
-                        value={nuevoMaterialTitulo}
-                        onChange={e => setNuevoMaterialTitulo(e.target.value)}
-                        style={{ height: '38px', padding: '0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', outline: 'none', background: '#ffffff', color: '#0f172a', fontWeight: 600 }}
-                      />
-                    </div>
-
-                    {/* Campo 2: Descripción */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', flex: '1 1 180px', minWidth: '160px', maxWidth: '240px' }}>
-                      <input
-                        type="text"
-                        placeholder="Ej: Video para estados de WhatsApp"
-                        value={nuevoMaterialDesc}
-                        onChange={e => setNuevoMaterialDesc(e.target.value)}
-                        style={{ height: '38px', padding: '0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', outline: 'none', background: '#ffffff', color: '#0f172a', fontWeight: 600 }}
-                      />
-                    </div>
-
-                    {/* Campo 3: Campaña */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', flex: '1 1 160px', minWidth: '140px', maxWidth: '220px' }}>
-                      <input
-                        type="text"
-                        placeholder="Ej: Navidad, Día del Padre"
-                        value={nuevoMaterialCampana}
-                        onChange={e => setNuevoMaterialCampana(e.target.value)}
-                        style={{ height: '38px', padding: '0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', outline: 'none', background: '#ffffff', color: '#0f172a', fontWeight: 600 }}
-                      />
-                    </div>
-
-                    {/* Campo 4: Tipo */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', minWidth: '160px' }}>
-                      <select
-                        value={nuevoMaterialTipo}
-                        onChange={e => setNuevoMaterialTipo(e.target.value as any)}
-                        style={{ height: '38px', padding: '0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', outline: 'none', background: '#ffffff', color: '#0f172a', fontWeight: 700, cursor: 'pointer' }}
-                      >
-                        <option value="video">🎥 Video (Google Drive)</option>
-                        <option value="imagen">🖼️ Imagen / Catálogo</option>
-                        <option value="documento">📄 Documento / PDF</option>
-                        <option value="carpeta">📁 Carpeta Completa</option>
-                      </select>
-                    </div>
-
-                    {/* Campo 5: URL Google Drive */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', flex: '1 1 200px', minWidth: '180px', maxWidth: '280px' }}>
-                      <input
-                        type="url"
-                        required
-                        placeholder="https://drive.google.com/..."
-                        value={nuevoMaterialUrl}
-                        onChange={e => setNuevoMaterialUrl(e.target.value)}
-                        style={{ height: '38px', padding: '0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', outline: 'none', background: '#ffffff', color: '#0f172a', fontWeight: 600 }}
-                      />
-                    </div>
-
-                    {/* Botón Guardar / Registrar */}
-                    <button
-                      type="submit"
-                      className="btn-primary hover-lift"
-                      disabled={loading}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '0.4rem',
-                        padding: '0 1.1rem',
-                        height: '38px',
-                        borderRadius: '10px',
-                        fontSize: '0.82rem',
-                        fontWeight: 800,
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                        background: '#00a6f9',
-                        color: '#ffffff',
-                        border: 'none',
-                        boxShadow: '0 2px 6px rgba(0, 166, 249, 0.3)'
-                      }}
-                    >
-                      <Plus size={15} /> {loading ? 'Guardando...' : 'Registrar Recurso'}
-                    </button>
-                  </form>
                 ) : (
                   <div className="topbar-filters-wrapper">
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', flex: '0 1 260px', maxWidth: '340px', minWidth: '180px', transition: 'border-color 0.2s' }}
@@ -5527,6 +5445,7 @@ export default function Admin() {
                         placeholder={
                           activeTab === 'clientes' ? 'Buscar por nombre o celular...' :
                           activeTab === 'asesores' ? 'Buscar asesor por nombre...' :
+                          activeTab === 'material_apoyo' ? 'Buscar recurso por título...' :
                           'Buscar mayorista...'
                         }
                         value={
@@ -5557,57 +5476,36 @@ export default function Admin() {
                     </div>
                     
                     {activeTab === 'asesores' && (
-                      <form className="topbar-form-inline" onSubmit={handleCrearAsesor}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', flex: '1 1 180px', minWidth: '160px', maxWidth: '240px' }}>
-                          <input type="text" required placeholder="Ej: Carolina Gómez" value={nuevoAsesorNombre} onChange={e => setNuevoAsesorNombre(e.target.value)} style={{ height: '38px', padding: '0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', outline: 'none', background: '#ffffff', color: '#0f172a', fontWeight: 500, fontFamily: "'Outfit', sans-serif" }} />
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', minWidth: '220px' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                            {nuevoAsesorTelefonos.map((tel, idx) => (
-                              <div key={idx} style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-                                <input type="text" required placeholder="Ej: 3123456789" value={tel} onChange={e => { const newTels = [...nuevoAsesorTelefonos]; newTels[idx] = e.target.value; setNuevoAsesorTelefonos(newTels); }} style={{ height: '38px', padding: '0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', outline: 'none', background: '#ffffff', color: '#0f172a', fontWeight: 500, fontFamily: "'Outfit', sans-serif", flex: 1 }} />
-                                {nuevoAsesorTelefonos.length > 1 && (
-                                  <button type="button" onClick={() => { setNuevoAsesorTelefonos(nuevoAsesorTelefonos.filter((_, i) => i !== idx)); }} style={{ background: '#fee2e2', border: '1px solid #fca5a5', color: '#ef4444', padding: '0', width: '38px', height: '38px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                          <button type="button" onClick={() => setNuevoAsesorTelefonos([...nuevoAsesorTelefonos, ''])} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', marginTop: '0.15rem', padding: '0.2rem 0' }}>+ Añadir más líneas</button>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', minWidth: '140px', maxWidth: '180px' }}>
-                          <input type="text" required maxLength={6} placeholder="Ej: 1234" value={nuevoAsesorPin} onChange={e => setNuevoAsesorPin(e.target.value)} style={{ height: '38px', padding: '0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', outline: 'none', background: '#ffffff', color: '#0f172a', fontWeight: 500, fontFamily: "'Outfit', sans-serif" }} />
-                        </div>
-                        <button type="submit" className="btn-primary hover-lift" disabled={loading} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0 1.1rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', background: '#00a6f9', color: '#ffffff', border: 'none', boxShadow: '0 2px 6px rgba(0, 166, 249, 0.3)', alignSelf: 'center' }}>
-                          <Plus size={15} /> Registrar Asesor
-                        </button>
-                      </form>
+                      <button
+                        type="button"
+                        className="btn-primary hover-lift"
+                        onClick={() => setShowCrearAsesorForm(!showCrearAsesorForm)}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0 1rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', background: showCrearAsesorForm ? '#64748b' : '#00a6f9', color: '#ffffff', border: 'none', boxShadow: '0 2px 6px rgba(0, 166, 249, 0.3)' }}
+                      >
+                        {showCrearAsesorForm ? <X size={14} /> : <Plus size={14} />} {showCrearAsesorForm ? 'Ocultar Formulario' : 'Nuevo Asesor'}
+                      </button>
                     )}
 
                     {activeTab === 'mayoristas' && (
-                      <form className="topbar-form-inline" onSubmit={handleCrearMayorista}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', flex: '1 1 180px', minWidth: '160px', maxWidth: '240px' }}>
-                          <input type="text" required placeholder="Ej: Distribuidora López" value={nuevoMayoristaNombre} onChange={e => setNuevoMayoristaNombre(e.target.value)} style={{ height: '38px', padding: '0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', outline: 'none', background: '#ffffff', color: '#0f172a', fontWeight: 500, fontFamily: "'Outfit', sans-serif" }} />
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', minWidth: '220px' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                            {nuevoMayoristaTelefonos.map((tel, idx) => (
-                              <div key={idx} style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-                                <input type="text" required placeholder="Ej: 3123456789" value={tel} onChange={e => { const t = [...nuevoMayoristaTelefonos]; t[idx] = e.target.value; setNuevoMayoristaTelefonos(t); }} style={{ height: '38px', padding: '0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', outline: 'none', background: '#ffffff', color: '#0f172a', fontWeight: 500, fontFamily: "'Outfit', sans-serif", flex: 1 }} />
-                                {nuevoMayoristaTelefonos.length > 1 && (
-                                  <button type="button" onClick={() => setNuevoMayoristaTelefonos(nuevoMayoristaTelefonos.filter((_, i) => i !== idx))} style={{ background: '#fee2e2', border: '1px solid #fca5a5', color: '#ef4444', padding: '0', width: '38px', height: '38px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                          <button type="button" onClick={() => setNuevoMayoristaTelefonos([...nuevoMayoristaTelefonos, ''])} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', marginTop: '0.15rem', padding: '0.2rem 0' }}>+ Añadir más líneas</button>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', minWidth: '140px', maxWidth: '180px' }}>
-                          <input type="text" required maxLength={6} placeholder="Ej: 4321" value={nuevoMayoristaPin} onChange={e => setNuevoMayoristaPin(e.target.value)} style={{ height: '38px', padding: '0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', outline: 'none', background: '#ffffff', color: '#0f172a', fontWeight: 500, fontFamily: "'Outfit', sans-serif" }} />
-                        </div>
-                        <button type="submit" className="btn-primary hover-lift" disabled={loading} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0 1.1rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', background: '#00a6f9', color: '#ffffff', border: 'none', boxShadow: '0 2px 6px rgba(0, 166, 249, 0.3)', alignSelf: 'center' }}>
-                          <Plus size={15} /> Registrar Mayorista
-                        </button>
-                      </form>
+                      <button
+                        type="button"
+                        className="btn-primary hover-lift"
+                        onClick={() => setShowCrearMayoristaForm(!showCrearMayoristaForm)}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0 1rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', background: showCrearMayoristaForm ? '#64748b' : '#00a6f9', color: '#ffffff', border: 'none', boxShadow: '0 2px 6px rgba(0, 166, 249, 0.3)' }}
+                      >
+                        {showCrearMayoristaForm ? <X size={14} /> : <Plus size={14} />} {showCrearMayoristaForm ? 'Ocultar Formulario' : 'Nuevo Mayorista'}
+                      </button>
+                    )}
+
+                    {activeTab === 'material_apoyo' && (
+                      <button
+                        type="button"
+                        className="btn-primary hover-lift"
+                        onClick={() => setShowCrearMaterialForm(!showCrearMaterialForm)}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0 1rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', background: showCrearMaterialForm ? '#64748b' : '#00a6f9', color: '#ffffff', border: 'none', boxShadow: '0 2px 6px rgba(0, 166, 249, 0.3)' }}
+                      >
+                        {showCrearMaterialForm ? <X size={14} /> : <Plus size={14} />} {showCrearMaterialForm ? 'Ocultar Formulario' : 'Nuevo Recurso'}
+                      </button>
                     )}
                   </div>
                 )}
@@ -9367,6 +9265,52 @@ export default function Admin() {
           {/* ── MATERIAL DE APOYO ADMIN TAB ── */}
           {activeTab === 'material_apoyo' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              
+              {/* Card Desplegable Crear Material */}
+              {showCrearMaterialForm && (
+                <div className="creation-form-card">
+                  <div className="creation-form-header">
+                    <h4>📁 Registrar Nuevo Recurso de Apoyo</h4>
+                    <button type="button" className="close-btn" onClick={() => setShowCrearMaterialForm(false)}>✕</button>
+                  </div>
+                  <form onSubmit={async (e) => { await handleCrearMaterial(e); setShowCrearMaterialForm(false); }}>
+                    <div className="form-grid-material">
+                      <div className="form-field-item">
+                        <label>Título del Recurso</label>
+                        <input type="text" required placeholder="Ej: Video Campaña Invierno" value={nuevoMaterialTitulo} onChange={e => setNuevoMaterialTitulo(e.target.value)} />
+                      </div>
+                      <div className="form-field-item">
+                        <label>Descripción</label>
+                        <input type="text" placeholder="Ej: Video para estados WhatsApp" value={nuevoMaterialDesc} onChange={e => setNuevoMaterialDesc(e.target.value)} />
+                      </div>
+                      <div className="form-field-item">
+                        <label>Campaña</label>
+                        <input type="text" placeholder="Ej: Navidad, Día del Padre" value={nuevoMaterialCampana} onChange={e => setNuevoMaterialCampana(e.target.value)} />
+                      </div>
+                      <div className="form-field-item">
+                        <label>Tipo de Recurso</label>
+                        <select value={nuevoMaterialTipo} onChange={e => setNuevoMaterialTipo(e.target.value as any)}>
+                          <option value="video">🎥 Video (Google Drive)</option>
+                          <option value="imagen">🖼️ Imagen / Catálogo</option>
+                          <option value="documento">📄 Documento / PDF</option>
+                          <option value="carpeta">📁 Carpeta Completa</option>
+                        </select>
+                      </div>
+                      <div className="form-field-item">
+                        <label>URL Google Drive</label>
+                        <input type="url" required placeholder="https://drive.google.com/..." value={nuevoMaterialUrl} onChange={e => setNuevoMaterialUrl(e.target.value)} />
+                      </div>
+                    </div>
+                    <div className="form-actions-row">
+                      <button type="button" className="btn-secondary" onClick={() => setShowCrearMaterialForm(false)} style={{ height: '38px', padding: '0 1rem', borderRadius: '10px', fontWeight: 700, cursor: 'pointer' }}>Cancelar</button>
+                      <button type="submit" className="btn-primary hover-lift" disabled={loading} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0 1.25rem', height: '38px', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', background: '#00a6f9', color: '#ffffff', border: 'none' }}>
+                        <Plus size={16} /> {loading ? 'Guardando...' : 'Guardar Recurso'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
               {/* Listado de Material de Apoyo */}
               <div className="admin-panel">
                 <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
@@ -9678,6 +9622,45 @@ export default function Admin() {
           {activeTab === 'asesores' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               
+              {/* Card Desplegable Crear Asesor */}
+              {showCrearAsesorForm && (
+                <div className="creation-form-card">
+                  <div className="creation-form-header">
+                    <h4>👤 Registrar Nuevo Asesor de Ventas</h4>
+                    <button type="button" className="close-btn" onClick={() => setShowCrearAsesorForm(false)}>✕</button>
+                  </div>
+                  <form onSubmit={async (e) => { await handleCrearAsesor(e); setShowCrearAsesorForm(false); }}>
+                    <div className="form-grid-3">
+                      <div className="form-field-item">
+                        <label>Nombre Completo</label>
+                        <input type="text" required placeholder="Ej: Carolina Gómez" value={nuevoAsesorNombre} onChange={e => setNuevoAsesorNombre(e.target.value)} />
+                      </div>
+                      <div className="form-field-item">
+                        <label>Líneas de Teléfono / WhatsApp</label>
+                        {nuevoAsesorTelefonos.map((tel, idx) => (
+                          <div key={idx} style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', marginBottom: '0.35rem' }}>
+                            <input type="text" required placeholder="Ej: 3123456789" value={tel} onChange={e => { const newTels = [...nuevoAsesorTelefonos]; newTels[idx] = e.target.value; setNuevoAsesorTelefonos(newTels); }} style={{ flex: 1 }} />
+                            {nuevoAsesorTelefonos.length > 1 && (
+                              <button type="button" onClick={() => setNuevoAsesorTelefonos(nuevoAsesorTelefonos.filter((_, i) => i !== idx))} style={{ background: '#fee2e2', border: '1px solid #fca5a5', color: '#ef4444', padding: '0', width: '38px', height: '38px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                            )}
+                          </div>
+                        ))}
+                        <button type="button" onClick={() => setNuevoAsesorTelefonos([...nuevoAsesorTelefonos, ''])} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', padding: '0.2rem 0' }}>+ Añadir más líneas</button>
+                      </div>
+                      <div className="form-field-item">
+                        <label>PIN de Acceso (6 dígitos)</label>
+                        <input type="text" required maxLength={6} placeholder="Ej: 1234" value={nuevoAsesorPin} onChange={e => setNuevoAsesorPin(e.target.value)} />
+                      </div>
+                    </div>
+                    <div className="form-actions-row">
+                      <button type="button" className="btn-secondary" onClick={() => setShowCrearAsesorForm(false)} style={{ height: '38px', padding: '0 1rem', borderRadius: '10px', fontWeight: 700, cursor: 'pointer' }}>Cancelar</button>
+                      <button type="submit" className="btn-primary hover-lift" disabled={loading} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0 1.25rem', height: '38px', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', background: '#00a6f9', color: '#ffffff', border: 'none' }}>
+                        <Plus size={16} /> {loading ? 'Guardando...' : 'Guardar Asesor'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
 
               {/* Listado de Asesores */}
               <div className="admin-panel">
@@ -10004,6 +9987,46 @@ export default function Admin() {
 
             return (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+
+                {/* Card Desplegable Crear Mayorista */}
+                {showCrearMayoristaForm && (
+                  <div className="creation-form-card">
+                    <div className="creation-form-header">
+                      <h4>🏭 Registrar Nuevo Mayorista</h4>
+                      <button type="button" className="close-btn" onClick={() => setShowCrearMayoristaForm(false)}>✕</button>
+                    </div>
+                    <form onSubmit={async (e) => { await handleCrearMayorista(e); setShowCrearMayoristaForm(false); }}>
+                      <div className="form-grid-3">
+                        <div className="form-field-item">
+                          <label>Nombre Distribuidora / Mayorista</label>
+                          <input type="text" required placeholder="Ej: Distribuidora López" value={nuevoMayoristaNombre} onChange={e => setNuevoMayoristaNombre(e.target.value)} />
+                        </div>
+                        <div className="form-field-item">
+                          <label>Líneas de Teléfono / WhatsApp</label>
+                          {nuevoMayoristaTelefonos.map((tel, idx) => (
+                            <div key={idx} style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', marginBottom: '0.35rem' }}>
+                              <input type="text" required placeholder="Ej: 3123456789" value={tel} onChange={e => { const t = [...nuevoMayoristaTelefonos]; t[idx] = e.target.value; setNuevoMayoristaTelefonos(t); }} style={{ flex: 1 }} />
+                              {nuevoMayoristaTelefonos.length > 1 && (
+                                <button type="button" onClick={() => setNuevoMayoristaTelefonos(nuevoMayoristaTelefonos.filter((_, i) => i !== idx))} style={{ background: '#fee2e2', border: '1px solid #fca5a5', color: '#ef4444', padding: '0', width: '38px', height: '38px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                              )}
+                            </div>
+                          ))}
+                          <button type="button" onClick={() => setNuevoMayoristaTelefonos([...nuevoMayoristaTelefonos, ''])} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', padding: '0.2rem 0' }}>+ Añadir más líneas</button>
+                        </div>
+                        <div className="form-field-item">
+                          <label>PIN de Acceso (6 dígitos)</label>
+                          <input type="text" required maxLength={6} placeholder="Ej: 4321" value={nuevoMayoristaPin} onChange={e => setNuevoMayoristaPin(e.target.value)} />
+                        </div>
+                      </div>
+                      <div className="form-actions-row">
+                        <button type="button" className="btn-secondary" onClick={() => setShowCrearMayoristaForm(false)} style={{ height: '38px', padding: '0 1rem', borderRadius: '10px', fontWeight: 700, cursor: 'pointer' }}>Cancelar</button>
+                        <button type="submit" className="btn-primary hover-lift" disabled={loading} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0 1.25rem', height: '38px', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 800, cursor: 'pointer', background: '#00a6f9', color: '#ffffff', border: 'none' }}>
+                          <Plus size={16} /> {loading ? 'Guardando...' : 'Guardar Mayorista'}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                )}
 
                 {/* Listado */}
                 <div className="admin-panel">
