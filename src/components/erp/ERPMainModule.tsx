@@ -6,13 +6,15 @@ import { ERPContabilidadModule } from './ERPContabilidadModule';
 import { ERPInventarioModule }   from './ERPInventarioModule';
 import { ERPComprasModule }      from './ERPComprasModule';
 import { ERPCRMModule }          from './ERPCRMModule';
+import { ERPPQRSModule }         from './ERPPQRSModule';
 import {
   Landmark, BookOpen, Building2,
-  ShoppingCart, Package, Users, BarChart2, ChevronRight
+  ShoppingCart, Package, Users, BarChart2, ChevronRight, LifeBuoy
 } from 'lucide-react';
 
 interface Props {
   tenantId: string;
+  configuracion?: any;
 }
 
 type ERPTab =
@@ -21,8 +23,9 @@ type ERPTab =
   | 'contabilidad'
   | 'inventario'
   | 'compras'
-  | 'nomina'
-  | 'crm';
+  | 'crm'
+  | 'soporte'
+  | 'nomina';
 
 interface NavItem {
   key: ERPTab;
@@ -77,6 +80,13 @@ const NAV_ITEMS: NavItem[] = [
     available: true
   },
   {
+    key: 'soporte',
+    icon: <LifeBuoy size={16} />,
+    label: 'Soporte & PQRS',
+    sublabel: 'Atención al cliente · Solicitudes · Reclamos · Garantías',
+    available: true
+  },
+  {
     key: 'nomina',
     icon: <Building2 size={16} />,
     label: 'Nómina',
@@ -85,25 +95,16 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
-export const ERPMainModule: React.FC<Props> = ({ tenantId }) => {
+export const ERPMainModule: React.FC<Props> = ({ tenantId, configuracion }) => {
   const [activeTab, setActiveTab] = useState<ERPTab>('ventas');
 
   return (
     <div className="erp-main-container" style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
       {/* ── Header Unificado del Sistema ERP ── */}
-      <div className="admin-panel" style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.1rem 1.25rem', boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-          <div>
-            <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Building2 size={22} color="#0ea5e9" /> Sistema ERP Empresarial Integrado
-            </h3>
-            <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: '#64748b' }}>
-              {NAV_ITEMS.find(n => n.key === activeTab)?.sublabel || 'Gestión integral de finanzas, ventas e inventario'}
-            </p>
-          </div>
-
+      <div className="admin-panel" style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '0.75rem 1rem', boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', width: '100%' }}>
           {/* Navegación por pestañas unificada con el diseño del sitio */}
-          <div style={{ display: 'flex', gap: '0.3rem', background: '#f1f5f9', padding: '0.3rem', borderRadius: '10px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: '0.3rem', background: '#f1f5f9', padding: '0.3rem', borderRadius: '10px', flexWrap: 'wrap', width: '100%', justifyContent: 'space-between' }}>
             {NAV_ITEMS.map(item => (
               <button
                 key={item.key}
@@ -162,8 +163,12 @@ export const ERPMainModule: React.FC<Props> = ({ tenantId }) => {
           <ERPCRMModule tenantId={tenantId} onNavigateTab={(tab) => setActiveTab(tab as any)} />
         )}
 
+        {activeTab === 'soporte' && (
+          <ERPPQRSModule tenantId={tenantId} configuracion={configuracion} />
+        )}
+
         {/* Módulos próximos — pantalla de "coming soon" */}
-        {!['ventas', 'tesoreria', 'contabilidad', 'inventario', 'compras', 'crm'].includes(activeTab) && (
+        {!['ventas', 'tesoreria', 'contabilidad', 'inventario', 'compras', 'crm', 'soporte'].includes(activeTab) && (
           <div style={{
             display: 'flex',
             flexDirection: 'column',

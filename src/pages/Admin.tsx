@@ -5846,14 +5846,8 @@ export default function Admin() {
               ) : (
                 /* PRODUCT LIST PANEL */
                 <div className="admin-panel">
-                  <div className="panel-header" style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem', alignItems: 'stretch' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '1rem' }}>
-                      <div>
-                        <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <Package size={18} style={{ color: '#6366f1' }} /> Inventario ({filteredProducts.length})
-                        </h3>
-                        <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.83rem' }}>Todos los productos publicados en tu tienda</p>
-                      </div>
+                  <div className="panel-header" style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', alignItems: 'stretch' }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '1rem' }}>
                       <div className="panel-header-actions" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                         <button 
                           className="btn-primary hover-lift" 
@@ -7945,310 +7939,11 @@ export default function Admin() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="btn-secondary"
-                                style={{ flex: 1, textDecoration: 'none', padding: '0.45rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', color: '#64748b', borderColor: '#e2e8f0', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', fontWeight: 700 }}
-                              >
-                                <Download size={12} style={{ color: '#0ea5e9' }} /> Descargar
-                              </a>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => {
-                                navigator.clipboard.writeText(m.url);
-                                showToast('Enlace de recurso copiado ✓', 'success');
-                              }}
-                              className="btn-secondary"
-                              style={{ flex: 1.2, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.45rem', borderRadius: '8px', background: 'white', color: '#ec4899', border: '1px solid #cbd5e1', fontWeight: 700, cursor: 'pointer' }}
-                            >
-                              <Link size={12} style={{ color: '#ec4899' }} /> Compartir
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
+                                style={{ flex: 1, textDecoration: 'none', padding: '0.45rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', color: '#64748b', borderColor          {/* ── ERP EMPRESARIAL UNIFICADO ── */}
 
-
-
-
-          {/* ── PQRS TAB ── */}
-          {activeTab === 'pqrs' && (
-            <div className="admin-section fade-in">
-              {/* Header section with KPIs */}
-              <div className="pqrs-header-card">
-                <div className="pqrs-header-title">
-                  <div className="pqrs-title-icon">
-                    <LifeBuoy size={26} />
-                  </div>
-                  <div>
-                    <h2>Centro de Soporte & PQRS</h2>
-                    <p>Gestiona solicitudes, reclamos y dudas de tus clientes en tiempo real</p>
-                  </div>
-                </div>
-
-                {/* KPI Cards Grid */}
-                <div className="pqrs-kpi-grid">
-                  <div className={`pqrs-kpi-card ${pqrsFiltroEstado === 'todos' ? 'active' : ''}`} onClick={() => setPqrsFiltroEstado('todos')}>
-                    <div className="pqrs-kpi-val">{listaPqrs.length}</div>
-                    <div className="pqrs-kpi-label">Total Solicitudes</div>
-                  </div>
-                  <div className={`pqrs-kpi-card ${pqrsFiltroEstado === 'pendiente' ? 'active' : ''}`} onClick={() => setPqrsFiltroEstado('pendiente')}>
-                    <div className="pqrs-kpi-val" style={{ color: '#ef4444' }}>
-                      {listaPqrs.filter(p => p.estado === 'pendiente').length}
-                      {listaPqrs.filter(p => p.estado === 'pendiente').length > 0 && <span className="kpi-dot-pulse" />}
-                    </div>
-                    <div className="pqrs-kpi-label">Pendientes</div>
-                  </div>
-                  <div className={`pqrs-kpi-card ${pqrsFiltroEstado === 'en_proceso' ? 'active' : ''}`} onClick={() => setPqrsFiltroEstado('en_proceso')}>
-                    <div className="pqrs-kpi-val" style={{ color: '#f59e0b' }}>
-                      {listaPqrs.filter(p => p.estado === 'en_proceso').length}
-                    </div>
-                    <div className="pqrs-kpi-label">En Proceso</div>
-                  </div>
-                  <div className={`pqrs-kpi-card ${pqrsFiltroEstado === 'resuelto' ? 'active' : ''}`} onClick={() => setPqrsFiltroEstado('resuelto')}>
-                    <div className="pqrs-kpi-val" style={{ color: '#10b981' }}>
-                      {listaPqrs.filter(p => p.estado === 'resuelto').length}
-                    </div>
-                    <div className="pqrs-kpi-label">Resueltos</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Controls Bar */}
-              <div className="pqrs-controls-bar">
-                <div className="pqrs-search-input-wrap">
-                  <Search size={16} className="pqrs-search-icon" />
-                  <input
-                    type="text"
-                    placeholder="Buscar por cliente, teléfono, pedido o motivo..."
-                    value={pqrsBusqueda}
-                    onChange={e => setPqrsBusqueda(e.target.value)}
-                    className="pqrs-search-input"
-                  />
-                  {pqrsBusqueda && (
-                    <button className="pqrs-search-clear" onClick={() => setPqrsBusqueda('')}>×</button>
-                  )}
-                </div>
-
-                <div className="pqrs-filters-group">
-                  <span className="pqrs-filter-label"><Filter size={14} /> Filtrar por:</span>
-                  <div className="pqrs-pill-tabs">
-                    <button className={`pqrs-pill ${pqrsFiltroEstado === 'todos' ? 'active' : ''}`} onClick={() => setPqrsFiltroEstado('todos')}>Todos ({listaPqrs.length})</button>
-                    <button className={`pqrs-pill pill-danger ${pqrsFiltroEstado === 'pendiente' ? 'active' : ''}`} onClick={() => setPqrsFiltroEstado('pendiente')}>Pendientes ({listaPqrs.filter(p => p.estado === 'pendiente').length})</button>
-                    <button className={`pqrs-pill pill-warning ${pqrsFiltroEstado === 'en_proceso' ? 'active' : ''}`} onClick={() => setPqrsFiltroEstado('en_proceso')}>En Proceso ({listaPqrs.filter(p => p.estado === 'en_proceso').length})</button>
-                    <button className={`pqrs-pill pill-success ${pqrsFiltroEstado === 'resuelto' ? 'active' : ''}`} onClick={() => setPqrsFiltroEstado('resuelto')}>Resueltos ({listaPqrs.filter(p => p.estado === 'resuelto').length})</button>
-                  </div>
-                </div>
-              </div>
-
-              {/* PQRS Data Table */}
-              {(() => {
-                const filtrados = listaPqrs.filter(p => {
-                  const matchEstado = pqrsFiltroEstado === 'todos' || p.estado === pqrsFiltroEstado;
-                  const q = pqrsBusqueda.toLowerCase().trim();
-                  const matchSearch = !q || 
-                    (p.nombre_cliente || '').toLowerCase().includes(q) ||
-                    (p.telefono_cliente || '').toLowerCase().includes(q) ||
-                    (p.numero_pedido || '').toLowerCase().includes(q) ||
-                    (p.motivo || '').toLowerCase().includes(q) ||
-                    (p.descripcion || '').toLowerCase().includes(q);
-                  return matchEstado && matchSearch;
-                });
-
-                if (filtrados.length === 0) {
-                  return (
-                    <div className="no-items pqrs-empty-box">
-                      <LifeBuoy size={48} style={{ color: '#cbd5e1', marginBottom: '0.75rem' }} />
-                      <h3>No se encontraron solicitudes PQRS</h3>
-                      <p>{pqrsBusqueda || pqrsFiltroEstado !== 'todos' ? 'Intenta cambiando los filtros de búsqueda.' : 'No se han registrado solicitudes de soporte.'}</p>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div className="pqrs-table-card">
-                    <div className="table-responsive">
-                      <table className="admin-table pqrs-modern-table">
-                        <thead>
-                          <tr>
-                            <th>Fecha</th>
-                            <th>Cliente / Pedido</th>
-                            <th>Motivo</th>
-                            <th>Descripción</th>
-                            <th>Evidencia</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {filtrados.map(pqrs => {
-                            const motivoClean = (pqrs.motivo || 'General').trim();
-                            const isReclamo = /reclamo|daño|defect|faltant|error/i.test(motivoClean);
-                            const isQueja = /queja|demora|mal serv|mala aten/i.test(motivoClean);
-                            const isPeticion = /peticion|cambio|garant/i.test(motivoClean);
-
-                            return (
-                              <tr key={pqrs.id}>
-                                <td>
-                                  <div className="pqrs-date-wrap">
-                                    <span className="pqrs-date-day">{new Date(pqrs.created_at).toLocaleDateString()}</span>
-                                    <span className="pqrs-date-time">{new Date(pqrs.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                                  </div>
-                                </td>
-                                <td>
-                                  <div className="pqrs-user-cell">
-                                    <div className="pqrs-user-avatar">
-                                      {(pqrs.nombre_cliente || 'C').substring(0, 2).toUpperCase()}
-                                    </div>
-                                    <div className="pqrs-user-info">
-                                      <strong className="pqrs-user-name">{pqrs.nombre_cliente}</strong>
-                                      <span className="pqrs-user-phone">📞 {pqrs.telefono_cliente}</span>
-                                      {pqrs.numero_pedido && (
-                                        <span className="pqrs-order-badge">
-                                          <Package size={10} /> Pedido: {pqrs.numero_pedido}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </div>
-                                </td>
-                                <td>
-                                  <span className={`pqrs-motivo-chip ${isReclamo ? 'motivo-danger' : isQueja ? 'motivo-warning' : isPeticion ? 'motivo-info' : 'motivo-default'}`}>
-                                    {motivoClean}
-                                  </span>
-                                </td>
-                                <td style={{ maxWidth: '280px' }}>
-                                  <div className="pqrs-desc-box">
-                                    <p className="pqrs-desc-text" title={pqrs.descripcion}>
-                                      {pqrs.descripcion}
-                                    </p>
-                                    <button className="pqrs-btn-expand" onClick={() => setDetailPqrs(pqrs)}>
-                                      Ver detalle completo
-                                    </button>
-                                  </div>
-                                </td>
-                                <td>
-                                  {pqrs.evidencia_url ? (
-                                    <a href={pqrs.evidencia_url} target="_blank" rel="noreferrer" className="pqrs-evidencia-badge">
-                                      <Link size={13} /> Ver adjunto
-                                    </a>
-                                  ) : (
-                                    <span className="pqrs-no-evidencia">Sin adjuntos</span>
-                                  )}
-                                </td>
-                                <td>
-                                  <select 
-                                    value={pqrs.estado} 
-                                    onChange={async (e) => {
-                                      const nuevoEstado = e.target.value;
-                                      setListaPqrs(prev => prev.map(p => p.id === pqrs.id ? { ...p, estado: nuevoEstado } : p));
-                                      await supabase.from('pqrs').update({ estado: nuevoEstado }).eq('id', pqrs.id);
-                                      showToast('Estado actualizado ✓');
-                                    }}
-                                    className={`pqrs-status-select select-status-${pqrs.estado}`}
-                                  >
-                                    <option value="pendiente">🔴 Pendiente</option>
-                                    <option value="en_proceso">🟠 En Proceso</option>
-                                    <option value="resuelto">🟢 Resuelto</option>
-                                  </select>
-                                </td>
-                                <td>
-                                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                                    <a 
-                                      href={formatWhatsAppLink(pqrs.telefono_cliente, `Hola ${pqrs.nombre_cliente}, te contactamos desde ${configuracion?.nombre_negocio || 'la tienda'} respecto a tu solicitud de soporte (${pqrs.motivo}).`)}
-                                      target="_blank" 
-                                      rel="noreferrer" 
-                                      className="pqrs-action-wa-btn"
-                                      title="Contactar por WhatsApp"
-                                    >
-                                      <MessageSquare size={14} /> Contactar
-                                    </a>
-                                    <button 
-                                      className="pqrs-action-icon-btn" 
-                                      onClick={() => setDetailPqrs(pqrs)}
-                                      title="Ver detalle"
-                                    >
-                                      <Eye size={15} />
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-          )}
-
-          {/* ── PQRS DETAIL MODAL ── */}
-          {detailPqrs && (
-            <div className="detail-overlay" onClick={() => setDetailPqrs(null)}>
-              <div className="detail-modal pqrs-modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', width: '92%' }}>
-                <button className="detail-close" onClick={() => setDetailPqrs(null)}><X size={20} /></button>
-                
-                <div style={{ padding: '1.5rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.85rem' }}>
-                    <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem' }}>
-                      {(detailPqrs.nombre_cliente || 'C').substring(0, 2).toUpperCase()}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#0f172a' }}>{detailPqrs.nombre_cliente}</h3>
-                      <span style={{ fontSize: '0.85rem', color: '#64748b' }}>📞 {detailPqrs.telefono_cliente}</span>
-                    </div>
-                    <span className="pqrs-motivo-chip motivo-default" style={{ fontSize: '0.8rem' }}>
-                      {detailPqrs.motivo}
-                    </span>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.85rem', marginBottom: '1.2rem', background: '#f8fafc', padding: '0.85rem', borderRadius: '10px', fontSize: '0.85rem' }}>
-                    <div>
-                      <span style={{ color: '#64748b', display: 'block', fontSize: '0.75rem' }}>Fecha de registro:</span>
-                      <strong>{new Date(detailPqrs.created_at).toLocaleString()}</strong>
-                    </div>
-                    {detailPqrs.numero_pedido && (
-                      <div>
-                        <span style={{ color: '#64748b', display: 'block', fontSize: '0.75rem' }}>Número de Pedido:</span>
-                        <strong style={{ color: 'var(--primary)' }}>#{detailPqrs.numero_pedido}</strong>
-                      </div>
-                    )}
-                    <div>
-                      <span style={{ color: '#64748b', display: 'block', fontSize: '0.75rem', marginBottom: '0.2rem' }}>Estado actual:</span>
-                      <select 
-                        value={detailPqrs.estado} 
-                        onChange={async (e) => {
-                          const nuevoEstado = e.target.value;
-                          setDetailPqrs({ ...detailPqrs, estado: nuevoEstado });
-                          setListaPqrs(prev => prev.map(p => p.id === detailPqrs.id ? { ...p, estado: nuevoEstado } : p));
-                          await supabase.from('pqrs').update({ estado: nuevoEstado }).eq('id', detailPqrs.id);
-                          showToast('Estado actualizado ✓');
-                        }}
-                        className={`pqrs-status-select select-status-${detailPqrs.estado}`}
-                        style={{ padding: '0.3rem 0.6rem' }}
-                      >
-                        <option value="pendiente">🔴 Pendiente</option>
-                        <option value="en_proceso">🟠 En Proceso</option>
-                        <option value="resuelto">🟢 Resuelto</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div style={{ marginBottom: '1.2rem' }}>
-                    <label style={{ display: 'block', fontWeight: 700, fontSize: '0.85rem', color: '#334155', marginBottom: '0.4rem' }}>Descripción del caso:</label>
-                    <div style={{ background: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.85rem', fontSize: '0.9rem', color: '#1e293b', lineHeight: '1.5', whiteSpace: 'pre-wrap', maxHeight: '200px', overflowY: 'auto' }}>
-                      {detailPqrs.descripcion}
-                    </div>
-                  </div>
-
-                  {detailPqrs.evidencia_url && (
-                    <div style={{ marginBottom: '1.2rem' }}>
-                      <label style={{ display: 'block', fontWeight: 700, fontSize: '0.85rem', color: '#334155', marginBottom: '0.4rem' }}>Evidencia adjunta:</label>
-                      <a href={detailPqrs.evidencia_url} target="_blank" rel="noreferrer" className="pqrs-evidencia-badge" style={{ display: 'inline-flex', padding: '0.6rem 1rem', fontSize: '0.85rem' }}>
+          {activeTab === 'erp' && (
+            <ERPMainModule tenantId={selectedCompany || getTenantId()} configuracion={configuracion} />
+          )}             <a href={detailPqrs.evidencia_url} target="_blank" rel="noreferrer" className="pqrs-evidencia-badge" style={{ display: 'inline-flex', padding: '0.6rem 1rem', fontSize: '0.85rem' }}>
                         <Link size={15} /> Abrir imagen/archivo adjunto
                       </a>
                     </div>
@@ -10176,14 +9871,6 @@ export default function Admin() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                 {/* Formulario Registro */}
                 <div className="admin-panel">
-                  <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
-                    <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
-                      <Users size={18} /> Registrar Nuevo Mayorista
-                    </h3>
-                    <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>
-                      Crea un acceso de catálogo con precios mayoristas para este cliente especial
-                    </p>
-                  </div>
                   <div className="panel-body">
                     <form onSubmit={handleCrearMayorista} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', alignItems: 'start' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
@@ -10229,11 +9916,7 @@ export default function Admin() {
 
                 {/* Listado */}
                 <div className="admin-panel">
-                  <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1rem' }}>
-                    <div>
-                      <h3 style={{ margin: 0 }}>📦 Mayoristas Registrados</h3>
-                      <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Clientes con acceso a precios y catálogo mayorista</p>
-                    </div>
+                  <div className="panel-header" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f1f5f9', padding: '0.4rem 0.8rem', borderRadius: '10px', border: '1px solid #e2e8f0', minWidth: '260px' }}>
                       <Search size={16} style={{ color: '#64748b' }} />
                       <input type="text" placeholder="Buscar mayorista..." value={mayoristaBuscador}
@@ -14700,17 +14383,6 @@ function SidebarContent({
             <button className={`nav-item ${activeTab === 'config' ? 'active' : ''}`} onClick={() => handleSelectTab('config')}>
               <span className="nav-icon"><Settings size={14} /></span> Configuración
               {activeTab === 'config' && <span className="active-dot"></span>}
-            </button>
-            <button className={`nav-item ${activeTab === 'pqrs' ? 'active' : ''}`} onClick={() => handleSelectTab('pqrs')} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingRight: '0.75rem' }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span className="nav-icon"><LifeBuoy size={14} /></span> Soporte / PQRS
-              </span>
-              {listaPqrs.filter(p => p.estado === 'pendiente').length > 0 && (
-                <span style={{ background: '#ef4444', color: 'white', fontSize: '0.7rem', padding: '1px 6px', borderRadius: '10px', fontWeight: 800 }}>
-                  {listaPqrs.filter(p => p.estado === 'pendiente').length}
-                </span>
-              )}
-              {activeTab === 'pqrs' && listaPqrs.filter(p => p.estado === 'pendiente').length === 0 && <span className="active-dot"></span>}
             </button>
           </>
         )}
