@@ -12071,7 +12071,7 @@ export default function Admin() {
                         const totalCount = leadsCount + contraEntregaCount + pendingCount + comprobarCount + exitosasCount;
 
                         return (
-                          <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap', marginBottom: '0.85rem' }}>
+                          <div className="mobile-status-pills-bar">
                             <button
                               type="button"
                               onClick={() => setOrderFilterStatus('todos')}
