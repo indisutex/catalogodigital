@@ -19,7 +19,14 @@ app.use((req, res) => {
   const indexPath = path.join(__dirname, 'dist', 'index.html');
   if (fs.existsSync(indexPath)) {
     try {
-      const html = fs.readFileSync(indexPath, 'utf-8');
+      let html = fs.readFileSync(indexPath, 'utf-8');
+      if (req.url && req.url.includes('/pago/')) {
+        html = html
+          .replace(/<title>.*?<\/title>/gi, '<title>💳 Subir Comprobante de Pago</title>')
+          .replace(/<meta name="apple-mobile-web-app-title".*?>/gi, '<meta name="apple-mobile-web-app-title" content="Comprobante de Pago" />')
+          .replace(/<meta property="og:title".*?>/gi, '<meta property="og:title" content="💳 Subir Comprobante de Pago" />')
+          .replace(/<meta property="og:description".*?>/gi, '<meta property="og:description" content="Sube la captura de pantalla de tu pago para procesar tu pedido." />');
+      }
       res.setHeader('Content-Type', 'text/html');
       res.send(html);
     } catch (e) {

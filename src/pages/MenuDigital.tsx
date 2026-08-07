@@ -839,7 +839,8 @@ export default function MenuDigital() {
       mensaje += `\n\nℹ️ *Nota importante:* Antes de despachar tu pedido, te enviaremos por WhatsApp el valor exacto del envío para tu confirmación.\nAl momento de recibir cancelas el valor de las prendas + el valor del envío.`;
     } else {
       mensaje += `\n\n*TOTAL PRODUCTOS:* $${total.toLocaleString('es-CO')}`;
-      mensaje += `\n📌 *Nota de envío:* Recuerda que al momento de recibir solo cancelas el valor del envío.`;
+      mensaje += `\n*ENVÍO:* 🚚 Pendiente de pagar al recibir.`;
+      mensaje += `\n\n📌 *Nota de pago:* El valor a transferir ahora es únicamente por tus prendas (*$${total.toLocaleString('es-CO')} COP*). Al recibir tu pedido en la transportadora, únicamente cancelas el valor del envío.\n`;
     }
 
     const numeroWhatsApp = overrideWhatsApp || configuracion?.whatsapp || '573185637317';
