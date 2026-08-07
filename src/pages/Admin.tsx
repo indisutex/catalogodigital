@@ -12604,6 +12604,15 @@ export default function Admin() {
                                     >
                                       💳 Verificar Pago
                                     </button>
+                                  ) : isContra ? (
+                                    <button 
+                                      type="button" 
+                                      className="btn-main-recover"
+                                      onClick={() => setSelectedPedido(ped)}
+                                      style={{ background: '#ea580c', color: 'white', border: 'none', fontWeight: 700 }}
+                                    >
+                                      🚚 Gestionar Despacho
+                                    </button>
                                   ) : (
                                     <button 
                                       type="button" 
