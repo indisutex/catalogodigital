@@ -39,11 +39,21 @@ export const ERPCRMModule: React.FC<Props> = ({ tenantId }) => {
 
   // Ranking de Asesoras por Venta
   const asesoraStats = asesores.map(a => {
-    const ventasAsesora = pedidos.filter(p => p.asesor === a.nombre || p.linea_whatsapp === `pos_${a.nombre}`);
-    const totalVendido = ventasAsesora.reduce((sum, p) => sum + (Number(p.total) || 0), 0);
+    const aPhones = (a.telefono || '').split(',').map((ph: string) => ph.replace(/\D/g, '')).filter(Boolean);
+    const ventasAsesora = pedidos.filter(p => {
+      const pPhone = (p.linea_whatsapp || '').replace(/\D/g, '');
+      const matchPhone = pPhone && aPhones.includes(pPhone);
+      const matchName = p.asesor && (p.asesor.toLowerCase() === (a.nombre || '').toLowerCase());
+      return matchPhone || matchName;
+    });
+
+    const pedidosCompletados = ventasAsesora.filter(p => p.estado === 'completado');
+    const totalVendido = pedidosCompletados.reduce((sum, p) => sum + (Number(p.total) || 0), 0);
+
     return {
       ...a,
       cantidad_ventas: ventasAsesora.length,
+      pedidos_completados: pedidosCompletados.length,
       total_vendido: totalVendido
     };
   }).sort((a, b) => b.total_vendido - a.total_vendido);
@@ -61,43 +71,51 @@ export const ERPCRMModule: React.FC<Props> = ({ tenantId }) => {
           </p>
         </div>
 
-        <button onClick={loadCRMData} className="erp-btn-primary" style={{ background: '#ffffff', color: '#334155', border: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        <button onClick={loadCRMData} className="erp-btn-primary" style={{ background: '#ffffff', color: '#334155', border: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 700 }}>
           <RefreshCw size={16} /> Actualizar CRM
         </button>
       </div>
 
       {/* Ránking de Asesoras y Vendedoras */}
-      <div className="erp-card-table">
-        <div className="erp-table-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Award size={22} color="#f59e0b" />
-            <h3 style={{ margin: 0 }}>Tabla de Desempeño & Comisiones por Asesora</h3>
+      <div className="erp-card-table" style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+        <div className="erp-table-header" style={{ background: '#f8fafc', padding: '1.25rem', borderBottom: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+            <Award size={24} color="#f59e0b" />
+            <div>
+              <h3 style={{ margin: 0, color: '#0f172a', fontWeight: 800, fontSize: '1.15rem' }}>
+                🏆 Resumen & Rendimiento de Asesoras
+              </h3>
+              <p style={{ margin: '0.15rem 0 0 0', color: '#64748b', fontSize: '0.84rem' }}>
+                Ventas verificadas y pedidos asignados por línea telefónica de cada asesora
+              </p>
+            </div>
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '1rem', padding: '1rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem', padding: '1.25rem' }}>
           {asesoraStats.length === 0 ? (
             <p style={{ color: '#64748b', padding: '1rem' }}>No hay asesoras registradas aún en el sistema.</p>
           ) : (
             asesoraStats.map((a, idx) => (
-              <div key={a.id} style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+              <div key={a.id} style={{ background: '#ffffff', border: '1.5px solid #e2e8f0', borderRadius: '16px', padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
                 {a.foto_url ? (
-                  <img src={a.foto_url} alt="" style={{ width: '54px', height: '54px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #cbd5e1' }} />
+                  <img src={a.foto_url} alt={a.nombre} style={{ width: '54px', height: '54px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #cbd5e1' }} />
                 ) : (
                   <div style={{ width: '54px', height: '54px', borderRadius: '50%', background: '#e0f2fe', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.4rem', fontWeight: 800 }}>
                     👤
                   </div>
                 )}
                 <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                    <strong style={{ fontSize: '1.05rem', color: '#0f172a' }}>{a.nombre}</strong>
-                    {idx === 0 && <span style={{ background: '#fef3c7', color: '#b45309', fontSize: '0.72rem', padding: '0.1rem 0.5rem', borderRadius: '99px', fontWeight: 800 }}>👑 Top 1</span>}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'space-between' }}>
+                    <strong style={{ fontSize: '1.05rem', color: '#0f172a', fontWeight: 800 }}>{a.nombre}</strong>
+                    {idx === 0 && <span style={{ background: '#fef3c7', color: '#b45309', fontSize: '0.72rem', padding: '0.15rem 0.6rem', borderRadius: '99px', fontWeight: 800, border: '1px solid #fde68a' }}>👑 Top 1</span>}
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.2rem' }}>
-                    🛍️ {a.cantidad_ventas} Ventas Realizadas
+                  <div style={{ fontSize: '0.82rem', color: '#475569', marginTop: '0.3rem', display: 'flex', gap: '0.8rem' }}>
+                    <span>📦 <strong>{a.cantidad_ventas}</strong> Pedidos</span>
+                    <span>✅ <strong>{a.pedidos_completados}</strong> Pagados</span>
                   </div>
-                  <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#16a34a', marginTop: '0.2rem' }}>
-                    ${a.total_vendido.toLocaleString('es-CO')}
+                  <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#16a34a', marginTop: '0.25rem' }}>
+                    ${a.total_vendido.toLocaleString('es-CO')} <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>COP</span>
                   </div>
                 </div>
               </div>
