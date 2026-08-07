@@ -66,36 +66,43 @@ export function TemuOfferToast() {
   if (!offerNotification?.show) return null;
 
   const isUnlocked = offerNotification.type === 'unlocked';
+  const unitsNeeded = Math.max(0, (nextTierTarget || 6) - totalUnits);
 
   return (
     <div className={`temu-toast-overlay ${isUnlocked ? 'unlocked-mode' : ''}`}>
-      <div className="temu-toast-card">
+      <div className="temu-toast-card" style={{ border: '2.5px solid #f97316', borderRadius: '22px', padding: '1.1rem 1.25rem', background: '#ffffff', boxShadow: '0 12px 35px rgba(249, 115, 22, 0.25)' }}>
         <button className="temu-toast-close" onClick={dismissOfferNotification} aria-label="Cerrar">
           <X size={16} />
         </button>
 
-        <div className="temu-toast-header">
+        <div className="temu-toast-header" style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginBottom: '0.85rem' }}>
           <div className={`temu-toast-icon ${isUnlocked ? 'icon-bounce' : 'icon-hot-flame'}`}>
-            {isUnlocked ? <Trophy size={30} color="#fbbf24" /> : <HotFlameIcon size={36} />}
+            {isUnlocked ? <Trophy size={32} color="#fbbf24" /> : <HotFlameIcon size={36} />}
           </div>
-          <div className="temu-toast-title-area">
-            <h4 className="temu-toast-title">{offerNotification.message}</h4>
-            {offerNotification.submessage && (
-              <p className="temu-toast-sub">{offerNotification.submessage}</p>
-            )}
+          <div className="temu-toast-title-area" style={{ flex: 1, paddingRight: '1rem' }}>
+            <h4 className="temu-toast-title" style={{ margin: 0, fontSize: '1.15rem', fontWeight: 900, color: '#0f172a' }}>
+              ¡Agregado al carrito! 🛍️
+            </h4>
+            <p className="temu-toast-sub" style={{ margin: '0.25rem 0 0 0', fontSize: '0.86rem', color: '#475569', fontWeight: 600, lineHeight: '1.3' }}>
+              {isUnlocked ? (
+                <span>¡Desbloqueaste el <strong>PRECIO POR MAYOR</strong>! 🎉</span>
+              ) : (
+                <span>Te faltan solo <strong>{unitsNeeded} prendas</strong> para desbloquear el <strong>PRECIO POR MAYOR</strong> 🔥</span>
+              )}
+            </p>
           </div>
         </div>
 
         {/* Progress Bar inside Toast */}
-        <div className="temu-toast-progress-wrapper">
-          <div className="temu-toast-progress-labels">
-            <span>{totalUnits} {totalUnits === 1 ? 'prenda' : 'prendas'} en carrito</span>
-            <span>Meta: {nextTierTarget} prendas</span>
+        <div className="temu-toast-progress-wrapper" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+          <div className="temu-toast-progress-labels" style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>
+            <span>{totalUnits} prendas en carrito</span>
+            <span>Meta: {nextTierTarget || 6} prendas</span>
           </div>
-          <div className="temu-toast-progress-bar">
+          <div className="temu-toast-progress-bar" style={{ height: '10px', background: '#e2e8f0', borderRadius: '10px', overflow: 'hidden', padding: 0 }}>
             <div 
               className={`temu-toast-progress-fill ${isUnlocked ? 'fill-gold' : 'fill-fiery'}`}
-              style={{ width: `${Math.min(100, Math.max(8, tierProgressPercent))}%` }}
+              style={{ width: `${Math.min(100, Math.max(6, tierProgressPercent))}%`, height: '100%', borderRadius: '10px', background: 'linear-gradient(90deg, #ff3d00 0%, #ff9100 100%)', transition: 'width 0.4s ease' }}
             >
               <div className="progress-sparkle" />
             </div>
@@ -107,49 +114,39 @@ export function TemuOfferToast() {
 }
 
 export function TemuStickyHeaderBar() {
-  const { totalUnits, unitsNeededForNextTier, nextTierTarget, tierProgressPercent, isBulkDiscountApplied } = useCart();
+  const { totalUnits, unitsNeededForNextTier, nextTierTarget, tierProgressPercent } = useCart();
 
-  const isUnlocked50 = totalUnits >= 50;
+  const isUnlocked = totalUnits >= 6;
 
   return (
-    <div className="temu-sticky-bar">
-      <div className="temu-sticky-content">
-        <div className="temu-sticky-left">
-          {totalUnits < 6 ? (
-            <>
-              <span className="badge-flame">
-                <HotFlameIcon size={15} /> OFERTA MAYORISTA
-              </span>
-              <span className="temu-sticky-msg">
-                ¡Agrega <strong>{unitsNeededForNextTier}</strong> {unitsNeededForNextTier === 1 ? 'prenda' : 'prendas'} más para <strong>PRECIO POR MAYOR</strong>!
-              </span>
-            </>
-          ) : totalUnits < 50 ? (
-            <>
-              <span className="badge-success">🎉 MAYORISTA ACTIVO</span>
-              <span className="temu-sticky-msg">
-                ¡Agrega <strong>{unitsNeededForNextTier}</strong> prendas más para el <strong>PRECIO DISTRIBUIDOR 50+</strong>!
-              </span>
-            </>
+    <div className="temu-sticky-bar" style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '0.6rem 0.9rem', marginBottom: '0.75rem', boxShadow: '0 2px 8px rgba(0,0,0,0.04)', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.88rem', fontWeight: 800, color: '#0f172a' }}>
+          <span>🔥</span>
+          {isUnlocked ? (
+            <span>¡PRECIO POR MAYOR DESBLOQUEADO! 🎉</span>
           ) : (
-            <>
-              <span className="badge-gold">🏆 MÁXIMO DESCUENTO</span>
-              <span className="temu-sticky-msg">
-                ¡Tienes activa la mejor tarifa de 50+ prendas!
-              </span>
-            </>
+            <span>
+              Te faltan <span style={{ color: '#00a6f9', fontWeight: 900 }}>{unitsNeededForNextTier} prendas</span> para <strong>POR MAYOR</strong>
+            </span>
           )}
         </div>
-
-        <div className="temu-sticky-progress-container">
-          <div className="temu-sticky-progress-bar">
-            <div 
-              className={`temu-sticky-progress-fill ${isUnlocked50 ? 'fill-gold' : isBulkDiscountApplied ? 'fill-green' : 'fill-fiery'}`}
-              style={{ width: `${Math.min(100, Math.max(5, tierProgressPercent))}%` }}
-            />
-          </div>
-          <span className="temu-sticky-count">{totalUnits}/{nextTierTarget}</span>
+        <div style={{ background: '#00a6f9', color: '#ffffff', padding: '0.25rem 0.75rem', borderRadius: '20px', fontWeight: 900, fontSize: '0.78rem', whiteSpace: 'nowrap', flexShrink: 0, boxShadow: '0 2px 6px rgba(0, 166, 249, 0.3)' }}>
+          {totalUnits}/{nextTierTarget || 6} unds
         </div>
+      </div>
+
+      {/* Progress Line Bar */}
+      <div style={{ width: '100%', height: '6px', background: '#e2e8f0', borderRadius: '6px', overflow: 'hidden' }}>
+        <div 
+          style={{
+            height: '100%',
+            width: `${Math.min(100, Math.max(5, tierProgressPercent))}%`,
+            background: isUnlocked ? '#10b981' : '#00a6f9',
+            borderRadius: '6px',
+            transition: 'width 0.4s ease'
+          }}
+        />
       </div>
     </div>
   );
