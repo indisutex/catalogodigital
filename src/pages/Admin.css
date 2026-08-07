@@ -1783,16 +1783,32 @@ body {
     gap: 0.35rem !important;
     margin-top: 0 !important;
     min-width: 0 !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+  .topbar-filters-wrapper::-webkit-scrollbar {
+    display: none !important;
+  }
+  .topbar-filters-wrapper > div {
+    flex: 0 0 auto !important;
+    height: 36px !important;
+    box-sizing: border-box !important;
   }
   .topbar-filters-wrapper > div:first-child {
-    flex: 1 1 auto !important;
-    min-width: 70px !important;
-    max-width: 100% !important;
+    flex: 1 0 120px !important;
+    min-width: 100px !important;
+    max-width: 220px !important;
     height: 36px !important;
     padding: 0 0.45rem !important;
   }
   .topbar-filters-wrapper > div:first-child input {
     font-size: 0.78rem !important;
+  }
+  .topbar-filters-wrapper select,
+  .topbar-filters-wrapper input[type="date"] {
+    font-size: 0.75rem !important;
+    height: 100% !important;
   }
   .topbar-filters-wrapper > button {
     flex: 0 0 auto !important;
