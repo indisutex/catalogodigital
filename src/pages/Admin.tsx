@@ -14633,7 +14633,7 @@ function SidebarContent({
                     onClick={() => handleSelectTab('pos')}
                     style={{ fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
                   >
-                    <span className="nav-icon"><CreditCard size={13} /></span> 🖥️ Caja POS
+                    <span className="nav-icon"><CreditCard size={13} /></span> Caja POS
                     {activeTab === 'pos' && <span className="active-dot"></span>}
                   </button>
                   <button
@@ -14642,7 +14642,7 @@ function SidebarContent({
                     onClick={() => handleSelectTab('ventas_pos')}
                     style={{ fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
                   >
-                    <span className="nav-icon"><ShoppingBag size={13} color="#8b5cf6" /></span> 🏪 Ventas POS
+                    <span className="nav-icon"><ShoppingBag size={13} color="#8b5cf6" /></span> Ventas POS
                     {activeTab === 'ventas_pos' && <span className="active-dot"></span>}
                   </button>
                 </div>
@@ -14678,7 +14678,7 @@ function SidebarContent({
                     onClick={() => handleSelectTab('productos')}
                     style={{ fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
                   >
-                    <span className="nav-icon"><Package size={13} /></span> 📦 Inventario
+                    <span className="nav-icon"><Package size={13} /></span> Inventario
                     {activeTab === 'productos' && <span className="active-dot"></span>}
                   </button>
                   <button
@@ -14687,7 +14687,7 @@ function SidebarContent({
                     onClick={() => handleSelectTab('categorias')}
                     style={{ fontSize: '0.8rem', padding: '0.45rem 0.75rem' }}
                   >
-                    <span className="nav-icon"><Tag size={13} color="#0284c7" /></span> 🗂️ Categorías
+                    <span className="nav-icon"><Tag size={13} color="#0284c7" /></span> Categorías
                     {activeTab === 'categorias' && <span className="active-dot"></span>}
                   </button>
                 </div>
