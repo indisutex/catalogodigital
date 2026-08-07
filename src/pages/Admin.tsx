@@ -5080,7 +5080,7 @@ export default function Admin() {
               {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           )}
-          <div className="topbar-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: 0, justifyContent: 'flex-start' }}>
+          <div className="topbar-title" style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '0.5rem', flex: 1, minWidth: 0, justifyContent: 'flex-start' }}>
             {((role === 'asesor' && currentAsesor) || (role === 'mayorista' && currentMayorista)) ? (
               (() => {
                 const currentUser = role === 'mayorista' ? currentMayorista : currentAsesor;
