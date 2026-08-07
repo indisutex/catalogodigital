@@ -5,7 +5,7 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista, PQRS } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2 } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, Wrench } from 'lucide-react';
 
 import * as XLSX from 'xlsx';
 import { ERPContabilidadService } from '../lib/erpContabilidadService';
@@ -1348,6 +1348,7 @@ export default function Admin() {
   const [orderFilterDate, setOrderFilterDate] = useState<string>('');
   const [orderSortBy, setOrderSortBy] = useState<string>('date_desc');
   const [configSubTab, setConfigSubTab] = useState<'negocio' | 'bancos' | 'apariencia' | 'pos' | 'desarrollador' | 'sistema'>('negocio');
+  const [showCatalogOtherOptions, setShowCatalogOtherOptions] = useState(false);
 
   // Filtros para Ventas POS
   const [posDateFilter, setPosDateFilter] = useState<string>('');
@@ -5969,51 +5970,136 @@ export default function Admin() {
                   <div className="panel-header" style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', alignItems: 'stretch' }}>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '1rem' }}>
                       <div className="panel-header-actions" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                        <button 
-                          className="btn-secondary hover-lift" 
-                          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', height: '38px', border: '1.5px solid #bae6fd', color: '#0284c7', background: '#f0f9ff', padding: '0 1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem' }}
-                          onClick={() => { setShowMigrateProductsModal(true); setSelectedSourceTenant(''); setSourceProducts([]); setSelectedProductIdsToMigrate([]); }}
-                          title="Copiar masivamente productos de otra tienda o empresa"
-                        >
-                          <PackageCheck size={16} color="#0ea5e9" /> Migrar de Empresa
-                        </button>
-                        <button 
-                          className="btn-secondary hover-lift" 
-                          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', height: '38px', border: '1.5px solid #fecaca', color: '#dc2626', background: '#fef2f2', padding: '0 1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem' }}
-                          onClick={() => setShowToolsModal(true)}
-                        >
-                          🔧 Depurar Catálogo
-                        </button>
-
-                        {/* Control Promocional */}
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', border: '1.5px solid #fed7aa', background: '#fff7ed', padding: '0 0.8rem', borderRadius: '10px', fontSize: '0.82rem', height: '38px' }}>
-                          <span style={{ fontWeight: 800, color: '#c2410c', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
-                            <Tag size={14} /> Promo:
-                          </span>
-                          <select
-                            value={configuracion?.descuento_promocional || 0}
-                            onChange={async (e) => {
-                              if (!configuracion) return;
-                              const desc = Number(e.target.value);
-                              const { error } = await supabase
-                                .from('configuracion')
-                                .update({ descuento_promocional: desc })
-                                .eq('id', configuracion.id);
-                              
-                              if (error) {
-                                showToast('Error al aplicar descuento: ' + error.message, 'error');
-                              } else {
-                                setConfiguracion({ ...configuracion, descuento_promocional: desc });
-                                showToast(desc > 0 ? `Descuento del ${desc}% aplicado a todo el catálogo ✓` : 'Descuento promocional desactivado ✓');
-                              }
+                        {/* Menú Desplegable: Otras Opciones */}
+                        <div style={{ position: 'relative' }}>
+                          <button
+                            type="button"
+                            className="btn-secondary hover-lift"
+                            onClick={() => setShowCatalogOtherOptions(!showCatalogOtherOptions)}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.45rem',
+                              height: '38px',
+                              padding: '0 1rem',
+                              borderRadius: '10px',
+                              border: '1.5px solid #cbd5e1',
+                              background: '#ffffff',
+                              color: '#475569',
+                              fontWeight: 700,
+                              fontSize: '0.82rem',
+                              cursor: 'pointer',
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
                             }}
-                            style={{ border: '1px solid #fdba74', borderRadius: '6px', padding: '0.2rem 0.4rem', outline: 'none', background: 'white', color: '#c2410c', fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' }}
                           >
-                            <option value={0}>Sin Descuento</option>
-                            <option value={5}>Bajar 5%</option>
-                            <option value={10}>Bajar 10%</option>
-                            <option value={20}>Bajar 20%</option>
-                          </select>
+                            <Settings size={15} /> Otras Opciones <ChevronDown size={14} />
+                          </button>
+
+                          {showCatalogOtherOptions && (
+                            <div 
+                              style={{
+                                position: 'absolute',
+                                top: '115%',
+                                right: 0,
+                                width: '270px',
+                                background: '#ffffff',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '14px',
+                                boxShadow: '0 12px 30px -5px rgba(0,0,0,0.15)',
+                                zIndex: 100,
+                                padding: '0.55rem',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '0.4rem'
+                              }}
+                            >
+                              {/* Opción 1: Migrar de Empresa */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowCatalogOtherOptions(false);
+                                  setShowMigrateProductsModal(true);
+                                  setSelectedSourceTenant('');
+                                  setSourceProducts([]);
+                                  setSelectedProductIdsToMigrate([]);
+                                }}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.55rem',
+                                  padding: '0.6rem 0.75rem',
+                                  borderRadius: '8px',
+                                  border: 'none',
+                                  background: '#f0f9ff',
+                                  color: '#0284c7',
+                                  fontWeight: 700,
+                                  fontSize: '0.82rem',
+                                  cursor: 'pointer',
+                                  textAlign: 'left'
+                                }}
+                              >
+                                <PackageCheck size={16} color="#0ea5e9" />
+                                <span>Migrar de Empresa</span>
+                              </button>
+
+                              {/* Opción 2: Depurar Catálogo */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowCatalogOtherOptions(false);
+                                  setShowToolsModal(true);
+                                }}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.55rem',
+                                  padding: '0.6rem 0.75rem',
+                                  borderRadius: '8px',
+                                  border: 'none',
+                                  background: '#fef2f2',
+                                  color: '#dc2626',
+                                  fontWeight: 700,
+                                  fontSize: '0.82rem',
+                                  cursor: 'pointer',
+                                  textAlign: 'left'
+                                }}
+                              >
+                                <Wrench size={16} color="#dc2626" />
+                                <span>Depurar Catálogo</span>
+                              </button>
+
+                              {/* Opción 3: Control Promocional */}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', padding: '0.55rem 0.75rem', background: '#fff7ed', borderRadius: '8px', border: '1px solid #fed7aa' }}>
+                                <span style={{ fontWeight: 800, color: '#c2410c', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                  <Tag size={14} /> Descuento Promocional:
+                                </span>
+                                <select
+                                  value={configuracion?.descuento_promocional || 0}
+                                  onChange={async (e) => {
+                                    if (!configuracion) return;
+                                    const desc = Number(e.target.value);
+                                    const { error } = await supabase
+                                      .from('configuracion')
+                                      .update({ descuento_promocional: desc })
+                                      .eq('id', configuracion.id);
+                                    
+                                    if (error) {
+                                      showToast('Error al aplicar descuento: ' + error.message, 'error');
+                                    } else {
+                                      setConfiguracion({ ...configuracion, descuento_promocional: desc });
+                                      showToast(desc > 0 ? `Descuento del ${desc}% aplicado a todo el catálogo ✓` : 'Descuento promocional desactivado ✓');
+                                    }
+                                  }}
+                                  style={{ border: '1px solid #fdba74', borderRadius: '6px', padding: '0.3rem 0.45rem', outline: 'none', background: 'white', color: '#c2410c', fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem', width: '100%' }}
+                                >
+                                  <option value={0}>Sin Descuento</option>
+                                  <option value={5}>Bajar 5%</option>
+                                  <option value={10}>Bajar 10%</option>
+                                  <option value={20}>Bajar 20%</option>
+                                </select>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
