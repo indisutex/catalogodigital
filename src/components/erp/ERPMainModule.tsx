@@ -93,7 +93,7 @@ const NAV_ITEMS: NavItem[] = [
   },
 ];
 
-export const ERPMainModule: React.FC<Props> = ({ tenantId, onToggleSidebar }) => {
+export const ERPMainModule: React.FC<Props> = ({ tenantId }) => {
   const [activeTab, setActiveTab] = useState<ERPTab>('ventas');
 
   return (
@@ -101,30 +101,6 @@ export const ERPMainModule: React.FC<Props> = ({ tenantId, onToggleSidebar }) =>
 
       {/* ── Barra de navegación superior ── */}
       <nav className="erp-main-topbar">
-        <div className="erp-topbar-left">
-          {onToggleSidebar && (
-            <button 
-              type="button" 
-              className="erp-topbar-menu-btn"
-              onClick={onToggleSidebar}
-              title="Mostrar / Ocultar Menú Lateral"
-              aria-label="Menú principal"
-            >
-              <Menu size={20} />
-            </button>
-          )}
-
-          <div className="erp-main-brand">
-            <div className="erp-brand-icon">
-              <BarChart2 size={18} color="#ffffff" />
-            </div>
-            <div className="erp-brand-text">
-              <span className="erp-brand-title">ERP Empresarial</span>
-              <small className="erp-brand-subtitle">Sistema Integrado</small>
-            </div>
-          </div>
-        </div>
-
         <div className="erp-nav-scroll-container">
           {NAV_ITEMS.map(item => (
             <button

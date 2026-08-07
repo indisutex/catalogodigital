@@ -5045,7 +5045,6 @@ export default function Admin() {
       {/* MAIN */}
       <div className="admin-main">
         {/* TOP BAR */}
-        {activeTab !== 'erp' && (
         <div className="admin-topbar">
           <button 
             type="button" 
@@ -5113,6 +5112,7 @@ export default function Admin() {
                   {activeTab === 'asesores' && '👥 Asesores'}
                   {activeTab === 'mayoristas' && '👥 Mayoristas'}
                   {activeTab === 'config' && '⚙️ Configuración'}
+                  {activeTab === 'erp' && '📈 ERP Empresarial'}
                 </h2>
                 <p style={{ margin: '0.15rem 0 0 0' }}>
                   {activeTab === 'productos' && `${productos.length} productos en total`}
@@ -5121,6 +5121,7 @@ export default function Admin() {
                   {activeTab === 'asesores' && `${asesores.length} asesores en tu equipo`}
                   {activeTab === 'mayoristas' && `${mayoristas.length} mayoristas en tu equipo`}
                   {activeTab === 'config' && 'Ajustes globales de tu tienda'}
+                  {activeTab === 'erp' && 'Sistema Integrado de Gestión Empresarial'}
                 </p>
               </div>
             )}
@@ -5307,7 +5308,6 @@ export default function Admin() {
             </button>
           </div>
         </div>
-        )}
 
         <div className="admin-content">
 
@@ -8267,7 +8267,7 @@ export default function Admin() {
           {/* ── ERP EMPRESARIAL UNIFICADO ── */}
 
           {activeTab === 'erp' && (
-            <ERPMainModule tenantId={selectedCompany || getTenantId()} onToggleSidebar={handleToggleSidebar} />
+            <ERPMainModule tenantId={selectedCompany || getTenantId()} />
           )}
 
           {/* ── CONFIG TAB ── */}
