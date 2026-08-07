@@ -105,9 +105,10 @@ export const ERPMainModule: React.FC<Props> = ({ tenantId, onToggleSidebar }) =>
           {onToggleSidebar && (
             <button 
               type="button" 
-              className="sidebar-collapse-toggle erp-topbar-menu-btn"
+              className="erp-topbar-menu-btn"
               onClick={onToggleSidebar}
               title="Mostrar / Ocultar Menú Lateral"
+              aria-label="Menú principal"
             >
               <Menu size={20} />
             </button>

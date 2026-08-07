@@ -1539,6 +1539,14 @@ export default function Admin() {
     });
   };
 
+  const handleToggleSidebar = () => {
+    if (window.innerWidth <= 992) {
+      setIsMobileMenuOpen(prev => !prev);
+    } else {
+      toggleSidebar();
+    }
+  };
+
   const handleManualRefresh = async () => {
     setIsRefreshing(true);
     try {
@@ -5029,7 +5037,7 @@ export default function Admin() {
           <button 
             type="button" 
             className="sidebar-collapse-toggle"
-            onClick={toggleSidebar}
+            onClick={handleToggleSidebar}
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -8246,7 +8254,7 @@ export default function Admin() {
           {/* ── ERP EMPRESARIAL UNIFICADO ── */}
 
           {activeTab === 'erp' && (
-            <ERPMainModule tenantId={selectedCompany || getTenantId()} onToggleSidebar={toggleSidebar} />
+            <ERPMainModule tenantId={selectedCompany || getTenantId()} onToggleSidebar={handleToggleSidebar} />
           )}
 
           {/* ── CONFIG TAB ── */}
