@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import { PQRS } from '../../types';
+import type { PQRS } from '../../types';
 import {
-  LifeBuoy, Search, Filter, Link, Eye, X, MessageSquare, Package, Check, RefreshCw
+  Search, Link, Eye, X, MessageSquare, RefreshCw
 } from 'lucide-react';
 
 interface Props {
