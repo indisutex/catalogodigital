@@ -5517,7 +5517,7 @@ export default function Admin() {
                   </form>
                 ) : (
                   <div className="topbar-filters-wrapper">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', flex: '0 1 260px', maxWidth: '340px', minWidth: '180px', transition: 'border-color 0.2s', marginTop: (activeTab === 'asesores' || activeTab === 'mayoristas') ? '1.25rem' : '0' }}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', flex: '0 1 260px', maxWidth: '340px', minWidth: '180px', transition: 'border-color 0.2s' }}
                       onFocus={e => (e.currentTarget.style.borderColor = '#00a6f9')}
                       onBlur={e => (e.currentTarget.style.borderColor = '#cbd5e1')}
                     >
@@ -5577,7 +5577,7 @@ export default function Admin() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', minWidth: '140px', maxWidth: '180px' }}>
                           <input type="text" required maxLength={6} placeholder="Ej: 1234" value={nuevoAsesorPin} onChange={e => setNuevoAsesorPin(e.target.value)} style={{ height: '38px', padding: '0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', outline: 'none', background: '#ffffff', color: '#0f172a', fontWeight: 500, fontFamily: "'Outfit', sans-serif" }} />
                         </div>
-                        <button type="submit" className="btn-primary hover-lift" disabled={loading} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0 1.1rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', background: '#00a6f9', color: '#ffffff', border: 'none', boxShadow: '0 2px 6px rgba(0, 166, 249, 0.3)', alignSelf: 'flex-start', marginTop: '1.25rem' }}>
+                        <button type="submit" className="btn-primary hover-lift" disabled={loading} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0 1.1rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', background: '#00a6f9', color: '#ffffff', border: 'none', boxShadow: '0 2px 6px rgba(0, 166, 249, 0.3)', alignSelf: 'center' }}>
                           <Plus size={15} /> Registrar Asesor
                         </button>
                       </form>
@@ -5604,7 +5604,7 @@ export default function Admin() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', minWidth: '140px', maxWidth: '180px' }}>
                           <input type="text" required maxLength={6} placeholder="Ej: 4321" value={nuevoMayoristaPin} onChange={e => setNuevoMayoristaPin(e.target.value)} style={{ height: '38px', padding: '0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', outline: 'none', background: '#ffffff', color: '#0f172a', fontWeight: 500, fontFamily: "'Outfit', sans-serif" }} />
                         </div>
-                        <button type="submit" className="btn-primary hover-lift" disabled={loading} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0 1.1rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', background: '#00a6f9', color: '#ffffff', border: 'none', boxShadow: '0 2px 6px rgba(0, 166, 249, 0.3)', alignSelf: 'flex-start', marginTop: '1.25rem' }}>
+                        <button type="submit" className="btn-primary hover-lift" disabled={loading} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0 1.1rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', background: '#00a6f9', color: '#ffffff', border: 'none', boxShadow: '0 2px 6px rgba(0, 166, 249, 0.3)', alignSelf: 'center' }}>
                           <Plus size={15} /> Registrar Mayorista
                         </button>
                       </form>

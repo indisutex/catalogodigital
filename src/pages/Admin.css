@@ -1659,11 +1659,19 @@ body {
     max-width: 100% !important;
     min-width: 0 !important;
   }
+  .topbar-form-inline button[type="submit"],
+  .topbar-form-material button[type="submit"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-top: 0.2rem !important;
+    box-sizing: border-box !important;
+  }
   .topbar-actions {
     margin-left: auto !important;
     flex-shrink: 0 !important;
     gap: 0.4rem !important;
   }
+
 
   .admin-content {
     padding: 1rem;
