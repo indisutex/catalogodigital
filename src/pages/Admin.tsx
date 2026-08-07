@@ -11949,170 +11949,41 @@ export default function Admin() {
 
             return (
               <div className="admin-panel">
-                <div className="panel-header" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.85rem', marginBottom: '0.75rem' }}>
-                  {/* Fila 1: Píldoras de Estado de Pedidos */}
-                  {(() => {
-                    const leadsCount = leadsFiltrados.length;
-                    const contraEntregaCount = contraEntregaFiltrados.length;
-                    const pendingCount = pendientePagoFiltrados.length;
-                    const comprobarCount = comprobarPagosFiltrados.length;
-                    const exitosasCount = clientesFiltrados.length;
-                    const totalCount = leadsCount + contraEntregaCount + pendingCount + comprobarCount + exitosasCount;
-
-                    return (
-                      <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                        <button
-                          type="button"
-                          onClick={() => setOrderFilterStatus('todos')}
-                          style={{
-                            padding: '0.4rem 0.85rem',
-                            borderRadius: '20px',
-                            border: orderFilterStatus === 'todos' ? 'none' : '1px solid #cbd5e1',
-                            background: orderFilterStatus === 'todos' ? '#00a6f9' : '#ffffff',
-                            color: orderFilterStatus === 'todos' ? '#ffffff' : '#334155',
-                            fontWeight: 800,
-                            fontSize: '0.78rem',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.35rem',
-                            boxShadow: orderFilterStatus === 'todos' ? '0 3px 10px rgba(0, 166, 249, 0.35)' : '0 1px 2px rgba(0,0,0,0.03)'
-                          }}
-                        >
-                          <span>Todos</span>
-                          <span style={{ background: orderFilterStatus === 'todos' ? 'rgba(255,255,255,0.25)' : '#f1f5f9', color: orderFilterStatus === 'todos' ? '#ffffff' : '#64748b', padding: '0.08rem 0.45rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 800 }}>{totalCount}</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setOrderFilterStatus('contra_entrega')}
-                          style={{
-                            padding: '0.4rem 0.85rem',
-                            borderRadius: '20px',
-                            border: orderFilterStatus === 'contra_entrega' ? 'none' : '1px solid #fed7aa',
-                            background: orderFilterStatus === 'contra_entrega' ? '#ea580c' : '#fff7ed',
-                            color: orderFilterStatus === 'contra_entrega' ? '#ffffff' : '#c2410c',
-                            fontWeight: 800,
-                            fontSize: '0.78rem',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.35rem',
-                            boxShadow: orderFilterStatus === 'contra_entrega' ? '0 3px 10px rgba(234, 88, 12, 0.35)' : 'none'
-                          }}
-                        >
-                          <span>🚚 Contra Entregas</span>
-                          <span style={{ background: orderFilterStatus === 'contra_entrega' ? 'rgba(255,255,255,0.25)' : '#ffedd5', color: orderFilterStatus === 'contra_entrega' ? '#ffffff' : '#ea580c', padding: '0.08rem 0.45rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 800 }}>{contraEntregaCount}</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setOrderFilterStatus('esperando_pago')}
-                          style={{
-                            padding: '0.4rem 0.85rem',
-                            borderRadius: '20px',
-                            border: orderFilterStatus === 'esperando_pago' ? 'none' : '1px solid #fef08a',
-                            background: orderFilterStatus === 'esperando_pago' ? '#eab308' : '#fefce8',
-                            color: orderFilterStatus === 'esperando_pago' ? '#ffffff' : '#854d0e',
-                            fontWeight: 800,
-                            fontSize: '0.78rem',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.35rem',
-                            boxShadow: orderFilterStatus === 'esperando_pago' ? '0 3px 10px rgba(234, 179, 8, 0.35)' : 'none'
-                          }}
-                        >
-                          <span>⏳ Pendientes Pago</span>
-                          <span style={{ background: orderFilterStatus === 'esperando_pago' ? 'rgba(255,255,255,0.25)' : '#fef9c3', color: orderFilterStatus === 'esperando_pago' ? '#ffffff' : '#854d0e', padding: '0.08rem 0.45rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 800 }}>{pendingCount}</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setOrderFilterStatus('comprobante')}
-                          style={{
-                            padding: '0.4rem 0.85rem',
-                            borderRadius: '20px',
-                            border: orderFilterStatus === 'comprobante' ? 'none' : '1px solid #bae6fd',
-                            background: orderFilterStatus === 'comprobante' ? '#0284c7' : '#f0f9ff',
-                            color: orderFilterStatus === 'comprobante' ? '#ffffff' : '#0369a1',
-                            fontWeight: 800,
-                            fontSize: '0.78rem',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.35rem',
-                            boxShadow: orderFilterStatus === 'comprobante' ? '0 3px 10px rgba(2, 132, 199, 0.35)' : 'none'
-                          }}
-                        >
-                          <span>💳 Comprobar Pagos</span>
-                          <span style={{ background: orderFilterStatus === 'comprobante' ? 'rgba(255,255,255,0.25)' : '#e0f2fe', color: orderFilterStatus === 'comprobante' ? '#ffffff' : '#0369a1', padding: '0.08rem 0.45rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 800 }}>{comprobarCount}</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setOrderFilterStatus('exitosas')}
-                          style={{
-                            padding: '0.4rem 0.85rem',
-                            borderRadius: '20px',
-                            border: orderFilterStatus === 'exitosas' ? 'none' : '1px solid #a7f3d0',
-                            background: orderFilterStatus === 'exitosas' ? '#10b981' : '#ecfdf5',
-                            color: orderFilterStatus === 'exitosas' ? '#ffffff' : '#047857',
-                            fontWeight: 800,
-                            fontSize: '0.78rem',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.35rem',
-                            boxShadow: orderFilterStatus === 'exitosas' ? '0 3px 10px rgba(16, 185, 129, 0.35)' : 'none'
-                          }}
-                        >
-                          <span>✅ Ventas Exitosas</span>
-                          <span style={{ background: orderFilterStatus === 'exitosas' ? 'rgba(255,255,255,0.25)' : '#d1fae5', color: orderFilterStatus === 'exitosas' ? '#ffffff' : '#047857', padding: '0.08rem 0.45rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 800 }}>{exitosasCount}</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => setOrderFilterStatus('abandonados')}
-                          style={{
-                            padding: '0.4rem 0.85rem',
-                            borderRadius: '20px',
-                            border: orderFilterStatus === 'abandonados' ? 'none' : '1px solid #fecaca',
-                            background: orderFilterStatus === 'abandonados' ? '#dc2626' : '#fef2f2',
-                            color: orderFilterStatus === 'abandonados' ? '#ffffff' : '#b91c1c',
-                            fontWeight: 800,
-                            fontSize: '0.78rem',
-                            cursor: 'pointer',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.35rem',
-                            boxShadow: orderFilterStatus === 'abandonados' ? '0 3px 10px rgba(220, 38, 38, 0.35)' : 'none'
-                          }}
-                        >
-                          <span>🛒 Abandonados</span>
-                          <span style={{ background: orderFilterStatus === 'abandonados' ? 'rgba(255,255,255,0.25)' : '#fee2e2', color: orderFilterStatus === 'abandonados' ? '#ffffff' : '#b91c1c', padding: '0.08rem 0.45rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 800 }}>{leadsCount}</span>
-                        </button>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Fila 2: Filtros Secundarios Integrados con Buscador */}
-                  <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap', background: '#f8fafc', padding: '0.45rem 0.75rem', borderRadius: '10px', border: '1px solid #f1f5f9' }}>
+                <div className="panel-header" style={{ width: '100%', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.85rem', marginBottom: '0.75rem' }}>
+                  {/* Fila Única de Filtros Integrada */}
+                  <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap', background: '#f8fafc', padding: '0.5rem 0.85rem', borderRadius: '10px', border: '1px solid #f1f5f9' }}>
                     {/* Buscador de Pedidos Directo */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.25rem 0.6rem', flex: '1 1 220px', maxWidth: '340px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.3rem 0.65rem', flex: '1 1 240px', maxWidth: '340px' }}>
                       <Search size={14} style={{ color: '#94a3b8', flexShrink: 0 }} />
                       <input 
                         type="text"
                         placeholder="Buscar por cliente, teléfono o ciudad..."
                         value={orderSearchQuery}
                         onChange={e => setOrderSearchQuery(e.target.value)}
-                        style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.78rem', width: '100%', color: '#0f172a', fontWeight: 600 }}
+                        style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.8rem', width: '100%', color: '#0f172a', fontWeight: 600 }}
                       />
                       {orderSearchQuery && (
                         <button onClick={() => setOrderSearchQuery('')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', padding: 0 }}>
                           <X size={13} />
                         </button>
                       )}
+                    </div>
+
+                    {/* Estado */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.76rem', fontWeight: 700, color: '#475569' }}>
+                      <span>🏷️ Estado:</span>
+                      <select 
+                        value={orderFilterStatus} 
+                        onChange={e => setOrderFilterStatus(e.target.value)}
+                        style={{ padding: '0.3rem 0.5rem', borderRadius: '7px', border: '1px solid #cbd5e1', fontSize: '0.78rem', background: '#ffffff', outline: 'none', color: '#0f172a', fontWeight: 700 }}
+                      >
+                        <option value="todos">Todos los Pedidos y Leads</option>
+                        <option value="contra_entrega">🚚 Contra Entregas</option>
+                        <option value="esperando_pago">⏳ Esperando Pago</option>
+                        <option value="comprobante">💳 Con Comprobante</option>
+                        <option value="exitosas">✅ Ventas Exitosas</option>
+                        <option value="abandonados">🛒 Abandonados (Leads)</option>
+                      </select>
                     </div>
 
                     {/* Fecha */}
