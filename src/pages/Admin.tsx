@@ -5133,8 +5133,104 @@ export default function Admin() {
                 {/* Divisor */}
                 <div style={{ width: '1px', height: '24px', background: '#e2e8f0', flexShrink: 0 }} />
 
-                {/* Buscador inline contextual (excepto en pedidos donde está integrado en su barra de filtros) */}
-                {activeTab !== 'pedidos' && (
+                {/* Buscador y Filtros inline en Topbar */}
+                {activeTab === 'pedidos' ? (
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap', flex: 1 }}>
+                    {/* Buscador de Pedidos Directo */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '8px', padding: '0.25rem 0.6rem', minWidth: '170px', flex: '1 1 170px', maxWidth: '260px' }}>
+                      <Search size={13} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                      <input 
+                        type="text"
+                        placeholder="Buscar cliente, tel..."
+                        value={orderSearchQuery}
+                        onChange={e => setOrderSearchQuery(e.target.value)}
+                        style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.78rem', width: '100%', color: '#0f172a', fontWeight: 600 }}
+                      />
+                      {orderSearchQuery && (
+                        <button onClick={() => setOrderSearchQuery('')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', padding: 0 }}>
+                          <X size={12} />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Estado */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.74rem', fontWeight: 700, color: '#475569' }}>
+                      <span>🏷️</span>
+                      <select 
+                        value={orderFilterStatus} 
+                        onChange={e => setOrderFilterStatus(e.target.value)}
+                        style={{ padding: '0.2rem 0.4rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.76rem', background: '#ffffff', outline: 'none', color: '#0f172a', fontWeight: 700 }}
+                      >
+                        <option value="todos">Todos los Pedidos</option>
+                        <option value="contra_entrega">🚚 Contra Entregas</option>
+                        <option value="esperando_pago">⏳ Esperando Pago</option>
+                        <option value="comprobante">💳 Con Comprobante</option>
+                        <option value="exitosas">✅ Ventas Exitosas</option>
+                        <option value="abandonados">🛒 Abandonados (Leads)</option>
+                      </select>
+                    </div>
+
+                    {/* Fecha */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.74rem', fontWeight: 700, color: '#475569' }}>
+                      <span>📅</span>
+                      <input 
+                        type="date"
+                        value={orderFilterDate}
+                        onChange={e => setOrderFilterDate(e.target.value)}
+                        style={{ padding: '0.2rem 0.4rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.76rem', background: '#ffffff', outline: 'none', color: '#0f172a' }}
+                      />
+                      {orderFilterDate && (
+                        <button onClick={() => setOrderFilterDate('')} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 800 }}>✕</button>
+                      )}
+                    </div>
+
+                    {/* Origen */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.74rem', fontWeight: 700, color: '#475569' }}>
+                      <span>📍</span>
+                      <select 
+                        value={orderFilterOrigin} 
+                        onChange={e => setOrderFilterOrigin(e.target.value)}
+                        style={{ padding: '0.2rem 0.4rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.76rem', background: '#ffffff', outline: 'none', color: '#0f172a', fontWeight: 600 }}
+                      >
+                        <option value="todos">🔀 Todos Orígenes</option>
+                        <option value="catalogo">📱 Catálogo Digital</option>
+                        <option value="pos">🖥️ Ventas POS</option>
+                      </select>
+                    </div>
+
+                    {/* Asesor */}
+                    {role === 'admin' && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.74rem', fontWeight: 700, color: '#475569' }}>
+                        <span>👤</span>
+                        <select 
+                          value={orderFilterAsesor} 
+                          onChange={e => setOrderFilterAsesor(e.target.value)}
+                          style={{ padding: '0.2rem 0.4rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.76rem', background: '#ffffff', outline: 'none', color: '#0f172a', fontWeight: 600 }}
+                        >
+                          <option value="todos">Todos los Asesores</option>
+                          {asesores.map(a => (
+                            <option key={a.id} value={a.telefono}>👤 {a.nombre}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {/* Ordenar por */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.74rem', fontWeight: 700, color: '#475569' }}>
+                      <span>↕️</span>
+                      <select 
+                        value={orderSortBy} 
+                        onChange={e => setOrderSortBy(e.target.value)}
+                        style={{ padding: '0.2rem 0.4rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.76rem', background: '#ffffff', outline: 'none', color: '#0f172a', fontWeight: 600 }}
+                      >
+                        <option value="date_desc">Más recientes primero</option>
+                        <option value="date_asc">Más antiguos primero</option>
+                        <option value="total_desc">Mayor valor</option>
+                        <option value="total_asc">Menor valor</option>
+                      </select>
+                    </div>
+                  </div>
+                ) : (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '10px', padding: '0.35rem 0.75rem', flex: 1, maxWidth: '340px', minWidth: '180px', transition: 'border-color 0.2s' }}
                     onFocus={e => (e.currentTarget.style.borderColor = '#6366f1')}
                     onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
@@ -11949,105 +12045,6 @@ export default function Admin() {
 
             return (
               <div className="admin-panel">
-                <div className="panel-header" style={{ width: '100%', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.85rem', marginBottom: '0.75rem' }}>
-                  {/* Fila Única de Filtros Integrada */}
-                  <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap', background: '#f8fafc', padding: '0.5rem 0.85rem', borderRadius: '10px', border: '1px solid #f1f5f9' }}>
-                    {/* Buscador de Pedidos Directo */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.3rem 0.65rem', flex: '1 1 240px', maxWidth: '340px' }}>
-                      <Search size={14} style={{ color: '#94a3b8', flexShrink: 0 }} />
-                      <input 
-                        type="text"
-                        placeholder="Buscar por cliente, teléfono o ciudad..."
-                        value={orderSearchQuery}
-                        onChange={e => setOrderSearchQuery(e.target.value)}
-                        style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.8rem', width: '100%', color: '#0f172a', fontWeight: 600 }}
-                      />
-                      {orderSearchQuery && (
-                        <button onClick={() => setOrderSearchQuery('')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', padding: 0 }}>
-                          <X size={13} />
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Estado */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.76rem', fontWeight: 700, color: '#475569' }}>
-                      <span>🏷️ Estado:</span>
-                      <select 
-                        value={orderFilterStatus} 
-                        onChange={e => setOrderFilterStatus(e.target.value)}
-                        style={{ padding: '0.3rem 0.5rem', borderRadius: '7px', border: '1px solid #cbd5e1', fontSize: '0.78rem', background: '#ffffff', outline: 'none', color: '#0f172a', fontWeight: 700 }}
-                      >
-                        <option value="todos">Todos los Pedidos y Leads</option>
-                        <option value="contra_entrega">🚚 Contra Entregas</option>
-                        <option value="esperando_pago">⏳ Esperando Pago</option>
-                        <option value="comprobante">💳 Con Comprobante</option>
-                        <option value="exitosas">✅ Ventas Exitosas</option>
-                        <option value="abandonados">🛒 Abandonados (Leads)</option>
-                      </select>
-                    </div>
-
-                    {/* Fecha */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.76rem', fontWeight: 700, color: '#475569' }}>
-                      <span>📅 Fecha:</span>
-                      <input 
-                        type="date"
-                        value={orderFilterDate}
-                        onChange={e => setOrderFilterDate(e.target.value)}
-                        style={{ padding: '0.25rem 0.45rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.78rem', background: '#ffffff', outline: 'none', color: '#0f172a' }}
-                      />
-                      {orderFilterDate && (
-                        <button onClick={() => setOrderFilterDate('')} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontWeight: 800 }}>✕</button>
-                      )}
-                    </div>
-
-                    {/* Origen */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.76rem', fontWeight: 700, color: '#475569' }}>
-                      <span>📍 Origen:</span>
-                      <select 
-                        value={orderFilterOrigin} 
-                        onChange={e => setOrderFilterOrigin(e.target.value)}
-                        style={{ padding: '0.25rem 0.45rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.78rem', background: '#ffffff', outline: 'none', color: '#0f172a' }}
-                      >
-                        <option value="todos">🔀 Todos los Orígenes</option>
-                        <option value="catalogo">📱 Solo Catálogo Digital</option>
-                        <option value="pos">🖥️ Solo Ventas POS</option>
-                      </select>
-                    </div>
-
-                    {/* Asesor */}
-                    {role === 'admin' && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.76rem', fontWeight: 700, color: '#475569' }}>
-                        <span>👤 Asesor:</span>
-                        <select 
-                          value={orderFilterAsesor} 
-                          onChange={e => setOrderFilterAsesor(e.target.value)}
-                          style={{ padding: '0.25rem 0.45rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.78rem', background: '#ffffff', outline: 'none', color: '#0f172a' }}
-                        >
-                          <option value="todos">Todos los Asesores</option>
-                          {asesores.map(a => (
-                            <option key={a.id} value={a.telefono}>👤 {a.nombre}</option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-
-                    {/* Ordenar por */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.76rem', fontWeight: 700, color: '#475569', marginLeft: 'auto' }}>
-                      <span>↕️ Orden:</span>
-                      <select 
-                        value={orderSortBy} 
-                        onChange={e => setOrderSortBy(e.target.value)}
-                        style={{ padding: '0.25rem 0.45rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.78rem', background: '#ffffff', outline: 'none', color: '#0f172a' }}
-                      >
-                        <option value="date_desc">Más recientes primero</option>
-                        <option value="date_asc">Más antiguos primero</option>
-                        <option value="total_desc">Mayor valor</option>
-                        <option value="total_asc">Menor valor</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
                 <div className="panel-body">
                   {pedidos.length === 0 && leads.length === 0 ? (
                     <div className="empty-state">
