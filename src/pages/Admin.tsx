@@ -3703,6 +3703,31 @@ export default function Admin() {
     }
   }
 
+  async function handleCrearMayorista(e: React.FormEvent) {
+    e.preventDefault();
+    const tels = nuevoMayoristaTelefonos.map(t => t.trim()).filter(Boolean);
+    if (!nuevoMayoristaNombre.trim() || tels.length === 0) {
+      showToast('Ingresa nombre y al menos un teléfono.', 'error'); return;
+    }
+    setLoading(true);
+    try {
+      const cleanPhone = tels.map(n => n.replace(/\D/g, '')).filter(Boolean).join(',');
+      const { data, error } = await supabase.from('mayoristas').insert({
+        nombre: nuevoMayoristaNombre.trim(),
+        telefono: cleanPhone,
+        pin: nuevoMayoristaPin.trim() || '1234',
+        foto_url: nuevoMayoristaFotoUrl.trim() || null,
+        tenant_id: getTenantId()
+      }).select().single();
+      if (error) throw error;
+      setMayoristas(prev => [data, ...prev]);
+      setNuevoMayoristaNombre(''); setNuevoMayoristaTelefonos(['']); setNuevoMayoristaFotoUrl('');
+      setNuevoMayoristaPin(Math.floor(1000 + Math.random() * 9000).toString());
+      showToast('Mayorista registrado ✓', 'success');
+    } catch (err: any) { showToast('Error: ' + err.message, 'error'); }
+    finally { setLoading(false); }
+  }
+
   async function handleGuardarAsesorEdicion(id: string) {
     const activeTelefonos = editingAsesorTelefonos.map(t => t.trim()).filter(Boolean);
     if (!editingAsesorNombre.trim() || activeTelefonos.length === 0 || !editingAsesorPin.trim()) {
@@ -5406,7 +5431,6 @@ export default function Admin() {
                   <form onSubmit={handleCrearMaterial} style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-end', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-end' }}>
                     {/* Campo 1: Título */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', flex: '1 1 180px', minWidth: '160px', maxWidth: '240px' }}>
-                      <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569', whiteSpace: 'nowrap' }}>Título del Recurso</label>
                       <input
                         type="text"
                         required
@@ -5419,7 +5443,6 @@ export default function Admin() {
 
                     {/* Campo 2: Descripción */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', flex: '1 1 180px', minWidth: '160px', maxWidth: '240px' }}>
-                      <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569', whiteSpace: 'nowrap' }}>Descripción (Opcional)</label>
                       <input
                         type="text"
                         placeholder="Ej: Video para estados de WhatsApp"
@@ -5431,7 +5454,6 @@ export default function Admin() {
 
                     {/* Campo 3: Campaña */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', flex: '1 1 160px', minWidth: '140px', maxWidth: '220px' }}>
-                      <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569', whiteSpace: 'nowrap' }}>Campaña (Opcional)</label>
                       <input
                         type="text"
                         placeholder="Ej: Navidad, Día del Padre"
@@ -5443,7 +5465,6 @@ export default function Admin() {
 
                     {/* Campo 4: Tipo */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', minWidth: '160px' }}>
-                      <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569', whiteSpace: 'nowrap' }}>Tipo de Recurso</label>
                       <select
                         value={nuevoMaterialTipo}
                         onChange={e => setNuevoMaterialTipo(e.target.value as any)}
@@ -5458,7 +5479,6 @@ export default function Admin() {
 
                     {/* Campo 5: URL Google Drive */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', flex: '1 1 200px', minWidth: '180px', maxWidth: '280px' }}>
-                      <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569', whiteSpace: 'nowrap' }}>Enlace de Google Drive (Compartido)</label>
                       <input
                         type="url"
                         required
@@ -5496,8 +5516,8 @@ export default function Admin() {
                     </button>
                   </form>
                 ) : (
-                  <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-end' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', flex: '0 1 260px', maxWidth: '340px', minWidth: '180px', transition: 'border-color 0.2s' }}
+                  <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-end' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', flex: '0 1 260px', maxWidth: '340px', minWidth: '180px', transition: 'border-color 0.2s', marginTop: (activeTab === 'asesores' || activeTab === 'mayoristas') ? '1.25rem' : '0' }}
                       onFocus={e => (e.currentTarget.style.borderColor = '#00a6f9')}
                       onBlur={e => (e.currentTarget.style.borderColor = '#cbd5e1')}
                     >
@@ -5519,7 +5539,7 @@ export default function Admin() {
                           else if (activeTab === 'asesores') setAsesorSearchQuery(e.target.value);
                           else setMayoristaBuscador(e.target.value);
                         }}
-                        style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '0.83rem', width: '100%', color: '#0f172a', fontWeight: 600 }}
+                        style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '0.83rem', width: '100%', color: '#0f172a', fontWeight: 500, fontFamily: "'Outfit', sans-serif" }}
                       />
                       {(
                         (activeTab === 'clientes' && clienteSearchQuery) ||
@@ -5535,6 +5555,60 @@ export default function Admin() {
                         </button>
                       )}
                     </div>
+                    
+                    {activeTab === 'asesores' && (
+                      <form onSubmit={handleCrearAsesor} style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-end' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', flex: '1 1 180px', minWidth: '160px', maxWidth: '240px' }}>
+                          <input type="text" required placeholder="Ej: Carolina Gómez" value={nuevoAsesorNombre} onChange={e => setNuevoAsesorNombre(e.target.value)} style={{ height: '38px', padding: '0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', outline: 'none', background: '#ffffff', color: '#0f172a', fontWeight: 500, fontFamily: "'Outfit', sans-serif" }} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', minWidth: '220px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                            {nuevoAsesorTelefonos.map((tel, idx) => (
+                              <div key={idx} style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+                                <input type="text" required placeholder="Ej: 3123456789" value={tel} onChange={e => { const newTels = [...nuevoAsesorTelefonos]; newTels[idx] = e.target.value; setNuevoAsesorTelefonos(newTels); }} style={{ height: '38px', padding: '0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', outline: 'none', background: '#ffffff', color: '#0f172a', fontWeight: 500, fontFamily: "'Outfit', sans-serif", flex: 1 }} />
+                                {nuevoAsesorTelefonos.length > 1 && (
+                                  <button type="button" onClick={() => { setNuevoAsesorTelefonos(nuevoAsesorTelefonos.filter((_, i) => i !== idx)); }} style={{ background: '#fee2e2', border: '1px solid #fca5a5', color: '#ef4444', padding: '0', width: '38px', height: '38px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                          <button type="button" onClick={() => setNuevoAsesorTelefonos([...nuevoAsesorTelefonos, ''])} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', marginTop: '0.15rem', padding: '0.2rem 0' }}>+ Añadir más líneas</button>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', minWidth: '140px', maxWidth: '180px' }}>
+                          <input type="text" required maxLength={6} placeholder="Ej: 1234" value={nuevoAsesorPin} onChange={e => setNuevoAsesorPin(e.target.value)} style={{ height: '38px', padding: '0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', outline: 'none', background: '#ffffff', color: '#0f172a', fontWeight: 500, fontFamily: "'Outfit', sans-serif" }} />
+                        </div>
+                        <button type="submit" className="btn-primary hover-lift" disabled={loading} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0 1.1rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', background: '#00a6f9', color: '#ffffff', border: 'none', boxShadow: '0 2px 6px rgba(0, 166, 249, 0.3)', alignSelf: 'flex-start', marginTop: '1.25rem' }}>
+                          <Plus size={15} /> Registrar Asesor
+                        </button>
+                      </form>
+                    )}
+
+                    {activeTab === 'mayoristas' && (
+                      <form onSubmit={handleCrearMayorista} style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-start', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-end' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', flex: '1 1 180px', minWidth: '160px', maxWidth: '240px' }}>
+                          <input type="text" required placeholder="Ej: Distribuidora López" value={nuevoMayoristaNombre} onChange={e => setNuevoMayoristaNombre(e.target.value)} style={{ height: '38px', padding: '0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', outline: 'none', background: '#ffffff', color: '#0f172a', fontWeight: 500, fontFamily: "'Outfit', sans-serif" }} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', minWidth: '220px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                            {nuevoMayoristaTelefonos.map((tel, idx) => (
+                              <div key={idx} style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+                                <input type="text" required placeholder="Ej: 3123456789" value={tel} onChange={e => { const t = [...nuevoMayoristaTelefonos]; t[idx] = e.target.value; setNuevoMayoristaTelefonos(t); }} style={{ height: '38px', padding: '0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', outline: 'none', background: '#ffffff', color: '#0f172a', fontWeight: 500, fontFamily: "'Outfit', sans-serif", flex: 1 }} />
+                                {nuevoMayoristaTelefonos.length > 1 && (
+                                  <button type="button" onClick={() => setNuevoMayoristaTelefonos(nuevoMayoristaTelefonos.filter((_, i) => i !== idx))} style={{ background: '#fee2e2', border: '1px solid #fca5a5', color: '#ef4444', padding: '0', width: '38px', height: '38px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                          <button type="button" onClick={() => setNuevoMayoristaTelefonos([...nuevoMayoristaTelefonos, ''])} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', marginTop: '0.15rem', padding: '0.2rem 0' }}>+ Añadir más líneas</button>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', minWidth: '140px', maxWidth: '180px' }}>
+                          <input type="text" required maxLength={6} placeholder="Ej: 4321" value={nuevoMayoristaPin} onChange={e => setNuevoMayoristaPin(e.target.value)} style={{ height: '38px', padding: '0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', outline: 'none', background: '#ffffff', color: '#0f172a', fontWeight: 500, fontFamily: "'Outfit', sans-serif" }} />
+                        </div>
+                        <button type="submit" className="btn-primary hover-lift" disabled={loading} style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0 1.1rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', background: '#00a6f9', color: '#ffffff', border: 'none', boxShadow: '0 2px 6px rgba(0, 166, 249, 0.3)', alignSelf: 'flex-start', marginTop: '1.25rem' }}>
+                          <Plus size={15} /> Registrar Mayorista
+                        </button>
+                      </form>
+                    )}
                   </div>
                 )}
 
@@ -9604,90 +9678,6 @@ export default function Admin() {
           {activeTab === 'asesores' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
               
-              {/* Formulario de Registro */}
-              <div className="admin-panel">
-                <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.25rem' }}>
-                  <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}><Users size={18} /> Registrar Nuevo Asesor</h3>
-                  <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Crea un enlace del catálogo personalizado para que las comisiones y chats lleguen a este asesor</p>
-                </div>
-                <div className="panel-body">
-                  <form onSubmit={handleCrearAsesor} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', alignItems: 'start' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Nombre del Asesor</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Ej: Carolina Gómez"
-                        value={nuevoAsesorNombre}
-                        onChange={e => setNuevoAsesorNombre(e.target.value)}
-                        style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', minWidth: '220px' }}>
-                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Números de WhatsApp</label>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        {nuevoAsesorTelefonos.map((tel, idx) => (
-                          <div key={idx} style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-                            <input
-                              type="text"
-                              required
-                              placeholder="Ej: 3123456789"
-                              value={tel}
-                              onChange={e => {
-                                const newTels = [...nuevoAsesorTelefonos];
-                                newTels[idx] = e.target.value;
-                                setNuevoAsesorTelefonos(newTels);
-                              }}
-                              style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none', flex: 1 }}
-                            />
-                            {nuevoAsesorTelefonos.length > 1 && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setNuevoAsesorTelefonos(nuevoAsesorTelefonos.filter((_, i) => i !== idx));
-                                }}
-                                style={{ background: '#fee2e2', border: '1px solid #fca5a5', color: '#ef4444', padding: '0.6rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
-                              >
-                                ✕
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setNuevoAsesorTelefonos([...nuevoAsesorTelefonos, ''])}
-                        style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', marginTop: '0.25rem', padding: '0.2rem 0' }}
-                      >
-                        + Añadir más líneas
-                      </button>
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                      <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>PIN de Acceso (4 dígitos)</label>
-                      <input
-                        type="text"
-                        required
-                        maxLength={6}
-                        placeholder="Ej: 1234"
-                        value={nuevoAsesorPin}
-                        onChange={e => setNuevoAsesorPin(e.target.value)}
-                        style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }}
-                      />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                      <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'transparent', userSelect: 'none' }}>Spacer</div>
-                      <button
-                        type="submit"
-                        className="btn-primary"
-                        disabled={loading}
-                        style={{ padding: '0.62rem', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontWeight: 700, height: '43px' }}
-                      >
-                        <Plus size={16} /> Registrar Asesor
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
 
               {/* Listado de Asesores */}
               <div className="admin-panel">
@@ -9992,31 +9982,6 @@ export default function Admin() {
           {activeTab === 'mayoristas' && (() => {
             // filteredMayoristas proviene del useMemo superior
 
-            async function handleCrearMayorista(e: React.FormEvent) {
-              e.preventDefault();
-              const tels = nuevoMayoristaTelefonos.map(t => t.trim()).filter(Boolean);
-              if (!nuevoMayoristaNombre.trim() || tels.length === 0) {
-                showToast('Ingresa nombre y al menos un teléfono.', 'error'); return;
-              }
-              setLoading(true);
-              try {
-                const cleanPhone = tels.map(n => n.replace(/\D/g, '')).filter(Boolean).join(',');
-                const { data, error } = await supabase.from('mayoristas').insert({
-                  nombre: nuevoMayoristaNombre.trim(),
-                  telefono: cleanPhone,
-                  pin: nuevoMayoristaPin.trim() || '1234',
-                  foto_url: nuevoMayoristaFotoUrl.trim() || null,
-                  tenant_id: getTenantId()
-                }).select().single();
-                if (error) throw error;
-                setMayoristas(prev => [data, ...prev]);
-                setNuevoMayoristaNombre(''); setNuevoMayoristaTelefonos(['']); setNuevoMayoristaFotoUrl('');
-                setNuevoMayoristaPin(Math.floor(1000 + Math.random() * 9000).toString());
-                showToast('Mayorista registrado ✓', 'success');
-              } catch (err: any) { showToast('Error: ' + err.message, 'error'); }
-              finally { setLoading(false); }
-            }
-
             async function handleGuardarMayorista(id: string) {
               const tels = editingMayoristaTelefonos.map(t => t.trim()).filter(Boolean);
               if (!editingMayoristaNombre.trim() || tels.length === 0) {
@@ -10039,50 +10004,6 @@ export default function Admin() {
 
             return (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {/* Formulario Registro */}
-                <div className="admin-panel">
-                  <div className="panel-body">
-                    <form onSubmit={handleCrearMayorista} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', alignItems: 'start' }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                        <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Nombre del Mayorista</label>
-                        <input type="text" required placeholder="Ej: Distribuidora López" value={nuevoMayoristaNombre}
-                          onChange={e => setNuevoMayoristaNombre(e.target.value)}
-                          style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }} />
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                        <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>Números de WhatsApp</label>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                          {nuevoMayoristaTelefonos.map((tel, idx) => (
-                            <div key={idx} style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
-                              <input type="text" required placeholder="Ej: 3123456789" value={tel}
-                                onChange={e => { const t = [...nuevoMayoristaTelefonos]; t[idx] = e.target.value; setNuevoMayoristaTelefonos(t); }}
-                                style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none', flex: 1 }} />
-                              {nuevoMayoristaTelefonos.length > 1 && (
-                                <button type="button" onClick={() => setNuevoMayoristaTelefonos(nuevoMayoristaTelefonos.filter((_, i) => i !== idx))}
-                                  style={{ background: '#fee2e2', border: '1px solid #fca5a5', color: '#ef4444', padding: '0.6rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                        <button type="button" onClick={() => setNuevoMayoristaTelefonos([...nuevoMayoristaTelefonos, ''])}
-                          style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', marginTop: '0.25rem', padding: '0.2rem 0' }}>+ Añadir más líneas</button>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                        <label style={{ fontSize: '0.78rem', fontWeight: 700, color: '#475569' }}>PIN de Acceso (4 dígitos)</label>
-                        <input type="text" required maxLength={6} placeholder="Ej: 4321" value={nuevoMayoristaPin}
-                          onChange={e => setNuevoMayoristaPin(e.target.value)}
-                          style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem', outline: 'none' }} />
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                        <div style={{ fontSize: '0.78rem', fontWeight: 700, color: 'transparent', userSelect: 'none' }}>Spacer</div>
-                        <button type="submit" className="btn-primary" disabled={loading}
-                          style={{ padding: '0.62rem', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontWeight: 700, height: '43px' }}>
-                          <Plus size={16} /> Registrar Mayorista
-                        </button>
-                      </div>
-                    </form>
-                  </div>
-                </div>
 
                 {/* Listado */}
                 <div className="admin-panel">
