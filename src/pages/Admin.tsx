@@ -5,7 +5,7 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista, PQRS } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2 } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2 } from 'lucide-react';
 
 import * as XLSX from 'xlsx';
 import { ERPContabilidadService } from '../lib/erpContabilidadService';
@@ -5221,6 +5221,46 @@ export default function Admin() {
             )}
           </div>
           <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            {/* Switcher Vista Lista / Kanban en Pedidos */}
+            {activeTab === 'pedidos' && (
+              <div style={{ display: 'flex', gap: '0.2rem', background: '#f1f5f9', padding: '0.2rem', borderRadius: '9px', border: '1px solid #e2e8f0' }}>
+                <button
+                  type="button"
+                  onClick={() => setPedidosViewMode('lista')}
+                  style={{
+                    border: 'none',
+                    background: pedidosViewMode === 'lista' ? '#ffffff' : 'transparent',
+                    color: pedidosViewMode === 'lista' ? '#0f172a' : '#64748b',
+                    padding: '0.3rem 0.65rem',
+                    borderRadius: '7px',
+                    fontSize: '0.78rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    boxShadow: pedidosViewMode === 'lista' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                  }}
+                >
+                  📋 Lista
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPedidosViewMode('kanban')}
+                  style={{
+                    border: 'none',
+                    background: pedidosViewMode === 'kanban' ? '#ffffff' : 'transparent',
+                    color: pedidosViewMode === 'kanban' ? '#0f172a' : '#64748b',
+                    padding: '0.3rem 0.65rem',
+                    borderRadius: '7px',
+                    fontSize: '0.78rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    boxShadow: pedidosViewMode === 'kanban' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
+                  }}
+                >
+                  📊 Kanban
+                </button>
+              </div>
+            )}
+
             {/* Botón de Sincronización Global */}
             <button
               type="button"
@@ -5320,17 +5360,17 @@ export default function Admin() {
                     display: 'flex',
                     flexDirection: 'column'
                   }}>
-                    <div style={{ padding: '1rem', borderBottom: '1px solid #f1f5f9', background: '#f8fafc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>Notificaciones</h4>
-                      <button onClick={() => setShowNotificationsPopover(false)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b' }}>
-                        <X size={16} />
-                      </button>
+                    {/* Header Popover */}
+                    <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc' }}>
+                      <h4 style={{ margin: 0, fontSize: '0.9rem', fontWeight: 800, color: '#0f172a' }}>🔔 Centro de Notificaciones</h4>
+                      <span style={{ fontSize: '0.75rem', background: '#fee2e2', color: '#ef4444', padding: '0.15rem 0.5rem', borderRadius: '12px', fontWeight: 700 }}>{activeNotificationsCount} nuevas</span>
                     </div>
-                    <div style={{ maxHeight: '350px', overflowY: 'auto', padding: '0.5rem' }}>
+
+                    {/* Lista Notificaciones */}
+                    <div style={{ maxHeight: '320px', overflowY: 'auto', padding: '0.5rem' }}>
                       {activeNotifications.length === 0 ? (
-                        <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#64748b' }}>
-                          <p style={{ margin: '0 0 0.5rem 0', fontSize: '2rem' }}>🎉</p>
-                          <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700 }}>¡Estás al día!</p>
+                        <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem' }}>
+                          🎉 ¡Todo al día! No tienes notificaciones pendientes.
                         </div>
                       ) : (
                         activeNotifications.map((notif: any) => {
@@ -5369,16 +5409,15 @@ export default function Admin() {
                                     background: isDanger ? '#ef4444' : isWarning ? '#f59e0b' : primaryColor,
                                     color: 'white',
                                     border: 'none',
-                                    padding: '0.35rem 0.75rem',
+                                    padding: '0.3rem 0.65rem',
                                     borderRadius: '6px',
                                     fontSize: '0.75rem',
                                     fontWeight: 700,
                                     cursor: 'pointer',
-                                    alignSelf: 'flex-start',
-                                    marginLeft: '1.6rem'
+                                    alignSelf: 'flex-end'
                                   }}
                                 >
-                                  Ir a atender
+                                  Ver Detalle →
                                 </button>
                               )}
                             </div>
@@ -5930,13 +5969,6 @@ export default function Admin() {
                   <div className="panel-header" style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', alignItems: 'stretch' }}>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '1rem' }}>
                       <div className="panel-header-actions" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                        <button 
-                          className="btn-primary hover-lift" 
-                          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', height: '38px', padding: '0 1.1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.83rem', boxShadow: '0 2px 6px rgba(99,102,241,0.25)' }}
-                          onClick={() => { setBulkForms([{ ...emptyProduct }]); setIsAddingProduct(true); }}
-                        >
-                          <Plus size={16} /> Nuevo Producto
-                        </button>
                         <button 
                           className="btn-secondary hover-lift" 
                           style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', height: '38px', border: '1.5px solid #bae6fd', color: '#0284c7', background: '#f0f9ff', padding: '0 1rem', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.82rem' }}
@@ -8137,38 +8169,39 @@ export default function Admin() {
                     setLoading(false);
                   }}>
                   {/* ── Sub-pestañas de Configuración ── */}
-                  <div style={{ display: 'flex', gap: '0.35rem', background: '#f1f5f9', padding: '0.35rem', borderRadius: '14px', marginBottom: '1.5rem', flexWrap: 'wrap', border: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'flex', gap: '0.4rem', background: '#f1f5f9', padding: '0.4rem', borderRadius: '16px', marginBottom: '1.5rem', flexWrap: 'wrap', border: '1px solid #e2e8f0' }}>
                     {[
-                      { key: 'negocio', label: 'Negocio & Perfil', icon: '🏪' },
-                      { key: 'bancos', label: 'Bancos & Pagos', icon: '💳' },
-                      { key: 'apariencia', label: 'Diseño & Catálogo', icon: '🎨' },
-                      { key: 'pos', label: 'POS & Impresión', icon: '🖨️' },
-                      { key: 'desarrollador', label: 'Desarrollador & APIs', icon: '💻' },
-                      { key: 'sistema', label: 'Reglas & Purga', icon: '⚙️' }
+                      { key: 'negocio', label: 'Negocio & Perfil', Icon: Building2 },
+                      { key: 'bancos', label: 'Bancos & Pagos', Icon: CreditCard },
+                      { key: 'apariencia', label: 'Diseño & Catálogo', Icon: Palette },
+                      { key: 'pos', label: 'POS & Impresión', Icon: Printer },
+                      { key: 'desarrollador', label: 'Desarrollador & APIs', Icon: Code2 },
+                      { key: 'sistema', label: 'Reglas & Purga', Icon: Settings }
                     ].map(sub => {
                       const isActive = configSubTab === sub.key;
+                      const IconComponent = sub.Icon;
                       return (
                         <button
                           key={sub.key}
                           type="button"
                           onClick={() => setConfigSubTab(sub.key as any)}
                           style={{
-                            border: '1px solid transparent',
-                            background: isActive ? '#ffffff' : 'transparent',
-                            color: isActive ? '#0f172a' : '#64748b',
-                            padding: '0.55rem 1rem',
-                            borderRadius: '10px',
+                            border: 'none',
+                            background: isActive ? '#00a6f9' : 'transparent',
+                            color: isActive ? '#ffffff' : '#475569',
+                            padding: '0.55rem 1.1rem',
+                            borderRadius: '12px',
                             fontSize: '0.84rem',
                             fontWeight: isActive ? 800 : 600,
                             cursor: 'pointer',
-                            boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
+                            boxShadow: isActive ? '0 4px 14px rgba(0, 166, 249, 0.35)' : 'none',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '0.45rem',
-                            transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)'
+                            gap: '0.5rem',
+                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
                           }}
                         >
-                          <span style={{ fontSize: '0.95rem' }}>{sub.icon}</span>
+                          <IconComponent size={16} style={{ color: isActive ? '#ffffff' : '#64748b', flexShrink: 0 }} />
                           <span>{sub.label}</span>
                         </button>
                       );
