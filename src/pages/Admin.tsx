@@ -9046,16 +9046,20 @@ export default function Admin() {
                         </div>
                       </div>
 
-                      {/* ── BOTÓN PURGE ── */}
-                      <div className="config-section" style={{ marginTop: '1.5rem', borderTop: '2px dashed #e2e8f0', paddingTop: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                      {/* ── SECCIÓN PURGA Y MANTENIMIENTO ── */}
+                      <div className="config-section" style={{ marginTop: '1.5rem', background: '#fef2f2', border: '1.5px solid #fecaca', borderRadius: '14px', padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
                         <div style={{ flex: 1 }}>
-                          <h4 style={{ margin: '0 0 0.2rem 0', fontWeight: 800, color: '#0f172a', fontSize: '0.95rem' }}>🧹 Purgar Registros</h4>
-                          <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>Elimina pedidos, clientes o leads de forma definitiva.</p>
+                          <h4 style={{ margin: '0 0 0.2rem 0', fontWeight: 800, color: '#991b1b', fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <Trash2 size={16} color="#dc2626" /> Purgar y Limpieza de Registros
+                          </h4>
+                          <p style={{ margin: 0, fontSize: '0.82rem', color: '#7f1d1d' }}>
+                            Herramienta avanzada para eliminar masivamente pedidos, clientes o leads de forma definitiva.
+                          </p>
                         </div>
                         <button
                           type="button"
                           onClick={() => { setPurgeTargets({ pedidos: false, clientes: false, leads: false, productos: false, categorias: false, pqrs: false }); setPurgeConfirmText(''); setPurgePreview(null); setShowPurgeModal(true); }}
-                          style={{ padding: '0.65rem 1.4rem', background: '#ef4444', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', whiteSpace: 'nowrap' }}
+                          style={{ padding: '0.65rem 1.4rem', background: '#dc2626', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(220, 38, 38, 0.25)' }}
                         >
                           🧹 Purgar Registros
                         </button>
@@ -9064,30 +9068,12 @@ export default function Admin() {
                   )}
 
                   <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid #e2e8f0', paddingTop: '1.25rem' }}>
-                    <button type="submit" className="btn-primary" disabled={loading} style={{ padding: '0.7rem 2rem' }}>
-                      <Check size={14} /> {loading ? 'Guardando...' : 'Guardar Configuración'}
+                    <button type="submit" className="btn-primary" disabled={loading} style={{ padding: '0.7rem 2rem', borderRadius: '10px', fontWeight: 800 }}>
+                      <Check size={16} /> {loading ? 'Guardando...' : 'Guardar Configuración'}
                     </button>
                   </div>
                 </form>
-
-                  {/* ── BOTÓN PURGE ── */}
-                  <div style={{ marginTop: '2rem', paddingTop: '2rem', borderTop: '2px dashed #e2e8f0', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                    <div style={{ flex: 1 }}>
-                      <h4 style={{ margin: '0 0 0.2rem 0', fontWeight: 800, color: '#0f172a', fontSize: '0.95rem' }}>🧹 Purgar Registros</h4>
-                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}>Elimina pedidos, clientes o leads de forma definitiva.</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => { setPurgeTargets({ pedidos: false, clientes: false, leads: false, productos: false, categorias: false, pqrs: false }); setPurgeConfirmText(''); setPurgePreview(null); setShowPurgeModal(true); }}
-                      style={{ padding: '0.65rem 1.4rem', background: '#ef4444', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 700, fontSize: '0.85rem', whiteSpace: 'nowrap' }}
-                    >
-                      🧹 Purgar Registros
-                    </button>
-                  </div>
-
-                  </>
-
-
+                </>
                 ) : (
                   <div className="empty-state">
                     <div className="loading-dot" />
@@ -11967,73 +11953,7 @@ export default function Admin() {
             return (
               <div className="admin-panel">
                 <div className="panel-header" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.85rem', marginBottom: '0.75rem' }}>
-                  {/* Fila Principal: Acciones y Vistas */}
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', width: '100%', gap: '0.75rem', flexWrap: 'wrap' }}>
-
-                    {/* Switchers y Refrescar */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
-                      <button
-                        type="button"
-                        onClick={handleManualRefresh}
-                        disabled={isRefreshing}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          background: '#f1f5f9',
-                          color: '#475569',
-                          border: '1px solid #e2e8f0',
-                          borderRadius: '8px',
-                          width: '34px',
-                          height: '34px',
-                          cursor: isRefreshing ? 'not-allowed' : 'pointer'
-                        }}
-                        title="Sincronizar Datos"
-                      >
-                        <RefreshCw size={15} className={isRefreshing ? 'spin-icon-active' : ''} />
-                      </button>
-
-                      {/* Switcher Vista */}
-                      <div className="desktop-view-mode-switcher" style={{ display: 'flex', gap: '0.25rem', background: '#f1f5f9', padding: '0.25rem', borderRadius: '8px' }}>
-                        <button
-                          type="button"
-                          onClick={() => setPedidosViewMode('lista')}
-                          style={{
-                            border: 'none',
-                            background: pedidosViewMode === 'lista' ? '#ffffff' : 'transparent',
-                            color: pedidosViewMode === 'lista' ? '#0f172a' : '#64748b',
-                            padding: '0.35rem 0.75rem',
-                            borderRadius: '6px',
-                            fontSize: '0.8rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            boxShadow: pedidosViewMode === 'lista' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
-                          }}
-                        >
-                          📋 Lista
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPedidosViewMode('kanban')}
-                          style={{
-                            border: 'none',
-                            background: pedidosViewMode === 'kanban' ? '#ffffff' : 'transparent',
-                            color: pedidosViewMode === 'kanban' ? '#0f172a' : '#64748b',
-                            padding: '0.35rem 0.75rem',
-                            borderRadius: '6px',
-                            fontSize: '0.8rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            boxShadow: pedidosViewMode === 'kanban' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none'
-                          }}
-                        >
-                          📊 Kanban
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Fila Secundaria: Filtros Compactos Integrados */}
+                  {/* Fila: Filtros Compactos Integrados */}
                   <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap', background: '#f8fafc', padding: '0.45rem 0.75rem', borderRadius: '10px', border: '1px solid #f1f5f9' }}>
                     {/* Fecha */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.76rem', fontWeight: 700, color: '#475569' }}>
