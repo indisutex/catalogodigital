@@ -228,3 +228,102 @@
     padding: 0.85rem 0.75rem 2rem 0.75rem;
   }
 }
+
+/* ========================================================
+   ESTILOS DE NAVEGACIÓN VERTICAL LATERAL SUB-MÓDULOS (ESTILO STRIPE / ODOO)
+   ======================================================== */
+.erp-vertical-layout {
+  display: flex;
+  gap: 1.25rem;
+  align-items: flex-start;
+  width: 100%;
+}
+
+.erp-sub-sidebar {
+  width: 250px;
+  flex-shrink: 0;
+  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  padding: 0.75rem;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  position: sticky;
+  top: 1rem;
+}
+
+.erp-sub-sidebar-title {
+  padding: 0.5rem 0.6rem 0.35rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.erp-sub-sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
+  font-size: 0.83rem;
+  font-weight: 700;
+  color: #475569;
+  background: transparent;
+  border: 1.5px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  width: 100%;
+  text-align: left;
+}
+
+.erp-sub-sidebar-item:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.erp-sub-sidebar-item.active {
+  background: #f0f9ff;
+  color: #0284c7;
+  border-color: #bae6fd;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.erp-sub-sidebar-item-badge {
+  margin-left: auto;
+  font-size: 0.7rem;
+  font-weight: 800;
+  padding: 0.15rem 0.45rem;
+  border-radius: 20px;
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.erp-sub-sidebar-item.active .erp-sub-sidebar-item-badge {
+  background: #0284c7;
+  color: #ffffff;
+}
+
+.erp-sub-workspace {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+@media (max-width: 900px) {
+  .erp-vertical-layout {
+    flex-direction: column;
+  }
+  .erp-sub-sidebar {
+    width: 100%;
+    position: static;
+    flex-direction: row;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}

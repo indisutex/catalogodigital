@@ -5,7 +5,7 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista, PQRS } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Filter, Link, LifeBuoy, PackageCheck, ArrowRightLeft, BarChart2 } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2 } from 'lucide-react';
 
 import * as XLSX from 'xlsx';
 import { ERPContabilidadService } from '../lib/erpContabilidadService';
@@ -410,9 +410,6 @@ export default function Admin() {
   const [subcategoriasData, setSubcategoriasData] = useState<Subcategoria[]>([]);
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [listaPqrs, setListaPqrs] = useState<PQRS[]>([]);
-  const [pqrsBusqueda, setPqrsBusqueda] = useState('');
-  const [pqrsFiltroEstado, setPqrsFiltroEstado] = useState<'todos' | 'pendiente' | 'en_proceso' | 'resuelto'>('todos');
-  const [detailPqrs, setDetailPqrs] = useState<PQRS | null>(null);
   const [showCopyCategoriesModal, setShowCopyCategoriesModal] = useState(false);
   const [copyCatSourceTenant, setCopyCatSourceTenant] = useState<string>(getTenantId() || 'sublimados_majestic');
   const [copyCatTargetTenant, setCopyCatTargetTenant] = useState<string>('saramantha');
@@ -5104,37 +5101,121 @@ export default function Admin() {
                   </>
                 );
               })()
+            ) : (['clientes','asesores','pedidos','mayoristas','productos'].includes(activeTab) && !isAddingProduct) ? (
+              /* ── Topbar contextual: título compacto + búsqueda inline + acciones ── */
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: 0, flexWrap: 'wrap' }}>
+                {/* Título compacto de sección */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexShrink: 0 }}>
+                  <span style={{ fontSize: '1rem', lineHeight: 1 }}>
+                    {activeTab === 'clientes' && '👥'}
+                    {activeTab === 'asesores' && '🧑‍💼'}
+                    {activeTab === 'pedidos' && '🛒'}
+                    {activeTab === 'mayoristas' && '🏭'}
+                    {activeTab === 'productos' && '📦'}
+                  </span>
+                  <span style={{ fontSize: '0.9rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap' }}>
+                    {activeTab === 'clientes' && 'Clientes'}
+                    {activeTab === 'asesores' && 'Asesores'}
+                    {activeTab === 'pedidos' && 'Pedidos'}
+                    {activeTab === 'mayoristas' && 'Mayoristas'}
+                    {activeTab === 'productos' && 'Catálogo'}
+                  </span>
+                  <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 600, background: '#f1f5f9', padding: '0.15rem 0.5rem', borderRadius: '20px' }}>
+                    {activeTab === 'clientes' && clientes.length}
+                    {activeTab === 'asesores' && asesores.length}
+                    {activeTab === 'pedidos' && pedidos.length}
+                    {activeTab === 'mayoristas' && mayoristas.length}
+                    {activeTab === 'productos' && filteredProducts.length}
+                  </span>
+                </div>
+
+                {/* Divisor */}
+                <div style={{ width: '1px', height: '24px', background: '#e2e8f0', flexShrink: 0 }} />
+
+                {/* Buscador inline contextual */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '10px', padding: '0.35rem 0.75rem', flex: 1, maxWidth: '340px', minWidth: '180px', transition: 'border-color 0.2s' }}
+                  onFocus={e => (e.currentTarget.style.borderColor = '#6366f1')}
+                  onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
+                >
+                  <Search size={14} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                  <input
+                    type="text"
+                    placeholder={
+                      activeTab === 'clientes' ? 'Buscar por nombre o celular...' :
+                      activeTab === 'asesores' ? 'Buscar asesor por nombre...' :
+                      activeTab === 'pedidos' ? 'Buscar por cliente, teléfono o ciudad...' :
+                      activeTab === 'mayoristas' ? 'Buscar mayorista...' :
+                      'Buscar producto o referencia...'
+                    }
+                    value={
+                      activeTab === 'clientes' ? clienteSearchQuery :
+                      activeTab === 'asesores' ? asesorSearchQuery :
+                      activeTab === 'pedidos' ? orderSearchQuery :
+                      activeTab === 'mayoristas' ? mayoristaBuscador :
+                      searchQuery
+                    }
+                    onChange={e => {
+                      if (activeTab === 'clientes') setClienteSearchQuery(e.target.value);
+                      else if (activeTab === 'asesores') setAsesorSearchQuery(e.target.value);
+                      else if (activeTab === 'pedidos') setOrderSearchQuery(e.target.value);
+                      else if (activeTab === 'mayoristas') setMayoristaBuscador(e.target.value);
+                      else setSearchQuery(e.target.value);
+                    }}
+                    style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '0.83rem', width: '100%', color: '#0f172a' }}
+                  />
+                  {(
+                    (activeTab === 'clientes' && clienteSearchQuery) ||
+                    (activeTab === 'asesores' && asesorSearchQuery) ||
+                    (activeTab === 'pedidos' && orderSearchQuery) ||
+                    (activeTab === 'mayoristas' && mayoristaBuscador) ||
+                    (activeTab === 'productos' && searchQuery)
+                  ) && (
+                    <button type="button" onClick={() => {
+                      if (activeTab === 'clientes') setClienteSearchQuery('');
+                      else if (activeTab === 'asesores') setAsesorSearchQuery('');
+                      else if (activeTab === 'pedidos') setOrderSearchQuery('');
+                      else if (activeTab === 'mayoristas') setMayoristaBuscador('');
+                      else setSearchQuery('');
+                    }} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', padding: 0 }}>
+                      <X size={13} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Botones de acción contextuales */}
+                {activeTab === 'productos' && !isAddingProduct && (
+                  <button
+                    className="btn-primary hover-lift"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.45rem 0.9rem', borderRadius: '9px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                    onClick={() => { setBulkForms([{ ...emptyProduct }]); setIsAddingProduct(true); }}
+                  >
+                    <Plus size={14} /> Nuevo Producto
+                  </button>
+                )}
+              </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
                 <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
                   {activeTab === 'dashboard' && '📊 Dashboard General'}
-                  {activeTab === 'productos' && '📦 Catálogo de Productos'}
                   {activeTab === 'categorias' && '🗂️ Categorías y Subcategorías'}
-                  {activeTab === 'pedidos' && '🛒 Gestión de Pedidos'}
                   {activeTab === 'pos' && '🖥️ Caja POS (Punto de Venta)'}
                   {activeTab === 'ventas_pos' && '🏪 Historial de Ventas POS'}
-                  {activeTab === 'clientes' && '👥 Base de Clientes (Fidelización)'}
-                  {activeTab === 'asesores' && '👥 Equipo de Asesores'}
-                  {activeTab === 'mayoristas' && '👥 Clientes Mayoristas'}
                   {activeTab === 'material_apoyo' && '📁 Material de Apoyo & Google Drive'}
                   {activeTab === 'config' && '⚙️ Configuración Global'}
                   {activeTab === 'erp' && '📈 ERP Empresarial'}
                   {activeTab === 'pqrs' && '💬 Centro de Soporte & PQRS'}
+                  {activeTab === 'productos' && '📦 Agregar Nuevo Producto'}
                 </h2>
                 <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.82rem', color: '#64748b', fontWeight: 500 }}>
                   {activeTab === 'dashboard' && 'Resumen de métricas, rendimiento y ventas del negocio'}
-                  {activeTab === 'productos' && `${productos.length} productos registrados en tu tienda`}
                   {activeTab === 'categorias' && `${categoriasData.length} categorías activas en catálogo`}
-                  {activeTab === 'pedidos' && 'Filtra, aprueba y gestiona el envío de tus pedidos'}
                   {activeTab === 'pos' && 'Cobra rápidamente a tus clientes en tienda física'}
                   {activeTab === 'ventas_pos' && 'Historial de facturas y cobros realizados desde POS'}
-                  {activeTab === 'clientes' && `Visualiza y filtra los ${clientes.length} clientes registrados por catálogo y POS`}
-                  {activeTab === 'asesores' && `${asesores.length} asesores en tu equipo con enlaces de comisión`}
-                  {activeTab === 'mayoristas' && `${mayoristas.length} mayoristas registrados con accesos especiales`}
                   {activeTab === 'material_apoyo' && 'Carpetas, fotos y videos compartidos desde Google Drive para el equipo'}
                   {activeTab === 'config' && 'Personaliza tu tienda al máximo (datos, pagos, diseño y APIs)'}
                   {activeTab === 'erp' && 'Sistema Integrado de Gestión Empresarial'}
                   {activeTab === 'pqrs' && 'Gestiona solicitudes, reclamos y dudas de clientes en tiempo real'}
+                  {activeTab === 'productos' && 'Completa los campos para publicar el producto en tu catálogo'}
                 </p>
               </div>
             )}
@@ -5905,24 +5986,13 @@ export default function Admin() {
                       </div>
                     </div>
 
-                    {/* Fila secundaria: Búsqueda y Ordenamiento */}
-                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap', width: '100%', background: '#f8fafc', padding: '0.6rem 0.8rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                      <div className="search-input-container" style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 1, minWidth: '200px' }}>
-                        <span style={{ position: 'absolute', left: '12px', color: '#94a3b8', display: 'flex', alignItems: 'center' }}>
-                          <Search size={16} />
-                        </span>
-                        <input
-                          className="search-bar"
-                          style={{ width: '100%', padding: '0.5rem 1rem 0.5rem 2.25rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white' }}
-                          placeholder="Buscar producto por nombre, referencia o categoría..."
-                          value={searchQuery}
-                          onChange={e => setSearchQuery(e.target.value)}
-                        />
-                      </div>
+                    {/* Ordenamiento */}
+                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600, whiteSpace: 'nowrap' }}>Ordenar por:</span>
                       <select
                         value={productSort}
                         onChange={e => setProductSort(e.target.value)}
-                        style={{ padding: '0.5rem 0.85rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.85rem', background: 'white', color: '#334155', fontWeight: 600, cursor: 'pointer', height: '36px' }}
+                        style={{ padding: '0.4rem 0.7rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.84rem', background: 'white', color: '#334155', fontWeight: 600, cursor: 'pointer', height: '34px' }}
                       >
                         <option value="recientes">Más recientes</option>
                         <option value="alfabetico">A-Z</option>
@@ -7939,31 +8009,23 @@ export default function Admin() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="btn-secondary"
-                                style={{ flex: 1, textDecoration: 'none', padding: '0.45rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', color: '#64748b', borderColor          {/* ── ERP EMPRESARIAL UNIFICADO ── */}
-
-          {activeTab === 'erp' && (
-            <ERPMainModule tenantId={selectedCompany || getTenantId()} configuracion={configuracion} />
-          )}             <a href={detailPqrs.evidencia_url} target="_blank" rel="noreferrer" className="pqrs-evidencia-badge" style={{ display: 'inline-flex', padding: '0.6rem 1rem', fontSize: '0.85rem' }}>
-                        <Link size={15} /> Abrir imagen/archivo adjunto
-                      </a>
-                    </div>
-                  )}
-
-                  <div style={{ display: 'flex', gap: '0.6rem', marginTop: '1.5rem', borderTop: '1px solid #f1f5f9', paddingTop: '1rem' }}>
-                    <a 
-                      href={formatWhatsAppLink(detailPqrs.telefono_cliente, `Hola ${detailPqrs.nombre_cliente}, te escribimos de ${configuracion?.nombre_negocio || 'la tienda'} referente a tu solicitud de soporte: "${detailPqrs.motivo}". Estamos aquí para ayudarte.`)}
-                      target="_blank" 
-                      rel="noreferrer" 
-                      className="pqrs-action-wa-btn"
-                      style={{ flex: 1, justifyContent: 'center', padding: '0.7rem' }}
-                    >
-                      <MessageSquare size={16} /> Abrir WhatsApp con respuesta
-                    </a>
+                                style={{ flex: 1, textDecoration: 'none', padding: '0.45rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', color: '#64748b', borderColor: '#e2e8f0', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', fontWeight: 700 }}
+                              >
+                                <Download size={12} style={{ color: '#0ea5e9' }} /> Descargar
+                              </a>
+                              )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
+                  )}
                 </div>
               </div>
-            </div>
           )}
+
+
+
 
 
           {/* ── ERP EMPRESARIAL UNIFICADO ── */}
@@ -7971,6 +8033,7 @@ export default function Admin() {
           {activeTab === 'erp' && (
             <ERPMainModule tenantId={selectedCompany || getTenantId()} />
           )}
+
 
           {/* ── CONFIG TAB ── */}
 
@@ -9309,22 +9372,6 @@ export default function Admin() {
           {/* ── CLIENTES TAB ── */}
           {activeTab === 'clientes' && (
             <div className="admin-panel">
-              <div className="panel-header" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1rem' }}>
-                {/* Search input */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f1f5f9', padding: '0.4rem 0.8rem', borderRadius: '10px', border: '1px solid #e2e8f0', minWidth: '280px' }}>
-                  <Search size={16} style={{ color: '#64748b' }} />
-                  <input
-                    type="text"
-                    placeholder="Buscar por nombre o celular..."
-                    value={clienteSearchQuery}
-                    onChange={e => setClienteSearchQuery(e.target.value)}
-                    style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '0.84rem', width: '100%', color: '#0f172a' }}
-                  />
-                  {clienteSearchQuery && (
-                    <button type="button" onClick={() => setClienteSearchQuery('')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
-                  )}
-                </div>
-              </div>
 
               <div className="panel-body" style={{ overflowX: 'auto' }}>
                 {filteredClientes.length === 0 ? (
@@ -9500,27 +9547,6 @@ export default function Admin() {
 
               {/* Listado de Asesores */}
               <div className="admin-panel">
-                <div className="panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1rem' }}>
-                  <div>
-                    <h3 style={{ margin: 0 }}>👥 Equipo de Asesores Registrados</h3>
-                    <p style={{ margin: '0.2rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Copia y comparte los enlaces exclusivos de catálogo de cada asesor</p>
-                  </div>
-                  
-                  {/* Buscador */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f1f5f9', padding: '0.4rem 0.8rem', borderRadius: '10px', border: '1px solid #e2e8f0', minWidth: '280px' }}>
-                    <Search size={16} style={{ color: '#64748b' }} />
-                    <input
-                      type="text"
-                      placeholder="Buscar asesor por nombre..."
-                      value={asesorSearchQuery}
-                      onChange={e => setAsesorSearchQuery(e.target.value)}
-                      style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '0.84rem', width: '100%', color: '#0f172a' }}
-                    />
-                    {asesorSearchQuery && (
-                      <button type="button" onClick={() => setAsesorSearchQuery('')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>
-                    )}
-                  </div>
-                </div>
 
                 <div className="panel-body" style={{ overflowX: 'auto' }}>
                   {filteredAsesores.length === 0 ? (
@@ -9916,15 +9942,6 @@ export default function Admin() {
 
                 {/* Listado */}
                 <div className="admin-panel">
-                  <div className="panel-header" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f1f5f9', padding: '0.4rem 0.8rem', borderRadius: '10px', border: '1px solid #e2e8f0', minWidth: '260px' }}>
-                      <Search size={16} style={{ color: '#64748b' }} />
-                      <input type="text" placeholder="Buscar mayorista..." value={mayoristaBuscador}
-                        onChange={e => setMayoristaBuscador(e.target.value)}
-                        style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '0.84rem', width: '100%', color: '#0f172a' }} />
-                      {mayoristaBuscador && <button type="button" onClick={() => setMayoristaBuscador('')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontWeight: 'bold' }}>✕</button>}
-                    </div>
-                  </div>
                   <div className="panel-body" style={{ overflowX: 'auto' }}>
                     {filteredMayoristas.length === 0 ? (
                       <div className="empty-state" style={{ padding: '3rem 1rem', textAlign: 'center' }}>
@@ -11916,38 +11933,8 @@ export default function Admin() {
             return (
               <div className="admin-panel">
                 <div className="panel-header" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: '100%', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.85rem', marginBottom: '0.75rem' }}>
-                  {/* Fila Principal: Buscador + Acciones y Vistas */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', gap: '0.75rem', flexWrap: 'wrap' }}>
-                    {/* Buscador Integrado */}
-                    <div style={{ flex: 1, minWidth: '220px', maxWidth: '420px', position: 'relative' }}>
-                      <Search size={15} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
-                      <input
-                        type="text"
-                        placeholder="Buscar por cliente, teléfono o ciudad..."
-                        value={orderSearchQuery}
-                        onChange={e => setOrderSearchQuery(e.target.value)}
-                        style={{
-                          width: '100%',
-                          padding: '0.45rem 0.75rem 0.45rem 2.2rem',
-                          borderRadius: '10px',
-                          border: '1px solid #cbd5e1',
-                          fontSize: '0.82rem',
-                          background: '#ffffff',
-                          outline: 'none',
-                          color: '#0f172a',
-                          boxShadow: '0 1px 3px rgba(0,0,0,0.04)'
-                        }}
-                      />
-                      {orderSearchQuery && (
-                        <button
-                          type="button"
-                          onClick={() => setOrderSearchQuery('')}
-                          style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontWeight: 700 }}
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
+                  {/* Fila Principal: Acciones y Vistas */}
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', width: '100%', gap: '0.75rem', flexWrap: 'wrap' }}>
 
                     {/* Switchers y Refrescar */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
@@ -14109,7 +14096,7 @@ export default function Admin() {
 
 // ── SIDEBAR COMPONENT ──
 function SidebarContent({
-  activeTab, setActiveTab, productos, configuracion, handleLogout, onClose, role, currentAsesor, activeNotificationsCount = 0, listaPqrs = []
+  activeTab, setActiveTab, productos, configuracion, handleLogout, onClose, role, currentAsesor, activeNotificationsCount = 0
 }: {
   activeTab: TabType;
   setActiveTab: (t: TabType) => void;
