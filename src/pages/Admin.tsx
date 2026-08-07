@@ -8137,127 +8137,42 @@ export default function Admin() {
                     setLoading(false);
                   }}>
                   {/* ── Sub-pestañas de Configuración ── */}
-                  <div style={{ display: 'flex', gap: '0.4rem', background: '#f1f5f9', padding: '0.35rem', borderRadius: '12px', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-                    <button
-                      type="button"
-                      onClick={() => setConfigSubTab('negocio')}
-                      style={{
-                        border: 'none',
-                        background: configSubTab === 'negocio' ? '#ffffff' : 'transparent',
-                        color: configSubTab === 'negocio' ? '#0f172a' : '#64748b',
-                        padding: '0.5rem 0.9rem',
-                        borderRadius: '8px',
-                        fontSize: '0.83rem',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        boxShadow: configSubTab === 'negocio' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.4rem'
-                      }}
-                    >
-                      🏪 Negocio & Perfil
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setConfigSubTab('bancos')}
-                      style={{
-                        border: 'none',
-                        background: configSubTab === 'bancos' ? '#ffffff' : 'transparent',
-                        color: configSubTab === 'bancos' ? '#0f172a' : '#64748b',
-                        padding: '0.5rem 0.9rem',
-                        borderRadius: '8px',
-                        fontSize: '0.83rem',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        boxShadow: configSubTab === 'bancos' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.4rem'
-                      }}
-                    >
-                      💳 Bancos & Pagos
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setConfigSubTab('apariencia')}
-                      style={{
-                        border: 'none',
-                        background: configSubTab === 'apariencia' ? '#ffffff' : 'transparent',
-                        color: configSubTab === 'apariencia' ? '#0f172a' : '#64748b',
-                        padding: '0.5rem 0.9rem',
-                        borderRadius: '8px',
-                        fontSize: '0.83rem',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        boxShadow: configSubTab === 'apariencia' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.4rem'
-                      }}
-                    >
-                      🎨 Diseño & Catálogo
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setConfigSubTab('pos')}
-                      style={{
-                        border: 'none',
-                        background: configSubTab === 'pos' ? '#ffffff' : 'transparent',
-                        color: configSubTab === 'pos' ? '#0f172a' : '#64748b',
-                        padding: '0.5rem 0.9rem',
-                        borderRadius: '8px',
-                        fontSize: '0.83rem',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        boxShadow: configSubTab === 'pos' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.4rem'
-                      }}
-                    >
-                      🖨️ POS & Impresión
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setConfigSubTab('desarrollador')}
-                      style={{
-                        border: 'none',
-                        background: configSubTab === 'desarrollador' ? '#ffffff' : 'transparent',
-                        color: configSubTab === 'desarrollador' ? '#0f172a' : '#64748b',
-                        padding: '0.5rem 0.9rem',
-                        borderRadius: '8px',
-                        fontSize: '0.83rem',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        boxShadow: configSubTab === 'desarrollador' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.4rem'
-                      }}
-                    >
-                      💻 Desarrollador & APIs
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setConfigSubTab('sistema')}
-                      style={{
-                        border: 'none',
-                        background: configSubTab === 'sistema' ? '#ffffff' : 'transparent',
-                        color: configSubTab === 'sistema' ? '#0f172a' : '#64748b',
-                        padding: '0.5rem 0.9rem',
-                        borderRadius: '8px',
-                        fontSize: '0.83rem',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        boxShadow: configSubTab === 'sistema' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.4rem'
-                      }}
-                    >
-                      ⚙️ Reglas & Purga
-                    </button>
+                  <div style={{ display: 'flex', gap: '0.35rem', background: '#f1f5f9', padding: '0.35rem', borderRadius: '14px', marginBottom: '1.5rem', flexWrap: 'wrap', border: '1px solid #e2e8f0' }}>
+                    {[
+                      { key: 'negocio', label: 'Negocio & Perfil', icon: '🏪' },
+                      { key: 'bancos', label: 'Bancos & Pagos', icon: '💳' },
+                      { key: 'apariencia', label: 'Diseño & Catálogo', icon: '🎨' },
+                      { key: 'pos', label: 'POS & Impresión', icon: '🖨️' },
+                      { key: 'desarrollador', label: 'Desarrollador & APIs', icon: '💻' },
+                      { key: 'sistema', label: 'Reglas & Purga', icon: '⚙️' }
+                    ].map(sub => {
+                      const isActive = configSubTab === sub.key;
+                      return (
+                        <button
+                          key={sub.key}
+                          type="button"
+                          onClick={() => setConfigSubTab(sub.key as any)}
+                          style={{
+                            border: '1px solid transparent',
+                            background: isActive ? '#ffffff' : 'transparent',
+                            color: isActive ? '#0f172a' : '#64748b',
+                            padding: '0.55rem 1rem',
+                            borderRadius: '10px',
+                            fontSize: '0.84rem',
+                            fontWeight: isActive ? 800 : 600,
+                            cursor: 'pointer',
+                            boxShadow: isActive ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.45rem',
+                            transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)'
+                          }}
+                        >
+                          <span style={{ fontSize: '0.95rem' }}>{sub.icon}</span>
+                          <span>{sub.label}</span>
+                        </button>
+                      );
+                    })}
                   </div>
 
                   {/* ── SUB-TAB 1: NEGOCIO & PERFIL ── */}
