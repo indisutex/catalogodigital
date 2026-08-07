@@ -5506,9 +5506,9 @@ export default function Admin() {
             )}
           </div>
           <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            {/* Switcher Vista Lista / Kanban en Pedidos */}
+            {/* Switcher Vista Lista / Kanban en Pedidos (Oculto en móvil) */}
             {activeTab === 'pedidos' && (
-              <div style={{ display: 'flex', gap: '0.2rem', background: '#f1f5f9', padding: '0.2rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', height: '38px', alignItems: 'center' }}>
+              <div className="desktop-only-table" style={{ display: 'flex', gap: '0.2rem', background: '#f1f5f9', padding: '0.2rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', height: '38px', alignItems: 'center' }}>
                 <button
                   type="button"
                   onClick={() => setPedidosViewMode('lista')}
