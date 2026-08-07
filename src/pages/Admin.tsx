@@ -5133,55 +5133,52 @@ export default function Admin() {
                 {/* Divisor */}
                 <div style={{ width: '1px', height: '24px', background: '#e2e8f0', flexShrink: 0 }} />
 
-                {/* Buscador inline contextual */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '10px', padding: '0.35rem 0.75rem', flex: 1, maxWidth: '340px', minWidth: '180px', transition: 'border-color 0.2s' }}
-                  onFocus={e => (e.currentTarget.style.borderColor = '#6366f1')}
-                  onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
-                >
-                  <Search size={14} style={{ color: '#94a3b8', flexShrink: 0 }} />
-                  <input
-                    type="text"
-                    placeholder={
-                      activeTab === 'clientes' ? 'Buscar por nombre o celular...' :
-                      activeTab === 'asesores' ? 'Buscar asesor por nombre...' :
-                      activeTab === 'pedidos' ? 'Buscar por cliente, teléfono o ciudad...' :
-                      activeTab === 'mayoristas' ? 'Buscar mayorista...' :
-                      'Buscar producto o referencia...'
-                    }
-                    value={
-                      activeTab === 'clientes' ? clienteSearchQuery :
-                      activeTab === 'asesores' ? asesorSearchQuery :
-                      activeTab === 'pedidos' ? orderSearchQuery :
-                      activeTab === 'mayoristas' ? mayoristaBuscador :
-                      searchQuery
-                    }
-                    onChange={e => {
-                      if (activeTab === 'clientes') setClienteSearchQuery(e.target.value);
-                      else if (activeTab === 'asesores') setAsesorSearchQuery(e.target.value);
-                      else if (activeTab === 'pedidos') setOrderSearchQuery(e.target.value);
-                      else if (activeTab === 'mayoristas') setMayoristaBuscador(e.target.value);
-                      else setSearchQuery(e.target.value);
-                    }}
-                    style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '0.83rem', width: '100%', color: '#0f172a' }}
-                  />
-                  {(
-                    (activeTab === 'clientes' && clienteSearchQuery) ||
-                    (activeTab === 'asesores' && asesorSearchQuery) ||
-                    (activeTab === 'pedidos' && orderSearchQuery) ||
-                    (activeTab === 'mayoristas' && mayoristaBuscador) ||
-                    (activeTab === 'productos' && searchQuery)
-                  ) && (
-                    <button type="button" onClick={() => {
-                      if (activeTab === 'clientes') setClienteSearchQuery('');
-                      else if (activeTab === 'asesores') setAsesorSearchQuery('');
-                      else if (activeTab === 'pedidos') setOrderSearchQuery('');
-                      else if (activeTab === 'mayoristas') setMayoristaBuscador('');
-                      else setSearchQuery('');
-                    }} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', padding: 0 }}>
-                      <X size={13} />
-                    </button>
-                  )}
-                </div>
+                {/* Buscador inline contextual (excepto en pedidos donde está integrado en su barra de filtros) */}
+                {activeTab !== 'pedidos' && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '10px', padding: '0.35rem 0.75rem', flex: 1, maxWidth: '340px', minWidth: '180px', transition: 'border-color 0.2s' }}
+                    onFocus={e => (e.currentTarget.style.borderColor = '#6366f1')}
+                    onBlur={e => (e.currentTarget.style.borderColor = '#e2e8f0')}
+                  >
+                    <Search size={14} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                    <input
+                      type="text"
+                      placeholder={
+                        activeTab === 'clientes' ? 'Buscar por nombre o celular...' :
+                        activeTab === 'asesores' ? 'Buscar asesor por nombre...' :
+                        activeTab === 'mayoristas' ? 'Buscar mayorista...' :
+                        'Buscar producto o referencia...'
+                      }
+                      value={
+                        activeTab === 'clientes' ? clienteSearchQuery :
+                        activeTab === 'asesores' ? asesorSearchQuery :
+                        activeTab === 'mayoristas' ? mayoristaBuscador :
+                        searchQuery
+                      }
+                      onChange={e => {
+                        if (activeTab === 'clientes') setClienteSearchQuery(e.target.value);
+                        else if (activeTab === 'asesores') setAsesorSearchQuery(e.target.value);
+                        else if (activeTab === 'mayoristas') setMayoristaBuscador(e.target.value);
+                        else setSearchQuery(e.target.value);
+                      }}
+                      style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '0.83rem', width: '100%', color: '#0f172a' }}
+                    />
+                    {(
+                      (activeTab === 'clientes' && clienteSearchQuery) ||
+                      (activeTab === 'asesores' && asesorSearchQuery) ||
+                      (activeTab === 'mayoristas' && mayoristaBuscador) ||
+                      (activeTab === 'productos' && searchQuery)
+                    ) && (
+                      <button type="button" onClick={() => {
+                        if (activeTab === 'clientes') setClienteSearchQuery('');
+                        else if (activeTab === 'asesores') setAsesorSearchQuery('');
+                        else if (activeTab === 'mayoristas') setMayoristaBuscador('');
+                        else setSearchQuery('');
+                      }} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', padding: 0 }}>
+                        <X size={13} />
+                      </button>
+                    )}
+                  </div>
+                )}
 
                 {/* Botones de acción contextuales */}
                 {activeTab === 'productos' && !isAddingProduct && (
@@ -12099,8 +12096,25 @@ export default function Admin() {
                     );
                   })()}
 
-                  {/* Fila 2: Filtros Secundarios Integrados */}
+                  {/* Fila 2: Filtros Secundarios Integrados con Buscador */}
                   <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap', background: '#f8fafc', padding: '0.45rem 0.75rem', borderRadius: '10px', border: '1px solid #f1f5f9' }}>
+                    {/* Buscador de Pedidos Directo */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '0.25rem 0.6rem', flex: '1 1 220px', maxWidth: '340px' }}>
+                      <Search size={14} style={{ color: '#94a3b8', flexShrink: 0 }} />
+                      <input 
+                        type="text"
+                        placeholder="Buscar por cliente, teléfono o ciudad..."
+                        value={orderSearchQuery}
+                        onChange={e => setOrderSearchQuery(e.target.value)}
+                        style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.78rem', width: '100%', color: '#0f172a', fontWeight: 600 }}
+                      />
+                      {orderSearchQuery && (
+                        <button onClick={() => setOrderSearchQuery('')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', padding: 0 }}>
+                          <X size={13} />
+                        </button>
+                      )}
+                    </div>
+
                     {/* Fecha */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.76rem', fontWeight: 700, color: '#475569' }}>
                       <span>📅 Fecha:</span>
