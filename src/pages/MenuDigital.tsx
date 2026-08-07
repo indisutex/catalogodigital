@@ -821,11 +821,6 @@ export default function MenuDigital() {
     }
     mensaje += `*Tipo de compra:* ${buyerLabel}\n`;
     mensaje += `*Método de pago:* ${modalidadPago === 'contra_entrega' ? '🚚 Contra Entrega' : '💳 Pago Anticipado'}\n`;
-    if (modalidadPago === 'contra_entrega') {
-      mensaje += `📌 *Nota de pago:* Al momento de recibir cancelas el valor de las prendas + el valor del envío.\n`;
-    } else {
-      mensaje += `📌 *Nota de pago:* Recuerda que al momento de recibir solo cancelas el valor del envío.\n`;
-    }
     if (isBulkDiscountApplied) {
       mensaje += `🎁 *¡Descuento al Por Mayor Aplicado!* (Llevas 6 o más productos)\n`;
     }
@@ -838,7 +833,14 @@ export default function MenuDigital() {
     ).join('\n');
     mensaje += mensajeProductos;
     
-    mensaje += `\n*TOTAL:* $${total.toLocaleString('es-CO')}`;
+    if (modalidadPago === 'contra_entrega') {
+      mensaje += `\n\n*PRODUCTOS:* $${total.toLocaleString('es-CO')}`;
+      mensaje += `\n*ENVÍO:* ⏳ Pendiente de calcular.`;
+      mensaje += `\n\nℹ️ *Nota importante:* Antes de despachar tu pedido, te enviaremos por WhatsApp el valor exacto del envío para tu confirmación.\nAl momento de recibir cancelas el valor de las prendas + el valor del envío.`;
+    } else {
+      mensaje += `\n\n*TOTAL PRODUCTOS:* $${total.toLocaleString('es-CO')}`;
+      mensaje += `\n📌 *Nota de envío:* Recuerda que al momento de recibir solo cancelas el valor del envío.`;
+    }
 
     const numeroWhatsApp = overrideWhatsApp || configuracion?.whatsapp || '573185637317';
 
