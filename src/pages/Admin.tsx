@@ -5106,9 +5106,8 @@ export default function Admin() {
                 );
               })()
             ) : (['clientes','asesores','pedidos','mayoristas','productos','material_apoyo'].includes(activeTab) && !isAddingProduct) ? (
-              /* ── Topbar contextual: título compacto + búsqueda inline + acciones alineados a la izquierda ── */
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: 0, flexWrap: 'wrap', justifyContent: 'flex-start' }}>
-                {/* Título compacto de sección y contador al lado del hamburger */}
+              <>
+                {/* Título compacto de sección y contador fijados inmediatamente a la izquierda del hamburger */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexShrink: 0 }}>
                   <span style={{ fontSize: '1.1rem', lineHeight: 1 }}>
                     {activeTab === 'clientes' && '👥'}
@@ -5137,9 +5136,9 @@ export default function Admin() {
                 </div>
 
                 {/* Divisor vertical */}
-                <div style={{ width: '1px', height: '24px', background: '#cbd5e1', flexShrink: 0 }} />
+                <div style={{ width: '1px', height: '24px', background: '#cbd5e1', flexShrink: 0, margin: '0 0.2rem' }} />
 
-                {/* Buscador y Filtros inline alineados a la izquierda en Top Header */}
+                {/* Buscador y Filtros inline alineados a la izquierda */}
                 {activeTab === 'pedidos' ? (
                   <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-start' }}>
                     {/* Buscador de Pedidos Directo */}
@@ -5547,7 +5546,7 @@ export default function Admin() {
                     <Plus size={14} /> Nuevo Producto
                   </button>
                 )}
-              </div>
+              </>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
                 <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a' }}>
