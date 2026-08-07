@@ -5228,6 +5228,172 @@ export default function Admin() {
                       </select>
                     </div>
                   </div>
+                ) : activeTab === 'productos' ? (
+                  <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexWrap: 'wrap', flex: 1 }}>
+                    {/* Buscador de Productos Directo */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', minWidth: '190px', flex: '1 1 190px', maxWidth: '280px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', transition: 'all 0.2s' }}>
+                      <Search size={15} style={{ color: '#00a6f9', flexShrink: 0 }} />
+                      <input 
+                        type="text"
+                        placeholder="Buscar producto o ref..."
+                        value={searchQuery}
+                        onChange={e => setSearchQuery(e.target.value)}
+                        style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.82rem', width: '100%', color: '#0f172a', fontWeight: 600 }}
+                      />
+                      {searchQuery && (
+                        <button onClick={() => setSearchQuery('')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', padding: 0 }}>
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Ordenar por Productos */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <select
+                        value={productSort}
+                        onChange={e => setProductSort(e.target.value)}
+                        style={{ height: '38px', padding: '0 0.85rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', fontSize: '0.8rem', background: '#ffffff', outline: 'none', color: '#0f172a', fontWeight: 700, cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}
+                      >
+                        <option value="recientes">↕️ Más recientes</option>
+                        <option value="alfabetico">🔤 A-Z</option>
+                        <option value="visibles">👁️ Solo Visibles</option>
+                        <option value="ocultos">🙈 Solo Ocultos</option>
+                        <option value="con_fotos">🖼️ Con fotos</option>
+                      </select>
+                    </div>
+
+                    {/* Menú Desplegable: Otras Opciones */}
+                    <div style={{ position: 'relative' }}>
+                      <button
+                        type="button"
+                        className="btn-secondary hover-lift"
+                        onClick={() => setShowCatalogOtherOptions(!showCatalogOtherOptions)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.45rem',
+                          height: '38px',
+                          padding: '0 0.85rem',
+                          borderRadius: '10px',
+                          border: '1.5px solid #cbd5e1',
+                          background: '#ffffff',
+                          color: '#475569',
+                          fontWeight: 700,
+                          fontSize: '0.8rem',
+                          cursor: 'pointer',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+                        }}
+                      >
+                        <Settings size={15} /> Otras Opciones <ChevronDown size={14} />
+                      </button>
+
+                      {showCatalogOtherOptions && (
+                        <div 
+                          style={{
+                            position: 'absolute',
+                            top: '115%',
+                            left: 0,
+                            width: '270px',
+                            background: '#ffffff',
+                            border: '1px solid #e2e8f0',
+                            borderRadius: '14px',
+                            boxShadow: '0 12px 30px -5px rgba(0,0,0,0.15)',
+                            zIndex: 100,
+                            padding: '0.55rem',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.4rem'
+                          }}
+                        >
+                          {/* Opción 1: Migrar de Empresa */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowCatalogOtherOptions(false);
+                              setShowMigrateProductsModal(true);
+                              setSelectedSourceTenant('');
+                              setSourceProducts([]);
+                              setSelectedProductIdsToMigrate([]);
+                            }}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.55rem',
+                              padding: '0.6rem 0.75rem',
+                              borderRadius: '8px',
+                              border: 'none',
+                              background: '#f0f9ff',
+                              color: '#0284c7',
+                              fontWeight: 700,
+                              fontSize: '0.82rem',
+                              cursor: 'pointer',
+                              textAlign: 'left'
+                            }}
+                          >
+                            <PackageCheck size={16} color="#0ea5e9" />
+                            <span>Migrar de Empresa</span>
+                          </button>
+
+                          {/* Opción 2: Depurar Catálogo */}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setShowCatalogOtherOptions(false);
+                              setShowToolsModal(true);
+                            }}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.55rem',
+                              padding: '0.6rem 0.75rem',
+                              borderRadius: '8px',
+                              border: 'none',
+                              background: '#fef2f2',
+                              color: '#dc2626',
+                              fontWeight: 700,
+                              fontSize: '0.82rem',
+                              cursor: 'pointer',
+                              textAlign: 'left'
+                            }}
+                          >
+                            <Wrench size={16} color="#dc2626" />
+                            <span>Depurar Catálogo</span>
+                          </button>
+
+                          {/* Opción 3: Control Promocional */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', padding: '0.55rem 0.75rem', background: '#fff7ed', borderRadius: '8px', border: '1px solid #fed7aa' }}>
+                            <span style={{ fontWeight: 800, color: '#c2410c', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                              <Tag size={14} /> Descuento Promocional:
+                            </span>
+                            <select
+                              value={configuracion?.descuento_promocional || 0}
+                              onChange={async (e) => {
+                                if (!configuracion) return;
+                                const desc = Number(e.target.value);
+                                const { error } = await supabase
+                                  .from('configuracion')
+                                  .update({ descuento_promocional: desc })
+                                  .eq('id', configuracion.id);
+                                
+                                if (error) {
+                                  showToast('Error al aplicar descuento: ' + error.message, 'error');
+                                } else {
+                                  setConfiguracion({ ...configuracion, descuento_promocional: desc });
+                                  showToast(desc > 0 ? `Descuento del ${desc}% aplicado a todo el catálogo ✓` : 'Descuento promocional desactivado ✓');
+                                }
+                              }}
+                              style={{ border: '1px solid #fdba74', borderRadius: '6px', padding: '0.3rem 0.45rem', outline: 'none', background: 'white', color: '#c2410c', fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem', width: '100%' }}
+                            >
+                              <option value={0}>Sin Descuento</option>
+                              <option value={5}>Bajar 5%</option>
+                              <option value={10}>Bajar 10%</option>
+                              <option value={20}>Bajar 20%</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '10px', padding: '0.35rem 0.75rem', flex: 1, maxWidth: '340px', minWidth: '180px', transition: 'border-color 0.2s' }}
                     onFocus={e => (e.currentTarget.style.borderColor = '#6366f1')}
@@ -5239,34 +5405,29 @@ export default function Admin() {
                       placeholder={
                         activeTab === 'clientes' ? 'Buscar por nombre o celular...' :
                         activeTab === 'asesores' ? 'Buscar asesor por nombre...' :
-                        activeTab === 'mayoristas' ? 'Buscar mayorista...' :
-                        'Buscar producto o referencia...'
+                        'Buscar mayorista...'
                       }
                       value={
                         activeTab === 'clientes' ? clienteSearchQuery :
                         activeTab === 'asesores' ? asesorSearchQuery :
-                        activeTab === 'mayoristas' ? mayoristaBuscador :
-                        searchQuery
+                        mayoristaBuscador
                       }
                       onChange={e => {
                         if (activeTab === 'clientes') setClienteSearchQuery(e.target.value);
                         else if (activeTab === 'asesores') setAsesorSearchQuery(e.target.value);
-                        else if (activeTab === 'mayoristas') setMayoristaBuscador(e.target.value);
-                        else setSearchQuery(e.target.value);
+                        else setMayoristaBuscador(e.target.value);
                       }}
                       style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '0.83rem', width: '100%', color: '#0f172a' }}
                     />
                     {(
                       (activeTab === 'clientes' && clienteSearchQuery) ||
                       (activeTab === 'asesores' && asesorSearchQuery) ||
-                      (activeTab === 'mayoristas' && mayoristaBuscador) ||
-                      (activeTab === 'productos' && searchQuery)
+                      (activeTab === 'mayoristas' && mayoristaBuscador)
                     ) && (
                       <button type="button" onClick={() => {
                         if (activeTab === 'clientes') setClienteSearchQuery('');
                         else if (activeTab === 'asesores') setAsesorSearchQuery('');
-                        else if (activeTab === 'mayoristas') setMayoristaBuscador('');
-                        else setSearchQuery('');
+                        else setMayoristaBuscador('');
                       }} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', padding: 0 }}>
                         <X size={13} />
                       </button>
@@ -6022,10 +6183,7 @@ export default function Admin() {
                       <div style={{ marginBottom: '1.25rem' }}>
                         <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.95rem', fontWeight: 700, color: '#0f172a' }}>📋 Importar Productos desde Texto Copiado</h4>
                         <p style={{ color: '#64748b', fontSize: '0.8rem', margin: 0 }}>
-                          Pega las filas en formato CSV o separado por tabuladores. Incluye la cabecera en la primera línea.
-                        </p>
-                        <p style={{ color: '#475569', fontSize: '0.78rem', fontWeight: 700, marginTop: '0.4rem', fontFamily: 'monospace', background: '#f1f5f9', padding: '0.4rem 0.6rem', borderRadius: '6px', display: 'inline-block' }}>
-                          Formato: Referencia,Categoria,Descripcion,Costo,Por Mayor,Detal,50 Unidades
+                          Pega las filas en formato CSV.
                         </p>
                       </div>
 
@@ -6063,160 +6221,7 @@ export default function Admin() {
               ) : (
                 /* PRODUCT LIST PANEL */
                 <div className="admin-panel">
-                  <div className="panel-header" style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', alignItems: 'stretch' }}>
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', width: '100%', flexWrap: 'wrap', gap: '1rem' }}>
-                      <div className="panel-header-actions" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                        {/* Menú Desplegable: Otras Opciones */}
-                        <div style={{ position: 'relative' }}>
-                          <button
-                            type="button"
-                            className="btn-secondary hover-lift"
-                            onClick={() => setShowCatalogOtherOptions(!showCatalogOtherOptions)}
-                            style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '0.45rem',
-                              height: '38px',
-                              padding: '0 1rem',
-                              borderRadius: '10px',
-                              border: '1.5px solid #cbd5e1',
-                              background: '#ffffff',
-                              color: '#475569',
-                              fontWeight: 700,
-                              fontSize: '0.82rem',
-                              cursor: 'pointer',
-                              boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
-                            }}
-                          >
-                            <Settings size={15} /> Otras Opciones <ChevronDown size={14} />
-                          </button>
-
-                          {showCatalogOtherOptions && (
-                            <div 
-                              style={{
-                                position: 'absolute',
-                                top: '115%',
-                                right: 0,
-                                width: '270px',
-                                background: '#ffffff',
-                                border: '1px solid #e2e8f0',
-                                borderRadius: '14px',
-                                boxShadow: '0 12px 30px -5px rgba(0,0,0,0.15)',
-                                zIndex: 100,
-                                padding: '0.55rem',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '0.4rem'
-                              }}
-                            >
-                              {/* Opción 1: Migrar de Empresa */}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setShowCatalogOtherOptions(false);
-                                  setShowMigrateProductsModal(true);
-                                  setSelectedSourceTenant('');
-                                  setSourceProducts([]);
-                                  setSelectedProductIdsToMigrate([]);
-                                }}
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '0.55rem',
-                                  padding: '0.6rem 0.75rem',
-                                  borderRadius: '8px',
-                                  border: 'none',
-                                  background: '#f0f9ff',
-                                  color: '#0284c7',
-                                  fontWeight: 700,
-                                  fontSize: '0.82rem',
-                                  cursor: 'pointer',
-                                  textAlign: 'left'
-                                }}
-                              >
-                                <PackageCheck size={16} color="#0ea5e9" />
-                                <span>Migrar de Empresa</span>
-                              </button>
-
-                              {/* Opción 2: Depurar Catálogo */}
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setShowCatalogOtherOptions(false);
-                                  setShowToolsModal(true);
-                                }}
-                                style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '0.55rem',
-                                  padding: '0.6rem 0.75rem',
-                                  borderRadius: '8px',
-                                  border: 'none',
-                                  background: '#fef2f2',
-                                  color: '#dc2626',
-                                  fontWeight: 700,
-                                  fontSize: '0.82rem',
-                                  cursor: 'pointer',
-                                  textAlign: 'left'
-                                }}
-                              >
-                                <Wrench size={16} color="#dc2626" />
-                                <span>Depurar Catálogo</span>
-                              </button>
-
-                              {/* Opción 3: Control Promocional */}
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', padding: '0.55rem 0.75rem', background: '#fff7ed', borderRadius: '8px', border: '1px solid #fed7aa' }}>
-                                <span style={{ fontWeight: 800, color: '#c2410c', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                  <Tag size={14} /> Descuento Promocional:
-                                </span>
-                                <select
-                                  value={configuracion?.descuento_promocional || 0}
-                                  onChange={async (e) => {
-                                    if (!configuracion) return;
-                                    const desc = Number(e.target.value);
-                                    const { error } = await supabase
-                                      .from('configuracion')
-                                      .update({ descuento_promocional: desc })
-                                      .eq('id', configuracion.id);
-                                    
-                                    if (error) {
-                                      showToast('Error al aplicar descuento: ' + error.message, 'error');
-                                    } else {
-                                      setConfiguracion({ ...configuracion, descuento_promocional: desc });
-                                      showToast(desc > 0 ? `Descuento del ${desc}% aplicado a todo el catálogo ✓` : 'Descuento promocional desactivado ✓');
-                                    }
-                                  }}
-                                  style={{ border: '1px solid #fdba74', borderRadius: '6px', padding: '0.3rem 0.45rem', outline: 'none', background: 'white', color: '#c2410c', fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem', width: '100%' }}
-                                >
-                                  <option value={0}>Sin Descuento</option>
-                                  <option value={5}>Bajar 5%</option>
-                                  <option value={10}>Bajar 10%</option>
-                                  <option value={20}>Bajar 20%</option>
-                                </select>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Ordenamiento */}
-                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                      <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600, whiteSpace: 'nowrap' }}>Ordenar por:</span>
-                      <select
-                        value={productSort}
-                        onChange={e => setProductSort(e.target.value)}
-                        style={{ padding: '0.4rem 0.7rem', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none', fontSize: '0.84rem', background: 'white', color: '#334155', fontWeight: 600, cursor: 'pointer', height: '34px' }}
-                      >
-                        <option value="recientes">Más recientes</option>
-                        <option value="alfabetico">A-Z</option>
-                        <option value="visibles">Solo Visibles</option>
-                        <option value="ocultos">Solo Ocultos</option>
-                        <option value="con_fotos">Con fotos</option>
-                      </select>
-                    </div>
-                  </div>
-                <div className="panel-body">
+                  <div className="panel-body">
                   {filteredProducts.length === 0 ? (
                     <div className="empty-state" style={{ padding: '4rem 2rem' }}>
                       <div className="empty-icon"><Package size={48} /></div>
