@@ -1275,8 +1275,94 @@ export default function MenuDigital() {
           </div>
         )}
 
+        {/* ── Dynamic Wholesale Progress Incentive Banner ── */}
+        <div style={{
+          background: totalUnits >= 6 
+            ? 'linear-gradient(135deg, #10b981 0%, #059669 100%)' 
+            : totalUnits >= 4 
+            ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)' 
+            : 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+          color: '#ffffff',
+          padding: '0.85rem 1.15rem',
+          borderRadius: '16px',
+          marginBottom: '1.25rem',
+          boxShadow: '0 4px 15px rgba(0,0,0,0.12)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.5rem',
+          transition: 'all 0.3s ease'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <span style={{ fontSize: '1.4rem' }}>
+                {totalUnits >= 6 ? '🎉' : totalUnits >= 4 ? '🎉' : '🛍️'}
+              </span>
+              <div>
+                <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 800, color: 'white' }}>
+                  {totalUnits >= 6 
+                    ? '¡Felicitaciones! Ahora tienes Precios Mayoristas' 
+                    : totalUnits >= 4 
+                    ? '¡Ya casi obtienes precios de mayorista!' 
+                    : 'Compra al Detal y Por Mayor Unificada'}
+                </h4>
+                <p style={{ margin: 0, fontSize: '0.8rem', opacity: 0.95, fontWeight: 500, lineHeight: '1.25' }}>
+                  {totalUnits >= 6 
+                    ? 'Todos tus productos se calculan con tarifa especial de mayorista.' 
+                    : totalUnits >= 4 
+                    ? `Solo agrega ${6 - totalUnits} ${6 - totalUnits === 1 ? 'producto más' : 'productos más'}.` 
+                    : totalUnits === 0 
+                    ? 'Agrega productos al carrito. Al completar 6 o más, obtienes precios por mayor automáticamente.'
+                    : `Llevas ${totalUnits} ${totalUnits === 1 ? 'producto' : 'productos'}. Te faltan ${6 - totalUnits} para obtener precios de mayorista.`}
+                </p>
+              </div>
+            </div>
+            {totalUnits >= 4 && totalUnits < 6 && (
+              <button
+                type="button"
+                onClick={() => {
+                  const el = document.getElementById('catalog-products-grid');
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+                style={{
+                  background: '#ffffff',
+                  color: '#d97706',
+                  border: 'none',
+                  padding: '0.4rem 0.8rem',
+                  borderRadius: '20px',
+                  fontWeight: 800,
+                  fontSize: '0.78rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                  whiteSpace: 'nowrap'
+                }}
+              >
+                💡 Ver productos recomendados
+              </button>
+            )}
+          </div>
+
+          {/* Progress Bar Visual */}
+          {totalUnits < 6 && (
+            <div style={{ marginTop: '0.15rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', fontWeight: 700, marginBottom: '0.2rem', opacity: 0.9 }}>
+                <span>Productos en carrito: {totalUnits}/6</span>
+                <span>{Math.round((totalUnits / 6) * 100)}% completado</span>
+              </div>
+              <div style={{ height: '7px', background: 'rgba(255,255,255,0.3)', borderRadius: '4px', overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%',
+                  width: `${Math.min(100, (totalUnits / 6) * 100)}%`,
+                  background: '#ffffff',
+                  borderRadius: '4px',
+                  transition: 'width 0.4s ease'
+                }} />
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Product List */}
-        <div className="menu-list">
+        <div id="catalog-products-grid" className="menu-list">
           {cargando ? (
             <div className="menu-loading">
               <Loader2 className="spinner" size={32} />
@@ -1403,11 +1489,21 @@ export default function MenuDigital() {
       {/* Floating Cart Button */}
       {totalItems > 0 && !isCartOpen && (
         <>
-          {buyerType === 'mayorista' && totalUnits < 6 && (
-            <div style={{ position: 'fixed', bottom: '85px', right: '1.25rem', zIndex: 998, background: 'rgba(15, 23, 42, 0.95)', color: 'white', padding: '0.45rem 0.85rem', borderRadius: '20px', fontSize: '0.76rem', fontWeight: 800, boxShadow: '0 4px 14px rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', gap: '0.4rem', border: '1px solid #38bdf8', backdropFilter: 'blur(6px)' }}>
-              <span>📦 Te faltan <strong style={{ color: '#38bdf8' }}>{6 - totalUnits}</strong> {6 - totalUnits === 1 ? 'unidad' : 'unidades'} para compra por mayor (Mín 6 U)</span>
-            </div>
-          )}
+          <div style={{
+            position: 'fixed', bottom: '85px', right: '1.25rem', zIndex: 998,
+            background: totalUnits >= 6 ? 'linear-gradient(135deg, #10b981, #059669)' : totalUnits >= 4 ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'rgba(15, 23, 42, 0.95)',
+            color: 'white', padding: '0.45rem 0.85rem', borderRadius: '20px', fontSize: '0.76rem', fontWeight: 800,
+            boxShadow: '0 4px 14px rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', gap: '0.4rem',
+            border: '1px solid rgba(255,255,255,0.2)', backdropFilter: 'blur(6px)'
+          }}>
+            {totalUnits >= 6 ? (
+              <span>🎉 ¡Felicitaciones! Precios mayorista aplicados ({totalUnits} unds)</span>
+            ) : totalUnits >= 4 ? (
+              <span>🎉 ¡Ya casi! Agrega <strong style={{ color: '#fde047' }}>{6 - totalUnits}</strong> más para Precio Mayorista</span>
+            ) : (
+              <span>🛍️ Te faltan <strong style={{ color: '#38bdf8' }}>{6 - totalUnits}</strong> productos para Precio Mayorista</span>
+            )}
+          </div>
           <button className="floating-cart-btn" onClick={() => setIsCartOpen(true)}>
             <div className="cart-icon-wrapper">
               <ShoppingBag size={22} />
