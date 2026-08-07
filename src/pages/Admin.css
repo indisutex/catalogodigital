@@ -1742,57 +1742,72 @@ body {
     z-index: 999 !important;
   }
   .admin-topbar {
-    padding: 0.65rem 0.85rem !important;
+    padding: 0.4rem 0.65rem !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
     justify-content: space-between !important;
-    gap: 0.5rem !important;
-    min-height: auto !important;
-    flex-wrap: wrap !important;
+    gap: 0.35rem !important;
+    min-height: 56px !important;
     box-sizing: border-box !important;
   }
   .topbar-title {
-    flex-wrap: wrap !important;
-    flex: 1 1 100% !important;
-    width: 100% !important;
-    gap: 0.45rem !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    flex: 1 1 auto !important;
+    width: auto !important;
+    gap: 0.35rem !important;
+    min-width: 0 !important;
   }
   .topbar-left-info {
-    flex: 1 !important;
+    flex: 0 0 auto !important;
     display: flex !important;
     align-items: center !important;
-    gap: 0.4rem !important;
+    gap: 0.3rem !important;
     min-width: 0 !important;
+  }
+  .topbar-left-info h2 {
+    font-size: 0.85rem !important;
+    white-space: nowrap !important;
   }
   .topbar-divider {
     display: none !important;
   }
-  .topbar-filters-wrapper,
-  .topbar-form-inline,
-  .topbar-form-material {
-    width: 100% !important;
-    flex: 1 1 100% !important;
-    justify-content: flex-start !important;
-    gap: 0.4rem !important;
-    flex-wrap: wrap !important;
-    margin-top: 0.25rem !important;
-  }
-  .topbar-filters-wrapper > div,
-  .topbar-form-material > div,
-  .topbar-form-inline > div {
-    flex: 1 1 100% !important;
-    max-width: 100% !important;
+  .topbar-filters-wrapper {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    flex: 1 1 auto !important;
+    width: auto !important;
+    gap: 0.35rem !important;
+    margin-top: 0 !important;
     min-width: 0 !important;
   }
-  .topbar-form-inline button[type="submit"],
-  .topbar-form-material button[type="submit"] {
-    width: 100% !important;
+  .topbar-filters-wrapper > div:first-child {
+    flex: 1 1 auto !important;
+    min-width: 70px !important;
     max-width: 100% !important;
-    margin-top: 0.2rem !important;
-    box-sizing: border-box !important;
+    height: 36px !important;
+    padding: 0 0.45rem !important;
+  }
+  .topbar-filters-wrapper > div:first-child input {
+    font-size: 0.78rem !important;
+  }
+  .topbar-filters-wrapper > button {
+    flex: 0 0 auto !important;
+    height: 36px !important;
+    padding: 0 0.55rem !important;
+    font-size: 0.75rem !important;
+    white-space: nowrap !important;
   }
   .topbar-actions {
-    margin-left: auto !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    margin-left: 0 !important;
     flex-shrink: 0 !important;
-    gap: 0.4rem !important;
+    gap: 0.25rem !important;
   }
 
 
