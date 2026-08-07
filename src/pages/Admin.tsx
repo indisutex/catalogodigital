@@ -2725,7 +2725,7 @@ export default function Admin() {
       }));
   }, [productos]);
 
-  const filteredPedidos = useMemo(() => {
+  const allFilteredPedidos = useMemo(() => {
     let result = [...pedidos];
 
     if (orderSearchQuery) {
@@ -2747,29 +2747,6 @@ export default function Admin() {
           return 0;
         });
       }
-
-    if (orderFilterStatus !== 'todos') {
-      if (orderFilterStatus === 'comprobante') {
-        result = result.filter(p => !!p.pantallazo_url && p.estado !== 'completado');
-      } else if (orderFilterStatus === 'esperando_pago') {
-        result = result.filter(p =>
-          !p.pantallazo_url &&
-          p.estado !== 'completado' &&
-          p.metodo_pago !== 'Contra Entrega' &&
-          !(p.metodo_pago && p.metodo_pago.toLowerCase().includes('contra'))
-        );
-      } else if (orderFilterStatus === 'contra_entrega') {
-        result = result.filter(p =>
-          (p.metodo_pago === 'Contra Entrega' || (p.metodo_pago && p.metodo_pago.toLowerCase().includes('contra'))) &&
-          p.estado !== 'completado'
-        );
-      } else if (orderFilterStatus === 'exitosas') {
-        result = result.filter(p => p.estado === 'completado');
-      } else if (orderFilterStatus === 'abandonados') {
-        // Los abandonados son leads, no pedidos — no filtrar aquí
-        result = [];
-      }
-    }
 
     if (orderFilterOrigin !== 'todos') {
       result = result.filter(p => {
@@ -2811,7 +2788,7 @@ export default function Admin() {
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       }
       if (orderSortBy === 'date_asc') {
-        return new Date(a.created_at).getTime() - new Date(a.created_at).getTime();
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       }
       if (orderSortBy === 'total_desc') {
         return b.total - a.total;
@@ -2823,7 +2800,43 @@ export default function Admin() {
     });
 
     return result;
-  }, [pedidos, orderSearchQuery, orderFilterStatus, orderFilterOrigin, orderFilterAsesor, orderFilterDate, orderSortBy, role, loggedAsesorPhone]);
+  }, [pedidos, orderSearchQuery, orderFilterOrigin, role, loggedAsesorPhone, orderFilterAsesor, orderFilterDate, orderSortBy]);
+
+  const filteredPedidos = useMemo(() => {
+    let result = [...allFilteredPedidos];
+
+    const getMetodo = (p: Pedido) => {
+      if (p.metodo_pago) return p.metodo_pago;
+      if (Array.isArray(p.productos) && (p.productos[0] as any)?._metodo_pago) return (p.productos[0] as any)._metodo_pago;
+      if (typeof p.productos === 'object' && (p.productos as any)?._metodo_pago) return (p.productos as any)._metodo_pago;
+      return '';
+    };
+
+    if (orderFilterStatus !== 'todos') {
+      if (orderFilterStatus === 'comprobante') {
+        result = result.filter(p => {
+          const mp = getMetodo(p);
+          return !!p.pantallazo_url && p.estado !== 'completado' && mp !== 'Contra Entrega' && !(mp && mp.toLowerCase().includes('contra'));
+        });
+      } else if (orderFilterStatus === 'esperando_pago') {
+        result = result.filter(p => {
+          const mp = getMetodo(p);
+          return !p.pantallazo_url && p.estado !== 'completado' && mp !== 'Contra Entrega' && !(mp && mp.toLowerCase().includes('contra'));
+        });
+      } else if (orderFilterStatus === 'contra_entrega') {
+        result = result.filter(p => {
+          const mp = getMetodo(p);
+          return (mp === 'Contra Entrega' || (mp && mp.toLowerCase().includes('contra'))) && p.estado !== 'completado';
+        });
+      } else if (orderFilterStatus === 'exitosas') {
+        result = result.filter(p => p.estado === 'completado');
+      } else if (orderFilterStatus === 'abandonados') {
+        result = [];
+      }
+    }
+
+    return result;
+  }, [allFilteredPedidos, orderFilterStatus]);
 
   // Dashboard Calculations
   const stats = useMemo(() => {
@@ -3411,29 +3424,29 @@ export default function Admin() {
   };
 
   const contraEntregaFiltrados = useMemo(() => {
-    return filteredPedidos.filter(p => {
+    return allFilteredPedidos.filter(p => {
       const mp = getMetodoPago(p);
       return (mp === 'Contra Entrega' || (mp && mp.toLowerCase().includes('contra'))) && p.estado !== 'completado';
     });
-  }, [filteredPedidos]);
+  }, [allFilteredPedidos]);
 
   const pendientePagoFiltrados = useMemo(() => {
-    return filteredPedidos.filter(p => {
+    return allFilteredPedidos.filter(p => {
       const mp = getMetodoPago(p);
       return !p.pantallazo_url && p.estado !== 'completado' && mp !== 'Contra Entrega' && !(mp && mp.toLowerCase().includes('contra'));
     });
-  }, [filteredPedidos]);
+  }, [allFilteredPedidos]);
 
   const comprobarPagosFiltrados = useMemo(() => {
-    return filteredPedidos.filter(p => {
+    return allFilteredPedidos.filter(p => {
       const mp = getMetodoPago(p);
       return p.pantallazo_url && p.estado !== 'completado' && mp !== 'Contra Entrega' && !(mp && mp.toLowerCase().includes('contra'));
     });
-  }, [filteredPedidos]);
+  }, [allFilteredPedidos]);
 
   const clientesFiltrados = useMemo(() => {
-    return filteredPedidos.filter(p => p.estado === 'completado' && p.origen !== 'pos');
-  }, [filteredPedidos]);
+    return allFilteredPedidos.filter(p => p.estado === 'completado' && p.origen !== 'pos');
+  }, [allFilteredPedidos]);
 
   const handleDropKanban = async (e: React.DragEvent, targetCol: string) => {
     e.preventDefault();
