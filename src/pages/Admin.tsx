@@ -5138,9 +5138,9 @@ export default function Admin() {
                 {/* Divisor vertical */}
                 <div style={{ width: '1px', height: '24px', background: '#cbd5e1', flexShrink: 0, margin: '0 0.2rem' }} />
 
-                {/* Buscador y Filtros inline alineados a la izquierda */}
+                {/* Buscador y Filtros inline alineados a la derecha */}
                 {activeTab === 'pedidos' ? (
-                  <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-start' }}>
+                  <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-end' }}>
                     {/* Buscador de Pedidos Directo */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', minWidth: '190px', flex: '0 1 240px', maxWidth: '280px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', transition: 'all 0.2s' }}>
                       <Search size={15} style={{ color: '#00a6f9', flexShrink: 0 }} />
@@ -5236,7 +5236,7 @@ export default function Admin() {
                     </div>
                   </div>
                 ) : activeTab === 'productos' ? (
-                  <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-start' }}>
+                  <div style={{ display: 'flex', gap: '0.65rem', alignItems: 'center', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-end' }}>
                     {/* Buscador de Productos Directo */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', minWidth: '190px', flex: '0 1 240px', maxWidth: '280px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', transition: 'all 0.2s' }}>
                       <Search size={15} style={{ color: '#00a6f9', flexShrink: 0 }} />
@@ -5403,7 +5403,7 @@ export default function Admin() {
                     </div>
                   </div>
                 ) : activeTab === 'material_apoyo' ? (
-                  <form onSubmit={handleCrearMaterial} style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-end', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-start' }}>
+                  <form onSubmit={handleCrearMaterial} style={{ display: 'flex', gap: '0.65rem', alignItems: 'flex-end', flexWrap: 'wrap', flex: 1, justifyContent: 'flex-end' }}>
                     {/* Campo 1: Título */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', flex: '1 1 180px', minWidth: '160px', maxWidth: '240px' }}>
                       <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569', whiteSpace: 'nowrap' }}>Título del Recurso</label>
