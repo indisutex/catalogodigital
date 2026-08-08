@@ -1309,18 +1309,18 @@ export default function Admin() {
                 handleUpdateLeadStatus(ped.id, 'contactado');
               }}
               style={{
-                padding: '0.55rem 0.55rem',
+                padding: '0.6rem 0.75rem',
                 borderRadius: '10px',
                 border: 'none',
                 background: 'linear-gradient(135deg, #10b981, #059669)',
                 color: '#ffffff',
-                fontSize: '0.76rem',
+                fontSize: '0.8rem',
                 fontWeight: 600,
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.25rem',
+                gap: '0.3rem',
                 boxShadow: '0 3px 10px rgba(16, 185, 129, 0.3)',
                 whiteSpace: 'nowrap',
                 flex: 1,
@@ -1329,7 +1329,7 @@ export default function Admin() {
                 textOverflow: 'ellipsis'
               }}
             >
-              <span style={{ fontSize: '0.85rem' }}>💭</span>
+              <span style={{ fontSize: '0.85rem', flexShrink: 0 }}>💭</span>
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>Recuperar venta</span>
               <ChevronRight size={13} color="#ffffff" style={{ flexShrink: 0 }} />
             </button>
@@ -1338,18 +1338,18 @@ export default function Admin() {
               type="button" 
               onClick={() => setSelectedPedido(ped)}
               style={{
-                padding: '0.55rem 0.55rem',
+                padding: '0.6rem 0.75rem',
                 borderRadius: '10px',
                 border: 'none',
                 background: 'linear-gradient(135deg, #ff5722, #ea580c)',
                 color: '#ffffff',
-                fontSize: '0.76rem',
+                fontSize: '0.8rem',
                 fontWeight: 600,
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.25rem',
+                gap: '0.3rem',
                 boxShadow: '0 3px 10px rgba(234, 88, 12, 0.3)',
                 whiteSpace: 'nowrap',
                 flex: 1,
@@ -1366,21 +1366,24 @@ export default function Admin() {
               type="button" 
               onClick={() => setSelectedPedido(ped)}
               style={{
-                padding: '0.65rem 0.95rem',
-                borderRadius: '12px',
+                padding: '0.6rem 0.75rem',
+                borderRadius: '10px',
                 border: 'none',
                 background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
                 color: '#ffffff',
-                fontSize: '0.85rem',
+                fontSize: '0.8rem',
                 fontWeight: 600,
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.35rem',
+                gap: '0.3rem',
                 boxShadow: '0 4px 14px rgba(59, 130, 246, 0.35)',
                 whiteSpace: 'nowrap',
-                flex: 1
+                flex: 1,
+                minWidth: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
               }}
             >
               <span>👁️ Ver Factura</span>
@@ -1390,21 +1393,24 @@ export default function Admin() {
               type="button" 
               onClick={() => setSelectedPedido(ped)}
               style={{
-                padding: '0.65rem 0.95rem',
-                borderRadius: '12px',
+                padding: '0.6rem 0.75rem',
+                borderRadius: '10px',
                 border: 'none',
                 background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
                 color: '#ffffff',
-                fontSize: '0.85rem',
+                fontSize: '0.8rem',
                 fontWeight: 600,
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.35rem',
+                gap: '0.3rem',
                 boxShadow: '0 4px 14px rgba(59, 130, 246, 0.35)',
                 whiteSpace: 'nowrap',
-                flex: 1
+                flex: 1,
+                minWidth: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
               }}
             >
               <span>💳 Verificar Pago</span>
@@ -1425,21 +1431,24 @@ export default function Admin() {
                 window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`, '_blank');
               }}
               style={{
-                padding: '0.65rem 0.95rem',
-                borderRadius: '12px',
+                padding: '0.6rem 0.75rem',
+                borderRadius: '10px',
                 border: 'none',
                 background: 'linear-gradient(135deg, #10b981, #059669)',
                 color: '#ffffff',
-                fontSize: '0.85rem',
+                fontSize: '0.8rem',
                 fontWeight: 600,
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.35rem',
+                gap: '0.3rem',
                 boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
                 whiteSpace: 'nowrap',
-                flex: 1
+                flex: 1,
+                minWidth: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
               }}
             >
               <span>📲 Recordar Pago</span>
