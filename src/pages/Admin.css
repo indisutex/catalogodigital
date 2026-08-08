@@ -1793,7 +1793,7 @@ body {
     gap: 0.35rem !important;
     margin-top: 0 !important;
     min-width: 0 !important;
-    overflow-x: auto !important;
+    overflow: visible !important;
     -webkit-overflow-scrolling: touch !important;
     scrollbar-width: none !important;
   }

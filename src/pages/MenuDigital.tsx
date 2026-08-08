@@ -8,7 +8,7 @@ import PqrsModal from '../components/PqrsModal';
 import { getOptimizedImageUrl } from '../lib/imageOptimizer';
 import { PromoWelcomeBanner as TemuWelcomeBanner } from '../components/NochePerfectaGameModal';
 import { JuegosHubModal } from '../components/JuegosHubModal';
-import { TemuOfferToast, TemuStickyHeaderBar } from '../components/TemuOfferBanner';
+import { TemuStickyHeaderBar } from '../components/TemuOfferBanner';
 import './MenuDigital.css';
 
 // Ejecutar sincrónicamente para evitar parpadeo de color
@@ -1404,31 +1404,14 @@ export default function MenuDigital() {
 
       {/* Floating Cart Button */}
       {totalItems > 0 && !isCartOpen && (
-        <>
-          <div style={{
-            position: 'fixed', bottom: '85px', right: '1.25rem', zIndex: 998,
-            background: totalUnits >= 6 ? 'linear-gradient(135deg, #10b981, #059669)' : totalUnits >= 4 ? 'linear-gradient(135deg, #f59e0b, #d97706)' : 'rgba(15, 23, 42, 0.95)',
-            color: 'white', padding: '0.45rem 0.85rem', borderRadius: '20px', fontSize: '0.76rem', fontWeight: 800,
-            boxShadow: '0 4px 14px rgba(0,0,0,0.25)', display: 'flex', alignItems: 'center', gap: '0.4rem',
-            border: '1px solid rgba(255,255,255,0.2)', backdropFilter: 'blur(6px)'
-          }}>
-            {totalUnits >= 6 ? (
-              <span>🎉 ¡Felicitaciones! Precios mayorista aplicados ({totalUnits} unds)</span>
-            ) : totalUnits >= 4 ? (
-              <span>🎉 ¡Ya casi! Agrega <strong style={{ color: '#fde047' }}>{6 - totalUnits}</strong> más para Precio Mayorista</span>
-            ) : (
-              <span>🛍️ Te faltan <strong style={{ color: '#38bdf8' }}>{6 - totalUnits}</strong> productos para Precio Mayorista</span>
-            )}
+        <button className="floating-cart-btn" onClick={() => setIsCartOpen(true)}>
+          <div className="cart-icon-wrapper">
+            <ShoppingBag size={22} />
+            <span className="cart-badge">{totalItems}</span>
+            <span>Ver Carrito</span>
           </div>
-          <button className="floating-cart-btn" onClick={() => setIsCartOpen(true)}>
-            <div className="cart-icon-wrapper">
-              <ShoppingBag size={22} />
-              <span className="cart-badge">{totalItems}</span>
-              <span>Ver Carrito</span>
-            </div>
-            <span className="cart-total-float">${total.toLocaleString('es-CO')}</span>
-          </button>
-        </>
+          <span className="cart-total-float">${total.toLocaleString('es-CO')}</span>
+        </button>
       )}
 
       {/* Cart Modal */}
@@ -1450,19 +1433,19 @@ export default function MenuDigital() {
 
             {/* Temu Multi-Tier Offer Progress Bar inside Cart */}
             {items.length > 0 && (
-              <div className="shrine-shipping-bar" style={{ padding: '0.65rem 1.1rem', background: '#ffffff', color: '#0f172a', borderBottom: '1.5px solid var(--primary, #6366f1)' }}>
+              <div className="shrine-shipping-bar" style={{ padding: '0.75rem 1.1rem', background: '#ffffff', color: '#0f172a', borderBottom: '1px solid #f1f5f9' }}>
                 {(() => {
                   if (totalUnits < 6) {
                     const remaining = 6 - totalUnits;
                     const pct = Math.min(100, (totalUnits / 6) * 100);
                     return (
-                      <div>
-                        <p style={{ margin: '0 0 0.4rem 0', fontSize: '0.8rem', fontWeight: 700, color: '#1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
-                          <span>🔥 Te faltan <strong style={{ color: 'var(--primary, #6366f1)' }}>{remaining} {remaining === 1 ? 'prenda' : 'prendas'}</strong> para <strong>POR MAYOR</strong></span>
-                          <span style={{ fontSize: '0.72rem', background: 'var(--primary, #6366f1)', padding: '0.15rem 0.5rem', borderRadius: '10px', color: '#ffffff', fontWeight: 800, whiteSpace: 'nowrap', flexShrink: 0 }}>{totalUnits}/6 unds</span>
-                        </p>
-                        <div style={{ height: '8px', background: '#e2e8f0', borderRadius: '6px', overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${pct}%`, background: 'var(--primary, #6366f1)', transition: 'width 0.3s ease' }} />
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', fontSize: '0.88rem', fontWeight: 800, color: '#0f172a' }}>
+                          <span>🔥 Te faltan <strong style={{ color: '#00a6f9' }}>{remaining} {remaining === 1 ? 'prenda' : 'prendas'}</strong> para <strong>POR MAYOR</strong></span>
+                          <span style={{ fontSize: '0.78rem', background: '#00a6f9', padding: '0.25rem 0.75rem', borderRadius: '20px', color: '#ffffff', fontWeight: 900, whiteSpace: 'nowrap', flexShrink: 0 }}>{totalUnits}/6 unds</span>
+                        </div>
+                        <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '6px', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${pct}%`, background: '#00a6f9', borderRadius: '6px', transition: 'width 0.3s ease' }} />
                         </div>
                       </div>
                     );
@@ -1470,21 +1453,21 @@ export default function MenuDigital() {
                     const remaining50 = 50 - totalUnits;
                     const pct50 = Math.min(100, Math.round(((totalUnits - 6) / 44) * 100));
                     return (
-                      <div>
-                        <p style={{ margin: '0 0 0.4rem 0', fontSize: '0.8rem', fontWeight: 700, color: '#1e293b', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem' }}>
-                          <span>🎉 <strong>¡Por Mayor Activo!</strong> Te faltan <strong style={{ color: '#d97706' }}>{remaining50} prendas</strong> para <strong>50+ Unidades</strong></span>
-                          <span style={{ fontSize: '0.72rem', background: '#10b981', padding: '0.15rem 0.5rem', borderRadius: '10px', color: '#ffffff', fontWeight: 800, whiteSpace: 'nowrap', flexShrink: 0 }}>{totalUnits}/50 unds</span>
-                        </p>
-                        <div style={{ height: '8px', background: '#e2e8f0', borderRadius: '6px', overflow: 'hidden' }}>
-                          <div style={{ height: '100%', width: `${pct50}%`, background: 'linear-gradient(90deg, #10b981, #f59e0b)', transition: 'width 0.3s ease' }} />
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.5rem', fontSize: '0.88rem', fontWeight: 800, color: '#0f172a' }}>
+                          <span>🎉 <strong>¡Por Mayor Activo!</strong> Te faltan <strong style={{ color: '#00a6f9' }}>{remaining50} prendas</strong> para <strong>50+ Unidades</strong></span>
+                          <span style={{ fontSize: '0.78rem', background: '#10b981', padding: '0.25rem 0.75rem', borderRadius: '20px', color: '#ffffff', fontWeight: 900, whiteSpace: 'nowrap', flexShrink: 0 }}>{totalUnits}/50 unds</span>
+                        </div>
+                        <div style={{ height: '6px', background: '#e2e8f0', borderRadius: '6px', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${pct50}%`, background: 'linear-gradient(90deg, #10b981, #00a6f9)', borderRadius: '6px', transition: 'width 0.3s ease' }} />
                         </div>
                       </div>
                     );
                   } else {
                     return (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#d97706', fontSize: '0.82rem', fontWeight: 800 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', color: '#10b981', fontSize: '0.85rem', fontWeight: 800 }}>
                         <span>🏆 ¡MÁXIMO DESCUENTO ACTIVADO (50+ PRENDAS)!</span>
-                        <span style={{ background: '#f59e0b', color: '#ffffff', padding: '0.15rem 0.5rem', borderRadius: '10px', fontSize: '0.72rem', whiteSpace: 'nowrap', flexShrink: 0 }}>✅ {totalUnits} unds</span>
+                        <span style={{ background: '#10b981', color: '#ffffff', padding: '0.25rem 0.75rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 900, whiteSpace: 'nowrap', flexShrink: 0 }}>✅ {totalUnits} unds</span>
                       </div>
                     );
                   }
@@ -2281,8 +2264,7 @@ export default function MenuDigital() {
         </>
       )}
 
-      {/* Temu-Style Offer Toast */}
-      <TemuOfferToast />
+
     </div>
   );
 }
