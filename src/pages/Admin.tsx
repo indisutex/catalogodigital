@@ -1010,13 +1010,23 @@ export default function Admin() {
                   </span>
                 )}
               </div>
-              <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.78rem', color: '#64748b', fontWeight: 400 }}>
-                Cantidad: {firstProd.cantidad || 1} {firstProd.cantidad === 1 ? 'unidad' : 'unidades'}
-              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.2rem', flexWrap: 'wrap' }}>
+                <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b', fontWeight: 400 }}>
+                  Cantidad: {firstProd.cantidad || 1} {firstProd.cantidad === 1 ? 'unidad' : 'unidades'}
+                </p>
+                {parsedProds.length > 1 && (
+                  <span 
+                    onClick={() => setSelectedPedido(ped)}
+                    style={{ position: 'relative', zIndex: 2, fontSize: '0.72rem', fontWeight: 600, color: '#ea580c', background: '#ffffff', padding: '0.2rem 0.55rem', borderRadius: '8px', border: '1px solid #ffedd5', cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
+                  >
+                    + Ver {parsedProds.length - 1} más
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* 3D Box Vector Graphic + (Billetes Verdes 💵 + Relojito 🕒 EXCLUSIVAMENTE en Pendiente por Pago) */}
-            <div style={{ position: 'absolute', right: '-4px', bottom: '-4px', pointerEvents: 'none', zIndex: 0, opacity: 0.95 }}>
+            <div style={{ position: 'absolute', right: '-4px', bottom: '-4px', pointerEvents: 'none', zIndex: 0, opacity: 0.45 }}>
               <svg width="90" height="82" viewBox="0 0 115 100" fill="none" style={{ overflow: 'visible' }} xmlns="http://www.w3.org/2000/svg">
                 <defs>
                   {/* Cardboard Box Gradients */}
@@ -1085,16 +1095,40 @@ export default function Admin() {
                 {/* Floor Shadow con pulso de respiración */}
                 <ellipse cx="62" cy="85" rx="38" ry="7" fill="#000000" opacity="0.12" className="box-shadow-pulse" />
 
-                {/* ── 1. CAJA DE CARTÓN 3D (RENDERIZADA AL FONDO / ATRÁS) ── */}
+                {/* ── 1. CAJA DE CARTÓN 3D (Caja Sellada vs Caja Abierta en Abandonados/Leads) ── */}
                 <g transform="translate(24, 0)" className="box-floating-group">
                   {/* Left Face */}
                   <path d="M 15 42 L 50 60 L 50 84 L 15 66 Z" fill="url(#boxLeftGrad)" />
                   {/* Right Face */}
                   <path d="M 50 60 L 85 42 L 85 66 L 50 84 Z" fill="url(#boxRightGrad)" />
-                  {/* Top Face */}
-                  <path d="M 50 20 L 85 38 L 50 56 L 15 38 Z" fill="url(#boxTopGrad)" />
-                  {/* Tape Across Top */}
-                  <path d="M 33 29 L 67 47 L 67 39 L 33 21 Z" fill="url(#tapeGrad)" />
+
+                  {isLead ? (
+                    /* 📦 CAJA DESARMADA / ABIERTA (SOLAPAS DESPLEGADAS EN CARRO ABANDONADO) */
+                    <>
+                      {/* Dark Interior Cavity */}
+                      <polygon points="15,42 50,60 85,42 50,24" fill="#5c3a19" />
+                      <polygon points="18,43 50,57 82,43 50,28" fill="#3d240e" />
+
+                      {/* Back Left Flap */}
+                      <path d="M 50 24 L 15 42 L 3 28 L 38 10 Z" fill="#e4bf9a" stroke="#b3824f" strokeWidth="0.8" />
+                      {/* Back Right Flap */}
+                      <path d="M 50 24 L 85 42 L 97 28 L 62 10 Z" fill="#d9b28b" stroke="#a37443" strokeWidth="0.8" />
+
+                      {/* Front Left Flap */}
+                      <path d="M 15 42 L 50 60 L 38 74 L 3 56 Z" fill="#eed0b0" stroke="#c29160" strokeWidth="0.8" />
+                      {/* Front Right Flap */}
+                      <path d="M 50 60 L 85 42 L 97 56 L 62 74 Z" fill="#dfb489" stroke="#a37443" strokeWidth="0.8" />
+                    </>
+                  ) : (
+                    /* 📦 CAJA CERRADA / SELLADA CON CINTA */
+                    <>
+                      {/* Top Face */}
+                      <path d="M 50 20 L 85 38 L 50 56 L 15 38 Z" fill="url(#boxTopGrad)" />
+                      {/* Tape Across Top */}
+                      <path d="M 33 29 L 67 47 L 67 39 L 33 21 Z" fill="url(#tapeGrad)" />
+                    </>
+                  )}
+
                   {/* Center Seams */}
                   <path d="M 50 60 L 50 84" stroke="rgba(0,0,0,0.18)" strokeWidth="1.5" />
                   <path d="M 15 42 L 50 60 L 85 42" stroke="rgba(0,0,0,0.1)" strokeWidth="1" />
@@ -1133,6 +1167,31 @@ export default function Admin() {
                   </g>
                 )}
 
+                {/* ── 2.5 COMPROBANTE RECIBIDO (RECIBITO AZUL ANIMADO EN FRENTE DE LA CAJA 3D) ── */}
+                {(ped.pantallazo_url && ped.estado !== 'completado') && (
+                  <g transform="translate(4, 30)">
+                    <style>{`
+                      @keyframes blueGlowPulse {
+                        0% { filter: drop-shadow(0 0 0px rgba(59, 130, 246, 0)); transform: translateY(0); }
+                        50% { filter: drop-shadow(0 0 7px rgba(59, 130, 246, 0.9)); transform: translateY(-2px); }
+                        100% { filter: drop-shadow(0 0 0px rgba(59, 130, 246, 0)); transform: translateY(0); }
+                      }
+                      .animated-blue-receipt {
+                        animation: blueGlowPulse 2.2s ease-in-out infinite;
+                      }
+                    `}</style>
+                    <g className="animated-blue-receipt">
+                      <circle cx="14" cy="14" r="14" fill="#ffffff" stroke="#3b82f6" strokeWidth="2.5" />
+                      <circle cx="14" cy="14" r="11.5" fill="#eff6ff" />
+                      {/* Document / Receipt Ticket Icon */}
+                      <rect x="8.5" y="7" width="11" height="14" rx="2" fill="#3b82f6" />
+                      <line x1="11" y1="10" x2="17" y2="10" stroke="#ffffff" strokeWidth="1.4" strokeLinecap="round" />
+                      <line x1="11" y1="13" x2="17" y2="13" stroke="#ffffff" strokeWidth="1.4" strokeLinecap="round" />
+                      <line x1="11" y1="16" x2="14.5" y2="16" stroke="#ffffff" strokeWidth="1.4" strokeLinecap="round" />
+                    </g>
+                  </g>
+                )}
+
                 {/* ── 3. VENTAS EXITOSAS (BILLETES Y CHULITO VERDE EN FRENTE DE LA CAJA) ── */}
                 {ped.estado === 'completado' && (
                   <>
@@ -1162,15 +1221,6 @@ export default function Admin() {
                 )}
               </svg>
             </div>
-
-            {parsedProds.length > 1 && (
-              <span 
-                onClick={() => setSelectedPedido(ped)}
-                style={{ position: 'relative', zIndex: 2, fontSize: '0.74rem', fontWeight: 600, color: '#ea580c', background: '#ffffff', padding: '0.3rem 0.65rem', borderRadius: '10px', border: '1px solid #ffedd5', cursor: 'pointer', whiteSpace: 'nowrap' }}
-              >
-                + Ver {parsedProds.length - 1} más
-              </span>
-            )}
           </div>
         ) : (
           <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '14px', padding: '0.65rem 0.9rem', marginBottom: '0.85rem' }}>
@@ -1178,8 +1228,8 @@ export default function Admin() {
           </div>
         )}
 
-        {/* ── FOOTER ACTIONS ROW (1 sola fila) ── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', width: '100%', flexWrap: 'nowrap' }}>
+        {/* ── FOOTER ACTIONS ROW (1 sola fila ajustada sin desbordamientos) ── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', width: '100%', flexWrap: 'nowrap' }}>
           {telefonoCliente && (
             <button 
               type="button" 
@@ -1189,9 +1239,9 @@ export default function Admin() {
                 window.open(`https://wa.me/${target}`, '_blank');
               }}
               style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '12px',
+                width: '36px',
+                height: '36px',
+                borderRadius: '10px',
                 border: '1.5px solid #e2e8f0',
                 background: '#ffffff',
                 display: 'flex',
@@ -1203,7 +1253,7 @@ export default function Admin() {
               }}
               title="Abrir Chat WhatsApp"
             >
-              <MessageSquare size={17} />
+              <MessageSquare size={16} />
             </button>
           )}
 
@@ -1211,31 +1261,31 @@ export default function Admin() {
             type="button" 
             onClick={() => setSelectedPedido(ped)}
             style={{
-              padding: '0.65rem 0.85rem',
-              borderRadius: '12px',
+              padding: '0.5rem 0.55rem',
+              borderRadius: '10px',
               border: '1.5px solid #e2e8f0',
               background: '#ffffff',
               color: '#0f172a',
-              fontSize: '0.82rem',
+              fontSize: '0.76rem',
               fontWeight: 500,
               cursor: 'pointer',
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '0.25rem',
+              gap: '0.2rem',
               whiteSpace: 'nowrap',
               flexShrink: 0
             }}
           >
             <span>Ver detalles</span>
-            <ChevronRight size={15} color="#64748b" />
+            <ChevronRight size={14} color="#64748b" />
           </button>
 
           {isLead && (
             <select 
               value={ped.retargeting_estado || ''}
               onChange={(e) => handleUpdateLeadStatus(ped.id, e.target.value)}
-              style={{ fontSize: '0.75rem', padding: '0.55rem 0.45rem', borderRadius: '12px', border: '1.5px solid #cbd5e1', background: 'white', cursor: 'pointer', fontWeight: 400, flexShrink: 0 }}
+              style={{ fontSize: '0.72rem', padding: '0.5rem 0.25rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', background: 'white', cursor: 'pointer', fontWeight: 400, flexShrink: 0, maxWidth: '85px' }}
             >
               <option value="">Estado...</option>
               <option value="contactado">Contactado</option>
@@ -1259,50 +1309,57 @@ export default function Admin() {
                 handleUpdateLeadStatus(ped.id, 'contactado');
               }}
               style={{
-                padding: '0.65rem 0.95rem',
-                borderRadius: '12px',
+                padding: '0.55rem 0.55rem',
+                borderRadius: '10px',
                 border: 'none',
                 background: 'linear-gradient(135deg, #10b981, #059669)',
                 color: '#ffffff',
-                fontSize: '0.85rem',
+                fontSize: '0.76rem',
                 fontWeight: 600,
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.35rem',
-                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
+                gap: '0.25rem',
+                boxShadow: '0 3px 10px rgba(16, 185, 129, 0.3)',
                 whiteSpace: 'nowrap',
-                flex: 1
+                flex: 1,
+                minWidth: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
               }}
             >
-              <span>💬 Recuperar venta</span>
-              <ChevronRight size={15} />
+              <span style={{ fontSize: '0.85rem' }}>💭</span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>Recuperar venta</span>
+              <ChevronRight size={13} color="#ffffff" style={{ flexShrink: 0 }} />
             </button>
           ) : isContra ? (
             <button 
               type="button" 
               onClick={() => setSelectedPedido(ped)}
               style={{
-                padding: '0.65rem 0.95rem',
-                borderRadius: '12px',
+                padding: '0.55rem 0.55rem',
+                borderRadius: '10px',
                 border: 'none',
                 background: 'linear-gradient(135deg, #ff5722, #ea580c)',
                 color: '#ffffff',
-                fontSize: '0.85rem',
+                fontSize: '0.76rem',
                 fontWeight: 600,
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.35rem',
-                boxShadow: '0 4px 14px rgba(234, 88, 12, 0.35)',
+                gap: '0.25rem',
+                boxShadow: '0 3px 10px rgba(234, 88, 12, 0.3)',
                 whiteSpace: 'nowrap',
-                flex: 1
+                flex: 1,
+                minWidth: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
               }}
             >
-              <span>🚚 Gestionar Despacho</span>
-              <ChevronRight size={15} />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>🚚 Gestionar Despacho</span>
+              <ChevronRight size={13} color="#ffffff" style={{ flexShrink: 0 }} />
             </button>
           ) : ped.estado === 'completado' ? (
             <button 
