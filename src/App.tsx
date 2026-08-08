@@ -34,8 +34,10 @@ function App() {
             <Route path="/:tenant/admin" element={<Admin />} />
             <Route path="/superadmin" element={<SuperAdmin />} />
 
-            {/* Pago Nequi - página pública para subir comprobante */}
-            <Route path="/pago/:pedidoId" element={<PagoNequi />} />
+            {/* Pago Nequi - página pública para subir comprobante (Transferencia) */}
+            <Route path="/pago/:pedidoId" element={<PagoNequi mode="pago" />} />
+            {/* Guía de envío - página pública para consultar evidencia de envío (Contra entrega / Despacho) */}
+            <Route path="/guia/:pedidoId" element={<PagoNequi mode="guia" />} />
 
             {/* Fallback para URLs antiguas como /products */}
             <Route path="*" element={<MenuDigital />} />

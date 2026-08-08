@@ -333,7 +333,7 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId, activeSubTab }) => 
             <>
               {/* ── Gráfico SVG de Área ── */}
               {(() => {
-                const W = 900, H = 200, PAD = { top: 20, right: 20, bottom: 32, left: 60 };
+                const W = 900, H = 125, PAD = { top: 14, right: 20, bottom: 24, left: 55 };
                 const innerW = W - PAD.left - PAD.right;
                 const innerH = H - PAD.top - PAD.bottom;
                 const data = resumen.ventasPorDia;
@@ -371,8 +371,9 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId, activeSubTab }) => 
                   <div style={{ position: 'relative', overflowX: 'auto' }}>
                     <svg
                       viewBox={`0 0 ${W} ${H}`}
-                      style={{ width: '100%', height: 'auto', display: 'block', minHeight: 160 }}
+                      style={{ width: '100%', height: 'auto', maxHeight: '140px', display: 'block' }}
                     >
+
                       <defs>
                         <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
                           <stop offset="0%" stopColor="var(--primary-color, #6366f1)" stopOpacity="0.35" />

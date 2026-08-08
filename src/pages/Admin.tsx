@@ -2694,9 +2694,10 @@ export default function Admin() {
         const prodNames = Array.isArray(ped.productos) && ped.productos.length > 0 
           ? ped.productos.map((p: any) => `${p.cantidad}x ${p.nombre}`).join(', ') 
           : '';
-        const uploadLink = `${window.location.origin}/pago/${ped.id.slice(0, 8)}`;
-        const msg = `¡Hola ${ped.cliente_nombre}! 👋 Tu pedido ha sido *VERIFICADO y DESPACHADO* 🚚\n\nPedido: ${prodNames}\nTotal: ${ped.total.toLocaleString()} COP\n\n📸 *Ver detalles y foto del envío aquí:* ${uploadLink}\n\n¡Gracias por tu compra!`;
+        const guiaLink = `${window.location.origin}/guia/${ped.id.slice(0, 8)}`;
+        const msg = `¡Hola ${ped.cliente_nombre}! 👋 Tu pedido ha sido *VERIFICADO y DESPACHADO* 🚚\n\nPedido: ${prodNames}\nTotal: ${ped.total.toLocaleString()} COP\n\n📸 *Ver detalles y evidencia del envío aquí:* ${guiaLink}\n\n¡Gracias por tu compra!`;
         window.open(formatWhatsAppLink(ped.cliente_telefono || '', msg), '_blank');
+
       }
     } catch (err: any) {
       console.error(err);
@@ -14143,10 +14144,11 @@ export default function Admin() {
                               <button
                                 style={{ flex: 1, padding: '0.7rem 0.85rem', background: 'var(--primary-color, #0ea5e9)', color: 'white', border: 'none', borderRadius: '14px', cursor: 'pointer', fontWeight: 600, fontSize: '0.86rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontFamily: "'Poppins', sans-serif" }}
                                 onClick={() => {
-                                  const uploadLink = `${window.location.origin}/pago/${selectedPedido.id.slice(0, 8)}`;
-                                  const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋 Tu pedido ha sido *VERIFICADO y DESPACHADO* 🚚\n\nPedido: ${selectedPedido.productos?.map((p: any) => `${p.cantidad}x ${p.nombre}`).join(', ')}\nTotal: ${selectedPedido.total.toLocaleString()} COP\n\n📸 *Ver detalles y foto del envío aquí:* ${uploadLink}\n\n¡Tu paquete está en camino. Gracias por tu compra! 🚀`;
+                                  const guiaLink = `${window.location.origin}/guia/${selectedPedido.id.slice(0, 8)}`;
+                                  const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋 Tu pedido ha sido *VERIFICADO y DESPACHADO* 🚚\n\nPedido: ${selectedPedido.productos?.map((p: any) => `${p.cantidad}x ${p.nombre}`).join(', ')}\nTotal: ${selectedPedido.total.toLocaleString()} COP\n\n📸 *Ver detalles y evidencia del envío aquí:* ${guiaLink}\n\n¡Tu paquete está en camino. Gracias por tu compra! 🚀`;
                                   window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
                                 }}
+
                               >
                                 🚚 Confirmar Despacho
                               </button>
