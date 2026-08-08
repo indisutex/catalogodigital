@@ -607,8 +607,9 @@ export default function MenuDigital() {
 
   const saveOrUpdateLead = async (customFormData = formData) => {
     if (isOrderSubmittedRef.current) return;
-    // Guardar lead tan pronto tenga nombre + teléfono + al menos 1 producto
-    if (!customFormData.nombre || !customFormData.telefono || items.length === 0) return;
+    const cleanPhone = (customFormData.telefono || '').replace(/\D/g, '');
+    const currentLeadId = leadIdRef.current || leadId;
+    if (!customFormData.nombre || (!currentLeadId && cleanPhone.length < 7) || items.length === 0) return;
 
     try {
       const tenant = getTenantId();

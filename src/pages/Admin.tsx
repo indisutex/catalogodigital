@@ -5,7 +5,7 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista, PQRS } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, Wrench, ArrowUpDown, Filter, MapPin } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, Wrench, ArrowUpDown, Filter, MapPin, XCircle, Truck, Clock, FileCheck, CheckCircle } from 'lucide-react';
 
 import * as XLSX from 'xlsx';
 import { ERPContabilidadService } from '../lib/erpContabilidadService';
@@ -1929,12 +1929,26 @@ export default function Admin() {
     
     cargarDatos();
     
-    // Auto-refresh data every 10 seconds to keep stats and orders in real-time
+    // Auto-refresh data cada 8 segundos como respaldo
     const interval = setInterval(() => {
       cargarDatos();
-    }, 10000);
+    }, 8000);
+
+    // Suscripción Realtime a Supabase para capturar cambios instantáneos de carritos abandonados y pedidos
+    const channel = supabase
+      .channel('admin_realtime_leads_orders')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
+        cargarDatos();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, () => {
+        cargarDatos();
+      })
+      .subscribe();
     
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      supabase.removeChannel(channel);
+    };
   }, [isAuthenticated, selectedCompany]);
 
   async function cargarDatos() {
@@ -12695,7 +12709,7 @@ export default function Admin() {
                               }}
                             >
                               <span>Todos</span>
-                              <span style={{ background: orderFilterStatus === 'todos' ? 'rgba(255,255,255,0.25)' : '#f1f5f9', color: orderFilterStatus === 'todos' ? '#ffffff' : '#64748b', padding: '0.05rem 0.4rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 800 }}>{totalCount}</span>
+                              <span style={{ background: orderFilterStatus === 'todos' ? 'rgba(255,255,255,0.25)' : '#f1f5f9', color: orderFilterStatus === 'todos' ? '#ffffff' : '#64748b', padding: '0.05rem 0.45rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 500 }}>{totalCount}</span>
                             </button>
 
                             <button
@@ -12707,17 +12721,18 @@ export default function Admin() {
                                 border: orderFilterStatus === 'contra_entrega' ? 'none' : '1px solid #fed7aa',
                                 background: orderFilterStatus === 'contra_entrega' ? '#ea580c' : '#fff7ed',
                                 color: orderFilterStatus === 'contra_entrega' ? '#ffffff' : '#c2410c',
-                                fontWeight: 800,
+                                fontWeight: 600,
                                 fontSize: '0.78rem',
                                 cursor: 'pointer',
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: '0.35rem',
-                                boxShadow: orderFilterStatus === 'contra_entrega' ? '0 3px 10px rgba(234, 88, 12, 0.35)' : 'none'
+                                fontFamily: "'Poppins', sans-serif",
+                                boxShadow: orderFilterStatus === 'contra_entrega' ? '0 3px 10px rgba(234, 88, 12, 0.25)' : 'none'
                               }}
                             >
-                              <span>🚚 Contra Entregas</span>
-                              <span style={{ background: orderFilterStatus === 'contra_entrega' ? 'rgba(255,255,255,0.25)' : '#ffedd5', color: orderFilterStatus === 'contra_entrega' ? '#ffffff' : '#ea580c', padding: '0.05rem 0.4rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 800 }}>{contraEntregaCount}</span>
+                              <span>Pago Contra Entrega</span>
+                              <span style={{ background: orderFilterStatus === 'contra_entrega' ? 'rgba(255,255,255,0.25)' : '#ffedd5', color: orderFilterStatus === 'contra_entrega' ? '#ffffff' : '#ea580c', padding: '0.05rem 0.45rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 500 }}>{contraEntregaCount}</span>
                             </button>
 
                             <button
@@ -12729,17 +12744,18 @@ export default function Admin() {
                                 border: orderFilterStatus === 'esperando_pago' ? 'none' : '1px solid #fef08a',
                                 background: orderFilterStatus === 'esperando_pago' ? '#eab308' : '#fefce8',
                                 color: orderFilterStatus === 'esperando_pago' ? '#ffffff' : '#854d0e',
-                                fontWeight: 800,
+                                fontWeight: 600,
                                 fontSize: '0.78rem',
                                 cursor: 'pointer',
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: '0.35rem',
-                                boxShadow: orderFilterStatus === 'esperando_pago' ? '0 3px 10px rgba(234, 179, 8, 0.35)' : 'none'
+                                fontFamily: "'Poppins', sans-serif",
+                                boxShadow: orderFilterStatus === 'esperando_pago' ? '0 3px 10px rgba(234, 179, 8, 0.25)' : 'none'
                               }}
                             >
-                              <span>⏳ Pendientes Pago</span>
-                              <span style={{ background: orderFilterStatus === 'esperando_pago' ? 'rgba(255,255,255,0.25)' : '#fef9c3', color: orderFilterStatus === 'esperando_pago' ? '#ffffff' : '#854d0e', padding: '0.05rem 0.4rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 800 }}>{pendingCount}</span>
+                              <span>Pendientes por Pago</span>
+                              <span style={{ background: orderFilterStatus === 'esperando_pago' ? 'rgba(255,255,255,0.25)' : '#fef9c3', color: orderFilterStatus === 'esperando_pago' ? '#ffffff' : '#854d0e', padding: '0.05rem 0.45rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 500 }}>{pendingCount}</span>
                             </button>
 
                             <button
@@ -12751,17 +12767,18 @@ export default function Admin() {
                                 border: orderFilterStatus === 'comprobante' ? 'none' : '1px solid #bae6fd',
                                 background: orderFilterStatus === 'comprobante' ? '#0284c7' : '#f0f9ff',
                                 color: orderFilterStatus === 'comprobante' ? '#ffffff' : '#0369a1',
-                                fontWeight: 800,
+                                fontWeight: 600,
                                 fontSize: '0.78rem',
                                 cursor: 'pointer',
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: '0.35rem',
-                                boxShadow: orderFilterStatus === 'comprobante' ? '0 3px 10px rgba(2, 132, 199, 0.35)' : 'none'
+                                fontFamily: "'Poppins', sans-serif",
+                                boxShadow: orderFilterStatus === 'comprobante' ? '0 3px 10px rgba(2, 132, 199, 0.25)' : 'none'
                               }}
                             >
-                              <span>💳 Comprobar Pagos</span>
-                              <span style={{ background: orderFilterStatus === 'comprobante' ? 'rgba(255,255,255,0.25)' : '#e0f2fe', color: orderFilterStatus === 'comprobante' ? '#ffffff' : '#0369a1', padding: '0.05rem 0.4rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 800 }}>{comprobarCount}</span>
+                              <span>Comprobante Recibido</span>
+                              <span style={{ background: orderFilterStatus === 'comprobante' ? 'rgba(255,255,255,0.25)' : '#e0f2fe', color: orderFilterStatus === 'comprobante' ? '#ffffff' : '#0369a1', padding: '0.05rem 0.45rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 500 }}>{comprobarCount}</span>
                             </button>
 
                             <button
@@ -12773,17 +12790,18 @@ export default function Admin() {
                                 border: orderFilterStatus === 'exitosas' ? 'none' : '1px solid #a7f3d0',
                                 background: orderFilterStatus === 'exitosas' ? '#10b981' : '#ecfdf5',
                                 color: orderFilterStatus === 'exitosas' ? '#ffffff' : '#047857',
-                                fontWeight: 800,
+                                fontWeight: 600,
                                 fontSize: '0.78rem',
                                 cursor: 'pointer',
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: '0.35rem',
-                                boxShadow: orderFilterStatus === 'exitosas' ? '0 3px 10px rgba(16, 185, 129, 0.35)' : 'none'
+                                fontFamily: "'Poppins', sans-serif",
+                                boxShadow: orderFilterStatus === 'exitosas' ? '0 3px 10px rgba(16, 185, 129, 0.25)' : 'none'
                               }}
                             >
-                              <span>✅ Ventas Exitosas</span>
-                              <span style={{ background: orderFilterStatus === 'exitosas' ? 'rgba(255,255,255,0.25)' : '#d1fae5', color: orderFilterStatus === 'exitosas' ? '#ffffff' : '#047857', padding: '0.05rem 0.4rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 800 }}>{exitosasCount}</span>
+                              <span>Ventas Exitosas</span>
+                              <span style={{ background: orderFilterStatus === 'exitosas' ? 'rgba(255,255,255,0.25)' : '#d1fae5', color: orderFilterStatus === 'exitosas' ? '#ffffff' : '#047857', padding: '0.05rem 0.45rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 500 }}>{exitosasCount}</span>
                             </button>
 
                             <button
@@ -12795,17 +12813,18 @@ export default function Admin() {
                                 border: orderFilterStatus === 'abandonados' ? 'none' : '1px solid #fecaca',
                                 background: orderFilterStatus === 'abandonados' ? '#dc2626' : '#fef2f2',
                                 color: orderFilterStatus === 'abandonados' ? '#ffffff' : '#b91c1c',
-                                fontWeight: 800,
+                                fontWeight: 600,
                                 fontSize: '0.78rem',
                                 cursor: 'pointer',
                                 display: 'inline-flex',
                                 alignItems: 'center',
                                 gap: '0.35rem',
-                                boxShadow: orderFilterStatus === 'abandonados' ? '0 3px 10px rgba(220, 38, 38, 0.35)' : 'none'
+                                fontFamily: "'Poppins', sans-serif",
+                                boxShadow: orderFilterStatus === 'abandonados' ? '0 3px 10px rgba(220, 38, 38, 0.25)' : 'none'
                               }}
                             >
-                              <span>🛒 Abandonados</span>
-                              <span style={{ background: orderFilterStatus === 'abandonados' ? 'rgba(255,255,255,0.25)' : '#fee2e2', color: orderFilterStatus === 'abandonados' ? '#ffffff' : '#b91c1c', padding: '0.05rem 0.4rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 800 }}>{leadsCount}</span>
+                              <span>Abandonados</span>
+                              <span style={{ background: orderFilterStatus === 'abandonados' ? 'rgba(255,255,255,0.25)' : '#fee2e2', color: orderFilterStatus === 'abandonados' ? '#ffffff' : '#b91c1c', padding: '0.05rem 0.45rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 500 }}>{leadsCount}</span>
                             </button>
                           </div>
                         );
@@ -12815,20 +12834,24 @@ export default function Admin() {
                             {pedidosViewMode === 'kanban' ? (
                               <div className="super-crm-kanban" style={{ alignItems: 'start' }}>
                         {/* Columna 1: No Interesados (Abandonos) */}
+                        {/* Columna 1: No Interesados (Abandonos) */}
                         <div
                           className="kanban-column"
                           onDragOver={(e) => e.preventDefault()}
                           onDrop={(e) => handleDropKanban(e, 'abandonado')}
-                          style={{ background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}
+                          style={{ background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
                         >
-                          <div className="kanban-column-header col-red" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #ef4444', paddingBottom: '0.5rem' }}>
-                            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#ef4444' }}>🔴 No Interesados (Abandonos)</h3>
-                            <span className="badge" style={{ background: '#fee2e2', color: '#ef4444', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{leadsFiltrados.length}</span>
+                          <div className="kanban-column-header col-red" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #ef4444', paddingBottom: '0.65rem' }}>
+                            <h3 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 600, color: '#dc2626', display: 'flex', alignItems: 'center', gap: '0.45rem', fontFamily: "'Poppins', sans-serif" }}>
+                              <XCircle size={16} color="#dc2626" />
+                              <span>No Interesados (Abandonos)</span>
+                            </h3>
+                            <span className="badge" style={{ background: '#ffffff', color: '#dc2626', border: '1px solid #fca5a5', padding: '0.15rem 0.6rem', borderRadius: '12px', fontSize: '0.76rem', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>{leadsFiltrados.length}</span>
                           </div>
                           <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
                             {leadsFiltrados.map(lead => renderLeadOrOrderCard(lead, true))}
                             {leadsFiltrados.length === 0 && (
-                              <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0' }}>No hay carritos abandonados.</p>
+                              <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay carritos abandonados.</p>
                             )}
                           </div>
                         </div>
@@ -12838,73 +12861,85 @@ export default function Admin() {
                           className="kanban-column"
                           onDragOver={(e) => e.preventDefault()}
                           onDrop={(e) => handleDropKanban(e, 'contra_entrega')}
-                          style={{ background: '#fff7ed', borderRadius: '12px', border: '1px solid #ffedd5', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}
+                          style={{ background: '#fff7ed', borderRadius: '16px', border: '1px solid #ffedd5', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(234,88,12,0.03)' }}
                         >
-                          <div className="kanban-column-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #ea580c', paddingBottom: '0.5rem' }}>
-                            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#ea580c' }}>🚚 Contra Entregas</h3>
-                            <span className="badge" style={{ background: '#ffedd5', color: '#ea580c', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{contraEntregaFiltrados.length}</span>
+                          <div className="kanban-column-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #ea580c', paddingBottom: '0.65rem' }}>
+                            <h3 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 600, color: '#c2410c', display: 'flex', alignItems: 'center', gap: '0.45rem', fontFamily: "'Poppins', sans-serif" }}>
+                              <Truck size={16} color="#c2410c" />
+                              <span>Pago Contra Entrega</span>
+                            </h3>
+                            <span className="badge" style={{ background: '#ffffff', color: '#c2410c', border: '1px solid #fdba74', padding: '0.15rem 0.6rem', borderRadius: '12px', fontSize: '0.76rem', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>{contraEntregaFiltrados.length}</span>
                           </div>
                           <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
                             {contraEntregaFiltrados.map(ped => renderLeadOrOrderCard(ped))}
                             {contraEntregaFiltrados.length === 0 && (
-                              <p className="empty-column-msg" style={{ textAlign: 'center', color: '#9a3412', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0' }}>No hay pedidos contra entrega pendientes.</p>
+                              <p className="empty-column-msg" style={{ textAlign: 'center', color: '#9a3412', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay pedidos contra entrega pendientes.</p>
                             )}
                           </div>
                         </div>
 
-                        {/* Columna 2: Pendientes (Esperando Pago) */}
+                        {/* Columna 3: Pendientes (Esperando Pago) */}
                         <div
                           className="kanban-column"
                           onDragOver={(e) => e.preventDefault()}
                           onDrop={(e) => handleDropKanban(e, 'pendiente')}
-                          style={{ background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}
+                          style={{ background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
                         >
-                          <div className="kanban-column-header col-yellow" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #eab308', paddingBottom: '0.5rem' }}>
-                            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#eab308' }}>🟡 Pendientes (Esperando Pago)</h3>
-                            <span className="badge" style={{ background: '#fef9c3', color: '#eab308', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{pendientePagoFiltrados.length}</span>
+                          <div className="kanban-column-header col-yellow" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #eab308', paddingBottom: '0.65rem' }}>
+                            <h3 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 600, color: '#a16207', display: 'flex', alignItems: 'center', gap: '0.45rem', fontFamily: "'Poppins', sans-serif" }}>
+                              <Clock size={16} color="#a16207" />
+                              <span>Pendientes por Pago</span>
+                            </h3>
+                            <span className="badge" style={{ background: '#ffffff', color: '#a16207', border: '1px solid #fde047', padding: '0.15rem 0.6rem', borderRadius: '12px', fontSize: '0.76rem', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>{pendientePagoFiltrados.length}</span>
                           </div>
                           <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
                             {pendientePagoFiltrados.map(ped => renderLeadOrOrderCard(ped))}
                             {pendientePagoFiltrados.length === 0 && (
-                              <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0' }}>No hay pedidos pendientes.</p>
+                              <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay pedidos pendientes.</p>
                             )}
                           </div>
                         </div>
 
-                        {/* Columna 3: Comprobante Recibido (Comprobar Pagos) */}
+                        {/* Columna 4: Comprobante Recibido (Comprobar Pagos) */}
                         <div
                           className="kanban-column"
                           onDragOver={(e) => e.preventDefault()}
                           onDrop={(e) => handleDropKanban(e, 'comprobante')}
-                          style={{ background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}
+                          style={{ background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
                         >
-                          <div className="kanban-column-header col-blue" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #3b82f6', paddingBottom: '0.5rem' }}>
-                            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#3b82f6' }}>📸 Comprobante Recibido</h3>
-                            <span className="badge" style={{ background: '#eff6ff', color: '#3b82f6', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{comprobarPagosFiltrados.length}</span>
+                          <div className="kanban-column-header col-blue" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #2563eb', paddingBottom: '0.65rem' }}>
+                            <h3 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 600, color: '#1d4ed8', display: 'flex', alignItems: 'center', gap: '0.45rem', fontFamily: "'Poppins', sans-serif" }}>
+                              <FileCheck size={16} color="#1d4ed8" />
+                              <span>Comprobante Recibido</span>
+                            </h3>
+                            <span className="badge" style={{ background: '#ffffff', color: '#1d4ed8', border: '1px solid #93c5fd', padding: '0.15rem 0.6rem', borderRadius: '12px', fontSize: '0.76rem', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>{comprobarPagosFiltrados.length}</span>
                           </div>
                           <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
                             {comprobarPagosFiltrados.map(ped => renderLeadOrOrderCard(ped))}
                             {comprobarPagosFiltrados.length === 0 && (
-                              <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0' }}>No hay comprobantes por revisar.</p>
+                              <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay comprobantes por revisar.</p>
                             )}
                           </div>
                         </div>
 
-                        {/* Columna 3: Clientes (Venta Exitosa) */}
+                        {/* Columna 5: Clientes (Venta Exitosa) */}
                         <div
                           className="kanban-column"
                           onDragOver={(e) => e.preventDefault()}
                           onDrop={(e) => handleDropKanban(e, 'completado')}
-                          style={{ background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px' }}
+                          style={{ background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
                         >
-                          <div className="kanban-column-header col-green" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #22c55e', paddingBottom: '0.5rem' }}>
-                            <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#22c55e' }}>🟢 Clientes (Venta Exitosa)</h3>
-                            <span className="badge" style={{ background: '#dcfce7', color: '#22c55e', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.78rem', fontWeight: 700 }}>{clientesFiltrados.length}</span>
+                          <div className="kanban-column-header col-green" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #16a34a', paddingBottom: '0.65rem' }}>
+                            <h3 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 600, color: '#15803d', display: 'flex', alignItems: 'center', gap: '0.45rem', fontFamily: "'Poppins', sans-serif" }}>
+                              <CheckCircle size={16} color="#15803d" />
+                              <span>Ventas Exitosas</span>
+                            </h3>
+                            <span className="badge" style={{ background: '#ffffff', color: '#15803d', border: '1px solid #86efac', padding: '0.15rem 0.6rem', borderRadius: '12px', fontSize: '0.76rem', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>{clientesFiltrados.length}</span>
                           </div>
                           <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
                             {clientesFiltrados.map(ped => renderLeadOrOrderCard(ped))}
                             {clientesFiltrados.length === 0 && (
-                              <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0' }}>No hay ventas exitosas aún.</p>
+                              <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay ventas exitosas aún.</p>
                             )}
                           </div>
                         </div>

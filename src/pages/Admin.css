@@ -2302,9 +2302,10 @@ body {
   .client-details h4 {
     margin: 0;
     font-size: 0.95rem;
-    font-weight: 400;
-    color: #334155;
+    font-weight: 600;
+    color: #0f172a;
     line-height: 1.2;
+    font-family: 'Poppins', sans-serif;
   }
   
   .client-phone {
@@ -2312,14 +2313,16 @@ body {
     font-size: 0.76rem;
     color: #64748b;
     line-height: 1.2;
+    font-family: 'Poppins', sans-serif;
   }
   
   .client-time {
     margin: 0;
     font-size: 0.72rem;
     color: #94a3b8;
-    font-weight: 500;
+    font-weight: 400;
     line-height: 1.2;
+    font-family: 'Poppins', sans-serif;
   }
   
   .status-badges-block {
@@ -2336,6 +2339,7 @@ body {
     padding: 2px 8px;
     border-radius: 6px;
     text-transform: uppercase;
+    font-family: 'Poppins', sans-serif;
   }
   .lead-abandonado .card-status-badge { background: #fee2e2; color: #ef4444; }
   .order-pendiente .card-status-badge { background: #fef9c3; color: #b45309; }
@@ -2350,6 +2354,7 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 4px;
+    font-family: 'Poppins', sans-serif;
   }
   .prob-badge-small.prob-high { background: #ecfdf5; color: #065f46; border: 1.5px solid #a7f3d0; }
   .prob-badge-small.prob-medium { background: #fffbeb; color: #92400e; border: 1.5px solid #fde68a; }
@@ -2361,6 +2366,7 @@ body {
     padding: 2px 6px;
     border-radius: 6px;
     border: 1.5px solid transparent;
+    font-family: 'Poppins', sans-serif;
   }
   .payment-badge-small.verified { background: #dcfce7; color: #15803d; border-color: #86efac; }
   .payment-badge-small.uploaded { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
@@ -2389,13 +2395,14 @@ body {
   }
   
   .cart-total-icon {
-    font-size: 1.2rem;
+    font-size: 1.1rem;
   }
   
   .cart-total-amount {
-    font-size: 1.25rem;
-    font-weight: 500;
-    color: #10b981;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--primary-color, #10b981);
+    font-family: 'Poppins', sans-serif;
   }
   
   .items-count {
@@ -2555,35 +2562,36 @@ body {
   }
   
   .btn-main-recover {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 6px;
-    padding: 6px 16px;
-    border-radius: 20px;
-    font-size: 0.82rem;
-    font-weight: 500;
+    padding: 0.45rem 0.9rem;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
     cursor: pointer;
     border: none;
-    transition: background 0.2s, transform 0.1s;
-    font-family: inherit;
+    transition: all 0.15s ease;
+    font-family: 'Poppins', sans-serif;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   }
   .btn-main-recover:active {
     transform: scale(0.97);
   }
   .btn-main-recover.green {
-    background: #00b95c;
+    background: #16a34a;
     color: #ffffff;
   }
   .btn-main-recover.green:hover {
-    background: #009c4e;
+    background: #15803d;
   }
   .btn-main-recover.blue {
-    background: #3b82f6;
+    background: var(--primary-color, #2563eb);
     color: #ffffff;
   }
   .btn-main-recover.blue:hover {
-    background: #2563eb;
+    filter: brightness(1.08);
   }
 
 
@@ -2751,19 +2759,19 @@ body {
 
 /* Ã¢â€â‚¬Ã¢â€â‚¬ Ver Detalles Button Styles Ã¢â€â‚¬Ã¢â€â‚¬ */
 .btn-details-action {
-  font-size: 0.72rem;
+  font-size: 0.75rem;
   font-weight: 500;
-  color: #0f172a;
+  color: #334155;
   background: #ffffff;
   border: 1.5px solid #e2e8f0;
   padding: 6px 12px;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   display: flex;
   align-items: center;
   gap: 4px;
-  font-family: inherit;
-  transition: background 0.2s, border-color 0.2s;
+  font-family: 'Poppins', sans-serif;
+  transition: all 0.15s ease;
   height: 32px;
   box-sizing: border-box;
 }
