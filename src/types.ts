@@ -31,8 +31,9 @@ export interface Producto {
     dama_plus?: number | null;
     caballero_unica?: number | null;
     unisex_2xl?: number | null;
+    opciones_deshabilitadas?: string[] | null;
     precios_tallas?: Record<string, number> | null;
-    precios_detallados?: Record<string, { detal?: number; mayor?: number; p50?: number }> | null;
+    precios_detallados?: Record<string, { detal?: number; mayor?: number; p50?: number; deshabilitado?: boolean }> | null;
   } | null;
 }
 

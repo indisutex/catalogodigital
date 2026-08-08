@@ -56,7 +56,7 @@ const getGoogleDriveThumbnailUrl = (url: string) => {
 import { deduplicateTallas, encodeExtraImage, decodeExtraImage, isMediaVideo, buildUnifiedImages } from '../lib/mediaUtils';
 import ZonificacionModule from '../components/ZonificacionModule';
 
-type FamilyDetailedPrices = Record<string, { detal?: string; mayor?: string; p50?: string }>;
+type FamilyDetailedPrices = Record<string, { detal?: string; mayor?: string; p50?: string; deshabilitado?: boolean }>;
 
 type ProductFormData = {
   nombre: string;
@@ -79,20 +79,21 @@ type ProductFormData = {
 };
 
 const defaultFamDetailedPrices: FamilyDetailedPrices = {
-  "Dama Única": { detal: "26000", mayor: "", p50: "" },
-  "Dama Plus": { detal: "30000", mayor: "", p50: "" },
-  "Caballero Única": { detal: "31000", mayor: "", p50: "" },
-  "2XL Unisex": { detal: "36000", mayor: "", p50: "" },
-  "2/4": { detal: "22000", mayor: "", p50: "" },
-  "6/8": { detal: "22000", mayor: "", p50: "" },
-  "10/12": { detal: "22000", mayor: "", p50: "" },
-  "14/16": { detal: "23000", mayor: "", p50: "" },
-  "18": { detal: "26000", mayor: "", p50: "" }
+  "Dama Única": { detal: "26000", mayor: "", p50: "", deshabilitado: false },
+  "Dama Plus": { detal: "30000", mayor: "", p50: "", deshabilitado: false },
+  "Caballero Única": { detal: "31000", mayor: "", p50: "", deshabilitado: false },
+  "2XL Unisex": { detal: "36000", mayor: "", p50: "", deshabilitado: false },
+  "2/4": { detal: "22000", mayor: "", p50: "", deshabilitado: false },
+  "6/8": { detal: "22000", mayor: "", p50: "", deshabilitado: false },
+  "10/12": { detal: "22000", mayor: "", p50: "", deshabilitado: false },
+  "14/16": { detal: "23000", mayor: "", p50: "", deshabilitado: false },
+  "18": { detal: "26000", mayor: "", p50: "", deshabilitado: false }
 };
 
 const getInitialFamDetailedPrices = (p: any): FamilyDetailedPrices => {
   const existingDet = p?.precios_familia?.precios_detallados;
   const existingTallas = p?.precios_familia?.precios_tallas || {};
+  const disabledList: string[] = p?.precios_familia?.opciones_deshabilitadas || [];
 
   const keys = ['Dama Única', 'Dama Plus', 'Caballero Única', '2XL Unisex', '2/4', '6/8', '10/12', '14/16', '18'];
   const defaults: Record<string, string> = {
@@ -110,23 +111,27 @@ const getInitialFamDetailedPrices = (p: any): FamilyDetailedPrices => {
   const result: any = {};
 
   keys.forEach(k => {
+    const isDeshabilitado = disabledList.includes(k) || (existingDet && existingDet[k]?.deshabilitado === true);
     if (existingDet && existingDet[k]) {
       result[k] = {
         detal: existingDet[k].detal !== undefined ? String(existingDet[k].detal) : (defaults[k] || ''),
         mayor: existingDet[k].mayor !== undefined ? String(existingDet[k].mayor) : '',
-        p50: existingDet[k].p50 !== undefined ? String(existingDet[k].p50) : ''
+        p50: existingDet[k].p50 !== undefined ? String(existingDet[k].p50) : '',
+        deshabilitado: isDeshabilitado
       };
     } else if (existingTallas[k]) {
       result[k] = {
         detal: String(existingTallas[k]),
         mayor: '',
-        p50: ''
+        p50: '',
+        deshabilitado: isDeshabilitado
       };
     } else {
       result[k] = {
         detal: defaults[k] || '',
         mayor: '',
-        p50: ''
+        p50: '',
+        deshabilitado: isDeshabilitado
       };
     }
   });
@@ -885,7 +890,7 @@ export default function Admin() {
         }}
       >
         {/* ── HEADER ROW ── */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem', marginBottom: '0.85rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem', marginBottom: '0.85rem', flexWrap: 'wrap' }}>
           {/* Cliente Info */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
             <div style={{
@@ -1228,8 +1233,8 @@ export default function Admin() {
           </div>
         )}
 
-        {/* ── FOOTER ACTIONS ROW (1 sola fila ajustada sin desbordamientos) ── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', width: '100%', flexWrap: 'nowrap' }}>
+        {/* ── FOOTER ACTIONS ROW ── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', width: '100%', flexWrap: 'wrap' }}>
           {telefonoCliente && (
             <button 
               type="button" 
@@ -2703,19 +2708,27 @@ export default function Admin() {
 
       const isFam = f.es_producto_familiar || f.categoria === 'familiar';
 
-      const preciosDetalladosMap: Record<string, { detal: number; mayor?: number; p50?: number }> = {};
+      const preciosDetalladosMap: Record<string, { detal: number; mayor?: number; p50?: number; deshabilitado?: boolean }> = {};
       const preciosTallasMap: Record<string, number> = {};
+      const opcionesDeshabilitadas: string[] = [];
 
       if (f.precios_detallados_fam) {
         Object.entries(f.precios_detallados_fam).forEach(([k, obj]) => {
           const dVal = parseFloat(obj.detal || '0');
           const mVal = parseFloat(obj.mayor || '0');
           const pVal = parseFloat(obj.p50 || '0');
-          if (dVal > 0 || mVal > 0 || pVal > 0) {
+          const isOff = !!obj.deshabilitado;
+
+          if (isOff) {
+            opcionesDeshabilitadas.push(k);
+          }
+
+          if (dVal > 0 || mVal > 0 || pVal > 0 || isOff) {
             preciosDetalladosMap[k] = {
               detal: dVal > 0 ? dVal : 0,
               ...(mVal > 0 ? { mayor: mVal } : {}),
-              ...(pVal > 0 ? { p50: pVal } : {})
+              ...(pVal > 0 ? { p50: pVal } : {}),
+              ...(isOff ? { deshabilitado: true } : {})
             };
             if (dVal > 0) preciosTallasMap[k] = dVal;
           }
@@ -2737,6 +2750,7 @@ export default function Admin() {
         nino: preciosTallasMap["2/4"] || 22000,
         hombre: pCaballeroUnica,
         mujer: pDamaUnica,
+        opciones_deshabilitadas: opcionesDeshabilitadas,
         precios_tallas: preciosTallasMap,
         precios_detallados: preciosDetalladosMap
       } : null;
@@ -3211,8 +3225,9 @@ export default function Admin() {
 
     const isFam = !!editingProduct.es_producto_familiar || editingProduct.categoria === 'familiar';
 
-    const preciosDetalladosMap: Record<string, { detal: number; mayor?: number; p50?: number }> = {};
+    const preciosDetalladosMap: Record<string, { detal: number; mayor?: number; p50?: number; deshabilitado?: boolean }> = {};
     const preciosTallasMap: Record<string, number> = {};
+    const opcionesDeshabilitadas: string[] = [];
 
     const famForm = (editingProduct as any).precios_detallados_fam || getInitialFamDetailedPrices(editingProduct);
     if (famForm) {
@@ -3220,14 +3235,20 @@ export default function Admin() {
         const dVal = parseFloat(obj.detal || '0');
         const mVal = parseFloat(obj.mayor || '0');
         const p50Val = parseFloat(obj.p50 || '0');
+        const isOff = !!obj.deshabilitado;
 
-        if (dVal > 0) {
+        if (isOff) {
+          opcionesDeshabilitadas.push(k);
+        }
+
+        if (dVal > 0 || mVal > 0 || p50Val > 0 || isOff) {
           preciosDetalladosMap[k] = {
-            detal: dVal,
+            detal: dVal > 0 ? dVal : 0,
             ...(mVal > 0 ? { mayor: mVal } : {}),
-            ...(p50Val > 0 ? { p50: p50Val } : {})
+            ...(p50Val > 0 ? { p50: p50Val } : {}),
+            ...(isOff ? { deshabilitado: true } : {})
           };
-          preciosTallasMap[k] = dVal;
+          if (dVal > 0) preciosTallasMap[k] = dVal;
         }
       });
     }
@@ -3245,6 +3266,7 @@ export default function Admin() {
       nino: preciosTallasMap["2/4"] || 22000,
       hombre: pCaballeroUnica,
       mujer: pDamaUnica,
+      opciones_deshabilitadas: opcionesDeshabilitadas,
       precios_tallas: preciosTallasMap,
       precios_detallados: preciosDetalladosMap
     } : null;
@@ -5467,18 +5489,36 @@ export default function Admin() {
                                 { key: '2XL Unisex', label: '🧑 2XL Unisex', defaultDetal: '36000' }
                               ].map(item => {
                                 const famForm = (editingProduct as any).precios_detallados_fam || getInitialFamDetailedPrices(editingProduct);
-                                const currentObj = famForm[item.key] || { detal: item.defaultDetal, mayor: '', p50: '' };
+                                const currentObj = famForm[item.key] || { detal: item.defaultDetal, mayor: '', p50: '', deshabilitado: false };
+                                const isOff = !!currentObj.deshabilitado;
                                 return (
-                                  <div key={item.key} style={{ background: '#ffffff', padding: '0.85rem', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
-                                    <label style={{ fontWeight: 800, fontSize: '0.84rem', color: '#0f172a', display: 'block', marginBottom: '0.45rem' }}>
-                                      {item.label}
-                                    </label>
+                                  <div key={item.key} style={{ background: isOff ? '#f8fafc' : '#ffffff', padding: '0.85rem', borderRadius: '12px', border: isOff ? '1px dashed #cbd5e1' : '1px solid #cbd5e1', opacity: isOff ? 0.75 : 1, transition: 'all 0.2s ease' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                      <label style={{ fontWeight: 600, fontSize: '0.84rem', color: isOff ? '#64748b' : '#0f172a', fontFamily: "'Poppins', sans-serif", margin: 0 }}>
+                                        {item.label} {isOff && <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 500 }}>(Deshabilitada)</span>}
+                                      </label>
+                                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer', fontSize: '0.73rem', color: isOff ? '#ef4444' : '#16a34a', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
+                                        <input
+                                          type="checkbox"
+                                          checked={!isOff}
+                                          onChange={e => {
+                                            const disabled = !e.target.checked;
+                                            const prev = (editingProduct as any).precios_detallados_fam || getInitialFamDetailedPrices(editingProduct);
+                                            const updated = { ...prev, [item.key]: { ...(prev[item.key] || {}), deshabilitado: disabled } };
+                                            setEditingProduct({ ...editingProduct, precios_detallados_fam: updated } as any);
+                                          }}
+                                          style={{ cursor: 'pointer', accentColor: '#0284c7' }}
+                                        />
+                                        {isOff ? 'Deshabilitada' : 'Habilitada'}
+                                      </label>
+                                    </div>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.35rem' }}>
                                       <div>
-                                        <span style={{ fontSize: '0.68rem', color: '#475569', fontWeight: 700, display: 'block', marginBottom: '0.15rem' }}>Detal ($)</span>
+                                        <span style={{ fontSize: '0.68rem', color: '#475569', fontWeight: 500, display: 'block', marginBottom: '0.15rem', fontFamily: "'Poppins', sans-serif" }}>Detal ($)</span>
                                         <input
                                           type="number"
                                           step="0.01"
+                                          disabled={isOff}
                                           placeholder={item.defaultDetal}
                                           value={currentObj.detal ?? item.defaultDetal}
                                           onChange={e => {
@@ -5486,14 +5526,15 @@ export default function Admin() {
                                             const updated = { ...prev, [item.key]: { ...(prev[item.key] || {}), detal: e.target.value } };
                                             setEditingProduct({ ...editingProduct, precios_detallados_fam: updated } as any);
                                           }}
-                                          style={{ width: '100%', padding: '0.4rem 0.25rem', borderRadius: '6px', border: '1px solid #94a3b8', fontSize: '0.8rem', fontWeight: 800, color: '#0f172a', textAlign: 'center' }}
+                                          style={{ width: '100%', padding: '0.4rem 0.25rem', borderRadius: '6px', border: '1px solid #94a3b8', fontSize: '0.8rem', fontWeight: 600, color: '#0f172a', textAlign: 'center', fontFamily: "'Poppins', sans-serif" }}
                                         />
                                       </div>
                                       <div>
-                                        <span style={{ fontSize: '0.68rem', color: '#0284c7', fontWeight: 700, display: 'block', marginBottom: '0.15rem' }}>Por Mayor</span>
+                                        <span style={{ fontSize: '0.68rem', color: '#0284c7', fontWeight: 500, display: 'block', marginBottom: '0.15rem', fontFamily: "'Poppins', sans-serif" }}>Por Mayor</span>
                                         <input
                                           type="number"
                                           step="0.01"
+                                          disabled={isOff}
                                           placeholder="Mayor"
                                           value={currentObj.mayor || ''}
                                           onChange={e => {
@@ -5501,14 +5542,15 @@ export default function Admin() {
                                             const updated = { ...prev, [item.key]: { ...(prev[item.key] || {}), mayor: e.target.value } };
                                             setEditingProduct({ ...editingProduct, precios_detallados_fam: updated } as any);
                                           }}
-                                          style={{ width: '100%', padding: '0.4rem 0.25rem', borderRadius: '6px', border: '1px solid #94a3b8', fontSize: '0.8rem', fontWeight: 800, color: '#0284c7', textAlign: 'center' }}
+                                          style={{ width: '100%', padding: '0.4rem 0.25rem', borderRadius: '6px', border: '1px solid #94a3b8', fontSize: '0.8rem', fontWeight: 600, color: '#0284c7', textAlign: 'center', fontFamily: "'Poppins', sans-serif" }}
                                         />
                                       </div>
                                       <div>
-                                        <span style={{ fontSize: '0.68rem', color: '#7c3aed', fontWeight: 700, display: 'block', marginBottom: '0.15rem' }}>50 Unid.</span>
+                                        <span style={{ fontSize: '0.68rem', color: '#7c3aed', fontWeight: 500, display: 'block', marginBottom: '0.15rem', fontFamily: "'Poppins', sans-serif" }}>50 Unid.</span>
                                         <input
                                           type="number"
                                           step="0.01"
+                                          disabled={isOff}
                                           placeholder="50 Unid"
                                           value={currentObj.p50 || ''}
                                           onChange={e => {
@@ -5516,7 +5558,7 @@ export default function Admin() {
                                             const updated = { ...prev, [item.key]: { ...(prev[item.key] || {}), p50: e.target.value } };
                                             setEditingProduct({ ...editingProduct, precios_detallados_fam: updated } as any);
                                           }}
-                                          style={{ width: '100%', padding: '0.4rem 0.25rem', borderRadius: '6px', border: '1px solid #94a3b8', fontSize: '0.8rem', fontWeight: 800, color: '#7c3aed', textAlign: 'center' }}
+                                          style={{ width: '100%', padding: '0.4rem 0.25rem', borderRadius: '6px', border: '1px solid #94a3b8', fontSize: '0.8rem', fontWeight: 600, color: '#7c3aed', textAlign: 'center', fontFamily: "'Poppins', sans-serif" }}
                                         />
                                       </div>
                                     </div>
@@ -5528,7 +5570,7 @@ export default function Admin() {
 
                           {/* SECCIÓN NIÑOS */}
                           <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '12px', border: '1px solid #bae6fd' }}>
-                            <label style={{ fontWeight: 800, fontSize: '0.88rem', color: '#0369a1', display: 'block', marginBottom: '0.6rem' }}>
+                            <label style={{ fontWeight: 600, fontSize: '0.88rem', color: '#0369a1', display: 'block', marginBottom: '0.6rem', fontFamily: "'Poppins', sans-serif" }}>
                               👶 Tallas Infantiles Niños (2/4, 6/8, 10/12, 14/16, 18)
                             </label>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.65rem' }}>
@@ -5540,18 +5582,36 @@ export default function Admin() {
                                 { key: '18', label: 'Talla 18', defaultDetal: '26000' }
                               ].map(item => {
                                 const famForm = (editingProduct as any).precios_detallados_fam || getInitialFamDetailedPrices(editingProduct);
-                                const currentObj = famForm[item.key] || { detal: item.defaultDetal, mayor: '', p50: '' };
+                                const currentObj = famForm[item.key] || { detal: item.defaultDetal, mayor: '', p50: '', deshabilitado: false };
+                                const isOff = !!currentObj.deshabilitado;
                                 return (
-                                  <div key={item.key} style={{ background: '#f8fafc', padding: '0.65rem', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                                    <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#0f172a', display: 'block', marginBottom: '0.3rem' }}>
-                                      {item.label}
-                                    </span>
+                                  <div key={item.key} style={{ background: isOff ? '#f8fafc' : '#f8fafc', padding: '0.65rem', borderRadius: '10px', border: isOff ? '1px dashed #cbd5e1' : '1px solid #e2e8f0', opacity: isOff ? 0.75 : 1 }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
+                                      <span style={{ fontSize: '0.78rem', fontWeight: 600, color: isOff ? '#64748b' : '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
+                                        {item.label} {isOff && <span style={{ fontSize: '0.68rem', color: '#ef4444', fontWeight: 500 }}>(Off)</span>}
+                                      </span>
+                                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer', fontSize: '0.7rem', color: isOff ? '#ef4444' : '#16a34a', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
+                                        <input
+                                          type="checkbox"
+                                          checked={!isOff}
+                                          onChange={e => {
+                                            const disabled = !e.target.checked;
+                                            const prev = (editingProduct as any).precios_detallados_fam || getInitialFamDetailedPrices(editingProduct);
+                                            const updated = { ...prev, [item.key]: { ...(prev[item.key] || {}), deshabilitado: disabled } };
+                                            setEditingProduct({ ...editingProduct, precios_detallados_fam: updated } as any);
+                                          }}
+                                          style={{ cursor: 'pointer', accentColor: '#0284c7' }}
+                                        />
+                                        {isOff ? 'Inactiva' : 'Activa'}
+                                      </label>
+                                    </div>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.3rem' }}>
                                       <div>
-                                        <span style={{ fontSize: '0.65rem', color: '#475569', fontWeight: 700, display: 'block', marginBottom: '0.1rem' }}>Detal</span>
+                                        <span style={{ fontSize: '0.65rem', color: '#475569', fontWeight: 500, display: 'block', marginBottom: '0.1rem', fontFamily: "'Poppins', sans-serif" }}>Detal</span>
                                         <input
                                           type="number"
                                           step="0.01"
+                                          disabled={isOff}
                                           placeholder={item.defaultDetal}
                                           value={currentObj.detal ?? item.defaultDetal}
                                           onChange={e => {
@@ -5559,14 +5619,15 @@ export default function Admin() {
                                             const updated = { ...prev, [item.key]: { ...(prev[item.key] || {}), detal: e.target.value } };
                                             setEditingProduct({ ...editingProduct, precios_detallados_fam: updated } as any);
                                           }}
-                                          style={{ width: '100%', padding: '0.35rem 0.2rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.78rem', fontWeight: 800, color: '#0f172a', textAlign: 'center' }}
+                                          style={{ width: '100%', padding: '0.35rem 0.2rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.78rem', fontWeight: 600, color: '#0f172a', textAlign: 'center', fontFamily: "'Poppins', sans-serif" }}
                                         />
                                       </div>
                                       <div>
-                                        <span style={{ fontSize: '0.65rem', color: '#0284c7', fontWeight: 700, display: 'block', marginBottom: '0.1rem' }}>Por Mayor</span>
+                                        <span style={{ fontSize: '0.65rem', color: '#0284c7', fontWeight: 500, display: 'block', marginBottom: '0.1rem', fontFamily: "'Poppins', sans-serif" }}>Por Mayor</span>
                                         <input
                                           type="number"
                                           step="0.01"
+                                          disabled={isOff}
                                           placeholder="Mayor"
                                           value={currentObj.mayor || ''}
                                           onChange={e => {
@@ -5574,14 +5635,15 @@ export default function Admin() {
                                             const updated = { ...prev, [item.key]: { ...(prev[item.key] || {}), mayor: e.target.value } };
                                             setEditingProduct({ ...editingProduct, precios_detallados_fam: updated } as any);
                                           }}
-                                          style={{ width: '100%', padding: '0.35rem 0.2rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.78rem', fontWeight: 800, color: '#0284c7', textAlign: 'center' }}
+                                          style={{ width: '100%', padding: '0.35rem 0.2rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.78rem', fontWeight: 600, color: '#0284c7', textAlign: 'center', fontFamily: "'Poppins', sans-serif" }}
                                         />
                                       </div>
                                       <div>
-                                        <span style={{ fontSize: '0.65rem', color: '#7c3aed', fontWeight: 700, display: 'block', marginBottom: '0.1rem' }}>50 Unid.</span>
+                                        <span style={{ fontSize: '0.65rem', color: '#7c3aed', fontWeight: 500, display: 'block', marginBottom: '0.1rem', fontFamily: "'Poppins', sans-serif" }}>50 Unid.</span>
                                         <input
                                           type="number"
                                           step="0.01"
+                                          disabled={isOff}
                                           placeholder="50 Unid"
                                           value={currentObj.p50 || ''}
                                           onChange={e => {
@@ -5589,7 +5651,7 @@ export default function Admin() {
                                             const updated = { ...prev, [item.key]: { ...(prev[item.key] || {}), p50: e.target.value } };
                                             setEditingProduct({ ...editingProduct, precios_detallados_fam: updated } as any);
                                           }}
-                                          style={{ width: '100%', padding: '0.35rem 0.2rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.78rem', fontWeight: 800, color: '#7c3aed', textAlign: 'center' }}
+                                          style={{ width: '100%', padding: '0.35rem 0.2rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.78rem', fontWeight: 600, color: '#7c3aed', textAlign: 'center', fontFamily: "'Poppins', sans-serif" }}
                                         />
                                       </div>
                                     </div>
@@ -7032,18 +7094,36 @@ export default function Admin() {
                                         { key: 'Caballero Única', label: '👨 Caballero Única', defaultDetal: '31000' },
                                         { key: '2XL Unisex', label: '🧑 2XL Unisex', defaultDetal: '36000' }
                                       ].map(item => {
-                                        const currentObj = form.precios_detallados_fam?.[item.key] || { detal: item.defaultDetal, mayor: '', p50: '' };
+                                        const currentObj = form.precios_detallados_fam?.[item.key] || { detal: item.defaultDetal, mayor: '', p50: '', deshabilitado: false };
+                                        const isOff = !!currentObj.deshabilitado;
                                         return (
-                                          <div key={item.key} style={{ background: '#ffffff', padding: '0.85rem', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
-                                            <label style={{ fontWeight: 800, fontSize: '0.84rem', color: '#0f172a', display: 'block', marginBottom: '0.45rem' }}>
-                                              {item.label}
-                                            </label>
+                                          <div key={item.key} style={{ background: isOff ? '#f8fafc' : '#ffffff', padding: '0.85rem', borderRadius: '12px', border: isOff ? '1px dashed #cbd5e1' : '1px solid #cbd5e1', opacity: isOff ? 0.75 : 1, transition: 'all 0.2s ease' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                              <label style={{ fontWeight: 600, fontSize: '0.84rem', color: isOff ? '#64748b' : '#0f172a', fontFamily: "'Poppins', sans-serif", margin: 0 }}>
+                                                {item.label} {isOff && <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 500 }}>(Deshabilitada)</span>}
+                                              </label>
+                                              <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', cursor: 'pointer', fontSize: '0.73rem', color: isOff ? '#ef4444' : '#16a34a', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
+                                                <input
+                                                  type="checkbox"
+                                                  checked={!isOff}
+                                                  onChange={e => {
+                                                    const disabled = !e.target.checked;
+                                                    const prev = form.precios_detallados_fam || defaultFamDetailedPrices;
+                                                    const updated = { ...prev, [item.key]: { ...(prev[item.key] || {}), deshabilitado: disabled } };
+                                                    updateBulkForm(index, 'precios_detallados_fam', updated);
+                                                  }}
+                                                  style={{ cursor: 'pointer', accentColor: '#0284c7' }}
+                                                />
+                                                {isOff ? 'Deshabilitada' : 'Habilitada'}
+                                              </label>
+                                            </div>
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.35rem' }}>
                                               <div>
-                                                <span style={{ fontSize: '0.68rem', color: '#475569', fontWeight: 700, display: 'block', marginBottom: '0.15rem' }}>Detal ($)</span>
+                                                <span style={{ fontSize: '0.68rem', color: '#475569', fontWeight: 500, display: 'block', marginBottom: '0.15rem', fontFamily: "'Poppins', sans-serif" }}>Detal ($)</span>
                                                 <input
                                                   type="number"
                                                   step="0.01"
+                                                  disabled={isOff}
                                                   placeholder={item.defaultDetal}
                                                   value={currentObj.detal ?? item.defaultDetal}
                                                   onChange={e => {
@@ -7051,14 +7131,15 @@ export default function Admin() {
                                                     const updated = { ...prev, [item.key]: { ...(prev[item.key] || {}), detal: e.target.value } };
                                                     updateBulkForm(index, 'precios_detallados_fam', updated);
                                                   }}
-                                                  style={{ width: '100%', padding: '0.4rem 0.25rem', borderRadius: '6px', border: '1px solid #94a3b8', fontSize: '0.8rem', fontWeight: 800, color: '#0f172a', textAlign: 'center' }}
+                                                  style={{ width: '100%', padding: '0.4rem 0.25rem', borderRadius: '6px', border: '1px solid #94a3b8', fontSize: '0.8rem', fontWeight: 600, color: '#0f172a', textAlign: 'center', fontFamily: "'Poppins', sans-serif" }}
                                                 />
                                               </div>
                                               <div>
-                                                <span style={{ fontSize: '0.68rem', color: '#0284c7', fontWeight: 700, display: 'block', marginBottom: '0.15rem' }}>Por Mayor</span>
+                                                <span style={{ fontSize: '0.68rem', color: '#0284c7', fontWeight: 500, display: 'block', marginBottom: '0.15rem', fontFamily: "'Poppins', sans-serif" }}>Por Mayor</span>
                                                 <input
                                                   type="number"
                                                   step="0.01"
+                                                  disabled={isOff}
                                                   placeholder="Mayor"
                                                   value={currentObj.mayor || ''}
                                                   onChange={e => {
@@ -7066,14 +7147,15 @@ export default function Admin() {
                                                     const updated = { ...prev, [item.key]: { ...(prev[item.key] || {}), mayor: e.target.value } };
                                                     updateBulkForm(index, 'precios_detallados_fam', updated);
                                                   }}
-                                                  style={{ width: '100%', padding: '0.4rem 0.25rem', borderRadius: '6px', border: '1px solid #94a3b8', fontSize: '0.8rem', fontWeight: 800, color: '#0284c7', textAlign: 'center' }}
+                                                  style={{ width: '100%', padding: '0.4rem 0.25rem', borderRadius: '6px', border: '1px solid #94a3b8', fontSize: '0.8rem', fontWeight: 600, color: '#0284c7', textAlign: 'center', fontFamily: "'Poppins', sans-serif" }}
                                                 />
                                               </div>
                                               <div>
-                                                <span style={{ fontSize: '0.68rem', color: '#7c3aed', fontWeight: 700, display: 'block', marginBottom: '0.15rem' }}>50 Unid.</span>
+                                                <span style={{ fontSize: '0.68rem', color: '#7c3aed', fontWeight: 500, display: 'block', marginBottom: '0.15rem', fontFamily: "'Poppins', sans-serif" }}>50 Unid.</span>
                                                 <input
                                                   type="number"
                                                   step="0.01"
+                                                  disabled={isOff}
                                                   placeholder="50 Unid"
                                                   value={currentObj.p50 || ''}
                                                   onChange={e => {
@@ -7081,7 +7163,7 @@ export default function Admin() {
                                                     const updated = { ...prev, [item.key]: { ...(prev[item.key] || {}), p50: e.target.value } };
                                                     updateBulkForm(index, 'precios_detallados_fam', updated);
                                                   }}
-                                                  style={{ width: '100%', padding: '0.4rem 0.25rem', borderRadius: '6px', border: '1px solid #94a3b8', fontSize: '0.8rem', fontWeight: 800, color: '#7c3aed', textAlign: 'center' }}
+                                                  style={{ width: '100%', padding: '0.4rem 0.25rem', borderRadius: '6px', border: '1px solid #94a3b8', fontSize: '0.8rem', fontWeight: 600, color: '#7c3aed', textAlign: 'center', fontFamily: "'Poppins', sans-serif" }}
                                                 />
                                               </div>
                                             </div>
@@ -7093,7 +7175,7 @@ export default function Admin() {
 
                                   {/* SECCIÓN NIÑOS */}
                                   <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '12px', border: '1px solid #bae6fd' }}>
-                                    <label style={{ fontWeight: 800, fontSize: '0.88rem', color: '#0369a1', display: 'block', marginBottom: '0.6rem' }}>
+                                    <label style={{ fontWeight: 600, fontSize: '0.88rem', color: '#0369a1', display: 'block', marginBottom: '0.6rem', fontFamily: "'Poppins', sans-serif" }}>
                                       👶 Tallas Infantiles Niños (2/4, 6/8, 10/12, 14/16, 18)
                                     </label>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.65rem' }}>
@@ -7104,18 +7186,36 @@ export default function Admin() {
                                         { key: '14/16', label: 'Talla 14/16', defaultDetal: '23000' },
                                         { key: '18', label: 'Talla 18', defaultDetal: '26000' }
                                       ].map(item => {
-                                        const currentObj = form.precios_detallados_fam?.[item.key] || { detal: item.defaultDetal, mayor: '', p50: '' };
+                                        const currentObj = form.precios_detallados_fam?.[item.key] || { detal: item.defaultDetal, mayor: '', p50: '', deshabilitado: false };
+                                        const isOff = !!currentObj.deshabilitado;
                                         return (
-                                          <div key={item.key} style={{ background: '#f8fafc', padding: '0.65rem', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                                            <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#0f172a', display: 'block', marginBottom: '0.3rem' }}>
-                                              {item.label}
-                                            </span>
+                                          <div key={item.key} style={{ background: isOff ? '#f8fafc' : '#f8fafc', padding: '0.65rem', borderRadius: '10px', border: isOff ? '1px dashed #cbd5e1' : '1px solid #e2e8f0', opacity: isOff ? 0.75 : 1 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem' }}>
+                                              <span style={{ fontSize: '0.78rem', fontWeight: 600, color: isOff ? '#64748b' : '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
+                                                {item.label} {isOff && <span style={{ fontSize: '0.68rem', color: '#ef4444', fontWeight: 500 }}>(Off)</span>}
+                                              </span>
+                                              <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', cursor: 'pointer', fontSize: '0.7rem', color: isOff ? '#ef4444' : '#16a34a', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
+                                                <input
+                                                  type="checkbox"
+                                                  checked={!isOff}
+                                                  onChange={e => {
+                                                    const disabled = !e.target.checked;
+                                                    const prev = form.precios_detallados_fam || defaultFamDetailedPrices;
+                                                    const updated = { ...prev, [item.key]: { ...(prev[item.key] || {}), deshabilitado: disabled } };
+                                                    updateBulkForm(index, 'precios_detallados_fam', updated);
+                                                  }}
+                                                  style={{ cursor: 'pointer', accentColor: '#0284c7' }}
+                                                />
+                                                {isOff ? 'Inactiva' : 'Activa'}
+                                              </label>
+                                            </div>
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.3rem' }}>
                                               <div>
-                                                <span style={{ fontSize: '0.65rem', color: '#475569', fontWeight: 700, display: 'block', marginBottom: '0.1rem' }}>Detal</span>
+                                                <span style={{ fontSize: '0.65rem', color: '#475569', fontWeight: 500, display: 'block', marginBottom: '0.1rem', fontFamily: "'Poppins', sans-serif" }}>Detal</span>
                                                 <input
                                                   type="number"
                                                   step="0.01"
+                                                  disabled={isOff}
                                                   placeholder={item.defaultDetal}
                                                   value={currentObj.detal ?? item.defaultDetal}
                                                   onChange={e => {
@@ -7123,14 +7223,15 @@ export default function Admin() {
                                                     const updated = { ...prev, [item.key]: { ...(prev[item.key] || {}), detal: e.target.value } };
                                                     updateBulkForm(index, 'precios_detallados_fam', updated);
                                                   }}
-                                                  style={{ width: '100%', padding: '0.35rem 0.2rem', borderRadius: '5px', border: '1px solid #94a3b8', fontSize: '0.78rem', fontWeight: 800, color: '#0f172a', textAlign: 'center' }}
+                                                  style={{ width: '100%', padding: '0.35rem 0.2rem', borderRadius: '5px', border: '1px solid #94a3b8', fontSize: '0.78rem', fontWeight: 600, color: '#0f172a', textAlign: 'center', fontFamily: "'Poppins', sans-serif" }}
                                                 />
                                               </div>
                                               <div>
-                                                <span style={{ fontSize: '0.65rem', color: '#0284c7', fontWeight: 700, display: 'block', marginBottom: '0.1rem' }}>Mayor</span>
+                                                <span style={{ fontSize: '0.65rem', color: '#0284c7', fontWeight: 500, display: 'block', marginBottom: '0.1rem', fontFamily: "'Poppins', sans-serif" }}>Mayor</span>
                                                 <input
                                                   type="number"
                                                   step="0.01"
+                                                  disabled={isOff}
                                                   placeholder="Mayor"
                                                   value={currentObj.mayor || ''}
                                                   onChange={e => {
@@ -7138,14 +7239,15 @@ export default function Admin() {
                                                     const updated = { ...prev, [item.key]: { ...(prev[item.key] || {}), mayor: e.target.value } };
                                                     updateBulkForm(index, 'precios_detallados_fam', updated);
                                                   }}
-                                                  style={{ width: '100%', padding: '0.35rem 0.2rem', borderRadius: '5px', border: '1px solid #94a3b8', fontSize: '0.78rem', fontWeight: 800, color: '#0284c7', textAlign: 'center' }}
+                                                  style={{ width: '100%', padding: '0.35rem 0.2rem', borderRadius: '5px', border: '1px solid #94a3b8', fontSize: '0.78rem', fontWeight: 600, color: '#0284c7', textAlign: 'center', fontFamily: "'Poppins', sans-serif" }}
                                                 />
                                               </div>
                                               <div>
-                                                <span style={{ fontSize: '0.65rem', color: '#7c3aed', fontWeight: 700, display: 'block', marginBottom: '0.1rem' }}>50 U</span>
+                                                <span style={{ fontSize: '0.65rem', color: '#7c3aed', fontWeight: 500, display: 'block', marginBottom: '0.1rem', fontFamily: "'Poppins', sans-serif" }}>50 U</span>
                                                 <input
                                                   type="number"
                                                   step="0.01"
+                                                  disabled={isOff}
                                                   placeholder="50 U"
                                                   value={currentObj.p50 || ''}
                                                   onChange={e => {
@@ -7153,7 +7255,7 @@ export default function Admin() {
                                                     const updated = { ...prev, [item.key]: { ...(prev[item.key] || {}), p50: e.target.value } };
                                                     updateBulkForm(index, 'precios_detallados_fam', updated);
                                                   }}
-                                                  style={{ width: '100%', padding: '0.35rem 0.2rem', borderRadius: '5px', border: '1px solid #94a3b8', fontSize: '0.78rem', fontWeight: 800, color: '#7c3aed', textAlign: 'center' }}
+                                                  style={{ width: '100%', padding: '0.35rem 0.2rem', borderRadius: '5px', border: '1px solid #94a3b8', fontSize: '0.78rem', fontWeight: 600, color: '#7c3aed', textAlign: 'center', fontFamily: "'Poppins', sans-serif" }}
                                                 />
                                               </div>
                                             </div>
@@ -7450,7 +7552,7 @@ export default function Admin() {
                               </p>
                               {/* Mini thumbnails if multiple extra images exist */}
                               {allImages.length > 1 && (
-                                <div style={{ display: 'flex', gap: '0.3rem', margin: '0.3rem 0', overflowX: 'auto', paddingBottom: '0.2rem' }}>
+                                <div style={{ display: 'flex', gap: '0.25rem', overflowX: 'auto', marginBottom: '0.4rem', paddingBottom: '0.1rem' }}>
                                   {allImages.map((imgObj, iIdx) => (
                                     <img
                                       key={iIdx}
@@ -7469,12 +7571,14 @@ export default function Admin() {
                                       const fam = p.precios_familia as any || {};
                                       const preciosDetallados = fam.precios_detallados || {};
                                       const preciosMap = fam.precios_tallas || {};
+                                      const disabledList: string[] = fam.opciones_deshabilitadas || [];
 
                                       const getOpt = (key: string, defD: number) => {
+                                        const isOff = disabledList.includes(key) || preciosDetallados[key]?.deshabilitado === true;
                                         const d = preciosDetallados[key]?.detal ?? preciosMap[key] ?? defD;
                                         const m = preciosDetallados[key]?.mayor ?? 0;
                                         const p50 = preciosDetallados[key]?.p50 ?? 0;
-                                        return { detal: d, mayor: m, p50: p50 };
+                                        return { detal: d, mayor: m, p50: p50, isOff };
                                       };
 
                                       const rows = [
@@ -7487,18 +7591,21 @@ export default function Admin() {
 
                                       return (
                                         <div style={{ background: '#f0f9ff', padding: '0.45rem', borderRadius: '8px', border: '1px solid #bae6fd', fontSize: '0.71rem' }}>
-                                          <div style={{ fontWeight: 800, color: '#0369a1', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                          <div style={{ fontWeight: 600, color: '#0369a1', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: "'Poppins', sans-serif" }}>
                                             <span>👨‍👩‍👧‍👦 Precios Familiar</span>
-                                            <span style={{ fontSize: '0.62rem', background: '#e0f2fe', color: '#0369a1', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: 700 }}>Detal | Mayor | 50U</span>
+                                            <span style={{ fontSize: '0.62rem', background: '#e0f2fe', color: '#0369a1', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: 500 }}>Detal | Mayor | 50U</span>
                                           </div>
                                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
                                             {rows.map((r, idx) => (
-                                              <div key={idx} style={{ background: '#ffffff', padding: '0.25rem 0.4rem', borderRadius: '4px', border: '1px solid #e0f2fe' }}>
-                                                <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.7rem', marginBottom: '0.1rem' }}>{r.label}</div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.66rem', color: '#475569' }}>
-                                                  <span>Detal: <strong style={{ color: '#0f172a' }}>${r.detal.toLocaleString()}</strong></span>
-                                                  <span>Mayor: <strong style={{ color: '#0284c7' }}>{r.mayor > 0 ? `$${r.mayor.toLocaleString()}` : '-'}</strong></span>
-                                                  <span>50U: <strong style={{ color: '#7c3aed' }}>{r.p50 > 0 ? `$${r.p50.toLocaleString()}` : '-'}</strong></span>
+                                              <div key={idx} style={{ background: r.isOff ? '#f1f5f9' : '#ffffff', padding: '0.25rem 0.4rem', borderRadius: '4px', border: r.isOff ? '1px dashed #cbd5e1' : '1px solid #e0f2fe', opacity: r.isOff ? 0.7 : 1 }}>
+                                                <div style={{ fontWeight: 600, color: r.isOff ? '#64748b' : '#0f172a', fontSize: '0.7rem', marginBottom: '0.1rem', display: 'flex', justifyContent: 'space-between', fontFamily: "'Poppins', sans-serif" }}>
+                                                  <span>{r.label}</span>
+                                                  {r.isOff && <span style={{ color: '#ef4444', fontSize: '0.64rem', fontWeight: 500 }}>Deshabilitada</span>}
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.66rem', color: '#475569', fontFamily: "'Poppins', sans-serif" }}>
+                                                  <span>Detal: <strong style={{ color: '#0f172a', fontWeight: 600 }}>${r.detal.toLocaleString()}</strong></span>
+                                                  <span>Mayor: <strong style={{ color: '#0284c7', fontWeight: 600 }}>{r.mayor > 0 ? `$${r.mayor.toLocaleString()}` : '-'}</strong></span>
+                                                  <span>50U: <strong style={{ color: '#7c3aed', fontWeight: 600 }}>{r.p50 > 0 ? `$${r.p50.toLocaleString()}` : '-'}</strong></span>
                                                 </div>
                                               </div>
                                             ))}

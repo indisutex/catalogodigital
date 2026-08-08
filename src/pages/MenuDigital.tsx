@@ -390,6 +390,16 @@ export default function MenuDigital() {
     }
   };
 
+  const isFamOptionDisabled = (prod: Producto, adminKey: string): boolean => {
+    if (!prod.es_producto_familiar || !prod.precios_familia) return false;
+    const fam = prod.precios_familia as any;
+    const disabledList: string[] = fam.opciones_deshabilitadas || [];
+    if (disabledList.includes(adminKey)) return true;
+    const det = fam.precios_detallados?.[adminKey];
+    if (det && det.deshabilitado === true) return true;
+    return false;
+  };
+
   const getActiveUnitPrice = (prod: Producto, miembro?: string, talla?: string, bType?: string | null) => {
     if (prod.es_producto_familiar && prod.precios_familia) {
       const fam = prod.precios_familia as any;
@@ -3315,107 +3325,123 @@ export default function MenuDigital() {
                     </p>
 
                     {/* ADULTOS / UNISEX */}
-                    <div style={{ marginBottom: '0.75rem' }}>
-                      <span style={{ fontSize: '0.76rem', fontWeight: 600, color: '#334155', display: 'block', marginBottom: '0.35rem' }}>
-                        👔 Opciones Adultos / Unisex
-                      </span>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(115px, 1fr))', gap: '0.4rem' }}>
-                        {[
-                          { key: 'dama_unica', label: '👩 Dama Única' },
-                          { key: 'dama_plus', label: '👩 Dama Plus' },
-                          { key: 'caballero_unica', label: '👨 Caballero Única' },
-                          { key: 'unisex_2xl', label: '🧑 2XL Unisex' }
-                        ].map(opt => {
-                          const optUnitPrice = getActiveUnitPrice(detailProduct, opt.key, 'Única', buyerType);
-                          const optPrice = getEffectivePrice({ ...detailProduct, precio: optUnitPrice }, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
-                          const qty = famOptionQuantities[opt.key] || 0;
-                          return (
-                            <div
-                              key={opt.key}
-                              style={{
-                                padding: '0.5rem 0.35rem',
-                                borderRadius: '10px',
-                                border: qty > 0 ? '2px solid #0284c7' : '1px solid #cbd5e1',
-                                background: qty > 0 ? '#e0f2fe' : '#ffffff',
-                                textAlign: 'center',
-                                boxShadow: qty > 0 ? '0 2px 8px rgba(2,132,199,0.2)' : 'none'
-                              }}
-                            >
-                              <div style={{ fontWeight: 600, fontSize: '0.76rem', color: '#0f172a' }}>{opt.label}</div>
-                              <div style={{ fontSize: '0.72rem', color: '#0284c7', fontWeight: 600, margin: '0.15rem 0 0.35rem' }}>
-                                ${optPrice.toLocaleString('es-CO')}
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
-                                <button
-                                  type="button"
-                                  onClick={() => setFamOptionQuantities(prev => ({ ...prev, [opt.key]: Math.max(0, (prev[opt.key] || 0) - 1) }))}
-                                  style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}
+                    {(() => {
+                      const adultOpts = [
+                        { key: 'dama_unica', label: '👩 Dama Única', adminKey: 'Dama Única' },
+                        { key: 'dama_plus', label: '👩 Dama Plus', adminKey: 'Dama Plus' },
+                        { key: 'caballero_unica', label: '👨 Caballero Única', adminKey: 'Caballero Única' },
+                        { key: 'unisex_2xl', label: '🧑 2XL Unisex', adminKey: '2XL Unisex' }
+                      ].filter(opt => !isFamOptionDisabled(detailProduct, opt.adminKey));
+
+                      if (adultOpts.length === 0) return null;
+
+                      return (
+                        <div style={{ marginBottom: '0.75rem' }}>
+                          <span style={{ fontSize: '0.76rem', fontWeight: 600, color: '#334155', display: 'block', marginBottom: '0.35rem', fontFamily: "'Poppins', sans-serif" }}>
+                            👔 Opciones Adultos / Unisex
+                          </span>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(115px, 1fr))', gap: '0.4rem' }}>
+                            {adultOpts.map(opt => {
+                              const optUnitPrice = getActiveUnitPrice(detailProduct, opt.key, 'Única', buyerType);
+                              const optPrice = getEffectivePrice({ ...detailProduct, precio: optUnitPrice }, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
+                              const qty = famOptionQuantities[opt.key] || 0;
+                              return (
+                                <div
+                                  key={opt.key}
+                                  style={{
+                                    padding: '0.5rem 0.35rem',
+                                    borderRadius: '10px',
+                                    border: qty > 0 ? '2px solid #0284c7' : '1px solid #cbd5e1',
+                                    background: qty > 0 ? '#e0f2fe' : '#ffffff',
+                                    textAlign: 'center',
+                                    boxShadow: qty > 0 ? '0 2px 8px rgba(2,132,199,0.2)' : 'none'
+                                  }}
                                 >
-                                  −
-                                </button>
-                                <span style={{ fontSize: '0.85rem', fontWeight: 600, minWidth: '16px', textAlign: 'center', color: '#0f172a' }}>{qty}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => setFamOptionQuantities(prev => ({ ...prev, [opt.key]: (prev[opt.key] || 0) + 1 }))}
-                                  style={{ width: '24px', height: '24px', borderRadius: '6px', border: 'none', background: '#0284c7', color: 'white', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}
-                                >
-                                  +
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
+                                  <div style={{ fontWeight: 600, fontSize: '0.76rem', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>{opt.label}</div>
+                                  <div style={{ fontSize: '0.72rem', color: '#0284c7', fontWeight: 600, margin: '0.15rem 0 0.35rem', fontFamily: "'Poppins', sans-serif" }}>
+                                    ${optPrice.toLocaleString('es-CO')}
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => setFamOptionQuantities(prev => ({ ...prev, [opt.key]: Math.max(0, (prev[opt.key] || 0) - 1) }))}
+                                      style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer', fontFamily: "'Poppins', sans-serif" }}
+                                    >
+                                      −
+                                    </button>
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 600, minWidth: '16px', textAlign: 'center', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>{qty}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => setFamOptionQuantities(prev => ({ ...prev, [opt.key]: (prev[opt.key] || 0) + 1 }))}
+                                      style={{ width: '24px', height: '24px', borderRadius: '6px', border: 'none', background: '#0284c7', color: 'white', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer', fontFamily: "'Poppins', sans-serif" }}
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {/* NIÑOS POR TALLAS */}
-                    <div>
-                      <span style={{ fontSize: '0.76rem', fontWeight: 800, color: '#0369a1', display: 'block', marginBottom: '0.35rem' }}>
-                        👶 Tallas Infantiles (Niños)
-                      </span>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '0.4rem' }}>
-                        {['2/4', '6/8', '10/12', '14/16', '18'].map(sz => {
-                          const optUnitPrice = getActiveUnitPrice(detailProduct, 'nino', sz, buyerType);
-                          const optPrice = getEffectivePrice({ ...detailProduct, precio: optUnitPrice }, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
-                          const qty = famOptionQuantities[sz] || 0;
-                          return (
-                            <div
-                              key={sz}
-                              style={{
-                                padding: '0.55rem 0.35rem',
-                                borderRadius: '10px',
-                                border: qty > 0 ? '2px solid #0284c7' : '1px solid #bae6fd',
-                                background: qty > 0 ? '#e0f2fe' : '#ffffff',
-                                textAlign: 'center',
-                                boxShadow: qty > 0 ? '0 2px 8px rgba(2,132,199,0.2)' : 'none'
-                              }}
-                            >
-                              <div style={{ fontWeight: 800, fontSize: '0.76rem', color: '#0f172a' }}>Talla {sz}</div>
-                              <div style={{ fontSize: '0.72rem', color: '#0284c7', fontWeight: 800, margin: '0.15rem 0 0.35rem' }}>
-                                ${optPrice.toLocaleString('es-CO')}
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
-                                <button
-                                  type="button"
-                                  onClick={() => setFamOptionQuantities(prev => ({ ...prev, [sz]: Math.max(0, (prev[sz] || 0) - 1) }))}
-                                  style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}
+                    {(() => {
+                      const kidOpts = ['2/4', '6/8', '10/12', '14/16', '18'].filter(sz => !isFamOptionDisabled(detailProduct, sz));
+
+                      if (kidOpts.length === 0) return null;
+
+                      return (
+                        <div>
+                          <span style={{ fontSize: '0.76rem', fontWeight: 600, color: '#0369a1', display: 'block', marginBottom: '0.35rem', fontFamily: "'Poppins', sans-serif" }}>
+                            👶 Tallas Infantiles (Niños)
+                          </span>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '0.4rem' }}>
+                            {kidOpts.map(sz => {
+                              const optUnitPrice = getActiveUnitPrice(detailProduct, 'nino', sz, buyerType);
+                              const optPrice = getEffectivePrice({ ...detailProduct, precio: optUnitPrice }, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
+                              const qty = famOptionQuantities[sz] || 0;
+                              return (
+                                <div
+                                  key={sz}
+                                  style={{
+                                    padding: '0.55rem 0.35rem',
+                                    borderRadius: '10px',
+                                    border: qty > 0 ? '2px solid #0284c7' : '1px solid #bae6fd',
+                                    background: qty > 0 ? '#e0f2fe' : '#ffffff',
+                                    textAlign: 'center',
+                                    boxShadow: qty > 0 ? '0 2px 8px rgba(2,132,199,0.2)' : 'none'
+                                  }}
                                 >
-                                  −
-                                </button>
-                                <span style={{ fontSize: '0.85rem', fontWeight: 800, minWidth: '16px', textAlign: 'center', color: '#0f172a' }}>{qty}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => setFamOptionQuantities(prev => ({ ...prev, [sz]: (prev[sz] || 0) + 1 }))}
-                                  style={{ width: '24px', height: '24px', borderRadius: '6px', border: 'none', background: '#0284c7', color: 'white', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}
-                                >
-                                  +
-                                </button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
+                                  <div style={{ fontWeight: 600, fontSize: '0.76rem', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>Talla {sz}</div>
+                                  <div style={{ fontSize: '0.72rem', color: '#0284c7', fontWeight: 600, margin: '0.15rem 0 0.35rem', fontFamily: "'Poppins', sans-serif" }}>
+                                    ${optPrice.toLocaleString('es-CO')}
+                                  </div>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => setFamOptionQuantities(prev => ({ ...prev, [sz]: Math.max(0, (prev[sz] || 0) - 1) }))}
+                                      style={{ width: '24px', height: '24px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer', fontFamily: "'Poppins', sans-serif" }}
+                                    >
+                                      −
+                                    </button>
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 600, minWidth: '16px', textAlign: 'center', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>{qty}</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => setFamOptionQuantities(prev => ({ ...prev, [sz]: (prev[sz] || 0) + 1 }))}
+                                      style={{ width: '24px', height: '24px', borderRadius: '6px', border: 'none', background: '#0284c7', color: 'white', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer', fontFamily: "'Poppins', sans-serif" }}
+                                    >
+                                      +
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
                 ) : null}
 

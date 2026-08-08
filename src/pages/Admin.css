@@ -3620,6 +3620,75 @@ button:active { transform: scale(0.95); }
   border: 1px solid #a7f3d0;
 }
 
+/* ── RESPONSIVE UTILITIES FOR MOBILE / DESKTOP TABLES & CARDS ── */
+.desktop-only-table,
+.orders-desktop-view {
+  display: block;
+}
+
+.mobile-only-cards,
+.orders-mobile-cards-container {
+  display: none;
+}
+
+.mobile-status-pills-bar {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0.4rem 0.2rem 0.6rem 0.2rem;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 0.5rem;
+}
+
+.mobile-status-pills-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.mobile-status-pills-bar button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.form-grid-material {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .desktop-only-table,
+  .orders-desktop-view {
+    display: none !important;
+  }
+  .mobile-only-cards,
+  .orders-mobile-cards-container {
+    display: flex !important;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+  .btn-text-desktop {
+    display: none !important;
+  }
+  .form-grid-material {
+    grid-template-columns: 1fr;
+  }
+  .super-crm-kanban {
+    display: flex !important;
+    overflow-x: auto !important;
+    gap: 1rem !important;
+    padding-bottom: 1rem !important;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+  .super-crm-kanban .kanban-column {
+    min-width: 84vw !important;
+    max-width: 86vw !important;
+    scroll-snap-align: start;
+    flex-shrink: 0 !important;
+  }
+}
+
 .pqrs-action-wa-btn {
   display: inline-flex;
   align-items: center;
