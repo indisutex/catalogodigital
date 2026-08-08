@@ -1055,13 +1055,7 @@ export default function Admin() {
 
                 {/* Center Seam */}
                 <path d="M 50 60 L 50 84" stroke="rgba(0,0,0,0.18)" strokeWidth="1.5" />
-                <path d="M 15 42 L 50 60 L 85 42" stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
-
-                {/* Shipping Label Sticker on Left Face */}
-                <path d="M 22 50 L 38 58 L 38 68 L 22 60 Z" fill="#ffffff" opacity="0.88" />
-                <path d="M 24 53 L 34 58" stroke="#475569" strokeWidth="1.2" opacity="0.6" />
-                <path d="M 24 56 L 31 59.5" stroke="#475569" strokeWidth="1.2" opacity="0.6" />
-                <path d="M 24 59 L 35 64.5" stroke="#ea580c" strokeWidth="1.5" opacity="0.8" />
+                <path d="M 15 42 L 50 60 L 85 42" stroke="rgba(0,0,0,0.1)" strokeWidth="1" />
               </svg>
             </div>
 
