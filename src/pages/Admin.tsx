@@ -879,86 +879,87 @@ export default function Admin() {
         }}
         style={{
           background: '#ffffff',
-          borderRadius: '20px',
+          borderRadius: '18px',
           border: '1px solid #f1f5f9',
           borderLeft: `5px solid ${borderLeftColor}`,
-          boxShadow: '0 8px 24px rgba(15, 23, 42, 0.05)',
-          padding: '1.1rem 1.25rem',
-          margin: '0 0 1rem 0',
+          boxShadow: '0 4px 18px rgba(15, 23, 42, 0.04)',
+          padding: '0.9rem 1rem',
+          margin: '0 0 0.85rem 0',
           cursor: 'grab',
           fontFamily: "'Poppins', sans-serif"
         }}
       >
-        {/* ── HEADER ROW ── */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem', marginBottom: '0.85rem', flexWrap: 'wrap' }}>
-          {/* Cliente Info */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-            <div style={{
-              width: '50px',
-              height: '50px',
-              borderRadius: '50%',
-              background: '#fff7ed',
-              border: '2px solid #ffedd5',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '1.25rem',
-              fontWeight: 600,
-              color: '#ea580c',
-              flexShrink: 0
-            }}>
-              {nombreCliente.charAt(0).toUpperCase()}
-            </div>
-            <div>
-              <h4 style={{ margin: 0, fontSize: '1.08rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.2 }}>
-                {nombreCliente}
-              </h4>
-              <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: '#64748b', fontWeight: 400, display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                <span>📞 {telefonoCliente || 'Sin número'}</span>
-                <span style={{ color: '#cbd5e1' }}>|</span>
-                <span>🕒 {timeLabel}</span>
-              </p>
-            </div>
-          </div>
-
-          {/* Asesor & Badge */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem', flexShrink: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', padding: '0.25rem 0.65rem', borderRadius: '12px', border: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
-              {adv.foto_url ? (
-                <img src={adv.foto_url} alt="" style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover' }} />
-              ) : (
-                <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: '#e0e7ff', color: '#4338ca', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 600 }}>
-                  {adv.nombre.charAt(0).toUpperCase()}
-                </div>
-              )}
-              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap' }}>{adv.nombre}</span>
-              <span style={{ background: '#f3e8ff', color: '#7e22ce', fontSize: '0.68rem', fontWeight: 500, padding: '1px 6px', borderRadius: '8px', whiteSpace: 'nowrap' }}>
-                {adv.role}
-              </span>
-            </div>
-
-            {/* Status Pill Badge */}
+        {/* ── HEADER BLOCK ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', marginBottom: '0.75rem' }}>
+          {/* Line 1: Status Pill Badge & Timestamp */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.35rem' }}>
             {isLead ? (
-              <span style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: '0.78rem', fontWeight: 500, padding: '0.35rem 0.75rem', borderRadius: '12px', whiteSpace: 'nowrap' }}>
+              <span style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: '0.72rem', fontWeight: 500, padding: '0.2rem 0.55rem', borderRadius: '10px' }}>
                 ⚠️ Carrito Abandonado
               </span>
             ) : ped.estado === 'completado' ? (
-              <span style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', fontSize: '0.78rem', fontWeight: 500, padding: '0.35rem 0.75rem', borderRadius: '12px', whiteSpace: 'nowrap' }}>
+              <span style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', fontSize: '0.72rem', fontWeight: 500, padding: '0.2rem 0.55rem', borderRadius: '10px' }}>
                 ✅ Verificado
               </span>
             ) : isContra ? (
-              <span style={{ background: '#fff7ed', border: '1px solid #ffedd5', color: '#ea580c', fontSize: '0.78rem', fontWeight: 500, padding: '0.35rem 0.75rem', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}>
-                🚚 Pago Contra Entrega
+              <span style={{ background: '#fff7ed', border: '1px solid #ffedd5', color: '#ea580c', fontSize: '0.72rem', fontWeight: 500, padding: '0.2rem 0.55rem', borderRadius: '10px', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                🚚 Contra Entrega
               </span>
             ) : ped.pantallazo_url ? (
-              <span style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: '0.78rem', fontWeight: 500, padding: '0.35rem 0.75rem', borderRadius: '12px', whiteSpace: 'nowrap' }}>
+              <span style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: '0.72rem', fontWeight: 500, padding: '0.2rem 0.55rem', borderRadius: '10px' }}>
                 📸 Comprobante recibido
               </span>
             ) : (
-              <span style={{ background: '#fffbeb', border: '1px solid #fef3c7', color: '#b45309', fontSize: '0.78rem', fontWeight: 500, padding: '0.35rem 0.75rem', borderRadius: '12px', whiteSpace: 'nowrap' }}>
-                ⏳ Esperando comprobante
+              <span style={{ background: '#fffbeb', border: '1px solid #fef3c7', color: '#b45309', fontSize: '0.72rem', fontWeight: 500, padding: '0.2rem 0.55rem', borderRadius: '10px' }}>
+                ⏳ Esperando pago
               </span>
             )}
+
+            <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 400 }}>
+              🕒 {timeLabel}
+            </span>
+          </div>
+
+          {/* Line 2: Customer Info & Advisor Pill */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0 }}>
+              <div style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '50%',
+                background: '#fff7ed',
+                border: '1.5px solid #ffedd5',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1rem',
+                fontWeight: 600,
+                color: '#ea580c',
+                flexShrink: 0
+              }}>
+                {nombreCliente.charAt(0).toUpperCase()}
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <h4 style={{ margin: 0, fontSize: '0.94rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.25, wordBreak: 'break-word' }}>
+                  {nombreCliente}
+                </h4>
+                <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.78rem', color: '#64748b', fontWeight: 400 }}>
+                  📞 {telefonoCliente || 'Sin número'}
+                </p>
+              </div>
+            </div>
+
+            {/* Asesor */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#f8fafc', padding: '0.2rem 0.5rem', borderRadius: '10px', border: '1px solid #e2e8f0', flexShrink: 0, maxWidth: '130px' }}>
+              {adv.foto_url ? (
+                <img src={adv.foto_url} alt="" style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+              ) : (
+                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#e0e7ff', color: '#4338ca', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: 600, flexShrink: 0 }}>
+                  {adv.nombre.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <span style={{ fontSize: '0.74rem', fontWeight: 500, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{adv.nombre}</span>
+            </div>
           </div>
         </div>
 
@@ -1314,28 +1315,26 @@ export default function Admin() {
                 handleUpdateLeadStatus(ped.id, 'contactado');
               }}
               style={{
-                padding: '0.6rem 0.75rem',
-                borderRadius: '10px',
+                padding: '0.45rem 0.65rem',
+                borderRadius: '8px',
                 border: 'none',
                 background: 'linear-gradient(135deg, #10b981, #059669)',
                 color: '#ffffff',
-                fontSize: '0.8rem',
+                fontSize: '0.76rem',
                 fontWeight: 600,
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.3rem',
+                gap: '0.25rem',
                 boxShadow: '0 3px 10px rgba(16, 185, 129, 0.3)',
                 whiteSpace: 'nowrap',
                 flex: 1,
-                minWidth: 0,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
+                minWidth: '95px'
               }}
             >
-              <span style={{ fontSize: '0.85rem', flexShrink: 0 }}>💭</span>
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>Recuperar venta</span>
+              <span style={{ fontSize: '0.82rem', flexShrink: 0 }}>💭</span>
+              <span>Contactar</span>
               <ChevronRight size={13} color="#ffffff" style={{ flexShrink: 0 }} />
             </button>
           ) : ped.estado === 'completado' ? (
@@ -1343,54 +1342,50 @@ export default function Admin() {
               type="button" 
               onClick={() => setSelectedPedido(ped)}
               style={{
-                padding: '0.6rem 0.75rem',
-                borderRadius: '10px',
+                padding: '0.45rem 0.65rem',
+                borderRadius: '8px',
                 border: 'none',
                 background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
                 color: '#ffffff',
-                fontSize: '0.8rem',
+                fontSize: '0.76rem',
                 fontWeight: 600,
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.3rem',
+                gap: '0.25rem',
                 boxShadow: '0 4px 14px rgba(59, 130, 246, 0.35)',
                 whiteSpace: 'nowrap',
                 flex: 1,
-                minWidth: 0,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
+                minWidth: '85px'
               }}
             >
-              <span>👁️ Ver Factura</span>
+              <span>👁️ Factura</span>
             </button>
           ) : isContra ? (
             <button 
               type="button" 
               onClick={() => setSelectedPedido(ped)}
               style={{
-                padding: '0.6rem 0.75rem',
-                borderRadius: '10px',
+                padding: '0.45rem 0.65rem',
+                borderRadius: '8px',
                 border: 'none',
                 background: 'linear-gradient(135deg, #ff5722, #ea580c)',
                 color: '#ffffff',
-                fontSize: '0.8rem',
+                fontSize: '0.76rem',
                 fontWeight: 600,
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.3rem',
+                gap: '0.25rem',
                 boxShadow: '0 3px 10px rgba(234, 88, 12, 0.3)',
                 whiteSpace: 'nowrap',
                 flex: 1,
-                minWidth: 0,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
+                minWidth: '95px'
               }}
             >
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>🚚 Gestionar Despacho</span>
+              <span>🚚 Despacho</span>
               <ChevronRight size={13} color="#ffffff" style={{ flexShrink: 0 }} />
             </button>
           ) : ped.pantallazo_url ? (
@@ -1398,27 +1393,25 @@ export default function Admin() {
               type="button" 
               onClick={() => setSelectedPedido(ped)}
               style={{
-                padding: '0.6rem 0.75rem',
-                borderRadius: '10px',
+                padding: '0.45rem 0.65rem',
+                borderRadius: '8px',
                 border: 'none',
                 background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
                 color: '#ffffff',
-                fontSize: '0.8rem',
+                fontSize: '0.76rem',
                 fontWeight: 600,
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.3rem',
+                gap: '0.25rem',
                 boxShadow: '0 4px 14px rgba(59, 130, 246, 0.35)',
                 whiteSpace: 'nowrap',
                 flex: 1,
-                minWidth: 0,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
+                minWidth: '95px'
               }}
             >
-              <span>💳 Verificar Pago</span>
+              <span>💳 Verificar</span>
             </button>
           ) : (
             <button 
@@ -1436,27 +1429,25 @@ export default function Admin() {
                 window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`, '_blank');
               }}
               style={{
-                padding: '0.6rem 0.75rem',
-                borderRadius: '10px',
+                padding: '0.45rem 0.65rem',
+                borderRadius: '8px',
                 border: 'none',
                 background: 'linear-gradient(135deg, #10b981, #059669)',
                 color: '#ffffff',
-                fontSize: '0.8rem',
+                fontSize: '0.76rem',
                 fontWeight: 600,
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.3rem',
+                gap: '0.25rem',
                 boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
                 whiteSpace: 'nowrap',
                 flex: 1,
-                minWidth: 0,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
+                minWidth: '95px'
               }}
             >
-              <span>📲 Recordar Pago</span>
+              <span>📲 Recordar</span>
             </button>
           )}
         </div>
