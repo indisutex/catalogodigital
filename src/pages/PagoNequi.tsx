@@ -26,19 +26,36 @@ export default function PagoNequi({ mode: propMode }: PagoNequiProps) {
     async function cargar() {
       if (!pedidoId) return;
       const cleanId = pedidoId.trim();
-      let query = supabase.from('pedidos').select('*');
-      if (cleanId.length === 36) {
-        query = query.eq('id', cleanId);
-      } else {
-        query = query.or(`id.eq.${cleanId},id.ilike.${cleanId}%`);
+      let foundData = null;
+
+      try {
+        if (cleanId.length === 36) {
+          const { data } = await supabase.from('pedidos').select('*').eq('id', cleanId).maybeSingle();
+          foundData = data;
+          if (!foundData) {
+            const { data: leadData } = await supabase.from('leads').select('*').eq('id', cleanId).maybeSingle();
+            foundData = leadData;
+          }
+        } else {
+          // Búsqueda segura por prefijo (8 caracteres) sobre pedidos y leads recientes
+          const { data: recentPedidos } = await supabase.from('pedidos').select('*').order('created_at', { ascending: false }).limit(100);
+          foundData = (recentPedidos || []).find((p: any) => (p.id || '').toLowerCase().startsWith(cleanId.toLowerCase()));
+          
+          if (!foundData) {
+            const { data: recentLeads } = await supabase.from('leads').select('*').order('created_at', { ascending: false }).limit(100);
+            foundData = (recentLeads || []).find((l: any) => (l.id || '').toLowerCase().startsWith(cleanId.toLowerCase()));
+          }
+        }
+      } catch (err) {
+        console.error('Error cargando pedido por ID:', err);
       }
-      const { data } = await query.limit(1).maybeSingle();
-      setPedido(data);
-      if (data?.pantallazo_url) setEnviado(true);
+
+      setPedido(foundData);
+      if (foundData?.pantallazo_url) setEnviado(true);
 
       // Cargar configuración de negocio si existe
-      if (data?.tenant_id) {
-        await supabase.from('configuracion').select('*').eq('tenant_id', data.tenant_id).maybeSingle();
+      if (foundData?.tenant_id) {
+        await supabase.from('configuracion').select('*').eq('tenant_id', foundData.tenant_id).maybeSingle();
       }
       setCargando(false);
     }
@@ -80,13 +97,18 @@ export default function PagoNequi({ mode: propMode }: PagoNequiProps) {
       }
       
       const { data: urlData } = supabase.storage.from('archivos').getPublicUrl(fileName);
-      const { error: updateErr } = await supabase
+      let { error: updateErr } = await supabase
         .from('pedidos')
         .update({ pantallazo_url: urlData.publicUrl })
         .eq('id', pedido.id);
+      
+      await supabase
+        .from('leads')
+        .update({ pantallazo_url: urlData.publicUrl })
+        .eq('id', pedido.id);
+
       if (updateErr) {
-        console.error('Database update error:', updateErr);
-        throw new Error(`Error de Base de Datos: ${updateErr.message}`);
+        console.warn('Database update en pedidos tuvo advertencia:', updateErr.message);
       }
       setEnviado(true);
     } catch (e: any) {

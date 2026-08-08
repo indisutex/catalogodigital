@@ -1192,14 +1192,16 @@ export default function MenuDigital() {
         mensaje += metodosStr;
       }
 
-      if (orderId) {
-        const shortOrderId = orderId.slice(0, 8);
+      const finalTargetId = orderId || (leadIdRef.current || leadId);
+      if (finalTargetId) {
+        const shortOrderId = finalTargetId.slice(0, 8);
         const uploadLink = `${window.location.origin}/pago/${shortOrderId}`;
         mensaje += `\n*Sube tu comprobante de pago aqui:* ${uploadLink}\n`;
       }
     } else if (modalidadPago === 'contra_entrega') {
-      if (orderId) {
-        const shortOrderId = orderId.slice(0, 8);
+      const finalTargetId = orderId || (leadIdRef.current || leadId);
+      if (finalTargetId) {
+        const shortOrderId = finalTargetId.slice(0, 8);
         const guiaLink = `${window.location.origin}/guia/${shortOrderId}`;
         mensaje += `\n*Ver guia / evidencia de envio:* ${guiaLink}\n`;
       }
