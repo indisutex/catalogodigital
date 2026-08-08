@@ -1135,9 +1135,7 @@ export default function MenuDigital() {
         cliente_nombre: formData.nombre,
         cliente_telefono: formData.telefono,
         cliente_cedula: cedVal,
-        cedula: cedVal,
         cliente_email: emailVal,
-        email: emailVal,
         direccion: direccionConDatos,
         ciudad: ciudadFormateada,
         total: total,
@@ -1156,9 +1154,12 @@ export default function MenuDigital() {
       let { data: newOrder, error: dbErr } = await supabase.from('pedidos').insert(insertPayload).select('id').single();
 
       if (dbErr) {
-        console.warn('Primer intento de insert falló:', dbErr.message, '- reintentando con payload básico...');
+        console.warn('Insert pedido falló:', dbErr.message);
+        // Reintento sin columnas opcionales por si alguna falta
         const pClean = { ...insertPayload };
-        delete pClean.metodo_pago; delete pClean.metodo_envio; delete pClean.modalidad_pago; delete pClean.metodo_recepcion; delete pClean.tipo_compra; delete pClean.departamento;
+        delete pClean.cliente_cedula; delete pClean.cliente_email;
+        delete pClean.metodo_pago; delete pClean.metodo_envio; delete pClean.modalidad_pago;
+        delete pClean.metodo_recepcion; delete pClean.tipo_compra; delete pClean.departamento;
         const retry = await supabase.from('pedidos').insert(pClean).select('id').single();
         if (!retry.error) {
           newOrder = retry.data;
