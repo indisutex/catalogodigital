@@ -5,7 +5,7 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista, PQRS } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, Wrench, ArrowUpDown, Filter, MapPin, XCircle, Truck, Clock, FileCheck, CheckCircle, Landmark, BookOpen, LifeBuoy, ShoppingCart, ClipboardList, Star } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, ChevronRight, Wrench, ArrowUpDown, Filter, MapPin, XCircle, Truck, Clock, FileCheck, CheckCircle, Landmark, BookOpen, LifeBuoy, ShoppingCart, ClipboardList, Star } from 'lucide-react';
 
 import * as XLSX from 'xlsx';
 import { ERPContabilidadService } from '../lib/erpContabilidadService';
@@ -835,16 +835,8 @@ export default function Admin() {
       timeLabel = `Hace ${elapsedMins} ${elapsedMins === 1 ? 'minuto' : 'minutos'}`;
     }
 
-    // let // probLabel = "50%";
-    // let // probClass = "prob-medium";
     const nombreCliente = ped.cliente_nombre || ped.nombre || 'Borrador Anónimo';
     const telefonoCliente = ped.cliente_telefono || ped.telefono || '';
-    if (isLead) {
-      // const charCodeSum = nombreCliente.split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
-      // const randProb = 15 + (charCodeSum % 80);
-      // probLabel = `${randProb}%`;
-      // probClass = randProb > 70 ? 'prob-high' : randProb > 40 ? 'prob-medium' : 'prob-low';
-    }
 
     let adv = getAsesorInfoByPhone(ped.linea_whatsapp);
     if (ped.origen === 'pos') {
@@ -854,15 +846,24 @@ export default function Admin() {
 
     const mp = getMetodoPago(ped);
     const isContra = mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra'));
-    const cardStatusClass = isLead 
-      ? 'lead-abandonado' 
-      : ped.estado === 'completado' 
-      ? 'order-completado' 
-      : isContra 
-      ? 'order-contraentrega' 
-      : ped.pantallazo_url 
-      ? 'order-comprobante' 
-      : 'order-pendiente';
+    
+    // Status border color
+    let borderLeftColor = '#ef4444'; // Lead default
+    if (!isLead) {
+      if (ped.estado === 'completado') borderLeftColor = '#10b981';
+      else if (isContra) borderLeftColor = '#ea580c';
+      else if (ped.pantallazo_url) borderLeftColor = '#3b82f6';
+      else borderLeftColor = '#f59e0b';
+    }
+
+    const firstProd = parsedProds[0] || null;
+    const firstProdImg = firstProd ? (
+      firstProd.imagen_url || firstProd.imagen || firstProd.image_url || 
+      (Array.isArray(firstProd.imagenes_extra) && firstProd.imagenes_extra[0] ? (typeof firstProd.imagenes_extra[0] === 'string' ? firstProd.imagenes_extra[0] : firstProd.imagenes_extra[0].url) : null) ||
+      (productos.find((p: any) => p.id === firstProd.id || (p.referencia && p.referencia === firstProd.referencia))?.imagen_url)
+    ) : null;
+
+    const totalUnits = parsedProds.reduce((acc: number, p: any) => acc + (p.cantidad || 1), 0);
 
     return (
       <div 
@@ -871,194 +872,380 @@ export default function Admin() {
         onDragStart={(e) => {
           e.dataTransfer.setData('text/plain', JSON.stringify({ id: ped.id, isLead }));
         }}
-        className={`order-mobile-card ${cardStatusClass}`} 
-        style={{ margin: 0, cursor: 'grab' }}
+        style={{
+          background: '#ffffff',
+          borderRadius: '20px',
+          border: '1px solid #f1f5f9',
+          borderLeft: `5px solid ${borderLeftColor}`,
+          boxShadow: '0 8px 24px rgba(15, 23, 42, 0.05)',
+          padding: '1.1rem 1.25rem',
+          margin: '0 0 1rem 0',
+          cursor: 'grab',
+          fontFamily: "'Poppins', sans-serif"
+        }}
       >
-        <div className="card-header-row">
-          <div className="client-info-block">
-            <div className="client-avatar">
+        {/* ── HEADER ROW ── */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.75rem', marginBottom: '0.85rem' }}>
+          {/* Cliente Info */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+            <div style={{
+              width: '50px',
+              height: '50px',
+              borderRadius: '50%',
+              background: '#fff7ed',
+              border: '2px solid #ffedd5',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.25rem',
+              fontWeight: 600,
+              color: '#ea580c',
+              flexShrink: 0
+            }}>
               {nombreCliente.charAt(0).toUpperCase()}
             </div>
-            <div className="client-details">
-              <h4>{nombreCliente}</h4>
-              <p className="client-phone">📞 {telefonoCliente || 'Sin número'}</p>
-              <span className="client-time">{timeLabel}</span>
+            <div>
+              <h4 style={{ margin: 0, fontSize: '1.08rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.2 }}>
+                {nombreCliente}
+              </h4>
+              <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.8rem', color: '#64748b', fontWeight: 400, display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                <span>📞 {telefonoCliente || 'Sin número'}</span>
+                <span style={{ color: '#cbd5e1' }}>|</span>
+                <span>🕒 {timeLabel}</span>
+              </p>
             </div>
           </div>
-          <div className="status-badges-block">
-            <div className="advisor-badge">
-              <div className="advisor-avatar">
-                {adv.foto_url ? (
-                  <img src={adv.foto_url} alt="" />
-                ) : (
-                  adv.nombre.charAt(0).toUpperCase()
-                )}
-              </div>
-              <div className="advisor-meta">
-                <h5>{adv.nombre}</h5>
-                <span className="advisor-role">{adv.role}</span>
-              </div>
+
+          {/* Asesor & Badge */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.4rem', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', padding: '0.25rem 0.65rem', borderRadius: '12px', border: '1px solid #e2e8f0', whiteSpace: 'nowrap' }}>
+              {adv.foto_url ? (
+                <img src={adv.foto_url} alt="" style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover' }} />
+              ) : (
+                <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: '#e0e7ff', color: '#4338ca', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 600 }}>
+                  {adv.nombre.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap' }}>{adv.nombre}</span>
+              <span style={{ background: '#f3e8ff', color: '#7e22ce', fontSize: '0.68rem', fontWeight: 500, padding: '1px 6px', borderRadius: '8px', whiteSpace: 'nowrap' }}>
+                {adv.role}
+              </span>
             </div>
-            {!isLead && (() => {
-              if (ped.estado === 'completado') {
-                return <span className="payment-badge-small verified" style={{ marginTop: '4px', display: 'inline-block' }}>✅ Verificado</span>;
-              }
-              if (isContra) {
-                return <span className="payment-badge-small contraentrega" style={{ marginTop: '4px', display: 'inline-block' }}>🚚 Pago Contra Entrega</span>;
-              }
-              if (ped.pantallazo_url) {
-                return <span className="payment-badge-small uploaded" style={{ marginTop: '4px', display: 'inline-block' }}>📸 Comprobante recibido</span>;
-              }
-              return <span className="payment-badge-small pending" style={{ marginTop: '4px', display: 'inline-block' }}>⏳ Esperando comprobante de pago</span>;
-            })()}
-          </div>
-        </div>
 
-        <div className="card-body-row">
-          <div className="cart-summary-block">
-            <div className="cart-total-info">
-              <span className="cart-total-icon">💰</span>
-              <span className="cart-total-amount">${ped.total.toLocaleString()}</span>
-              <span className="items-count">📦 {parsedProds.reduce((acc: number, p: any) => acc + (p.cantidad || 1), 0)} uds</span>
-            </div>
-            
-            {parsedProds.length > 0 ? (
-              <div className="cart-products-box">
-                <ul className="cart-products-list">
-                  {parsedProds.slice(0, 2).map((prod: any, idx: number) => (
-                    <li key={idx}>
-                      • {prod.nombre} {prod.talla ? `(${prod.talla})` : ''}
-                    </li>
-                  ))}
-                </ul>
-                {parsedProds.length > 2 && (
-                  <div className="more-products-badge" onClick={() => setSelectedPedido(ped)}>
-                    + Ver {parsedProds.length - 2} más
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="cart-products-box" style={{ background: '#fffbeb', borderColor: '#fde68a' }}>
-                <span style={{ fontSize: '0.65rem', color: '#b45309', fontWeight: 600 }}>⚠️ Sin productos</span>
-              </div>
-            )}
-          </div>
-
-
-        </div>
-
-
-
-        <div className="card-footer-row" style={{ marginTop: '0.25rem' }}>
-          <div className="quick-actions" style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            {telefonoCliente && (
-              <button 
-                type="button" 
-                className="btn-circle-action"
-                onClick={() => {
-                  const cleanPhone = telefonoCliente.replace(/\D/g, '');
-                  const target = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
-                  window.open(`https://wa.me/${target}`, '_blank');
-                }}
-              >
-                <MessageSquare size={13} />
-              </button>
-            )}
-            <button type="button" className="btn-details-action" onClick={() => setSelectedPedido(ped)}>
-              Ver detalles
-            </button>
-            {isLead && (
-              <select 
-                className="lead-status-dropdown" 
-                value={ped.retargeting_estado || ''}
-                onChange={(e) => handleUpdateLeadStatus(ped.id, e.target.value)}
-                style={{ fontSize: '0.75rem', padding: '0.25rem', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer' }}
-              >
-                <option value="">Estado...</option>
-                <option value="contactado">Contactado</option>
-                <option value="descartado">Descartado</option>
-              </select>
-            )}
-          </div>
-
-          <div className="main-action-wrapper">
+            {/* Status Pill Badge */}
             {isLead ? (
-              <button 
-                type="button" 
-                className="btn-main-recover green"
-                onClick={() => {
-                  const cleanPhone = (telefonoCliente || '').replace(/\D/g, '');
-                  if (!cleanPhone) {
-                    showToast('Teléfono inválido para WhatsApp', 'error');
-                    return;
-                  }
-                  const prodNames = Array.isArray(ped.productos) && ped.productos.length > 0
-                    ? ped.productos.map((p: any) => `${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ')
-                    : '';
-                  const text = `¡Hola ${nombreCliente || ''}! 👋 Vimos que estás interesado en: ${prodNames ? `*${prodNames}*` : 'nuestros productos'}. ¿Tienes alguna duda o te ayudamos a completar tu pedido? Escríbenos y con gusto te colaboramos. 😊`;
-                  const targetPhone = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
-                  window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`, '_blank');
-                  handleUpdateLeadStatus(ped.id, 'contactado');
-                }}
-              >
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style={{ marginRight: '5px', display: 'inline-block', verticalAlign: 'middle' }}>
-                  <path d="M12.012 2c-5.506 0-9.988 4.482-9.988 9.988 0 1.761.46 3.473 1.332 4.978L2 22l5.222-1.368a9.92 9.92 0 0 0 4.79 1.228h.004c5.502 0 9.984-4.482 9.984-9.988C22 6.482 17.514 2 12.012 2zm5.836 14.199c-.24.676-1.18 1.258-1.748 1.356-.572.096-1.28.18-3.79-.824-3.13-1.252-5.112-4.412-5.268-4.622-.156-.21-1.272-1.688-1.272-3.218 0-1.53.804-2.28 1.092-2.584.288-.304.624-.378.834-.378.21 0 .42.002.604.01.192.008.452-.074.708.536.26.622.888 2.164.966 2.322.078.158.13.342.024.552-.104.21-.156.342-.312.524-.156.182-.328.406-.468.546-.156.156-.32.326-.138.636.182.31.81 1.334 1.738 2.16.196.176.386.326.568.428 1.218.682 1.83.582 2.112.282.282-.3.626-.642.796-.89.17-.25.334-.208.562-.124.228.084 1.442.68 1.69 1.046.248.366.248.55.128.832z"/>
-                </svg> Recuperar venta</button>
+              <span style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: '0.78rem', fontWeight: 500, padding: '0.35rem 0.75rem', borderRadius: '12px', whiteSpace: 'nowrap' }}>
+                ⚠️ Carrito Abandonado
+              </span>
             ) : ped.estado === 'completado' ? (
-              <button 
-                type="button" 
-                className="btn-main-recover blue"
-                onClick={() => setSelectedPedido(ped)}
-              >
-                👁️ Ver Factura
-              </button>
+              <span style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', fontSize: '0.78rem', fontWeight: 500, padding: '0.35rem 0.75rem', borderRadius: '12px', whiteSpace: 'nowrap' }}>
+                ✅ Verificado
+              </span>
+            ) : isContra ? (
+              <span style={{ background: '#fff7ed', border: '1px solid #ffedd5', color: '#ea580c', fontSize: '0.78rem', fontWeight: 500, padding: '0.35rem 0.75rem', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', whiteSpace: 'nowrap' }}>
+                🚚 Pago Contra Entrega
+              </span>
             ) : ped.pantallazo_url ? (
-              <button 
-                type="button" 
-                className="btn-main-recover blue"
-                onClick={() => setSelectedPedido(ped)}
-              >
-                💳 Verificar Pago
-              </button>
-            ) : (() => {
-              const mp = getMetodoPago(ped);
-              return mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra'));
-            })() ? (
-              <button 
-                type="button" 
-                className="btn-main-recover"
-                onClick={() => setSelectedPedido(ped)}
-                style={{ background: '#ea580c', color: 'white', border: 'none', fontWeight: 700 }}
-              >
-                🚚 Gestionar Despacho
-              </button>
+              <span style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: '0.78rem', fontWeight: 500, padding: '0.35rem 0.75rem', borderRadius: '12px', whiteSpace: 'nowrap' }}>
+                📸 Comprobante recibido
+              </span>
             ) : (
-              <button 
-                type="button" 
-                className="btn-main-recover green"
-                onClick={() => {
-                  const cleanPhone = (telefonoCliente || '').replace(/\D/g, '');
-                  if (!cleanPhone) { showToast('Teléfono inválido para WhatsApp', 'error'); return; }
-                  const prodNames = Array.isArray(ped.productos) && ped.productos.length > 0
-                    ? ped.productos.map((p: any) => p.nombre).join(', ')
-                    : '';
-                  const uploadLink = `${window.location.origin}/pago/${ped.id.slice(0, 8)}`;
-                  const metodosInfo = getFormattedMetodosPago();
-                  const text = `¡Hola ${nombreCliente || ''}! 👋 Esperamos que estés muy bien. Recordamos que tu pedido de ${prodNames ? `*${prodNames}*` : 'nuestro catálogo'} por valor de *${ped.total.toLocaleString()}* está pendiente de pago.${metodosInfo}\nPor favor, sube tu comprobante de pago en el siguiente enlace para completar tu pedido:\n${uploadLink} 😊`;
-                  const targetPhone = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
-                  window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`, '_blank');
-                }}
-              >
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style={{ marginRight: '5px', display: 'inline-block', verticalAlign: 'middle' }}>
-                  <path d="M12.012 2c-5.506 0-9.988 4.482-9.988 9.988 0 1.761.46 3.473 1.332 4.978L2 22l5.222-1.368a9.92 9.92 0 0 0 4.79 1.228h.004c5.502 0 9.984-4.482 9.984-9.988C22 6.482 17.514 2 12.012 2zm5.836 14.199c-.24.676-1.18 1.258-1.748 1.356-.572.096-1.28.18-3.79-.824-3.13-1.252-5.112-4.412-5.268-4.622-.156-.21-1.272-1.688-1.272-3.218 0-1.53.804-2.28 1.092-2.584.288-.304.624-.378.834-.378.21 0 .42.002.604.01.192.008.452-.074.708.536.26.622.888 2.164.966 2.322.078.158.13.342.024.552-.104.21-.156.342-.312.524-.156.182-.328.406-.468.546-.156.156-.32.326-.138.636.182.31.81 1.334 1.738 2.16.196.176.386.326.568.428 1.218.682 1.83.582 2.112.282.282-.3.626-.642.796-.89.17-.25.334-.208.562-.124.228.084 1.442.68 1.69 1.046.248.366.248.55.128.832z"/>
-                </svg>
-                Recordar Pago
-              </button>
+              <span style={{ background: '#fffbeb', border: '1px solid #fef3c7', color: '#b45309', fontSize: '0.78rem', fontWeight: 500, padding: '0.35rem 0.75rem', borderRadius: '12px', whiteSpace: 'nowrap' }}>
+                ⏳ Esperando comprobante
+              </span>
             )}
           </div>
         </div>
 
+        {/* ── MIDDLE RESUMEN BLOCK (Total & Cantidad) ── */}
+        <div style={{ background: '#ffffff', border: '1px solid #f1f5f9', borderRadius: '16px', padding: '0.8rem 1.1rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 8px rgba(15,23,42,0.02)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem' }}>
+              💰
+            </div>
+            <div>
+              <span style={{ fontSize: '0.68rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'block' }}>TOTAL DEL PEDIDO</span>
+              <span style={{ fontSize: '1.3rem', fontWeight: 600, color: '#ea580c', lineHeight: 1.1, display: 'block' }}>
+                ${ped.total.toLocaleString()}
+              </span>
+            </div>
+          </div>
 
+          <div style={{ width: '1px', height: '36px', background: '#e2e8f0' }} />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem' }}>
+              📦
+            </div>
+            <div>
+              <span style={{ fontSize: '0.68rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'block' }}>PRODUCTOS</span>
+              <span style={{ fontSize: '1.05rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.1, display: 'block' }}>
+                {totalUnits} {totalUnits === 1 ? 'unidad' : 'uds'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── PRODUCT ITEM PREVIEW BOX ── */}
+        {firstProd ? (
+          <div style={{ background: '#fffbf5', border: '1px solid #ffedd5', borderRadius: '16px', padding: '0.75rem 1rem', marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.85rem', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ea580c', flexShrink: 0 }} />
+            
+            {firstProdImg ? (
+              <img src={firstProdImg} alt="" style={{ width: '48px', height: '48px', borderRadius: '12px', objectFit: 'cover', border: '1px solid #e2e8f0', background: 'white', flexShrink: 0 }} />
+            ) : (
+              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', flexShrink: 0 }}>
+                🛍️
+              </div>
+            )}
+
+            <div style={{ flex: 1, minWidth: 0, zIndex: 1 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                <h5 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {firstProd.nombre}
+                </h5>
+                {firstProd.talla && (
+                  <span style={{ background: '#f3e8ff', color: '#7e22ce', fontSize: '0.72rem', fontWeight: 500, padding: '2px 7px', borderRadius: '8px' }}>
+                    {firstProd.talla}
+                  </span>
+                )}
+              </div>
+              <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.78rem', color: '#64748b', fontWeight: 400 }}>
+                Cantidad: {firstProd.cantidad || 1} {firstProd.cantidad === 1 ? 'unidad' : 'unidades'}
+              </p>
+            </div>
+
+            {/* 3D Box Image Decoration Watermark */}
+            <div style={{ position: 'absolute', right: '-8px', bottom: '-10px', opacity: 0.88, pointerEvents: 'none' }}>
+              <img src="/caja_3d.png" alt="Caja 3D" style={{ width: '72px', height: '72px', objectFit: 'contain', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.06))' }} />
+            </div>
+
+            {parsedProds.length > 1 && (
+              <span 
+                onClick={() => setSelectedPedido(ped)}
+                style={{ position: 'relative', zIndex: 2, fontSize: '0.74rem', fontWeight: 600, color: '#ea580c', background: '#ffffff', padding: '0.3rem 0.65rem', borderRadius: '10px', border: '1px solid #ffedd5', cursor: 'pointer', whiteSpace: 'nowrap' }}
+              >
+                + Ver {parsedProds.length - 1} más
+              </span>
+            )}
+          </div>
+        ) : (
+          <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '14px', padding: '0.65rem 0.9rem', marginBottom: '0.85rem' }}>
+            <span style={{ fontSize: '0.78rem', color: '#b45309', fontWeight: 500 }}>⚠️ Sin productos detallados</span>
+          </div>
+        )}
+
+        {/* ── FOOTER ACTIONS ROW (1 sola fila) ── */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', width: '100%', flexWrap: 'nowrap' }}>
+          {telefonoCliente && (
+            <button 
+              type="button" 
+              onClick={() => {
+                const cleanPhone = telefonoCliente.replace(/\D/g, '');
+                const target = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
+                window.open(`https://wa.me/${target}`, '_blank');
+              }}
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '12px',
+                border: '1.5px solid #e2e8f0',
+                background: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: '#475569',
+                flexShrink: 0
+              }}
+              title="Abrir Chat WhatsApp"
+            >
+              <MessageSquare size={17} />
+            </button>
+          )}
+
+          <button 
+            type="button" 
+            onClick={() => setSelectedPedido(ped)}
+            style={{
+              padding: '0.65rem 0.85rem',
+              borderRadius: '12px',
+              border: '1.5px solid #e2e8f0',
+              background: '#ffffff',
+              color: '#0f172a',
+              fontSize: '0.82rem',
+              fontWeight: 500,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '0.25rem',
+              whiteSpace: 'nowrap',
+              flexShrink: 0
+            }}
+          >
+            <span>Ver detalles</span>
+            <ChevronRight size={15} color="#64748b" />
+          </button>
+
+          {isLead && (
+            <select 
+              value={ped.retargeting_estado || ''}
+              onChange={(e) => handleUpdateLeadStatus(ped.id, e.target.value)}
+              style={{ fontSize: '0.75rem', padding: '0.55rem 0.45rem', borderRadius: '12px', border: '1.5px solid #cbd5e1', background: 'white', cursor: 'pointer', fontWeight: 400, flexShrink: 0 }}
+            >
+              <option value="">Estado...</option>
+              <option value="contactado">Contactado</option>
+              <option value="descartado">Descartado</option>
+            </select>
+          )}
+
+          {/* Main Primary Action Button */}
+          {isLead ? (
+            <button 
+              type="button" 
+              onClick={() => {
+                const cleanPhone = (telefonoCliente || '').replace(/\D/g, '');
+                if (!cleanPhone) { showToast('Teléfono inválido para WhatsApp', 'error'); return; }
+                const prodNames = Array.isArray(ped.productos) && ped.productos.length > 0
+                  ? ped.productos.map((p: any) => `${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ')
+                  : '';
+                const text = `¡Hola ${nombreCliente || ''}! 👋 Vimos que estás interesado en: ${prodNames ? `*${prodNames}*` : 'nuestros productos'}. ¿Tienes alguna duda o te ayudamos a completar tu pedido? Escríbenos y con gusto te colaboramos. 😊`;
+                const targetPhone = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
+                window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`, '_blank');
+                handleUpdateLeadStatus(ped.id, 'contactado');
+              }}
+              style={{
+                padding: '0.65rem 0.95rem',
+                borderRadius: '12px',
+                border: 'none',
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                color: '#ffffff',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.35rem',
+                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
+                whiteSpace: 'nowrap',
+                flex: 1
+              }}
+            >
+              <span>💬 Recuperar venta</span>
+              <ChevronRight size={15} />
+            </button>
+          ) : isContra ? (
+            <button 
+              type="button" 
+              onClick={() => setSelectedPedido(ped)}
+              style={{
+                padding: '0.65rem 0.95rem',
+                borderRadius: '12px',
+                border: 'none',
+                background: 'linear-gradient(135deg, #ff5722, #ea580c)',
+                color: '#ffffff',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.35rem',
+                boxShadow: '0 4px 14px rgba(234, 88, 12, 0.35)',
+                whiteSpace: 'nowrap',
+                flex: 1
+              }}
+            >
+              <span>🚚 Gestionar Despacho</span>
+              <ChevronRight size={15} />
+            </button>
+          ) : ped.estado === 'completado' ? (
+            <button 
+              type="button" 
+              onClick={() => setSelectedPedido(ped)}
+              style={{
+                padding: '0.65rem 0.95rem',
+                borderRadius: '12px',
+                border: 'none',
+                background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+                color: '#ffffff',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.35rem',
+                boxShadow: '0 4px 14px rgba(59, 130, 246, 0.35)',
+                whiteSpace: 'nowrap',
+                flex: 1
+              }}
+            >
+              <span>👁️ Ver Factura</span>
+            </button>
+          ) : ped.pantallazo_url ? (
+            <button 
+              type="button" 
+              onClick={() => setSelectedPedido(ped)}
+              style={{
+                padding: '0.65rem 0.95rem',
+                borderRadius: '12px',
+                border: 'none',
+                background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+                color: '#ffffff',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.35rem',
+                boxShadow: '0 4px 14px rgba(59, 130, 246, 0.35)',
+                whiteSpace: 'nowrap',
+                flex: 1
+              }}
+            >
+              <span>💳 Verificar Pago</span>
+            </button>
+          ) : (
+            <button 
+              type="button" 
+              onClick={() => {
+                const cleanPhone = (telefonoCliente || '').replace(/\D/g, '');
+                if (!cleanPhone) { showToast('Teléfono inválido para WhatsApp', 'error'); return; }
+                const prodNames = Array.isArray(ped.productos) && ped.productos.length > 0
+                  ? ped.productos.map((p: any) => p.nombre).join(', ')
+                  : '';
+                const uploadLink = `${window.location.origin}/pago/${ped.id.slice(0, 8)}`;
+                const metodosInfo = getFormattedMetodosPago();
+                const text = `¡Hola ${nombreCliente || ''}! 👋 Esperamos que estés muy bien. Recordamos que tu pedido de ${prodNames ? `*${prodNames}*` : 'nuestro catálogo'} por valor de *${ped.total.toLocaleString()}* está pendiente de pago.${metodosInfo}\nPor favor, sube tu comprobante de pago en el siguiente enlace para completar tu pedido:\n${uploadLink} 😊`;
+                const targetPhone = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
+                window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`, '_blank');
+              }}
+              style={{
+                padding: '0.65rem 0.95rem',
+                borderRadius: '12px',
+                border: 'none',
+                background: 'linear-gradient(135deg, #10b981, #059669)',
+                color: '#ffffff',
+                fontSize: '0.85rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.35rem',
+                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
+                whiteSpace: 'nowrap',
+                flex: 1
+              }}
+            >
+              <span>📲 Recordar Pago</span>
+            </button>
+          )}
+        </div>
       </div>
     );
   };
@@ -13341,235 +13528,7 @@ export default function Admin() {
                           <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600 }}>No se encontraron registros</p>
                         </div>
                       ) : (
-                        combinedList.map((ped) => {
-                          const isLead = ped.isLead;
-                          const elapsedMs = new Date().getTime() - new Date(ped.created_at).getTime();
-                          const elapsedMins = Math.floor(elapsedMs / 60000);
-                          let timeLabel = 'Hace un momento';
-                          if (elapsedMins >= 60) {
-                            const elapsedHours = Math.floor(elapsedMins / 60);
-                            if (elapsedHours >= 24) {
-                              const days = Math.floor(elapsedHours / 24);
-                              timeLabel = `Hace ${days} ${days === 1 ? 'día' : 'días'}`;
-                            } else {
-                              timeLabel = `Hace ${elapsedHours} ${elapsedHours === 1 ? 'hora' : 'horas'}`;
-                            }
-                          } else if (elapsedMins > 0) {
-                            timeLabel = `Hace ${elapsedMins} ${elapsedMins === 1 ? 'minuto' : 'minutos'}`;
-                          }
-
-                          // Consistent probability for leads
-                          // // let // probLabel = "50%";
-                          // let // probClass = "prob-medium";
-                          if (isLead) {
-                            // const charCodeSum = (ped.cliente_nombre || '').split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
-                            // const randProb = 15 + (charCodeSum % 80);
-                            // probLabel = `${randProb}%`;
-                            // probClass = randProb > 70 ? 'prob-high' : randProb > 40 ? 'prob-medium' : 'prob-low';
-                          }
-
-                          // Advisor Info
-                          let adv = getAsesorInfoByPhone(ped.linea_whatsapp);
-                          if (ped.origen === 'pos') {
-                            adv = { nombre: 'Punto de Venta', role: 'POS', foto_url: '' };
-                          }
-
-                          const mp = getMetodoPago(ped);
-                          const isContra = mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra'));
-                          const cardStatusClass = isLead 
-                            ? 'lead-abandonado' 
-                            : ped.estado === 'completado' 
-                            ? 'order-completado' 
-                            : isContra 
-                            ? 'order-contraentrega' 
-                            : ped.pantallazo_url 
-                            ? 'order-comprobante' 
-                            : 'order-pendiente';
-
-                          return (
-                            <div key={ped.id} className={`order-mobile-card ${cardStatusClass}`}>
-                              {/* Header Row: Client avatar, details, and status badges */}
-                              <div className="card-header-row">
-                                <div className="client-info-block">
-                                  <div className="client-avatar">
-                                    {(ped.cliente_nombre || '?').charAt(0).toUpperCase()}
-                                  </div>
-                                  <div className="client-details">
-                                    <h4>{ped.cliente_nombre}</h4>
-                                    <p className="client-phone">📞 {ped.cliente_telefono}</p>
-                                    <span className="client-time">{timeLabel}</span>
-                                  </div>
-                                </div>
-                                <div className="status-badges-block">
-                                  <div className="advisor-badge">
-                                    <div className="advisor-avatar">
-                                      {adv.foto_url ? (
-                                        <img src={adv.foto_url} alt="" />
-                                      ) : (
-                                        adv.nombre.charAt(0).toUpperCase()
-                                      )}
-                                    </div>
-                                    <div className="advisor-meta">
-                                      <h5>{adv.nombre}</h5>
-                                      <span className="advisor-role">{adv.role}</span>
-                                    </div>
-                                  </div>
-                                  {!isLead && (() => {
-                                    if (ped.estado === 'completado') {
-                                      return <span className="payment-badge-small verified" style={{ marginTop: '4px', display: 'inline-block' }}>✅ Verificado</span>;
-                                    }
-                                    if (isContra) {
-                                      return <span className="payment-badge-small contraentrega" style={{ marginTop: '4px', display: 'inline-block' }}>🚚 Pago Contra Entrega</span>;
-                                    }
-                                    if (ped.pantallazo_url) {
-                                      return <span className="payment-badge-small uploaded" style={{ marginTop: '4px', display: 'inline-block' }}>📸 Comprobante recibido</span>;
-                                    }
-                                    return <span className="payment-badge-small pending" style={{ marginTop: '4px', display: 'inline-block' }}>⏳ Esperando comprobante de pago</span>;
-                                  })()}
-                                </div>
-                              </div>
-
-                              {/* Body Row: 2 columns (Cart Summary & Assigned Advisor) */}
-                              <div className="card-body-row">
-                                <div className="cart-summary-block">
-                                  <div className="cart-total-info">
-                                    <span className="cart-total-icon">💰</span>
-                                    <span className="cart-total-amount">${ped.total.toLocaleString()}</span>
-                                    <span className="items-count">📦 {Array.isArray(ped.productos) ? ped.productos.reduce((acc: number, p: any) => acc + (p.cantidad || 1), 0) : 0} uds</span>
-                                  </div>
-                                  
-                                  {Array.isArray(ped.productos) && ped.productos.length > 0 && (
-                                    <div className="cart-products-box">
-                                      <ul className="cart-products-list">
-                                        {ped.productos.slice(0, 2).map((prod: any, idx: number) => (
-                                          <li key={idx}>
-                                            • {prod.nombre} {prod.talla ? `(${prod.talla})` : ''}
-                                          </li>
-                                        ))}
-                                      </ul>
-                                      {ped.productos.length > 2 && (
-                                        <div className="more-products-badge" onClick={() => setSelectedPedido(ped)}>
-                                          + Ver {ped.productos.length - 2} más
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-
-
-                              </div>
-
-                              {/* Footer Row: Quick contact buttons on left, WhatsApp action on right */}
-                              <div className="card-footer-row">
-                                <div className="quick-actions" style={{ display: 'flex', gap: '0.35rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                                  {ped.cliente_telefono && (
-                                    <button 
-                                      type="button" 
-                                      className="btn-circle-action"
-                                      onClick={() => {
-                                        const cleanPhone = ped.cliente_telefono.replace(/\D/g, '');
-                                        const target = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
-                                        window.open(`https://wa.me/${target}`, '_blank');
-                                      }}
-                                    >
-                                      <MessageSquare size={13} />
-                                    </button>
-                                  )}
-                                  <button type="button" className="btn-details-action" onClick={() => setSelectedPedido(ped)}>
-                                    Ver detalles
-                                  </button>
-                                  {isLead && (
-                                    <select 
-                                      className="lead-status-dropdown" 
-                                      value={ped.retargeting_estado || ''}
-                                      onChange={(e) => handleUpdateLeadStatus(ped.id, e.target.value)}
-                                      style={{ fontSize: '0.75rem', padding: '0.25rem', borderRadius: '6px', border: '1px solid #cbd5e1', background: 'white', cursor: 'pointer' }}
-                                    >
-                                      <option value="">Estado...</option>
-                                      <option value="contactado">Contactado</option>
-                                      <option value="descartado">Descartado</option>
-                                    </select>
-                                  )}
-                                </div>
-
-                                <div className="main-action-wrapper">
-                                  {isLead ? (
-                                    <button 
-                                      type="button" 
-                                      className="btn-main-recover green"
-                                      onClick={() => {
-                                        const cleanPhone = (ped.cliente_telefono || '').replace(/\D/g, '');
-                                        if (!cleanPhone) {
-                                          showToast('Teléfono inválido para WhatsApp', 'error');
-                                          return;
-                                        }
-                                        const prodNames = Array.isArray(ped.productos) && ped.productos.length > 0
-                                          ? ped.productos.map((p: any) => `${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ')
-                                          : '';
-                                        const text = `¡Hola ${ped.cliente_nombre || ''}! 👋 Vimos que estás interesado en: ${prodNames ? `*${prodNames}*` : 'nuestros productos'}. ¿Tienes alguna duda o te ayudamos a completar tu pedido? Escríbenos y con gusto te colaboramos. 😊`;
-                                        const targetPhone = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
-                                        // Open WhatsApp FIRST (synchronous, browser allows popup on direct click)
-                                        window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`, '_blank');
-                                        // Then update status asynchronously
-                                        handleUpdateLeadStatus(ped.id, 'contactado');
-                                      }}
-                                    >
-                                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style={{ marginRight: '5px', display: 'inline-block', verticalAlign: 'middle' }}>
-                  <path d="M12.012 2c-5.506 0-9.988 4.482-9.988 9.988 0 1.761.46 3.473 1.332 4.978L2 22l5.222-1.368a9.92 9.92 0 0 0 4.79 1.228h.004c5.502 0 9.984-4.482 9.984-9.988C22 6.482 17.514 2 12.012 2zm5.836 14.199c-.24.676-1.18 1.258-1.748 1.356-.572.096-1.28.18-3.79-.824-3.13-1.252-5.112-4.412-5.268-4.622-.156-.21-1.272-1.688-1.272-3.218 0-1.53.804-2.28 1.092-2.584.288-.304.624-.378.834-.378.21 0 .42.002.604.01.192.008.452-.074.708.536.26.622.888 2.164.966 2.322.078.158.13.342.024.552-.104.21-.156.342-.312.524-.156.182-.328.406-.468.546-.156.156-.32.326-.138.636.182.31.81 1.334 1.738 2.16.196.176.386.326.568.428 1.218.682 1.83.582 2.112.282.282-.3.626-.642.796-.89.17-.25.334-.208.562-.124.228.084 1.442.68 1.69 1.046.248.366.248.55.128.832z"/>
-                </svg> Recuperar venta</button>
-                                  ) : ped.estado === 'completado' ? (
-                                    <button 
-                                      type="button" 
-                                      className="btn-main-recover blue"
-                                      onClick={() => setSelectedPedido(ped)}
-                                    >
-                                      👁️ Ver Factura
-                                    </button>
-                                  ) : ped.pantallazo_url ? (
-                                    <button 
-                                      type="button" 
-                                      className="btn-main-recover blue"
-                                      onClick={() => setSelectedPedido(ped)}
-                                    >
-                                      💳 Verificar Pago
-                                    </button>
-                                  ) : isContra ? (
-                                    <button 
-                                      type="button" 
-                                      className="btn-main-recover"
-                                      onClick={() => setSelectedPedido(ped)}
-                                      style={{ background: '#ea580c', color: 'white', border: 'none', fontWeight: 700 }}
-                                    >
-                                      🚚 Gestionar Despacho
-                                    </button>
-                                  ) : (
-                                    <button 
-                                      type="button" 
-                                      className="btn-main-recover green"
-                                      onClick={() => {
-                                        const cleanPhone = (ped.cliente_telefono || '').replace(/\D/g, '');
-                                        if (!cleanPhone) { showToast('Teléfono inválido para WhatsApp', 'error'); return; }
-                                        const prodNames = Array.isArray(ped.productos) && ped.productos.length > 0
-                                          ? ped.productos.map((p: any) => p.nombre).join(', ')
-                                          : '';
-                                        const metodosInfo = getFormattedMetodosPago();
-                                        const uploadLink = `${window.location.origin}/pago/${ped.id}`;
-                                        const text = `¡Hola ${ped.cliente_nombre || ''}! 👋 Esperamos que estés muy bien. Recordamos que tu pedido de ${prodNames ? `*${prodNames}*` : 'nuestro catálogo'} por valor de *$${ped.total.toLocaleString()}* está pendiente de pago.${metodosInfo}\nPor favor, sube tu comprobante de pago en el siguiente enlace para completar tu pedido:\n${uploadLink} 😊`;
-                                        const targetPhone = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
-                                        window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`, '_blank');
-                                      }}
-                                    >
-                                      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" style={{ marginRight: '5px', display: 'inline-block', verticalAlign: 'middle' }}>
-                                        <path d="M12.012 2c-5.506 0-9.988 4.482-9.988 9.988 0 1.761.46 3.473 1.332 4.978L2 22l5.222-1.368a9.92 9.92 0 0 0 4.79 1.228h.004c5.502 0 9.984-4.482 9.984-9.988C22 6.482 17.514 2 12.012 2zm5.836 14.199c-.24.676-1.18 1.258-1.748 1.356-.572.096-1.28.18-3.79-.824-3.13-1.252-5.112-4.412-5.268-4.622-.156-.21-1.272-1.688-1.272-3.218 0-1.53.804-2.28 1.092-2.584.288-.304.624-.378.834-.378.21 0 .42.002.604.01.192.008.452-.074.708.536.26.622.888 2.164.966 2.322.078.158.13.342.024.552-.104.21-.156.342-.312.524-.156.182-.328.406-.468.546-.156.156-.32.326-.138.636.182.31.81 1.334 1.738 2.16.196.176.386.326.568.428 1.218.682 1.83.582 2.112.282.282-.3.626-.642.796-.89.17-.25.334-.208.562-.124.228.084 1.442.68 1.69 1.046.248.366.248.55.128.832z"/>
-                                      </svg>
-                                      Recordar Pago
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })
+                        combinedList.map((ped) => renderLeadOrOrderCard(ped, ped.isLead))
                       )}
                     </div>
                   </>

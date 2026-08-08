@@ -2477,6 +2477,7 @@ body {
     align-items: center;
     gap: 6px;
     margin-top: 2px;
+    white-space: nowrap;
   }
   
   .advisor-avatar {
@@ -2503,6 +2504,7 @@ body {
     display: flex;
     flex-direction: column;
     text-align: left;
+    white-space: nowrap;
   }
   
   .advisor-meta h5 {
@@ -2511,6 +2513,7 @@ body {
     font-weight: 400;
     color: #334155;
     line-height: 1.1;
+    white-space: nowrap;
   }
   
   .advisor-role {

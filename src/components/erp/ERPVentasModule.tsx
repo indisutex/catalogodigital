@@ -331,9 +331,9 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId, activeSubTab }) => 
             <p style={{ color: '#9ca3af', textAlign: 'center', padding: '2rem', fontFamily: "'Poppins', sans-serif", fontWeight: 400 }}>Cargando datos de ventas...</p>
           ) : resumen && resumen.ventasPorDia.length > 0 ? (
             <>
-              {/* ── Gráfico SVG de Área ── */}
+              {/* ── Gráfico SVG de Área Compacto y Elegante ── */}
               {(() => {
-                const W = 900, H = 125, PAD = { top: 14, right: 20, bottom: 24, left: 55 };
+                const W = 1000, H = 220, PAD = { top: 20, right: 25, bottom: 35, left: 60 };
                 const innerW = W - PAD.left - PAD.right;
                 const innerH = H - PAD.top - PAD.bottom;
                 const data = resumen.ventasPorDia;
@@ -368,21 +368,16 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId, activeSubTab }) => 
                 }));
 
                 return (
-                  <div style={{ position: 'relative', overflowX: 'auto' }}>
+                  <div style={{ position: 'relative', overflowX: 'auto', background: '#fafcff', border: '1px solid #e8edf5', borderRadius: '16px', padding: '1rem 1.25rem 0.5rem 1.25rem', marginBottom: '1.25rem' }}>
                     <svg
                       viewBox={`0 0 ${W} ${H}`}
-                      style={{ width: '100%', height: 'auto', maxHeight: '140px', display: 'block' }}
+                      style={{ width: '100%', height: 'auto', maxHeight: '180px', display: 'block' }}
                     >
-
                       <defs>
                         <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="var(--primary-color, #6366f1)" stopOpacity="0.35" />
-                          <stop offset="100%" stopColor="var(--primary-color, #6366f1)" stopOpacity="0.02" />
+                          <stop offset="0%" stopColor="var(--primary-color, #0ea5e9)" stopOpacity="0.22" />
+                          <stop offset="100%" stopColor="var(--primary-color, #0ea5e9)" stopOpacity="0.0" />
                         </linearGradient>
-                        <filter id="glow">
-                          <feGaussianBlur stdDeviation="2.5" result="blur" />
-                          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-                        </filter>
                       </defs>
 
                       {/* Grid horizontal lines + Y labels */}
@@ -390,12 +385,12 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId, activeSubTab }) => 
                         <g key={i}>
                           <line
                             x1={PAD.left} y1={t.y} x2={W - PAD.right} y2={t.y}
-                            stroke="#e5e7eb" strokeWidth="1" strokeDasharray={i === 0 ? '0' : '4 3'}
+                            stroke="#f1f5f9" strokeWidth="1" strokeDasharray={i === 0 ? '0' : '4 4'}
                           />
                           <text
-                            x={PAD.left - 8} y={t.y + 4}
-                            textAnchor="end" fontSize="9" fill="#9ca3af"
-                            fontFamily="Poppins, sans-serif"
+                            x={PAD.left - 10} y={t.y + 4}
+                            textAnchor="end" fontSize="10.5" fill="#94a3af"
+                            fontFamily="Poppins, sans-serif" fontWeight="500"
                           >
                             {t.v >= 1000000
                               ? `$${(t.v/1000000).toFixed(1)}M`
@@ -413,11 +408,10 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId, activeSubTab }) => 
                       <path
                         d={linePath}
                         fill="none"
-                        stroke="var(--primary-color, #6366f1)"
-                        strokeWidth="2.5"
+                        stroke="var(--primary-color, #0ea5e9)"
+                        strokeWidth="2.8"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        filter="url(#glow)"
                       />
 
                       {/* Data points + labels */}
@@ -426,22 +420,17 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId, activeSubTab }) => 
                         const hasVal = d.total_ventas > 0;
                         return (
                           <g key={d.fecha} className="erp-svg-point">
-                            {/* Outer glow ring */}
-                            {hasVal && (
-                              <circle cx={x} cy={y} r={7}
-                                fill="var(--primary-color, #6366f1)" fillOpacity="0.15" />
-                            )}
                             {/* Dot */}
                             <circle
                               cx={x} cy={y} r={hasVal ? 4 : 2.5}
-                              fill={hasVal ? 'var(--primary-color, #6366f1)' : '#d1d5db'}
+                              fill={hasVal ? 'var(--primary-color, #0ea5e9)' : '#cbd5e1'}
                               stroke="white" strokeWidth="2"
                             />
                             {/* X-axis day label */}
                             <text
-                              x={x} y={H - 6}
-                              textAnchor="middle" fontSize="9" fill="#9ca3af"
-                              fontFamily="Poppins, sans-serif"
+                              x={x} y={H - 8}
+                              textAnchor="middle" fontSize="10.5" fill="#64748b"
+                              fontFamily="Poppins, sans-serif" fontWeight="500"
                             >
                               {d.fecha.split('-')[2]}
                             </text>
@@ -455,29 +444,29 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId, activeSubTab }) => 
                 );
               })()}
 
-              {/* Estadísticas rápidas */}
-              <div className="erp-chart-summary">
-                <div className="erp-chart-summary-item">
-                  <span className="erp-chart-summary-label">Total período</span>
-                  <span className="erp-chart-summary-value" style={{ color: 'var(--primary-color, #6366f1)' }}>
+              {/* Estadísticas rápidas en tarjetas compactas */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '0.85rem', marginBottom: '1.25rem', fontFamily: "'Poppins', sans-serif" }}>
+                <div style={{ background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+                  <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block' }}>Total Período</span>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--primary-color, #0ea5e9)', marginTop: '0.15rem', display: 'block' }}>
                     {fmt(resumen.ventasPorDia.reduce((a, d) => a + d.total_ventas, 0))}
                   </span>
                 </div>
-                <div className="erp-chart-summary-item">
-                  <span className="erp-chart-summary-label">Días con ventas</span>
-                  <span className="erp-chart-summary-value">
-                    {resumen.ventasPorDia.filter(d => d.total_ventas > 0).length}
+                <div style={{ background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+                  <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block' }}>Días con Ventas</span>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0f172a', marginTop: '0.15rem', display: 'block' }}>
+                    {resumen.ventasPorDia.filter(d => d.total_ventas > 0).length} días
                   </span>
                 </div>
-                <div className="erp-chart-summary-item">
-                  <span className="erp-chart-summary-label">Mejor día</span>
-                  <span className="erp-chart-summary-value" style={{ color: '#10b981' }}>
+                <div style={{ background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+                  <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block' }}>Mejor Día</span>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 600, color: '#10b981', marginTop: '0.15rem', display: 'block' }}>
                     {fmt(maxBar)}
                   </span>
                 </div>
-                <div className="erp-chart-summary-item">
-                  <span className="erp-chart-summary-label">Promedio diario</span>
-                  <span className="erp-chart-summary-value">
+                <div style={{ background: '#f8fafc', padding: '0.75rem 1rem', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+                  <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block' }}>Promedio Diario</span>
+                  <span style={{ fontSize: '1.1rem', fontWeight: 600, color: '#0f172a', marginTop: '0.15rem', display: 'block' }}>
                     {fmt(resumen.ventasPorDia.reduce((a, d) => a + d.total_ventas, 0) / Math.max(1, resumen.ventasPorDia.filter(d => d.total_ventas > 0).length))}
                   </span>
                 </div>
