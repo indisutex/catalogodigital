@@ -5632,7 +5632,7 @@ export default function Admin() {
                     <div style={{ position: 'relative' }}>
                       <button
                         type="button"
-                        className="btn-secondary hover-lift"
+                        className="btn-secondary"
                         onClick={() => setShowCatalogOtherOptions(!showCatalogOtherOptions)}
                         style={{
                           display: 'inline-flex',
@@ -5658,7 +5658,7 @@ export default function Admin() {
                           style={{
                             position: 'absolute',
                             top: '115%',
-                            left: 0,
+                            right: 0,
                             width: '270px',
                             background: '#ffffff',
                             border: '1px solid #e2e8f0',
