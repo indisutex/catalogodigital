@@ -1978,26 +1978,14 @@ export default function MenuDigital() {
                     const companyColor = configuracion?.color_primario || 'var(--primary, #f36b8e)';
 
                     if (producto.es_producto_familiar) {
-                      const { minDetal, minMayor } = getFamilyPriceRange(producto);
-                      const hasWholesalePrice = minMayor > 0 && minMayor < minDetal;
-
                       return (
-                        <div style={{ marginTop: '0.1rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                          {minDetal > 0 ? (
-                            <strong style={{ fontSize: '0.98rem', fontWeight: 600, color: companyColor, fontFamily: "'Poppins', sans-serif" }}>
-                              Desde ${minDetal.toLocaleString('es-CO')}
-                            </strong>
-                          ) : (
-                            <strong style={{ fontSize: '0.88rem', fontWeight: 600, color: companyColor, fontFamily: "'Poppins', sans-serif" }}>
-                              Ver opciones familiares
-                            </strong>
-                          )}
-                          {hasWholesalePrice && (
-                            <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#0284c7', fontFamily: "'Poppins', sans-serif" }}>
-                              Por mayor: <strong style={{ fontWeight: 700, fontSize: '0.95rem', fontFamily: "'Poppins', sans-serif" }}>${minMayor.toLocaleString('es-CO')}</strong>
-                            </div>
-                          )}
-                          <span style={{ fontSize: '0.68rem', color: '#64748b', fontFamily: "'Poppins', sans-serif" }}>Opción familiar disponible</span>
+                        <div style={{ marginTop: '0.15rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
+                          <strong style={{ fontSize: '0.92rem', fontWeight: 600, color: companyColor, fontFamily: "'Poppins', sans-serif" }}>
+                            Ver opciones disponibles
+                          </strong>
+                          <span style={{ fontSize: '0.72rem', color: '#0284c7', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
+                            👨‍👩‍👧‍👦 Opción familiar disponible
+                          </span>
                         </div>
                       );
                     }
