@@ -1120,10 +1120,25 @@ export default function MenuDigital() {
         };
       });
 
+      const cedVal = (formData.cedula || '').trim();
+      const emailVal = (formData.email || '').trim();
+
+      let direccionConDatos = direccionFormateada;
+      if (cedVal && !direccionConDatos.includes(cedVal)) {
+        direccionConDatos += ` | CC: ${cedVal}`;
+      }
+      if (emailVal && !direccionConDatos.includes(emailVal)) {
+        direccionConDatos += ` | Email: ${emailVal}`;
+      }
+
       let insertPayload: any = {
         cliente_nombre: formData.nombre,
         cliente_telefono: formData.telefono,
-        direccion: direccionFormateada,
+        cliente_cedula: cedVal,
+        cedula: cedVal,
+        cliente_email: emailVal,
+        email: emailVal,
+        direccion: direccionConDatos,
         ciudad: ciudadFormateada,
         total: total,
         productos: productosProcesados,
@@ -1137,16 +1152,13 @@ export default function MenuDigital() {
         departamento: selectedDepartamento || '',
         estado: modalidadPago === 'contra_entrega' ? 'contra_entrega' : 'pendiente'
       };
-      if (formData.cedula) insertPayload.cliente_cedula = formData.cedula;
-      if (formData.email) insertPayload.cliente_email = formData.email;
 
       let { data: newOrder, error: dbErr } = await supabase.from('pedidos').insert(insertPayload).select('id').single();
 
       if (dbErr) {
         console.warn('Primer intento de insert falló:', dbErr.message, '- reintentando con payload básico...');
         const pClean = { ...insertPayload };
-        delete pClean.metodo_pago; delete pClean.cliente_cedula; delete pClean.cliente_email;
-        delete pClean.metodo_envio; delete pClean.modalidad_pago; delete pClean.metodo_recepcion; delete pClean.tipo_compra; delete pClean.departamento;
+        delete pClean.metodo_pago; delete pClean.metodo_envio; delete pClean.modalidad_pago; delete pClean.metodo_recepcion; delete pClean.tipo_compra; delete pClean.departamento;
         const retry = await supabase.from('pedidos').insert(pClean).select('id').single();
         if (!retry.error) {
           newOrder = retry.data;

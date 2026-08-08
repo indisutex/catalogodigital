@@ -13221,7 +13221,12 @@ export default function Admin() {
             // Pedidos del catálogo digital únicamente (excluir POS del tab de pedidos)
             const pedItems = filteredPedidos
               .filter(p => (p.origen || 'catalogo') !== 'pos')
-              .map(p => ({ ...p, isLead: false }));
+              .map(p => ({ 
+                ...p, 
+                isLead: false,
+                cliente_cedula: p.cliente_cedula || (p as any).cedula || (p as any).dni || (p as any).documento || (p.direccion?.match(/(?:CC|Cédula|Cedula):\s*([0-9a-zA-Z]+)/i)?.[1]) || '',
+                cliente_email: p.cliente_email || (p as any).email || (p as any).correo || (p.direccion?.match(/(?:Email|Correo):\s*([^\s|]+)/i)?.[1]) || ''
+              }));
             const leadItems = orderFilterStatus === 'comprobante' || orderFilterStatus === 'esperando_pago' || orderFilterStatus === 'contra_entrega'
               ? []
               : leadsFiltrados.map(l => ({
@@ -13251,7 +13256,12 @@ export default function Admin() {
                   estado: 'abandonado'
                 })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
               : orderFilterStatus === 'contra_entrega'
-              ? contraEntregaFiltrados.map(p => ({ ...p, isLead: false })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+              ? contraEntregaFiltrados.map(p => ({ 
+                  ...p, 
+                  isLead: false,
+                  cliente_cedula: p.cliente_cedula || (p as any).cedula || (p as any).dni || (p as any).documento || (p.direccion?.match(/(?:CC|Cédula|Cedula):\s*([0-9a-zA-Z]+)/i)?.[1]) || '',
+                  cliente_email: p.cliente_email || (p as any).email || (p as any).correo || (p.direccion?.match(/(?:Email|Correo):\s*([^\s|]+)/i)?.[1]) || ''
+                })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
               : [...pedItems, ...leadItems].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
             return (
