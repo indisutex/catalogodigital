@@ -658,19 +658,15 @@ export default function MenuDigital() {
         ? (selectedDepartamento && !customFormData.ciudad.includes(selectedDepartamento) ? `${customFormData.ciudad}, ${selectedDepartamento}` : customFormData.ciudad)
         : (selectedDepartamento || '');
 
-      let direccionFormateada = customFormData.direccion 
-        ? customFormData.direccion 
-        : (isEnvioSeleccionado && metodoRecepcion === 'tienda' ? `Recoger en Tienda (${configuracion?.direccion || 'Sede Principal'})` : '');
+      let direccionFormateada = '';
+      if (isEnvioSeleccionado && metodoRecepcion === 'tienda') {
+        direccionFormateada = `Recoger en Tienda (${configuracion?.direccion || 'Sede Principal'})`;
+      } else {
+        direccionFormateada = customFormData.direccion ? customFormData.direccion.trim() : '';
+      }
 
       const cedVal = (customFormData.cedula || '').trim();
       const emailVal = (customFormData.email || '').trim();
-
-      if (cedVal && !direccionFormateada.includes(cedVal)) {
-        direccionFormateada += ` | CC: ${cedVal}`;
-      }
-      if (emailVal && !direccionFormateada.includes(emailVal)) {
-        direccionFormateada += ` | Email: ${emailVal}`;
-      }
 
       // Payload completo para alimentar en tiempo real el Lead / Carrito Abandonado
       const basePayload: any = {

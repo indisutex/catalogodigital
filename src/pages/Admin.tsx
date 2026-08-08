@@ -13925,11 +13925,23 @@ export default function Admin() {
                     <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Dirección y Ciudad de Entrega</h5>
                     <p style={{ margin: 0, color: '#0f172a', fontSize: '0.86rem', fontWeight: 500 }}>
                       {(() => {
-                        const dir = (selectedPedido.direccion || '').trim();
+                        let dir = (selectedPedido.direccion || '').replace(/\s*\|\s*CC:.*$/i, '').replace(/\s*\|\s*Email:.*$/i, '').trim();
                         const ciu = (selectedPedido.ciudad || '').trim();
-                        if (!dir && !ciu) return 'Recoger en Tienda / Por definir';
-                        if (dir && ciu && (dir.toLowerCase().includes(ciu.toLowerCase()) || ciu.toLowerCase().includes(dir.toLowerCase()))) return dir || ciu;
-                        return [dir, ciu].filter(Boolean).join(', ');
+                        const metodoEnv = ((selectedPedido as any).metodo_envio || '').toLowerCase();
+                        const metodoRec = ((selectedPedido as any).metodo_recepcion || '').toLowerCase();
+                        
+                        if (metodoEnv.includes('recoger') || metodoRec === 'tienda' || (dir.toLowerCase().includes('recoger en tienda') && !metodoEnv.includes('domicilio'))) {
+                          return `🏪 Recoger en Tienda (${configuracion?.direccion || 'Sede Principal'})`;
+                        }
+
+                        if (dir.toLowerCase().includes('recoger en tienda')) {
+                          dir = '';
+                        }
+
+                        const ciuLimpia = (ciu && ciu !== 'Por definir') ? ciu : '';
+                        if (!dir && !ciuLimpia) return 'Por definir';
+                        if (dir && ciuLimpia && (dir.toLowerCase().includes(ciuLimpia.toLowerCase()) || ciuLimpia.toLowerCase().includes(dir.toLowerCase()))) return dir || ciuLimpia;
+                        return [dir, ciuLimpia].filter(Boolean).join(', ');
                       })()}
                     </p>
                   </div>
