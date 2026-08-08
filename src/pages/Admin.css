@@ -61,7 +61,7 @@ body {
   color: #0f172a;
   margin: 0;
   letter-spacing: -0.3px;
-  background: linear-gradient(135deg, #4f46e5, #0ea5e9);
+  background: linear-gradient(135deg, var(--primary-color, #4f46e5), var(--primary-color, #0ea5e9));
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -364,7 +364,7 @@ body {
 .sidebar-banner-card p {
   margin: 0;
   font-size: 0.72rem;
-  color: #0ea5e9;
+  color: var(--primary-color, #0ea5e9);
   line-height: 1.3;
 }
 

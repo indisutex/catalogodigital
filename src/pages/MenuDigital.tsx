@@ -598,6 +598,7 @@ export default function MenuDigital() {
 
   const saveOrUpdateLead = async (customFormData = formData) => {
     if (isOrderSubmittedRef.current) return;
+    // Guardar lead tan pronto tenga nombre + teléfono + al menos 1 producto
     if (!customFormData.nombre || !customFormData.telefono || items.length === 0) return;
 
     try {
@@ -617,13 +618,13 @@ export default function MenuDigital() {
 
       const ciudadFormateada = customFormData.ciudad 
         ? (selectedDepartamento && !customFormData.ciudad.includes(selectedDepartamento) ? `${customFormData.ciudad}, ${selectedDepartamento}` : customFormData.ciudad)
-        : (selectedDepartamento || 'Por definir');
+        : (selectedDepartamento || '');
 
-      const payload: any = {
+      // Payload base (columnas seguras que siempre existen en leads)
+      const basePayload: any = {
         nombre: customFormData.nombre,
         telefono: customFormData.telefono,
-        ciudad: ciudadFormateada,
-        direccion: customFormData.direccion || (metodoRecepcion === 'tienda' ? 'Recoger en tienda' : ''),
+        ciudad: ciudadFormateada || 'Por definir',
         tenant_id: tenant,
         estado: 'abandonado',
         linea_whatsapp: numeroWhatsApp,
@@ -634,23 +635,50 @@ export default function MenuDigital() {
       const currentLeadId = leadIdRef.current || leadId;
 
       if (currentLeadId) {
-        await supabase
+        // Update: intentar con todos los campos, si falla ignorar silenciosamente
+        const { error: updateErr } = await supabase
           .from('leads')
-          .update(payload)
+          .update(basePayload)
           .eq('id', currentLeadId);
+        if (updateErr) {
+          console.warn('Lead update warning:', updateErr.message);
+        }
       } else {
         if (isInsertingRef.current) return;
         isInsertingRef.current = true;
         
+        // Intento 1: payload base
         const { data, error } = await supabase
           .from('leads')
-          .insert(payload)
+          .insert(basePayload)
           .select('id')
           .single();
 
         if (!error && data) {
           setLeadId(data.id);
           leadIdRef.current = data.id;
+        } else if (error) {
+          console.warn('Lead insert error:', error.message);
+          // Intento 2: payload mínimo absoluto
+          const minPayload = {
+            nombre: customFormData.nombre,
+            telefono: customFormData.telefono,
+            tenant_id: tenant,
+            estado: 'abandonado',
+            linea_whatsapp: numeroWhatsApp,
+            total: total
+          };
+          const { data: data2, error: err2 } = await supabase
+            .from('leads')
+            .insert(minPayload)
+            .select('id')
+            .single();
+          if (!err2 && data2) {
+            setLeadId(data2.id);
+            leadIdRef.current = data2.id;
+          } else {
+            console.error('Lead insert failed (minimal):', err2?.message);
+          }
         }
         isInsertingRef.current = false;
       }
@@ -660,16 +688,30 @@ export default function MenuDigital() {
     }
   };
 
+  // Disparar lead con solo nombre + teléfono (desde Step 1, con debounce)
   useEffect(() => {
     if (isOrderSubmittedRef.current) return;
     if (!formData.nombre || !formData.telefono || items.length === 0) return;
 
     const delayDebounceFn = setTimeout(() => {
       saveOrUpdateLead(formData);
-    }, 1000);
+    }, 1200);
 
     return () => clearTimeout(delayDebounceFn);
   }, [formData.nombre, formData.telefono, formData.direccion, formData.ciudad, selectedDepartamento, metodoRecepcion, modalidadPago, items, total, leadId]);
+
+  // Re-disparar lead cuando configuracion cargue (fix race condition: config llega tarde)
+  useEffect(() => {
+    if (!configuracion) return;
+    if (isOrderSubmittedRef.current) return;
+    if (!formData.nombre || !formData.telefono || items.length === 0) return;
+    if (leadIdRef.current || leadId) return; // ya existe el lead, no crear duplicado
+    // Si ya tenemos nombre + teléfono pero configuracion recién cargó → guardar ahora
+    const t = setTimeout(() => {
+      saveOrUpdateLead(formData);
+    }, 800);
+    return () => clearTimeout(t);
+  }, [configuracion]);
 
   useEffect(() => {
     async function cargarDatos() {
