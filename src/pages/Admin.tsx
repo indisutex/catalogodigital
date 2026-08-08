@@ -873,6 +873,7 @@ export default function Admin() {
     return (
       <div 
         key={ped.id} 
+        className="pedido-card-item"
         draggable={true}
         onDragStart={(e) => {
           e.dataTransfer.setData('text/plain', JSON.stringify({ id: ped.id, isLead }));
@@ -885,8 +886,7 @@ export default function Admin() {
           boxShadow: '0 4px 18px rgba(15, 23, 42, 0.04)',
           padding: '0.9rem 1rem',
           margin: '0 0 0.85rem 0',
-          cursor: 'grab',
-          fontFamily: "'Poppins', sans-serif"
+          cursor: 'grab'
         }}
       >
         {/* ── HEADER BLOCK ── */}
@@ -894,28 +894,28 @@ export default function Admin() {
           {/* Line 1: Status Pill Badge & Timestamp */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.35rem' }}>
             {isLead ? (
-              <span style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: '0.72rem', fontWeight: 500, padding: '0.2rem 0.55rem', borderRadius: '10px' }}>
+              <span className="pedido-card-status-pill" style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: '0.72rem', fontWeight: 500, padding: '0.2rem 0.55rem', borderRadius: '10px' }}>
                 ⚠️ Carrito Abandonado
               </span>
             ) : ped.estado === 'completado' ? (
-              <span style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', fontSize: '0.72rem', fontWeight: 500, padding: '0.2rem 0.55rem', borderRadius: '10px' }}>
+              <span className="pedido-card-status-pill" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', fontSize: '0.72rem', fontWeight: 500, padding: '0.2rem 0.55rem', borderRadius: '10px' }}>
                 ✅ Verificado
               </span>
             ) : isContra ? (
-              <span style={{ background: '#fff7ed', border: '1px solid #ffedd5', color: '#ea580c', fontSize: '0.72rem', fontWeight: 500, padding: '0.2rem 0.55rem', borderRadius: '10px', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+              <span className="pedido-card-status-pill" style={{ background: '#fff7ed', border: '1px solid #ffedd5', color: '#ea580c', fontSize: '0.72rem', fontWeight: 500, padding: '0.2rem 0.55rem', borderRadius: '10px', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
                 🚚 Contra Entrega
               </span>
             ) : ped.pantallazo_url ? (
-              <span style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: '0.72rem', fontWeight: 500, padding: '0.2rem 0.55rem', borderRadius: '10px' }}>
+              <span className="pedido-card-status-pill" style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: '0.72rem', fontWeight: 500, padding: '0.2rem 0.55rem', borderRadius: '10px' }}>
                 📸 Comprobante recibido
               </span>
             ) : (
-              <span style={{ background: '#fffbeb', border: '1px solid #fef3c7', color: '#b45309', fontSize: '0.72rem', fontWeight: 500, padding: '0.2rem 0.55rem', borderRadius: '10px' }}>
+              <span className="pedido-card-status-pill" style={{ background: '#fffbeb', border: '1px solid #fef3c7', color: '#b45309', fontSize: '0.72rem', fontWeight: 500, padding: '0.2rem 0.55rem', borderRadius: '10px' }}>
                 ⏳ Esperando pago
               </span>
             )}
 
-            <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 400 }}>
+            <span className="pedido-card-time" style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 400 }}>
               🕒 {timeLabel}
             </span>
           </div>
@@ -923,7 +923,7 @@ export default function Admin() {
           {/* Line 2: Customer Info & Advisor Pill */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0 }}>
-              <div style={{
+              <div className="pedido-card-avatar" style={{
                 width: '38px',
                 height: '38px',
                 borderRadius: '50%',
@@ -940,17 +940,17 @@ export default function Admin() {
                 {nombreCliente.charAt(0).toUpperCase()}
               </div>
               <div style={{ minWidth: 0 }}>
-                <h4 style={{ margin: 0, fontSize: '0.94rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.25, wordBreak: 'break-word' }}>
+                <h4 className="pedido-card-name" style={{ margin: 0, fontSize: '0.94rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.25, wordBreak: 'break-word' }}>
                   {nombreCliente}
                 </h4>
-                <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.78rem', color: '#64748b', fontWeight: 400 }}>
+                <p className="pedido-card-phone" style={{ margin: '0.15rem 0 0 0', fontSize: '0.78rem', color: '#64748b', fontWeight: 400 }}>
                   📞 {telefonoCliente || 'Sin número'}
                 </p>
               </div>
             </div>
 
             {/* Asesor */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#f8fafc', padding: '0.2rem 0.5rem', borderRadius: '10px', border: '1px solid #e2e8f0', flexShrink: 0, maxWidth: '130px' }}>
+            <div className="pedido-card-advisor" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#f8fafc', padding: '0.2rem 0.5rem', borderRadius: '10px', border: '1px solid #e2e8f0', flexShrink: 0, maxWidth: '130px' }}>
               {adv.foto_url ? (
                 <img src={adv.foto_url} alt="" style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
               ) : (
@@ -964,14 +964,14 @@ export default function Admin() {
         </div>
 
         {/* ── MIDDLE RESUMEN BLOCK (Total & Cantidad) ── */}
-        <div style={{ background: '#ffffff', border: '1px solid #f1f5f9', borderRadius: '16px', padding: '0.8rem 1.1rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 8px rgba(15,23,42,0.02)' }}>
+        <div className="pedido-card-summary" style={{ background: '#ffffff', border: '1px solid #f1f5f9', borderRadius: '16px', padding: '0.8rem 1.1rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 8px rgba(15,23,42,0.02)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
             <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem' }}>
               💰
             </div>
             <div>
               <span style={{ fontSize: '0.68rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'block' }}>TOTAL DEL PEDIDO</span>
-              <span style={{ fontSize: '1.3rem', fontWeight: 600, color: '#ea580c', lineHeight: 1.1, display: 'block' }}>
+              <span className="pedido-card-total" style={{ fontSize: '1.3rem', fontWeight: 600, color: '#ea580c', lineHeight: 1.1, display: 'block' }}>
                 ${ped.total.toLocaleString()}
               </span>
             </div>
@@ -985,7 +985,7 @@ export default function Admin() {
             </div>
             <div>
               <span style={{ fontSize: '0.68rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'block' }}>PRODUCTOS</span>
-              <span style={{ fontSize: '1.05rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.1, display: 'block' }}>
+              <span className="pedido-card-units" style={{ fontSize: '1.05rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.1, display: 'block' }}>
                 {totalUnits} {totalUnits === 1 ? 'unidad' : 'uds'}
               </span>
             </div>
@@ -994,7 +994,7 @@ export default function Admin() {
 
         {/* ── PRODUCT ITEM PREVIEW BOX ── */}
         {firstProd ? (
-          <div style={{ background: '#fffbf5', border: '1px solid #ffedd5', borderRadius: '16px', padding: '0.75rem 1rem', marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.85rem', position: 'relative', overflow: 'hidden' }}>
+          <div className="pedido-card-prod-box" style={{ background: '#fffbf5', border: '1px solid #ffedd5', borderRadius: '16px', padding: '0.75rem 1rem', marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.85rem', position: 'relative', overflow: 'hidden' }}>
             <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ea580c', flexShrink: 0 }} />
             
             {firstProdImg ? (
@@ -1007,7 +1007,7 @@ export default function Admin() {
 
             <div style={{ flex: 1, minWidth: 0, zIndex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                <h5 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <h5 className="pedido-card-prod-name" style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {firstProd.nombre}
                 </h5>
                 {firstProd.talla && (
@@ -1235,7 +1235,7 @@ export default function Admin() {
         )}
 
         {/* ── FOOTER ACTIONS ROW ── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', width: '100%', flexWrap: 'wrap' }}>
+        <div className="pedido-card-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', width: '100%', flexWrap: 'wrap' }}>
           {telefonoCliente && (
             <button 
               type="button" 
@@ -1303,6 +1303,7 @@ export default function Admin() {
           {isLead ? (
             <button 
               type="button" 
+              className="pedido-card-btn"
               onClick={() => {
                 const cleanPhone = (telefonoCliente || '').replace(/\D/g, '');
                 if (!cleanPhone) { showToast('Teléfono inválido para WhatsApp', 'error'); return; }
@@ -1340,6 +1341,7 @@ export default function Admin() {
           ) : ped.estado === 'completado' ? (
             <button 
               type="button" 
+              className="pedido-card-btn"
               onClick={() => setSelectedPedido(ped)}
               style={{
                 padding: '0.45rem 0.65rem',
@@ -1365,6 +1367,7 @@ export default function Admin() {
           ) : isContra ? (
             <button 
               type="button" 
+              className="pedido-card-btn"
               onClick={() => setSelectedPedido(ped)}
               style={{
                 padding: '0.45rem 0.65rem',
@@ -1391,6 +1394,7 @@ export default function Admin() {
           ) : ped.pantallazo_url ? (
             <button 
               type="button" 
+              className="pedido-card-btn"
               onClick={() => setSelectedPedido(ped)}
               style={{
                 padding: '0.45rem 0.65rem',
@@ -1416,6 +1420,7 @@ export default function Admin() {
           ) : (
             <button 
               type="button" 
+              className="pedido-card-btn"
               onClick={() => {
                 const cleanPhone = (telefonoCliente || '').replace(/\D/g, '');
                 if (!cleanPhone) { showToast('Teléfono inválido para WhatsApp', 'error'); return; }

@@ -3656,6 +3656,71 @@ button:active { transform: scale(0.95); }
   gap: 1rem;
 }
 
+/* ── FLUID & RESPONSIVE DYNAMIC TYPOGRAPHY FOR ORDER CARDS ── */
+.pedido-card-item {
+  font-family: 'Poppins', sans-serif;
+  transition: all 0.2s ease;
+}
+
+.pedido-card-name {
+  font-size: clamp(0.82rem, 1vw, 0.94rem) !important;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.25;
+  word-break: break-word;
+}
+
+.pedido-card-phone {
+  font-size: clamp(0.7rem, 0.9vw, 0.78rem) !important;
+  color: #64748b;
+  font-weight: 400;
+}
+
+.pedido-card-time {
+  font-size: clamp(0.68rem, 0.85vw, 0.72rem) !important;
+  color: #64748b;
+  font-weight: 400;
+}
+
+.pedido-card-status-pill {
+  font-size: clamp(0.66rem, 0.85vw, 0.72rem) !important;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.pedido-card-advisor {
+  font-size: clamp(0.68rem, 0.85vw, 0.74rem) !important;
+  font-weight: 500;
+}
+
+.pedido-card-total {
+  font-size: clamp(0.95rem, 1.3vw, 1.15rem) !important;
+  font-weight: 600;
+  color: #ea580c;
+  line-height: 1.1;
+}
+
+.pedido-card-units {
+  font-size: clamp(0.82rem, 1.1vw, 0.95rem) !important;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.1;
+}
+
+.pedido-card-prod-name {
+  font-size: clamp(0.76rem, 0.95vw, 0.86rem) !important;
+  font-weight: 600;
+}
+
+.pedido-card-btn {
+  font-size: clamp(0.68rem, 0.85vw, 0.76rem) !important;
+  padding: clamp(0.35rem, 0.6vw, 0.45rem) clamp(0.45rem, 0.8vw, 0.65rem) !important;
+  font-weight: 600;
+  border-radius: 8px;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
 @media (max-width: 768px) {
   .desktop-only-table,
   .orders-desktop-view {
@@ -3686,6 +3751,51 @@ button:active { transform: scale(0.95); }
     max-width: 86vw !important;
     scroll-snap-align: start;
     flex-shrink: 0 !important;
+  }
+  .pedido-card-item {
+    padding: 0.75rem 0.85rem !important;
+    border-radius: 14px !important;
+  }
+  .pedido-card-avatar {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 0.88rem !important;
+  }
+  .pedido-card-summary {
+    padding: 0.5rem 0.65rem !important;
+    border-radius: 12px !important;
+  }
+  .pedido-card-prod-box {
+    padding: 0.5rem 0.65rem !important;
+    border-radius: 12px !important;
+  }
+  .pedido-card-actions {
+    gap: 0.3rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .pedido-card-item {
+    padding: 0.65rem 0.75rem !important;
+  }
+  .pedido-card-name {
+    font-size: 0.82rem !important;
+  }
+  .pedido-card-phone,
+  .pedido-card-time,
+  .pedido-card-status-pill,
+  .pedido-card-advisor {
+    font-size: 0.66rem !important;
+  }
+  .pedido-card-total {
+    font-size: 0.95rem !important;
+  }
+  .pedido-card-units {
+    font-size: 0.82rem !important;
+  }
+  .pedido-card-btn {
+    font-size: 0.68rem !important;
+    padding: 0.35rem 0.45rem !important;
   }
 }
 
