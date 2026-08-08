@@ -1015,9 +1015,54 @@ export default function Admin() {
               </p>
             </div>
 
-            {/* 3D Box Image Decoration Watermark */}
-            <div style={{ position: 'absolute', right: '-8px', bottom: '-10px', opacity: 0.88, pointerEvents: 'none' }}>
-              <img src="/caja_3d.png" alt="Caja 3D" style={{ width: '72px', height: '72px', objectFit: 'contain', filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.06))' }} />
+            {/* 3D Box Vector Graphic (100% transparente sin fondo) */}
+            <div style={{ position: 'absolute', right: '-4px', bottom: '-4px', pointerEvents: 'none', zIndex: 0, opacity: 0.9 }}>
+              <svg width="78" height="78" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="boxTopGrad" x1="20" y1="20" x2="80" y2="50" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#eed0b0" />
+                    <stop offset="100%" stopColor="#dfb489" />
+                  </linearGradient>
+                  <linearGradient id="boxLeftGrad" x1="15" y1="45" x2="50" y2="80" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#d4a373" />
+                    <stop offset="100%" stopColor="#c29160" />
+                  </linearGradient>
+                  <linearGradient id="boxRightGrad" x1="50" y1="45" x2="85" y2="80" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#ba8957" />
+                    <stop offset="100%" stopColor="#a37443" />
+                  </linearGradient>
+                  <linearGradient id="tapeGrad" x1="30" y1="25" x2="70" y2="45" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#d4a574" stopOpacity="0.9" />
+                    <stop offset="50%" stopColor="#c4935f" stopOpacity="0.95" />
+                    <stop offset="100%" stopColor="#b3824f" stopOpacity="0.9" />
+                  </linearGradient>
+                </defs>
+
+                {/* Soft Floor Shadow */}
+                <ellipse cx="50" cy="85" rx="34" ry="7" fill="#000000" opacity="0.12" />
+
+                {/* Left Face (Isometric Left) */}
+                <path d="M 15 42 L 50 60 L 50 84 L 15 66 Z" fill="url(#boxLeftGrad)" />
+
+                {/* Right Face (Isometric Right) */}
+                <path d="M 50 60 L 85 42 L 85 66 L 50 84 Z" fill="url(#boxRightGrad)" />
+
+                {/* Top Face (Isometric Top Flaps) */}
+                <path d="M 50 20 L 85 38 L 50 56 L 15 38 Z" fill="url(#boxTopGrad)" />
+
+                {/* Tape Across Top Flaps */}
+                <path d="M 33 29 L 67 47 L 67 39 L 33 21 Z" fill="url(#tapeGrad)" />
+
+                {/* Center Seam */}
+                <path d="M 50 60 L 50 84" stroke="rgba(0,0,0,0.18)" strokeWidth="1.5" />
+                <path d="M 15 42 L 50 60 L 85 42" stroke="rgba(255,255,255,0.3)" strokeWidth="1" />
+
+                {/* Shipping Label Sticker on Left Face */}
+                <path d="M 22 50 L 38 58 L 38 68 L 22 60 Z" fill="#ffffff" opacity="0.88" />
+                <path d="M 24 53 L 34 58" stroke="#475569" strokeWidth="1.2" opacity="0.6" />
+                <path d="M 24 56 L 31 59.5" stroke="#475569" strokeWidth="1.2" opacity="0.6" />
+                <path d="M 24 59 L 35 64.5" stroke="#ea580c" strokeWidth="1.5" opacity="0.8" />
+              </svg>
             </div>
 
             {parsedProds.length > 1 && (
