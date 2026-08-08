@@ -196,7 +196,7 @@ export default function MenuDigital() {
 
 
     const params = new URLSearchParams(window.location.search);
-    const wsParam = params.get('ws') || params.get('asesor') || params.get('wa') || params.get('linea') || params.get('telefono');
+    const wsParam = params.get('ws') || params.get('asesor') || params.get('wa') || params.get('linea');
     let phoneToQuery = '';
     if (wsParam) {
       if (wsParam === 'clear') {
@@ -596,6 +596,15 @@ export default function MenuDigital() {
   const isInsertingRef = useRef(false);
   const isOrderSubmittedRef = useRef(false);
 
+  const getStoreWhatsAppNumber = (customerPhone?: string) => {
+    const cleanCustomer = (customerPhone || formData?.telefono || '').replace(/\D/g, '');
+    const cleanOverride = (overrideWhatsApp || '').replace(/\D/g, '');
+    if (cleanOverride && cleanOverride !== cleanCustomer && cleanOverride.length >= 7) {
+      return cleanOverride;
+    }
+    return (configuracion?.whatsapp || '573185637317').replace(/\D/g, '');
+  };
+
   const saveOrUpdateLead = async (customFormData = formData) => {
     if (isOrderSubmittedRef.current) return;
     // Guardar lead tan pronto tenga nombre + teléfono + al menos 1 producto
@@ -603,7 +612,7 @@ export default function MenuDigital() {
 
     try {
       const tenant = getTenantId();
-      const numeroWhatsApp = overrideWhatsApp || configuracion?.whatsapp || '573185637317';
+      const numeroWhatsApp = getStoreWhatsAppNumber(customFormData.telefono);
       
       const productosProcesados = items.map(item => {
         const effectivePrice = getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
@@ -943,7 +952,7 @@ export default function MenuDigital() {
       mensaje += `\n\n*Coordinacion por WhatsApp:* Acordaremos el pago y envio directamente por este chat.`;
     }
 
-    const numeroWhatsApp = overrideWhatsApp || configuracion?.whatsapp || '573185637317';
+    const numeroWhatsApp = getStoreWhatsAppNumber(formData.telefono);
 
     let orderId = '';
     // Guardar en la base de datos de pedidos
@@ -2023,12 +2032,12 @@ export default function MenuDigital() {
                       {/* ── PASO 1: CONTACTO ── */}
                       {checkoutStep === 1 && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
-                          <h4 style={{ margin: '0 0 0.15rem 0', fontSize: '1.08rem', fontWeight: 700, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
+                          <h4 style={{ margin: '0 0 0.15rem 0', fontSize: '1.05rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
                             Tus datos de contacto
                           </h4>
 
                           <div className="form-group" style={{ margin: 0 }}>
-                            <label style={{ fontSize: '0.86rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.4rem', display: 'block' }}>
+                            <label style={{ fontSize: '0.85rem', fontWeight: 500, color: '#334155', marginBottom: '0.4rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
                               Nombre *
                             </label>
                             <input 
@@ -2037,16 +2046,16 @@ export default function MenuDigital() {
                               value={formData.nombre}
                               onChange={e => setFormData({...formData, nombre: e.target.value})}
                               placeholder="Ej. Juan Pérez"
-                              style={{ width: '100%', padding: '0.78rem 0.95rem', borderRadius: '14px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.9rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}
+                              style={{ width: '100%', padding: '0.78rem 0.95rem', borderRadius: '14px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.9rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif", fontWeight: 400 }}
                             />
                           </div>
 
                           <div className="form-group" style={{ margin: 0 }}>
-                            <label style={{ fontSize: '0.86rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.4rem', display: 'block' }}>
+                            <label style={{ fontSize: '0.85rem', fontWeight: 500, color: '#334155', marginBottom: '0.4rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
                               Teléfono *
                             </label>
                             <div style={{ display: 'flex', gap: '0.55rem' }}>
-                              <div style={{ padding: '0.78rem 0.85rem', background: '#fafafa', border: '1.5px solid #e2e8f0', borderRadius: '14px', fontSize: '0.88rem', fontWeight: 600, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0 }}>
+                              <div style={{ padding: '0.78rem 0.85rem', background: '#fafafa', border: '1.5px solid #e2e8f0', borderRadius: '14px', fontSize: '0.88rem', fontWeight: 500, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0, fontFamily: "'Poppins', sans-serif" }}>
                                 <span>CO +57</span>
                                 <ChevronDown size={14} color="#64748b" />
                               </div>
@@ -3578,37 +3587,51 @@ export default function MenuDigital() {
               </div>
 
               {orderSummaryData.modalidadPago === 'transferencia' && (
-                <>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.3rem 0', color: '#64748b' }}>
-                    <span>Banco</span>
-                    <span style={{ fontWeight: 600, color: '#0f172a' }}>Bancolombia</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
+                    💳 Cuentas para Transferencia / Nequi:
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0', color: '#64748b' }}>
-                    <span>Número</span>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                      <span style={{ fontWeight: 600, color: '#0f172a', fontFamily: 'monospace' }}>456789456</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText('456789456');
-                          setCopiedField(true);
-                          setTimeout(() => setCopiedField(false), 2000);
-                        }}
-                        style={{ background: '#e2e8f0', border: 'none', borderRadius: '6px', cursor: 'pointer', padding: '2px 6px', fontSize: '0.74rem', color: '#0f172a', fontWeight: 500 }}
-                        title="Copiar número de cuenta"
-                      >
-                        {copiedField ? '✓ Copiado' : '📋 Copiar'}
-                      </button>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.3rem 0', color: '#64748b' }}>
-                    <span>Titular</span>
-                    <span style={{ fontWeight: 600, color: '#0f172a' }}>Juan Ramirez</span>
-                  </div>
-                  <div style={{ borderTop: '1px dashed #cbd5e1', marginTop: '0.5rem', paddingTop: '0.5rem', fontSize: '0.76rem', color: '#64748b', lineHeight: 1.35 }}>
-                    Transfiere a cuenta ahorros 456789456 de Bancolombia a nombre de Juan Ramirez.
-                  </div>
-                </>
+                  {(() => {
+                    if (configuracion?.metodos_pago) {
+                      try {
+                        const parsed = JSON.parse(configuracion.metodos_pago);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                          return parsed.map((m: any, idx: number) => (
+                            <div key={idx} style={{ padding: '0.35rem 0', color: '#475569', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: idx < parsed.length - 1 ? '1px dashed #e2e8f0' : 'none', fontFamily: "'Poppins', sans-serif" }}>
+                              <span><strong>{m.banco}</strong> {m.tipo ? `(${m.tipo})` : ''}</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                <span style={{ fontWeight: 600, color: '#0f172a', fontFamily: 'monospace' }}>{m.numero}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(m.numero);
+                                    setCopiedField(true);
+                                    setTimeout(() => setCopiedField(false), 2000);
+                                  }}
+                                  style={{ background: '#e2e8f0', border: 'none', borderRadius: '6px', cursor: 'pointer', padding: '2px 6px', fontSize: '0.74rem', color: '#0f172a', fontWeight: 500 }}
+                                  title="Copiar número de cuenta"
+                                >
+                                  {copiedField ? '✓ Copiado' : '📋 Copiar'}
+                                </button>
+                              </div>
+                            </div>
+                          ));
+                        } else if (typeof configuracion.metodos_pago === 'string' && configuracion.metodos_pago.trim() !== '') {
+                          return <div style={{ whiteSpace: 'pre-line', color: '#334155', fontFamily: "'Poppins', sans-serif", fontSize: '0.82rem' }}>{configuracion.metodos_pago}</div>;
+                        }
+                      } catch {
+                        if (typeof configuracion.metodos_pago === 'string' && configuracion.metodos_pago.trim() !== '') {
+                          return <div style={{ whiteSpace: 'pre-line', color: '#334155', fontFamily: "'Poppins', sans-serif", fontSize: '0.82rem' }}>{configuracion.metodos_pago}</div>;
+                        }
+                      }
+                    }
+                    return (
+                      <div style={{ color: '#475569', fontSize: '0.8rem', fontFamily: "'Poppins', sans-serif" }}>
+                        Solicita los datos bancarios directamente por WhatsApp al asesor.
+                      </div>
+                    );
+                  })()}
+                </div>
               )}
 
               {orderSummaryData.modalidadPago === 'contra_entrega' && (
