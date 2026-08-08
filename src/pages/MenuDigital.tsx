@@ -595,8 +595,8 @@ export default function MenuDigital() {
   const leadIdRef = useRef<string | null>(null);
   const isInsertingRef = useRef(false);
   const isOrderSubmittedRef = useRef(false);
-  const [isPagoSeleccionado, setIsPagoSeleccionado] = useState(false);
-  const [isEnvioSeleccionado, setIsEnvioSeleccionado] = useState(false);
+  const [isPagoSeleccionado, setIsPagoSeleccionado] = useState(true);  // Transferencia Bancaria predefinida
+  const [isEnvioSeleccionado, setIsEnvioSeleccionado] = useState(true); // Domicilio predefinido
 
   const getStoreWhatsAppNumber = (customerPhone?: string) => {
     const cleanCustomer = (customerPhone || formData?.telefono || '').replace(/\D/g, '');
