@@ -3,17 +3,20 @@
    Modern, Light, Conversion-driven Layout
    ========================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
 
-* { 
-  box-sizing: border-box; 
+*, *::before, *::after { 
+  box-sizing: border-box;
+  font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 400;
 }
 
 body {
   margin: 0;
   background-color: #f8fafc;
   color: #1e293b;
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: 'Poppins', sans-serif;
+  font-weight: 400;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -24,7 +27,7 @@ body {
   display: none;
 }
 
-/* ── LOGIN SCREEN ── */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ LOGIN SCREEN Ã¢â€â‚¬Ã¢â€â‚¬ */
 .admin-login-wrapper {
   display: flex;
   align-items: center;
@@ -34,7 +37,7 @@ body {
   background-image: 
     radial-gradient(circle at 0% 0%, rgba(99, 102, 241, 0.05) 0%, transparent 50%),
     radial-gradient(circle at 100% 100%, rgba(14, 165, 233, 0.06) 0%, transparent 50%);
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: 'Poppins', sans-serif;
 }
 
 .admin-login-card {
@@ -52,12 +55,12 @@ body {
 }
 
 .admin-login-card h1 {
-  font-family: 'Outfit', sans-serif;
-  font-size: 1.65rem;
-  font-weight: 800;
+  font-family: 'Poppins', sans-serif;
+  font-size: 1.55rem;
+  font-weight: 500;
   color: #0f172a;
   margin: 0;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.3px;
   background: linear-gradient(135deg, #4f46e5, #0ea5e9);
   -webkit-background-clip: text;
   background-clip: text;
@@ -83,7 +86,7 @@ body {
   transition: all 0.2s ease;
   outline: none;
   font-family: inherit;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .admin-login-card input::placeholder { 
@@ -105,7 +108,7 @@ body {
   border: none;
   border-radius: 14px;
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
   box-shadow: 0 4px 15px rgba(var(--primary-rgb, 99, 102, 241), 0.2);
@@ -127,7 +130,7 @@ body {
   color: #1e293b;
 }
 
-/* ── SIDEBAR ── */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ SIDEBAR Ã¢â€â‚¬Ã¢â€â‚¬ */
 .admin-sidebar {
   width: 270px;
   height: 100vh;
@@ -163,16 +166,16 @@ body {
   align-items: center;
   justify-content: center;
   color: white;
-  font-weight: 800;
+  font-weight: 500;
   font-size: 1.15rem;
   flex-shrink: 0;
   box-shadow: 0 4px 12px rgba(var(--primary-rgb, 99, 102, 241), 0.2);
 }
 
 .sidebar-brand .brand-text h2 {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Poppins', sans-serif;
   font-size: 1.1rem;
-  font-weight: 800;
+  font-weight: 500;
   color: #0f172a;
   margin: 0;
   line-height: 1.2;
@@ -185,7 +188,7 @@ body {
   font-weight: 500;
 }
 
-/* ── SIDEBAR ACTION CARD ── */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ SIDEBAR ACTION CARD Ã¢â€â‚¬Ã¢â€â‚¬ */
 .sidebar-action-card {
   margin: 1.25rem 1.25rem 0.5rem;
   background: #ffffff;
@@ -200,7 +203,7 @@ body {
 
 .action-card-text h4 {
   font-size: 0.88rem;
-  font-weight: 700;
+  font-weight: 500;
   color: #0f172a;
   margin: 0 0 0.15rem 0;
 }
@@ -241,7 +244,7 @@ body {
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 1.5px;
-  font-weight: 800;
+  font-weight: 500;
   color: #94a3b8;
   margin-bottom: 0.75rem;
   padding-left: 0.5rem;
@@ -258,7 +261,7 @@ body {
   border-radius: 12px;
   color: #64748b;
   font-size: 0.92rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   margin-bottom: 0.35rem;
@@ -275,7 +278,7 @@ body {
 .nav-item.active {
   background: linear-gradient(135deg, rgba(var(--primary-rgb, 99, 102, 241), 0.08) 0%, rgba(var(--primary-rgb, 99, 102, 241), 0.02) 100%);
   color: var(--primary-color, #6366f1);
-  font-weight: 700;
+  font-weight: 500;
   border-left: 3px solid var(--primary-color, #6366f1);
   border-radius: 0 12px 12px 0;
 }
@@ -303,7 +306,7 @@ body {
   box-shadow: 0 0 8px rgba(var(--primary-rgb, 99, 102, 241), 0.5);
 }
 
-/* ── STORAGE / PRODUCT STATS ── */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ STORAGE / PRODUCT STATS Ã¢â€â‚¬Ã¢â€â‚¬ */
 .sidebar-storage-stats {
   padding: 0.5rem 1.25rem;
   margin-bottom: 1.25rem;
@@ -314,7 +317,7 @@ body {
   justify-content: space-between;
   font-size: 0.78rem;
   margin-bottom: 0.4rem;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .sidebar-storage-stats .storage-text strong {
@@ -340,7 +343,7 @@ body {
   transition: width 0.3s ease;
 }
 
-/* ── SIDEBAR BANNER CARD ── */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ SIDEBAR BANNER CARD Ã¢â€â‚¬Ã¢â€â‚¬ */
 .sidebar-banner-card {
   margin: 0 1.25rem 1.25rem 1.25rem;
   background: linear-gradient(135deg, #e0f2fe, #bae6fd);
@@ -353,7 +356,7 @@ body {
 .sidebar-banner-card h4 {
   margin: 0 0 0.25rem 0;
   font-size: 0.82rem;
-  font-weight: 800;
+  font-weight: 500;
   color: #0369a1;
   text-transform: uppercase;
 }
@@ -365,7 +368,7 @@ body {
   line-height: 1.3;
 }
 
-/* ── MODALS ── */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ MODALS Ã¢â€â‚¬Ã¢â€â‚¬ */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -393,7 +396,7 @@ body {
   background: #f0f9ff;
   color: #0284c7;
   font-size: 0.62rem;
-  font-weight: 800;
+  font-weight: 500;
   padding: 0.2rem 0.5rem;
   border-radius: 20px;
   letter-spacing: 0.5px;
@@ -424,17 +427,17 @@ body {
   font-size: 0.85rem;
   color: #0f172a;
   margin: 0;
-  font-weight: 700;
+  font-weight: 500;
 }
 
 .sidebar-footer .user-info p {
   font-size: 0.74rem;
   color: #10b981;
   margin: 0;
-  font-weight: 600;
+  font-weight: 500;
 }
 
-/* ── MAIN CONTENT ── */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ MAIN CONTENT Ã¢â€â‚¬Ã¢â€â‚¬ */
 .admin-main {
   flex: 1;
   display: flex;
@@ -459,7 +462,7 @@ body {
   box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
 }
 
-/* Píldoras de estado del CRM de Pedidos: ÚNICAMENTE visibles en Móvil (<= 768px) */
+/* PÃƒÂ­ldoras de estado del CRM de Pedidos: ÃƒÅ¡NICAMENTE visibles en MÃƒÂ³vil (<= 768px) */
 .mobile-status-pills-bar {
   display: none !important;
 }
@@ -537,15 +540,15 @@ body {
 }
 
 .topbar-title h2 {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Poppins', sans-serif;
   font-size: 1.15rem;
-  font-weight: 800;
+  font-weight: 500;
   color: #0f172a;
   margin: 0;
   line-height: 1.25;
 }
 
-/* ── CREATION FORM EXPANDABLE CARD ── */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ CREATION FORM EXPANDABLE CARD Ã¢â€â‚¬Ã¢â€â‚¬ */
 .creation-form-card {
   background: #ffffff;
   border: 1px solid #e2e8f0;
@@ -581,7 +584,7 @@ body {
 .creation-form-header h4 {
   margin: 0;
   font-size: 1rem;
-  font-weight: 800;
+  font-weight: 500;
   color: #0f172a;
   display: flex;
   align-items: center;
@@ -630,7 +633,7 @@ body {
 
 .form-field-item label {
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 500;
   color: #475569;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -646,7 +649,7 @@ body {
   outline: none;
   background: #ffffff;
   color: #0f172a;
-  font-weight: 600;
+  font-weight: 500;
   font-family: inherit;
   transition: border-color 0.2s, box-shadow 0.2s;
   width: 100%;
@@ -689,7 +692,7 @@ body {
   padding: 0.55rem 1.25rem;
   border-radius: 10px;
   font-size: 0.84rem;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
   font-family: inherit;
   transition: all 0.2s;
@@ -719,7 +722,7 @@ body {
   padding: 0.55rem 1.1rem;
   border-radius: 10px;
   font-size: 0.84rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   font-family: inherit;
   transition: all 0.2s;
@@ -738,7 +741,7 @@ body {
   padding: 0.45rem 0.85rem;
   border-radius: 8px;
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   font-family: inherit;
   transition: all 0.2s;
@@ -755,7 +758,7 @@ body {
   padding: 0.45rem 0.85rem;
   border-radius: 8px;
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
   font-family: inherit;
   transition: all 0.2s;
@@ -765,7 +768,7 @@ body {
   background: #bae6fd; 
 }
 
-/* ── CONTENT AREA ── */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ CONTENT AREA Ã¢â€â‚¬Ã¢â€â‚¬ */
 .admin-content {
   padding: 2rem;
   display: flex;
@@ -773,7 +776,7 @@ body {
   gap: 1.5rem;
 }
 
-/* ── STAT CARDS (TOP METRICS) ── */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ STAT CARDS (TOP METRICS) Ã¢â€â‚¬Ã¢â€â‚¬ */
 .metrics-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -801,15 +804,15 @@ body {
 .metric-card .mc-label {
   font-size: 0.72rem;
   color: #64748b;
-  font-weight: 700;
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.8px;
 }
 
 .metric-card .mc-value {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Poppins', sans-serif;
   font-size: 2.1rem;
-  font-weight: 800;
+  font-weight: 500;
   color: #0f172a;
   line-height: 1;
 }
@@ -825,7 +828,7 @@ body {
   margin-bottom: 0.25rem;
 }
 
-/* ── PANELS ── */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ PANELS Ã¢â€â‚¬Ã¢â€â‚¬ */
 .admin-panel {
   background: #ffffff;
   border: 1px solid #e2e8f0;
@@ -853,9 +856,9 @@ body {
 }
 
 .panel-header h3 {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Poppins', sans-serif;
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 500;
   color: #0f172a;
   margin: 0;
   display: flex;
@@ -873,7 +876,7 @@ body {
   padding: 1.75rem;
 }
 
-/* ── PRODUCT GRID ── */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ PRODUCT GRID Ã¢â€â‚¬Ã¢â€â‚¬ */
 .products-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -929,9 +932,9 @@ body {
 }
 
 .product-card-body h4 {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Poppins', sans-serif;
   font-size: 0.92rem;
-  font-weight: 700;
+  font-weight: 500;
   color: #0f172a;
   margin: 0;
   white-space: nowrap;
@@ -947,9 +950,9 @@ body {
 }
 
 .product-card-body .p-price {
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Poppins', sans-serif;
   font-size: 1.1rem;
-  font-weight: 800;
+  font-weight: 500;
   color: var(--primary-color, #6366f1);
   margin: 0;
 }
@@ -978,7 +981,7 @@ body {
 /* Form Styles */
 .form-group label {
   font-size: 0.85rem;
-  font-weight: 700;
+  font-weight: 500;
   color: #334155;
   margin-bottom: 0.45rem;
 }
@@ -1014,7 +1017,7 @@ body {
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 1px;
-  font-weight: 800;
+  font-weight: 500;
   padding: 1.1rem 1.5rem;
   border-bottom: 2px solid #f1f5f9;
 }
@@ -1047,7 +1050,7 @@ body {
   gap: 0.75rem;
   padding: 1rem 2rem;
   border-radius: 50px;
-  font-weight: 700;
+  font-weight: 500;
   font-size: 1rem;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.25);
   animation: toastIn 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -1166,9 +1169,9 @@ body {
 
 .cat-title-line h4 {
   margin: 0;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Poppins', sans-serif;
   font-size: 1.02rem;
-  font-weight: 800;
+  font-weight: 500;
   color: #0f172a;
   letter-spacing: -0.01em;
 }
@@ -1180,7 +1183,7 @@ body {
   background: #f1f5f9;
   padding: 0.15rem 0.5rem;
   border-radius: 6px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .cat-meta-line {
@@ -1194,7 +1197,7 @@ body {
   align-items: center;
   gap: 0.3rem;
   font-size: 0.74rem;
-  font-weight: 700;
+  font-weight: 500;
   color: #0369a1;
   background: #e0f2fe;
   padding: 0.18rem 0.6rem;
@@ -1206,7 +1209,7 @@ body {
   align-items: center;
   gap: 0.3rem;
   font-size: 0.74rem;
-  font-weight: 700;
+  font-weight: 500;
   color: #047857;
   background: #ecfdf5;
   padding: 0.18rem 0.6rem;
@@ -1227,7 +1230,7 @@ body {
   padding: 0.45rem 0.85rem;
   border-radius: 10px;
   font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
   border: 1px solid transparent;
   transition: all 0.18s ease;
@@ -1305,7 +1308,7 @@ body {
 
 .form-field label {
   font-size: 0.82rem;
-  font-weight: 700;
+  font-weight: 500;
   color: #475569;
 }
 
@@ -1356,7 +1359,7 @@ body {
   border: 1px solid #cbd5e1;
   color: #475569;
   border-radius: 10px;
-  font-weight: 600;
+  font-weight: 500;
   font-size: 0.82rem;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -1436,9 +1439,9 @@ body {
 
 .bulk-product-card-header h4 {
   margin: 0;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Poppins', sans-serif;
   font-size: 0.95rem;
-  font-weight: 700;
+  font-weight: 500;
   color: #0f172a;
 }
 
@@ -1465,9 +1468,9 @@ body {
 
 .empty-state h4 {
   margin: 0 0 0.25rem 0;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Poppins', sans-serif;
   font-size: 1.15rem;
-  font-weight: 700;
+  font-weight: 500;
   color: #0f172a;
 }
 
@@ -1538,9 +1541,9 @@ body {
 
 .kanban-column-header h3 {
   margin: 0;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Poppins', sans-serif;
   font-size: 1rem;
-  font-weight: 800;
+  font-weight: 500;
   letter-spacing: 0.2px;
 }
 
@@ -1560,7 +1563,7 @@ body {
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
   font-size: 0.8rem;
-  font-weight: 800;
+  font-weight: 500;
 }
 
 .kanban-cards-list {
@@ -1601,9 +1604,9 @@ body {
 
 .kanban-card h4 {
   margin: 0 0 0.5rem 0;
-  font-family: 'Outfit', sans-serif;
+  font-family: 'Poppins', sans-serif;
   font-size: 0.98rem;
-  font-weight: 700;
+  font-weight: 500;
   color: #0f172a;
 }
 
@@ -1626,7 +1629,7 @@ body {
 
 
 
-/* ── POS (POINT OF SALE) SYSTEM STYLES ── */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ POS (POINT OF SALE) SYSTEM STYLES Ã¢â€â‚¬Ã¢â€â‚¬ */
 .pos-layout {
   padding: 1.5rem;
   background: #f8fafc;
@@ -1655,7 +1658,7 @@ body {
    RESPONSIVE - Admin / Asesor / Mayorista
    ============================================ */
 
-/* ── Responsive POS Layout ── */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ Responsive POS Layout Ã¢â€â‚¬Ã¢â€â‚¬ */
 .pos-grid-container {
   display: grid;
   grid-template-columns: 1.2fr 1fr;
@@ -1669,12 +1672,12 @@ body {
   }
 }
 
-/* ── Mobile toggle button ── */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ Mobile toggle button Ã¢â€â‚¬Ã¢â€â‚¬ */
 .mobile-menu-toggle {
   display: none;
 }
 
-/* ── Tablet & Mobile (≤ 992px) ── */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ Tablet & Mobile (Ã¢â€°Â¤ 992px) Ã¢â€â‚¬Ã¢â€â‚¬ */
 @media (max-width: 992px) {
   .mobile-menu-toggle {
     display: flex !important;
@@ -1918,7 +1921,7 @@ body {
   }
 }
 
-/* ── Mobile only (≤ 600px) ── */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ Mobile only (Ã¢â€°Â¤ 600px) Ã¢â€â‚¬Ã¢â€â‚¬ */
 @media (max-width: 600px) {
   /* Stats grid - 1 column */
   .stats-grid, .admin-stats-grid {
@@ -1991,7 +1994,7 @@ body {
   }
 }
 
-/* ── Very small phones (≤ 380px) ── */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ Very small phones (Ã¢â€°Â¤ 380px) Ã¢â€â‚¬Ã¢â€â‚¬ */
 @media (max-width: 380px) {
   .admin-content {
     padding: 0.75rem !important;
@@ -2018,7 +2021,7 @@ body {
   animation: pulseBell 1.6s infinite ease-in-out;
 }
 
-/* ── Mobile Bottom Navigation ── */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ Mobile Bottom Navigation Ã¢â€â‚¬Ã¢â€â‚¬ */
 .mobile-bottom-nav {
   display: none;
 }
@@ -2068,7 +2071,7 @@ body {
   cursor: pointer;
   padding: 6px 4px;
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: 500;
   position: relative;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   flex-shrink: 0;
@@ -2130,7 +2133,7 @@ body {
   font-size: 0.6rem;
   padding: 1px 5px;
   border-radius: 10px;
-  font-weight: 800;
+  font-weight: 500;
   border: 1.5px solid white;
 }
 
@@ -2179,7 +2182,7 @@ body {
     padding: 8px 16px;
     border-radius: 20px;
     font-size: 0.8rem;
-    font-weight: 700;
+    font-weight: 500;
     cursor: pointer;
     background: #ffffff;
     border: 1.5px solid #e2e8f0;
@@ -2195,7 +2198,7 @@ body {
     padding: 2px 6px;
     border-radius: 10px;
     color: white;
-    font-weight: 800;
+    font-weight: 500;
     min-width: 20px;
     text-align: center;
   }
@@ -2276,7 +2279,7 @@ body {
     border-radius: 50%;
     background: #f8fafc;
     color: #475569;
-    font-weight: 800;
+    font-weight: 500;
     font-size: 1.1rem;
     display: flex;
     align-items: center;
@@ -2313,7 +2316,7 @@ body {
     margin: 0;
     font-size: 0.72rem;
     color: #94a3b8;
-    font-weight: 600;
+    font-weight: 500;
     line-height: 1.2;
   }
   
@@ -2339,7 +2342,7 @@ body {
   
   .prob-badge-small {
     font-size: 0.72rem;
-    font-weight: 700;
+    font-weight: 500;
     padding: 2px 6px;
     border-radius: 6px;
     display: inline-flex;
@@ -2352,7 +2355,7 @@ body {
   
   .payment-badge-small {
     font-size: 0.68rem;
-    font-weight: 700;
+    font-weight: 500;
     padding: 2px 6px;
     border-radius: 6px;
     border: 1.5px solid transparent;
@@ -2389,7 +2392,7 @@ body {
   
   .cart-total-amount {
     font-size: 1.25rem;
-    font-weight: 600;
+    font-weight: 500;
     color: #10b981;
   }
   
@@ -2426,7 +2429,7 @@ body {
     text-overflow: ellipsis;
     white-space: nowrap;
     max-width: 100%;
-    font-weight: 600;
+    font-weight: 500;
   }
   
   .more-products-badge {
@@ -2436,7 +2439,7 @@ body {
     padding: 2px 6px;
     border-radius: 6px;
     font-size: 0.65rem;
-    font-weight: 800;
+    font-weight: 500;
     margin-top: 4px;
     cursor: pointer;
   }
@@ -2472,7 +2475,7 @@ body {
     border-radius: 50%;
     background: #e2e8f0;
     color: #475569;
-    font-weight: 800;
+    font-weight: 500;
     font-size: 0.8rem;
     display: flex;
     align-items: center;
@@ -2506,7 +2509,7 @@ body {
     color: #7c3aed;
     padding: 1px 4px;
     border-radius: 4px;
-    font-weight: 700;
+    font-weight: 500;
     margin-top: 2px;
     display: inline-block;
     align-self: flex-start;
@@ -2582,7 +2585,7 @@ body {
   }
 
 
-/* ── Search & Filter Panel Redesign ── */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ Search & Filter Panel Redesign Ã¢â€â‚¬Ã¢â€â‚¬ */
 .orders-search-filter-container {
   display: flex;
   flex-direction: column;
@@ -2640,7 +2643,7 @@ body {
 
 .filter-label {
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 500;
   color: #64748b;
   text-transform: uppercase;
   letter-spacing: 0.3px;
@@ -2744,7 +2747,7 @@ body {
   }
 }
 
-/* ── Ver Detalles Button Styles ── */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ Ver Detalles Button Styles Ã¢â€â‚¬Ã¢â€â‚¬ */
 .btn-details-action {
   font-size: 0.72rem;
   font-weight: 500;
@@ -2804,7 +2807,7 @@ body {
 .panel-header-title-custom {
   margin: 0;
   font-size: 1.25rem;
-  font-weight: 800;
+  font-weight: 500;
   color: #0f172a;
   text-align: left;
 }
@@ -3002,7 +3005,7 @@ body {
 }
 }
 
-/* ── Wholesaler Markup Container ── */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ Wholesaler Markup Container Ã¢â€â‚¬Ã¢â€â‚¬ */
 .wholesaler-markup-container {
   margin-bottom: 2rem;
   display: flex;
@@ -3050,7 +3053,7 @@ body {
   }
 }
 
-/* ── Product Override Row ── */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ Product Override Row Ã¢â€â‚¬Ã¢â€â‚¬ */
 .product-override-row {
   display: flex;
   gap: 0.4rem;
@@ -3211,7 +3214,7 @@ button:active { transform: scale(0.95); }
   margin: 0 0 0.25rem 0;
   font-size: 1.35rem;
   color: #0f172a;
-  font-weight: 800;
+  font-weight: 500;
 }
 
 .pqrs-header-title p {
@@ -3249,7 +3252,7 @@ button:active { transform: scale(0.95); }
 
 .pqrs-kpi-val {
   font-size: 1.6rem;
-  font-weight: 800;
+  font-weight: 500;
   line-height: 1.1;
   margin-bottom: 0.25rem;
   display: flex;
@@ -3259,7 +3262,7 @@ button:active { transform: scale(0.95); }
 
 .pqrs-kpi-label {
   font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: #64748b;
@@ -3342,7 +3345,7 @@ button:active { transform: scale(0.95); }
 
 .pqrs-filter-label {
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 500;
   color: #64748b;
   display: flex;
   align-items: center;
@@ -3363,7 +3366,7 @@ button:active { transform: scale(0.95); }
   padding: 0.4rem 0.85rem;
   border-radius: 999px;
   font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: 500;
   color: #64748b;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -3408,7 +3411,7 @@ button:active { transform: scale(0.95); }
   background: #f8fafc;
   color: #475569;
   font-size: 0.78rem;
-  font-weight: 800;
+  font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.5px;
   padding: 0.9rem 1rem;
@@ -3428,7 +3431,7 @@ button:active { transform: scale(0.95); }
 }
 
 .pqrs-date-day {
-  font-weight: 700;
+  font-weight: 500;
   color: #334155;
   font-size: 0.85rem;
 }
@@ -3450,7 +3453,7 @@ button:active { transform: scale(0.95); }
   border-radius: 50%;
   background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
   color: #0284c7;
-  font-weight: 800;
+  font-weight: 500;
   font-size: 0.85rem;
   display: flex;
   align-items: center;
@@ -3481,7 +3484,7 @@ button:active { transform: scale(0.95); }
   background: #f1f5f9;
   color: #475569;
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 500;
   padding: 0.15rem 0.4rem;
   border-radius: 6px;
   margin-top: 0.15rem;
@@ -3493,7 +3496,7 @@ button:active { transform: scale(0.95); }
   padding: 0.3rem 0.65rem;
   border-radius: 999px;
   font-size: 0.76rem;
-  font-weight: 700;
+  font-weight: 500;
   text-transform: capitalize;
 }
 
@@ -3544,7 +3547,7 @@ button:active { transform: scale(0.95); }
   border: none;
   color: #3b82f6;
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
   padding: 0;
   text-align: left;
@@ -3560,7 +3563,7 @@ button:active { transform: scale(0.95); }
   padding: 0.35rem 0.65rem;
   border-radius: 8px;
   font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: 500;
   text-decoration: none;
   transition: background 0.15s;
 }
@@ -3579,7 +3582,7 @@ button:active { transform: scale(0.95); }
   padding: 0.4rem 0.65rem;
   border-radius: 20px;
   font-size: 0.78rem;
-  font-weight: 700;
+  font-weight: 500;
   outline: none;
   cursor: pointer;
   transition: all 0.2s;
@@ -3612,7 +3615,7 @@ button:active { transform: scale(0.95); }
   padding: 0.45rem 0.85rem;
   border-radius: 8px;
   font-size: 0.8rem;
-  font-weight: 700;
+  font-weight: 500;
   text-decoration: none;
   box-shadow: 0 3px 8px rgba(37, 211, 102, 0.3);
   transition: all 0.2s ease;
@@ -3651,7 +3654,7 @@ button:active { transform: scale(0.95); }
   text-align: center;
 }
 
-/* ── RESPONSIVE UTILITIES FOR MOBILE / DESKTOP TABLES & CARDS ── */
+/* Ã¢â€â‚¬Ã¢â€â‚¬ RESPONSIVE UTILITIES FOR MOBILE / DESKTOP TABLES & CARDS Ã¢â€â‚¬Ã¢â€â‚¬ */
 .mobile-only-cards {
   display: none;
 }
@@ -3669,5 +3672,8 @@ button:active { transform: scale(0.95); }
     display: none !important;
   }
 }
+
+
+
 
 

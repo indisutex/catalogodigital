@@ -1703,8 +1703,7 @@ export default function MenuDigital() {
                       return (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '0.1rem' }}>
                           {/* 1. PRIMERO: PRECIO DETAL */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap' }}>
-                            <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>Detal:</span>
+                          <div style={{ display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
                             <strong style={{ fontSize: '1.05rem', fontWeight: 600, color: companyColor, fontFamily: "'Poppins', sans-serif", textDecoration: ((producto.descuento !== undefined && producto.descuento > 0) || descuentoPromocional > 0) ? 'line-through' : 'none' }}>
                               ${priceDetal.toLocaleString('es-CO')}
                             </strong>
