@@ -1818,7 +1818,8 @@ body {
   .search-box-container button {
     display: none !important;
   }
-  .btn-text-desktop {
+  .btn-text-desktop,
+  .desktop-sort-select {
     display: none !important;
   }
   .topbar-filters-wrapper > button,

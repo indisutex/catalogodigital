@@ -5613,7 +5613,7 @@ export default function Admin() {
                     </div>
 
                     {/* Ordenar por Productos */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', height: '38px', padding: '0 0.65rem 0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', background: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                    <div className="desktop-sort-select" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', height: '38px', padding: '0 0.65rem 0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', background: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
                       <ArrowUpDown size={15} style={{ color: '#00a6f9', flexShrink: 0 }} />
                       <select
                         value={productSort}
@@ -5671,6 +5671,24 @@ export default function Admin() {
                             gap: '0.4rem'
                           }}
                         >
+                          {/* Ordenar por Productos */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', padding: '0.55rem 0.75rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                            <span style={{ fontWeight: 800, color: '#334155', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                              <ArrowUpDown size={14} color="#00a6f9" /> Ordenar Catálogo:
+                            </span>
+                            <select
+                              value={productSort}
+                              onChange={e => setProductSort(e.target.value)}
+                              style={{ border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.35rem 0.45rem', outline: 'none', background: 'white', color: '#0f172a', fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem', width: '100%' }}
+                            >
+                              <option value="recientes">Más recientes</option>
+                              <option value="alfabetico">A-Z</option>
+                              <option value="visibles">Solo Visibles</option>
+                              <option value="ocultos">Solo Ocultos</option>
+                              <option value="con_fotos">Con fotos</option>
+                            </select>
+                          </div>
+
                           {/* Opción 1: Migrar de Empresa */}
                           <button
                             type="button"
