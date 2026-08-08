@@ -652,9 +652,20 @@ export default function MenuDigital() {
         ? (selectedDepartamento && !customFormData.ciudad.includes(selectedDepartamento) ? `${customFormData.ciudad}, ${selectedDepartamento}` : customFormData.ciudad)
         : (selectedDepartamento || '');
 
-      const direccionFormateada = customFormData.direccion 
+      let direccionFormateada = customFormData.direccion 
         ? customFormData.direccion 
         : (metodoRecepcion === 'tienda' ? `Recoger en Tienda (${configuracion?.direccion || 'Sede Principal'})` : '');
+
+      if (customFormData.cedula && customFormData.cedula.trim()) {
+        if (!direccionFormateada.includes('Cédula:')) {
+          direccionFormateada += ` | CC: ${customFormData.cedula.trim()}`;
+        }
+      }
+      if (customFormData.email && customFormData.email.trim()) {
+        if (!direccionFormateada.includes('Email:')) {
+          direccionFormateada += ` | Email: ${customFormData.email.trim()}`;
+        }
+      }
 
       // Payload completo para alimentar en tiempo real el Lead / Carrito Abandonado
       const basePayload: any = {
