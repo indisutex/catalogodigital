@@ -14037,34 +14037,6 @@ export default function Admin() {
                             <h4 style={{ margin: 0, fontSize: '0.86rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600 }}>
                               💳 Comprobante de Pago Subido
                             </h4>
-                            <label style={{ fontSize: '0.75rem', color: 'var(--primary-color, #0ea5e9)', fontWeight: 500, cursor: 'pointer', background: '#f1f5f9', padding: '0.25rem 0.65rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-                              📷 Cambiar foto
-                              <input
-                                type="file"
-                                accept="image/*"
-                                hidden
-                                onChange={async (e) => {
-                                  if (e.target.files && e.target.files[0]) {
-                                    const file = e.target.files[0];
-                                    try {
-                                      showToast('Subiendo nuevo comprobante...', 'success');
-                                      const fileExt = file.name.split('.').pop();
-                                      const fileName = `comprobante_${selectedPedido.id}_${Date.now()}.${fileExt}`;
-                                      const { error: upErr } = await supabase.storage.from('archivos').upload(fileName, file);
-                                      if (upErr) throw upErr;
-                                      const { data: urlData } = supabase.storage.from('archivos').getPublicUrl(fileName);
-                                      const newUrl = urlData.publicUrl;
-                                      await supabase.from('pedidos').update({ pantallazo_url: newUrl }).eq('id', selectedPedido.id);
-                                      setSelectedPedido({ ...selectedPedido, pantallazo_url: newUrl });
-                                      setPedidos(prev => prev.map(p => p.id === selectedPedido.id ? { ...p, pantallazo_url: newUrl } : p));
-                                      showToast('¡Comprobante actualizado! ✓', 'success');
-                                    } catch (err) {
-                                      showToast('Error al subir el comprobante', 'error');
-                                    }
-                                  }
-                                }}
-                              />
-                            </label>
                           </div>
                           <div onClick={() => setPagoModalUrl(selectedPedido.pantallazo_url || null)} style={{ cursor: 'pointer', textAlign: 'center' }}>
                             <img
