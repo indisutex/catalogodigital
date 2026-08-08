@@ -15,10 +15,7 @@ import {
   RefreshCw,
   Download,
   BarChart2,
-  ClipboardList,
-  CreditCard,
   AlertCircle,
-  Star,
   FileText,
   Eye,
   Printer,
@@ -32,6 +29,7 @@ import * as XLSX from 'xlsx';
 
 interface Props {
   tenantId: string;
+  activeSubTab?: string;
 }
 
 const CATEGORIAS_EGRESO = [
@@ -54,8 +52,18 @@ const estadoClass = (e?: string) => {
 
 const fmt = (n: number) => `$${Math.round(n).toLocaleString('es-CO')}`;
 
-export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
-  const [tab, setTab] = useState<'dashboard' | 'ventas' | 'egresos' | 'productos'>('dashboard');
+export const ERPVentasModule: React.FC<Props> = ({ tenantId, activeSubTab }) => {
+  const [tab, setTab] = useState<'dashboard' | 'ventas' | 'egresos' | 'productos'>(() => (
+    activeSubTab && ['dashboard', 'ventas', 'egresos', 'productos'].includes(activeSubTab)
+      ? (activeSubTab as any)
+      : 'dashboard'
+  ));
+
+  useEffect(() => {
+    if (activeSubTab && ['dashboard', 'ventas', 'egresos', 'productos'].includes(activeSubTab)) {
+      setTab(activeSubTab as any);
+    }
+  }, [activeSubTab]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -247,69 +255,57 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
       {/* Encabezado */}
       <div className="erp-ventas-header">
         <div>
-          <h1><TrendingUp size={28} color="var(--primary-color, #6366f1)" /> Ventas, Facturación y Rendimiento Comercial</h1>
+          <h1><TrendingUp size={20} color="var(--primary-color, #6366f1)" /> Ventas, Facturación y Rendimiento Comercial</h1>
           <p>Supervisión comercial de ventas reales y pedidos facturados</p>
         </div>
         <button className="erp-btn erp-btn-ghost" onClick={loadAll}>
-          <RefreshCw size={16} /> Actualizar
+          <RefreshCw size={15} /> Actualizar
         </button>
       </div>
 
       {/* KPI Cards */}
       <div className="erp-kpi-grid">
         <div className="erp-kpi-card ventas">
-          <p className="erp-kpi-label"><TrendingUp size={14} /> Ventas del Mes</p>
+          <div className="erp-kpi-icon"><TrendingUp size={18} /></div>
+          <p className="erp-kpi-label">Ventas del Mes</p>
           <h2 className="erp-kpi-value">{resumen ? fmt(resumen.totalVentasMes) : '...'}</h2>
           <p className="erp-kpi-sub">{resumen?.pedidosMes ?? 0} pedidos aprobados</p>
-          <span className="erp-kpi-today" style={{ background: '#ede9fe', color: '#6d28d9' }}>
+          <span className="erp-kpi-today" style={{ background: 'rgba(99,102,241,0.1)', color: '#6366f1' }}>
             Hoy: {resumen ? fmt(resumen.totalVentasHoy) : '-'}
           </span>
         </div>
 
         <div className="erp-kpi-card gastos">
-          <p className="erp-kpi-label"><TrendingDown size={14} /> Gastos de Operación</p>
+          <div className="erp-kpi-icon"><TrendingDown size={18} /></div>
+          <p className="erp-kpi-label">Gastos de Operación</p>
           <h2 className="erp-kpi-value">{resumen ? fmt(resumen.totalEgresosMes) : '...'}</h2>
           <p className="erp-kpi-sub">{egresos.length} egresos registrados</p>
-          <span className="erp-kpi-today" style={{ background: '#fee2e2', color: '#b91c1c' }}>
+          <span className="erp-kpi-today" style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444' }}>
             Hoy: {resumen ? fmt(resumen.totalEgresosHoy) : '-'}
           </span>
         </div>
 
         <div className="erp-kpi-card utilidad">
-          <p className="erp-kpi-label"><DollarSign size={14} /> Utilidad Bruta Mes</p>
+          <div className="erp-kpi-icon"><DollarSign size={18} /></div>
+          <p className="erp-kpi-label">Utilidad Bruta Mes</p>
           <h2 className="erp-kpi-value" style={{ color: (resumen?.utilidadMes ?? 0) >= 0 ? '#059669' : '#dc2626' }}>
             {resumen ? fmt(resumen.utilidadMes) : '...'}
           </h2>
           <p className="erp-kpi-sub">Ventas − Gastos directos</p>
-          <span className="erp-kpi-today" style={{ background: '#d1fae5', color: '#065f46' }}>
+          <span className="erp-kpi-today" style={{ background: 'rgba(16,185,129,0.1)', color: '#059669' }}>
             Hoy: {resumen ? fmt(resumen.utilidadHoy) : '-'}
           </span>
         </div>
 
         <div className="erp-kpi-card pedidos">
-          <p className="erp-kpi-label"><ShoppingBag size={14} /> Ticket Promedio</p>
+          <div className="erp-kpi-icon"><ShoppingBag size={18} /></div>
+          <p className="erp-kpi-label">Ticket Promedio</p>
           <h2 className="erp-kpi-value">{resumen ? fmt(resumen.ticketPromedio) : '...'}</h2>
           <p className="erp-kpi-sub">Valor promedio por venta</p>
-          <span className="erp-kpi-today" style={{ background: '#e0f2fe', color: '#0369a1' }}>
+          <span className="erp-kpi-today" style={{ background: 'rgba(245,158,11,0.1)', color: '#d97706' }}>
             Total {ventas.length} pedidos
           </span>
         </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="erp-ventas-tabs">
-        <button className={`erp-ventas-tab ${tab === 'dashboard' ? 'active' : ''}`} onClick={() => setTab('dashboard')}>
-          <BarChart2 size={16} /> Dashboard Comercial
-        </button>
-        <button className={`erp-ventas-tab ${tab === 'ventas' ? 'active' : ''}`} onClick={() => setTab('ventas')}>
-          <ClipboardList size={16} /> Pedidos & Facturas Reales
-        </button>
-        <button className={`erp-ventas-tab ${tab === 'egresos' ? 'active' : ''}`} onClick={() => setTab('egresos')}>
-          <CreditCard size={16} /> Egresos de Operación
-        </button>
-        <button className={`erp-ventas-tab ${tab === 'productos' ? 'active' : ''}`} onClick={() => setTab('productos')}>
-          <Star size={16} /> Ranking de Productos
-        </button>
       </div>
 
       {error && (
@@ -324,27 +320,166 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
           <div className="erp-panel-header">
             <h3>📊 Ventas Diarias del Mes</h3>
             <div className="erp-filtros">
-              <label style={{ fontSize: '0.82rem', color: '#64748b', fontWeight: 600 }}>Desde:</label>
+              <label style={{ fontSize: '0.78rem', color: '#6b7280', fontWeight: 500 }}>Desde:</label>
               <input type="date" value={desde} onChange={e => setDesde(e.target.value)} />
-              <label style={{ fontSize: '0.82rem', color: '#64748b', fontWeight: 600 }}>Hasta:</label>
+              <label style={{ fontSize: '0.78rem', color: '#6b7280', fontWeight: 500 }}>Hasta:</label>
               <input type="date" value={hasta} onChange={e => setHasta(e.target.value)} />
             </div>
           </div>
 
           {loading ? (
-            <p style={{ color: '#94a3b8', textAlign: 'center', padding: '2rem' }}>Cargando datos de ventas...</p>
+            <p style={{ color: '#9ca3af', textAlign: 'center', padding: '2rem', fontFamily: "'Poppins', sans-serif", fontWeight: 400 }}>Cargando datos de ventas...</p>
           ) : resumen && resumen.ventasPorDia.length > 0 ? (
             <>
-              <div className="erp-bar-chart">
-                {resumen.ventasPorDia.map(dia => (
-                  <div key={dia.fecha} className="erp-bar-item" title={`${dia.fecha}: ${fmt(dia.total_ventas)}`}>
-                    <div
-                      className="erp-bar-fill"
-                      style={{ height: `${Math.max(4, (dia.total_ventas / maxBar) * 90)}px` }}
-                    />
-                    <span className="erp-bar-label">{dia.fecha.split('-')[2]}</span>
+              {/* ── Gráfico SVG de Área ── */}
+              {(() => {
+                const W = 900, H = 200, PAD = { top: 20, right: 20, bottom: 32, left: 60 };
+                const innerW = W - PAD.left - PAD.right;
+                const innerH = H - PAD.top - PAD.bottom;
+                const data = resumen.ventasPorDia;
+                const n = data.length;
+                if (n === 0) return null;
+
+                const maxVal = Math.max(...data.map(d => d.total_ventas), 1);
+                // Scale helpers
+                const xPos = (i: number) => PAD.left + (n === 1 ? innerW / 2 : (i / (n - 1)) * innerW);
+                const yPos = (v: number) => PAD.top + innerH - (v / maxVal) * innerH;
+
+                // Build smooth path using cubic bezier
+                const buildPath = (pts: {x: number; y: number}[]) => {
+                  if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y}`;
+                  let d = `M ${pts[0].x} ${pts[0].y}`;
+                  for (let i = 1; i < pts.length; i++) {
+                    const prev = pts[i - 1], curr = pts[i];
+                    const cpx = (prev.x + curr.x) / 2;
+                    d += ` C ${cpx} ${prev.y}, ${cpx} ${curr.y}, ${curr.x} ${curr.y}`;
+                  }
+                  return d;
+                };
+
+                const pts = data.map((d, i) => ({ x: xPos(i), y: yPos(d.total_ventas) }));
+                const linePath = buildPath(pts);
+                const areaPath = `${linePath} L ${pts[pts.length-1].x} ${PAD.top + innerH} L ${pts[0].x} ${PAD.top + innerH} Z`;
+
+                // Y-axis ticks
+                const yTicks = [0, 0.25, 0.5, 0.75, 1].map(f => ({
+                  v: maxVal * f,
+                  y: yPos(maxVal * f)
+                }));
+
+                return (
+                  <div style={{ position: 'relative', overflowX: 'auto' }}>
+                    <svg
+                      viewBox={`0 0 ${W} ${H}`}
+                      style={{ width: '100%', height: 'auto', display: 'block', minHeight: 160 }}
+                    >
+                      <defs>
+                        <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="var(--primary-color, #6366f1)" stopOpacity="0.35" />
+                          <stop offset="100%" stopColor="var(--primary-color, #6366f1)" stopOpacity="0.02" />
+                        </linearGradient>
+                        <filter id="glow">
+                          <feGaussianBlur stdDeviation="2.5" result="blur" />
+                          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                        </filter>
+                      </defs>
+
+                      {/* Grid horizontal lines + Y labels */}
+                      {yTicks.map((t, i) => (
+                        <g key={i}>
+                          <line
+                            x1={PAD.left} y1={t.y} x2={W - PAD.right} y2={t.y}
+                            stroke="#e5e7eb" strokeWidth="1" strokeDasharray={i === 0 ? '0' : '4 3'}
+                          />
+                          <text
+                            x={PAD.left - 8} y={t.y + 4}
+                            textAnchor="end" fontSize="9" fill="#9ca3af"
+                            fontFamily="Poppins, sans-serif"
+                          >
+                            {t.v >= 1000000
+                              ? `$${(t.v/1000000).toFixed(1)}M`
+                              : t.v >= 1000
+                              ? `$${(t.v/1000).toFixed(0)}k`
+                              : `$${Math.round(t.v)}`}
+                          </text>
+                        </g>
+                      ))}
+
+                      {/* Area fill */}
+                      <path d={areaPath} fill="url(#areaGrad)" />
+
+                      {/* Line */}
+                      <path
+                        d={linePath}
+                        fill="none"
+                        stroke="var(--primary-color, #6366f1)"
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        filter="url(#glow)"
+                      />
+
+                      {/* Data points + labels */}
+                      {data.map((d, i) => {
+                        const x = pts[i].x, y = pts[i].y;
+                        const hasVal = d.total_ventas > 0;
+                        return (
+                          <g key={d.fecha} className="erp-svg-point">
+                            {/* Outer glow ring */}
+                            {hasVal && (
+                              <circle cx={x} cy={y} r={7}
+                                fill="var(--primary-color, #6366f1)" fillOpacity="0.15" />
+                            )}
+                            {/* Dot */}
+                            <circle
+                              cx={x} cy={y} r={hasVal ? 4 : 2.5}
+                              fill={hasVal ? 'var(--primary-color, #6366f1)' : '#d1d5db'}
+                              stroke="white" strokeWidth="2"
+                            />
+                            {/* X-axis day label */}
+                            <text
+                              x={x} y={H - 6}
+                              textAnchor="middle" fontSize="9" fill="#9ca3af"
+                              fontFamily="Poppins, sans-serif"
+                            >
+                              {d.fecha.split('-')[2]}
+                            </text>
+                            {/* Tooltip on hover via title */}
+                            <title>{d.fecha}: {fmt(d.total_ventas)} · {d.cantidad_pedidos} ped.</title>
+                          </g>
+                        );
+                      })}
+                    </svg>
                   </div>
-                ))}
+                );
+              })()}
+
+              {/* Estadísticas rápidas */}
+              <div className="erp-chart-summary">
+                <div className="erp-chart-summary-item">
+                  <span className="erp-chart-summary-label">Total período</span>
+                  <span className="erp-chart-summary-value" style={{ color: 'var(--primary-color, #6366f1)' }}>
+                    {fmt(resumen.ventasPorDia.reduce((a, d) => a + d.total_ventas, 0))}
+                  </span>
+                </div>
+                <div className="erp-chart-summary-item">
+                  <span className="erp-chart-summary-label">Días con ventas</span>
+                  <span className="erp-chart-summary-value">
+                    {resumen.ventasPorDia.filter(d => d.total_ventas > 0).length}
+                  </span>
+                </div>
+                <div className="erp-chart-summary-item">
+                  <span className="erp-chart-summary-label">Mejor día</span>
+                  <span className="erp-chart-summary-value" style={{ color: '#10b981' }}>
+                    {fmt(maxBar)}
+                  </span>
+                </div>
+                <div className="erp-chart-summary-item">
+                  <span className="erp-chart-summary-label">Promedio diario</span>
+                  <span className="erp-chart-summary-value">
+                    {fmt(resumen.ventasPorDia.reduce((a, d) => a + d.total_ventas, 0) / Math.max(1, resumen.ventasPorDia.filter(d => d.total_ventas > 0).length))}
+                  </span>
+                </div>
               </div>
 
               <table className="erp-ventas-table" style={{ marginTop: '1.5rem' }}>
@@ -359,10 +494,10 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
                 <tbody>
                   {resumen.ventasPorDia.slice().reverse().map(dia => (
                     <tr key={dia.fecha}>
-                      <td><strong>{dia.fecha}</strong></td>
-                      <td>{dia.cantidad_pedidos} pedidos</td>
-                      <td>{fmt(dia.ticket_promedio)}</td>
-                      <td style={{ textAlign: 'right', fontWeight: 800, color: '#6366f1', fontFamily: 'Outfit, sans-serif' }}>{fmt(dia.total_ventas)}</td>
+                      <td><span style={{ fontWeight: 500 }}>{dia.fecha}</span></td>
+                      <td style={{ color: '#6b7280' }}>{dia.cantidad_pedidos} pedidos</td>
+                      <td style={{ color: '#6b7280' }}>{fmt(dia.ticket_promedio)}</td>
+                      <td style={{ textAlign: 'right', fontWeight: 600, color: 'var(--primary-color, #6366f1)', fontFamily: "'Poppins', sans-serif" }}>{fmt(dia.total_ventas)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -376,6 +511,7 @@ export const ERPVentasModule: React.FC<Props> = ({ tenantId }) => {
           )}
         </div>
       )}
+
 
       {/* ── Tab: Historial de Ventas ── */}
       {tab === 'ventas' && (

@@ -18,6 +18,7 @@ import {
 
 interface Props { 
   tenantId: string;
+  activeSubTab?: string;
   onNavigateTab?: (tab: string) => void;
 }
 
@@ -43,8 +44,18 @@ const badgeClass = (est: string) => {
 };
 
 // ────────────────────────────────────────────────────────────
-export const ERPTesoreriaModule: React.FC<Props> = ({ tenantId }) => {
-  const [tab, setTab] = useState<Tab>('resumen');
+export const ERPTesoreriaModule: React.FC<Props> = ({ tenantId, activeSubTab }) => {
+  const VALID_TABS: Tab[] = ['resumen', 'ingresos', 'egresos', 'cxc', 'cxp', 'cuentas'];
+  const [tab, setTab] = useState<Tab>(() =>
+    activeSubTab && VALID_TABS.includes(activeSubTab as Tab) ? (activeSubTab as Tab) : 'resumen'
+  );
+
+  useEffect(() => {
+    if (activeSubTab && VALID_TABS.includes(activeSubTab as Tab)) {
+      setTab(activeSubTab as Tab);
+    }
+  }, [activeSubTab]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError]   = useState<string | null>(null);
 
@@ -260,21 +271,7 @@ export const ERPTesoreriaModule: React.FC<Props> = ({ tenantId }) => {
         </div>
       </div>
 
-      {/* ── Tabs ── */}
-      <div className="teso-tabs">
-        {([
-          ['resumen',  <Wallet size={15} />,         'Resumen de Cajas & Bancos'],
-          ['ingresos', <ArrowDownCircle size={15} />, 'Entradas de Tesorería'],
-          ['egresos',  <ArrowUpCircle size={15} />,   'Salidas de Tesorería'],
-          ['cxc',      <Users size={15} />,            'Cartera Clientes (CxC)'],
-          ['cxp',      <ShoppingCart size={15} />,     'Proveedores (CxP)'],
-          ['cuentas',  <Landmark size={15} />,         'Gestión de Cuentas Bancarias']
-        ] as const).map(([t, icon, label]) => (
-          <button key={t} className={`teso-tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t as Tab)}>
-            {icon} {label}
-          </button>
-        ))}
-      </div>
+
 
       {error && (
         <div style={{ background:'#fef2f2', border:'1px solid #fca5a5', color:'#991b1b', borderRadius:'12px', padding:'1rem', display:'flex', gap:'.5rem', marginBottom:'1rem' }}>

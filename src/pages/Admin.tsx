@@ -5,11 +5,11 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista, PQRS } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, Wrench, ArrowUpDown, Filter, MapPin, XCircle, Truck, Clock, FileCheck, CheckCircle } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, Wrench, ArrowUpDown, Filter, MapPin, XCircle, Truck, Clock, FileCheck, CheckCircle, Landmark, BookOpen, LifeBuoy, ShoppingCart, ClipboardList, Star } from 'lucide-react';
 
 import * as XLSX from 'xlsx';
 import { ERPContabilidadService } from '../lib/erpContabilidadService';
-import { ERPMainModule } from '../components/erp/ERPMainModule';
+import { ERPMainModule, type ERPTab } from '../components/erp/ERPMainModule';
 
 const SECRET_PIN = '0000';
 
@@ -617,7 +617,7 @@ function SidebarContent({
               {activeTab === 'erp' && <span className="active-dot"></span>}
             </button>
             <button className={`nav-item ${activeTab === 'zonificacion' ? 'active' : ''}`} onClick={() => handleSelectTab('zonificacion')}>
-              <span className="nav-icon"><MapPin size={14} color="#f59e0b" /></span> Zonificación
+              <span className="nav-icon"><MapPin size={14} /></span> Zonificación
               {activeTab === 'zonificacion' && <span className="active-dot"></span>}
             </button>
             <button className={`nav-item ${activeTab === 'config' ? 'active' : ''}`} onClick={() => handleSelectTab('config')}>
@@ -1718,6 +1718,12 @@ export default function Admin() {
 
   // Filtros para Ventas POS
   const [posDateFilter, setPosDateFilter] = useState<string>('');
+  const [activeErpTab, setActiveErpTab] = useState<ERPTab>('ventas');
+  const [activeErpSubTab, setActiveErpSubTab] = useState<string>('dashboard');
+  const [openErpDropdown, setOpenErpDropdown] = useState<string | null>(null);
+  const [erpDropdownPos, setErpDropdownPos] = useState<{ top: number; left?: number; right?: number } | null>(null);
+  const erpCloseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
 
   const [leads, setLeads] = useState<any[]>([]);
   const [pedidosViewMode, setPedidosViewMode] = useState<'lista' | 'kanban'>(() => {
@@ -5894,46 +5900,339 @@ export default function Admin() {
                   </div>
                 )}
               </>
+            ) : activeTab === 'erp' ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div className="topbar-left-info">
+                    <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '10px', background: '#ffffff', border: '1px solid #e2e8f0', color: 'var(--primary-color, #0ea5e9)', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                      <BarChart2 size={16} />
+                    </div>
+                    <span style={{ fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>
+                      ERP Empresarial
+                    </span>
+                  </div>
+                  <div className="topbar-divider" />
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.5rem', padding: '0.15rem 0', position: 'relative', overflow: 'visible', flexWrap: 'wrap' }}>
+                {[
+                  {
+                    key: 'ventas',
+                    label: 'Ventas & Facturación',
+                    icon: <BarChart2 size={15} />,
+                    available: true,
+                    subItems: [
+                      { key: 'dashboard', label: 'Dashboard Comercial', icon: <BarChart2 size={14} /> },
+                      { key: 'ventas', label: 'Pedidos & Facturas Reales', icon: <ClipboardList size={14} /> },
+                      { key: 'egresos', label: 'Egresos de Operación', icon: <CreditCard size={14} /> },
+                      { key: 'productos', label: 'Ranking de Productos', icon: <Star size={14} /> }
+                    ]
+                  },
+                  {
+                    key: 'tesoreria',
+                    label: 'Tesorería & Bancos',
+                    icon: <Landmark size={15} />,
+                    available: true,
+                    subItems: [
+                      { key: 'resumen', label: 'Resumen Cajas & Bancos', icon: <Landmark size={14} /> },
+                      { key: 'cxc', label: 'Cartera CxC (Clientes)', icon: <ClipboardList size={14} /> },
+                      { key: 'cxp', label: 'Cuentas CxP (Proveedores)', icon: <CreditCard size={14} /> }
+                    ]
+                  },
+                  {
+                    key: 'contabilidad',
+                    label: 'Contabilidad NIIF',
+                    icon: <BookOpen size={15} />,
+                    available: true,
+                    subItems: [
+                      { key: 'diario', label: 'Libro Diario & Comprobantes', icon: <BookOpen size={14} /> },
+                      { key: 'balance', label: 'Balance General NIIF', icon: <BarChart2 size={14} /> },
+                      { key: 'puc', label: 'Plan Único de Cuentas (PUC)', icon: <ClipboardList size={14} /> }
+                    ]
+                  },
+                  {
+                    key: 'inventario',
+                    label: 'Inventario',
+                    icon: <Package size={15} />,
+                    available: true,
+                    subItems: [
+                      { key: 'kardex', label: 'Kardex & Stock', icon: <Package size={14} /> },
+                      { key: 'ajustes', label: 'Ajustes de Inventario', icon: <RefreshCw size={14} /> }
+                    ]
+                  },
+                  {
+                    key: 'compras',
+                    label: 'Compras',
+                    icon: <ShoppingCart size={15} />,
+                    available: true,
+                    subItems: [
+                      { key: 'facturas', label: 'Facturas Proveedores', icon: <CreditCard size={14} /> },
+                      { key: 'ordenes', label: 'Órdenes de Compra', icon: <ShoppingCart size={14} /> }
+                    ]
+                  },
+                  {
+                    key: 'crm',
+                    label: 'CRM & Asesores',
+                    icon: <Users size={15} />,
+                    available: true,
+                    subItems: [
+                      { key: 'clientes', label: 'Clientes VIP', icon: <Users size={14} /> },
+                      { key: 'asesores', label: 'Comisiones Asesores', icon: <Star size={14} /> }
+                    ]
+                  },
+                  {
+                    key: 'soporte',
+                    label: 'Soporte & PQRS',
+                    icon: <LifeBuoy size={15} />,
+                    available: true,
+                    subItems: [
+                      { key: 'tickets', label: 'Tickets & Solicitudes', icon: <LifeBuoy size={14} /> }
+                    ]
+                  },
+                  {
+                    key: 'nomina',
+                    label: 'Nómina',
+                    icon: <Building2 size={15} />,
+                    available: false,
+                    subItems: [
+                      { key: 'liquidacion', label: 'Liquidación & Primas', icon: <Building2 size={14} /> }
+                    ]
+                  }
+                ].map((item, index) => {
+                  const isActiveModule = activeErpTab === item.key;
+                  const isOpen = openErpDropdown === item.key;
+                  const isRightAligned = index >= 4;
+
+                  return (
+                    <div
+                      key={item.key}
+                      style={{ position: 'relative', display: 'inline-block' }}
+                      onMouseEnter={(e) => {
+                        if (erpCloseTimer.current) clearTimeout(erpCloseTimer.current);
+                        if (!item.available) return;
+                        const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                        setErpDropdownPos({
+                          top: rect.bottom + 4,
+                          ...(isRightAligned
+                            ? { right: window.innerWidth - rect.right }
+                            : { left: rect.left })
+                        });
+                        setOpenErpDropdown(item.key);
+                      }}
+                      onMouseLeave={() => {
+                        erpCloseTimer.current = setTimeout(() => {
+                          setOpenErpDropdown(null);
+                          setErpDropdownPos(null);
+                        }, 150);
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (!item.available) return;
+                          setActiveErpTab(item.key as any);
+                          const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                          setErpDropdownPos({
+                            top: rect.bottom + 4,
+                            ...(isRightAligned
+                              ? { right: window.innerWidth - rect.right }
+                              : { left: rect.left })
+                          });
+                          setOpenErpDropdown(prev => prev === item.key ? null : item.key);
+                        }}
+                        style={{
+                          border: isActiveModule ? '1px solid var(--primary-color, #0ea5e9)' : '1px solid #e2e8f0',
+                          background: isActiveModule ? 'var(--primary-color, #0ea5e9)' : '#ffffff',
+                          color: isActiveModule ? '#ffffff' : item.available ? '#475569' : '#94a3b8',
+                          padding: '0.45rem 0.85rem',
+                          borderRadius: '10px',
+                          fontSize: '0.8rem',
+                          fontWeight: isActiveModule ? 600 : 500,
+                          fontFamily: "'Poppins', sans-serif",
+                          cursor: item.available ? 'pointer' : 'not-allowed',
+                          boxShadow: isActiveModule ? '0 3px 10px rgba(var(--primary-rgb, 14, 165, 233), 0.25)' : 'none',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
+                          whiteSpace: 'nowrap',
+                          transition: 'all 0.15s ease',
+                          opacity: item.available ? 1 : 0.65,
+                          flexShrink: 0
+                        }}
+                      >
+                        {item.icon}
+                        <span>{item.label}</span>
+                        {item.available && (
+                          <ChevronDown size={13} style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s ease', opacity: 0.8 }} />
+                        )}
+                        {!item.available && (
+                          <span style={{ fontSize: '0.6rem', background: isActiveModule ? 'rgba(255,255,255,0.25)' : '#e2e8f0', color: isActiveModule ? '#ffffff' : '#64748b', padding: '0.1rem 0.3rem', borderRadius: '4px', fontWeight: 500 }}>Próximamente</span>
+                        )}
+                      </button>
+
+                      {/* Dropdown Menu Flotante - position:fixed escapa el overflow del scroll container */}
+                      {isOpen && item.available && item.subItems && erpDropdownPos && (
+                        <div
+                          onMouseEnter={() => {
+                            if (erpCloseTimer.current) clearTimeout(erpCloseTimer.current);
+                          }}
+                          onMouseLeave={() => {
+                            erpCloseTimer.current = setTimeout(() => {
+                              setOpenErpDropdown(null);
+                              setErpDropdownPos(null);
+                            }, 100);
+                          }}
+                          style={{
+                            position: 'fixed',
+                            top: erpDropdownPos.top,
+                            left: erpDropdownPos.left,
+                            right: erpDropdownPos.right,
+                            background: '#ffffff',
+                            borderRadius: '14px',
+                            border: '1px solid #e2e8f0',
+                            boxShadow: '0 12px 40px rgba(15,23,42,0.18)',
+                            padding: '0.5rem',
+                            zIndex: 99999,
+                            minWidth: '220px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.25rem'
+                          }}
+                        >
+                          <div style={{ padding: '0.35rem 0.6rem 0.2rem', fontSize: '0.68rem', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: "'Poppins', sans-serif" }}>
+                            {item.label}
+                          </div>
+                          {item.subItems.map(sub => {
+                            const isSubActive = isActiveModule && activeErpSubTab === sub.key;
+                            return (
+                              <button
+                                key={sub.key}
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveErpTab(item.key as any);
+                                  setActiveErpSubTab(sub.key);
+                                  setOpenErpDropdown(null);
+                                  setErpDropdownPos(null);
+                                }}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.55rem',
+                                  padding: '0.5rem 0.75rem',
+                                  borderRadius: '9px',
+                                  border: 'none',
+                                  background: isSubActive ? 'rgba(14, 165, 233, 0.1)' : 'transparent',
+                                  color: isSubActive ? 'var(--primary-color, #0ea5e9)' : '#334155',
+                                  fontSize: '0.78rem',
+                                  fontWeight: isSubActive ? 600 : 500,
+                                  fontFamily: "'Poppins', sans-serif",
+                                  cursor: 'pointer',
+                                  textAlign: 'left',
+                                  width: '100%',
+                                  transition: 'background 0.15s ease'
+                                }}
+                                onMouseEnter={e => {
+                                  if (!isSubActive) e.currentTarget.style.background = '#f8fafc';
+                                }}
+                                onMouseLeave={e => {
+                                  if (!isSubActive) e.currentTarget.style.background = 'transparent';
+                                }}
+                              >
+                                {sub.icon}
+                                <span>{sub.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                </div>
+              </div>
+            ) : activeTab === 'config' ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', width: '100%' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div className="topbar-left-info">
+                    <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '10px', background: '#ffffff', border: '1px solid #e2e8f0', color: 'var(--primary-color, #0ea5e9)', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                      <Settings size={16} />
+                    </div>
+                    <span style={{ fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>
+                      Configuración Global
+                    </span>
+                  </div>
+                  <div className="topbar-divider" />
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.4rem', overflowX: 'auto', scrollbarWidth: 'none', padding: '0.15rem 0' }}>
+                {[
+                  { key: 'negocio', label: 'Negocio & Perfil', Icon: Building2 },
+                  { key: 'bancos', label: 'Bancos & Pagos', Icon: CreditCard },
+                  { key: 'apariencia', label: 'Diseño & Catálogo', Icon: Palette },
+                  { key: 'pos', label: 'POS & Impresión', Icon: Printer },
+                  { key: 'desarrollador', label: 'Desarrollador & APIs', Icon: Code2 },
+                  { key: 'sistema', label: 'Reglas & Purga', Icon: Settings }
+                ].map(sub => {
+                  const isActive = configSubTab === sub.key;
+                  const IconComponent = sub.Icon;
+                  return (
+                    <button
+                      key={sub.key}
+                      type="button"
+                      onClick={() => setConfigSubTab(sub.key as any)}
+                      style={{
+                        border: isActive ? '1px solid var(--primary-color, #0ea5e9)' : '1px solid #e2e8f0',
+                        background: isActive ? 'var(--primary-color, #0ea5e9)' : '#ffffff',
+                        color: isActive ? '#ffffff' : '#475569',
+                        padding: '0.45rem 0.85rem',
+                        borderRadius: '10px',
+                        fontSize: '0.8rem',
+                        fontWeight: isActive ? 600 : 500,
+                        fontFamily: "'Poppins', sans-serif",
+                        cursor: 'pointer',
+                        boxShadow: isActive ? '0 3px 10px rgba(var(--primary-rgb, 14, 165, 233), 0.25)' : 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        whiteSpace: 'nowrap',
+                        transition: 'all 0.15s ease',
+                        flexShrink: 0
+                      }}
+                    >
+                      <IconComponent size={14} />
+                      <span>{sub.label}</span>
+                    </button>
+                  );
+                })}
+                </div>
+              </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left' }}>
-                <h2 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '8px', background: '#e0f2fe', color: 'var(--primary-color, #00a6f9)', flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div className="topbar-left-info">
+                  <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '10px', background: '#ffffff', border: '1px solid #e2e8f0', color: 'var(--primary-color, #0ea5e9)', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                     {activeTab === 'dashboard' && <LayoutDashboard size={16} />}
                     {activeTab === 'categorias' && <Tag size={16} />}
                     {activeTab === 'pos' && <Calculator size={16} />}
                     {activeTab === 'ventas_pos' && <CreditCard size={16} />}
                     {activeTab === 'material_apoyo' && <Link size={16} />}
-                    {activeTab === 'config' && <Settings size={16} />}
-                    {activeTab === 'zonificacion' && <MapPin size={16} color="#f59e0b" />}
-                    {activeTab === 'erp' && <BarChart2 size={16} />}
+                    {activeTab === 'zonificacion' && <MapPin size={16} />}
                     {activeTab === 'pqrs' && <MessageSquare size={16} />}
                     {activeTab === 'productos' && <Package size={16} />}
                   </div>
-                  <span>
+                  <span style={{ fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>
                     {activeTab === 'dashboard' && 'Dashboard General'}
                     {activeTab === 'categorias' && 'Categorías y Subcategorías'}
                     {activeTab === 'pos' && 'Caja POS (Punto de Venta)'}
                     {activeTab === 'ventas_pos' && 'Historial de Ventas POS'}
                     {activeTab === 'material_apoyo' && 'Material de Apoyo & Google Drive'}
-                    {activeTab === 'config' && 'Configuración Global'}
                     {activeTab === 'zonificacion' && 'Zonificación & Cobertura de Envíos'}
-                    {activeTab === 'erp' && 'ERP Empresarial'}
                     {activeTab === 'pqrs' && 'Centro de Soporte & PQRS'}
                     {activeTab === 'productos' && 'Agregar Nuevo Producto'}
                   </span>
-                </h2>
-                <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.82rem', color: '#64748b', fontWeight: 500 }}>
-                  {activeTab === 'dashboard' && 'Resumen de métricas, rendimiento y ventas del negocio'}
-                  {activeTab === 'categorias' && `${categoriasData.length} categorías activas en catálogo`}
-                  {activeTab === 'pos' && 'Cobra rápidamente a tus clientes en tienda física'}
-                  {activeTab === 'ventas_pos' && 'Historial de facturas y cobros realizados desde POS'}
-                  {activeTab === 'material_apoyo' && 'Carpetas, fotos y videos compartidos desde Google Drive para el equipo'}
-                  {activeTab === 'config' && 'Personaliza tu tienda al máximo (datos, pagos, diseño y APIs)'}
-                  {activeTab === 'zonificacion' && 'Administra los 32 departamentos y municipios de Colombia con tarifas de envío'}
-                  {activeTab === 'erp' && 'Sistema Integrado de Gestión Empresarial'}
-                  {activeTab === 'pqrs' && 'Gestiona solicitudes, reclamos y dudas de clientes en tiempo real'}
-                  {activeTab === 'productos' && 'Completa los campos para publicar el producto en tu catálogo'}
-                </p>
+                </div>
+                <div className="topbar-divider" />
               </div>
             )}
           </div>
@@ -8714,7 +9013,13 @@ export default function Admin() {
           {/* ── ERP EMPRESARIAL UNIFICADO ── */}
 
           {activeTab === 'erp' && (
-            <ERPMainModule tenantId={selectedCompany || getTenantId()} />
+            <ERPMainModule
+              tenantId={selectedCompany || getTenantId()}
+              activeErpTab={activeErpTab}
+              setActiveErpTab={setActiveErpTab}
+              activeErpSubTab={activeErpSubTab}
+              setActiveErpSubTab={setActiveErpSubTab}
+            />
           )}
 
 
@@ -8825,45 +9130,6 @@ export default function Admin() {
                     
                     setLoading(false);
                   }}>
-                  {/* ── Sub-pestañas de Configuración ── */}
-                  <div style={{ display: 'flex', gap: '0.4rem', background: '#f1f5f9', padding: '0.4rem', borderRadius: '16px', marginBottom: '1.5rem', flexWrap: 'wrap', border: '1px solid #e2e8f0' }}>
-                    {[
-                      { key: 'negocio', label: 'Negocio & Perfil', Icon: Building2 },
-                      { key: 'bancos', label: 'Bancos & Pagos', Icon: CreditCard },
-                      { key: 'apariencia', label: 'Diseño & Catálogo', Icon: Palette },
-                      { key: 'pos', label: 'POS & Impresión', Icon: Printer },
-                      { key: 'desarrollador', label: 'Desarrollador & APIs', Icon: Code2 },
-                      { key: 'sistema', label: 'Reglas & Purga', Icon: Settings }
-                    ].map(sub => {
-                      const isActive = configSubTab === sub.key;
-                      const IconComponent = sub.Icon;
-                      return (
-                        <button
-                          key={sub.key}
-                          type="button"
-                          onClick={() => setConfigSubTab(sub.key as any)}
-                          style={{
-                            border: 'none',
-                            background: isActive ? 'var(--primary-color, #00a6f9)' : 'transparent',
-                            color: isActive ? '#ffffff' : '#475569',
-                            padding: '0.55rem 1.1rem',
-                            borderRadius: '12px',
-                            fontSize: '0.84rem',
-                            fontWeight: isActive ? 800 : 600,
-                            cursor: 'pointer',
-                            boxShadow: isActive ? '0 4px 14px rgba(var(--primary-rgb, 99, 102, 241), 0.35)' : 'none',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',
-                            transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)'
-                          }}
-                        >
-                          <IconComponent size={16} style={{ color: isActive ? '#ffffff' : '#64748b', flexShrink: 0 }} />
-                          <span>{sub.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
 
                   {/* ── SUB-TAB 1: NEGOCIO & PERFIL ── */}
                   {configSubTab === 'negocio' && (

@@ -458,8 +458,9 @@ body {
   background: #ffffff;
   position: sticky;
   top: 0;
-  z-index: 10;
+  z-index: 200;
   box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03);
+  overflow: visible;
 }
 
 /* PÃƒÂ­ldoras de estado del CRM de Pedidos: ÃƒÅ¡NICAMENTE visibles en MÃƒÂ³vil (<= 768px) */

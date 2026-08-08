@@ -9,8 +9,6 @@ import type {
 } from '../../types/erp';
 import './ERPContabilidadModule.css';
 import {
-  Wallet,
-  Users,
   ArrowUpRight,
   ArrowDownRight,
   BarChart3,
@@ -21,7 +19,6 @@ import {
   CheckCircle2,
   HelpCircle,
   BookOpen,
-  Receipt,
   Package,
   Search,
   X,
@@ -34,12 +31,23 @@ import * as XLSX from 'xlsx';
 
 interface Props {
   tenantId: string;
+  activeSubTab?: string;
   onNavigateTab?: (tab: 'ventas' | 'tesoreria' | 'contabilidad' | 'inventario') => void;
 }
 
-export const ERPContabilidadModule: React.FC<Props> = ({ tenantId }) => {
-  // Pestañas principales simplificadas para el usuario
-  const [activeTab, setActiveTab] = useState<'resumen' | 'terceros' | 'movimientos' | 'facturacion' | 'reportes' | 'puc_avanzado'>('resumen');
+export const ERPContabilidadModule: React.FC<Props> = ({ tenantId, activeSubTab }) => {
+  type ContabTab = 'resumen' | 'terceros' | 'movimientos' | 'facturacion' | 'reportes' | 'puc_avanzado';
+  const VALID_TABS: ContabTab[] = ['resumen', 'terceros', 'movimientos', 'facturacion', 'reportes', 'puc_avanzado'];
+  const [activeTab, setActiveTab] = useState<ContabTab>(() =>
+    activeSubTab && VALID_TABS.includes(activeSubTab as ContabTab) ? (activeSubTab as ContabTab) : 'resumen'
+  );
+
+  useEffect(() => {
+    if (activeSubTab && VALID_TABS.includes(activeSubTab as ContabTab)) {
+      setActiveTab(activeSubTab as ContabTab);
+    }
+  }, [activeSubTab]);
+
   const [loading, setLoading] = useState<boolean>(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -390,46 +398,7 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId }) => {
         </div>
       </div>
 
-      {/* Pestañas Contables NIIF */}
-      <div className="erp-nav-tabs" style={{ overflowX: 'auto', flexWrap: 'nowrap' }}>
-        <button
-          className={`erp-tab-btn ${activeTab === 'resumen' ? 'active' : ''}`}
-          onClick={() => setActiveTab('resumen')}
-        >
-          <Wallet size={18} /> Balance de Caja
-        </button>
-        <button
-          className={`erp-tab-btn ${activeTab === 'facturacion' ? 'active' : ''}`}
-          onClick={() => setActiveTab('facturacion')}
-        >
-          <Receipt size={18} /> Facturación & Cartera ({pedidosList.filter(p => p.estado !== 'completado').length} Pendientes)
-        </button>
-        <button
-          className={`erp-tab-btn ${activeTab === 'reportes' ? 'active' : ''}`}
-          onClick={() => setActiveTab('reportes')}
-        >
-          <Printer size={18} /> Informe PyG & Reportes
-        </button>
-        <button
-          className={`erp-tab-btn ${activeTab === 'movimientos' ? 'active' : ''}`}
-          onClick={() => setActiveTab('movimientos')}
-        >
-          <BarChart3 size={18} /> Libro Diario
-        </button>
-        <button
-          className={`erp-tab-btn ${activeTab === 'terceros' ? 'active' : ''}`}
-          onClick={() => setActiveTab('terceros')}
-        >
-          <Users size={18} /> Terceros NIIF ({tercerosList.length})
-        </button>
-        <button
-          className={`erp-tab-btn ${activeTab === 'puc_avanzado' ? 'active' : ''}`}
-          onClick={() => setActiveTab('puc_avanzado')}
-          style={{ marginLeft: 'auto', background: activeTab === 'puc_avanzado' ? undefined : '#f1f5f9' }}
-        >
-          <BookOpen size={18} /> Plan PUC
-        </button>
-      </div>
+
 
       {errorMsg && (
         <div style={{ background: '#fef2f2', border: '1px solid #ef4444', color: '#991b1b', padding: '1rem', borderRadius: '12px', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

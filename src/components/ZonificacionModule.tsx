@@ -72,7 +72,7 @@ export default function ZonificacionModule({ configuracion: _configuracion }: Pr
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
         <div>
           <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <MapPin color="#f59e0b" size={24} /> Cobertura de Envíos en Colombia
+            <MapPin size={24} color="var(--primary-color, #0ea5e9)" /> Cobertura de Envíos en Colombia
           </h3>
           <p style={{ margin: '0.3rem 0 0 0', fontSize: '0.86rem', color: '#64748b' }}>
             Gestiona los 32 departamentos y municipios de Colombia con su tarifa y estado de cobertura.

@@ -12,12 +12,7 @@ import {
   ShoppingCart, Package, Users, BarChart2, ChevronRight, LifeBuoy
 } from 'lucide-react';
 
-interface Props {
-  tenantId: string;
-  configuracion?: any;
-}
-
-type ERPTab =
+export type ERPTab =
   | 'ventas'
   | 'tesoreria'
   | 'contabilidad'
@@ -26,6 +21,15 @@ type ERPTab =
   | 'crm'
   | 'soporte'
   | 'nomina';
+
+export interface Props {
+  tenantId: string;
+  configuracion?: any;
+  activeErpTab?: ERPTab;
+  setActiveErpTab?: (tab: ERPTab) => void;
+  activeErpSubTab?: string;
+  setActiveErpSubTab?: (subTab: string) => void;
+}
 
 interface NavItem {
   key: ERPTab;
@@ -83,7 +87,7 @@ const NAV_ITEMS: NavItem[] = [
     key: 'soporte',
     icon: <LifeBuoy size={16} />,
     label: 'Soporte & PQRS',
-    sublabel: 'Atención al cliente · Solicitudes · Reclamos · Garantías',
+    sublabel: 'Tickets · Reclamos · Consultas',
     available: true
   },
   {
@@ -91,64 +95,42 @@ const NAV_ITEMS: NavItem[] = [
     icon: <Building2 size={16} />,
     label: 'Nómina',
     sublabel: 'Liquidación · PILA · Colillas · Primas',
-    available: false
+    available: false,
+    badge: 'Próximamente'
   },
 ];
 
-export const ERPMainModule: React.FC<Props> = ({ tenantId, configuracion }) => {
-  const [activeTab, setActiveTab] = useState<ERPTab>('ventas');
+export const ERPMainModule: React.FC<Props> = ({ 
+  tenantId, 
+  configuracion,
+  activeErpTab: propActiveErpTab,
+  setActiveErpTab: propSetActiveErpTab,
+  activeErpSubTab
+}) => {
+  const [internalTab, setInternalTab] = useState<ERPTab>('ventas');
+
+  const activeTab = propActiveErpTab || internalTab;
+  const setActiveTab = (tab: ERPTab) => {
+    if (propSetActiveErpTab) propSetActiveErpTab(tab);
+    else setInternalTab(tab);
+  };
 
   return (
     <div className="erp-main-container" style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-      {/* ── Header Unificado del Sistema ERP ── */}
-      <div className="admin-panel" style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '0.75rem 1rem', boxShadow: '0 2px 10px rgba(0,0,0,0.03)' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', width: '100%' }}>
-          {/* Navegación por pestañas unificada con el diseño del sitio */}
-          <div style={{ display: 'flex', gap: '0.3rem', background: '#f1f5f9', padding: '0.3rem', borderRadius: '10px', flexWrap: 'wrap', width: '100%', justifyContent: 'space-between' }}>
-            {NAV_ITEMS.map(item => (
-              <button
-                key={item.key}
-                onClick={() => item.available && setActiveTab(item.key)}
-                style={{
-                  border: 'none',
-                  background: activeTab === item.key ? '#ffffff' : 'transparent',
-                  color: activeTab === item.key ? '#0f172a' : item.available ? '#475569' : '#94a3b8',
-                  padding: '0.45rem 0.85rem',
-                  borderRadius: '7px',
-                  fontSize: '0.8rem',
-                  fontWeight: 700,
-                  cursor: item.available ? 'pointer' : 'not-allowed',
-                  boxShadow: activeTab === item.key ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  opacity: item.available ? 1 : 0.6
-                }}
-              >
-                {item.icon}
-                <span>{item.label}</span>
-                {!item.available && (
-                  <span style={{ fontSize: '0.65rem', background: '#e2e8f0', color: '#64748b', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: 700 }}>Próximamente</span>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
 
       {/* ── Contenido del módulo activo ── */}
       <div className="erp-main-content">
 
         {activeTab === 'ventas' && (
-          <ERPVentasModule tenantId={tenantId} />
+          <ERPVentasModule tenantId={tenantId} activeSubTab={activeErpSubTab} />
         )}
 
         {activeTab === 'tesoreria' && (
-          <ERPTesoreriaModule tenantId={tenantId} onNavigateTab={(tab) => setActiveTab(tab as any)} />
+          <ERPTesoreriaModule tenantId={tenantId} activeSubTab={activeErpSubTab} onNavigateTab={(tab) => setActiveTab(tab as any)} />
         )}
 
         {activeTab === 'contabilidad' && (
-          <ERPContabilidadModule tenantId={tenantId} onNavigateTab={(tab) => setActiveTab(tab as any)} />
+          <ERPContabilidadModule tenantId={tenantId} activeSubTab={activeErpSubTab} onNavigateTab={(tab) => setActiveTab(tab as any)} />
         )}
 
         {activeTab === 'inventario' && (
