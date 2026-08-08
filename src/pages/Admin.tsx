@@ -1333,6 +1333,33 @@ export default function Admin() {
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>Recuperar venta</span>
               <ChevronRight size={13} color="#ffffff" style={{ flexShrink: 0 }} />
             </button>
+          ) : ped.estado === 'completado' ? (
+            <button 
+              type="button" 
+              onClick={() => setSelectedPedido(ped)}
+              style={{
+                padding: '0.6rem 0.75rem',
+                borderRadius: '10px',
+                border: 'none',
+                background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+                color: '#ffffff',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.3rem',
+                boxShadow: '0 4px 14px rgba(59, 130, 246, 0.35)',
+                whiteSpace: 'nowrap',
+                flex: 1,
+                minWidth: 0,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis'
+              }}
+            >
+              <span>👁️ Ver Factura</span>
+            </button>
           ) : isContra ? (
             <button 
               type="button" 
@@ -1360,33 +1387,6 @@ export default function Admin() {
             >
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>🚚 Gestionar Despacho</span>
               <ChevronRight size={13} color="#ffffff" style={{ flexShrink: 0 }} />
-            </button>
-          ) : ped.estado === 'completado' ? (
-            <button 
-              type="button" 
-              onClick={() => setSelectedPedido(ped)}
-              style={{
-                padding: '0.6rem 0.75rem',
-                borderRadius: '10px',
-                border: 'none',
-                background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
-                color: '#ffffff',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.3rem',
-                boxShadow: '0 4px 14px rgba(59, 130, 246, 0.35)',
-                whiteSpace: 'nowrap',
-                flex: 1,
-                minWidth: 0,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-              }}
-            >
-              <span>👁️ Ver Factura</span>
             </button>
           ) : ped.pantallazo_url ? (
             <button 
