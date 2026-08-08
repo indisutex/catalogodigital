@@ -706,10 +706,23 @@ export default function MenuDigital() {
           delete p1.metodo_envio; delete p1.modalidad_pago; delete p1.metodo_recepcion; delete p1.tipo_compra; delete p1.departamento;
           let { error: err1 } = await supabase.from('leads').update(p1).eq('id', currentId);
           if (err1) {
-            console.warn('Lead update p1 falló, probando sin campos de cedula/email opcionales:', err1.message);
+            console.warn('Lead update p1 falló, probando sin campos opcionales:', err1.message);
             const p2 = { ...basePayload }; 
             delete p2.cliente_cedula; delete p2.cliente_email; delete p2.cedula; delete p2.email; delete p2.metodo_envio; delete p2.modalidad_pago; delete p2.metodo_recepcion; delete p2.tipo_compra; delete p2.departamento;
-            await supabase.from('leads').update(p2).eq('id', currentId);
+            let { error: err2 } = await supabase.from('leads').update(p2).eq('id', currentId);
+            if (err2) {
+              const p3 = {
+                nombre: basePayload.nombre,
+                telefono: basePayload.telefono,
+                ciudad: basePayload.ciudad,
+                direccion: basePayload.direccion,
+                tenant_id: basePayload.tenant_id,
+                estado: 'abandonado',
+                productos: basePayload.productos,
+                total: basePayload.total
+              };
+              await supabase.from('leads').update(p3).eq('id', currentId);
+            }
           }
         }
       } else {
@@ -727,11 +740,27 @@ export default function MenuDigital() {
           data = res1.data; error = res1.error;
 
           if (error) {
-            console.warn('Lead insert p1 falló, probando sin campos de cedula/email opcionales:', error.message);
+            console.warn('Lead insert p1 falló, probando sin campos opcionales:', error.message);
             const p2 = { ...basePayload }; 
             delete p2.cliente_cedula; delete p2.cliente_email; delete p2.cedula; delete p2.email; delete p2.metodo_envio; delete p2.modalidad_pago; delete p2.metodo_recepcion; delete p2.tipo_compra; delete p2.departamento;
             const res2 = await supabase.from('leads').insert(p2).select('id').single();
             data = res2.data; error = res2.error;
+
+            if (error) {
+              console.warn('Lead insert p2 falló, probando con payload ultra esencial p3:', error.message);
+              const p3 = {
+                nombre: basePayload.nombre,
+                telefono: basePayload.telefono,
+                ciudad: basePayload.ciudad,
+                direccion: basePayload.direccion,
+                tenant_id: basePayload.tenant_id,
+                estado: 'abandonado',
+                productos: basePayload.productos,
+                total: basePayload.total
+              };
+              const res3 = await supabase.from('leads').insert(p3).select('id').single();
+              data = res3.data; error = res3.error;
+            }
           }
         }
 
