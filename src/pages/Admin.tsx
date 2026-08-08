@@ -1015,10 +1015,11 @@ export default function Admin() {
               </p>
             </div>
 
-            {/* 3D Box Vector Graphic (100% transparente sin fondo) */}
-            <div style={{ position: 'absolute', right: '-4px', bottom: '-4px', pointerEvents: 'none', zIndex: 0, opacity: 0.9 }}>
-              <svg width="78" height="78" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* 3D Box Vector Graphic + (Billetes Verdes 💵 + Relojito 🕒 EXCLUSIVAMENTE en Pendiente por Pago) */}
+            <div style={{ position: 'absolute', right: '-4px', bottom: '-4px', pointerEvents: 'none', zIndex: 0, opacity: 0.95 }}>
+              <svg width="90" height="82" viewBox="0 0 115 100" fill="none" style={{ overflow: 'visible' }} xmlns="http://www.w3.org/2000/svg">
                 <defs>
+                  {/* Cardboard Box Gradients */}
                   <linearGradient id="boxTopGrad" x1="20" y1="20" x2="80" y2="50" gradientUnits="userSpaceOnUse">
                     <stop offset="0%" stopColor="#eed0b0" />
                     <stop offset="100%" stopColor="#dfb489" />
@@ -1036,26 +1037,129 @@ export default function Admin() {
                     <stop offset="50%" stopColor="#c4935f" stopOpacity="0.95" />
                     <stop offset="100%" stopColor="#b3824f" stopOpacity="0.9" />
                   </linearGradient>
+
+                  {/* Green Bills Gradients */}
+                  <linearGradient id="billGrad1" x1="0" y1="0" x2="35" y2="25" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#34d399" />
+                    <stop offset="100%" stopColor="#059669" />
+                  </linearGradient>
+                  <linearGradient id="billGrad2" x1="0" y1="0" x2="35" y2="25" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#10b981" />
+                    <stop offset="100%" stopColor="#047857" />
+                  </linearGradient>
+                  {/* Checkmark Gradient */}
+                  <linearGradient id="checkGrad" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#34d399" />
+                    <stop offset="100%" stopColor="#059669" />
+                  </linearGradient>
                 </defs>
 
-                {/* Soft Floor Shadow */}
-                <ellipse cx="50" cy="85" rx="34" ry="7" fill="#000000" opacity="0.12" />
+                <style>{`
+                  @keyframes boxFloatSmooth {
+                    0% { transform: translateY(0px); }
+                    50% { transform: translateY(-5px); }
+                    100% { transform: translateY(0px); }
+                  }
+                  @keyframes shadowBreath {
+                    0% { transform: scale(1); opacity: 0.12; }
+                    50% { transform: scale(1.14); opacity: 0.22; }
+                    100% { transform: scale(1); opacity: 0.12; }
+                  }
+                  @keyframes checkGlowPulse {
+                    0% { filter: drop-shadow(0 0 0px rgba(16, 185, 129, 0)); }
+                    50% { filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.85)); }
+                    100% { filter: drop-shadow(0 0 0px rgba(16, 185, 129, 0)); }
+                  }
+                  .box-floating-group {
+                    animation: boxFloatSmooth 3.2s ease-in-out infinite;
+                  }
+                  .box-shadow-pulse {
+                    transform-origin: 62px 85px;
+                    animation: shadowBreath 3.2s ease-in-out infinite;
+                  }
+                  .animated-check-badge {
+                    animation: checkGlowPulse 2.2s ease-in-out infinite;
+                  }
+                `}</style>
 
-                {/* Left Face (Isometric Left) */}
-                <path d="M 15 42 L 50 60 L 50 84 L 15 66 Z" fill="url(#boxLeftGrad)" />
+                {/* Floor Shadow con pulso de respiración */}
+                <ellipse cx="62" cy="85" rx="38" ry="7" fill="#000000" opacity="0.12" className="box-shadow-pulse" />
 
-                {/* Right Face (Isometric Right) */}
-                <path d="M 50 60 L 85 42 L 85 66 L 50 84 Z" fill="url(#boxRightGrad)" />
+                {/* ── 1. CAJA DE CARTÓN 3D (RENDERIZADA AL FONDO / ATRÁS) ── */}
+                <g transform="translate(24, 0)" className="box-floating-group">
+                  {/* Left Face */}
+                  <path d="M 15 42 L 50 60 L 50 84 L 15 66 Z" fill="url(#boxLeftGrad)" />
+                  {/* Right Face */}
+                  <path d="M 50 60 L 85 42 L 85 66 L 50 84 Z" fill="url(#boxRightGrad)" />
+                  {/* Top Face */}
+                  <path d="M 50 20 L 85 38 L 50 56 L 15 38 Z" fill="url(#boxTopGrad)" />
+                  {/* Tape Across Top */}
+                  <path d="M 33 29 L 67 47 L 67 39 L 33 21 Z" fill="url(#tapeGrad)" />
+                  {/* Center Seams */}
+                  <path d="M 50 60 L 50 84" stroke="rgba(0,0,0,0.18)" strokeWidth="1.5" />
+                  <path d="M 15 42 L 50 60 L 85 42" stroke="rgba(0,0,0,0.1)" strokeWidth="1" />
+                </g>
 
-                {/* Top Face (Isometric Top Flaps) */}
-                <path d="M 50 20 L 85 38 L 50 56 L 15 38 Z" fill="url(#boxTopGrad)" />
+                {/* ── 2. PENDIENTE DE PAGO (RELOJITO RENDERIZADO EN FRENTE DE LA CAJA) ── */}
+                {(!isLead && !isContra && ped.estado !== 'completado' && !ped.pantallazo_url) && (
+                  <g transform="translate(4, 30)">
+                    <style>{`
+                      @keyframes spinClockHand {
+                        from { transform: rotate(0deg); }
+                        to { transform: rotate(360deg); }
+                      }
+                      .clock-minute-hand {
+                        transform-origin: 14px 14px;
+                        animation: spinClockHand 3.5s linear infinite;
+                      }
+                      .clock-hour-hand {
+                        transform-origin: 14px 14px;
+                        animation: spinClockHand 28s linear infinite;
+                      }
+                    `}</style>
+                    <circle cx="14" cy="14" r="14" fill="#ffffff" stroke="#f59e0b" strokeWidth="2.5" />
+                    <circle cx="14" cy="14" r="11.5" fill="#fffbeb" />
+                    <circle cx="14" cy="4.5" r="1" fill="#b45309" />
+                    <circle cx="23.5" cy="14" r="1" fill="#b45309" />
+                    <circle cx="14" cy="23.5" r="1" fill="#b45309" />
+                    <circle cx="4.5" cy="14" r="1" fill="#b45309" />
 
-                {/* Tape Across Top Flaps */}
-                <path d="M 33 29 L 67 47 L 67 39 L 33 21 Z" fill="url(#tapeGrad)" />
+                    {/* Hour Hand (gira lento) */}
+                    <line x1="14" y1="14" x2="14" y2="8.5" stroke="#d97706" strokeWidth="2.2" strokeLinecap="round" className="clock-hour-hand" />
+                    {/* Minute Hand (gira más rápido) */}
+                    <line x1="14" y1="14" x2="19.5" y2="14" stroke="#ea580c" strokeWidth="1.8" strokeLinecap="round" className="clock-minute-hand" />
 
-                {/* Center Seam */}
-                <path d="M 50 60 L 50 84" stroke="rgba(0,0,0,0.18)" strokeWidth="1.5" />
-                <path d="M 15 42 L 50 60 L 85 42" stroke="rgba(0,0,0,0.1)" strokeWidth="1" />
+                    <circle cx="14" cy="14" r="1.8" fill="#92400e" />
+                  </g>
+                )}
+
+                {/* ── 3. VENTAS EXITOSAS (BILLETES Y CHULITO VERDE EN FRENTE DE LA CAJA) ── */}
+                {ped.estado === 'completado' && (
+                  <>
+                    {/* Bill 1 (Back Bill) */}
+                    <g transform="translate(4, 44) rotate(-20)">
+                      <rect x="0" y="0" width="34" height="20" rx="3" fill="url(#billGrad1)" stroke="#047857" strokeWidth="1" />
+                      <rect x="3" y="3" width="28" height="14" rx="2" fill="none" stroke="#a7f3d0" strokeWidth="0.8" opacity="0.7" />
+                      <circle cx="17" cy="10" r="4" fill="#047857" opacity="0.4" />
+                      <text x="17" y="13" fontSize="8" fontWeight="bold" fill="#ffffff" textAnchor="middle" fontFamily="sans-serif">$</text>
+                    </g>
+
+                    {/* Bill 2 (Front Bill) */}
+                    <g transform="translate(10, 50) rotate(-7)">
+                      <rect x="0" y="0" width="34" height="20" rx="3" fill="url(#billGrad2)" stroke="#065f46" strokeWidth="1" />
+                      <rect x="3" y="3" width="28" height="14" rx="2" fill="none" stroke="#a7f3d0" strokeWidth="0.8" opacity="0.8" />
+                      <circle cx="17" cy="10" r="4.5" fill="#065f46" opacity="0.45" />
+                      <text x="17" y="13.2" fontSize="9" fontWeight="bold" fill="#ffffff" textAnchor="middle" fontFamily="sans-serif">$</text>
+                    </g>
+
+                    {/* Animated Chulito Verde Badge (En frente de todo) */}
+                    <g transform="translate(0, 22)" className="animated-check-badge">
+                      <circle cx="14" cy="14" r="14" fill="#ffffff" stroke="#10b981" strokeWidth="2.5" />
+                      <circle cx="14" cy="14" r="11.5" fill="url(#checkGrad)" />
+                      <path d="M 8.5 14 L 12.5 18 L 19.5 10" stroke="#ffffff" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </g>
+                  </>
+                )}
               </svg>
             </div>
 
