@@ -13,7 +13,6 @@ export default function PagoNequi({ mode: propMode }: PagoNequiProps) {
   const isGuiaRoute = propMode === 'guia' || location.pathname.startsWith('/guia');
 
   const [pedido, setPedido] = useState<any>(null);
-  const [configuracion, setConfiguracion] = useState<any>(null);
   const [cargando, setCargando] = useState(true);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -39,8 +38,7 @@ export default function PagoNequi({ mode: propMode }: PagoNequiProps) {
 
       // Cargar configuración de negocio si existe
       if (data?.tenant_id) {
-        const { data: conf } = await supabase.from('configuracion').select('*').eq('tenant_id', data.tenant_id).maybeSingle();
-        setConfiguracion(conf);
+        await supabase.from('configuracion').select('*').eq('tenant_id', data.tenant_id).maybeSingle();
       }
       setCargando(false);
     }

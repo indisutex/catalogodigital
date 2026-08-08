@@ -13745,6 +13745,18 @@ export default function Admin() {
                     </p>
                   </div>
                   <div>
+                    <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Método de Pago</h5>
+                    <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.84rem' }}>
+                      {getMetodoPago(selectedPedido) || (selectedPedido as any).modalidad_pago || 'Por definir'}
+                    </p>
+                  </div>
+                  <div>
+                    <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Método de Envío</h5>
+                    <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.84rem' }}>
+                      {(selectedPedido as any).metodo_envio || (Array.isArray(selectedPedido.productos) && selectedPedido.productos[0]?._metodo_envio) || ((selectedPedido.direccion || '').toLowerCase().includes('recoger') ? '🏪 Recoger en tienda' : '🚚 Envío a domicilio')}
+                    </p>
+                  </div>
+                  <div>
                     <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Línea / Asesor</h5>
                     <div style={{ display: 'flex', alignItems: 'center', marginTop: '0.15rem' }}>
                       {renderAsesorBadge(selectedPedido.linea_whatsapp, selectedPedido.origen)}

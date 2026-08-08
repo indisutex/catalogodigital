@@ -609,12 +609,30 @@ export default function MenuDigital() {
     if (isOrderSubmittedRef.current) return;
     const cleanPhone = (customFormData.telefono || '').replace(/\D/g, '');
     const currentLeadId = leadIdRef.current || leadId;
-    if (!customFormData.nombre || (!currentLeadId && cleanPhone.length < 7) || items.length === 0) return;
+    
+    // Guardar borrador desde que ingresa al menos 7 dígitos en el teléfono y tenga productos en el carrito.
+    // Si ya existe un leadId, actualiza la información con cada cambio.
+    if ((!currentLeadId && cleanPhone.length < 7) || items.length === 0) return;
 
     try {
       const tenant = getTenantId();
       const numeroWhatsApp = getStoreWhatsAppNumber(customFormData.telefono);
       
+      const metodoEnvioLabel = metodoRecepcion === 'tienda' 
+        ? `Recoger en Tienda (${configuracion?.direccion || 'Sede Principal'})` 
+        : `Envío a domicilio`;
+
+      const metodoPagoLabel = modalidadPago === 'transferencia' 
+        ? '[ Transferencia Bancaria ]' 
+        : modalidadPago === 'contra_entrega' 
+        ? '[ Pago Contra Entrega ]' 
+        : '[ Coordinar por WhatsApp ]';
+
+      let buyerLabel = '';
+      if (buyerType === 'mayorista') buyerLabel = 'Mayorista';
+      else if (buyerType === '50_unidades') buyerLabel = '50+ unidades';
+      else buyerLabel = isBulkDiscountApplied ? 'Al detal (Con descuento por mayor)' : 'Al detal';
+
       const productosProcesados = items.map(item => {
         const effectivePrice = getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
         const isWholesale = effectiveCartBuyerType === 'mayorista' || isBulkDiscountApplied || buyerType === 'mayorista';
@@ -622,54 +640,64 @@ export default function MenuDigital() {
           ...item,
           precio_detal: item.precio_detal || item.precio,
           precio: effectivePrice,
-          precio_aplicado_mayor: isWholesale
+          precio_aplicado_mayor: isWholesale,
+          _metodo_pago: metodoPagoLabel,
+          _metodo_envio: metodoEnvioLabel,
+          _tipo_compra: buyerLabel,
+          _departamento: selectedDepartamento || ''
         };
       });
 
       const ciudadFormateada = customFormData.ciudad 
         ? (selectedDepartamento && !customFormData.ciudad.includes(selectedDepartamento) ? `${customFormData.ciudad}, ${selectedDepartamento}` : customFormData.ciudad)
         : (selectedDepartamento || '');
-      const metodoPagoLabel = modalidadPago === 'transferencia' 
-        ? '[ Transferencia Bancaria ]' 
-        : modalidadPago === 'contra_entrega' 
-        ? '[ Pago Contra Entrega ]' 
-        : '[ Coordinar por WhatsApp ]';
+
+      const direccionFormateada = customFormData.direccion 
+        ? customFormData.direccion 
+        : (metodoRecepcion === 'tienda' ? `Recoger en Tienda (${configuracion?.direccion || 'Sede Principal'})` : '');
 
       // Payload completo para alimentar en tiempo real el Lead / Carrito Abandonado
       const basePayload: any = {
-        nombre: customFormData.nombre,
-        telefono: customFormData.telefono,
+        nombre: customFormData.nombre.trim() || 'Cliente Anónimo',
+        telefono: customFormData.telefono.trim(),
         ciudad: ciudadFormateada || 'Por definir',
-        direccion: customFormData.direccion || '',
+        direccion: direccionFormateada,
         tenant_id: tenant,
         estado: 'abandonado',
         linea_whatsapp: numeroWhatsApp,
         productos: productosProcesados,
         total: total,
-        metodo_pago: metodoPagoLabel
+        metodo_pago: metodoPagoLabel,
+        metodo_envio: metodoEnvioLabel,
+        modalidad_pago: modalidadPago,
+        metodo_recepcion: metodoRecepcion,
+        tipo_compra: buyerLabel,
+        departamento: selectedDepartamento || ''
       };
       if (customFormData.cedula) {
-        basePayload.cedula = customFormData.cedula;
-        basePayload.cliente_cedula = customFormData.cedula;
+        basePayload.cedula = customFormData.cedula.trim();
+        basePayload.cliente_cedula = customFormData.cedula.trim();
       }
       if (customFormData.email) {
-        basePayload.email = customFormData.email;
-        basePayload.cliente_email = customFormData.email;
+        basePayload.email = customFormData.email.trim();
+        basePayload.cliente_email = customFormData.email.trim();
       }
 
       const currentId = leadIdRef.current || leadId;
 
       if (currentId) {
-        // Intento 1: con ambos campos
+        // Intento 1: payload completo
         let { error: updateErr } = await supabase.from('leads').update(basePayload).eq('id', currentId);
         
         if (updateErr) {
-          console.warn('Lead update con ambos campos falló, probando cliente_cedula:', updateErr.message);
-          const p1 = { ...basePayload }; delete p1.cedula; delete p1.email;
+          console.warn('Lead update con campos completos falló, reintentando sin columnas extendidas:', updateErr.message);
+          const p1 = { ...basePayload }; 
+          delete p1.metodo_envio; delete p1.modalidad_pago; delete p1.metodo_recepcion; delete p1.tipo_compra; delete p1.departamento;
           let { error: err1 } = await supabase.from('leads').update(p1).eq('id', currentId);
           if (err1) {
-            console.warn('Lead update con cliente_cedula falló, probando cedula:', err1.message);
-            const p2 = { ...basePayload }; delete p2.cliente_cedula; delete p2.cliente_email;
+            console.warn('Lead update p1 falló, probando sin campos de cedula/email opcionales:', err1.message);
+            const p2 = { ...basePayload }; 
+            delete p2.cliente_cedula; delete p2.cliente_email; delete p2.cedula; delete p2.email; delete p2.metodo_envio; delete p2.modalidad_pago; delete p2.metodo_recepcion; delete p2.tipo_compra; delete p2.departamento;
             await supabase.from('leads').update(p2).eq('id', currentId);
           }
         }
@@ -681,14 +709,16 @@ export default function MenuDigital() {
         let { data, error } = await supabase.from('leads').insert(basePayload).select('id').single();
 
         if (error) {
-          console.warn('Lead insert completo falló, probando cliente_cedula:', error.message);
-          const p1 = { ...basePayload }; delete p1.cedula; delete p1.email;
+          console.warn('Lead insert completo falló, reintentando sin columnas extendidas:', error.message);
+          const p1 = { ...basePayload }; 
+          delete p1.metodo_envio; delete p1.modalidad_pago; delete p1.metodo_recepcion; delete p1.tipo_compra; delete p1.departamento;
           const res1 = await supabase.from('leads').insert(p1).select('id').single();
           data = res1.data; error = res1.error;
 
           if (error) {
-            console.warn('Lead insert con cliente_cedula falló, probando cedula:', error.message);
-            const p2 = { ...basePayload }; delete p2.cliente_cedula; delete p2.cliente_email;
+            console.warn('Lead insert p1 falló, probando sin campos de cedula/email opcionales:', error.message);
+            const p2 = { ...basePayload }; 
+            delete p2.cliente_cedula; delete p2.cliente_email; delete p2.cedula; delete p2.email; delete p2.metodo_envio; delete p2.modalidad_pago; delete p2.metodo_recepcion; delete p2.tipo_compra; delete p2.departamento;
             const res2 = await supabase.from('leads').insert(p2).select('id').single();
             data = res2.data; error = res2.error;
           }
@@ -707,14 +737,70 @@ export default function MenuDigital() {
   };
 
 
+  // Auto-buscar cliente anterior por teléfono para autocompletar Nombre, Cédula, Ciudad y Dirección
+  useEffect(() => {
+    const cleanPhone = (formData.telefono || '').replace(/\D/g, '');
+    if (cleanPhone.length < 7) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const tenant = getTenantId();
+        // 1. Buscar en clientes_exitosos
+        const { data: clienteExito } = await supabase
+          .from('clientes_exitosos')
+          .select('*')
+          .eq('telefono', cleanPhone)
+          .eq('tenant_id', tenant)
+          .maybeSingle();
+
+        if (clienteExito && clienteExito.nombre) {
+          setFormData(prev => ({
+            ...prev,
+            nombre: prev.nombre.trim() ? prev.nombre : (clienteExito.nombre || prev.nombre)
+          }));
+          return;
+        }
+
+        // 2. Si no está en clientes_exitosos, buscar en el último pedido realizado
+        const { data: ultimoPedido } = await supabase
+          .from('pedidos')
+          .select('cliente_nombre, cliente_cedula, cliente_email, direccion, ciudad')
+          .eq('cliente_telefono', cleanPhone)
+          .eq('tenant_id', tenant)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (ultimoPedido && ultimoPedido.cliente_nombre) {
+          setFormData(prev => ({
+            ...prev,
+            nombre: prev.nombre.trim() ? prev.nombre : (ultimoPedido.cliente_nombre || prev.nombre),
+            cedula: prev.cedula.trim() ? prev.cedula : (ultimoPedido.cliente_cedula || prev.cedula),
+            email: prev.email.trim() ? prev.email : (ultimoPedido.cliente_email || prev.email),
+            direccion: prev.direccion.trim() ? prev.direccion : (ultimoPedido.direccion || prev.direccion),
+            ciudad: prev.ciudad.trim() ? prev.ciudad : (ultimoPedido.ciudad || prev.ciudad)
+          }));
+        }
+      } catch (e) {
+        console.warn('Error autocompletando datos por teléfono:', e);
+      }
+    }, 450);
+
+    return () => clearTimeout(timer);
+  }, [formData.telefono]);
+
   // Disparar o actualizar lead en tiempo real tan pronto el cliente llena o modifica cualquier campo
   useEffect(() => {
     if (isOrderSubmittedRef.current) return;
-    if (!formData.nombre || !formData.telefono || items.length === 0) return;
+    const cleanPhone = (formData.telefono || '').replace(/\D/g, '');
+    const currentLeadId = leadIdRef.current || leadId;
+
+    // Se dispara desde que hay al menos 7 dígitos en teléfono (o ya existe un leadId) y hay items en el carrito
+    if ((!currentLeadId && cleanPhone.length < 7) || items.length === 0) return;
 
     const delayDebounceFn = setTimeout(() => {
       saveOrUpdateLead(formData);
-    }, 600);
+    }, 400);
 
     return () => clearTimeout(delayDebounceFn);
   }, [formData.nombre, formData.telefono, formData.cedula, formData.email, formData.direccion, formData.ciudad, selectedDepartamento, metodoRecepcion, modalidadPago, items, total, leadId]);
@@ -723,12 +809,13 @@ export default function MenuDigital() {
   useEffect(() => {
     if (!configuracion) return;
     if (isOrderSubmittedRef.current) return;
-    if (!formData.nombre || !formData.telefono || items.length === 0) return;
+    const cleanPhone = (formData.telefono || '').replace(/\D/g, '');
+    if (cleanPhone.length < 7 || items.length === 0) return;
     if (leadIdRef.current || leadId) return; // ya existe el lead, no crear duplicado
-    // Si ya tenemos nombre + teléfono pero configuracion recién cargó → guardar ahora
+    
     const t = setTimeout(() => {
       saveOrUpdateLead(formData);
-    }, 800);
+    }, 600);
     return () => clearTimeout(t);
   }, [configuracion]);
 
@@ -967,7 +1054,20 @@ export default function MenuDigital() {
     let orderId = '';
     // Guardar en la base de datos de pedidos
     try {
+      const metodoEnvioLabel = metodoRecepcion === 'tienda' 
+        ? `Recoger en Tienda (${configuracion?.direccion || 'Sede Principal'})` 
+        : `Envío a domicilio`;
+
       const metodoPagoStr = metodoPagoLabel;
+
+      const ciudadFormateada = formData.ciudad 
+        ? (selectedDepartamento && !formData.ciudad.includes(selectedDepartamento) ? `${formData.ciudad}, ${selectedDepartamento}` : formData.ciudad)
+        : (selectedDepartamento || '');
+
+      const direccionFormateada = formData.direccion 
+        ? formData.direccion 
+        : (metodoRecepcion === 'tienda' ? `Recoger en Tienda (${configuracion?.direccion || 'Sede Principal'})` : '');
+
       const productosProcesados = items.map(item => {
         const effectivePrice = getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
         const isWholesale = effectiveCartBuyerType === 'mayorista' || isBulkDiscountApplied || buyerType === 'mayorista';
@@ -976,20 +1076,28 @@ export default function MenuDigital() {
           precio_detal: item.precio_detal || item.precio,
           precio: effectivePrice,
           precio_aplicado_mayor: isWholesale,
-          _metodo_pago: metodoPagoStr
+          _metodo_pago: metodoPagoStr,
+          _metodo_envio: metodoEnvioLabel,
+          _tipo_compra: buyerLabel,
+          _departamento: selectedDepartamento || ''
         };
       });
 
       let insertPayload: any = {
         cliente_nombre: formData.nombre,
         cliente_telefono: formData.telefono,
-        direccion: formData.direccion,
-        ciudad: formData.ciudad,
+        direccion: direccionFormateada,
+        ciudad: ciudadFormateada,
         total: total,
         productos: productosProcesados,
         linea_whatsapp: numeroWhatsApp,
         tenant_id: getTenantId(),
         metodo_pago: metodoPagoStr,
+        metodo_envio: metodoEnvioLabel,
+        modalidad_pago: modalidadPago,
+        metodo_recepcion: metodoRecepcion,
+        tipo_compra: buyerLabel,
+        departamento: selectedDepartamento || '',
         estado: modalidadPago === 'contra_entrega' ? 'contra_entrega' : 'pendiente'
       };
       if (formData.cedula) insertPayload.cliente_cedula = formData.cedula;
@@ -999,10 +1107,10 @@ export default function MenuDigital() {
 
       if (dbErr) {
         console.warn('Primer intento de insert falló:', dbErr.message, '- reintentando con payload básico...');
-        delete insertPayload.metodo_pago;
-        delete insertPayload.cliente_cedula;
-        delete insertPayload.cliente_email;
-        const retry = await supabase.from('pedidos').insert(insertPayload).select('id').single();
+        const pClean = { ...insertPayload };
+        delete pClean.metodo_pago; delete pClean.cliente_cedula; delete pClean.cliente_email;
+        delete pClean.metodo_envio; delete pClean.modalidad_pago; delete pClean.metodo_recepcion; delete pClean.tipo_compra; delete pClean.departamento;
+        const retry = await supabase.from('pedidos').insert(pClean).select('id').single();
         if (!retry.error) {
           newOrder = retry.data;
           dbErr = null;
