@@ -1767,6 +1767,9 @@ body {
     gap: 0.35rem !important;
     min-width: 0 !important;
   }
+  .topbar-title p {
+    display: none !important;
+  }
   .topbar-left-info {
     flex: 0 0 auto !important;
     display: flex !important;

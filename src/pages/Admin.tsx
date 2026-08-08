@@ -5650,7 +5650,7 @@ export default function Admin() {
                           boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
                         }}
                       >
-                        <Settings size={15} /> Otras Opciones <ChevronDown size={14} />
+                        <Settings size={15} /> <span className="btn-text-desktop">Otras Opciones</span> <ChevronDown size={14} className="btn-text-desktop" />
                       </button>
 
                       {showCatalogOtherOptions && (
@@ -5767,7 +5767,7 @@ export default function Admin() {
                         style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0 0.85rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
                         onClick={() => { setBulkForms([{ ...emptyProduct }]); setIsAddingProduct(true); }}
                       >
-                        <Plus size={14} /> Nuevo Producto
+                        <Plus size={14} /> <span className="btn-text-desktop">Nuevo Producto</span>
                       </button>
                     )}
                   </div>
