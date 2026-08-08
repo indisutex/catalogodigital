@@ -628,35 +628,63 @@ export default function MenuDigital() {
       const ciudadFormateada = customFormData.ciudad 
         ? (selectedDepartamento && !customFormData.ciudad.includes(selectedDepartamento) ? `${customFormData.ciudad}, ${selectedDepartamento}` : customFormData.ciudad)
         : (selectedDepartamento || '');
+      const metodoPagoLabel = modalidadPago === 'transferencia' 
+        ? '[ Transferencia Bancaria ]' 
+        : modalidadPago === 'contra_entrega' 
+        ? '[ Pago Contra Entrega ]' 
+        : '[ Coordinar por WhatsApp ]';
 
-      // Payload base (columnas seguras que siempre existen en leads)
+      // Payload completo para alimentar en tiempo real el Lead / Carrito Abandonado
       const basePayload: any = {
         nombre: customFormData.nombre,
         telefono: customFormData.telefono,
         ciudad: ciudadFormateada || 'Por definir',
+        direccion: customFormData.direccion || '',
         tenant_id: tenant,
         estado: 'abandonado',
         linea_whatsapp: numeroWhatsApp,
         productos: productosProcesados,
-        total: total
+        total: total,
+        metodo_pago: metodoPagoLabel
       };
+      if (customFormData.cedula) {
+        basePayload.cedula = customFormData.cedula;
+        basePayload.cliente_cedula = customFormData.cedula;
+      }
+      if (customFormData.email) {
+        basePayload.email = customFormData.email;
+        basePayload.cliente_email = customFormData.email;
+      }
 
       const currentLeadId = leadIdRef.current || leadId;
 
       if (currentLeadId) {
-        // Update: intentar con todos los campos, si falla ignorar silenciosamente
+        // Update: intentar con todos los campos
         const { error: updateErr } = await supabase
           .from('leads')
           .update(basePayload)
           .eq('id', currentLeadId);
+          
         if (updateErr) {
-          console.warn('Lead update warning:', updateErr.message);
+          console.warn('Lead update con payload completo dio advertencia, reintentando con campos base:', updateErr.message);
+          const safePayload: any = {
+            nombre: customFormData.nombre,
+            telefono: customFormData.telefono,
+            ciudad: ciudadFormateada || 'Por definir',
+            direccion: customFormData.direccion || '',
+            tenant_id: tenant,
+            estado: 'abandonado',
+            linea_whatsapp: numeroWhatsApp,
+            productos: productosProcesados,
+            total: total
+          };
+          await supabase.from('leads').update(safePayload).eq('id', currentLeadId);
         }
       } else {
         if (isInsertingRef.current) return;
         isInsertingRef.current = true;
         
-        // Intento 1: payload base
+        // Intento 1: payload completo
         const { data, error } = await supabase
           .from('leads')
           .insert(basePayload)
@@ -667,26 +695,23 @@ export default function MenuDigital() {
           setLeadId(data.id);
           leadIdRef.current = data.id;
         } else if (error) {
-          console.warn('Lead insert error:', error.message);
-          // Intento 2: payload mínimo absoluto
-          const minPayload = {
-            nombre: customFormData.nombre,
-            telefono: customFormData.telefono,
-            tenant_id: tenant,
-            estado: 'abandonado',
-            linea_whatsapp: numeroWhatsApp,
-            total: total
-          };
+          console.warn('Lead insert error, reintentando con campos básicos:', error.message);
+          delete basePayload.cedula;
+          delete basePayload.cliente_cedula;
+          delete basePayload.email;
+          delete basePayload.cliente_email;
+          delete basePayload.metodo_pago;
+
           const { data: data2, error: err2 } = await supabase
             .from('leads')
-            .insert(minPayload)
+            .insert(basePayload)
             .select('id')
             .single();
           if (!err2 && data2) {
             setLeadId(data2.id);
             leadIdRef.current = data2.id;
           } else {
-            console.error('Lead insert failed (minimal):', err2?.message);
+            console.error('Lead insert falló (mínimo):', err2?.message);
           }
         }
         isInsertingRef.current = false;
@@ -697,17 +722,17 @@ export default function MenuDigital() {
     }
   };
 
-  // Disparar lead con solo nombre + teléfono (desde Step 1, con debounce)
+  // Disparar o actualizar lead en tiempo real tan pronto el cliente llena o modifica cualquier campo
   useEffect(() => {
     if (isOrderSubmittedRef.current) return;
     if (!formData.nombre || !formData.telefono || items.length === 0) return;
 
     const delayDebounceFn = setTimeout(() => {
       saveOrUpdateLead(formData);
-    }, 1200);
+    }, 600);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [formData.nombre, formData.telefono, formData.direccion, formData.ciudad, selectedDepartamento, metodoRecepcion, modalidadPago, items, total, leadId]);
+  }, [formData.nombre, formData.telefono, formData.cedula, formData.email, formData.direccion, formData.ciudad, selectedDepartamento, metodoRecepcion, modalidadPago, items, total, leadId]);
 
   // Re-disparar lead cuando configuracion cargue (fix race condition: config llega tarde)
   useEffect(() => {

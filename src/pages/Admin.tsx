@@ -5540,7 +5540,7 @@ export default function Admin() {
               <>
                 {/* Título compacto de sección y contador fijados inmediatamente a la izquierda del hamburger */}
                 <div className="topbar-left-info">
-                  <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '28px', height: '28px', borderRadius: '8px', background: '#e0f2fe', color: 'var(--primary-color, #00a6f9)', flexShrink: 0 }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '10px', background: '#ffffff', border: '1px solid #e2e8f0', color: 'var(--primary-color, #0ea5e9)', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                     {activeTab === 'clientes' && <Users size={16} />}
                     {activeTab === 'asesores' && <User size={16} />}
                     {activeTab === 'pedidos' && <ShoppingBag size={16} />}
@@ -5548,7 +5548,7 @@ export default function Admin() {
                     {activeTab === 'productos' && <Package size={16} />}
                     {activeTab === 'material_apoyo' && <Link size={16} />}
                   </div>
-                  <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap' }}>
+                  <span style={{ fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap' }}>
                     {activeTab === 'clientes' && 'Clientes'}
                     {activeTab === 'asesores' && 'Asesores'}
                     {activeTab === 'pedidos' && 'Pedidos'}
@@ -5556,7 +5556,7 @@ export default function Admin() {
                     {activeTab === 'productos' && 'Catálogo'}
                     {activeTab === 'material_apoyo' && 'Material de Apoyo'}
                   </span>
-                  <span style={{ fontSize: '0.78rem', color: 'var(--primary-color, #00a6f9)', fontWeight: 800, background: '#e0f2fe', padding: '0.15rem 0.55rem', borderRadius: '20px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <span style={{ fontSize: '0.78rem', color: 'var(--primary-color, #0ea5e9)', fontWeight: 600, background: '#ffffff', border: '1px solid #e2e8f0', padding: '0.15rem 0.55rem', borderRadius: '20px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                     {activeTab === 'clientes' && clientes.length}
                     {activeTab === 'asesores' && asesores.length}
                     {activeTab === 'pedidos' && pedidos.length}
@@ -5923,7 +5923,7 @@ export default function Admin() {
               </div>
             )}
           </div>
-          <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: '0.65rem' }}>
             {/* Switcher Vista Lista / Kanban en Pedidos (Oculto en móvil) */}
             {activeTab === 'pedidos' && (
               <div className="desktop-only-table" style={{ display: 'flex', gap: '0.2rem', background: '#f1f5f9', padding: '0.2rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', height: '38px', alignItems: 'center' }}>
@@ -12556,10 +12556,32 @@ export default function Admin() {
               .map(p => ({ ...p, isLead: false }));
             const leadItems = orderFilterStatus === 'comprobante' || orderFilterStatus === 'esperando_pago' || orderFilterStatus === 'contra_entrega'
               ? []
-              : leadsFiltrados.map(l => ({ ...l, isLead: true, cliente_nombre: l.nombre || 'Borrador Anónimo', cliente_telefono: l.telefono || 'Sin número', direccion: l.direccion || '', estado: 'abandonado' }));
+              : leadsFiltrados.map(l => ({
+                  ...l,
+                  isLead: true,
+                  cliente_nombre: l.nombre || 'Borrador Anónimo',
+                  cliente_telefono: l.telefono || 'Sin número',
+                  cliente_cedula: l.cedula || l.cliente_cedula || '',
+                  cliente_email: l.email || l.cliente_email || '',
+                  direccion: l.direccion || '',
+                  ciudad: l.ciudad || '',
+                  metodo_pago: l.metodo_pago || '',
+                  estado: 'abandonado'
+                }));
             
             const combinedList = orderFilterStatus === 'abandonados'
-              ? leadsFiltrados.map(l => ({ ...l, isLead: true, cliente_nombre: l.nombre || 'Borrador Anónimo', cliente_telefono: l.telefono || 'Sin número', direccion: l.direccion || '', estado: 'abandonado' })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+              ? leadsFiltrados.map(l => ({
+                  ...l,
+                  isLead: true,
+                  cliente_nombre: l.nombre || 'Borrador Anónimo',
+                  cliente_telefono: l.telefono || 'Sin número',
+                  cliente_cedula: l.cedula || l.cliente_cedula || '',
+                  cliente_email: l.email || l.cliente_email || '',
+                  direccion: l.direccion || '',
+                  ciudad: l.ciudad || '',
+                  metodo_pago: l.metodo_pago || '',
+                  estado: 'abandonado'
+                })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
               : orderFilterStatus === 'contra_entrega'
               ? contraEntregaFiltrados.map(p => ({ ...p, isLead: false })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
               : [...pedItems, ...leadItems].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -13513,27 +13535,54 @@ export default function Admin() {
 
                   return (
                     <div style={{ fontFamily: "'Poppins', sans-serif" }}>
-                      {/* Pantallazo Nequi */}
-                      {selectedPedido.pantallazo_url && (
+                      {/* Evidencia del Comprobante de Pago */}
+                      {selectedPedido.pantallazo_url ? (
                         <div style={{ marginTop: '0.9rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.85rem' }}>
-                          <h4 style={{ margin: '0 0 0.65rem', fontSize: '0.86rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 500 }}>
-                            💳 Comprobante de Pago (Nequi)
-                          </h4>
-                          <div onClick={() => setPagoModalUrl(selectedPedido.pantallazo_url || null)} style={{ cursor: 'pointer' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <h4 style={{ margin: 0, fontSize: '0.86rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600 }}>
+                              💳 Comprobante de Pago Subido
+                            </h4>
+                            <label style={{ fontSize: '0.75rem', color: 'var(--primary-color, #0ea5e9)', fontWeight: 500, cursor: 'pointer', background: '#f1f5f9', padding: '0.25rem 0.65rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                              📷 Cambiar foto
+                              <input
+                                type="file"
+                                accept="image/*"
+                                hidden
+                                onChange={async (e) => {
+                                  if (e.target.files && e.target.files[0]) {
+                                    const file = e.target.files[0];
+                                    try {
+                                      showToast('Subiendo nuevo comprobante...', 'success');
+                                      const fileExt = file.name.split('.').pop();
+                                      const fileName = `comprobante_${selectedPedido.id}_${Date.now()}.${fileExt}`;
+                                      const { error: upErr } = await supabase.storage.from('archivos').upload(fileName, file);
+                                      if (upErr) throw upErr;
+                                      const { data: urlData } = supabase.storage.from('archivos').getPublicUrl(fileName);
+                                      const newUrl = urlData.publicUrl;
+                                      await supabase.from('pedidos').update({ pantallazo_url: newUrl }).eq('id', selectedPedido.id);
+                                      setSelectedPedido({ ...selectedPedido, pantallazo_url: newUrl });
+                                      setPedidos(prev => prev.map(p => p.id === selectedPedido.id ? { ...p, pantallazo_url: newUrl } : p));
+                                      showToast('¡Comprobante actualizado! ✓', 'success');
+                                    } catch (err) {
+                                      showToast('Error al subir el comprobante', 'error');
+                                    }
+                                  }
+                                }}
+                              />
+                            </label>
+                          </div>
+                          <div onClick={() => setPagoModalUrl(selectedPedido.pantallazo_url || null)} style={{ cursor: 'pointer', textAlign: 'center' }}>
                             <img
                               src={selectedPedido.pantallazo_url}
-                              alt="Comprobante Nequi"
-                              style={{ width: '100%', maxHeight: '120px', objectFit: 'contain', borderRadius: '12px', border: '1px solid #e2e8f0' }}
+                              alt="Comprobante de Pago"
+                              style={{ width: '100%', maxHeight: '140px', objectFit: 'contain', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc' }}
                             />
                           </div>
-                          <p style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 500, marginTop: '0.4rem', textAlign: 'center' }}>
-                            ✅ Comprobante recibido — Click para ver en pantalla completa
+                          <p style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: 500, marginTop: '0.4rem', textAlign: 'center', margin: '0.4rem 0 0 0' }}>
+                            ✅ Comprobante recibido — Clic en la imagen para ver en pantalla completa
                           </p>
                         </div>
-                      )}
-                      
-                      {/* Banner de estado para Contra Entrega o Pendiente */}
-                      {isContra ? (
+                      ) : isContra ? (
                         <div style={{ marginTop: '0.9rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.75rem' }}>
                           <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', padding: '0.65rem 0.85rem', borderRadius: '12px', textAlign: 'center' }}>
                             <span style={{ color: '#ea580c', fontWeight: 500, fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -13541,44 +13590,48 @@ export default function Admin() {
                             </span>
                           </div>
                         </div>
-                      ) : !selectedPedido.pantallazo_url ? (
+                      ) : (
                         <div style={{ marginTop: '0.9rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.75rem' }}>
-                          <div style={{ background: '#fffbeb', border: '1px solid #fde68a', padding: '0.8rem 0.9rem', borderRadius: '12px', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
-                            <p style={{ color: '#b45309', fontWeight: 500, fontSize: '0.85rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                              ⏳ Pendiente de comprobante de pago
-                            </p>
-                            <span style={{ fontSize: '0.76rem', color: '#78350f', fontWeight: 400 }}>
-                              Enlace directo para que el cliente suba su comprobante:
-                            </span>
-                            <div style={{ display: 'flex', gap: '0.45rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                              <input
-                                type="text"
-                                readOnly
-                                value={`${window.location.origin}/pago/${selectedPedido.id.slice(0, 8)}`}
-                                style={{ flex: 1, minWidth: '170px', padding: '0.4rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.78rem', background: '#ffffff', outline: 'none', color: '#334155', fontFamily: 'monospace' }}
-                              />
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  navigator.clipboard.writeText(`${window.location.origin}/pago/${selectedPedido.id.slice(0, 8)}`);
-                                  showToast('¡Enlace de pago copiado! ✓', 'success');
-                                }}
-                                style={{ padding: '0.4rem 0.7rem', background: 'var(--primary-color, #f59e0b)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.76rem', fontWeight: 500, whiteSpace: 'nowrap' }}
-                              >
-                                📋 Copiar Enlace
-                              </button>
-                              <a
-                                href={`${window.location.origin}/pago/${selectedPedido.id.slice(0, 8)}`}
-                                target="_blank"
-                                rel="noreferrer"
-                                style={{ padding: '0.4rem 0.7rem', background: '#ffffff', color: '#b45309', border: '1px solid #fde68a', borderRadius: '8px', fontSize: '0.76rem', fontWeight: 500, textDecoration: 'none', whiteSpace: 'nowrap' }}
-                              >
-                                ↗️ Abrir
-                              </a>
+                          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '0.85rem 1rem', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
+                            <div>
+                              <p style={{ color: '#475569', fontWeight: 600, fontSize: '0.84rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                ⏳ Pendiente comprobante de transferencia
+                              </p>
+                              <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0.15rem 0 0 0', fontWeight: 400 }}>
+                                Si el cliente te lo envió por WhatsApp, puedes subirlo aquí.
+                              </p>
                             </div>
+                            <label style={{ padding: '0.55rem 0.9rem', background: 'var(--primary-color, #0ea5e9)', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 2px 6px rgba(14,165,233,0.25)' }}>
+                              📷 Subir comprobante
+                              <input
+                                type="file"
+                                accept="image/*"
+                                hidden
+                                onChange={async (e) => {
+                                  if (e.target.files && e.target.files[0]) {
+                                    const file = e.target.files[0];
+                                    try {
+                                      showToast('Subiendo comprobante...', 'success');
+                                      const fileExt = file.name.split('.').pop();
+                                      const fileName = `comprobante_${selectedPedido.id}_${Date.now()}.${fileExt}`;
+                                      const { error: upErr } = await supabase.storage.from('archivos').upload(fileName, file);
+                                      if (upErr) throw upErr;
+                                      const { data: urlData } = supabase.storage.from('archivos').getPublicUrl(fileName);
+                                      const newUrl = urlData.publicUrl;
+                                      await supabase.from('pedidos').update({ pantallazo_url: newUrl }).eq('id', selectedPedido.id);
+                                      setSelectedPedido({ ...selectedPedido, pantallazo_url: newUrl });
+                                      setPedidos(prev => prev.map(p => p.id === selectedPedido.id ? { ...p, pantallazo_url: newUrl } : p));
+                                      showToast('¡Comprobante guardado con éxito! ✓', 'success');
+                                    } catch (err) {
+                                      showToast('Error al subir el comprobante', 'error');
+                                    }
+                                  }
+                                }}
+                              />
+                            </label>
                           </div>
                         </div>
-                      ) : null}
+                      )}
 
                       {/* Guía y Evidencia de Envío (Manual) */}
                       {(selectedPedido.estado === 'completado' || isContra) && (

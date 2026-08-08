@@ -149,11 +149,11 @@
 }
 
 .erp-ventas-tab.active {
-  background: #00a6f9;
+  background: var(--primary-color, #0ea5e9);
   color: #ffffff;
-  border-color: #00a6f9;
-  font-weight: 700;
-  box-shadow: 0 4px 14px rgba(0, 166, 249, 0.35);
+  border-color: var(--primary-color, #0ea5e9);
+  font-weight: 600;
+  box-shadow: 0 4px 14px var(--primary-rgb, rgba(14, 165, 233, 0.35));
 }
 
 /* ── Panel principal ── */
