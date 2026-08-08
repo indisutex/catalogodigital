@@ -13229,11 +13229,11 @@ export default function Admin() {
                   isLead: true,
                   cliente_nombre: l.nombre || 'Borrador Anónimo',
                   cliente_telefono: l.telefono || 'Sin número',
-                  cliente_cedula: l.cedula || l.cliente_cedula || '',
-                  cliente_email: l.email || l.cliente_email || '',
+                  cliente_cedula: l.cliente_cedula || l.cedula || (l.direccion?.match(/(?:CC|Cédula|Cedula):\s*([0-9a-zA-Z]+)/i)?.[1]) || '',
+                  cliente_email: l.cliente_email || l.email || (l.direccion?.match(/(?:Email|Correo):\s*([^\s|]+)/i)?.[1]) || '',
                   direccion: l.direccion || '',
                   ciudad: l.ciudad || '',
-                  metodo_pago: l.metodo_pago || '',
+                  metodo_pago: l.metodo_pago || 'Por definir',
                   estado: 'abandonado'
                 }));
             
@@ -13243,11 +13243,11 @@ export default function Admin() {
                   isLead: true,
                   cliente_nombre: l.nombre || 'Borrador Anónimo',
                   cliente_telefono: l.telefono || 'Sin número',
-                  cliente_cedula: l.cedula || l.cliente_cedula || '',
-                  cliente_email: l.email || l.cliente_email || '',
+                  cliente_cedula: l.cliente_cedula || l.cedula || (l.direccion?.match(/(?:CC|Cédula|Cedula):\s*([0-9a-zA-Z]+)/i)?.[1]) || '',
+                  cliente_email: l.cliente_email || l.email || (l.direccion?.match(/(?:Email|Correo):\s*([^\s|]+)/i)?.[1]) || '',
                   direccion: l.direccion || '',
                   ciudad: l.ciudad || '',
-                  metodo_pago: l.metodo_pago || '',
+                  metodo_pago: l.metodo_pago || 'Por definir',
                   estado: 'abandonado'
                 })).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
               : orderFilterStatus === 'contra_entrega'
@@ -13894,13 +13894,13 @@ export default function Admin() {
                   <div>
                     <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Cédula / DNI</h5>
                     <p style={{ margin: 0, fontWeight: 400, color: '#0f172a', fontSize: '0.85rem' }}>
-                      {selectedPedido.cliente_cedula || (selectedPedido as any).cedula || (selectedPedido as any).dni || (selectedPedido as any).documento || 'No registrada'}
+                      {selectedPedido.cliente_cedula || (selectedPedido as any).cedula || (selectedPedido as any).dni || (selectedPedido as any).documento || (selectedPedido.direccion?.match(/(?:CC|Cédula|Cedula):\s*([0-9a-zA-Z]+)/i)?.[1]) || 'No registrada'}
                     </p>
                   </div>
                   <div>
                     <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Correo Electrónico</h5>
                     <p style={{ margin: 0, fontWeight: 400, color: '#0f172a', fontSize: '0.84rem', wordBreak: 'break-all' }}>
-                      {selectedPedido.cliente_email || (selectedPedido as any).email || (selectedPedido as any).correo || 'No registrado'}
+                      {selectedPedido.cliente_email || (selectedPedido as any).email || (selectedPedido as any).correo || (selectedPedido.direccion?.match(/(?:Email|Correo):\s*([^\s|]+)/i)?.[1]) || 'No registrado'}
                     </p>
                   </div>
                   <div>

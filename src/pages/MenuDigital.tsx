@@ -595,6 +595,8 @@ export default function MenuDigital() {
   const leadIdRef = useRef<string | null>(null);
   const isInsertingRef = useRef(false);
   const isOrderSubmittedRef = useRef(false);
+  const [isPagoSeleccionado, setIsPagoSeleccionado] = useState(false);
+  const [isEnvioSeleccionado, setIsEnvioSeleccionado] = useState(false);
 
   const getStoreWhatsAppNumber = (customerPhone?: string) => {
     const cleanCustomer = (customerPhone || formData?.telefono || '').replace(/\D/g, '');
@@ -618,15 +620,19 @@ export default function MenuDigital() {
       const tenant = getTenantId();
       const numeroWhatsApp = getStoreWhatsAppNumber(customFormData.telefono);
       
-      const metodoEnvioLabel = metodoRecepcion === 'tienda' 
-        ? `Recoger en Tienda (${configuracion?.direccion || 'Sede Principal'})` 
-        : `Envío a domicilio`;
+      const metodoEnvioLabel = isEnvioSeleccionado 
+        ? (metodoRecepcion === 'tienda' 
+          ? `Recoger en Tienda (${configuracion?.direccion || 'Sede Principal'})` 
+          : `Envío a domicilio`)
+        : 'Por definir';
 
-      const metodoPagoLabel = modalidadPago === 'transferencia' 
-        ? '[ Transferencia Bancaria ]' 
-        : modalidadPago === 'contra_entrega' 
-        ? '[ Pago Contra Entrega ]' 
-        : '[ Coordinar por WhatsApp ]';
+      const metodoPagoLabel = isPagoSeleccionado 
+        ? (modalidadPago === 'transferencia' 
+          ? '[ Transferencia Bancaria ]' 
+          : modalidadPago === 'contra_entrega' 
+          ? '[ Pago Contra Entrega ]' 
+          : '[ Coordinar por WhatsApp ]')
+        : 'Por definir';
 
       let buyerLabel = '';
       if (buyerType === 'mayorista') buyerLabel = 'Mayorista';
@@ -654,17 +660,16 @@ export default function MenuDigital() {
 
       let direccionFormateada = customFormData.direccion 
         ? customFormData.direccion 
-        : (metodoRecepcion === 'tienda' ? `Recoger en Tienda (${configuracion?.direccion || 'Sede Principal'})` : '');
+        : (isEnvioSeleccionado && metodoRecepcion === 'tienda' ? `Recoger en Tienda (${configuracion?.direccion || 'Sede Principal'})` : '');
 
-      if (customFormData.cedula && customFormData.cedula.trim()) {
-        if (!direccionFormateada.includes('Cédula:')) {
-          direccionFormateada += ` | CC: ${customFormData.cedula.trim()}`;
-        }
+      const cedVal = (customFormData.cedula || '').trim();
+      const emailVal = (customFormData.email || '').trim();
+
+      if (cedVal && !direccionFormateada.includes(cedVal)) {
+        direccionFormateada += ` | CC: ${cedVal}`;
       }
-      if (customFormData.email && customFormData.email.trim()) {
-        if (!direccionFormateada.includes('Email:')) {
-          direccionFormateada += ` | Email: ${customFormData.email.trim()}`;
-        }
+      if (emailVal && !direccionFormateada.includes(emailVal)) {
+        direccionFormateada += ` | Email: ${emailVal}`;
       }
 
       // Payload completo para alimentar en tiempo real el Lead / Carrito Abandonado
@@ -673,6 +678,10 @@ export default function MenuDigital() {
         telefono: customFormData.telefono.trim(),
         ciudad: ciudadFormateada || 'Por definir',
         direccion: direccionFormateada,
+        cedula: cedVal,
+        cliente_cedula: cedVal,
+        email: emailVal,
+        cliente_email: emailVal,
         tenant_id: tenant,
         estado: 'abandonado',
         linea_whatsapp: numeroWhatsApp,
@@ -680,19 +689,11 @@ export default function MenuDigital() {
         total: total,
         metodo_pago: metodoPagoLabel,
         metodo_envio: metodoEnvioLabel,
-        modalidad_pago: modalidadPago,
-        metodo_recepcion: metodoRecepcion,
+        modalidad_pago: isPagoSeleccionado ? modalidadPago : 'por_definir',
+        metodo_recepcion: isEnvioSeleccionado ? metodoRecepcion : 'por_definir',
         tipo_compra: buyerLabel,
         departamento: selectedDepartamento || ''
       };
-      if (customFormData.cedula) {
-        basePayload.cedula = customFormData.cedula.trim();
-        basePayload.cliente_cedula = customFormData.cedula.trim();
-      }
-      if (customFormData.email) {
-        basePayload.email = customFormData.email.trim();
-        basePayload.cliente_email = customFormData.email.trim();
-      }
 
       const currentId = leadIdRef.current || leadId;
 
@@ -2526,6 +2527,7 @@ export default function MenuDigital() {
                                 return;
                               }
                               saveOrUpdateLead(formData);
+                              setIsEnvioSeleccionado(true);
                               setCheckoutStep(3);
                             }}
                             style={{
@@ -2590,7 +2592,10 @@ export default function MenuDigital() {
                                 name="modalidadPago" 
                                 value="transferencia"
                                 checked={modalidadPago === 'transferencia'}
-                                onChange={() => setModalidadPago('transferencia')}
+                                onChange={() => {
+                                  setModalidadPago('transferencia');
+                                  setIsPagoSeleccionado(true);
+                                }}
                                 style={{ accentColor: brandColor, width: '18px', height: '18px', cursor: 'pointer', flexShrink: 0 }}
                               />
                             </label>
@@ -2625,7 +2630,10 @@ export default function MenuDigital() {
                                 name="modalidadPago" 
                                 value="contra_entrega"
                                 checked={modalidadPago === 'contra_entrega'}
-                                onChange={() => setModalidadPago('contra_entrega')}
+                                onChange={() => {
+                                  setModalidadPago('contra_entrega');
+                                  setIsPagoSeleccionado(true);
+                                }}
                                 style={{ accentColor: brandColor, width: '18px', height: '18px', cursor: 'pointer', flexShrink: 0 }}
                               />
                             </label>
