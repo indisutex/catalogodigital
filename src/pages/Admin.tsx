@@ -5,7 +5,7 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista, PQRS } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, Wrench, ArrowUpDown, Filter } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, Wrench, ArrowUpDown, Filter, MapPin } from 'lucide-react';
 
 import * as XLSX from 'xlsx';
 import { ERPContabilidadService } from '../lib/erpContabilidadService';
@@ -54,6 +54,7 @@ const getGoogleDriveThumbnailUrl = (url: string) => {
 };
 
 import { deduplicateTallas, encodeExtraImage, decodeExtraImage, isMediaVideo, buildUnifiedImages } from '../lib/mediaUtils';
+import ZonificacionModule from '../components/ZonificacionModule';
 
 type FamilyDetailedPrices = Record<string, { detal?: string; mayor?: string; p50?: string }>;
 
@@ -153,7 +154,7 @@ const emptyProduct: ProductFormData = {
   precios_detallados_fam: defaultFamDetailedPrices
 };
 
-type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'ventas_pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor' | 'material_apoyo' | 'material_asesor' | 'productos_asesor' | 'productos_mayorista' | 'ranking_mayorista' | 'pqrs' | 'contabilidad' | 'erp';
+type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'ventas_pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor' | 'material_apoyo' | 'material_asesor' | 'productos_asesor' | 'productos_mayorista' | 'ranking_mayorista' | 'pqrs' | 'contabilidad' | 'erp' | 'zonificacion';
 
 type Toast = { message: string; type: 'success' | 'error' } | null;
 
@@ -614,6 +615,10 @@ function SidebarContent({
             <button className={`nav-item ${activeTab === 'erp' ? 'active' : ''}`} onClick={() => handleSelectTab('erp')}>
               <span className="nav-icon"><BarChart2 size={14} /></span> ERP Empresarial
               {activeTab === 'erp' && <span className="active-dot"></span>}
+            </button>
+            <button className={`nav-item ${activeTab === 'zonificacion' ? 'active' : ''}`} onClick={() => handleSelectTab('zonificacion')}>
+              <span className="nav-icon"><MapPin size={14} color="#f59e0b" /></span> Zonificación
+              {activeTab === 'zonificacion' && <span className="active-dot"></span>}
             </button>
             <button className={`nav-item ${activeTab === 'config' ? 'active' : ''}`} onClick={() => handleSelectTab('config')}>
               <span className="nav-icon"><Settings size={14} /></span> Configuración
@@ -5879,6 +5884,7 @@ export default function Admin() {
                     {activeTab === 'ventas_pos' && <CreditCard size={16} />}
                     {activeTab === 'material_apoyo' && <Link size={16} />}
                     {activeTab === 'config' && <Settings size={16} />}
+                    {activeTab === 'zonificacion' && <MapPin size={16} color="#f59e0b" />}
                     {activeTab === 'erp' && <BarChart2 size={16} />}
                     {activeTab === 'pqrs' && <MessageSquare size={16} />}
                     {activeTab === 'productos' && <Package size={16} />}
@@ -5890,6 +5896,7 @@ export default function Admin() {
                     {activeTab === 'ventas_pos' && 'Historial de Ventas POS'}
                     {activeTab === 'material_apoyo' && 'Material de Apoyo & Google Drive'}
                     {activeTab === 'config' && 'Configuración Global'}
+                    {activeTab === 'zonificacion' && 'Zonificación & Cobertura de Envíos'}
                     {activeTab === 'erp' && 'ERP Empresarial'}
                     {activeTab === 'pqrs' && 'Centro de Soporte & PQRS'}
                     {activeTab === 'productos' && 'Agregar Nuevo Producto'}
@@ -5902,6 +5909,7 @@ export default function Admin() {
                   {activeTab === 'ventas_pos' && 'Historial de facturas y cobros realizados desde POS'}
                   {activeTab === 'material_apoyo' && 'Carpetas, fotos y videos compartidos desde Google Drive para el equipo'}
                   {activeTab === 'config' && 'Personaliza tu tienda al máximo (datos, pagos, diseño y APIs)'}
+                  {activeTab === 'zonificacion' && 'Administra los 32 departamentos y municipios de Colombia con tarifas de envío'}
                   {activeTab === 'erp' && 'Sistema Integrado de Gestión Empresarial'}
                   {activeTab === 'pqrs' && 'Gestiona solicitudes, reclamos y dudas de clientes en tiempo real'}
                   {activeTab === 'productos' && 'Completa los campos para publicar el producto en tu catálogo'}
@@ -8689,6 +8697,12 @@ export default function Admin() {
             <ERPMainModule tenantId={selectedCompany || getTenantId()} />
           )}
 
+
+          {/* ── ZONIFICACIÓN Y COBERTURA DE ENVÍOS ── */}
+
+          {activeTab === 'zonificacion' && (
+            <ZonificacionModule configuracion={configuracion} />
+          )}
 
           {/* ── CONFIG TAB ── */}
 

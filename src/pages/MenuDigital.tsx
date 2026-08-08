@@ -2,12 +2,13 @@ import { useEffect, useState, useRef, useMemo } from 'react';
 import { supabase, getTenantId } from '../lib/supabase';
 import { updatePWAManifestAndIcons } from '../lib/pwa';
 import type { Producto, Categoria, Subcategoria, Configuracion } from '../types';
-import { Loader2, Search, Plus, ShoppingBag, X, ShoppingCart, Volume2, VolumeX, Package, HelpCircle, RefreshCw, Menu, Check, Filter, LayoutGrid, Users, Sparkles, Shirt, Baby, Moon, Layers, Tag, Heart, Gift, ChevronDown, Share2, Trash2, CreditCard, MessageCircle } from 'lucide-react';
+import { Loader2, Search, Plus, ShoppingBag, X, ShoppingCart, Volume2, VolumeX, Package, HelpCircle, RefreshCw, Menu, Check, Filter, LayoutGrid, Users, Sparkles, Shirt, Baby, Moon, Layers, Tag, Heart, Gift, ChevronDown, Share2, Trash2, CreditCard, MessageCircle, ArrowLeft, ChevronRight } from 'lucide-react';
 import { useCart, getEffectivePrice } from '../context/CartContext';
 import PqrsModal from '../components/PqrsModal';
 import { getOptimizedImageUrl } from '../lib/imageOptimizer';
 import { PromoWelcomeBanner as TemuWelcomeBanner } from '../components/NochePerfectaGameModal';
 import { JuegosHubModal } from '../components/JuegosHubModal';
+import { DEPARTAMENTOS_COLOMBIA, TODAS_LAS_CIUDADES_COLOMBIA } from '../data/colombiaData';
 import './MenuDigital.css';
 
 // Ejecutar sincrónicamente para evitar parpadeo de color
@@ -100,6 +101,19 @@ export default function MenuDigital() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isPqrsOpen, setIsPqrsOpen] = useState(false);
   const [isCheckoutMode, setIsCheckoutMode] = useState(false);
+  const [checkoutStep, setCheckoutStep] = useState<1 | 2 | 3>(1);
+  const [metodoRecepcion, setMetodoRecepcion] = useState<'domicilio' | 'tienda'>('domicilio');
+  const [selectedDepartamento, setSelectedDepartamento] = useState<string>('');
+  const [isCityFocused, setIsCityFocused] = useState<boolean>(false);
+  const [orderSummaryData, setOrderSummaryData] = useState<{
+    orderCode: string;
+    subtotal: number;
+    total: number;
+    metodoPagoLabel: string;
+    modalidadPago: 'transferencia' | 'contra_entrega' | 'whatsapp';
+    whatsappUrl: string;
+  } | null>(null);
+  const [copiedField, setCopiedField] = useState(false);
   const [overrideWhatsApp, setOverrideWhatsApp] = useState<string | null>(null);
   const [heroMuted, setHeroMuted] = useState(true);
   const [showTipoModal, setShowTipoModal] = useState(false);
@@ -575,83 +589,87 @@ export default function MenuDigital() {
     direccion: '',
     ciudad: ''
   });
-  const [modalidadPago, setModalidadPago] = useState<'contra_entrega' | 'anticipado'>('contra_entrega');
+  const [modalidadPago, setModalidadPago] = useState<'transferencia' | 'contra_entrega' | 'whatsapp'>('transferencia');
   const [leadId, setLeadId] = useState<string | null>(null);
 
   const leadIdRef = useRef<string | null>(null);
   const isInsertingRef = useRef(false);
   const isOrderSubmittedRef = useRef(false);
 
-  useEffect(() => {
+  const saveOrUpdateLead = async (customFormData = formData) => {
     if (isOrderSubmittedRef.current) return;
-    // Solo guardar el abandonado si llenó todos los datos
-    if (!formData.nombre || !formData.telefono || !formData.direccion || !formData.ciudad) return;
+    if (!customFormData.nombre || !customFormData.telefono || items.length === 0) return;
 
-    const delayDebounceFn = setTimeout(async () => {
-      if (isOrderSubmittedRef.current) return;
-      try {
-        const tenant = getTenantId();
-        const numeroWhatsApp = overrideWhatsApp || configuracion?.whatsapp || '573185637317';
+    try {
+      const tenant = getTenantId();
+      const numeroWhatsApp = overrideWhatsApp || configuracion?.whatsapp || '573185637317';
+      
+      const productosProcesados = items.map(item => {
+        const effectivePrice = getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
+        const isWholesale = effectiveCartBuyerType === 'mayorista' || isBulkDiscountApplied || buyerType === 'mayorista';
+        return {
+          ...item,
+          precio_detal: item.precio_detal || item.precio,
+          precio: effectivePrice,
+          precio_aplicado_mayor: isWholesale
+        };
+      });
+
+      const ciudadFormateada = customFormData.ciudad 
+        ? (selectedDepartamento && !customFormData.ciudad.includes(selectedDepartamento) ? `${customFormData.ciudad}, ${selectedDepartamento}` : customFormData.ciudad)
+        : (selectedDepartamento || 'Por definir');
+
+      const payload: any = {
+        nombre: customFormData.nombre,
+        telefono: customFormData.telefono,
+        ciudad: ciudadFormateada,
+        direccion: customFormData.direccion || (metodoRecepcion === 'tienda' ? 'Recoger en tienda' : ''),
+        tenant_id: tenant,
+        estado: 'abandonado',
+        linea_whatsapp: numeroWhatsApp,
+        productos: productosProcesados,
+        total: total
+      };
+
+      const currentLeadId = leadIdRef.current || leadId;
+
+      if (currentLeadId) {
+        await supabase
+          .from('leads')
+          .update(payload)
+          .eq('id', currentLeadId);
+      } else {
+        if (isInsertingRef.current) return;
+        isInsertingRef.current = true;
         
-        const productosProcesados = items.map(item => {
-          const effectivePrice = getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
-          const isWholesale = effectiveCartBuyerType === 'mayorista' || isBulkDiscountApplied || buyerType === 'mayorista';
-          return {
-            ...item,
-            precio_detal: item.precio_detal || item.precio,
-            precio: effectivePrice,
-            precio_aplicado_mayor: isWholesale
-          };
-        });
+        const { data, error } = await supabase
+          .from('leads')
+          .insert(payload)
+          .select('id')
+          .single();
 
-        const currentLeadId = leadIdRef.current || leadId;
-
-        if (currentLeadId) {
-          await supabase
-            .from('leads')
-            .update({
-              nombre: formData.nombre,
-              telefono: formData.telefono,
-              ciudad: formData.ciudad,
-              estado: 'abandonado',
-              linea_whatsapp: numeroWhatsApp,
-              productos: productosProcesados,
-              total: total
-            })
-            .eq('id', currentLeadId);
-        } else {
-          if (isInsertingRef.current) return;
-          isInsertingRef.current = true;
-          
-          const { data, error } = await supabase
-            .from('leads')
-            .insert({
-              nombre: formData.nombre,
-              telefono: formData.telefono,
-              ciudad: formData.ciudad,
-              tenant_id: tenant,
-              estado: 'abandonado',
-              linea_whatsapp: numeroWhatsApp,
-              productos: productosProcesados,
-              total: total
-            })
-            .select('id')
-            .single();
-
-          if (!error && data) {
-            setLeadId(data.id);
-            leadIdRef.current = data.id;
-          }
-          isInsertingRef.current = false;
+        if (!error && data) {
+          setLeadId(data.id);
+          leadIdRef.current = data.id;
         }
-      } catch (err) {
-        console.error('Error saving draft lead:', err);
         isInsertingRef.current = false;
       }
-    }, 1500); // 1.5s debounce
+    } catch (err) {
+      console.error('Error guardando borrador / carrito abandonado:', err);
+      isInsertingRef.current = false;
+    }
+  };
+
+  useEffect(() => {
+    if (isOrderSubmittedRef.current) return;
+    if (!formData.nombre || !formData.telefono || items.length === 0) return;
+
+    const delayDebounceFn = setTimeout(() => {
+      saveOrUpdateLead(formData);
+    }, 1000);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [formData.nombre, formData.telefono, formData.direccion, formData.ciudad, overrideWhatsApp, configuracion, items, total, leadId]);
+  }, [formData.nombre, formData.telefono, formData.direccion, formData.ciudad, selectedDepartamento, metodoRecepcion, modalidadPago, items, total, leadId]);
 
   useEffect(() => {
     async function cargarDatos() {
@@ -851,10 +869,16 @@ export default function MenuDigital() {
     if (formData.email) {
       mensaje += `*Correo:* ${formData.email}\n`;
     }
+    const metodoPagoLabel = modalidadPago === 'transferencia' 
+      ? '[ Transferencia Bancaria ]' 
+      : modalidadPago === 'contra_entrega' 
+      ? '[ Pago Contra Entrega ]' 
+      : '[ Coordinar por WhatsApp ]';
+
     mensaje += `*Tipo de compra:* ${buyerLabel}\n`;
-    mensaje += `*Método de pago:* ${modalidadPago === 'contra_entrega' ? '🚚 Contra Entrega' : '💳 Pago Anticipado'}\n`;
+    mensaje += `*Método de pago:* ${metodoPagoLabel}\n`;
     if (isBulkDiscountApplied) {
-      mensaje += `🎁 *¡Descuento al Por Mayor Aplicado!* (Llevas 6 o más productos)\n`;
+      mensaje += `*DESCUENTO AL POR MAYOR APLICADO* (Llevas 6 o mas productos)\n`;
     }
     mensaje += `*Teléfono:* ${formData.telefono}\n`;
     mensaje += `*Dirección:* ${formData.direccion}, ${formData.ciudad}\n\n`;
@@ -865,14 +889,16 @@ export default function MenuDigital() {
     ).join('\n');
     mensaje += mensajeProductos;
     
-    if (modalidadPago === 'contra_entrega') {
-      mensaje += `\n\n*PRODUCTOS:* $${total.toLocaleString('es-CO')}`;
-      mensaje += `\n*ENVÍO:* ⏳ Pendiente de calcular.`;
-      mensaje += `\n\nℹ️ *Nota importante:* Antes de despachar tu pedido, te enviaremos por WhatsApp el valor exacto del envío para tu confirmación.\nAl momento de recibir cancelas el valor de las prendas + el valor del envío.`;
+    if (modalidadPago === 'transferencia') {
+      mensaje += `\n\n*TOTAL PRODUCTOS:* $${total.toLocaleString('es-CO')}`;
+      mensaje += `\n*ENVIO:* Pendiente por calcular.`;
+      mensaje += `\n\n*Nota de pago:* Por favor solicita los datos de transferencia bancaria para realizar el pago de *$${total.toLocaleString('es-CO')} COP*.`;
+    } else if (modalidadPago === 'contra_entrega') {
+      mensaje += `\n\n*TOTAL PRODUCTOS:* $${total.toLocaleString('es-CO')}`;
+      mensaje += `\n*ENVIO:* Pago contra entrega al recibir (sin recargo adicional).`;
     } else {
       mensaje += `\n\n*TOTAL PRODUCTOS:* $${total.toLocaleString('es-CO')}`;
-      mensaje += `\n*ENVÍO:* 🚚 Pendiente de pagar al recibir.`;
-      mensaje += `\n\n📌 *Nota de pago:* El valor a transferir ahora es únicamente por tus prendas (*$${total.toLocaleString('es-CO')} COP*). Al recibir tu pedido en la transportadora, únicamente cancelas el valor del envío.\n`;
+      mensaje += `\n\n*Coordinacion por WhatsApp:* Acordaremos el pago y envio directamente por este chat.`;
     }
 
     const numeroWhatsApp = overrideWhatsApp || configuracion?.whatsapp || '573185637317';
@@ -880,7 +906,7 @@ export default function MenuDigital() {
     let orderId = '';
     // Guardar en la base de datos de pedidos
     try {
-      const metodoPagoStr = modalidadPago === 'contra_entrega' ? 'Contra Entrega' : 'Pago Anticipado';
+      const metodoPagoStr = metodoPagoLabel;
       const productosProcesados = items.map(item => {
         const effectivePrice = getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
         const isWholesale = effectiveCartBuyerType === 'mayorista' || isBulkDiscountApplied || buyerType === 'mayorista';
@@ -901,11 +927,12 @@ export default function MenuDigital() {
         total: total,
         productos: productosProcesados,
         linea_whatsapp: numeroWhatsApp,
-        tenant_id: getTenantId()
+        tenant_id: getTenantId(),
+        metodo_pago: metodoPagoStr,
+        estado: modalidadPago === 'contra_entrega' ? 'contra_entrega' : 'pendiente'
       };
       if (formData.cedula) insertPayload.cliente_cedula = formData.cedula;
       if (formData.email) insertPayload.cliente_email = formData.email;
-      insertPayload.metodo_pago = modalidadPago === 'contra_entrega' ? 'Contra Entrega' : 'Pago Anticipado';
 
       let { data: newOrder, error: dbErr } = await supabase.from('pedidos').insert(insertPayload).select('id').single();
 
@@ -938,19 +965,19 @@ export default function MenuDigital() {
       console.error('Error al registrar pedido en base de datos:', dbErr);
     }
 
-    if (modalidadPago === 'anticipado') {
+    if (modalidadPago === 'transferencia') {
       let metodosStr = '';
       if (configuracion?.metodos_pago) {
         try {
           const parsed = JSON.parse(configuracion.metodos_pago);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            metodosStr = `\n💳 *Métodos de pago:*\n` + parsed.map((m: any) => `• ${m.banco} ${m.tipo ? `(${m.tipo})` : ''}: ${m.numero}`).join('\n') + `\n`;
+            metodosStr = `\n*Metodos de pago:*\n` + parsed.map((m: any) => `  - ${m.banco} ${m.tipo ? `(${m.tipo})` : ''}: ${m.numero}`).join('\n') + `\n`;
           } else if (typeof configuracion.metodos_pago === 'string' && configuracion.metodos_pago.trim() !== '') {
-            metodosStr = `\n💳 *Métodos de pago:*\n${configuracion.metodos_pago}\n`;
+            metodosStr = `\n*Metodos de pago:*\n${configuracion.metodos_pago}\n`;
           }
         } catch {
           if (typeof configuracion.metodos_pago === 'string' && configuracion.metodos_pago.trim() !== '') {
-            metodosStr = `\n💳 *Métodos de pago:*\n${configuracion.metodos_pago}\n`;
+            metodosStr = `\n*Metodos de pago:*\n${configuracion.metodos_pago}\n`;
           }
         }
       }
@@ -962,7 +989,7 @@ export default function MenuDigital() {
       if (orderId) {
         const shortOrderId = orderId.slice(0, 8);
         const uploadLink = `${window.location.origin}/pago/${shortOrderId}`;
-        mensaje += `\n📸 *Sube tu comprobante de pago aquí:* ${uploadLink}\n`;
+        mensaje += `\n*Sube tu comprobante de pago aqui:* ${uploadLink}\n`;
       }
     }
 
@@ -970,10 +997,21 @@ export default function MenuDigital() {
     if (cleanWhatsApp.length === 10) {
       cleanWhatsApp = '57' + cleanWhatsApp;
     }
-    const url = `https://wa.me/${cleanWhatsApp}?text=${encodeURIComponent(mensaje)}`;
-    
-    window.open(url, '_blank');
-    
+    const whatsappUrl = `https://wa.me/${cleanWhatsApp}?text=${encodeURIComponent(mensaje)}`;
+
+    const dateCode = new Date().toISOString().slice(0,10).replace(/-/g,'');
+    const seqNum = orderId ? orderId.slice(0,4).toUpperCase() : Math.floor(1000 + Math.random() * 9000).toString();
+    const formattedOrderCode = `#HER-${dateCode}-${seqNum}`;
+
+    setOrderSummaryData({
+      orderCode: formattedOrderCode,
+      subtotal: total,
+      total: total,
+      metodoPagoLabel: metodoPagoLabel,
+      modalidadPago: modalidadPago,
+      whatsappUrl: whatsappUrl
+    });
+
     // Limpiar después de enviar
     setIsCartOpen(false);
     setIsCheckoutMode(false);
@@ -1645,35 +1683,39 @@ export default function MenuDigital() {
                     const priceDetal = getEffectivePrice(producto, 'detal', markupPorcentaje, ajustesProductos, descuentoPromocional);
                     const priceMayor = getEffectivePrice(producto, 'mayorista', markupPorcentaje, ajustesProductos, descuentoPromocional);
                     const hasWholesalePrice = priceMayor > 0 && priceMayor < priceDetal;
+                    const companyColor = configuracion?.color_primario || 'var(--primary, #f36b8e)';
 
                     if (producto.es_producto_familiar) {
                       return (
                         <div style={{ marginTop: '0.1rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                          <strong style={{ fontSize: '0.98rem', fontWeight: 800, color: '#0f172a' }}>
+                          <strong style={{ fontSize: '0.98rem', fontWeight: 600, color: companyColor, fontFamily: "'Poppins', sans-serif" }}>
                             ${priceDetal.toLocaleString('es-CO')}
                           </strong>
-                          <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0284c7' }}>
-                            Por mayor: <strong style={{ fontWeight: 800, fontSize: '0.95rem' }}>${priceMayor.toLocaleString('es-CO')}</strong>
+                          <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#0284c7', fontFamily: "'Poppins', sans-serif" }}>
+                            Por mayor: <strong style={{ fontWeight: 700, fontSize: '0.95rem', fontFamily: "'Poppins', sans-serif" }}>${priceMayor.toLocaleString('es-CO')}</strong>
                           </div>
-                          <span style={{ fontSize: '0.68rem', color: '#64748b' }}>Opción familiar disponible</span>
+                          <span style={{ fontSize: '0.68rem', color: '#64748b', fontFamily: "'Poppins', sans-serif" }}>Opción familiar disponible</span>
                         </div>
                       );
                     }
 
                     if (hasWholesalePrice) {
                       return (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem', marginTop: '0.1rem' }}>
-                          {/* 1. PRIMERO: PRECIO */}
-                          <strong style={{ fontSize: '0.98rem', fontWeight: 800, color: '#0f172a', textDecoration: ((producto.descuento !== undefined && producto.descuento > 0) || descuentoPromocional > 0) ? 'line-through' : 'none' }}>
-                            ${priceDetal.toLocaleString('es-CO')}
-                          </strong>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', marginTop: '0.1rem' }}>
+                          {/* 1. PRIMERO: PRECIO DETAL */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap' }}>
+                            <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>Detal:</span>
+                            <strong style={{ fontSize: '1.05rem', fontWeight: 600, color: companyColor, fontFamily: "'Poppins', sans-serif", textDecoration: ((producto.descuento !== undefined && producto.descuento > 0) || descuentoPromocional > 0) ? 'line-through' : 'none' }}>
+                              ${priceDetal.toLocaleString('es-CO')}
+                            </strong>
+                          </div>
 
-                          {/* 2. ABAJO: PRECIO AL POR MAYOR (Claro y concreto) */}
+                          {/* 2. ABAJO: PRECIO AL POR MAYOR */}
                           <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.35rem' }}>
-                            <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#15803d', background: '#dcfce7', padding: '0.12rem 0.4rem', borderRadius: '4px', display: 'inline-block' }}>
+                            <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#15803d', background: '#dcfce7', padding: '0.15rem 0.45rem', borderRadius: '5px', display: 'inline-block', fontFamily: "'Poppins', sans-serif", border: '1px solid #bbf7d0' }}>
                               Por mayor +6:
                             </span>
-                            <strong style={{ fontSize: '1.05rem', fontWeight: 800, color: '#166534' }}>
+                            <strong style={{ fontSize: '1.08rem', fontWeight: 600, color: '#166534', fontFamily: "'Poppins', sans-serif" }}>
                               ${priceMayor.toLocaleString('es-CO')}
                             </strong>
                           </div>
@@ -1683,7 +1725,7 @@ export default function MenuDigital() {
 
                     return (
                       <div style={{ marginTop: '0.1rem' }}>
-                        <strong style={{ fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
+                        <strong style={{ fontSize: '1.05rem', fontWeight: 600, color: companyColor, fontFamily: "'Poppins', sans-serif" }}>
                           ${priceDetal.toLocaleString('es-CO')}
                         </strong>
                       </div>
@@ -1699,15 +1741,22 @@ export default function MenuDigital() {
       {/* PQRS Modal */}
       {isPqrsOpen && <PqrsModal onClose={() => setIsPqrsOpen(false)} configuracion={configuracion} />}
 
-      {/* Floating Cart Button */}
+      {/* Floating Cart Button (Color Sólido Único de la Empresa) */}
       {totalItems > 0 && !isCartOpen && (
-        <button className="floating-cart-btn" onClick={() => setIsCartOpen(true)}>
+        <button 
+          className="floating-cart-btn" 
+          onClick={() => setIsCartOpen(true)}
+          style={{ 
+            background: configuracion?.color_primario || 'var(--primary, #f36b8e)',
+            boxShadow: `0 -4px 20px ${(configuracion?.color_primario || '#f36b8e')}35`
+          }}
+        >
           <div className="cart-icon-wrapper">
             <ShoppingBag size={22} />
-            <span className="cart-badge">{totalItems}</span>
+            <span className="cart-badge" style={{ color: configuracion?.color_primario || '#0f172a' }}>{totalItems}</span>
             <span>Ver Carrito</span>
           </div>
-          <span className="cart-total-float">${total.toLocaleString('es-CO')}</span>
+          <span className="cart-total-float" style={{ fontWeight: 700, fontSize: '1.05rem' }}>${total.toLocaleString('es-CO')}</span>
         </button>
       )}
 
@@ -1715,35 +1764,163 @@ export default function MenuDigital() {
       {isCartOpen && (
         <div className="cart-modal-overlay">
           <div className="cart-modal">
-            <div className="cart-header" style={{ padding: '1rem 1.15rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ width: '42px', height: '42px', borderRadius: '14px', background: `${configuracion?.color_primario || 'var(--primary, #f36b8e)'}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <ShoppingBag size={20} color={configuracion?.color_primario || 'var(--primary, #f36b8e)'} />
-                </div>
-                <div>
-                  <h3 style={{ fontSize: '1.05rem', fontWeight: 600, color: '#0f172a', margin: 0, lineHeight: 1.2 }}>
-                    {isCheckoutMode ? 'Datos de Envío' : 'Tu carrito'}
+             {isCheckoutMode ? (
+              <>
+                {/* TOP ROW HEADER WITH BACK BUTTON & TITLE & CLOSE BUTTON */}
+                <div className="checkout-top-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 1.25rem', background: '#ffffff', borderBottom: '1px solid #f1f5f9' }}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (checkoutStep > 1) {
+                        setCheckoutStep(prev => (prev - 1) as 1 | 2 | 3);
+                      } else {
+                        setIsCheckoutMode(false);
+                      }
+                    }}
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#0f172a', display: 'flex', alignItems: 'center', padding: '0.2rem' }}
+                  >
+                    <ArrowLeft size={22} />
+                  </button>
+
+                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
+                    Formulario de compra
                   </h3>
-                  <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 400, marginTop: '2px', display: 'block' }}>
-                    {totalUnits} {totalUnits === 1 ? 'producto' : 'productos'}
-                  </span>
+
+                  <button 
+                    type="button"
+                    onClick={() => {
+                      setIsCartOpen(false);
+                      setIsCheckoutMode(false);
+                    }} 
+                    className="close-btn"
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '0.2rem', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                    title="Cerrar"
+                  >
+                    <X size={22} />
+                  </button>
                 </div>
+
+                {/* SEPARATE STEPPER PROGRESS BAR ROW WITH DIVIDER (EN OTRO CAMPO SEPARADO) */}
+                <div className="checkout-stepper-row" style={{ padding: '0.95rem 1.25rem', background: '#ffffff', borderBottom: '1px solid #f1f5f9' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.4rem' }}>
+                    {/* STEP 1 */}
+                    <div 
+                      onClick={() => setCheckoutStep(1)}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', cursor: 'pointer' }}
+                    >
+                      <div 
+                        style={{ 
+                          width: '26px', 
+                          height: '26px', 
+                          borderRadius: '50%', 
+                          backgroundColor: checkoutStep >= 1 ? (configuracion?.color_primario || 'var(--primary, #f36b8e)') : '#f1f5f9', 
+                          color: checkoutStep >= 1 ? '#ffffff' : '#64748b', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          fontSize: '0.8rem', 
+                          fontWeight: 700,
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        1
+                      </div>
+                      <span style={{ fontSize: '0.84rem', fontWeight: checkoutStep === 1 ? 700 : 500, color: checkoutStep === 1 ? '#0f172a' : '#64748b' }}>
+                        Contacto
+                      </span>
+                    </div>
+
+                    <div style={{ flex: 1, height: '2px', background: checkoutStep >= 2 ? (configuracion?.color_primario || 'var(--primary, #f36b8e)') : '#e2e8f0', transition: 'all 0.3s ease', margin: '0 0.3rem' }} />
+
+                    {/* STEP 2 */}
+                    <div 
+                      onClick={() => { if (formData.nombre && formData.telefono) setCheckoutStep(2); }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', cursor: 'pointer' }}
+                    >
+                      <div 
+                        style={{ 
+                          width: '26px', 
+                          height: '26px', 
+                          borderRadius: '50%', 
+                          backgroundColor: checkoutStep >= 2 ? (configuracion?.color_primario || 'var(--primary, #f36b8e)') : '#f1f5f9', 
+                          color: checkoutStep >= 2 ? '#ffffff' : '#64748b', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          fontSize: '0.8rem', 
+                          fontWeight: 700,
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        2
+                      </div>
+                      <span style={{ fontSize: '0.84rem', fontWeight: checkoutStep === 2 ? 700 : 500, color: checkoutStep === 2 ? '#0f172a' : '#64748b' }}>
+                        Envío
+                      </span>
+                    </div>
+
+                    <div style={{ flex: 1, height: '2px', background: checkoutStep >= 3 ? (configuracion?.color_primario || 'var(--primary, #f36b8e)') : '#e2e8f0', transition: 'all 0.3s ease', margin: '0 0.3rem' }} />
+
+                    {/* STEP 3 */}
+                    <div 
+                      onClick={() => { if (formData.nombre && formData.telefono && formData.ciudad && formData.direccion) setCheckoutStep(3); }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', cursor: 'pointer' }}
+                    >
+                      <div 
+                        style={{ 
+                          width: '26px', 
+                          height: '26px', 
+                          borderRadius: '50%', 
+                          backgroundColor: checkoutStep >= 3 ? (configuracion?.color_primario || 'var(--primary, #f36b8e)') : '#f1f5f9', 
+                          color: checkoutStep >= 3 ? '#ffffff' : '#64748b', 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          fontSize: '0.8rem', 
+                          fontWeight: 700,
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        3
+                      </div>
+                      <span style={{ fontSize: '0.84rem', fontWeight: checkoutStep === 3 ? 700 : 500, color: checkoutStep === 3 ? '#0f172a' : '#64748b' }}>
+                        Pago
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="cart-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 1.15rem', background: '#ffffff', borderBottom: '1px solid #f1f5f9' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{ width: '42px', height: '42px', borderRadius: '14px', background: `${configuracion?.color_primario || 'var(--primary, #f36b8e)'}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <ShoppingBag size={20} color={configuracion?.color_primario || 'var(--primary, #f36b8e)'} />
+                  </div>
+                  <div>
+                    <h3 style={{ fontSize: '1.05rem', fontWeight: 600, color: '#0f172a', margin: 0, lineHeight: 1.2 }}>
+                      Tu carrito
+                    </h3>
+                    <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 400, marginTop: '2px', display: 'block' }}>
+                      {totalUnits} {totalUnits === 1 ? 'producto' : 'productos'}
+                    </span>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => {
+                    setIsCartOpen(false);
+                    setIsCheckoutMode(false);
+                  }} 
+                  className="close-btn"
+                  style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '0.4rem', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  title="Cerrar carrito"
+                >
+                  <X size={22} />
+                </button>
               </div>
-              <button 
-                onClick={() => {
-                  setIsCartOpen(false);
-                  setIsCheckoutMode(false);
-                }} 
-                className="close-btn"
-                style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '0.4rem', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                title="Cerrar carrito"
-              >
-                <X size={22} />
-              </button>
-            </div>
+            )}
 
             {/* Temu Multi-Tier Offer Progress Bar inside Cart */}
-            {items.length > 0 && (
+            {!isCheckoutMode && items.length > 0 && (
               <div className="shrine-shipping-bar" style={{ padding: '0.75rem 1.1rem', background: '#ffffff', color: '#0f172a', borderBottom: '1px solid #f1f5f9' }}>
                 {(() => {
                   const brandColor = configuracion?.color_primario || 'var(--primary, #f36b8e)';
@@ -1796,200 +1973,650 @@ export default function MenuDigital() {
             )}
             
             {isCheckoutMode ? (
-              <form className="checkout-form" onSubmit={handleEnviarPedido}>
-                <div className="form-group">
-                  <label>Nombre Completo</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={formData.nombre}
-                    onChange={e => setFormData({...formData, nombre: e.target.value})}
-                    placeholder="Ej. Juan Pérez"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Número de Cédula / DNI</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={formData.cedula}
-                    onChange={e => setFormData({...formData, cedula: e.target.value})}
-                    placeholder="Ej. 1098765432"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Correo Electrónico</label>
-                  <input 
-                    type="email" 
-                    required 
-                    value={formData.email}
-                    onChange={e => setFormData({...formData, email: e.target.value})}
-                    placeholder="Ej. cliente@gmail.com"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Teléfono (WhatsApp)</label>
-                  <input 
-                    type="tel" 
-                    required 
-                    value={formData.telefono}
-                    onChange={e => setFormData({...formData, telefono: e.target.value})}
-                    placeholder="Ej. 3001234567"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Ciudad</label>
-                  <input 
-                    type="text" 
-                    required 
-                    value={formData.ciudad}
-                    onChange={e => setFormData({...formData, ciudad: e.target.value})}
-                    placeholder="Ej. Cali, Bogotá, Medellín..."
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Dirección exacta (Barrio, Calle, Casa/Apto)</label>
-                  <textarea 
-                    required 
-                    rows={3}
-                    value={formData.direccion}
-                    onChange={e => setFormData({...formData, direccion: e.target.value})}
-                    placeholder="Barrio, Calle #, Casa o Apto, referencias..."
-                  />
-                </div>
+              <form className="checkout-form" onSubmit={handleEnviarPedido} style={{ padding: '1.15rem', display: 'flex', flexDirection: 'column', flex: 1, gap: '1rem', overflowY: 'auto' }}>
+                {(() => {
+                  const brandColor = configuracion?.color_primario || 'var(--primary, #f36b8e)';
 
-                {configuracion?.metodos_pago && (
-                  <div style={{ background: '#f8fafc', padding: '0.85rem', borderRadius: '12px', border: '1px solid #e2e8f0', marginTop: '0.2rem', marginBottom: '0.75rem', fontSize: '0.82rem' }}>
-                    <strong style={{ color: '#1e293b', display: 'block', marginBottom: '0.4rem', fontSize: '0.85rem' }}>💳 Métodos de Pago Disponibles:</strong>
-                    {(() => {
-                      try {
-                        const parsed = JSON.parse(configuracion.metodos_pago);
-                        if (Array.isArray(parsed) && parsed.length > 0) {
-                          return parsed.map((m: any, idx: number) => (
-                            <div key={idx} style={{ padding: '0.3rem 0', color: '#475569', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: idx < parsed.length - 1 ? '1px dashed #e2e8f0' : 'none' }}>
-                              <span><strong>{m.banco}</strong> {m.tipo ? `(${m.tipo})` : ''}</span>
-                              <span style={{ fontWeight: 700, color: '#0f172a', fontFamily: 'monospace' }}>{m.numero}</span>
+                  return (
+                    <>
+                      {/* ── PASO 1: CONTACTO ── */}
+                      {checkoutStep === 1 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
+                          <h4 style={{ margin: '0 0 0.15rem 0', fontSize: '1.08rem', fontWeight: 700, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
+                            Tus datos de contacto
+                          </h4>
+
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label style={{ fontSize: '0.86rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.4rem', display: 'block' }}>
+                              Nombre *
+                            </label>
+                            <input 
+                              type="text" 
+                              required 
+                              value={formData.nombre}
+                              onChange={e => setFormData({...formData, nombre: e.target.value})}
+                              placeholder="Ej. Juan Pérez"
+                              style={{ width: '100%', padding: '0.78rem 0.95rem', borderRadius: '14px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.9rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}
+                            />
+                          </div>
+
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label style={{ fontSize: '0.86rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.4rem', display: 'block' }}>
+                              Teléfono *
+                            </label>
+                            <div style={{ display: 'flex', gap: '0.55rem' }}>
+                              <div style={{ padding: '0.78rem 0.85rem', background: '#fafafa', border: '1.5px solid #e2e8f0', borderRadius: '14px', fontSize: '0.88rem', fontWeight: 600, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0 }}>
+                                <span>CO +57</span>
+                                <ChevronDown size={14} color="#64748b" />
+                              </div>
+                              <input 
+                                type="tel" 
+                                required 
+                                value={formData.telefono}
+                                onChange={e => setFormData({...formData, telefono: e.target.value})}
+                                placeholder="300 123 4567"
+                                style={{ flex: 1, minWidth: 0, padding: '0.78rem 0.95rem', borderRadius: '14px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.9rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}
+                              />
                             </div>
-                          ));
-                        }
-                      } catch {}
-                      return <p style={{ margin: 0, color: '#64748b' }}>{configuracion.metodos_pago}</p>;
-                    })()}
-                  </div>
-                )}
+                          </div>
 
-                {/* ── SELECCIÓN DE MÉTODO / MODALIDAD DE PAGO ── */}
-                <div style={{ background: '#ffffff', padding: '1rem', borderRadius: '14px', border: '1.5px solid #cbd5e1', marginTop: '0.2rem', marginBottom: '1rem', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
-                  <label style={{ color: '#0f172a', fontWeight: 800, display: 'block', marginBottom: '0.65rem', fontSize: '0.88rem' }}>
-                    📦 Selecciona tu Método de Pago:
-                  </label>
-                  
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-                    <label 
-                      style={{ 
-                        display: 'flex', 
-                        alignItems: 'flex-start', 
-                        gap: '0.65rem', 
-                        padding: '0.75rem 0.85rem', 
-                        borderRadius: '12px', 
-                        border: `2px solid ${modalidadPago === 'contra_entrega' ? '#ea580c' : '#e2e8f0'}`, 
-                        background: modalidadPago === 'contra_entrega' ? '#fff7ed' : '#f8fafc', 
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                        boxShadow: modalidadPago === 'contra_entrega' ? '0 2px 8px rgba(234, 88, 12, 0.12)' : 'none'
-                      }}
-                    >
-                      <input 
-                        type="radio" 
-                        name="modalidadPago" 
-                        value="contra_entrega"
-                        checked={modalidadPago === 'contra_entrega'}
-                        onChange={() => setModalidadPago('contra_entrega')}
-                        style={{ accentColor: '#ea580c', width: '18px', height: '18px', marginTop: '2px', cursor: 'pointer', flexShrink: 0 }}
-                      />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '0.88rem', fontWeight: 800, color: modalidadPago === 'contra_entrega' ? '#ea580c' : '#0f172a' }}>
-                          🚚 Pago contra entrega
+                          <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem', fontSize: '0.8rem', color: '#475569', cursor: 'pointer', marginTop: '0.15rem', lineHeight: 1.35 }}>
+                            <input 
+                              type="checkbox" 
+                              defaultChecked 
+                              style={{ accentColor: brandColor, width: '18px', height: '18px', borderRadius: '4px', cursor: 'pointer', flexShrink: 0, marginTop: '2px' }} 
+                            />
+                            <span>Acepto recibir novedades y promociones de {toTitleCase(configuracion?.nombre_negocio || 'la tienda')}</span>
+                          </label>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (!formData.nombre.trim()) {
+                                alert('Por favor ingresa tu nombre completo.');
+                                return;
+                              }
+                              if (!formData.telefono.trim()) {
+                                alert('Por favor ingresa tu número de teléfono.');
+                                return;
+                              }
+                              saveOrUpdateLead(formData);
+                              setCheckoutStep(2);
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '0.88rem 1rem',
+                              borderRadius: '14px',
+                              border: 'none',
+                              background: brandColor,
+                              color: '#ffffff',
+                              fontSize: '0.98rem',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '0.4rem',
+                              marginTop: '0.5rem',
+                              boxShadow: `0 4px 14px ${brandColor}35`
+                            }}
+                          >
+                            <span>Continuar</span>
+                            <ChevronRight size={18} />
+                          </button>
                         </div>
-                        <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.15rem', fontWeight: 500, lineHeight: 1.35 }}>
-                          Pagas tus productos y el domicilio al recibir.
+                      )}
+
+                      {/* ── PASO 2: ENVÍO ── */}
+                      {checkoutStep === 2 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
+                          <h4 style={{ margin: '0 0 0.15rem 0', fontSize: '1.08rem', fontWeight: 700, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
+                            ¿Cómo quieres recibir tu pedido?
+                          </h4>
+
+                          {/* SELECTOR DE MÉTODO DE RECEPCIÓN (DOMICILIO vs RECOGER EN TIENDA) */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                            <label 
+                              style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '0.75rem', 
+                                padding: '0.85rem 1rem', 
+                                borderRadius: '14px', 
+                                border: `2px solid ${metodoRecepcion === 'domicilio' ? brandColor : '#e2e8f0'}`, 
+                                background: metodoRecepcion === 'domicilio' ? `${brandColor}0d` : '#fafafa', 
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                              }}
+                            >
+                              <input 
+                                type="radio" 
+                                name="metodoRecepcion" 
+                                value="domicilio"
+                                checked={metodoRecepcion === 'domicilio'}
+                                onChange={() => setMetodoRecepcion('domicilio')}
+                                style={{ accentColor: brandColor, width: '18px', height: '18px', cursor: 'pointer', flexShrink: 0 }}
+                              />
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: '0.92rem', fontWeight: 600, color: metodoRecepcion === 'domicilio' ? brandColor : '#1e293b', fontFamily: "'Poppins', sans-serif" }}>
+                                  🚚 Envío a domicilio
+                                </div>
+                                <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.15rem', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
+                                  Te lo enviamos a tu dirección exacta
+                                </div>
+                              </div>
+                            </label>
+
+                            <label 
+                              style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '0.75rem', 
+                                padding: '0.85rem 1rem', 
+                                borderRadius: '14px', 
+                                border: `2px solid ${metodoRecepcion === 'tienda' ? brandColor : '#e2e8f0'}`, 
+                                background: metodoRecepcion === 'tienda' ? `${brandColor}0d` : '#fafafa', 
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                              }}
+                            >
+                              <input 
+                                type="radio" 
+                                name="metodoRecepcion" 
+                                value="tienda"
+                                checked={metodoRecepcion === 'tienda'}
+                                onChange={() => {
+                                  setMetodoRecepcion('tienda');
+                                  setFormData({ ...formData, direccion: `Recoger en Tienda (${configuracion?.direccion || 'Sede Principal'})` });
+                                }}
+                                style={{ accentColor: brandColor, width: '18px', height: '18px', cursor: 'pointer', flexShrink: 0 }}
+                              />
+                              <div style={{ flex: 1 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <div style={{ fontSize: '0.92rem', fontWeight: 600, color: metodoRecepcion === 'tienda' ? brandColor : '#1e293b', fontFamily: "'Poppins', sans-serif" }}>
+                                    🏪 Recoger en tienda
+                                  </div>
+                                  <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#10b981', background: '#d1fae5', padding: '2px 8px', borderRadius: '10px', fontFamily: "'Poppins', sans-serif" }}>
+                                    Gratis
+                                  </span>
+                                </div>
+                                <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.15rem', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
+                                  📍 {configuracion?.direccion || 'Calle 45 # 33-26 (Sede Principal)'}
+                                </div>
+                              </div>
+                            </label>
+                          </div>
+
+                          {metodoRecepcion === 'domicilio' ? (
+                            <>
+                              <div className="form-group" style={{ margin: 0 }}>
+                                <label style={{ fontSize: '0.86rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.4rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
+                                  Departamento *
+                                </label>
+                                <select
+                                  value={selectedDepartamento}
+                                  onChange={(e) => {
+                                    setSelectedDepartamento(e.target.value);
+                                    setFormData({ ...formData, ciudad: '' });
+                                  }}
+                                  style={{ width: '100%', padding: '0.78rem 0.95rem', borderRadius: '14px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.9rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}
+                                >
+                                  <option value="">Todos los departamentos de Colombia</option>
+                                  {Object.keys(DEPARTAMENTOS_COLOMBIA).map(depto => (
+                                    <option key={depto} value={depto}>{depto}</option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              {/* ── DESPLEGABLE PERSONALIZADO DE CIUDADES (POP-OVER BLANCO Y ELEGANTE) ── */}
+                              <div className="form-group" style={{ margin: 0, position: 'relative' }}>
+                                <label style={{ fontSize: '0.86rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.4rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
+                                  Ciudad / Municipio *
+                                </label>
+                                <div style={{ position: 'relative' }}>
+                                  <input 
+                                    type="text" 
+                                    required 
+                                    value={formData.ciudad}
+                                    onFocus={() => setIsCityFocused(true)}
+                                    onBlur={() => setTimeout(() => setIsCityFocused(false), 200)}
+                                    onChange={e => {
+                                      setFormData({...formData, ciudad: e.target.value});
+                                      setIsCityFocused(true);
+                                    }}
+                                    placeholder="Ej. Cali, Bogotá, Medellín, Rionegro..."
+                                    style={{ width: '100%', padding: '0.78rem 2.2rem 0.78rem 0.95rem', borderRadius: '14px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.9rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}
+                                  />
+                                  <ChevronDown size={18} color="#64748b" style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                                </div>
+
+                                {isCityFocused && (
+                                  <div 
+                                    style={{ 
+                                      position: 'absolute', 
+                                      top: 'calc(100% + 4px)', 
+                                      left: 0, 
+                                      right: 0, 
+                                      zIndex: 9999, 
+                                      background: '#ffffff', 
+                                      borderRadius: '16px', 
+                                      border: '1px solid #e2e8f0', 
+                                      boxShadow: '0 12px 28px rgba(15, 23, 42, 0.15)', 
+                                      maxHeight: '210px', 
+                                      overflowY: 'auto',
+                                      fontFamily: "'Poppins', sans-serif"
+                                    }}
+                                  >
+                                    {(() => {
+                                      const availableCities = selectedDepartamento && DEPARTAMENTOS_COLOMBIA[selectedDepartamento]
+                                        ? DEPARTAMENTOS_COLOMBIA[selectedDepartamento].map(muni => ({ ciudad: `${muni}, ${selectedDepartamento}` }))
+                                        : TODAS_LAS_CIUDADES_COLOMBIA;
+                                      
+                                      const filtered = availableCities.filter(item => 
+                                        !formData.ciudad || item.ciudad.toLowerCase().includes(formData.ciudad.toLowerCase())
+                                      ).slice(0, 35);
+
+                                      if (filtered.length === 0) {
+                                        return (
+                                          <div style={{ padding: '0.75rem 1rem', fontSize: '0.84rem', color: '#94a3b8', textAlign: 'center' }}>
+                                            No se encontraron municipios coincidentes
+                                          </div>
+                                        );
+                                      }
+
+                                      return filtered.map((item, idx) => (
+                                        <div 
+                                          key={idx}
+                                          onMouseDown={(e) => {
+                                            e.preventDefault();
+                                            setFormData({ ...formData, ciudad: item.ciudad });
+                                            setIsCityFocused(false);
+                                          }}
+                                          style={{ 
+                                            padding: '0.65rem 1rem', 
+                                            fontSize: '0.86rem', 
+                                            color: '#1e293b', 
+                                            cursor: 'pointer', 
+                                            borderBottom: idx < filtered.length - 1 ? '1px solid #f1f5f9' : 'none',
+                                            transition: 'background 0.12s ease',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            fontWeight: 500
+                                          }}
+                                          onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                                          onMouseLeave={(e) => e.currentTarget.style.background = '#ffffff'}
+                                        >
+                                          <span>{item.ciudad}</span>
+                                          <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>📍 Colombia</span>
+                                        </div>
+                                      ));
+                                    })()}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="form-group" style={{ margin: 0 }}>
+                                <label style={{ fontSize: '0.86rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.4rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
+                                  Dirección exacta de entrega *
+                                </label>
+                                <textarea 
+                                  required 
+                                  rows={3}
+                                  value={formData.direccion}
+                                  onChange={e => setFormData({...formData, direccion: e.target.value})}
+                                  placeholder="Barrio, Calle #, Casa o Apto, referencias..."
+                                  style={{ width: '100%', padding: '0.78rem 0.95rem', borderRadius: '14px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.9rem', outline: 'none', resize: 'vertical', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}
+                                />
+                              </div>
+                            </>
+                          ) : (
+                            <div style={{ background: '#ecfdf5', padding: '0.85rem 1rem', borderRadius: '14px', border: '1px solid #a7f3d0', color: '#065f46', fontSize: '0.86rem' }}>
+                              <strong>📍 Dirección para retirar tu pedido:</strong>
+                              <p style={{ margin: '0.25rem 0 0 0', fontWeight: 500 }}>
+                                {configuracion?.direccion || 'Calle 45 # 33-26 (Sede Principal)'}
+                              </p>
+                            </div>
+                          )}
+
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label style={{ fontSize: '0.86rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.4rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
+                              Número de Cédula / DNI *
+                            </label>
+                            <input 
+                              type="text" 
+                              required 
+                              value={formData.cedula}
+                              onChange={e => setFormData({...formData, cedula: e.target.value})}
+                              placeholder="Ej. 1098765432"
+                              style={{ width: '100%', padding: '0.78rem 0.95rem', borderRadius: '14px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.9rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}
+                            />
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (metodoRecepcion === 'domicilio' && !formData.ciudad.trim()) {
+                                alert('Por favor ingresa o selecciona tu ciudad/municipio.');
+                                return;
+                              }
+                              if (metodoRecepcion === 'domicilio' && !formData.direccion.trim()) {
+                                alert('Por favor ingresa tu dirección de entrega.');
+                                return;
+                              }
+                              if (!formData.cedula.trim()) {
+                                alert('Por favor ingresa tu número de cédula o DNI para la factura.');
+                                return;
+                              }
+                              saveOrUpdateLead(formData);
+                              setCheckoutStep(3);
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '0.88rem 1rem',
+                              borderRadius: '14px',
+                              border: 'none',
+                              background: brandColor,
+                              color: '#ffffff',
+                              fontSize: '0.98rem',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '0.4rem',
+                              marginTop: '0.5rem',
+                              boxShadow: `0 4px 14px ${brandColor}35`
+                            }}
+                          >
+                            <span>Continuar a Pago</span>
+                            <ChevronRight size={18} />
+                          </button>
+                        </div>
+                      )}
+
+                      {/* ── PASO 3: PAGO ── */}
+                      {checkoutStep === 3 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
+                          <h4 style={{ margin: '0 0 0.15rem 0', fontSize: '1.08rem', fontWeight: 700, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
+                            ¿Cómo quieres pagar?
+                          </h4>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                            {/* OPCIÓN 1: TRANSFERENCIA BANCARIA */}
+                            <label 
+                              style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '0.75rem', 
+                                padding: '0.85rem 1rem', 
+                                borderRadius: '14px', 
+                                border: `2px solid ${modalidadPago === 'transferencia' ? brandColor : '#e2e8f0'}`, 
+                                background: modalidadPago === 'transferencia' ? `${brandColor}0d` : '#fafafa', 
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                              }}
+                            >
+                              <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1.1rem' }}>
+                                🏦
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: '0.92rem', fontWeight: 600, color: modalidadPago === 'transferencia' ? brandColor : '#1e293b', fontFamily: "'Poppins', sans-serif" }}>
+                                  Transferencia Bancaria
+                                </div>
+                                <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.15rem', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
+                                  Bancolombia · Nequi · Daviplata
+                                </div>
+                              </div>
+                              <input 
+                                type="radio" 
+                                name="modalidadPago" 
+                                value="transferencia"
+                                checked={modalidadPago === 'transferencia'}
+                                onChange={() => setModalidadPago('transferencia')}
+                                style={{ accentColor: brandColor, width: '18px', height: '18px', cursor: 'pointer', flexShrink: 0 }}
+                              />
+                            </label>
+
+                            {/* OPCIÓN 2: PAGO CONTRA ENTREGA */}
+                            <label 
+                              style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '0.75rem', 
+                                padding: '0.85rem 1rem', 
+                                borderRadius: '14px', 
+                                border: `2px solid ${modalidadPago === 'contra_entrega' ? brandColor : '#e2e8f0'}`, 
+                                background: modalidadPago === 'contra_entrega' ? `${brandColor}0d` : '#fafafa', 
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                              }}
+                            >
+                              <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1.1rem' }}>
+                                🚚
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: '0.92rem', fontWeight: 600, color: modalidadPago === 'contra_entrega' ? brandColor : '#1e293b', fontFamily: "'Poppins', sans-serif" }}>
+                                  Pago contra entrega
+                                </div>
+                                <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.15rem', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
+                                  Pagas tus prendas y domicilio al recibir en tu puerta
+                                </div>
+                              </div>
+                              <input 
+                                type="radio" 
+                                name="modalidadPago" 
+                                value="contra_entrega"
+                                checked={modalidadPago === 'contra_entrega'}
+                                onChange={() => setModalidadPago('contra_entrega')}
+                                style={{ accentColor: brandColor, width: '18px', height: '18px', cursor: 'pointer', flexShrink: 0 }}
+                              />
+                            </label>
+
+                            {/* OPCIÓN 3: COORDINAR POR WHATSAPP */}
+                            <label 
+                              style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '0.75rem', 
+                                padding: '0.85rem 1rem', 
+                                borderRadius: '14px', 
+                                border: `2px solid ${modalidadPago === 'whatsapp' ? brandColor : '#e2e8f0'}`, 
+                                background: modalidadPago === 'whatsapp' ? `${brandColor}0d` : '#fafafa', 
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease'
+                              }}
+                            >
+                              <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1.1rem' }}>
+                                💬
+                              </div>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontSize: '0.92rem', fontWeight: 600, color: modalidadPago === 'whatsapp' ? brandColor : '#1e293b', fontFamily: "'Poppins', sans-serif" }}>
+                                  Coordinar por WhatsApp
+                                </div>
+                                <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.15rem', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
+                                  Coordina el pago y el costo del envío con la tienda
+                                </div>
+                              </div>
+                              <input 
+                                type="radio" 
+                                name="modalidadPago" 
+                                value="whatsapp"
+                                checked={modalidadPago === 'whatsapp'}
+                                onChange={() => setModalidadPago('whatsapp')}
+                                style={{ accentColor: brandColor, width: '18px', height: '18px', cursor: 'pointer', flexShrink: 0 }}
+                              />
+                            </label>
+                          </div>
+
+                          {/* MOSTRAR CUENTAS BANCARIAS SI SELECCIONA TRANSFERENCIA */}
+                          {modalidadPago === 'transferencia' && (
+                            <div style={{ background: '#f8fafc', padding: '0.9rem 1rem', borderRadius: '14px', border: '1px solid #e2e8f0', fontSize: '0.84rem' }}>
+                              <strong style={{ color: '#1e293b', display: 'block', marginBottom: '0.45rem', fontSize: '0.86rem' }}>
+                                💳 Datos para la Transferencia:
+                              </strong>
+                              {(() => {
+                                if (configuracion?.metodos_pago) {
+                                  try {
+                                    const parsed = JSON.parse(configuracion.metodos_pago);
+                                    if (Array.isArray(parsed) && parsed.length > 0) {
+                                      return parsed.map((m: any, idx: number) => (
+                                        <div key={idx} style={{ padding: '0.35rem 0', color: '#475569', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: idx < parsed.length - 1 ? '1px dashed #e2e8f0' : 'none' }}>
+                                          <span><strong>{m.banco}</strong> {m.tipo ? `(${m.tipo})` : ''}</span>
+                                          <span style={{ fontWeight: 700, color: '#0f172a', fontFamily: 'monospace' }}>{m.numero}</span>
+                                        </div>
+                                      ));
+                                    }
+                                  } catch {}
+                                }
+                                return (
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', color: '#475569' }}>
+                                    <div><strong>Bancolombia Ahorros:</strong> 456-789456-01</div>
+                                    <div><strong>Nequi / Daviplata:</strong> 318 563 7317</div>
+                                  </div>
+                                );
+                              })()}
+                            </div>
+                          )}
+
+                          {/* BOTONES INFERIORES (BOTÓN VOLVER Y CONFIRMAR PEDIDO) */}
+                          <div style={{ display: 'flex', gap: '0.65rem', marginTop: '0.5rem' }}>
+                            <button
+                              type="button"
+                              onClick={() => setCheckoutStep(2)}
+                              style={{
+                                padding: '0.85rem 1.1rem',
+                                borderRadius: '14px',
+                                border: '1.5px solid #e2e8f0',
+                                background: '#ffffff',
+                                color: '#0f172a',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.15s ease'
+                              }}
+                              title="Volver"
+                            >
+                              <ArrowLeft size={20} />
+                            </button>
+
+                            <button 
+                              type="submit" 
+                              style={{
+                                flex: 1,
+                                padding: '0.88rem 1rem',
+                                borderRadius: '14px',
+                                border: 'none',
+                                background: brandColor,
+                                color: '#ffffff',
+                                fontSize: '0.98rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: '0.5rem',
+                                boxShadow: `0 4px 14px ${brandColor}35`
+                              }}
+                            >
+                              <Check size={20} />
+                              <span>Confirmar pedido</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ── RESUMEN DEL PEDIDO (SE MUESTRA ABAJO EN CADA PASO CON CONTENEDOR DE FONDO #f8fafc) ── */}
+                      <div style={{ marginTop: '1.25rem', padding: '1.2rem 1.25rem', background: '#f8fafc', borderRadius: '18px', border: '1px solid #e2e8f0' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.95rem' }}>
+                          <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
+                            Resumen del pedido <span style={{ fontWeight: 400, color: '#64748b', fontSize: '0.82rem' }}>({totalUnits} {totalUnits === 1 ? 'producto' : 'productos'})</span>
+                          </h4>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '0.95rem' }}>
+                          {items.map(item => {
+                            const itemUnitPrice = getEffectivePrice(item, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
+                            const itemTotal = itemUnitPrice * item.cantidad;
+                            const thumbUrl = item.imagen_url || (item.imagenes_extra && item.imagenes_extra.length > 0 ? decodeExtraImage(item.imagenes_extra[0]).url : '');
+
+                            return (
+                              <div key={`${item.id}-${item.talla}-${item.estampado}`} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <div style={{ position: 'relative', width: '46px', height: '46px', flexShrink: 0 }}>
+                                  {thumbUrl ? (
+                                    <img src={getOptimizedImageUrl(thumbUrl, 150, 75)} alt={item.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px', border: '1px solid #e2e8f0' }} />
+                                  ) : (
+                                    <div style={{ width: '100%', height: '100%', background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                      <Package size={18} color="#94a3b8" />
+                                    </div>
+                                  )}
+                                  <span style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#ef4444', color: '#fff', fontSize: '0.68rem', fontWeight: 700, width: '18px', height: '18px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.18)' }}>
+                                    {item.cantidad}
+                                  </span>
+                                </div>
+
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <h5 style={{ margin: 0, fontSize: '0.84rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Poppins', sans-serif" }}>
+                                    {toTitleCase(item.nombre)}
+                                  </h5>
+                                  {(item.talla || item.estampado) && (
+                                    <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
+                                      {[item.talla ? `Talla: ${toTitleCase(item.talla)}` : '', item.estampado ? `Estampado: ${toTitleCase(item.estampado)}` : ''].filter(Boolean).join(' • ')}
+                                    </span>
+                                  )}
+                                </div>
+
+                                <span style={{ fontSize: '0.86rem', fontWeight: 600, color: '#0f172a', flexShrink: 0, fontFamily: "'Poppins', sans-serif" }}>
+                                  ${itemTotal.toLocaleString('es-CO')}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {isBulkDiscountApplied && (
+                          <div 
+                            className="wholesale-congrats-banner"
+                            style={{ 
+                              margin: '0.2rem 0 0.65rem 0', 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '0.4rem',
+                              color: '#059669',
+                              fontSize: '0.8rem',
+                              fontWeight: 600,
+                              fontFamily: "'Poppins', sans-serif"
+                            }}
+                          >
+                            <span>🎉</span>
+                            <span>¡Felicidades! Aplicaste a compra por mayor</span>
+                          </div>
+                        )}
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', borderTop: '1px dashed #cbd5e1', paddingTop: '0.8rem', fontSize: '0.86rem', fontFamily: "'Poppins', sans-serif" }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
+                            <span>Subtotal</span>
+                            <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.86rem' }}>${total.toLocaleString('es-CO')}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
+                            <span>Envío</span>
+                            <span style={{ fontWeight: 500, color: '#0f172a', fontSize: '0.84rem' }}>Por calcular</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', color: '#0f172a', fontWeight: 700, fontSize: '0.96rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.6rem', marginTop: '0.25rem' }}>
+                            <span>Total</span>
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.3rem' }}>
+                              <span>${total.toLocaleString('es-CO')}</span>
+                              <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>+ envío</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </label>
-
-                    <label 
-                      style={{ 
-                        display: 'flex', 
-                        alignItems: 'flex-start', 
-                        gap: '0.65rem', 
-                        padding: '0.75rem 0.85rem', 
-                        borderRadius: '12px', 
-                        border: `2px solid ${modalidadPago === 'anticipado' ? '#ea580c' : '#e2e8f0'}`, 
-                        background: modalidadPago === 'anticipado' ? '#fff7ed' : '#f8fafc', 
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                        boxShadow: modalidadPago === 'anticipado' ? '0 2px 8px rgba(234, 88, 12, 0.12)' : 'none'
-                      }}
-                    >
-                      <input 
-                        type="radio" 
-                        name="modalidadPago" 
-                        value="anticipado"
-                        checked={modalidadPago === 'anticipado'}
-                        onChange={() => setModalidadPago('anticipado')}
-                        style={{ accentColor: '#ea580c', width: '18px', height: '18px', marginTop: '2px', cursor: 'pointer', flexShrink: 0 }}
-                      />
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '0.88rem', fontWeight: 800, color: modalidadPago === 'anticipado' ? '#ea580c' : '#0f172a' }}>
-                          💳 Pago anticipado
-                        </div>
-                        <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.15rem', fontWeight: 500, lineHeight: 1.35 }}>
-                          Pagas los productos ahora. El domicilio se cancela al recibir.
-                        </div>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-
-                <div className="cart-footer" style={{ marginTop: 'auto' }}>
-                  <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: '12px', padding: '0.85rem', marginBottom: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
-                    {/* Subtotal Productos */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.88rem', color: '#0f172a', fontWeight: 600 }}>
-                      <span>Productos</span>
-                      <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>${total.toLocaleString('es-CO')}</span>
-                    </div>
-
-                    {/* Envío */}
-                    <div style={{ borderTop: '1px dashed #cbd5e1', paddingTop: '0.55rem' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.85rem', color: '#0f172a', fontWeight: 600 }}>
-                        <span>Envío</span>
-                        <span style={{ color: '#d97706', fontWeight: 700, fontSize: '0.78rem', background: '#fef3c7', padding: '0.15rem 0.5rem', borderRadius: '6px' }}>
-                          ⏳ Pendiente de calcular
-                        </span>
-                      </div>
-                      <p style={{ margin: '0.35rem 0 0 0', fontSize: '0.74rem', color: '#64748b', lineHeight: 1.35, fontWeight: 500 }}>
-                        Antes de despachar tu pedido, te enviaremos por WhatsApp el valor exacto del envío para tu confirmación.
-                      </p>
-                    </div>
-
-                    {/* Total pagado por productos */}
-                    <div style={{ borderTop: '1.5px solid #0f172a', paddingTop: '0.55rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#0f172a' }}>Total pagado por productos</span>
-                      <span style={{ fontWeight: 900, fontSize: '1.15rem', color: '#166534' }}>${total.toLocaleString('es-CO')}</span>
-                    </div>
-                  </div>
-
-                  <button type="submit" className="checkout-btn whatsapp-submit">
-                    Enviar Pedido por WhatsApp
-                  </button>
-                  <button 
-                    type="button" 
-                    className="back-btn" 
-                    onClick={() => setIsCheckoutMode(false)}
-                  >
-                    Volver al Carrito
-                  </button>
-                </div>
+                    </>
+                  );
+                })()}
               </form>
             ) : (
               <>
@@ -2245,6 +2872,7 @@ export default function MenuDigital() {
                         alert(`Tienes que comprar mínimo 6 unidades para poder comprar en nuestro catálogo mayorista. Actualmente llevas ${totalUnits} ${totalUnits === 1 ? 'unidad' : 'unidades'}. Agrega ${6 - totalUnits} más a tu carrito o cambia a modo Detal.`);
                         return;
                       }
+                      setCheckoutStep(1);
                       setIsCheckoutMode(true);
                     }}
                     style={{ 
@@ -2271,10 +2899,13 @@ export default function MenuDigital() {
                   {/* HELP LINK */}
                   <div 
                     onClick={() => {
-                      const tel = configuracion?.telefono || '573000000000';
-                      const cleanTel = tel.replace(/[^0-9]/g, '');
-                      const msg = encodeURIComponent(`¡Hola! Tengo una duda sobre mi pedido en la tienda.`);
-                      window.open(`https://wa.me/${cleanTel.startsWith('57') ? cleanTel : '57' + cleanTel}?text=${msg}`, '_blank');
+                      const rawNum = overrideWhatsApp || configuracion?.whatsapp || configuracion?.telefono || '573185637317';
+                      let cleanNum = rawNum.replace(/\D/g, '');
+                      if (cleanNum.length === 10) {
+                        cleanNum = '57' + cleanNum;
+                      }
+                      const msg = encodeURIComponent(`¡Hola! Tengo una duda sobre mi compra/pedido en la tienda.`);
+                      window.open(`https://wa.me/${cleanNum}?text=${msg}`, '_blank');
                     }}
                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', marginTop: '0.75rem', fontSize: '0.82rem', color: '#64748b', cursor: 'pointer' }}
                   >
@@ -2408,21 +3039,21 @@ export default function MenuDigital() {
 
                       if (hasWholesale) {
                         return (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', textAlign: 'right', alignItems: 'flex-end' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', textAlign: 'right', alignItems: 'flex-end', fontFamily: "'Poppins', sans-serif" }}>
                             {/* 1. PRIMERO: PRECIO AL DETAL */}
-                            <div style={{ fontSize: '0.84rem', color: '#475569', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'flex-end', whiteSpace: 'nowrap' }}>
-                              <span>Detal:</span>
-                              <strong style={{ fontSize: '0.98rem', fontWeight: 700, color: '#0f172a' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'flex-end', whiteSpace: 'nowrap' }}>
+                              <span style={{ fontSize: '0.86rem', color: '#64748b', fontWeight: 500 }}>Detal:</span>
+                              <strong style={{ fontSize: '1.12rem', fontWeight: 600, color: configuracion?.color_primario || 'var(--primary, #f36b8e)' }}>
                                 ${priceDetal.toLocaleString('es-CO')}
                               </strong>
                             </div>
 
                             {/* 2. ABAJO: PRECIO AL POR MAYOR */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'flex-end', whiteSpace: 'nowrap' }}>
-                              <span style={{ fontSize: '0.65rem', fontWeight: 600, color: '#15803d', background: '#dcfce7', padding: '0.15rem 0.4rem', borderRadius: '6px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'flex-end', whiteSpace: 'nowrap' }}>
+                              <span style={{ fontSize: '0.74rem', fontWeight: 600, color: '#15803d', background: '#dcfce7', padding: '0.18rem 0.5rem', borderRadius: '6px', border: '1px solid #bbf7d0' }}>
                                 Por mayor +6:
                               </span>
-                              <strong style={{ fontSize: '1.18rem', fontWeight: 700, color: '#166534' }}>
+                              <strong style={{ fontSize: '1.12rem', fontWeight: 600, color: '#166534' }}>
                                 ${priceMayor.toLocaleString('es-CO')}
                               </strong>
                             </div>
@@ -2431,9 +3062,9 @@ export default function MenuDigital() {
                       }
 
                       return (
-                        <div style={{ textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <div style={{ textAlign: 'right', whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>
                           <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 500 }}>Detal</div>
-                          <span style={{ fontSize: '1.18rem', fontWeight: 700, color: '#0f172a' }}>
+                          <span style={{ fontSize: '1.18rem', fontWeight: 600, color: configuracion?.color_primario || 'var(--primary, #f36b8e)' }}>
                             ${priceDetal.toLocaleString('es-CO')}
                           </span>
                         </div>
@@ -2808,6 +3439,201 @@ export default function MenuDigital() {
             tenantId={getTenantId()}
           />
         </>
+      )}
+
+      {/* ── MODAL DE CONFIRMACIÓN / RESUMEN DEL PEDIDO ("Pedido reservado") ── */}
+      {orderSummaryData && (
+        <div 
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(5px)',
+            zIndex: 999999,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem'
+          }}
+        >
+          <div 
+            style={{
+              background: '#ffffff',
+              borderRadius: '24px',
+              maxWidth: '440px',
+              width: '100%',
+              maxHeight: '92vh',
+              overflowY: 'auto',
+              padding: '1.75rem 1.5rem',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+              fontFamily: "'Poppins', sans-serif",
+              textAlign: 'center',
+              position: 'relative'
+            }}
+          >
+            {/* BADGE DE RELOJ / CONFIRMACIÓN */}
+            <div 
+              style={{
+                width: '56px',
+                height: '56px',
+                borderRadius: '50%',
+                background: '#fef3c7',
+                color: '#d97706',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 1rem auto'
+              }}
+            >
+              <span style={{ fontSize: '1.6rem' }}>🕒</span>
+            </div>
+
+            {/* TÍTULO Y SUBTÍTULO */}
+            <h3 style={{ margin: '0 0 0.35rem 0', fontSize: '1.25rem', fontWeight: 600, color: '#0f172a' }}>
+              Pedido reservado
+            </h3>
+            <p style={{ margin: 0, fontSize: '0.84rem', color: '#64748b', lineHeight: 1.45, padding: '0 0.5rem' }}>
+              Tu pedido <span style={{ color: '#0f172a', fontWeight: 600 }}>{orderSummaryData.orderCode}</span> está reservado. Realiza el pago y envía tu comprobante. El costo del envío se acordará contigo.
+            </p>
+
+            {/* TABLA DE DETALLES DEL PEDIDO */}
+            <div style={{ margin: '1.25rem 0 1.15rem 0', textAlign: 'left', fontSize: '0.86rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', color: '#64748b' }}>
+                <span>Pedido</span>
+                <span style={{ fontWeight: 600, color: '#0f172a' }}>{orderSummaryData.orderCode}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', color: '#64748b' }}>
+                <span>Subtotal</span>
+                <span style={{ fontWeight: 600, color: '#0f172a' }}>${orderSummaryData.subtotal.toLocaleString('es-CO')}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0', color: '#64748b' }}>
+                <span>Envío</span>
+                <span style={{ fontSize: '0.74rem', fontWeight: 600, color: '#b45309', background: '#fef3c7', border: '1px solid #fde68a', padding: '2px 8px', borderRadius: '12px' }}>
+                  Por acordar
+                </span>
+              </div>
+              
+              <div style={{ borderTop: '1px solid #f1f5f9', margin: '0.5rem 0' }} />
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', fontWeight: 600, color: '#0f172a', fontSize: '0.92rem' }}>
+                <span>Total</span>
+                <span>${orderSummaryData.total.toLocaleString('es-CO')} + envío</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0' }}>
+                <span style={{ color: '#64748b' }}>Estado</span>
+                <span style={{ 
+                  color: orderSummaryData.modalidadPago === 'contra_entrega' ? '#059669' : orderSummaryData.modalidadPago === 'whatsapp' ? '#0284c7' : '#d97706', 
+                  fontWeight: 600 
+                }}>
+                  {orderSummaryData.modalidadPago === 'contra_entrega' ? 'Pago contra entrega' : orderSummaryData.modalidadPago === 'whatsapp' ? 'Por acordar en WhatsApp' : 'Pendiente de pago'}
+                </span>
+              </div>
+            </div>
+
+            {/* DETALLES DE LA FORMA DE PAGO */}
+            <div style={{ background: '#fafafa', border: '1px solid #f1f5f9', borderRadius: '16px', padding: '0.95rem 1rem', textAlign: 'left', marginBottom: '1.4rem', fontSize: '0.84rem' }}>
+              <div style={{ fontSize: '0.88rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.65rem' }}>
+                {orderSummaryData.modalidadPago === 'transferencia' ? '🏦 Transferencia Bancaria' : orderSummaryData.modalidadPago === 'contra_entrega' ? '🚚 Pago contra entrega' : '💬 Coordinar por WhatsApp'}
+              </div>
+
+              {orderSummaryData.modalidadPago === 'transferencia' && (
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.3rem 0', color: '#64748b' }}>
+                    <span>Banco</span>
+                    <span style={{ fontWeight: 600, color: '#0f172a' }}>Bancolombia</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.3rem 0', color: '#64748b' }}>
+                    <span>Número</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      <span style={{ fontWeight: 600, color: '#0f172a', fontFamily: 'monospace' }}>456789456</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText('456789456');
+                          setCopiedField(true);
+                          setTimeout(() => setCopiedField(false), 2000);
+                        }}
+                        style={{ background: '#e2e8f0', border: 'none', borderRadius: '6px', cursor: 'pointer', padding: '2px 6px', fontSize: '0.74rem', color: '#0f172a', fontWeight: 500 }}
+                        title="Copiar número de cuenta"
+                      >
+                        {copiedField ? '✓ Copiado' : '📋 Copiar'}
+                      </button>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.3rem 0', color: '#64748b' }}>
+                    <span>Titular</span>
+                    <span style={{ fontWeight: 600, color: '#0f172a' }}>Juan Ramirez</span>
+                  </div>
+                  <div style={{ borderTop: '1px dashed #cbd5e1', marginTop: '0.5rem', paddingTop: '0.5rem', fontSize: '0.76rem', color: '#64748b', lineHeight: 1.35 }}>
+                    Transfiere a cuenta ahorros 456789456 de Bancolombia a nombre de Juan Ramirez.
+                  </div>
+                </>
+              )}
+
+              {orderSummaryData.modalidadPago === 'contra_entrega' && (
+                <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.4 }}>
+                  Pagas tus prendas y el valor del domicilio al momento de recibir en tu puerta (sin recargos adicionales).
+                </div>
+              )}
+
+              {orderSummaryData.modalidadPago === 'whatsapp' && (
+                <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.4 }}>
+                  Coordina la cuenta de pago y el valor del envío directamente a través del chat de WhatsApp con la tienda.
+                </div>
+              )}
+            </div>
+
+            {/* BOTONES INFERIORES */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  window.open(orderSummaryData.whatsappUrl, '_blank');
+                }}
+                style={{
+                  width: '100%',
+                  padding: '0.88rem',
+                  borderRadius: '14px',
+                  border: 'none',
+                  background: '#10b981',
+                  color: '#ffffff',
+                  fontSize: '0.92rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)'
+                }}
+              >
+                <span>Enviar comprobante y acordar envío</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setOrderSummaryData(null)}
+                style={{
+                  width: '100%',
+                  padding: '0.82rem',
+                  borderRadius: '14px',
+                  border: '1.5px solid #fca5a5',
+                  background: '#fff5f5',
+                  color: '#e11d48',
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.4rem'
+                }}
+              >
+                <span>🏪 Volver a la tienda</span>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
 

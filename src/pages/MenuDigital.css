@@ -885,11 +885,11 @@
   left: 0;
   right: 0;
   width: 100%;
-  background: linear-gradient(135deg, var(--primary) 0%, #e85d95 100%);
+  background: var(--primary, #f36b8e);
   color: white;
   border: none;
   border-radius: 0;
-  padding: 1rem 1.5rem;
+  padding: 0.95rem 1.5rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -956,7 +956,7 @@
 
 .cart-modal {
   width: 100%;
-  max-width: 400px;
+  max-width: 460px;
   height: 100%;
   background-color: white;
   display: flex;
@@ -2911,5 +2911,25 @@
     width: 35px;
     height: 35px;
   }
+}
+
+/* Wholesale Congrats Banner Animation */
+@keyframes congratsPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.92) translateY(6px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.03) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.wholesale-congrats-banner {
+  animation: congratsPop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
