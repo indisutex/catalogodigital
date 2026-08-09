@@ -1860,7 +1860,7 @@ export default function MenuDigital() {
       <div className="menu-app-body">
         {/* Header Search Takeover vs Normal Row */}
         {searchVisible ? (
-          <div className="search-takeover-bar" style={{ marginTop: '0.75rem', marginBottom: '0.75rem' }}>
+          <div className="search-takeover-bar" style={{ marginTop: 0, marginBottom: '0.75rem' }}>
             <Search size={18} style={{ color: 'var(--primary)', flexShrink: 0 }} />
             <input
               className="search-bar-input"
@@ -1888,7 +1888,7 @@ export default function MenuDigital() {
             </button>
           </div>
         ) : (
-          <div style={{ width: '100%', marginBottom: '0.5rem', marginTop: '0.75rem' }}>
+          <div style={{ width: '100%', marginBottom: '0.5rem', marginTop: 0 }}>
             <div className="categories-carousel" style={{ paddingBottom: '0.25rem' }}>
               <div 
                 className={`category-card story-card ${filtroCategoria === 'todos' ? 'active' : ''}`}
