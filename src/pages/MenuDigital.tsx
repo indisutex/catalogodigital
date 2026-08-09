@@ -1839,6 +1839,72 @@ export default function MenuDigital() {
       </div>
 
       <div className="menu-app-body">
+        {/* ── STORE IDENTITY STRIP (below hero logo) ── */}
+        <div style={{ textAlign: 'center', marginBottom: '0.75rem', paddingBottom: '0.5rem' }}>
+          <h2 style={{
+            margin: '0 0 0.35rem 0',
+            fontSize: '1.05rem',
+            fontWeight: 600,
+            color: '#0f172a',
+            fontFamily: "'Poppins', sans-serif",
+            letterSpacing: '-0.01em'
+          }}>
+            {toTitleCase(mayoristaBranding?.nombre || configuracion?.nombre_negocio || 'Catálogo Digital')}
+          </h2>
+          {activeAsesor && (
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              padding: '0.35rem 0.8rem',
+              background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+              border: '1px solid #a7f3d0',
+              borderRadius: '20px',
+              fontFamily: "'Poppins', sans-serif",
+              maxWidth: '90%'
+            }}>
+              {activeAsesor.foto_url ? (
+                <img
+                  src={activeAsesor.foto_url}
+                  alt={activeAsesor.nombre}
+                  style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
+                    objectFit: 'cover',
+                    border: '1.5px solid #10b981',
+                    flexShrink: 0
+                  }}
+                />
+              ) : (
+                <div style={{
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '50%',
+                  background: '#10b981',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 500,
+                  fontSize: '0.8rem',
+                  flexShrink: 0
+                }}>
+                  {activeAsesor.nombre.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontSize: '0.58rem', fontWeight: 500, color: '#047857', textTransform: 'uppercase', letterSpacing: '0.3px', lineHeight: 1 }}>
+                  Estás con el asesor:
+                </div>
+                <div style={{ fontSize: '0.78rem', fontWeight: 500, color: '#065f46', lineHeight: 1.25 }}>
+                  {activeAsesor.nombre}{activeAsesor.telefono ? ` · 📱 ${activeAsesor.telefono.split(',')[0].trim()}` : ''}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* Header Search Takeover vs Normal Row */}
         {searchVisible ? (
           <div className="search-takeover-bar" style={{ marginTop: 0, marginBottom: '0.75rem' }}>
