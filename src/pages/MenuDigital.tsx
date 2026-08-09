@@ -1470,22 +1470,29 @@ export default function MenuDigital() {
 
           {/* ── CENTRAL OVERLAPPING LOGO (HERBARIA STYLE - ANCHORED DIRECTLY TO HERO MEDIA BOTTOM) ── */}
           <div className="hero-center-logo">
-            {(mayoristaBranding?.logo || configuracion?.logo_url || DEFAULT_LOGOS[getTenantId()]) ? (
-              <img
-                src={mayoristaBranding?.logo || configuracion?.logo_url || DEFAULT_LOGOS[getTenantId()]}
-                alt="Logo"
-                className="store-logo-round"
-                loading="eager"
-                fetchPriority="high"
-                decoding="async"
-              />
-            ) : (
-              <div className="store-logo-round store-logo-placeholder">
-                <span className="logo-letter c1" style={{ fontSize: '24px', fontWeight: 'bold' }}>
-                  {(mayoristaBranding?.nombre || configuracion?.nombre_negocio || 'T').substring(0, 1).toUpperCase()}
-                </span>
-              </div>
-            )}
+            <img
+              src={mayoristaBranding?.logo || configuracion?.logo_url || DEFAULT_LOGOS[getTenantId()]}
+              alt="Logo"
+              className="store-logo-round"
+              loading="eager"
+              fetchPriority="high"
+              decoding="async"
+              style={{ display: (mayoristaBranding?.logo || configuracion?.logo_url || DEFAULT_LOGOS[getTenantId()]) ? 'block' : 'none' }}
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                if (e.currentTarget.nextElementSibling) {
+                  (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
+                }
+              }}
+            />
+            <div 
+              className="store-logo-round store-logo-placeholder" 
+              style={{ display: (mayoristaBranding?.logo || configuracion?.logo_url || DEFAULT_LOGOS[getTenantId()]) ? 'none' : 'flex' }}
+            >
+              <span className="logo-letter c1" style={{ fontSize: '24px', fontWeight: 'bold' }}>
+                {(mayoristaBranding?.nombre || configuracion?.nombre_negocio || 'T').substring(0, 1).toUpperCase()}
+              </span>
+            </div>
           </div>
         </div>
 
