@@ -163,9 +163,11 @@ export default function MenuDigital() {
         const tenant = getTenantId();
 
         // 1. Buscar directamente en la tabla asesores por número de teléfono
-        const { data: allAsesores } = await supabase
+        const { data: allAsesores, error: asesoresErr } = await supabase
           .from('asesores')
-          .select('id, nombre, telefono, porcentaje_ganancia, ajustes_productos, foto_url, tenant_id');
+          .select('id, nombre, telefono, foto_url, tenant_id');
+
+        console.log('🔍 [DEBUG ASESOR] Querying for phone:', phone, 'Tenant:', tenant, 'allAsesores:', allAsesores, 'err:', asesoresErr);
 
         const cleanQuery = phone.replace(/\D/g, '');
         const normQuery = cleanQuery.length === 12 && cleanQuery.startsWith('57') ? cleanQuery.substring(2) : cleanQuery;
@@ -179,9 +181,9 @@ export default function MenuDigital() {
           return phoneList.some((p: string) => p === normQuery || p.includes(normQuery) || normQuery.includes(p));
         });
 
+        console.log('🔍 [DEBUG ASESOR] matchAsesor found:', matchAsesor);
+
         if (matchAsesor) {
-          setMarkupPorcentaje(Number((matchAsesor as any).porcentaje_ganancia) || 0);
-          setAjustesProductos((matchAsesor as any).ajustes_productos || {});
           setActiveAsesor({
             nombre: (matchAsesor as any).nombre || 'Asesor Comercial',
             foto_url: (matchAsesor as any).foto_url || '',
