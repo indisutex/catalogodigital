@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { supabase, getTenantId, normalizeTenantId } from '../lib/supabase';
+import { supabase, getTenantId, normalizeTenantId, findClosestTenant } from '../lib/supabase';
 import { updatePWAManifestAndIcons } from '../lib/pwa';
 import type { Producto, Categoria, Subcategoria, Configuracion } from '../types';
 import { Loader2, Search, Plus, ShoppingBag, X, ShoppingCart, Volume2, VolumeX, Package, HelpCircle, RefreshCw, Menu, Check, Filter, LayoutGrid, Users, Sparkles, Shirt, Baby, Moon, Layers, Tag, Heart, Gift, ChevronDown, Share2, Trash2, CreditCard, MessageCircle, ArrowLeft, ChevronRight } from 'lucide-react';
@@ -123,7 +123,39 @@ export default function MenuDigital() {
   const [isRecommendedAnimating, setIsRecommendedAnimating] = useState(false);
   const [logoError, setLogoError] = useState(false);
   const [activeAsesor, setActiveAsesor] = useState<{ nombre: string; foto_url?: string; telefono?: string } | null>(null);
+  const [typoModal, setTypoModal] = useState<{ rawSlug: string; targetName: string; canonicalSlug: string } | null>(null);
+  const [countdown, setCountdown] = useState(5);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const rawPath = window.location.pathname.replace(/^\/+/g, '').trim().split('/')[0].toLowerCase();
+    if (rawPath) {
+      const match = findClosestTenant(rawPath);
+      if (match && match.isTypo) {
+        setTypoModal({
+          rawSlug: rawPath,
+          targetName: match.name,
+          canonicalSlug: match.canonicalSlug
+        });
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!typoModal) return;
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          const params = window.location.search;
+          window.location.href = `/${typoModal.canonicalSlug}${params}`;
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [typoModal]);
 
   useEffect(() => {
     async function loadWholesalerMarkup(phone: string) {
@@ -1548,26 +1580,25 @@ export default function MenuDigital() {
               </h3>
               {activeAsesor && (
                 <div style={{
-                  marginTop: '0.65rem',
-                  padding: '0.5rem 0.75rem',
+                  marginTop: '0.5rem',
+                  padding: '0.4rem 0.65rem',
                   background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
-                  border: '1px solid #86efac',
+                  border: '1px solid #a7f3d0',
                   borderRadius: '12px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.6rem',
+                  gap: '0.5rem',
                   width: '100%',
                   boxSizing: 'border-box',
-                  fontFamily: "'Poppins', sans-serif",
-                  boxShadow: '0 2px 6px rgba(16, 185, 129, 0.08)'
+                  fontFamily: "'Poppins', sans-serif"
                 }}>
                   {activeAsesor.foto_url ? (
                     <img
                       src={activeAsesor.foto_url}
                       alt={activeAsesor.nombre}
                       style={{
-                        width: '38px',
-                        height: '38px',
+                        width: '28px',
+                        height: '28px',
                         borderRadius: '50%',
                         objectFit: 'cover',
                         border: '1.5px solid #10b981',
@@ -1576,8 +1607,8 @@ export default function MenuDigital() {
                     />
                   ) : (
                     <div style={{
-                      width: '38px',
-                      height: '38px',
+                      width: '28px',
+                      height: '28px',
                       borderRadius: '50%',
                       background: '#10b981',
                       color: '#ffffff',
@@ -1585,24 +1616,19 @@ export default function MenuDigital() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontWeight: 500,
-                      fontSize: '0.9rem',
+                      fontSize: '0.8rem',
                       flexShrink: 0
                     }}>
                       {activeAsesor.nombre.charAt(0).toUpperCase()}
                     </div>
                   )}
                   <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', overflow: 'hidden' }}>
-                    <span style={{ fontSize: '0.63rem', fontWeight: 500, color: '#047857', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                    <span style={{ fontSize: '0.6rem', fontWeight: 500, color: '#047857', textTransform: 'uppercase', letterSpacing: '0.2px', lineHeight: 1.1 }}>
                       Estás con el asesor:
                     </span>
-                    <span style={{ fontSize: '0.82rem', fontWeight: 500, color: '#065f46', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {activeAsesor.nombre}
+                    <span style={{ fontSize: '0.78rem', fontWeight: 500, color: '#065f46', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.2 }}>
+                      {activeAsesor.nombre} {activeAsesor.telefono ? `· 📱 ${activeAsesor.telefono.split(',')[0].trim()}` : ''}
                     </span>
-                    {activeAsesor.telefono && (
-                      <span style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 400 }}>
-                        📱 {activeAsesor.telefono.split(',')[0].trim()}
-                      </span>
-                    )}
                   </div>
                 </div>
               )}
@@ -4089,7 +4115,105 @@ export default function MenuDigital() {
           </div>
         </div>
       )}
+      {/* ── MODAL ALERTA ERROR DE ESCRITURA EN ENLACE (TYPO AUTO-CORRECTION) ── */}
+      {typoModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          backgroundColor: 'rgba(15, 23, 42, 0.78)',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          zIndex: 999999,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1.25rem',
+          boxSizing: 'border-box',
+          fontFamily: "'Poppins', sans-serif"
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '24px',
+            padding: '2rem 1.5rem',
+            maxWidth: '440px',
+            width: '100%',
+            textAlign: 'center',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            border: '1px solid #f1f5f9',
+            boxSizing: 'border-box'
+          }}>
+            <div style={{
+              width: '64px',
+              height: '64px',
+              borderRadius: '50%',
+              background: '#fef3c7',
+              color: '#d97706',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 1.25rem auto',
+              fontSize: '2rem',
+              border: '2px solid #fde68a'
+            }}>
+              🔍
+            </div>
+            
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 600, color: '#0f172a', margin: '0 0 0.5rem 0' }}>
+              ¿Buscabas {typoModal.targetName}?
+            </h3>
+            
+            <p style={{ fontSize: '0.88rem', fontWeight: 400, color: '#64748b', margin: '0 0 1.25rem 0', lineHeight: '1.5' }}>
+              El enlace ingresado (<code style={{ background: '#fff1f2', color: '#e11d48', padding: '0.2rem 0.45rem', borderRadius: '6px', fontSize: '0.82rem', border: '1px solid #fecdd3' }}>/{typoModal.rawSlug}</code>) contiene un pequeño error de escritura.
+            </p>
 
+            <div style={{
+              background: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '16px',
+              padding: '1rem',
+              marginBottom: '1.5rem',
+              textAlign: 'left'
+            }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#64748b', display: 'block', marginBottom: '0.2rem', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                Te estamos dirigiendo al catálogo oficial:
+              </span>
+              <span style={{ fontSize: '0.98rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                🛍️ Catálogo Oficial de {typoModal.targetName}
+              </span>
+            </div>
+
+            <button
+              onClick={() => {
+                const params = window.location.search;
+                window.location.href = `/${typoModal.canonicalSlug}${params}`;
+              }}
+              style={{
+                width: '100%',
+                padding: '0.85rem 1.2rem',
+                background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '14px',
+                fontSize: '0.95rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
+                transition: 'all 0.2s',
+                fontFamily: "'Poppins', sans-serif"
+              }}
+            >
+              🚀 Ir al catálogo de {typoModal.targetName}
+            </button>
+
+            <p style={{ fontSize: '0.78rem', fontWeight: 400, color: '#94a3b8', marginTop: '1.1rem', marginBottom: 0 }}>
+              Redirigiendo automáticamente en <strong style={{ fontWeight: 600, color: '#059669' }}>{countdown} segundos</strong>...
+            </p>
+          </div>
+        </div>
+      )}
 
     </div>
   );

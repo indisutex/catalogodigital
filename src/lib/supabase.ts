@@ -7,27 +7,92 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.warn('Faltan las credenciales de Supabase en el archivo .env');
 }
 
+function levenshteinDistance(a: string, b: string): number {
+  const matrix: number[][] = [];
+  for (let i = 0; i <= b.length; i++) matrix[i] = [i];
+  for (let j = 0; j <= a.length; j++) matrix[0][j] = j;
+
+  for (let i = 1; i <= b.length; i++) {
+    for (let j = 1; j <= a.length; j++) {
+      if (b.charAt(i - 1) === a.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+  return matrix[b.length][a.length];
+}
+
+export interface ClosestStoreInfo {
+  tenant_id: string;
+  name: string;
+  canonicalSlug: string;
+  isTypo: boolean;
+  rawSlug: string;
+}
+
+export const findClosestTenant = (raw: string): ClosestStoreInfo | null => {
+  if (!raw) return null;
+  const clean = raw.toLowerCase().trim().replace(/-/g, '_');
+
+  const systemRoutes = [
+    'admin', 'superadmin', 'pago', 'guia', 'menu', 'dist', 
+    'assets', 'api', 'sw.js', 'manifest.json', 'products', 
+    'orders', 'favicon.ico', 'robots.txt'
+  ];
+  if (systemRoutes.includes(clean)) return null;
+
+  const knownTargets = [
+    { tenant_id: 'sublimados_majestic', name: 'Sublimados Majestic', canonicalSlug: 'sublimados_majestic', exactKeys: ['sublimados_majestic', 'sublimados', 'majestic', 'sublimados-majestic', 'sublimadosmajestic'], typoKeys: ['sublimsados_majestic', 'sublimsados', 'majestik', 'majesti'] },
+    { tenant_id: 'lucerito', name: 'Pijamas Lucerito', canonicalSlug: 'lucerito', exactKeys: ['lucerito', 'pijamas_lucerito', 'pijamas-lucerito', 'pijamaslucerito', 'pijamas'], typoKeys: ['luceritoo', 'luceritoos', 'luzerito'] },
+    { tenant_id: 'saramantha', name: 'Saramantha', canonicalSlug: 'saramantha', exactKeys: ['saramantha'], typoKeys: ['saramanta', 'saramantaa', 'saramanthaa'] },
+    { tenant_id: 'lovely', name: 'Lovely', canonicalSlug: 'lovely', exactKeys: ['lovely'], typoKeys: ['lovly', 'lovelly'] }
+  ];
+
+  // 1. Exact match
+  for (const t of knownTargets) {
+    if (t.exactKeys.includes(clean)) {
+      return { tenant_id: t.tenant_id, name: t.name, canonicalSlug: t.canonicalSlug, isTypo: false, rawSlug: raw };
+    }
+  }
+
+  // 2. Explicit typo match
+  for (const t of knownTargets) {
+    if (t.typoKeys.includes(clean)) {
+      return { tenant_id: t.tenant_id, name: t.name, canonicalSlug: t.canonicalSlug, isTypo: true, rawSlug: raw };
+    }
+  }
+
+  // 3. Substring / Levenshtein fuzzy match
+  let bestMatch: ClosestStoreInfo | null = null;
+  let minDistance = Infinity;
+
+  for (const t of knownTargets) {
+    for (const key of [...t.exactKeys, ...t.typoKeys]) {
+      if (clean.includes(key) || key.includes(clean)) {
+        return { tenant_id: t.tenant_id, name: t.name, canonicalSlug: t.canonicalSlug, isTypo: true, rawSlug: raw };
+      }
+      const dist = levenshteinDistance(clean, key);
+      if (dist < minDistance && dist <= 4) {
+        minDistance = dist;
+        bestMatch = { tenant_id: t.tenant_id, name: t.name, canonicalSlug: t.canonicalSlug, isTypo: true, rawSlug: raw };
+      }
+    }
+  }
+
+  return bestMatch;
+};
+
 export const normalizeTenantId = (raw: string): string => {
   if (!raw) return 'sublimados_majestic';
-  const clean = raw.toLowerCase().trim().replace(/-/g, '_');
-  
-  const aliases: Record<string, string> = {
-    'pijamas_lucerito': 'lucerito',
-    'pijamas-lucerito': 'lucerito',
-    'pijamaslucerito': 'lucerito',
-    'pijamas': 'lucerito',
-    'lucerito': 'lucerito',
-    'majestic': 'sublimados_majestic',
-    'sublimados': 'sublimados_majestic',
-    'sublimados-majestic': 'sublimados_majestic',
-    'sublimados_majestic': 'sublimados_majestic',
-    'sublimadosmajestic': 'sublimados_majestic',
-    'saramantha': 'saramantha',
-    'lovely': 'lovely',
-    'mamamia': 'mamamia'
-  };
-  
-  return aliases[clean] || clean;
+  const match = findClosestTenant(raw);
+  if (match) return match.tenant_id;
+  return raw.toLowerCase().trim().replace(/-/g, '_');
 };
 
 export const getTenantId = () => {

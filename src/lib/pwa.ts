@@ -39,12 +39,15 @@ export function updatePWAManifestAndIcons(logoUrl?: string | null, storeName?: s
 
     const iconType = icon.toLowerCase().endsWith('.svg') ? 'image/svg+xml' : 'image/png';
 
+    const currentPath = window.location.pathname + window.location.search;
+
     // 4. Generate dynamic PWA Manifest using Blob URL
     const manifestData = {
+      id: currentPath || '/',
       name: `${name} — Catálogo Digital`,
       short_name: name,
       description: `Catálogo Digital e Interactivo de ${name}`,
-      start_url: window.location.pathname + window.location.search,
+      start_url: currentPath || '/',
       scope: '/',
       display: 'standalone',
       orientation: 'portrait-primary',
