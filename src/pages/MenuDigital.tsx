@@ -122,6 +122,7 @@ export default function MenuDigital() {
   const [recommendedIdx, setRecommendedIdx] = useState(0);
   const [isRecommendedAnimating, setIsRecommendedAnimating] = useState(false);
   const [logoError, setLogoError] = useState(false);
+  const [activeAsesor, setActiveAsesor] = useState<{ nombre: string; foto_url?: string; telefono?: string } | null>(null);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -163,6 +164,11 @@ export default function MenuDigital() {
         if (matchAsesor) {
           setMarkupPorcentaje(Number((matchAsesor as any).porcentaje_ganancia) || 0);
           setAjustesProductos((matchAsesor as any).ajustes_productos || {});
+          setActiveAsesor({
+            nombre: (matchAsesor as any).nombre || 'Asesor Comercial',
+            foto_url: (matchAsesor as any).foto_url || '',
+            telefono: (matchAsesor as any).telefono || phone
+          });
           if ((matchAsesor as any).foto_url || (matchAsesor as any).nombre) {
             setMayoristaBranding({
               nombre: (matchAsesor as any).nombre || '',
@@ -210,6 +216,14 @@ export default function MenuDigital() {
           });
           setBuyerType('detal'); // Bypass clients selection screen for mayoristas
           return;
+        }
+
+        if (phone) {
+          setActiveAsesor({
+            nombre: 'Asesor Comercial',
+            foto_url: '',
+            telefono: phone
+          });
         }
 
         setMarkupPorcentaje(0);
@@ -1532,6 +1546,66 @@ export default function MenuDigital() {
               <h3 className="burger-store-title">
                 {toTitleCase(mayoristaBranding?.nombre || configuracion?.nombre_negocio || 'Catálogo Digital')}
               </h3>
+              {activeAsesor && (
+                <div style={{
+                  marginTop: '0.65rem',
+                  padding: '0.5rem 0.75rem',
+                  background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+                  border: '1px solid #86efac',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.6rem',
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  fontFamily: "'Poppins', sans-serif",
+                  boxShadow: '0 2px 6px rgba(16, 185, 129, 0.08)'
+                }}>
+                  {activeAsesor.foto_url ? (
+                    <img
+                      src={activeAsesor.foto_url}
+                      alt={activeAsesor.nombre}
+                      style={{
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        border: '1.5px solid #10b981',
+                        flexShrink: 0
+                      }}
+                    />
+                  ) : (
+                    <div style={{
+                      width: '38px',
+                      height: '38px',
+                      borderRadius: '50%',
+                      background: '#10b981',
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 500,
+                      fontSize: '0.9rem',
+                      flexShrink: 0
+                    }}>
+                      {activeAsesor.nombre.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', overflow: 'hidden' }}>
+                    <span style={{ fontSize: '0.63rem', fontWeight: 500, color: '#047857', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                      Estás con el asesor:
+                    </span>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 500, color: '#065f46', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {activeAsesor.nombre}
+                    </span>
+                    {activeAsesor.telefono && (
+                      <span style={{ fontSize: '0.72rem', color: '#059669', fontWeight: 400 }}>
+                        📱 {activeAsesor.telefono.split(',')[0].trim()}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
