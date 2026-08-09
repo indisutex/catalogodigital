@@ -121,6 +121,7 @@ export default function MenuDigital() {
   const [isBurgerMenuOpen, setIsBurgerMenuOpen] = useState(false);
   const [recommendedIdx, setRecommendedIdx] = useState(0);
   const [isRecommendedAnimating, setIsRecommendedAnimating] = useState(false);
+  const [logoError, setLogoError] = useState(false);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -1470,29 +1471,29 @@ export default function MenuDigital() {
 
           {/* ── CENTRAL OVERLAPPING LOGO (HERBARIA STYLE - ANCHORED DIRECTLY TO HERO MEDIA BOTTOM) ── */}
           <div className="hero-center-logo">
-            <img
-              src={mayoristaBranding?.logo || configuracion?.logo_url || DEFAULT_LOGOS[getTenantId()]}
-              alt="Logo"
-              className="store-logo-round"
-              loading="eager"
-              fetchPriority="high"
-              decoding="async"
-              style={{ display: (mayoristaBranding?.logo || configuracion?.logo_url || DEFAULT_LOGOS[getTenantId()]) ? 'block' : 'none' }}
-              onError={(e) => {
-                e.currentTarget.style.display = 'none';
-                if (e.currentTarget.nextElementSibling) {
-                  (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
-                }
-              }}
-            />
-            <div 
-              className="store-logo-round store-logo-placeholder" 
-              style={{ display: (mayoristaBranding?.logo || configuracion?.logo_url || DEFAULT_LOGOS[getTenantId()]) ? 'none' : 'flex' }}
-            >
-              <span className="logo-letter c1" style={{ fontSize: '24px', fontWeight: 'bold' }}>
-                {(mayoristaBranding?.nombre || configuracion?.nombre_negocio || 'T').substring(0, 1).toUpperCase()}
-              </span>
-            </div>
+            {(() => {
+              const logoSrc = mayoristaBranding?.logo || configuracion?.logo_url || DEFAULT_LOGOS[getTenantId()];
+              if (logoSrc && !logoError) {
+                return (
+                  <img
+                    src={logoSrc}
+                    alt="Logo"
+                    className="store-logo-round"
+                    loading="eager"
+                    fetchPriority="high"
+                    decoding="async"
+                    onError={() => setLogoError(true)}
+                  />
+                );
+              }
+              return (
+                <div className="store-logo-round store-logo-placeholder">
+                  <span className="logo-letter c1" style={{ fontSize: '24px', fontWeight: 'bold' }}>
+                    {(mayoristaBranding?.nombre || configuracion?.nombre_negocio || 'T').substring(0, 1).toUpperCase()}
+                  </span>
+                </div>
+              );
+            })()}
           </div>
         </div>
 
