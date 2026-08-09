@@ -1362,7 +1362,7 @@
 .menu-app-header.has-video .hero-background-video {
   position: relative;
   width: 100%;
-  height: clamp(240px, 60vw, 360px);
+  height: clamp(340px, 80vw, 480px);
   object-fit: cover;
   object-position: 50% 30%;
   display: block;
