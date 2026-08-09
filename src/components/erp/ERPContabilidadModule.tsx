@@ -475,7 +475,7 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId, activeSubTab 
                 style={{ background: carteraFilter === 'pendientes' ? '#d97706' : '#fffbe6', color: carteraFilter === 'pendientes' ? '#fff' : '#b45309', border: '1px solid #fde68a' }}
                 onClick={() => setCarteraFilter('pendientes')}
               >
-                🟡 Pendientes por Cobrar ({pedidosList.filter(p => p.estado !== 'completado').length})
+                🟡 Pendientes por Cobrar ({pedidosList.filter(p => !['completado', 'exitosa', 'exitoso', 'entregado'].includes((p.estado || '').toLowerCase())).length})
               </button>
               <button
                 type="button"
@@ -483,7 +483,7 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId, activeSubTab 
                 style={{ background: carteraFilter === 'completados' ? '#16a34a' : '#f0fdf4', color: carteraFilter === 'completados' ? '#fff' : '#15803d', border: '1px solid #bbf7d0' }}
                 onClick={() => setCarteraFilter('completados')}
               >
-                🟢 Cobrados ({pedidosList.filter(p => p.estado === 'completado').length})
+                🟢 Cobrados ({pedidosList.filter(p => ['completado', 'exitosa', 'exitoso', 'entregado'].includes((p.estado || '').toLowerCase())).length})
               </button>
             </div>
           </div>
@@ -503,12 +503,13 @@ export const ERPContabilidadModule: React.FC<Props> = ({ tenantId, activeSubTab 
             <tbody>
               {pedidosList
                 .filter(p => {
-                  if (carteraFilter === 'pendientes') return p.estado !== 'completado';
-                  if (carteraFilter === 'completados') return p.estado === 'completado';
+                  const isExitosa = ['completado', 'exitosa', 'exitoso', 'entregado'].includes((p.estado || '').toLowerCase());
+                  if (carteraFilter === 'pendientes') return !isExitosa;
+                  if (carteraFilter === 'completados') return isExitosa;
                   return true;
                 })
                 .map((p) => {
-                  const isPagado = p.estado === 'completado';
+                  const isPagado = ['completado', 'exitosa', 'exitoso', 'entregado'].includes((p.estado || '').toLowerCase());
                   return (
                     <tr key={p.id}>
                       <td><strong>#{p.id.substring(0, 8)}</strong></td>

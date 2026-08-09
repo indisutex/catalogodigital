@@ -3647,18 +3647,18 @@ export default function Admin() {
 
   // Dashboard Calculations
   const stats = useMemo(() => {
-    // 1. Total Ventas ($ COP de pedidos completados)
-    const completados = pedidos.filter(p => p.estado === 'completado');
+    // 1. Total Ventas ($ COP de pedidos completados / ventas exitosas)
+    const completados = pedidos.filter(p => ['completado', 'exitosa', 'exitoso', 'entregado'].includes((p.estado || '').toLowerCase()));
     const totalVentasVal = completados.reduce((sum, p) => sum + (p.total || 0), 0);
+    
+    // 2. Pedidos no resueltos (pendientes o en proceso)
+    const noResueltos = pedidos.filter(p => !['completado', 'exitosa', 'exitoso', 'entregado'].includes((p.estado || '').toLowerCase()));
 
-    // 2. Pedidos no resueltos (pendientes o atendidos)
-    const noResueltos = pedidos.filter(p => p.estado === 'pendiente' || p.estado === 'atendido' || !p.estado);
+    // 3. Ventas por origen (POS vs Catálogo) - Solo de ventas exitosas
+    const posOrders = completados.filter(p => p.origen === 'pos');
+    const catalogOrders = completados.filter(p => p.origen === 'catalogo' || !p.origen);
 
-    // 3. Ventas por origen (POS vs Catálogo)
-    const posOrders = pedidos.filter(p => p.origen === 'pos');
-    const catalogOrders = pedidos.filter(p => p.origen === 'catalogo' || !p.origen);
-
-    // 4. Pedidos por ciudad (agrupados)
+    // 4. Pedidos por ciudad (agrupados) - Solo de ventas exitosas
     const cityCounts: { [city: string]: number } = {};
     pedidos.forEach(p => {
       if (p.ciudad) {

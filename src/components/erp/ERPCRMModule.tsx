@@ -47,7 +47,7 @@ export const ERPCRMModule: React.FC<Props> = ({ tenantId }) => {
       return matchPhone || matchName;
     });
 
-    const pedidosCompletados = ventasAsesora.filter(p => p.estado === 'completado');
+    const pedidosCompletados = ventasAsesora.filter(p => ['completado', 'exitosa', 'exitoso', 'entregado'].includes((p.estado || '').toLowerCase()));
     const totalVendido = pedidosCompletados.reduce((sum, p) => sum + (Number(p.total) || 0), 0);
 
     return {
