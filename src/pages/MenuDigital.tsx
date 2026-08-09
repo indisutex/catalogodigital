@@ -11,15 +11,16 @@ import { JuegosHubModal } from '../components/JuegosHubModal';
 import { DEPARTAMENTOS_COLOMBIA, TODAS_LAS_CIUDADES_COLOMBIA } from '../data/colombiaData';
 import './MenuDigital.css';
 
+const DEFAULT_LOGOS: Record<string, string> = {
+  'saramantha': '/saramantha-logo.jpg',
+  'sublimados_majestic': '/sublimados-logo.jpg',
+  'pijamas_lucerito': '/lucerito-logo.jpg',
+  'lovely': '/lovely-logo.jpg',
+};
+
 // Ejecutar sincrónicamente para evitar parpadeo de color
 try {
-  let tId = 'indisutex';
-  const pathParts = window.location.pathname.split('/');
-  if (pathParts[1] && pathParts[1] !== 'admin' && pathParts[1] !== 'superadmin' && pathParts[1] !== 'menu') {
-    tId = pathParts[1].toLowerCase().replace(/-/g, '_');
-  } else {
-    tId = localStorage.getItem('tenant_id') || 'saramantha';
-  }
+  const tId = getTenantId();
   const cachedColor = localStorage.getItem(`admin_primary_color_${tId}`);
   if (cachedColor) {
     document.documentElement.style.setProperty('--primary', cachedColor);
@@ -241,7 +242,7 @@ export default function MenuDigital() {
   useEffect(() => {
     const tenant = getTenantId();
     const storeName = mayoristaBranding?.nombre || configuracion?.nombre_negocio || (tenant ? tenant.charAt(0).toUpperCase() + tenant.slice(1) : 'Catálogo Digital');
-    const storeLogo = mayoristaBranding?.logo || configuracion?.logo_url;
+    const storeLogo = mayoristaBranding?.logo || configuracion?.logo_url || DEFAULT_LOGOS[tenant] || '';
 
     document.title = storeName;
 
@@ -1442,9 +1443,9 @@ export default function MenuDigital() {
 
           {/* ── CENTRAL OVERLAPPING LOGO (HERBARIA STYLE - ANCHORED DIRECTLY TO HERO MEDIA BOTTOM) ── */}
           <div className="hero-center-logo">
-            {(mayoristaBranding?.logo || configuracion?.logo_url) ? (
+            {(mayoristaBranding?.logo || configuracion?.logo_url || DEFAULT_LOGOS[getTenantId()]) ? (
               <img
-                src={mayoristaBranding?.logo || configuracion?.logo_url || ''}
+                src={mayoristaBranding?.logo || configuracion?.logo_url || DEFAULT_LOGOS[getTenantId()]}
                 alt="Logo"
                 className="store-logo-round"
                 loading="eager"
