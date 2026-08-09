@@ -9616,7 +9616,11 @@ export default function Admin() {
                     let retries = 0;
 
                     while (retries < 15) {
-                      const res = await supabase.from('configuracion').update(payload).eq('id', configuracion.id);
+                      const curT = configuracion.tenant_id || getTenantId();
+                      const normT = normalizeTenantId(curT);
+                      const res = await supabase.from('configuracion')
+                        .update(payload)
+                        .or(`id.eq.${configuracion.id},tenant_id.eq.${curT},tenant_id.eq.${normT}`);
                       error = res.error;
                       if (!error) break;
 
@@ -9672,7 +9676,7 @@ export default function Admin() {
                               <input 
                                 type="text" 
                                 value={configuracion.admin_foto_url || ''} 
-                                onChange={e => setConfiguracion({ ...configuracion, admin_foto_url: e.target.value })} 
+                                onChange={e => setConfiguracion(prev => (prev ? { ...prev, admin_foto_url: e.target.value } : configuracion))} 
                                 placeholder="https://..." 
                                 style={{ flex: 1 }} 
                               />
@@ -9851,7 +9855,7 @@ export default function Admin() {
                               <input 
                                 type="text" 
                                 value={configuracion.logo_url || ''} 
-                                onChange={e => setConfiguracion({ ...configuracion, logo_url: e.target.value })} 
+                                onChange={e => setConfiguracion(prev => (prev ? { ...prev, logo_url: e.target.value } : null))} 
                                 placeholder="https://..." 
                                 style={{ flex: 1 }}
                               />
@@ -9866,9 +9870,18 @@ export default function Admin() {
                                     const fileName = `logo_${Date.now()}.${compFile.name.split('.').pop()}`;
                                     await supabase.storage.from('archivos').upload(fileName, compFile);
                                     const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
-                                    setConfiguracion({ ...configuracion, logo_url: data.publicUrl });
-                                    showToast('Logo subido ✓');
-                                  } catch { showToast('Error subiendo logo', 'error'); }
+                                    
+                                    const currentTenant = configuracion.tenant_id || getTenantId();
+                                    const normTenant = normalizeTenantId(currentTenant);
+                                    await supabase.from('configuracion')
+                                      .update({ logo_url: data.publicUrl })
+                                      .or(`id.eq.${configuracion.id},tenant_id.eq.${currentTenant},tenant_id.eq.${normTenant}`);
+
+                                    setConfiguracion(prev => (prev ? { ...prev, logo_url: data.publicUrl } : null));
+                                    showToast('Logo subido y guardado ✓', 'success');
+                                  } catch (err: any) { 
+                                    showToast('Error subiendo logo: ' + (err?.message || ''), 'error'); 
+                                  }
                                   setLoading(false);
                                 }} />
                               </label>
@@ -14252,12 +14265,12 @@ export default function Admin() {
                                     onClick={async () => {
                                       try {
                                         await supabase.from('pedidos').update({ evidencia_despacho_url: null }).eq('id', selectedPedido.id);
-                                        setSelectedPedido({ ...selectedPedido, evidencia_despacho_url: undefined });
-                                        setPedidos(prev => prev.map(p => p.id === selectedPedido.id ? { ...p, evidencia_despacho_url: undefined } : p));
-                                        showToast('Evidencia eliminada, puedes subir otra', 'success');
-                                      } catch (err: any) {
-                                        showToast('Error al eliminar evidencia', 'error');
-                                      }
+                                         setSelectedPedido({ ...selectedPedido, evidencia_despacho_url: undefined });
+                                         setPedidos(prev => prev.map(p => p.id === selectedPedido.id ? { ...p, evidencia_despacho_url: undefined } : p));
+                                         showToast('Evidencia eliminada, puedes subir otra', 'success');
+                                       } catch (err: any) {
+                                         showToast('Error al eliminar evidencia', 'error');
+                                       }
                                     }}
                                     style={{ background: '#fee2e2', color: '#ef4444', border: '1px solid #fca5a5', borderRadius: '6px', padding: '0.2rem 0.5rem', fontSize: '0.72rem', cursor: 'pointer', fontWeight: 500 }}
                                   >
