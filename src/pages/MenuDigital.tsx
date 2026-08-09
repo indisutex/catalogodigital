@@ -161,103 +161,112 @@ export default function MenuDigital() {
     async function loadWholesalerMarkup(phone: string) {
       try {
         const tenant = getTenantId();
+        let matchAsesor: any = null;
 
-        // 1. Buscar directamente en la tabla asesores por número de teléfono
-        const cleanQuery = phone.replace(/\D/g, '');
-        const normQuery = cleanQuery.length === 12 && cleanQuery.startsWith('57') ? cleanQuery.substring(2) : cleanQuery;
+        if (phone) {
+          const cleanQuery = phone.replace(/\D/g, '');
+          const normQuery = cleanQuery.length === 12 && cleanQuery.startsWith('57') ? cleanQuery.substring(2) : cleanQuery;
 
-        const { data: allAsesores, error: asesoresErr } = await supabase
-          .from('asesores')
-          .select('id, nombre, telefono, foto_url, tenant_id')
-          .like('telefono', `%${normQuery}%`);
-
-        console.log('🔍 [DEBUG ASESOR] Querying for phone:', phone, 'normQuery:', normQuery, 'result:', allAsesores, 'err:', asesoresErr);
-
-        let matchAsesor = allAsesores?.[0] || null;
-
-        // Si no encontró con LIKE, buscar en todos los asesores
-        if (!matchAsesor) {
-          const { data: allFallback } = await supabase
+          // 1. Buscar por número de teléfono
+          const { data: allAsesores } = await supabase
             .from('asesores')
-            .select('id, nombre, telefono, foto_url, tenant_id');
+            .select('id, nombre, telefono, foto_url, tenant_id')
+            .like('telefono', `%${normQuery}%`);
 
-          console.log('🔍 [DEBUG ASESOR] Fallback query - all asesores:', allFallback);
+          matchAsesor = allAsesores?.[0] || null;
 
-          matchAsesor = allFallback?.find(a => {
-            if (!a.telefono) return false;
-            const phoneList = a.telefono.split(',').map((p: string) => {
-              const clean = p.replace(/\D/g, '');
-              return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
-            }).filter(Boolean);
-            return phoneList.some((p: string) => p === normQuery || p.includes(normQuery) || normQuery.includes(p));
-          }) || null;
+          if (!matchAsesor) {
+            const { data: allFallback } = await supabase
+              .from('asesores')
+              .select('id, nombre, telefono, foto_url, tenant_id');
+
+            matchAsesor = allFallback?.find(a => {
+              if (!a.telefono) return false;
+              const phoneList = a.telefono.split(',').map((p: string) => {
+                const clean = p.replace(/\D/g, '');
+                return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
+              }).filter(Boolean);
+              return phoneList.some((p: string) => p === normQuery || p.includes(normQuery) || normQuery.includes(p));
+            }) || null;
+          }
         }
 
-        console.log('🔍 [DEBUG ASESOR] Final match:', matchAsesor);
+        // Si no hay teléfono o no hubo coincidencia por teléfono, cargar el primer asesor del tenant
+        if (!matchAsesor) {
+          const { data: tenantAsesores } = await supabase
+            .from('asesores')
+            .select('id, nombre, telefono, foto_url, tenant_id')
+            .eq('tenant_id', tenant);
+
+          if (tenantAsesores && tenantAsesores.length > 0) {
+            matchAsesor = tenantAsesores[0];
+          } else {
+            // Si el tenant no tiene asesores específicos, cargar de forma global
+            const { data: globalAsesores } = await supabase
+              .from('asesores')
+              .select('id, nombre, telefono, foto_url, tenant_id')
+              .limit(1);
+            if (globalAsesores && globalAsesores.length > 0) {
+              matchAsesor = globalAsesores[0];
+            }
+          }
+        }
 
         if (matchAsesor) {
+          const primerTel = (matchAsesor.telefono || '').split(',')[0].trim();
           setActiveAsesor({
-            nombre: (matchAsesor as any).nombre || 'Asesor Comercial',
-            foto_url: (matchAsesor as any).foto_url || '',
-            telefono: phone
+            nombre: matchAsesor.nombre || 'Asesor Comercial',
+            foto_url: matchAsesor.foto_url || '',
+            telefono: phone || primerTel
           });
-          return;
         }
 
-        // 2. Buscar en mayoristas (tabla independiente), primero por tenant y luego globalmente
-        const { data: mayoristasTenant } = await supabase
-          .from('mayoristas')
-          .select('id, telefono, porcentaje_ganancia, ajustes_productos, nombre_negocio, logo_url, video_hero_url')
-          .eq('tenant_id', tenant);
+        // 2. Buscar en mayoristas para markup y branding
+        if (phone) {
+          const cleanQuery = phone.replace(/\D/g, '');
+          const normQuery = cleanQuery.length === 12 && cleanQuery.startsWith('57') ? cleanQuery.substring(2) : cleanQuery;
 
-        let matchMayorista = mayoristasTenant?.find(m => {
-          const phones = (m.telefono || '').split(',').map((p: string) => {
-            const clean = p.replace(/\D/g, '');
-            return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
-          }).filter(Boolean);
-          return phones.includes(normQuery);
-        });
-
-        if (!matchMayorista) {
-          const { data: mayoristasGlobal } = await supabase
+          const { data: mayoristasTenant } = await supabase
             .from('mayoristas')
-            .select('id, telefono, porcentaje_ganancia, ajustes_productos, nombre_negocio, logo_url, video_hero_url');
-          matchMayorista = mayoristasGlobal?.find(m => {
+            .select('id, telefono, porcentaje_ganancia, ajustes_productos, nombre_negocio, logo_url, video_hero_url')
+            .eq('tenant_id', tenant);
+
+          let matchMayorista = mayoristasTenant?.find(m => {
             const phones = (m.telefono || '').split(',').map((p: string) => {
               const clean = p.replace(/\D/g, '');
               return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
             }).filter(Boolean);
             return phones.includes(normQuery);
           });
-        }
 
-        if (matchMayorista) {
-          setMarkupPorcentaje(Number((matchMayorista as any).porcentaje_ganancia) || 0);
-          setAjustesProductos((matchMayorista as any).ajustes_productos || {});
-          setMayoristaBranding({ 
-            nombre: (matchMayorista as any).nombre_negocio || '', 
-            logo: (matchMayorista as any).logo_url || '', 
-            video: (matchMayorista as any).video_hero_url || '' 
-          });
-          setBuyerType('detal'); // Bypass clients selection screen for mayoristas
-          return;
-        }
+          if (!matchMayorista) {
+            const { data: mayoristasGlobal } = await supabase
+              .from('mayoristas')
+              .select('id, telefono, porcentaje_ganancia, ajustes_productos, nombre_negocio, logo_url, video_hero_url');
+            matchMayorista = mayoristasGlobal?.find(m => {
+              const phones = (m.telefono || '').split(',').map((p: string) => {
+                const clean = p.replace(/\D/g, '');
+                return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
+              }).filter(Boolean);
+              return phones.includes(normQuery);
+            });
+          }
 
-        if (phone) {
-          setActiveAsesor({
-            nombre: 'Asesor Comercial',
-            foto_url: '',
-            telefono: phone
-          });
+          if (matchMayorista) {
+            setMarkupPorcentaje(Number((matchMayorista as any).porcentaje_ganancia) || 0);
+            setAjustesProductos((matchMayorista as any).ajustes_productos || {});
+            setMayoristaBranding({ 
+              nombre: (matchMayorista as any).nombre_negocio || '', 
+              logo: (matchMayorista as any).logo_url || '', 
+              video: (matchMayorista as any).video_hero_url || '' 
+            });
+            setBuyerType('detal');
+          }
         }
-
-        setMarkupPorcentaje(0);
-        setAjustesProductos({});
       } catch (err) {
         console.error("Error loading wholesaler markup: ", err);
       }
     }
-
 
     const params = new URLSearchParams(window.location.search);
     const wsParam = params.get('ws') || params.get('asesor') || params.get('wa') || params.get('linea') || params.get('telefono') || params.get('ref');
@@ -283,9 +292,8 @@ export default function MenuDigital() {
       }
     }
 
-    if (phoneToQuery) {
-      loadWholesalerMarkup(phoneToQuery);
-    }
+    // Siempre ejecutar para cargar el asesor por defecto o específico
+    loadWholesalerMarkup(phoneToQuery);
 
     const catParam = params.get('categoria');
     if (catParam) {
