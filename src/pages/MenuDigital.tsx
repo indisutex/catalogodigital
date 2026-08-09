@@ -163,25 +163,37 @@ export default function MenuDigital() {
         const tenant = getTenantId();
 
         // 1. Buscar directamente en la tabla asesores por número de teléfono
-        const { data: allAsesores, error: asesoresErr } = await supabase
-          .from('asesores')
-          .select('id, nombre, telefono, foto_url, tenant_id');
-
-        console.log('🔍 [DEBUG ASESOR] Querying for phone:', phone, 'Tenant:', tenant, 'allAsesores:', allAsesores, 'err:', asesoresErr);
-
         const cleanQuery = phone.replace(/\D/g, '');
         const normQuery = cleanQuery.length === 12 && cleanQuery.startsWith('57') ? cleanQuery.substring(2) : cleanQuery;
 
-        let matchAsesor = allAsesores?.find(a => {
-          if (!a.telefono) return false;
-          const phoneList = a.telefono.split(',').map((p: string) => {
-            const clean = p.replace(/\D/g, '');
-            return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
-          }).filter(Boolean);
-          return phoneList.some((p: string) => p === normQuery || p.includes(normQuery) || normQuery.includes(p));
-        });
+        const { data: allAsesores, error: asesoresErr } = await supabase
+          .from('asesores')
+          .select('id, nombre, telefono, foto_url, tenant_id')
+          .like('telefono', `%${normQuery}%`);
 
-        console.log('🔍 [DEBUG ASESOR] matchAsesor found:', matchAsesor);
+        console.log('🔍 [DEBUG ASESOR] Querying for phone:', phone, 'normQuery:', normQuery, 'result:', allAsesores, 'err:', asesoresErr);
+
+        let matchAsesor = allAsesores?.[0] || null;
+
+        // Si no encontró con LIKE, buscar en todos los asesores
+        if (!matchAsesor) {
+          const { data: allFallback } = await supabase
+            .from('asesores')
+            .select('id, nombre, telefono, foto_url, tenant_id');
+
+          console.log('🔍 [DEBUG ASESOR] Fallback query - all asesores:', allFallback);
+
+          matchAsesor = allFallback?.find(a => {
+            if (!a.telefono) return false;
+            const phoneList = a.telefono.split(',').map((p: string) => {
+              const clean = p.replace(/\D/g, '');
+              return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
+            }).filter(Boolean);
+            return phoneList.some((p: string) => p === normQuery || p.includes(normQuery) || normQuery.includes(p));
+          }) || null;
+        }
+
+        console.log('🔍 [DEBUG ASESOR] Final match:', matchAsesor);
 
         if (matchAsesor) {
           setActiveAsesor({
