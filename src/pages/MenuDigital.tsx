@@ -162,36 +162,22 @@ export default function MenuDigital() {
       try {
         const tenant = getTenantId();
 
-        // 1. Primero buscar en asesores de la tienda actual
-        const { data: asesoresTenant } = await supabase
+        // 1. Buscar directamente en la tabla asesores por número de teléfono
+        const { data: allAsesores } = await supabase
           .from('asesores')
-          .select('id, nombre, telefono, porcentaje_ganancia, ajustes_productos, foto_url')
-          .eq('tenant_id', tenant);
+          .select('id, nombre, telefono, porcentaje_ganancia, ajustes_productos, foto_url, tenant_id');
 
         const cleanQuery = phone.replace(/\D/g, '');
         const normQuery = cleanQuery.length === 12 && cleanQuery.startsWith('57') ? cleanQuery.substring(2) : cleanQuery;
 
-        let matchAsesor = asesoresTenant?.find(a => {
-          const phones = (a.telefono || '').split(',').map((p: string) => {
+        let matchAsesor = allAsesores?.find(a => {
+          if (!a.telefono) return false;
+          const phoneList = a.telefono.split(',').map((p: string) => {
             const clean = p.replace(/\D/g, '');
             return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
           }).filter(Boolean);
-          return phones.some((p: string) => p === normQuery || p.includes(normQuery) || normQuery.includes(p));
+          return phoneList.some((p: string) => p === normQuery || p.includes(normQuery) || normQuery.includes(p));
         });
-
-        // Si no se encuentra en el tenant actual, buscar globalmente en la tabla asesores
-        if (!matchAsesor) {
-          const { data: asesoresGlobal } = await supabase
-            .from('asesores')
-            .select('id, nombre, telefono, porcentaje_ganancia, ajustes_productos, foto_url');
-          matchAsesor = asesoresGlobal?.find(a => {
-            const phones = (a.telefono || '').split(',').map((p: string) => {
-              const clean = p.replace(/\D/g, '');
-              return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
-            }).filter(Boolean);
-            return phones.some((p: string) => p === normQuery || p.includes(normQuery) || normQuery.includes(p));
-          });
-        }
 
         if (matchAsesor) {
           setMarkupPorcentaje(Number((matchAsesor as any).porcentaje_ganancia) || 0);
