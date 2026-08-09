@@ -2358,8 +2358,9 @@ export default function Admin() {
   async function cargarDatos() {
     try {
       const tenant = getTenantId();
+      const normT = normalizeTenantId(tenant);
 
-      const tenantOrFilter = `tenant_id.eq.${tenant},tenant_id.eq.${tenant.replace(/_/g, '-')},tenant_id.eq.${tenant.replace(/-/g, '_')},tenant_id.is.null`;
+      const tenantOrFilter = `tenant_id.eq.${tenant},tenant_id.eq.${normT},tenant_id.eq.${tenant.replace(/_/g, '-')},tenant_id.eq.${tenant.replace(/-/g, '_')}`;
 
       // Fetch other data in parallel
       const [catRes, subcatRes, confRes, pedRes, leadRes, cliRes, aseRes, matRes, mayRes, pqrsRes] = await Promise.all([
@@ -2416,7 +2417,7 @@ export default function Admin() {
 
       const isMatchingTenant = (tId?: string | null) => {
         if (!tId) return true; // Incluir PQRS sin tenant para asegurar que no se pierdan
-        return tId === tenant || tId === tenant.replace(/_/g, '-') || tId === tenant.replace(/-/g, '_');
+        return tId === tenant || tId === normT || tId === tenant.replace(/_/g, '-') || tId === tenant.replace(/-/g, '_');
       };
 
       const pqrsMap = new Map<string, PQRS>();
@@ -2444,7 +2445,7 @@ export default function Admin() {
         const { data: chunk, error: prodError } = await supabase
           .from('productos')
           .select('*')
-          .eq('tenant_id', tenant)
+          .or(`tenant_id.eq.${tenant},tenant_id.eq.${normT}`)
           .order('created_at', { ascending: false })
           .range(from, to);
 
@@ -2464,7 +2465,8 @@ export default function Admin() {
       setProductos(allProducts);
       
       if (confRes.data && confRes.data.length > 0) {
-        const bestConfig = confRes.data.find(c => c.logo_url || c.video_hero_url) || confRes.data[0];
+        const matchingTenantConfigs = confRes.data.filter(c => c.tenant_id === tenant || c.tenant_id === normT || c.tenant_id === tenant.replace(/-/g, '_'));
+        const bestConfig = matchingTenantConfigs.find(c => c.logo_url || c.video_hero_url) || matchingTenantConfigs[0] || confRes.data[0];
         let cleanMetodos = bestConfig.metodos_pago || '';
         let extraFromMetodos: any = {};
 

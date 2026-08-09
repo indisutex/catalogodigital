@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
-import { supabase, getTenantId } from '../lib/supabase';
+import { supabase, getTenantId, normalizeTenantId } from '../lib/supabase';
 import { updatePWAManifestAndIcons } from '../lib/pwa';
 import type { Producto, Categoria, Subcategoria, Configuracion } from '../types';
 import { Loader2, Search, Plus, ShoppingBag, X, ShoppingCart, Volume2, VolumeX, Package, HelpCircle, RefreshCw, Menu, Check, Filter, LayoutGrid, Users, Sparkles, Shirt, Baby, Moon, Layers, Tag, Heart, Gift, ChevronDown, Share2, Trash2, CreditCard, MessageCircle, ArrowLeft, ChevronRight } from 'lucide-react';
@@ -948,16 +948,20 @@ export default function MenuDigital() {
     async function cargarDatos() {
       try {
         const tenant = getTenantId();
+        const normT = normalizeTenantId(tenant);
+        const tenantFilter = `tenant_id.eq.${tenant},tenant_id.eq.${normT}`;
+
         const [catRes, subcatRes, confRes] = await Promise.all([
-          supabase.from('categorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
-          supabase.from('subcategorias').select('*').eq('tenant_id', tenant).order('orden', { ascending: true }),
-          supabase.from('configuracion').select('*').eq('tenant_id', tenant)
+          supabase.from('categorias').select('*').or(tenantFilter).order('orden', { ascending: true }),
+          supabase.from('subcategorias').select('*').or(tenantFilter).order('orden', { ascending: true }),
+          supabase.from('configuracion').select('*').or(tenantFilter)
         ]);
         
         if (catRes.data) setCategorias(catRes.data);
         if (subcatRes.data) setSubcategorias(subcatRes.data);
         if (confRes.data && confRes.data.length > 0) {
-          const bestConfig = confRes.data.find(c => c.logo_url || c.video_hero_url) || confRes.data[0];
+          const matchingTenantConfigs = confRes.data.filter(c => c.tenant_id === tenant || c.tenant_id === normT);
+          const bestConfig = matchingTenantConfigs.find(c => c.logo_url || c.video_hero_url) || matchingTenantConfigs[0] || confRes.data[0];
           let extraConfig: any = {};
           let cleanMetodos = bestConfig.metodos_pago || '';
 
