@@ -462,7 +462,7 @@
 
 /* Body Section */
 .menu-app-body {
-  padding: 1.75rem 1rem 1.5rem 1rem;
+  padding: 1.25rem 1rem 1.5rem 1rem;
   background-color: #fafafa;
 }
 
@@ -634,7 +634,7 @@
   display: flex;
   overflow-x: auto;
   gap: 1rem;
-  padding: 0.5rem 0.5rem 2rem 0.5rem; /* Aumentado para evitar corte de sombra */
+  padding: 0.25rem 0.5rem 1.5rem 0.5rem; /* Aumentado para evitar corte de sombra */
   margin-bottom: 0.5rem;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-x pan-y;

@@ -176,7 +176,7 @@ export default function MenuDigital() {
             const clean = p.replace(/\D/g, '');
             return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
           }).filter(Boolean);
-          return phones.includes(normQuery);
+          return phones.some((p: string) => p === normQuery || p.includes(normQuery) || normQuery.includes(p));
         });
 
         // Si no se encuentra en el tenant actual, buscar globalmente en la tabla asesores
@@ -189,7 +189,7 @@ export default function MenuDigital() {
               const clean = p.replace(/\D/g, '');
               return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
             }).filter(Boolean);
-            return phones.includes(normQuery);
+            return phones.some((p: string) => p === normQuery || p.includes(normQuery) || normQuery.includes(p));
           });
         }
 
@@ -199,15 +199,8 @@ export default function MenuDigital() {
           setActiveAsesor({
             nombre: (matchAsesor as any).nombre || 'Asesor Comercial',
             foto_url: (matchAsesor as any).foto_url || '',
-            telefono: (matchAsesor as any).telefono || phone
+            telefono: phone
           });
-          if ((matchAsesor as any).foto_url || (matchAsesor as any).nombre) {
-            setMayoristaBranding({
-              nombre: (matchAsesor as any).nombre || '',
-              logo: (matchAsesor as any).foto_url || '',
-              video: ''
-            });
-          }
           return;
         }
 
