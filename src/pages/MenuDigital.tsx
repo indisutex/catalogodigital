@@ -12,11 +12,8 @@ import { DEPARTAMENTOS_COLOMBIA, TODAS_LAS_CIUDADES_COLOMBIA } from '../data/col
 import './MenuDigital.css';
 
 const DEFAULT_LOGOS: Record<string, string> = {
-  'saramantha': '/saramantha-logo.jpg',
-  'sublimados_majestic': '/sublimados-logo.jpg',
-  'lucerito': '/lucerito-logo.jpg',
-  'pijamas_lucerito': '/lucerito-logo.jpg',
-  'lovely': '/lovely-logo.jpg',
+  'saramantha': 'https://dowbsbxvxjzjjhyqmyfr.supabase.co/storage/v1/object/public/archivos/logo_1782527997229.jpg',
+  'lucerito': 'https://dowbsbxvxjzjjhyqmyfr.supabase.co/storage/v1/object/public/archivos/logo_1785611120589.webp',
 };
 
 // Ejecutar sincrónicamente para evitar parpadeo de color

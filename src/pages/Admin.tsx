@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { supabase, getTenantId, setTenantId } from '../lib/supabase';
+import { supabase, getTenantId, setTenantId, normalizeTenantId } from '../lib/supabase';
 import { updatePWAManifestAndIcons } from '../lib/pwa';
 import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
@@ -5140,22 +5140,23 @@ export default function Admin() {
 
   if (!isAuthenticated) {
     const baseCompanies = [
-      { id: 'saramantha', name: 'Saramantha', logo: '/saramantha-logo.jpg' }, 
-      { id: 'sublimados_majestic', name: 'Sublimados Majestic', logo: '/sublimados-logo.jpg' },
-      { id: 'lucerito', name: 'Lucerito', logo: '/lucerito-logo.jpg' },
-      { id: 'lovely', name: 'Lovely', logo: '/lovely-logo.jpg' },
+      { id: 'saramantha', name: 'Saramantha', logo: 'https://dowbsbxvxjzjjhyqmyfr.supabase.co/storage/v1/object/public/archivos/logo_1782527997229.jpg' }, 
+      { id: 'sublimados_majestic', name: 'Sublimados Majestic', logo: '' },
+      { id: 'lucerito', name: 'Pijamas Lucerito', logo: 'https://dowbsbxvxjzjjhyqmyfr.supabase.co/storage/v1/object/public/archivos/logo_1785611120589.webp' },
+      { id: 'lovely', name: 'Lovely', logo: '' },
     ];
     
     const companyMap = new Map<string, { id: string; name: string; logo: string }>();
     baseCompanies.forEach(b => companyMap.set(b.id, { id: b.id, name: b.name, logo: b.logo }));
     
     dbCompanies.forEach(dbC => {
-      if (dbC.tenant_id && dbC.tenant_id !== 'indisutex') {
-        const existing = companyMap.get(dbC.tenant_id);
-        const nameVal = dbC.nombre_negocio || existing?.name || dbC.tenant_id.replace(/_/g, ' ');
+      const normTenant = normalizeTenantId(dbC.tenant_id);
+      if (normTenant && normTenant !== 'indisutex') {
+        const existing = companyMap.get(normTenant);
+        const nameVal = dbC.nombre_negocio || existing?.name || normTenant.replace(/_/g, ' ');
         const logoVal = dbC.logo_url || existing?.logo || '';
-        companyMap.set(dbC.tenant_id, {
-          id: dbC.tenant_id,
+        companyMap.set(normTenant, {
+          id: normTenant,
           name: nameVal,
           logo: logoVal
         });
