@@ -14,6 +14,7 @@ import './MenuDigital.css';
 const DEFAULT_LOGOS: Record<string, string> = {
   'saramantha': '/saramantha-logo.jpg',
   'sublimados_majestic': '/sublimados-logo.jpg',
+  'lucerito': '/lucerito-logo.jpg',
   'pijamas_lucerito': '/lucerito-logo.jpg',
   'lovely': '/lovely-logo.jpg',
 };
@@ -130,8 +131,8 @@ export default function MenuDigital() {
       try {
         const tenant = getTenantId();
 
-        // Primero buscar en asesores
-        const { data: asesoresData } = await supabase
+        // 1. Primero buscar en asesores de la tienda actual
+        const { data: asesoresTenant } = await supabase
           .from('asesores')
           .select('id, nombre, telefono, porcentaje_ganancia, ajustes_productos, foto_url')
           .eq('tenant_id', tenant);
@@ -139,53 +140,78 @@ export default function MenuDigital() {
         const cleanQuery = phone.replace(/\D/g, '');
         const normQuery = cleanQuery.length === 12 && cleanQuery.startsWith('57') ? cleanQuery.substring(2) : cleanQuery;
 
-        if (asesoresData) {
-          const match = asesoresData.find(a => {
+        let matchAsesor = asesoresTenant?.find(a => {
+          const phones = (a.telefono || '').split(',').map((p: string) => {
+            const clean = p.replace(/\D/g, '');
+            return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
+          }).filter(Boolean);
+          return phones.includes(normQuery);
+        });
+
+        // Si no se encuentra en el tenant actual, buscar globalmente en la tabla asesores
+        if (!matchAsesor) {
+          const { data: asesoresGlobal } = await supabase
+            .from('asesores')
+            .select('id, nombre, telefono, porcentaje_ganancia, ajustes_productos, foto_url');
+          matchAsesor = asesoresGlobal?.find(a => {
             const phones = (a.telefono || '').split(',').map((p: string) => {
               const clean = p.replace(/\D/g, '');
               return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
             }).filter(Boolean);
             return phones.includes(normQuery);
           });
-          if (match) {
-            setMarkupPorcentaje(Number((match as any).porcentaje_ganancia) || 0);
-            setAjustesProductos((match as any).ajustes_productos || {});
-            if ((match as any).foto_url || (match as any).nombre) {
-              setMayoristaBranding({
-                nombre: (match as any).nombre || '',
-                logo: (match as any).foto_url || '',
-                video: ''
-              });
-            }
-            return;
-          }
         }
 
-        // Si no se encontró en asesores, buscar en mayoristas (tabla independiente)
-        const { data: mayoristasData } = await supabase
+        if (matchAsesor) {
+          setMarkupPorcentaje(Number((matchAsesor as any).porcentaje_ganancia) || 0);
+          setAjustesProductos((matchAsesor as any).ajustes_productos || {});
+          if ((matchAsesor as any).foto_url || (matchAsesor as any).nombre) {
+            setMayoristaBranding({
+              nombre: (matchAsesor as any).nombre || '',
+              logo: (matchAsesor as any).foto_url || '',
+              video: ''
+            });
+          }
+          return;
+        }
+
+        // 2. Buscar en mayoristas (tabla independiente), primero por tenant y luego globalmente
+        const { data: mayoristasTenant } = await supabase
           .from('mayoristas')
           .select('id, telefono, porcentaje_ganancia, ajustes_productos, nombre_negocio, logo_url, video_hero_url')
           .eq('tenant_id', tenant);
 
-        if (mayoristasData) {
-          const match = mayoristasData.find(m => {
+        let matchMayorista = mayoristasTenant?.find(m => {
+          const phones = (m.telefono || '').split(',').map((p: string) => {
+            const clean = p.replace(/\D/g, '');
+            return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
+          }).filter(Boolean);
+          return phones.includes(normQuery);
+        });
+
+        if (!matchMayorista) {
+          const { data: mayoristasGlobal } = await supabase
+            .from('mayoristas')
+            .select('id, telefono, porcentaje_ganancia, ajustes_productos, nombre_negocio, logo_url, video_hero_url');
+          matchMayorista = mayoristasGlobal?.find(m => {
             const phones = (m.telefono || '').split(',').map((p: string) => {
               const clean = p.replace(/\D/g, '');
               return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
             }).filter(Boolean);
             return phones.includes(normQuery);
           });
-          if (match) {
-            setMarkupPorcentaje(Number((match as any).porcentaje_ganancia) || 0);
-            setAjustesProductos((match as any).ajustes_productos || {});
-            setMayoristaBranding({ 
-              nombre: (match as any).nombre_negocio || '', 
-              logo: (match as any).logo_url || '', 
-              video: (match as any).video_hero_url || '' 
-            });
-            setBuyerType('detal'); // Bypass clients selection screen for mayoristas
-            return;
-          }
+        }
+
+        if (matchMayorista) {
+          setMarkupPorcentaje(Number((matchMayorista as any).porcentaje_ganancia) || 0);
+          setAjustesProductos((matchMayorista as any).ajustes_productos || {});
+          setMayoristaBranding({ 
+            nombre: (matchMayorista as any).nombre_negocio || '', 
+            logo: (matchMayorista as any).logo_url || '', 
+            video: (matchMayorista as any).video_hero_url || '' 
+          });
+          setBuyerType('detal'); // Bypass clients selection screen for mayoristas
+          return;
         }
 
         setMarkupPorcentaje(0);
@@ -197,7 +223,7 @@ export default function MenuDigital() {
 
 
     const params = new URLSearchParams(window.location.search);
-    const wsParam = params.get('ws') || params.get('asesor') || params.get('wa') || params.get('linea');
+    const wsParam = params.get('ws') || params.get('asesor') || params.get('wa') || params.get('linea') || params.get('telefono') || params.get('ref');
     let phoneToQuery = '';
     if (wsParam) {
       if (wsParam === 'clear') {

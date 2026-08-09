@@ -12,11 +12,14 @@ export const normalizeTenantId = (raw: string): string => {
   const clean = raw.toLowerCase().trim().replace(/-/g, '_');
   
   const aliases: Record<string, string> = {
-    'lucerito': 'pijamas_lucerito',
-    'pijamas_lucerito': 'pijamas_lucerito',
-    'pijamaslucerito': 'pijamas_lucerito',
+    'pijamas_lucerito': 'lucerito',
+    'pijamas-lucerito': 'lucerito',
+    'pijamaslucerito': 'lucerito',
+    'pijamas': 'lucerito',
+    'lucerito': 'lucerito',
     'majestic': 'sublimados_majestic',
     'sublimados': 'sublimados_majestic',
+    'sublimados-majestic': 'sublimados_majestic',
     'sublimados_majestic': 'sublimados_majestic',
     'sublimadosmajestic': 'sublimados_majestic',
     'saramantha': 'saramantha',

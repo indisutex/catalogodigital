@@ -1803,7 +1803,7 @@ export default function SuperAdmin() {
                   <input
                     type="text"
                     required
-                    placeholder="pijamas_lucerito"
+                    placeholder="lucerito"
                     value={tiendaForm.tenant_id}
                     onChange={e => setTiendaForm(prev => ({ ...prev, tenant_id: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_') }))}
                     style={{ flex: 1, padding: '0.6rem 0.8rem 0.6rem 0', border: 'none', background: 'transparent', fontSize: '0.9rem', outline: 'none', fontWeight: 700, color: '#4f46e5' }}

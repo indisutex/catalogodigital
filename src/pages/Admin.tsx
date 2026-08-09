@@ -1683,7 +1683,7 @@ export default function Admin() {
   const availableTenantsList = [
     { slug: 'saramantha', name: 'Saramantha', shortName: 'Saramantha', icon: '🌸', color: '#ec4899', bg: '#fce7f3' },
     { slug: 'sublimados_majestic', name: 'Majestic', shortName: 'Sublimados Majestic', icon: '👑', color: '#8b5cf6', bg: '#f3e8ff' },
-    { slug: 'pijamas_lucerito', name: 'Pijamas Lucerito', shortName: 'Pijamas Lucerito', icon: '🌙', color: '#0ea5e9', bg: '#e0f2fe' },
+    { slug: 'lucerito', name: 'Lucerito', shortName: 'Lucerito', icon: '🌙', color: '#0ea5e9', bg: '#e0f2fe' },
     { slug: 'indisutex', name: 'Indisutex', shortName: 'Indisutex', icon: '🛍️', color: '#10b981', bg: '#d1fae5' },
     { slug: 'lovely', name: 'Lovely', shortName: 'Lovely', icon: '💖', color: '#f43f5e', bg: '#ffe4e6' }
   ];
@@ -3357,7 +3357,7 @@ export default function Admin() {
 
     setCopyingCategories(true);
     try {
-      const allTenantsList = ['saramantha', 'sublimados_majestic', 'lovely', 'pijamas_lucerito', 'indisutex'];
+      const allTenantsList = ['saramantha', 'sublimados_majestic', 'lovely', 'lucerito', 'indisutex'];
       const targets = targetTenantId === 'todas'
         ? allTenantsList.filter(t => t !== sourceTenantId)
         : [targetTenantId];
@@ -5142,7 +5142,7 @@ export default function Admin() {
     const baseCompanies = [
       { id: 'saramantha', name: 'Saramantha', logo: '/saramantha-logo.jpg' }, 
       { id: 'sublimados_majestic', name: 'Sublimados Majestic', logo: '/sublimados-logo.jpg' },
-      { id: 'pijamas_lucerito', name: 'Pijamas Lucerito', logo: '/lucerito-logo.jpg' },
+      { id: 'lucerito', name: 'Lucerito', logo: '/lucerito-logo.jpg' },
       { id: 'lovely', name: 'Lovely', logo: '/lovely-logo.jpg' },
     ];
     
@@ -8116,7 +8116,7 @@ export default function Admin() {
                           { id: 'sublimados_majestic', nombre: '✨ Sublimados Majestic' },
                           { id: 'saramantha', nombre: '🏢 Saramantha' },
                           { id: 'lovely', nombre: '🏢 Lovely Shop' },
-                          { id: 'pijamas_lucerito', nombre: '🏢 Pijamas Lucerito' },
+                          { id: 'lucerito', nombre: '🏢 Lucerito' },
                           { id: 'indisutex', nombre: '🏢 Indisutex' }
                         ].map(t => (
                           <option key={t.id} value={t.id}>{t.nombre} ({t.id})</option>
@@ -8139,7 +8139,7 @@ export default function Admin() {
                           { id: 'saramantha', nombre: 'Saramantha' },
                           { id: 'sublimados_majestic', nombre: 'Sublimados Majestic' },
                           { id: 'lovely', nombre: 'Lovely Shop' },
-                          { id: 'pijamas_lucerito', nombre: 'Pijamas Lucerito' },
+                          { id: 'lucerito', nombre: 'Lucerito' },
                           { id: 'indisutex', nombre: 'Indisutex' }
                         ].filter(t => t.id !== copyCatSourceTenant).map(t => (
                           <option key={t.id} value={t.id}>🏢 {t.nombre} ({t.id})</option>
