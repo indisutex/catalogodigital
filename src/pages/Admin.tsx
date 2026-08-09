@@ -16,7 +16,8 @@ const SECRET_PIN = '0000';
 const formatWhatsAppLink = (phone: string, text?: string) => {
   if (!phone) return '#';
   const clean = phone.replace(/\D/g, '');
-  const finalNum = clean.startsWith('57') && clean.length > 10 ? clean : '57' + clean;
+  if (!clean) return '#';
+  const finalNum = clean.length === 10 ? '57' + clean : clean.startsWith('57') ? clean : '57' + clean;
   return `https://wa.me/${finalNum}${text ? `?text=${encodeURIComponent(text)}` : ''}`;
 };
 
@@ -11212,7 +11213,7 @@ export default function Admin() {
                                 <div>
                                   <span style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block' }}>Líneas WhatsApp</span>
                                   {(a.telefono || '').split(',').map((phone: string, idx: number) => (
-                                    <a key={idx} href={`https://wa.me/${phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700, fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+                                    <a key={idx} href={formatWhatsAppLink(phone)} target="_blank" rel="noopener noreferrer" style={{ color: '#10b981', fontWeight: 700, fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
                                       <Phone size={11} /> {phone.trim()}
                                     </a>
                                   ))}
@@ -11397,7 +11398,7 @@ export default function Admin() {
                                       ) : (
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                                           {(m.telefono || '').split(',').map((p: string) => p.trim()).filter(Boolean).map((phone: string, idx: number) => (
-                                            <a key={idx} href={`https://wa.me/${phone}`} target="_blank" rel="noopener noreferrer"
+                                            <a key={idx} href={formatWhatsAppLink(phone)} target="_blank" rel="noopener noreferrer"
                                               style={{ color: '#10b981', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem' }}>
                                               <Phone size={12} /> {phone}
                                             </a>
