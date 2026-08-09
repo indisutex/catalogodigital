@@ -62,6 +62,7 @@ export class ERPVentasService {
       .select('*')
       .eq('tenant_id', tenantId)
       .gt('total', 0)
+      .or('estado.eq.completado,estado.eq.exitosa,estado.eq.exitoso,estado.eq.entregado')
       .gte('created_at', (desde ?? inicioMes) + 'T00:00:00')
       .lte('created_at', (hasta ?? finMes) + 'T23:59:59')
       .order('created_at', { ascending: false });
@@ -80,21 +81,23 @@ export class ERPVentasService {
     const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1).toISOString().split('T')[0];
     const finMes = new Date(hoy.getFullYear(), hoy.getMonth() + 1, 0).toISOString().split('T')[0];
 
-    // 1. Ventas del mes desde pedidos (todos con total > 0)
+    // 1. Ventas del mes desde pedidos (solo ventas exitosas)
     const { data: ventasMes } = await supabase
       .from('pedidos')
       .select('total, created_at')
       .eq('tenant_id', tenantId)
       .gt('total', 0)
+      .or('estado.eq.completado,estado.eq.exitosa,estado.eq.exitoso,estado.eq.entregado')
       .gte('created_at', inicioMes + 'T00:00:00')
       .lte('created_at', finMes + 'T23:59:59');
 
-    // 2. Ventas de hoy
+    // 2. Ventas de hoy (solo ventas exitosas)
     const { data: ventasHoy } = await supabase
       .from('pedidos')
       .select('total, created_at')
       .eq('tenant_id', tenantId)
       .gt('total', 0)
+      .or('estado.eq.completado,estado.eq.exitosa,estado.eq.exitoso,estado.eq.entregado')
       .gte('created_at', hoyStr + 'T00:00:00')
       .lte('created_at', hoyStr + 'T23:59:59');
 
@@ -187,7 +190,7 @@ export class ERPVentasService {
   }
 
   /**
-   * Top 5 productos más vendidos del mes
+   * Top 5 productos más vendidos del mes (Solo de ventas exitosas)
    */
   static async fetchTopProductos(tenantId: string): Promise<{ nombre: string; cantidad: number; total: number }[]> {
     const hoy = new Date();
@@ -198,6 +201,7 @@ export class ERPVentasService {
       .select('productos, total')
       .eq('tenant_id', tenantId)
       .gt('total', 0)
+      .or('estado.eq.completado,estado.eq.exitosa,estado.eq.exitoso,estado.eq.entregado')
       .gte('created_at', inicioMes + 'T00:00:00');
 
     const mapaProductos: Record<string, { cantidad: number; total: number }> = {};

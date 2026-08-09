@@ -452,7 +452,8 @@ export default function SuperAdmin() {
   // --- MÉTTRICAS CON FILTRO APLICADO ---
   const stats = useMemo(() => {
     const total = pedidosFiltrados.length;
-    const ventas = pedidosFiltrados.reduce((acc, curr) => acc + (curr.total || 0), 0);
+    const ventasExitosas = pedidosFiltrados.filter(p => ['completado', 'exitosa', 'exitoso', 'entregado'].includes((p.estado || '').toLowerCase()));
+    const ventas = ventasExitosas.reduce((acc, curr) => acc + (curr.total || 0), 0);
     const atendidos = pedidosFiltrados.filter(p => p.atendido).length;
     const pendientes = total - atendidos;
     const tasa = total > 0 ? Math.round((atendidos / total) * 100) : 0;
@@ -468,7 +469,10 @@ export default function SuperAdmin() {
         acc[tenant] = { count: 0, total: 0, atendidos: 0, productos: 0 };
       }
       acc[tenant].count += 1;
-      acc[tenant].total += curr.total || 0;
+      const isExitosa = ['completado', 'exitosa', 'exitoso', 'entregado'].includes((curr.estado || '').toLowerCase());
+      if (isExitosa) {
+        acc[tenant].total += curr.total || 0;
+      }
       if (curr.atendido) acc[tenant].atendidos += 1;
       return acc;
     }, {} as Record<string, { count: number; total: number; atendidos: number; productos: number }>);
