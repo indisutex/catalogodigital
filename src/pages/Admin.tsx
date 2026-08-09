@@ -1243,7 +1243,7 @@ export default function Admin() {
               onClick={() => {
                 const cleanPhone = telefonoCliente.replace(/\D/g, '');
                 const target = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
-                window.open(`https://wa.me/${target}`, '_blank');
+                window.open(formatWhatsAppLink(target), '_blank');
               }}
               style={{
                 width: '36px',
@@ -1313,7 +1313,7 @@ export default function Admin() {
                   : '';
                 const text = `¡Hola ${nombreCliente || ''}! 👋 Vimos que estás interesado en: ${prodNames ? `*${prodNames}*` : 'nuestros productos'}. ¿Tienes alguna duda o te ayudamos a completar tu pedido? Escríbenos y con gusto te colaboramos. 😊`;
                 const targetPhone = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
-                window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`, '_blank');
+                window.open(formatWhatsAppLink(targetPhone, text), '_blank');
                 handleUpdateLeadStatus(ped.id, 'contactado');
               }}
               style={{
@@ -1432,7 +1432,7 @@ export default function Admin() {
                 const metodosInfo = getFormattedMetodosPago();
                 const text = `¡Hola ${nombreCliente || ''}! 👋 Esperamos que estés muy bien. Recordamos que tu pedido de ${prodNames ? `*${prodNames}*` : 'nuestro catálogo'} por valor de *${ped.total.toLocaleString()}* está pendiente de pago.${metodosInfo}\nPor favor, sube tu comprobante de pago en el siguiente enlace para completar tu pedido:\n${uploadLink} 😊`;
                 const targetPhone = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
-                window.open(`https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`, '_blank');
+                window.open(formatWhatsAppLink(targetPhone, text), '_blank');
               }}
               style={{
                 padding: '0.45rem 0.65rem',
@@ -10819,7 +10819,7 @@ export default function Admin() {
                               </div>
                               {cleanPhone && (
                                 <a
-                                  href={`https://wa.me/${cleanPhone}`}
+                                  href={formatWhatsAppLink(cleanPhone)}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   style={{ padding: '0.35rem 0.65rem', background: '#dcfce7', color: '#15803d', border: '1px solid #86efac', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 800, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', flexShrink: 0 }}
@@ -11003,7 +11003,7 @@ export default function Admin() {
                                         {(a.telefono || '').split(',').map(p => p.trim()).filter(Boolean).map((phone, idx) => (
                                           <a
                                             key={idx}
-                                            href={`https://wa.me/${phone}`}
+                                            href={formatWhatsAppLink(phone)}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             style={{ color: '#10b981', textDecoration: 'none', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.85rem' }}
@@ -13327,7 +13327,7 @@ export default function Admin() {
                                   const target = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
                                   const itemsStr = Array.isArray(ped.productos) ? ped.productos.map((i: any) => `- ${i.cantidad}x ${i.nombre} ${i.talla ? `(${i.talla})` : ''}`).join('\n') : '';
                                   const msg = `¡Hola ${ped.cliente_nombre}! 👋\nAquí está el resumen de tu compra POS #${ped.numero_factura || ped.id.slice(0,6)}:\n\n${itemsStr}\n\n*Total Pagado: $${ped.total.toLocaleString()} COP*\n*Método: ${ped.metodo_pago || 'Efectivo'}*\n\n¡Gracias por tu compra! 😊`;
-                                  window.open(`https://wa.me/${target}?text=${encodeURIComponent(msg)}`, '_blank');
+                                  window.open(formatWhatsAppLink(target, msg), '_blank');
                                 }}
                                 style={{ padding: '0.35rem 0.6rem', borderRadius: '6px', border: 'none', background: '#25D366', color: 'white', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700 }}
                               >
