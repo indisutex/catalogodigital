@@ -12,7 +12,11 @@ export const getTenantId = () => {
   const pathname = window.location.pathname.replace(/^\/+/g, '').trim();
   const firstPart = pathname.split('/')[0].toLowerCase();
   
-  const systemRoutes = ['admin', 'superadmin', 'pago', 'menu', 'dist', 'assets', 'api', 'sw.js', 'manifest.json'];
+  const systemRoutes = [
+    'admin', 'superadmin', 'pago', 'guia', 'menu', 'dist', 
+    'assets', 'api', 'sw.js', 'manifest.json', 'products', 
+    'orders', 'favicon.ico', 'robots.txt'
+  ];
   
   if (firstPart && !systemRoutes.includes(firstPart)) {
     const normalised = firstPart.replace(/-/g, '_');

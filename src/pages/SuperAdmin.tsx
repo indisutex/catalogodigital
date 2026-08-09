@@ -96,10 +96,23 @@ export default function SuperAdmin() {
       // 3. Cargar Configuraciones de Tiendas / Tenants
       const { data: dataConfigs } = await supabase
         .from('configuracion')
-        .select('*');
+        .select('*')
+        .order('created_at', { ascending: false });
 
       if (dataConfigs) {
-        setConfiguracionesList(dataConfigs as Configuracion[]);
+        const uniqueConfigsMap = new Map<string, Configuracion>();
+        for (const cfg of dataConfigs as Configuracion[]) {
+          if (!cfg.tenant_id) continue;
+          if (!uniqueConfigsMap.has(cfg.tenant_id)) {
+            uniqueConfigsMap.set(cfg.tenant_id, cfg);
+          } else {
+            const existing = uniqueConfigsMap.get(cfg.tenant_id)!;
+            if (!existing.logo_url && cfg.logo_url) {
+              uniqueConfigsMap.set(cfg.tenant_id, cfg);
+            }
+          }
+        }
+        setConfiguracionesList(Array.from(uniqueConfigsMap.values()));
       }
 
       // 4. Cargar Leads (CRM - Carts Abandonados)

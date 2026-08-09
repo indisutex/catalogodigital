@@ -2511,16 +2511,16 @@ export default function Admin() {
         });
         setWebhookUrl(`https://dowbsbxvxjzjjhyqmyfr.supabase.co/functions/v1/siigo-webhook?tenant=${tenant}`);
       } else {
-        // Create default config for this tenant if it doesn't exist
+        // En lugar de auto-insertar tiendas no existentes en Supabase, usar una configuración por defecto en memoria
         const tenant = getTenantId();
         const defaultConfig = {
+          id: 'temp-' + tenant,
           nombre_negocio: tenant,
           whatsapp: '573185637317',
           descripcion_hero: 'CATÁLOGO DIGITAL',
           tenant_id: tenant
         };
-        const { data: newConf } = await supabase.from('configuracion').insert([defaultConfig]).select().maybeSingle();
-        if (newConf) setConfiguracion(newConf);
+        setConfiguracion(defaultConfig as any);
       }
     } catch (err: any) {
       console.error('Error cargando datos:', err);
