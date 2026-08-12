@@ -10,6 +10,7 @@ import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Penci
 import * as XLSX from 'xlsx';
 import { ERPContabilidadService } from '../lib/erpContabilidadService';
 import { ERPMainModule, type ERPTab } from '../components/erp/ERPMainModule';
+import WhatsAppPhoneVerifier, { validateWhatsAppPhone } from '../components/WhatsAppPhoneVerifier';
 
 const SECRET_PIN = '0000';
 
@@ -12935,7 +12936,7 @@ export default function Admin() {
 
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: 0 }}>
-                            <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Teléfono *</label>
+                            <label style={{ fontSize: '0.72rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: "'Poppins', sans-serif" }}>Teléfono / WhatsApp *</label>
                             <input type="text" required placeholder="Ej: 3122564284" value={posCustomerPhone}
                               onChange={e => {
                                 setPosCustomerPhone(e.target.value);
@@ -12944,8 +12945,9 @@ export default function Admin() {
                                   setShowPosCustomerDropdown(true);
                                 }
                               }}
-                              style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '0.85rem', outline: 'none', background: 'white', transition: 'border 0.2s' }}
+                              style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '0.55rem 0.75rem', borderRadius: '8px', border: validateWhatsAppPhone(posCustomerPhone).status === 'valid' ? '1.5px solid #22c55e' : '1.5px solid #e2e8f0', fontSize: '0.85rem', outline: 'none', background: 'white', transition: 'border 0.2s', fontFamily: "'Poppins', sans-serif" }}
                             />
+                            <WhatsAppPhoneVerifier phone={posCustomerPhone} compact={true} />
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: 0 }}>
                             <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nombre *</label>

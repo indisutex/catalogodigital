@@ -9,6 +9,7 @@ import { getOptimizedImageUrl } from '../lib/imageOptimizer';
 import { PromoWelcomeBanner as TemuWelcomeBanner } from '../components/NochePerfectaGameModal';
 import { JuegosHubModal } from '../components/JuegosHubModal';
 import { DEPARTAMENTOS_COLOMBIA, TODAS_LAS_CIUDADES_COLOMBIA } from '../data/colombiaData';
+import WhatsAppPhoneVerifier, { validateWhatsAppPhone } from '../components/WhatsAppPhoneVerifier';
 import './MenuDigital.css';
 
 const DEFAULT_LOGOS: Record<string, string> = {
@@ -2428,25 +2429,41 @@ export default function MenuDigital() {
                             />
                           </div>
 
-                          <div className="form-group" style={{ margin: 0 }}>
-                            <label style={{ fontSize: '0.85rem', fontWeight: 500, color: '#334155', marginBottom: '0.4rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
-                              Teléfono *
-                            </label>
-                            <div style={{ display: 'flex', gap: '0.55rem' }}>
-                              <div style={{ padding: '0.78rem 0.85rem', background: '#fafafa', border: '1.5px solid #e2e8f0', borderRadius: '14px', fontSize: '0.88rem', fontWeight: 500, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0, fontFamily: "'Poppins', sans-serif" }}>
-                                <span>CO +57</span>
-                                <ChevronDown size={14} color="#64748b" />
+                          {(() => {
+                            const phoneVal = validateWhatsAppPhone(formData.telefono);
+                            let inputBorder = '1.5px solid #e2e8f0';
+                            if (phoneVal.status === 'valid') inputBorder = '1.5px solid #22c55e';
+                            else if (phoneVal.status === 'invalid_landline') inputBorder = '1.5px solid #f59e0b';
+                            else if (phoneVal.status === 'invalid_length') inputBorder = '1.5px solid #ea580c';
+
+                            return (
+                              <div className="form-group" style={{ margin: 0 }}>
+                                <label style={{ fontSize: '0.85rem', fontWeight: 500, color: '#334155', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: "'Poppins', sans-serif" }}>
+                                  <span>Teléfono / WhatsApp *</span>
+                                  {phoneVal.status === 'valid' && (
+                                    <span style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                                      <Check size={13} style={{ strokeWidth: 3 }} /> WhatsApp Válido
+                                    </span>
+                                  )}
+                                </label>
+                                <div style={{ display: 'flex', gap: '0.55rem' }}>
+                                  <div style={{ padding: '0.78rem 0.85rem', background: '#fafafa', border: '1.5px solid #e2e8f0', borderRadius: '14px', fontSize: '0.88rem', fontWeight: 500, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0, fontFamily: "'Poppins', sans-serif" }}>
+                                    <span>CO +57</span>
+                                    <ChevronDown size={14} color="#64748b" />
+                                  </div>
+                                  <input 
+                                    type="tel" 
+                                    required 
+                                    value={formData.telefono}
+                                    onChange={e => setFormData({...formData, telefono: e.target.value})}
+                                    placeholder="300 123 4567"
+                                    style={{ flex: 1, minWidth: 0, padding: '0.78rem 0.95rem', borderRadius: '14px', border: inputBorder, background: phoneVal.status === 'valid' ? '#f0fdf4' : '#fafafa', fontSize: '0.9rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif", transition: 'border-color 0.2s ease, background 0.2s ease' }}
+                                  />
+                                </div>
+                                <WhatsAppPhoneVerifier phone={formData.telefono} showTestButton={true} />
                               </div>
-                              <input 
-                                type="tel" 
-                                required 
-                                value={formData.telefono}
-                                onChange={e => setFormData({...formData, telefono: e.target.value})}
-                                placeholder="300 123 4567"
-                                style={{ flex: 1, minWidth: 0, padding: '0.78rem 0.95rem', borderRadius: '14px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.9rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}
-                              />
-                            </div>
-                          </div>
+                            );
+                          })()}
 
                           <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem', fontSize: '0.8rem', color: '#475569', cursor: 'pointer', marginTop: '0.15rem', lineHeight: 1.35 }}>
                             <input 
@@ -2467,6 +2484,15 @@ export default function MenuDigital() {
                               }
                               if (!formData.telefono.trim()) {
                                 alert('Por favor ingresa tu número de teléfono.');
+                                return;
+                              }
+                              const phoneVal = validateWhatsAppPhone(formData.telefono);
+                              if (phoneVal.status === 'invalid_landline') {
+                                alert('El número ingresado parece ser un teléfono fijo y los fijos no tienen WhatsApp. Por favor ingresa tu número celular de 10 dígitos (inicia por 3) para enviarte la información de tu pedido.');
+                                return;
+                              }
+                              if (phoneVal.status === 'invalid_length') {
+                                alert('Por favor verifica tu número celular. Debe tener exactamente 10 dígitos (ej: 300 123 4567).');
                                 return;
                               }
                               saveOrUpdateLead(formData);

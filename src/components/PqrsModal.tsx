@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { supabase, getTenantId } from '../lib/supabase';
 import { X, Upload, Send, Loader2, MapPin, Mail, Phone, Building2, HelpCircle, MessageSquare, ExternalLink } from 'lucide-react';
 import type { Configuracion } from '../types';
+import WhatsAppPhoneVerifier from './WhatsAppPhoneVerifier';
 import './PqrsModal.css';
 
 export default function PqrsModal({ onClose, configuracion }: { onClose: () => void; configuracion?: Configuracion | null }) {
@@ -313,6 +314,7 @@ export default function PqrsModal({ onClose, configuracion }: { onClose: () => v
                   <div className="form-field">
                     <label>Teléfono / WhatsApp *</label>
                     <input type="tel" value={formData.telefono} onChange={e => setFormData({...formData, telefono: e.target.value})} placeholder="Ej: 3001234567" required />
+                    <WhatsAppPhoneVerifier phone={formData.telefono} compact={true} />
                   </div>
                   <div className="form-field">
                     <label>N° de Pedido / Guía (Opcional)</label>
