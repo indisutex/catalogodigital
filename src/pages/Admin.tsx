@@ -12950,7 +12950,7 @@ export default function Admin() {
                             <WhatsAppPhoneVerifier phone={posCustomerPhone} compact={true} />
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: 0 }}>
-                            <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Nombre *</label>
+                            <label style={{ fontSize: '0.72rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: "'Poppins', sans-serif" }}>Nombre *</label>
                             <input type="text" required placeholder="Nombre del cliente" value={posCustomerName}
                               onChange={e => {
                                 setPosCustomerName(e.target.value);
@@ -12959,19 +12959,19 @@ export default function Admin() {
                                   setShowPosCustomerDropdown(true);
                                 }
                               }}
-                              style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '0.85rem', outline: 'none', background: 'white', transition: 'border 0.2s' }}
+                              style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '0.85rem', outline: 'none', background: 'white', transition: 'border 0.2s', fontFamily: "'Poppins', sans-serif" }}
                             />
                           </div>
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: 0 }}>
-                            <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Dirección</label>
-                            <input type="text" placeholder="Calle, Manzana, Casa..." value={posCustomerAddress} onChange={e => setPosCustomerAddress(e.target.value)}
-                              style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '0.85rem', outline: 'none', background: 'white' }}
+                            <label style={{ fontSize: '0.72rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: "'Poppins', sans-serif" }}>Dirección</label>
+                            <input type="text" placeholder="Calle, Manzana, Casa, Barrio..." value={posCustomerAddress} onChange={e => setPosCustomerAddress(e.target.value)}
+                              style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '0.85rem', outline: 'none', background: 'white', fontFamily: "'Poppins', sans-serif" }}
                             />
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: 0 }}>
-                            <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ciudad</label>
+                            <label style={{ fontSize: '0.72rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: "'Poppins', sans-serif" }}>Ciudad</label>
                             <input type="text" placeholder="Ej: Cali" value={posCustomerCity} onChange={e => setPosCustomerCity(e.target.value)}
                               style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1.5px solid #e2e8f0', fontSize: '0.85rem', outline: 'none', background: 'white' }}
                             />

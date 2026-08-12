@@ -10,6 +10,7 @@ import { PromoWelcomeBanner as TemuWelcomeBanner } from '../components/NochePerf
 import { JuegosHubModal } from '../components/JuegosHubModal';
 import { DEPARTAMENTOS_COLOMBIA, TODAS_LAS_CIUDADES_COLOMBIA } from '../data/colombiaData';
 import WhatsAppPhoneVerifier, { validateWhatsAppPhone } from '../components/WhatsAppPhoneVerifier';
+import AddressVerifier, { validateAddressFormat } from '../components/AddressVerifier';
 import './MenuDigital.css';
 
 const DEFAULT_LOGOS: Record<string, string> = {
@@ -724,6 +725,7 @@ export default function MenuDigital() {
     email: '',
     telefono: '',
     direccion: '',
+    barrio: '',
     ciudad: ''
   });
   const [modalidadPago, setModalidadPago] = useState<'transferencia' | 'contra_entrega' | 'whatsapp'>('transferencia');
@@ -799,7 +801,8 @@ export default function MenuDigital() {
       if (isEnvioSeleccionado && metodoRecepcion === 'tienda') {
         direccionFormateada = `Recoger en Tienda (${configuracion?.direccion || 'Sede Principal'})`;
       } else {
-        direccionFormateada = customFormData.direccion ? customFormData.direccion.trim() : '';
+        const barrioTxt = customFormData.barrio ? ` (Barrio: ${customFormData.barrio.trim()})` : '';
+        direccionFormateada = customFormData.direccion ? `${customFormData.direccion.trim()}${barrioTxt}` : '';
       }
 
       const cedVal = (customFormData.cedula || '').trim();
@@ -1207,7 +1210,11 @@ export default function MenuDigital() {
       mensaje += `*DESCUENTO AL POR MAYOR APLICADO* (Llevas 6 o mas productos)\n`;
     }
     mensaje += `*Teléfono:* ${formData.telefono}\n`;
-    mensaje += `*Dirección:* ${formData.direccion}, ${formData.ciudad}\n\n`;
+    if (formData.email) {
+      mensaje += `*Correo:* ${formData.email}\n`;
+    }
+    const dirTexto = formData.barrio ? `${formData.direccion} (Barrio ${formData.barrio})` : formData.direccion;
+    mensaje += `*Dirección:* ${dirTexto}, ${formData.ciudad}\n\n`;
     
     mensaje += `*PRODUCTOS:*\n`;
     const mensajeProductos = items.map(item => 
@@ -1385,7 +1392,7 @@ export default function MenuDigital() {
     setIsCartOpen(false);
     setIsCheckoutMode(false);
     clearCart();
-    setFormData({ nombre: '', cedula: '', email: '', telefono: '', direccion: '', ciudad: '' });
+    setFormData({ nombre: '', cedula: '', email: '', telefono: '', direccion: '', barrio: '', ciudad: '' });
     setTimeout(() => {
       isOrderSubmittedRef.current = false;
     }, 2000);
@@ -2465,6 +2472,20 @@ export default function MenuDigital() {
                             );
                           })()}
 
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label style={{ fontSize: '0.85rem', fontWeight: 500, color: '#334155', marginBottom: '0.4rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
+                              Correo Electrónico *
+                            </label>
+                            <input 
+                              type="email" 
+                              required 
+                              value={formData.email}
+                              onChange={e => setFormData({...formData, email: e.target.value})}
+                              placeholder="tu@correo.com"
+                              style={{ width: '100%', padding: '0.78rem 0.95rem', borderRadius: '14px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.9rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif", fontWeight: 400 }}
+                            />
+                          </div>
+
                           <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem', fontSize: '0.8rem', color: '#475569', cursor: 'pointer', marginTop: '0.15rem', lineHeight: 1.35 }}>
                             <input 
                               type="checkbox" 
@@ -2493,6 +2514,10 @@ export default function MenuDigital() {
                               }
                               if (phoneVal.status === 'invalid_length') {
                                 alert('Por favor verifica tu número celular. Debe tener exactamente 10 dígitos (ej: 300 123 4567).');
+                                return;
+                              }
+                              if (!formData.email.trim() || !formData.email.includes('@')) {
+                                alert('Por favor ingresa un correo electrónico válido.');
                                 return;
                               }
                               saveOrUpdateLead(formData);
@@ -2605,7 +2630,7 @@ export default function MenuDigital() {
                           {metodoRecepcion === 'domicilio' ? (
                             <>
                               <div className="form-group" style={{ margin: 0 }}>
-                                <label style={{ fontSize: '0.86rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.4rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
+                                <label style={{ fontSize: '0.86rem', fontWeight: 500, color: '#1e293b', marginBottom: '0.4rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
                                   Departamento *
                                 </label>
                                 <select
@@ -2616,7 +2641,7 @@ export default function MenuDigital() {
                                   }}
                                   style={{ width: '100%', padding: '0.78rem 0.95rem', borderRadius: '14px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.9rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}
                                 >
-                                  <option value="">Todos los departamentos de Colombia</option>
+                                  <option value="">Selecciona tu departamento</option>
                                   {Object.keys(DEPARTAMENTOS_COLOMBIA).map(depto => (
                                     <option key={depto} value={depto}>{depto}</option>
                                   ))}
@@ -2625,7 +2650,7 @@ export default function MenuDigital() {
 
                               {/* ── DESPLEGABLE PERSONALIZADO DE CIUDADES (POP-OVER BLANCO Y ELEGANTE) ── */}
                               <div className="form-group" style={{ margin: 0, position: 'relative' }}>
-                                <label style={{ fontSize: '0.86rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.4rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
+                                <label style={{ fontSize: '0.86rem', fontWeight: 500, color: '#1e293b', marginBottom: '0.4rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
                                   Ciudad / Municipio *
                                 </label>
                                 <div style={{ position: 'relative' }}>
@@ -2712,18 +2737,40 @@ export default function MenuDigital() {
                               </div>
 
                               <div className="form-group" style={{ margin: 0 }}>
-                                <label style={{ fontSize: '0.86rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.4rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
-                                  Dirección exacta de entrega *
+                                <label style={{ fontSize: '0.86rem', fontWeight: 500, color: '#1e293b', marginBottom: '0.4rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
+                                  Barrio *
+                                </label>
+                                <input 
+                                  type="text" 
+                                  required 
+                                  value={formData.barrio}
+                                  onChange={e => setFormData({...formData, barrio: e.target.value})}
+                                  placeholder="Ej. El Poblado, Chapinero, San Fernando..."
+                                  style={{ width: '100%', padding: '0.78rem 0.95rem', borderRadius: '14px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.9rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}
+                                />
+                              </div>
+
+                              <div className="form-group" style={{ margin: 0 }}>
+                                <label style={{ fontSize: '0.86rem', fontWeight: 500, color: '#1e293b', marginBottom: '0.4rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
+                                  Dirección exacta de residencia (Calle / Carrera #) *
                                 </label>
                                 <textarea 
                                   required 
-                                  rows={3}
+                                  rows={2}
                                   value={formData.direccion}
                                   onChange={e => setFormData({...formData, direccion: e.target.value})}
-                                  placeholder="Barrio, Calle #, Casa o Apto, referencias..."
+                                  placeholder="Ej. Calle 45 # 23-15 Apt 302, Edificio Los Pinos"
                                   style={{ width: '100%', padding: '0.78rem 0.95rem', borderRadius: '14px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.9rem', outline: 'none', resize: 'vertical', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}
                                 />
                               </div>
+
+                              {/* ── AUTO VERIFICADOR DE DIRECCIÓN ── */}
+                              <AddressVerifier 
+                                direccion={formData.direccion}
+                                barrio={formData.barrio}
+                                ciudad={formData.ciudad}
+                                departamento={selectedDepartamento}
+                              />
                             </>
                           ) : (
                             <div style={{ background: '#ecfdf5', padding: '0.85rem 1rem', borderRadius: '14px', border: '1px solid #a7f3d0', color: '#065f46', fontSize: '0.86rem' }}>
@@ -2735,7 +2782,7 @@ export default function MenuDigital() {
                           )}
 
                           <div className="form-group" style={{ margin: 0 }}>
-                            <label style={{ fontSize: '0.86rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.4rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
+                            <label style={{ fontSize: '0.86rem', fontWeight: 500, color: '#1e293b', marginBottom: '0.4rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
                               Número de Cédula / DNI *
                             </label>
                             <input 
@@ -2752,13 +2799,28 @@ export default function MenuDigital() {
                             type="button"
                             onClick={(e) => {
                               e.preventDefault();
-                              if (metodoRecepcion === 'domicilio' && !formData.ciudad.trim()) {
-                                alert('Por favor ingresa o selecciona tu ciudad/municipio.');
-                                return;
-                              }
-                              if (metodoRecepcion === 'domicilio' && !formData.direccion.trim()) {
-                                alert('Por favor ingresa tu dirección de entrega.');
-                                return;
+                              if (metodoRecepcion === 'domicilio') {
+                                if (!selectedDepartamento.trim()) {
+                                  alert('Por favor selecciona tu departamento de residencia.');
+                                  return;
+                                }
+                                if (!formData.ciudad.trim()) {
+                                  alert('Por favor ingresa o selecciona tu ciudad/municipio.');
+                                  return;
+                                }
+                                if (!formData.barrio.trim()) {
+                                  alert('Por favor ingresa el nombre de tu barrio.');
+                                  return;
+                                }
+                                if (!formData.direccion.trim()) {
+                                  alert('Por favor ingresa tu dirección exacta de residencia (Calle, Carrera, número, etc.).');
+                                  return;
+                                }
+                                const addrVal = validateAddressFormat(formData.direccion, formData.barrio, formData.ciudad, selectedDepartamento);
+                                if (!addrVal.isValidFormat) {
+                                  alert(addrVal.message);
+                                  return;
+                                }
                               }
                               if (!formData.cedula.trim()) {
                                 alert('Por favor ingresa tu número de cédula o DNI para la factura.');
