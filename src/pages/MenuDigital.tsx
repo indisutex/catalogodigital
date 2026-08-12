@@ -1221,7 +1221,7 @@ export default function MenuDigital() {
       mensaje += `\n\n*Nota de pago:* Por favor solicita los datos de transferencia bancaria para realizar el pago de *$${total.toLocaleString('es-CO')} COP*.`;
     } else if (modalidadPago === 'contra_entrega') {
       mensaje += `\n\n*TOTAL PRODUCTOS:* $${total.toLocaleString('es-CO')}`;
-      mensaje += `\n*ENVIO:* Pago contra entrega al recibir (sin recargo adicional).`;
+      mensaje += `\n*ENVÍO:* PAGO CONTRA ENTREGA\n\nCancela al momento de recibir tu pedido el valor de las prendas + el costo del envío. ¡Fácil, seguro y sin pagos anticipados!`;
     } else {
       mensaje += `\n\n*TOTAL PRODUCTOS:* $${total.toLocaleString('es-CO')}`;
       mensaje += `\n\n*Coordinacion por WhatsApp:* Acordaremos el pago y envio directamente por este chat.`;
@@ -4074,8 +4074,8 @@ export default function MenuDigital() {
               )}
 
               {orderSummaryData.modalidadPago === 'contra_entrega' && (
-                <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.4 }}>
-                  Pagas tus prendas y el valor del domicilio al momento de recibir en tu puerta (sin recargos adicionales).
+                <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.4, fontFamily: "'Poppins', sans-serif" }}>
+                  Cancela al momento de recibir tu pedido el valor de las prendas + el costo del envío. ¡Fácil, seguro y sin pagos anticipados!
                 </div>
               )}
 
