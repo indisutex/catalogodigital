@@ -5,7 +5,7 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista, PQRS } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, ChevronRight, Wrench, ArrowUpDown, Filter, MapPin, XCircle, Truck, Clock, FileCheck, CheckCircle, Landmark, BookOpen, LifeBuoy, ShoppingCart, ClipboardList, Star } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, ChevronRight, Wrench, ArrowUpDown, Filter, MapPin, XCircle, Truck, Clock, FileCheck, CheckCircle, Landmark, BookOpen, LifeBuoy, ShoppingCart, ClipboardList, Star, Ban } from 'lucide-react';
 
 import * as XLSX from 'xlsx';
 import { ERPContabilidadService } from '../lib/erpContabilidadService';
@@ -856,7 +856,8 @@ export default function Admin() {
     
     // Status border color
     let borderLeftColor = '#ef4444'; // Lead default
-    if (!isLead) {
+    if (ped.estado === 'cancelado') borderLeftColor = '#dc2626';
+    else if (!isLead) {
       if (ped.estado === 'completado') borderLeftColor = '#10b981';
       else if (isContra) borderLeftColor = '#ea580c';
       else if (ped.pantallazo_url) borderLeftColor = '#3b82f6';
@@ -895,7 +896,11 @@ export default function Admin() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', marginBottom: '0.75rem' }}>
           {/* Line 1: Status Pill Badge & Timestamp */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.35rem' }}>
-            {isLead ? (
+            {ped.estado === 'cancelado' ? (
+              <span className="pedido-card-status-pill" style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#dc2626', fontSize: '0.72rem', fontWeight: 500, padding: '0.2rem 0.55rem', borderRadius: '10px', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                🚫 Cancelado
+              </span>
+            ) : isLead ? (
               <span className="pedido-card-status-pill" style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: '0.72rem', fontWeight: 500, padding: '0.2rem 0.55rem', borderRadius: '10px' }}>
                 ⚠️ Carrito Abandonado
               </span>
@@ -1262,6 +1267,32 @@ export default function Admin() {
               title="Abrir Chat WhatsApp"
             >
               <MessageSquare size={16} />
+            </button>
+          )}
+
+          {ped.estado !== 'cancelado' && (
+            <button 
+              type="button" 
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCancelarPedido(ped.id, isLead);
+              }}
+              style={{
+                width: '36px',
+                height: '36px',
+                borderRadius: '10px',
+                border: '1.5px solid #fee2e2',
+                background: '#fef2f2',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: '#dc2626',
+                flexShrink: 0
+              }}
+              title="Cancelar pedido (Mover a Cancelados)"
+            >
+              <RefreshCw size={15} />
             </button>
           )}
 
@@ -3618,23 +3649,25 @@ export default function Admin() {
     };
 
     if (orderFilterStatus !== 'todos') {
-      if (orderFilterStatus === 'comprobante') {
+      if (orderFilterStatus === 'cancelados') {
+        result = result.filter(p => p.estado === 'cancelado');
+      } else if (orderFilterStatus === 'comprobante') {
         result = result.filter(p => {
           const mp = getMetodo(p);
           const isContra = mp === 'Contra Entrega' || (mp && mp.toLowerCase().includes('contra')) || p.estado === 'contra_entrega';
-          return !!p.pantallazo_url && p.estado !== 'completado' && !isContra;
+          return !!p.pantallazo_url && p.estado !== 'completado' && p.estado !== 'cancelado' && !isContra;
         });
       } else if (orderFilterStatus === 'esperando_pago') {
         result = result.filter(p => {
           const mp = getMetodo(p);
           const isContra = mp === 'Contra Entrega' || (mp && mp.toLowerCase().includes('contra')) || p.estado === 'contra_entrega';
-          return !p.pantallazo_url && p.estado !== 'completado' && !isContra;
+          return !p.pantallazo_url && p.estado !== 'completado' && p.estado !== 'cancelado' && !isContra;
         });
       } else if (orderFilterStatus === 'contra_entrega') {
         result = result.filter(p => {
           const mp = getMetodo(p);
           const isContra = mp === 'Contra Entrega' || (mp && mp.toLowerCase().includes('contra')) || p.estado === 'contra_entrega';
-          return isContra && p.estado !== 'completado';
+          return isContra && p.estado !== 'completado' && p.estado !== 'cancelado';
         });
       } else if (orderFilterStatus === 'exitosas') {
         result = result.filter(p => p.estado === 'completado');
@@ -4237,11 +4270,15 @@ export default function Admin() {
     return '';
   };
 
+  const canceladosFiltrados = useMemo(() => {
+    return allFilteredPedidos.filter(p => p.estado === 'cancelado');
+  }, [allFilteredPedidos]);
+
   const contraEntregaFiltrados = useMemo(() => {
     return allFilteredPedidos.filter(p => {
       const mp = getMetodoPago(p);
       const isContra = mp === 'Contra Entrega' || (mp && mp.toLowerCase().includes('contra')) || p.estado === 'contra_entrega';
-      return isContra && p.estado !== 'completado';
+      return isContra && p.estado !== 'completado' && p.estado !== 'cancelado';
     });
   }, [allFilteredPedidos]);
 
@@ -4249,7 +4286,7 @@ export default function Admin() {
     return allFilteredPedidos.filter(p => {
       const mp = getMetodoPago(p);
       const isContra = mp === 'Contra Entrega' || (mp && mp.toLowerCase().includes('contra')) || p.estado === 'contra_entrega';
-      return !p.pantallazo_url && p.estado !== 'completado' && !isContra;
+      return !p.pantallazo_url && p.estado !== 'completado' && p.estado !== 'cancelado' && !isContra;
     });
   }, [allFilteredPedidos]);
 
@@ -4257,13 +4294,68 @@ export default function Admin() {
     return allFilteredPedidos.filter(p => {
       const mp = getMetodoPago(p);
       const isContra = mp === 'Contra Entrega' || (mp && mp.toLowerCase().includes('contra')) || p.estado === 'contra_entrega';
-      return p.pantallazo_url && p.estado !== 'completado' && !isContra;
+      return p.pantallazo_url && p.estado !== 'completado' && p.estado !== 'cancelado' && !isContra;
     });
   }, [allFilteredPedidos]);
 
   const clientesFiltrados = useMemo(() => {
     return allFilteredPedidos.filter(p => p.estado === 'completado' && p.origen !== 'pos');
   }, [allFilteredPedidos]);
+
+  const handleCancelarPedido = async (id: string, isLead?: boolean) => {
+    if (!confirm('¿Estás seguro de cancelar este pedido y moverlo a Cancelados?')) return;
+    try {
+      setLoading(true);
+      if (isLead) {
+        setLeads(prev => prev.map(l => l.id === id ? { ...l, estado: 'cancelado' } : l));
+        showToast('Lead cancelado y movido a Cancelados 🚫', 'success');
+        const { error } = await supabase.from('leads').update({ estado: 'cancelado' }).eq('id', id);
+        if (error) console.error(error);
+      } else {
+        setPedidos(prev => prev.map(p => p.id === id ? { ...p, estado: 'cancelado' } : p));
+        showToast('Pedido cancelado y movido a Cancelados 🚫', 'success');
+        const { error } = await supabase.from('pedidos').update({ estado: 'cancelado' }).eq('id', id);
+        if (error) console.error(error);
+      }
+      cargarDatos();
+    } catch (err: any) {
+      showToast('Error al cancelar pedido: ' + err.message, 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUploadEvidenciaCancelacion = async (e: React.ChangeEvent<HTMLInputElement>, pedidoId: string) => {
+    if (!e.target.files || !e.target.files[0]) return;
+    try {
+      showToast('Subiendo evidencia de cancelación...', 'success');
+      let file = e.target.files[0];
+      if (file.type.startsWith('image/')) {
+        file = (await compressImage(file)) as File;
+      }
+      const fileExt = file.name.split('.').pop();
+      const fileName = `cancelacion_${pedidoId}_${Date.now()}.${fileExt}`;
+      const { error: upErr } = await supabase.storage.from('archivos').upload(fileName, file);
+      if (upErr) throw upErr;
+
+      const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
+      const newUrl = data.publicUrl;
+
+      const { error: dbErr } = await supabase
+        .from('pedidos')
+        .update({ evidencia_cancelacion_url: newUrl })
+        .eq('id', pedidoId);
+
+      if (dbErr) console.warn('Update evidencia_cancelacion_url:', dbErr);
+
+      setSelectedPedido(prev => prev ? { ...prev, evidencia_cancelacion_url: newUrl } : null);
+      setPedidos(prev => prev.map(p => p.id === pedidoId ? { ...p, evidencia_cancelacion_url: newUrl } : p));
+      showToast('Evidencia de cancelación guardada ✓', 'success');
+    } catch (err: any) {
+      console.error(err);
+      showToast('Error al subir evidencia: ' + (err.message || err), 'error');
+    }
+  };
 
   const handleDropKanban = async (e: React.DragEvent, targetCol: string) => {
     e.preventDefault();
@@ -4272,7 +4364,20 @@ export default function Admin() {
       if (!dataStr) return;
       const { id, isLead } = JSON.parse(dataStr);
 
-      if (targetCol === 'completado') {
+      if (targetCol === 'cancelado') {
+        if (isLead) {
+          setLeads(prev => prev.map(l => l.id === id ? { ...l, estado: 'cancelado' } : l));
+          showToast('Lead movido a Cancelados 🚫', 'success');
+          const { error } = await supabase.from('leads').update({ estado: 'cancelado' }).eq('id', id);
+          if (error) console.error(error);
+        } else {
+          setPedidos(prev => prev.map(p => p.id === id ? { ...p, estado: 'cancelado' } : p));
+          showToast('Pedido movido a Cancelados 🚫', 'success');
+          const { error } = await supabase.from('pedidos').update({ estado: 'cancelado' }).eq('id', id);
+          if (error) console.error(error);
+        }
+        cargarDatos();
+      } else if (targetCol === 'completado') {
         const targetPed = pedidos.find(p => p.id === id);
         if (targetPed) {
           handleAprobarPago(targetPed);
@@ -13482,12 +13587,13 @@ export default function Admin() {
                     <>
                       {/* Barra de Píldoras de Estado Rápida (Resumen con Contadores) */}
                       {(() => {
+                        const canceladosCount = canceladosFiltrados.length;
                         const leadsCount = leadsFiltrados.length;
                         const contraEntregaCount = contraEntregaFiltrados.length;
                         const pendingCount = pendientePagoFiltrados.length;
                         const comprobarCount = comprobarPagosFiltrados.length;
                         const exitosasCount = clientesFiltrados.length;
-                        const totalCount = leadsCount + contraEntregaCount + pendingCount + comprobarCount + exitosasCount;
+                        const totalCount = canceladosCount + leadsCount + contraEntregaCount + pendingCount + comprobarCount + exitosasCount;
 
                         return (
                           <div className="mobile-status-pills-bar">
@@ -13511,6 +13617,29 @@ export default function Admin() {
                             >
                               <span>Todos</span>
                               <span style={{ background: orderFilterStatus === 'todos' ? 'rgba(255,255,255,0.25)' : '#f1f5f9', color: orderFilterStatus === 'todos' ? '#ffffff' : '#64748b', padding: '0.05rem 0.45rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 500 }}>{totalCount}</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setOrderFilterStatus('cancelados')}
+                              style={{
+                                padding: '0.35rem 0.75rem',
+                                borderRadius: '20px',
+                                border: orderFilterStatus === 'cancelados' ? 'none' : '1px solid #fca5a5',
+                                background: orderFilterStatus === 'cancelados' ? '#dc2626' : '#fef2f2',
+                                color: orderFilterStatus === 'cancelados' ? '#ffffff' : '#991b1b',
+                                fontWeight: 600,
+                                fontSize: '0.78rem',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.35rem',
+                                fontFamily: "'Poppins', sans-serif",
+                                boxShadow: orderFilterStatus === 'cancelados' ? '0 3px 10px rgba(220, 38, 38, 0.25)' : 'none'
+                              }}
+                            >
+                              <span>Cancelados</span>
+                              <span style={{ background: orderFilterStatus === 'cancelados' ? 'rgba(255,255,255,0.25)' : '#fee2e2', color: orderFilterStatus === 'cancelados' ? '#ffffff' : '#dc2626', padding: '0.05rem 0.45rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 500 }}>{canceladosCount}</span>
                             </button>
 
                             <button
@@ -13634,6 +13763,28 @@ export default function Admin() {
                           <div className="orders-desktop-view">
                             {pedidosViewMode === 'kanban' ? (
                               <div className="super-crm-kanban" style={{ alignItems: 'start' }}>
+                        {/* Columna 0: Cancelados */}
+                        <div
+                          className="kanban-column"
+                          onDragOver={(e) => e.preventDefault()}
+                          onDrop={(e) => handleDropKanban(e, 'cancelado')}
+                          style={{ background: '#fef2f2', borderRadius: '16px', border: '1px solid #fee2e2', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(220,38,38,0.02)' }}
+                        >
+                          <div className="kanban-column-header col-red" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid #dc2626', paddingBottom: '0.65rem' }}>
+                            <h3 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 600, color: '#991b1b', display: 'flex', alignItems: 'center', gap: '0.45rem', fontFamily: "'Poppins', sans-serif" }}>
+                              <Ban size={16} color="#dc2626" />
+                              <span>Cancelados</span>
+                            </h3>
+                            <span className="badge" style={{ background: '#ffffff', color: '#dc2626', border: '1px solid #fca5a5', padding: '0.15rem 0.6rem', borderRadius: '12px', fontSize: '0.76rem', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>{canceladosFiltrados.length}</span>
+                          </div>
+                          <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
+                            {canceladosFiltrados.map(ped => renderLeadOrOrderCard(ped))}
+                            {canceladosFiltrados.length === 0 && (
+                              <p className="empty-column-msg" style={{ textAlign: 'center', color: '#991b1b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay pedidos cancelados.</p>
+                            )}
+                          </div>
+                        </div>
+
                         {/* Columna 1: No Interesados (Abandonos) */}
                         {/* Columna 1: No Interesados (Abandonos) */}
                         <div
@@ -14167,6 +14318,58 @@ export default function Admin() {
 
                   return (
                     <div style={{ fontFamily: "'Poppins', sans-serif" }}>
+                      {/* Evidencia de Cancelación (Si el pedido está cancelado) */}
+                      {selectedPedido.estado === 'cancelado' && (
+                        <div style={{ marginTop: '0.9rem', borderTop: '1px solid #fca5a5', paddingTop: '0.85rem', background: '#fef2f2', padding: '0.9rem 1rem', borderRadius: '14px', border: '1.5px solid #fca5a5' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                            <h4 style={{ margin: 0, fontSize: '0.88rem', color: '#991b1b', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600 }}>
+                              🚫 Evidencia de Cancelación (Foto / Captura de Chat)
+                            </h4>
+                          </div>
+
+                          {selectedPedido.evidencia_cancelacion_url ? (
+                            <div style={{ textAlign: 'center' }}>
+                              <div onClick={() => setPagoModalUrl(selectedPedido.evidencia_cancelacion_url || null)} style={{ cursor: 'pointer', textAlign: 'center' }}>
+                                <img
+                                  src={selectedPedido.evidencia_cancelacion_url}
+                                  alt="Evidencia de Cancelación"
+                                  style={{ width: '100%', maxHeight: '180px', objectFit: 'contain', borderRadius: '12px', border: '1px solid #fca5a5', background: '#ffffff' }}
+                                />
+                              </div>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', marginTop: '0.5rem' }}>
+                                <p style={{ fontSize: '0.76rem', color: '#991b1b', fontWeight: 500, margin: 0 }}>
+                                  ✅ Captura subida — Clic para ampliar
+                                </p>
+                                <label style={{ background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '6px', padding: '0.2rem 0.55rem', fontSize: '0.72rem', cursor: 'pointer', fontWeight: 500 }}>
+                                  Cambiar Foto
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    style={{ display: 'none' }}
+                                    onChange={(e) => handleUploadEvidenciaCancelacion(e, selectedPedido.id)}
+                                  />
+                                </label>
+                              </div>
+                            </div>
+                          ) : (
+                            <div>
+                              <p style={{ fontSize: '0.78rem', color: '#7f1d1d', margin: '0 0 0.55rem 0', fontWeight: 400 }}>
+                                Sube la foto o captura del chat de WhatsApp donde se confirme la cancelación del pedido:
+                              </p>
+                              <label style={{ padding: '0.65rem 1rem', background: '#dc2626', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', boxShadow: '0 2px 6px rgba(220,38,38,0.25)' }}>
+                                📸 Subir Captura / Evidencia de Cancelación
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  style={{ display: 'none' }}
+                                  onChange={(e) => handleUploadEvidenciaCancelacion(e, selectedPedido.id)}
+                                />
+                              </label>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {/* Evidencia del Comprobante de Pago */}
                       {selectedPedido.pantallazo_url ? (
                         <div style={{ marginTop: '0.9rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.85rem' }}>
@@ -14457,6 +14660,19 @@ export default function Admin() {
                             </>
                           )}
                         </div>
+
+                        {selectedPedido.estado !== 'cancelado' && (
+                          <button
+                            type="button"
+                            style={{ width: '100%', padding: '0.65rem', background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '12px', cursor: 'pointer', fontWeight: 600, fontSize: '0.84rem', marginTop: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontFamily: "'Poppins', sans-serif" }}
+                            onClick={() => {
+                              handleCancelarPedido(selectedPedido.id);
+                              setSelectedPedido(prev => prev ? { ...prev, estado: 'cancelado' } : null);
+                            }}
+                          >
+                            <Trash2 size={15} /> Cancelar Pedido
+                          </button>
+                        )}
                       </div>
                     </div>
                   );

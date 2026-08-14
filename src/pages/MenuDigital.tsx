@@ -416,20 +416,53 @@ export default function MenuDigital() {
   const heroVideoUrl = mayoristaBranding?.video || configuracion?.video_hero_url;
 
   useEffect(() => {
-    const v = heroVideoRef.current;
-    if (v) {
-      v.muted = heroMuted;
-      v.defaultMuted = true;
-      v.playsInline = true;
-      const playPromise = v.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(() => {
-          v.muted = true;
-          v.play().catch(() => {});
-        });
+    const playHeroVideo = () => {
+      const v = heroVideoRef.current;
+      if (v) {
+        v.muted = true;
+        v.defaultMuted = true;
+        v.playsInline = true;
+        v.volume = 0;
+        v.setAttribute('muted', 'muted');
+        v.setAttribute('playsinline', 'true');
+        v.setAttribute('webkit-playsinline', 'true');
+        v.setAttribute('autoplay', 'true');
+        const playPromise = v.play();
+        if (playPromise !== undefined) {
+          playPromise.catch(() => {
+            v.muted = true;
+            v.volume = 0;
+            v.play().catch(() => {});
+          });
+        }
       }
-    }
-  }, [heroVideoUrl, heroMuted]);
+    };
+
+    playHeroVideo();
+
+    // Eventos de respaldo para activar la reproducción en móviles/Safari si el navegador la pausó por políticas de autoplay
+    const handleUserInteraction = () => {
+      if (heroVideoRef.current && heroVideoRef.current.paused) {
+        playHeroVideo();
+      }
+    };
+
+    window.addEventListener('touchstart', handleUserInteraction, { passive: true });
+    window.addEventListener('pointerdown', handleUserInteraction, { passive: true });
+    window.addEventListener('click', handleUserInteraction, { passive: true });
+    window.addEventListener('scroll', handleUserInteraction, { passive: true });
+    document.addEventListener('visibilitychange', handleUserInteraction);
+    window.addEventListener('pageshow', handleUserInteraction);
+
+    return () => {
+      window.removeEventListener('touchstart', handleUserInteraction);
+      window.removeEventListener('pointerdown', handleUserInteraction);
+      window.removeEventListener('click', handleUserInteraction);
+      window.removeEventListener('scroll', handleUserInteraction);
+      document.removeEventListener('visibilitychange', handleUserInteraction);
+      window.removeEventListener('pageshow', handleUserInteraction);
+    };
+  }, [heroVideoUrl]);
   
   // Product Detail Popup
   const [detailProduct, setDetailProduct] = useState<Producto | null>(null);
@@ -1471,7 +1504,7 @@ export default function MenuDigital() {
                   src={heroVideoUrl} 
                   autoPlay 
                   loop 
-                  muted={heroMuted}
+                  muted
                   playsInline 
                   preload="auto"
                   className="hero-background-video"
@@ -1479,13 +1512,19 @@ export default function MenuDigital() {
                   ref={(el) => {
                     (heroVideoRef as any).current = el;
                     if (el) {
-                      el.muted = heroMuted;
+                      el.muted = true;
                       el.defaultMuted = true;
                       el.playsInline = true;
+                      el.volume = 0;
+                      el.setAttribute('muted', 'muted');
+                      el.setAttribute('playsinline', 'true');
+                      el.setAttribute('webkit-playsinline', 'true');
+                      el.setAttribute('autoplay', 'true');
                       const promise = el.play();
                       if (promise !== undefined) {
                         promise.catch(() => {
                           el.muted = true;
+                          el.volume = 0;
                           el.play().catch(() => {});
                         });
                       }
@@ -1493,14 +1532,24 @@ export default function MenuDigital() {
                   }}
                   onCanPlay={el => { 
                     const v = (el.target as HTMLVideoElement); 
-                    v.muted = heroMuted; 
+                    v.muted = true; 
                     v.defaultMuted = true; 
+                    v.playsInline = true;
+                    v.volume = 0;
+                    v.setAttribute('muted', 'muted');
+                    v.setAttribute('playsinline', 'true');
+                    v.setAttribute('webkit-playsinline', 'true');
                     v.play().catch(() => {}); 
                   }}
                   onLoadedData={el => {
                     const v = (el.target as HTMLVideoElement);
-                    v.muted = heroMuted;
+                    v.muted = true;
                     v.defaultMuted = true;
+                    v.playsInline = true;
+                    v.volume = 0;
+                    v.setAttribute('muted', 'muted');
+                    v.setAttribute('playsinline', 'true');
+                    v.setAttribute('webkit-playsinline', 'true');
                     v.play().catch(() => {});
                   }}
                 />

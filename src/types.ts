@@ -113,6 +113,7 @@ export interface Pedido {
   numero_factura?: string;
   asesor?: string;
   evidencia_despacho_url?: string;
+  evidencia_cancelacion_url?: string;
   evidencia_url?: string;
   metodo_pago?: string;
   envio_metodo?: string;
