@@ -4208,7 +4208,7 @@ export default function Admin() {
     };
 
     let temp = leads.filter(l => {
-      if (l.estado === 'completado' || l.estado === 'contra_entrega') return false;
+      if (l.estado === 'completado' || l.estado === 'contra_entrega' || l.estado === 'cancelado') return false;
       const cleanLeadPhone = normalizePhone(l.telefono);
       if (!cleanLeadPhone) return true;
       
@@ -4271,8 +4271,38 @@ export default function Admin() {
   };
 
   const canceladosFiltrados = useMemo(() => {
-    return allFilteredPedidos.filter(p => p.estado === 'cancelado');
-  }, [allFilteredPedidos]);
+    const canceledOrders = allFilteredPedidos.filter(p => p.estado === 'cancelado').map(p => ({ ...p, isLead: false }));
+    
+    let tempLeads = leads.filter(l => l.estado === 'cancelado');
+    if (orderSearchQuery) {
+      const cleanOrderStr = (str: string) => 
+        (str || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+      const q = cleanOrderStr(orderSearchQuery);
+      tempLeads = tempLeads.filter(l => 
+        cleanOrderStr(l.nombre).includes(q) ||
+        cleanOrderStr(l.telefono).includes(q) ||
+        cleanOrderStr(l.ciudad).includes(q)
+      );
+    }
+    if (orderFilterDate) {
+      tempLeads = tempLeads.filter(l => l.created_at.startsWith(orderFilterDate));
+    }
+    
+    const canceledLeads = tempLeads.map(l => ({
+      ...l,
+      isLead: true,
+      cliente_nombre: l.nombre || 'Borrador Anónimo',
+      cliente_telefono: l.telefono || 'Sin número',
+      cliente_cedula: (l as any).cliente_cedula || (l as any).cedula || (l.direccion?.match(/(?:CC|Cédula|Cedula):\s*([0-9a-zA-Z]+)/i)?.[1]) || '',
+      cliente_email: (l as any).cliente_email || (l as any).email || (l.direccion?.match(/(?:Email|Correo):\s*([^\s|]+)/i)?.[1]) || '',
+      direccion: l.direccion || '',
+      ciudad: l.ciudad || '',
+      metodo_pago: l.metodo_pago || 'Por definir',
+      estado: 'cancelado'
+    }));
+
+    return [...canceledOrders, ...canceledLeads].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }, [allFilteredPedidos, leads, orderSearchQuery, orderFilterDate]);
 
   const contraEntregaFiltrados = useMemo(() => {
     return allFilteredPedidos.filter(p => {
@@ -13484,7 +13514,9 @@ export default function Admin() {
                   estado: 'abandonado'
                 }));
             
-            const combinedList = orderFilterStatus === 'abandonados'
+            const combinedList = orderFilterStatus === 'cancelados'
+              ? canceladosFiltrados
+              : orderFilterStatus === 'abandonados'
               ? leadsFiltrados.map(l => ({
                   ...l,
                   isLead: true,
@@ -13778,7 +13810,7 @@ export default function Admin() {
                             <span className="badge" style={{ background: '#ffffff', color: '#dc2626', border: '1px solid #fca5a5', padding: '0.15rem 0.6rem', borderRadius: '12px', fontSize: '0.76rem', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>{canceladosFiltrados.length}</span>
                           </div>
                           <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
-                            {canceladosFiltrados.map(ped => renderLeadOrOrderCard(ped))}
+                            {canceladosFiltrados.map(ped => renderLeadOrOrderCard(ped, ped.isLead))}
                             {canceladosFiltrados.length === 0 && (
                               <p className="empty-column-msg" style={{ textAlign: 'center', color: '#991b1b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay pedidos cancelados.</p>
                             )}
