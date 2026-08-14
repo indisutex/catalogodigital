@@ -193,7 +193,7 @@ export default function MenuDigital() {
           }
         }
 
-        // Si no hay teléfono o no hubo coincidencia por teléfono, seleccionar un asesor aleatoriamente entre los asesores del negocio/tenant
+        // Si no hay teléfono o no hubo coincidencia por teléfono, seleccionar asesor mediante rotación equitativa por turnos (Round-Robin)
         if (!matchAsesor) {
           const { data: tenantAsesores } = await supabase
             .from('asesores')
@@ -201,16 +201,33 @@ export default function MenuDigital() {
             .eq('tenant_id', tenant);
 
           if (tenantAsesores && tenantAsesores.length > 0) {
-            const randomIndex = Math.floor(Math.random() * tenantAsesores.length);
-            matchAsesor = tenantAsesores[randomIndex];
+            // Ordenar de forma estable por ID para garantizar siempre la misma secuencia
+            tenantAsesores.sort((a, b) => (a.id || '').localeCompare(b.id || ''));
+
+            const storageKey = `last_asesor_idx_${tenant}`;
+            let lastIdx = parseInt(localStorage.getItem(storageKey) || '-1', 10);
+            if (isNaN(lastIdx) || lastIdx < 0 || lastIdx >= tenantAsesores.length) {
+              lastIdx = -1;
+            }
+
+            const nextIdx = (lastIdx + 1) % tenantAsesores.length;
+            localStorage.setItem(storageKey, nextIdx.toString());
+            matchAsesor = tenantAsesores[nextIdx];
           } else {
-            // Si el tenant no tiene asesores específicos, cargar de forma aleatoria global
+            // Si el tenant no tiene asesores específicos, cargar de forma secuencial global
             const { data: globalAsesores } = await supabase
               .from('asesores')
               .select('id, nombre, telefono, foto_url, tenant_id');
             if (globalAsesores && globalAsesores.length > 0) {
-              const randomIndex = Math.floor(Math.random() * globalAsesores.length);
-              matchAsesor = globalAsesores[randomIndex];
+              globalAsesores.sort((a, b) => (a.id || '').localeCompare(b.id || ''));
+              const storageKey = `last_asesor_idx_global`;
+              let lastIdx = parseInt(localStorage.getItem(storageKey) || '-1', 10);
+              if (isNaN(lastIdx) || lastIdx < 0 || lastIdx >= globalAsesores.length) {
+                lastIdx = -1;
+              }
+              const nextIdx = (lastIdx + 1) % globalAsesores.length;
+              localStorage.setItem(storageKey, nextIdx.toString());
+              matchAsesor = globalAsesores[nextIdx];
             }
           }
         }
@@ -225,10 +242,8 @@ export default function MenuDigital() {
             telefono: phone || primerTel
           });
 
-          // Si el cliente ingresó al enlace directo sin parámetro de asesor previa (phone estaba vacío),
-          // guardamos el número del asesor asignado aleatoriamente en el estado de WhatsApp y en sessionStorage
-          // para mantener coherencia durante toda la sesión de navegación del cliente en la tienda.
-          if (!phone && cleanAssignedPhone) {
+          // Guardar el asesor asignado en la sesión
+          if (cleanAssignedPhone) {
             setOverrideWhatsApp(cleanAssignedPhone);
             sessionStorage.setItem(`ws_override_${tenant}`, cleanAssignedPhone);
           }
@@ -287,6 +302,7 @@ export default function MenuDigital() {
     if (wsParam) {
       if (wsParam === 'clear') {
         sessionStorage.removeItem(`ws_override_${getTenantId()}`);
+        sessionStorage.removeItem(`ws_explicit_${getTenantId()}`);
         setOverrideWhatsApp(null);
         setMarkupPorcentaje(0);
       } else {
@@ -294,18 +310,24 @@ export default function MenuDigital() {
         if (cleanNum) {
           setOverrideWhatsApp(cleanNum);
           sessionStorage.setItem(`ws_override_${getTenantId()}`, cleanNum);
+          sessionStorage.setItem(`ws_explicit_${getTenantId()}`, 'true');
           phoneToQuery = cleanNum;
         }
       }
     } else {
+      const isExplicit = sessionStorage.getItem(`ws_explicit_${getTenantId()}`) === 'true';
       const savedOverride = sessionStorage.getItem(`ws_override_${getTenantId()}`);
-      if (savedOverride) {
+      if (isExplicit && savedOverride) {
         setOverrideWhatsApp(savedOverride);
         phoneToQuery = savedOverride;
+      } else {
+        // Enlaces directos a la tienda sin asesor previo: rotación secuencial (Round-Robin) en cada nueva visita
+        sessionStorage.removeItem(`ws_override_${getTenantId()}`);
+        phoneToQuery = '';
       }
     }
 
-    // Siempre ejecutar para cargar el asesor por defecto o específico
+    // Siempre ejecutar para cargar el asesor por turno o específico
     loadWholesalerMarkup(phoneToQuery);
 
     const catParam = params.get('categoria');
