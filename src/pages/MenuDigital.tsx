@@ -193,7 +193,7 @@ export default function MenuDigital() {
           }
         }
 
-        // Si no hay teléfono o no hubo coincidencia por teléfono, cargar el primer asesor del tenant
+        // Si no hay teléfono o no hubo coincidencia por teléfono, seleccionar un asesor aleatoriamente entre los asesores del negocio/tenant
         if (!matchAsesor) {
           const { data: tenantAsesores } = await supabase
             .from('asesores')
@@ -201,26 +201,37 @@ export default function MenuDigital() {
             .eq('tenant_id', tenant);
 
           if (tenantAsesores && tenantAsesores.length > 0) {
-            matchAsesor = tenantAsesores[0];
+            const randomIndex = Math.floor(Math.random() * tenantAsesores.length);
+            matchAsesor = tenantAsesores[randomIndex];
           } else {
-            // Si el tenant no tiene asesores específicos, cargar de forma global
+            // Si el tenant no tiene asesores específicos, cargar de forma aleatoria global
             const { data: globalAsesores } = await supabase
               .from('asesores')
-              .select('id, nombre, telefono, foto_url, tenant_id')
-              .limit(1);
+              .select('id, nombre, telefono, foto_url, tenant_id');
             if (globalAsesores && globalAsesores.length > 0) {
-              matchAsesor = globalAsesores[0];
+              const randomIndex = Math.floor(Math.random() * globalAsesores.length);
+              matchAsesor = globalAsesores[randomIndex];
             }
           }
         }
 
         if (matchAsesor) {
           const primerTel = (matchAsesor.telefono || '').split(',')[0].trim();
+          const cleanAssignedPhone = (phone || primerTel).replace(/\D/g, '');
+
           setActiveAsesor({
             nombre: matchAsesor.nombre || 'Asesor Comercial',
             foto_url: matchAsesor.foto_url || '',
             telefono: phone || primerTel
           });
+
+          // Si el cliente ingresó al enlace directo sin parámetro de asesor previa (phone estaba vacío),
+          // guardamos el número del asesor asignado aleatoriamente en el estado de WhatsApp y en sessionStorage
+          // para mantener coherencia durante toda la sesión de navegación del cliente en la tienda.
+          if (!phone && cleanAssignedPhone) {
+            setOverrideWhatsApp(cleanAssignedPhone);
+            sessionStorage.setItem(`ws_override_${tenant}`, cleanAssignedPhone);
+          }
         }
 
         // 2. Buscar en mayoristas para markup y branding
