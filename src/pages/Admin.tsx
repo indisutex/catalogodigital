@@ -1292,7 +1292,7 @@ export default function Admin() {
               }}
               title="Cancelar pedido (Mover a Cancelados)"
             >
-              <RefreshCw size={15} />
+              <XCircle size={16} />
             </button>
           )}
 
