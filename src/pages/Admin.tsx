@@ -802,9 +802,18 @@ function SidebarContent({
 
       <div className="sidebar-footer" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', padding: '1.2rem', borderTop: '1px solid #f1f5f9', marginTop: 'auto', flexShrink: 0 }}>
         <a 
-          href={(role === 'asesor' || role === 'mayorista') && currentAsesor?.telefono 
-            ? `/${getTenantId()}?ws=${currentAsesor.telefono.split(',')[0].trim().replace(/\D/g, '')}${role === 'mayorista' ? '&tipo=mayorista' : ''}` 
-            : `/${getTenantId()}?ws=clear`} 
+          href={(() => {
+            if (role === 'mayorista' && currentMayorista) {
+              const normalizeSlug = (str?: string) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+              const bizSlug = currentMayorista.nombre_negocio ? normalizeSlug(currentMayorista.nombre_negocio) : (currentMayorista.nombre ? normalizeSlug(currentMayorista.nombre) : getTenantId());
+              const cleanP = (currentMayorista.telefono || '').split(',')[0].trim().replace(/\D/g, '');
+              return cleanP ? `/${bizSlug}?ws=${cleanP}` : `/${bizSlug}`;
+            }
+            if (role === 'asesor' && currentAsesor?.telefono) {
+              return `/${getTenantId()}?ws=${currentAsesor.telefono.split(',')[0].trim().replace(/\D/g, '')}`;
+            }
+            return `/${getTenantId()}?ws=clear`;
+          })()} 
           target="_blank" 
           rel="noopener noreferrer"
           className="btn-primary" 
@@ -6348,9 +6357,11 @@ export default function Admin() {
                     catalogUrl = customDom.startsWith('http') ? customDom : `https://${customDom}`;
                     displayUrl = customDom;
                   } else {
-                    const base = `${window.location.origin}/${tenant}`;
+                    const normalizeSlug = (str?: string) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+                    const bizSlug = currentMayorista.nombre_negocio ? normalizeSlug(currentMayorista.nombre_negocio) : (currentMayorista.nombre ? normalizeSlug(currentMayorista.nombre) : tenant);
+                    const base = `${window.location.origin}/${bizSlug}`;
                     catalogUrl = finalPhone ? `${base}?ws=${finalPhone}` : base;
-                    displayUrl = `${window.location.host}/${tenant}${finalPhone ? `?ws=${finalPhone}` : ''}`;
+                    displayUrl = `${window.location.host}/${bizSlug}${finalPhone ? `?ws=${finalPhone}` : ''}`;
                   }
                 } else {
                   // Rol Asesor: Enlace oficial con su línea WhatsApp asignada
@@ -9028,27 +9039,40 @@ export default function Admin() {
                             }} />
                           </label>
                         </div>
-                        <small style={{color: '#64748b'}}>Esta foto aparecerá en tu panel y como asesor estrella.</small>
+                        <small style={{color: '#64748b', fontWeight: 400, fontFamily: "'Poppins', sans-serif"}}>{role === 'mayorista' ? 'Esta foto o logo identificará tu marca en tu catálogo digital.' : 'Esta foto aparecerá en tu panel y como asesor estrella.'}</small>
                       </div>
                       <div className="form-field full" style={{ marginTop: '1.5rem', background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                        <label style={{ fontWeight: 800, color: '#0f172a', marginBottom: '0.5rem', display: 'block' }}>🔗 Tus Enlaces de Venta Personalizados</label>
-                        <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 1rem 0' }}>Usa estos enlaces para compartirlos con tus clientes. Cuando compren a través de ellos, las ventas se te asignarán automáticamente.</p>
+                        <label style={{ fontWeight: 600, color: '#0f172a', marginBottom: '0.5rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
+                          🔗 {role === 'mayorista' ? 'Tu Enlace Oficial de Mayorista (Marca Blanca)' : 'Tus Enlaces de Venta Personalizados'}
+                        </label>
+                        <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 1rem 0', fontFamily: "'Poppins', sans-serif", fontWeight: 400 }}>
+                          {role === 'mayorista'
+                            ? 'Usa este enlace directo para tus clientes en Instagram, TikTok o WhatsApp. Carga directamente con tu nombre y catálogo propio sin menciones de fábrica.'
+                            : 'Usa estos enlaces para compartirlos con tus clientes. Cuando compren a través de ellos, las ventas se te asignarán automáticamente.'}
+                        </p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                           {(loggedAsesorPhone || '').split(',').map(p => p.trim()).filter(Boolean).map((phone, idx) => {
-                            const link = `${window.location.origin}/${getTenantId()}?ws=${phone.replace(/\D/g, '')}${role === 'mayorista' ? '&tipo=mayorista' : ''}`;
+                            const normalizeSlug = (str?: string) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+                            const bizSlug = currentMayorista?.nombre_negocio 
+                              ? normalizeSlug(currentMayorista.nombre_negocio) 
+                              : (currentMayorista?.nombre ? normalizeSlug(currentMayorista.nombre) : getTenantId());
+                            const targetSlug = role === 'mayorista' && bizSlug ? bizSlug : getTenantId();
+                            const link = `${window.location.origin}/${targetSlug}?ws=${phone.replace(/\D/g, '')}`;
                             return (
                               <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'white', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-                                <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#475569', whiteSpace: 'nowrap' }}>Línea {phone}:</span>
+                                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569', whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>
+                                  {role === 'mayorista' ? 'Mi Catálogo:' : `Línea ${phone}:`}
+                                </span>
                                 <input 
                                   readOnly 
                                   value={link} 
-                                  style={{ flex: 1, fontSize: '0.8rem', background: 'transparent', border: 'none', color: 'var(--primary-color, #6366f1)', fontWeight: 600, padding: 0 }} 
+                                  style={{ flex: 1, fontSize: '0.8rem', background: 'transparent', border: 'none', color: 'var(--primary-color, #0ea5e9)', fontWeight: 500, padding: 0, fontFamily: "'Poppins', sans-serif" }} 
                                   onClick={(e) => (e.target as HTMLInputElement).select()}
                                 />
                                 <button
                                   type="button"
                                   className="btn-secondary"
-                                  style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', borderRadius: '6px', cursor: 'pointer', border: '1px solid #cbd5e1', background: 'white' }}
+                                  style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', borderRadius: '6px', cursor: 'pointer', border: '1px solid #cbd5e1', background: 'white', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}
                                   onClick={() => {
                                     navigator.clipboard.writeText(link);
                                     showToast('Enlace copiado al portapapeles ✅', 'success');
