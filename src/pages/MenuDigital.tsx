@@ -177,14 +177,29 @@ export default function MenuDigital() {
         const cleanQuery = phone ? phone.replace(/\D/g, '') : '';
         const normQuery = cleanQuery.length === 12 && cleanQuery.startsWith('57') ? cleanQuery.substring(2) : cleanQuery;
 
-        // 1. PRIMERO: Buscar en Mayoristas (por teléfono o dominio personalizado)
-        const { data: mayoristasTenant } = await supabase
-          .from('mayoristas')
-          .select('id, nombre, telefono, porcentaje_ganancia, ajustes_productos, nombre_negocio, logo_url, foto_url, video_hero_url, color_primario, dominio_personalizado')
-          .eq('tenant_id', tenant);
+        const normalizeSlug = (str?: string) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+        const currentTenantSlug = normalizeSlug(tenant);
 
-        if (normQuery) {
-          matchMayorista = mayoristasTenant?.find(m => {
+        // 1. PRIMERO: Buscar en Mayoristas (por teléfono, slug de negocio, ID o dominio personalizado)
+        const { data: mayoristasGlobal } = await supabase
+          .from('mayoristas')
+          .select('id, nombre, telefono, porcentaje_ganancia, ajustes_productos, nombre_negocio, logo_url, foto_url, video_hero_url, color_primario, dominio_personalizado, tenant_id');
+
+        // A. Match por slug de nombre de negocio o ID en la URL (ej: /magentapijamas)
+        if (currentTenantSlug && currentTenantSlug !== 'indisutex' && currentTenantSlug !== 'sublimadosmajestic' && currentTenantSlug !== 'sublimados_majestic' && currentTenantSlug !== 'default' && currentTenantSlug !== 'menu') {
+          matchMayorista = mayoristasGlobal?.find(m => {
+            const bizSlug = normalizeSlug(m.nombre_negocio);
+            const nameSlug = normalizeSlug(m.nombre);
+            return (bizSlug && bizSlug === currentTenantSlug) || 
+                   (nameSlug && nameSlug === currentTenantSlug) ||
+                   (m.id && normalizeSlug(m.id) === currentTenantSlug) ||
+                   (m.tenant_id && normalizeSlug(m.tenant_id) === currentTenantSlug);
+          });
+        }
+
+        // B. Match por teléfono si no hubo match por slug
+        if (!matchMayorista && normQuery) {
+          matchMayorista = mayoristasGlobal?.find(m => {
             const phones = (m.telefono || '').split(',').map((p: string) => {
               const clean = p.replace(/\D/g, '');
               return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
@@ -193,36 +208,12 @@ export default function MenuDigital() {
           });
         }
 
-        // Buscar por dominio personalizado en el tenant si aplica
+        // C. Match por dominio personalizado
         if (!matchMayorista && currentHost && !currentHost.includes('localhost') && !currentHost.includes('vercel.app')) {
-          matchMayorista = mayoristasTenant?.find(m => {
+          matchMayorista = mayoristasGlobal?.find(m => {
             const dom = (m.dominio_personalizado || m.ajustes_productos?.dominio_personalizado || '').toLowerCase().trim();
             return dom && (dom === currentHost || currentHost.endsWith(dom));
           });
-        }
-
-        // Buscar a nivel global de mayoristas si aún no hay match
-        if (!matchMayorista) {
-          const { data: mayoristasGlobal } = await supabase
-            .from('mayoristas')
-            .select('id, nombre, telefono, porcentaje_ganancia, ajustes_productos, nombre_negocio, logo_url, foto_url, video_hero_url, color_primario, dominio_personalizado');
-
-          if (normQuery) {
-            matchMayorista = mayoristasGlobal?.find(m => {
-              const phones = (m.telefono || '').split(',').map((p: string) => {
-                const clean = p.replace(/\D/g, '');
-                return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
-              }).filter(Boolean);
-              return phones.includes(normQuery) || (m.telefono && m.telefono.includes(normQuery));
-            });
-          }
-
-          if (!matchMayorista && currentHost && !currentHost.includes('localhost') && !currentHost.includes('vercel.app')) {
-            matchMayorista = mayoristasGlobal?.find(m => {
-              const dom = (m.dominio_personalizado || m.ajustes_productos?.dominio_personalizado || '').toLowerCase().trim();
-              return dom && (dom === currentHost || currentHost.endsWith(dom));
-            });
-          }
         }
 
         // SI ES MAYORISTA: Configurar tienda propia, precios y contacto directo del mayorista
