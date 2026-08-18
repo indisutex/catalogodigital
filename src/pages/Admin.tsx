@@ -803,10 +803,10 @@ function SidebarContent({
       <div className="sidebar-footer" style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem', padding: '1.2rem', borderTop: '1px solid #f1f5f9', marginTop: 'auto', flexShrink: 0 }}>
         <a 
           href={(() => {
-            if (role === 'mayorista' && currentMayorista) {
+            if (role === 'mayorista' && currentAsesor) {
               const normalizeSlug = (str?: string) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
-              const bizSlug = currentMayorista.nombre_negocio ? normalizeSlug(currentMayorista.nombre_negocio) : (currentMayorista.nombre ? normalizeSlug(currentMayorista.nombre) : getTenantId());
-              const cleanP = (currentMayorista.telefono || '').split(',')[0].trim().replace(/\D/g, '');
+              const bizSlug = currentAsesor.nombre_negocio ? normalizeSlug(currentAsesor.nombre_negocio) : (currentAsesor.nombre ? normalizeSlug(currentAsesor.nombre) : getTenantId());
+              const cleanP = (currentAsesor.telefono || '').split(',')[0].trim().replace(/\D/g, '');
               return cleanP ? `/${bizSlug}?ws=${cleanP}` : `/${bizSlug}`;
             }
             if (role === 'asesor' && currentAsesor?.telefono) {
@@ -6349,25 +6349,21 @@ export default function Admin() {
                 const finalPhone = cleanPhone ? (cleanPhone.length === 10 ? `57${cleanPhone}` : cleanPhone) : '';
 
                 let catalogUrl = '';
-                let displayUrl = '';
 
                 if (role === 'mayorista' && currentMayorista) {
                   const customDom = currentMayorista.dominio_personalizado || currentMayorista.ajustes_productos?.dominio_personalizado;
                   if (customDom) {
                     catalogUrl = customDom.startsWith('http') ? customDom : `https://${customDom}`;
-                    displayUrl = customDom;
                   } else {
                     const normalizeSlug = (str?: string) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
                     const bizSlug = currentMayorista.nombre_negocio ? normalizeSlug(currentMayorista.nombre_negocio) : (currentMayorista.nombre ? normalizeSlug(currentMayorista.nombre) : tenant);
                     const base = `${window.location.origin}/${bizSlug}`;
                     catalogUrl = finalPhone ? `${base}?ws=${finalPhone}` : base;
-                    displayUrl = `${window.location.host}/${bizSlug}${finalPhone ? `?ws=${finalPhone}` : ''}`;
                   }
                 } else {
                   // Rol Asesor: Enlace oficial con su línea WhatsApp asignada
                   const base = `${window.location.origin}/${tenant}`;
                   catalogUrl = finalPhone ? `${base}?ws=${finalPhone}` : base;
-                  displayUrl = `${window.location.host}/${tenant}${finalPhone ? `?ws=${finalPhone}` : ''}`;
                 }
 
                 return (
@@ -6390,46 +6386,14 @@ export default function Admin() {
                       </div>
                     </div>
 
-                    {/* Acceso Directo al Enlace del Catálogo + Botón Copiar al Portapapeles (Una sola fila fija) */}
+                    {/* Botón Compacto: Copiar Enlace Catálogo */}
                     <div style={{
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '0.45rem',
-                      background: '#f8fafc',
-                      border: '1.5px solid #e2e8f0',
-                      borderRadius: '10px',
-                      padding: '0.25rem 0.45rem 0.25rem 0.65rem',
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                      gap: '0.4rem',
                       fontFamily: "'Poppins', sans-serif",
                       flexShrink: 0
                     }}>
-                      <span style={{ fontSize: '0.82rem', display: 'flex', alignItems: 'center', color: 'var(--primary-color, #0ea5e9)', flexShrink: 0 }}>
-                        🔗
-                      </span>
-                      <a
-                        href={catalogUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        title={`Abrir mi catálogo: ${catalogUrl}`}
-                        style={{
-                          fontSize: '0.74rem',
-                          fontWeight: 500,
-                          color: '#334155',
-                          textDecoration: 'none',
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                          maxWidth: '200px',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.25rem'
-                        }}
-                        onMouseEnter={e => (e.currentTarget.style.color = 'var(--primary-color, #0ea5e9)')}
-                        onMouseLeave={e => (e.currentTarget.style.color = '#334155')}
-                      >
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayUrl}</span>
-                        <ExternalLink size={12} style={{ opacity: 0.7, flexShrink: 0 }} />
-                      </a>
                       <button
                         type="button"
                         onClick={(e) => {
@@ -6439,36 +6403,61 @@ export default function Admin() {
                           showToast('¡Enlace copiado al portapapeles! ✓', 'success');
                           setTimeout(() => setCopiedHeaderLink(false), 2000);
                         }}
-                        title="Copiar enlace de mi catálogo al portapapeles"
+                        title={`Copiar enlace: ${catalogUrl}`}
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: '0.3rem',
+                          gap: '0.35rem',
                           background: copiedHeaderLink ? '#dcfce7' : 'var(--primary-color, #0ea5e9)',
                           color: copiedHeaderLink ? '#15803d' : '#ffffff',
-                          border: `1px solid ${copiedHeaderLink ? '#86efac' : 'transparent'}`,
-                          borderRadius: '7px',
-                          padding: '0.22rem 0.55rem',
-                          fontSize: '0.72rem',
+                          border: `1.5px solid ${copiedHeaderLink ? '#86efac' : 'transparent'}`,
+                          borderRadius: '8px',
+                          padding: '0.35rem 0.75rem',
+                          fontSize: '0.76rem',
                           fontWeight: 500,
                           cursor: 'pointer',
                           transition: 'all 0.2s ease',
                           whiteSpace: 'nowrap',
-                          flexShrink: 0
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                          fontFamily: "'Poppins', sans-serif"
                         }}
                       >
                         {copiedHeaderLink ? (
                           <>
-                            <Check size={12} />
-                            <span>¡Copiado!</span>
+                            <Check size={13} />
+                            <span>¡Enlace Copiado!</span>
                           </>
                         ) : (
                           <>
-                            <Copy size={12} />
-                            <span>Copiar</span>
+                            <Copy size={13} />
+                            <span>Copiar Enlace</span>
                           </>
                         )}
                       </button>
+
+                      <a
+                        href={catalogUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={`Abrir catálogo: ${catalogUrl}`}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '30px',
+                          height: '30px',
+                          background: '#f1f5f9',
+                          color: '#475569',
+                          border: '1px solid #cbd5e1',
+                          borderRadius: '8px',
+                          textDecoration: 'none',
+                          transition: 'all 0.15s ease'
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.color = 'var(--primary-color, #0ea5e9)'; e.currentTarget.style.borderColor = 'var(--primary-color, #0ea5e9)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.color = '#475569'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+                      >
+                        <ExternalLink size={13} />
+                      </a>
                     </div>
                   </div>
                 );
@@ -9564,12 +9553,6 @@ export default function Admin() {
                                            </span>
                                          </div>
 
-                                         <div style={{ borderTop: '1px dashed #86efac', paddingTop: '0.3rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-                                           <span style={{ color: '#15803d', fontWeight: 400 }}>Ganancia en Detal:</span>
-                                           <span style={{ color: '#15803d', fontWeight: 600 }}>
-                                             +${gananciaDetal.toLocaleString()} / ud
-                                           </span>
-                                         </div>
                                        </div>
                                      )}
                                    </>
