@@ -280,11 +280,11 @@ function MiNegocioSettings({
 
   return (
     <div className="admin-panel" style={{ borderRadius: '20px', padding: '1.5rem 1.75rem', marginTop: '1.5rem', fontFamily: "'Poppins', sans-serif" }}>
-      <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', textAlign: 'left' }}>
-        <span style={{ fontSize: '1.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🏪</span>
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left' }}>
-          <h2 className="panel-header-title-custom" style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600 }}>Configuración de Mi Catálogo (Marca Blanca)</h2>
-          <p style={{ margin: '0.15rem 0 0 0', color: '#64748b', fontSize: '0.85rem', fontWeight: 400, textAlign: 'left' }}>Personaliza el color, logo, imagen de portada, dominio propio y nombre que verán tus clientes en tu catálogo propio.</p>
+      <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', gap: '0.85rem', textAlign: 'left' }}>
+        <span style={{ fontSize: '1.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>🏪</span>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left', minWidth: 0 }}>
+          <h2 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>Configuración de Mi Catálogo (Marca Blanca)</h2>
+          <p style={{ margin: '0.15rem 0 0 0', color: '#64748b', fontSize: '0.82rem', fontWeight: 400, textAlign: 'left', fontFamily: "'Poppins', sans-serif" }}>Personaliza el color, logo, imagen de portada, dominio propio y nombre que verán tus clientes en tu catálogo propio.</p>
         </div>
       </div>
       <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -9461,15 +9461,13 @@ export default function Admin() {
                                  const vendeMayor = costoMayor ? Math.round(costoMayor * (1 + markup)) : null;
                                  const vende50 = costo50 ? Math.round(costo50 * (1 + markup)) : null;
 
-                                 const gananciaDetal = vendeDetal - costoDetal;
-
                                  return (
                                    <>
-                                     {/* BLOQUE 1: TÚ COMPRAS (Costo Fábrica / Indisutex) */}
+                                     {/* BLOQUE 1: TÚ COMPRAS */}
                                      <div style={{ background: '#f8fafc', padding: '0.65rem 0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.3rem' }}>
                                          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
-                                           📦 Tú Compras (Fábrica)
+                                           📦 Tú Compras
                                          </span>
                                          {desc > 0 && (
                                            <span style={{ fontSize: '0.7rem', color: '#059669', background: '#ecfdf5', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: 500 }}>
@@ -9509,12 +9507,12 @@ export default function Admin() {
                                        </div>
                                      </div>
 
-                                     {/* BLOQUE 2: TÚ VENDES (Precios Sugeridos con Margen) */}
+                                     {/* BLOQUE 2: TÚ VENDES */}
                                      {role === 'mayorista' && currentMayorista && (
                                        <div style={{ background: '#f0fdf4', padding: '0.65rem 0.75rem', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
                                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '0.3rem' }}>
                                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
-                                             🏷️ Tú Vendes (Catálogo)
+                                             🏷️ Tú Vendes
                                            </span>
                                            <span style={{ fontSize: '0.7rem', color: hasOverride ? '#b45309' : '#15803d', background: hasOverride ? '#fef3c7' : '#dcfce7', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 500 }}>
                                              {hasOverride ? 'Precio Manual' : `+${currentMayorista?.porcentaje_ganancia || 0}% margen`}
