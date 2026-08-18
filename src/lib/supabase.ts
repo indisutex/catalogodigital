@@ -87,11 +87,24 @@ export const findClosestTenant = (raw: string): ClosestStoreInfo | null => {
   return bestMatch;
 };
 
+const KNOWN_STORE_TENANTS = [
+  'sublimados_majestic', 'lucerito', 'saramantha', 'lovely', 'indisutex',
+  'majestic', 'sublimados', 'sublimadosmajestic'
+];
+
+export const isKnownStoreTenant = (slug: string): boolean => {
+  if (!slug) return false;
+  const clean = slug.toLowerCase().trim().replace(/-/g, '_');
+  return KNOWN_STORE_TENANTS.includes(clean) || !!findClosestTenant(clean);
+};
+
 export const normalizeTenantId = (raw: string): string => {
   if (!raw) return 'sublimados_majestic';
   const match = findClosestTenant(raw);
   if (match) return match.tenant_id;
-  return raw.toLowerCase().trim().replace(/-/g, '_');
+  const clean = raw.toLowerCase().trim().replace(/-/g, '_');
+  if (clean === 'majestic' || clean === 'sublimados' || clean === 'sublimadosmajestic') return 'sublimados_majestic';
+  return clean;
 };
 
 export const getTenantId = () => {
@@ -106,30 +119,51 @@ export const getTenantId = () => {
   ];
   
   if (firstPart && !systemRoutes.includes(firstPart)) {
-    const normalised = normalizeTenantId(firstPart);
-    setTenantId(normalised);
-    return normalised;
+    const match = findClosestTenant(firstPart);
+    if (match) {
+      setTenantId(match.tenant_id);
+      return match.tenant_id;
+    }
+    const clean = firstPart.replace(/-/g, '_');
+    if (KNOWN_STORE_TENANTS.includes(clean)) {
+      const normalised = normalizeTenantId(clean);
+      setTenantId(normalised);
+      return normalised;
+    }
+    // Return custom/wholesaler slug without saving it as the permanent store tenant
+    return clean;
   }
 
   // Then check URL params
   const urlParams = new URLSearchParams(window.location.search);
   const urlTenant = urlParams.get('tienda');
   if (urlTenant) {
-    const normalised = normalizeTenantId(urlTenant);
-    setTenantId(normalised);
-    return normalised;
+    const match = findClosestTenant(urlTenant);
+    if (match) {
+      setTenantId(match.tenant_id);
+      return match.tenant_id;
+    }
+    const clean = urlTenant.toLowerCase().trim().replace(/-/g, '_');
+    if (KNOWN_STORE_TENANTS.includes(clean)) {
+      const normalised = normalizeTenantId(clean);
+      setTenantId(normalised);
+      return normalised;
+    }
+    return clean;
   }
   
   // Then check localStorage
   const stored = localStorage.getItem('tenant_id');
-  if (stored) return normalizeTenantId(stored);
+  if (stored && isKnownStoreTenant(stored)) return normalizeTenantId(stored);
   
   // Fallback to default
   return import.meta.env.VITE_TENANT_ID || 'sublimados_majestic';
 };
 
 export const setTenantId = (id: string) => {
-  localStorage.setItem('tenant_id', id);
+  if (id && isKnownStoreTenant(id)) {
+    localStorage.setItem('tenant_id', normalizeTenantId(id));
+  }
 };
 
 export const supabase = createClient(

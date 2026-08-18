@@ -804,9 +804,14 @@ function SidebarContent({
         <a 
           href={(() => {
             if (role === 'mayorista' && currentAsesor) {
+              const mayorista = currentAsesor as any;
+              const customDom = mayorista.dominio_personalizado || mayorista.ajustes_productos?.dominio_personalizado;
+              if (customDom) {
+                return customDom.startsWith('http') ? customDom : `https://${customDom}`;
+              }
               const normalizeSlug = (str?: string) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
-              const bizSlug = currentAsesor.nombre_negocio ? normalizeSlug(currentAsesor.nombre_negocio) : (currentAsesor.nombre ? normalizeSlug(currentAsesor.nombre) : getTenantId());
-              const cleanP = (currentAsesor.telefono || '').split(',')[0].trim().replace(/\D/g, '');
+              const bizSlug = mayorista.nombre_negocio ? normalizeSlug(mayorista.nombre_negocio) : (mayorista.nombre ? normalizeSlug(mayorista.nombre) : getTenantId());
+              const cleanP = (mayorista.telefono || '').split(',')[0].trim().replace(/\D/g, '');
               return cleanP ? `/${bizSlug}?ws=${cleanP}` : `/${bizSlug}`;
             }
             if (role === 'asesor' && currentAsesor?.telefono) {
@@ -817,7 +822,7 @@ function SidebarContent({
           target="_blank" 
           rel="noopener noreferrer"
           className="btn-primary" 
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', width: '100%', padding: '0.8rem', borderRadius: '8px', textDecoration: 'none', background: 'var(--primary-color, #6366f1)' }}
+          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', width: '100%', padding: '0.8rem', borderRadius: '8px', textDecoration: 'none', background: 'var(--primary-color, #6366f1)', fontFamily: "'Poppins', sans-serif", fontWeight: 500 }}
         >
           <Eye size={16} /> Ver Catálogo
         </a>
@@ -9031,48 +9036,166 @@ export default function Admin() {
                         <small style={{color: '#64748b', fontWeight: 400, fontFamily: "'Poppins', sans-serif"}}>{role === 'mayorista' ? 'Esta foto o logo identificará tu marca en tu catálogo digital.' : 'Esta foto aparecerá en tu panel y como asesor estrella.'}</small>
                       </div>
                       <div className="form-field full" style={{ marginTop: '1.5rem', background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                        <label style={{ fontWeight: 600, color: '#0f172a', marginBottom: '0.5rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
-                          🔗 {role === 'mayorista' ? 'Tu Enlace Oficial de Mayorista (Marca Blanca)' : 'Tus Enlaces de Venta Personalizados'}
+                        <label style={{ fontWeight: 600, color: '#0f172a', marginBottom: '0.25rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
+                          🔗 {role === 'mayorista' ? 'Tus Enlaces Oficiales de Venta' : 'Tus Enlaces de Venta Personalizados'}
                         </label>
                         <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '0 0 1rem 0', fontFamily: "'Poppins', sans-serif", fontWeight: 400 }}>
                           {role === 'mayorista'
-                            ? 'Usa este enlace directo para tus clientes en Instagram, TikTok o WhatsApp. Carga directamente con tu nombre y catálogo propio sin menciones de fábrica.'
+                            ? 'Tienes 2 enlaces oficiales listos para compartir con tus clientes o publicar en redes sociales:'
                             : 'Usa estos enlaces para compartirlos con tus clientes. Cuando compren a través de ellos, las ventas se te asignarán automáticamente.'}
                         </p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                          {(loggedAsesorPhone || '').split(',').map(p => p.trim()).filter(Boolean).map((phone, idx) => {
-                            const normalizeSlug = (str?: string) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
-                            const bizSlug = currentMayorista?.nombre_negocio 
-                              ? normalizeSlug(currentMayorista.nombre_negocio) 
-                              : (currentMayorista?.nombre ? normalizeSlug(currentMayorista.nombre) : getTenantId());
-                            const targetSlug = role === 'mayorista' && bizSlug ? bizSlug : getTenantId();
-                            const link = `${window.location.origin}/${targetSlug}?ws=${phone.replace(/\D/g, '')}`;
-                            return (
-                              <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'white', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
-                                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569', whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>
-                                  {role === 'mayorista' ? 'Mi Catálogo:' : `Línea ${phone}:`}
-                                </span>
-                                <input 
-                                  readOnly 
-                                  value={link} 
-                                  style={{ flex: 1, fontSize: '0.8rem', background: 'transparent', border: 'none', color: 'var(--primary-color, #0ea5e9)', fontWeight: 500, padding: 0, fontFamily: "'Poppins', sans-serif" }} 
-                                  onClick={(e) => (e.target as HTMLInputElement).select()}
-                                />
-                                <button
-                                  type="button"
-                                  className="btn-secondary"
-                                  style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', borderRadius: '6px', cursor: 'pointer', border: '1px solid #cbd5e1', background: 'white', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(link);
-                                    showToast('Enlace copiado al portapapeles ✅', 'success');
-                                  }}
-                                >
-                                  Copiar
-                                </button>
-                              </div>
-                            );
-                          })}
-                        </div>
+
+                        {role === 'mayorista' ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            {(() => {
+                              const phoneList = (loggedAsesorPhone || currentMayorista?.telefono || '').split(',').map(p => p.trim()).filter(Boolean);
+                              const primaryPhone = phoneList[0] || '';
+                              const cleanPhone = primaryPhone.replace(/\D/g, '');
+                              const normalizeSlug = (str?: string) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+                              const bizSlug = currentMayorista?.nombre_negocio 
+                                ? normalizeSlug(currentMayorista.nombre_negocio) 
+                                : (currentMayorista?.nombre ? normalizeSlug(currentMayorista.nombre) : getTenantId());
+                              const parentTenant = currentMayorista?.tenant_id || getTenantId() || 'sublimados_majestic';
+                              
+                              const customDom = currentMayorista?.dominio_personalizado || currentMayorista?.ajustes_productos?.dominio_personalizado;
+                              const friendlyLink = customDom 
+                                ? (customDom.startsWith('http') ? customDom : `https://${customDom}`)
+                                : `${window.location.origin}/${bizSlug}${cleanPhone ? `?ws=${cleanPhone}` : ''}`;
+                              
+                              const standardLink = `${window.location.origin}/${parentTenant}?ws=${cleanPhone}`;
+
+                              return (
+                                <>
+                                  {/* ENLACE 1: MARCA BLANCA / PERSONALIZADO */}
+                                  <div style={{ background: '#ffffff', border: '1px solid #c7d2fe', borderRadius: '10px', padding: '0.85rem 1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#4338ca', fontFamily: "'Poppins', sans-serif" }}>
+                                          🏷️ Enlace Marca Blanca (Personalizado)
+                                        </span>
+                                        <span style={{ fontSize: '0.7rem', background: '#e0e7ff', color: '#4338ca', padding: '0.15rem 0.45rem', borderRadius: '999px', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
+                                          Recomendado Redes Sociales
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.6rem 0', fontFamily: "'Poppins', sans-serif", fontWeight: 400 }}>
+                                      Carga con el nombre de tu marca (<strong>{currentMayorista?.nombre_negocio || 'Tu Marca'}</strong>), logo y catálogo propio sin menciones de fábrica.
+                                    </p>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f8fafc', padding: '0.45rem 0.65rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                      <input 
+                                        readOnly 
+                                        value={friendlyLink} 
+                                        style={{ flex: 1, fontSize: '0.8rem', background: 'transparent', border: 'none', color: '#4f46e5', fontWeight: 500, padding: 0, fontFamily: "'Poppins', sans-serif", outline: 'none' }} 
+                                        onClick={(e) => (e.target as HTMLInputElement).select()}
+                                      />
+                                      <button
+                                        type="button"
+                                        className="btn-secondary"
+                                        style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', borderRadius: '6px', cursor: 'pointer', border: '1px solid #cbd5e1', background: 'white', fontWeight: 500, fontFamily: "'Poppins', sans-serif", display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                                        onClick={() => {
+                                          navigator.clipboard.writeText(friendlyLink);
+                                          showToast('Enlace de marca blanca copiado ✅', 'success');
+                                        }}
+                                      >
+                                        <Copy size={13} /> Copiar
+                                      </button>
+                                      <a
+                                        href={friendlyLink}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', borderRadius: '6px', textDecoration: 'none', border: '1px solid #4f46e5', background: '#4f46e5', color: 'white', fontWeight: 500, fontFamily: "'Poppins', sans-serif", display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                                      >
+                                        <ExternalLink size={13} /> Abrir
+                                      </a>
+                                    </div>
+                                  </div>
+
+                                  {/* ENLACE 2: ENLACE ESTÁNDAR OFICIAL */}
+                                  <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '0.85rem 1rem', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                        <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155', fontFamily: "'Poppins', sans-serif" }}>
+                                          🏢 Enlace Estándar Oficial (con tu línea asignada)
+                                        </span>
+                                        <span style={{ fontSize: '0.7rem', background: '#f1f5f9', color: '#475569', padding: '0.15rem 0.45rem', borderRadius: '999px', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
+                                          Enlace Directo
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 0.6rem 0', fontFamily: "'Poppins', sans-serif", fontWeight: 400 }}>
+                                      Enlace tradicional de la tienda oficial con tu número de WhatsApp vinculado para asignarte las ventas automáticamente.
+                                    </p>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f8fafc', padding: '0.45rem 0.65rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                      <input 
+                                        readOnly 
+                                        value={standardLink} 
+                                        style={{ flex: 1, fontSize: '0.8rem', background: 'transparent', border: 'none', color: '#0284c7', fontWeight: 500, padding: 0, fontFamily: "'Poppins', sans-serif", outline: 'none' }} 
+                                        onClick={(e) => (e.target as HTMLInputElement).select()}
+                                      />
+                                      <button
+                                        type="button"
+                                        className="btn-secondary"
+                                        style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', borderRadius: '6px', cursor: 'pointer', border: '1px solid #cbd5e1', background: 'white', fontWeight: 500, fontFamily: "'Poppins', sans-serif", display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                                        onClick={() => {
+                                          navigator.clipboard.writeText(standardLink);
+                                          showToast('Enlace oficial copiado ✅', 'success');
+                                        }}
+                                      >
+                                        <Copy size={13} /> Copiar
+                                      </button>
+                                      <a
+                                        href={standardLink}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{ padding: '0.35rem 0.65rem', fontSize: '0.75rem', borderRadius: '6px', textDecoration: 'none', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#334155', fontWeight: 500, fontFamily: "'Poppins', sans-serif", display: 'flex', alignItems: 'center', gap: '0.3rem' }}
+                                      >
+                                        <ExternalLink size={13} /> Abrir
+                                      </a>
+                                    </div>
+                                  </div>
+                                </>
+                              );
+                            })()}
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            {(loggedAsesorPhone || '').split(',').map(p => p.trim()).filter(Boolean).map((phone, idx) => {
+                              const link = `${window.location.origin}/${getTenantId()}?ws=${phone.replace(/\D/g, '')}`;
+                              return (
+                                <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'white', padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1' }}>
+                                  <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569', whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>
+                                    {`Línea ${phone}:`}
+                                  </span>
+                                  <input 
+                                    readOnly 
+                                    value={link} 
+                                    style={{ flex: 1, fontSize: '0.8rem', background: 'transparent', border: 'none', color: 'var(--primary-color, #0ea5e9)', fontWeight: 500, padding: 0, fontFamily: "'Poppins', sans-serif" }} 
+                                    onClick={(e) => (e.target as HTMLInputElement).select()}
+                                  />
+                                  <button
+                                    type="button"
+                                    className="btn-secondary"
+                                    style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', borderRadius: '6px', cursor: 'pointer', border: '1px solid #cbd5e1', background: 'white', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(link);
+                                      showToast('Enlace copiado al portapapeles ✅', 'success');
+                                    }}
+                                  >
+                                    Copiar
+                                  </button>
+                                  <a
+                                    href={link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ padding: '0.3rem 0.6rem', fontSize: '0.75rem', borderRadius: '6px', textDecoration: 'none', border: '1px solid #cbd5e1', background: 'white', color: '#334155', fontWeight: 500, fontFamily: "'Poppins', sans-serif", display: 'flex', alignItems: 'center', gap: '0.2rem' }}
+                                  >
+                                    <ExternalLink size={13} /> Abrir
+                                  </a>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="form-actions" style={{ marginTop: '1.5rem', display: 'flex', justifyContent: 'flex-end' }}>
@@ -11961,44 +12084,60 @@ export default function Admin() {
                                       );
                                     })()}
                                     <td style={{ padding: '1rem' }}>
-                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
                                         {(m.telefono || '').split(',').map((p: string) => p.trim()).filter(Boolean).map((phone: string, idx: number) => {
-                                          const link = `${window.location.origin}/${getTenantId()}?ws=${phone}`;
+                                          const normalizeSlug = (str?: string) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+                                          const bizSlug = m.nombre_negocio ? normalizeSlug(m.nombre_negocio) : (m.nombre ? normalizeSlug(m.nombre) : getTenantId());
+                                          const cleanP = phone.replace(/\D/g, '');
+                                          const friendlyLink = `${window.location.origin}/${bizSlug}?ws=${cleanP}`;
+                                          const standardLink = `${window.location.origin}/${m.tenant_id || getTenantId()}?ws=${cleanP}`;
+
                                           return (
-                                            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-                                              <a
-                                                href={link}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                style={{ 
-                                                  fontSize: '0.78rem', 
-                                                  color: '#1e1b4b', 
-                                                  fontWeight: 700, 
-                                                  display: 'inline-flex', 
-                                                  alignItems: 'center', 
-                                                  gap: '0.25rem', 
-                                                  textDecoration: 'underline', 
-                                                  textDecorationColor: '#cbd5e1', 
-                                                  transition: 'all 0.2s',
-                                                  cursor: 'pointer'
-                                                }}
-                                                onMouseEnter={e => { e.currentTarget.style.color = '#0ea5e9'; e.currentTarget.style.textDecorationColor = '#0ea5e9'; }}
-                                                onMouseLeave={e => { e.currentTarget.style.color = '#1e1b4b'; e.currentTarget.style.textDecorationColor = '#cbd5e1'; }}
-                                                title="Click para ver catálogo de este mayorista"
-                                              >
-                                                📲 {phone}
-                                              </a>
-                                              <button
-                                                type="button"
-                                                onClick={() => {
-                                                  navigator.clipboard.writeText(link);
-                                                  showToast(`Enlace mayorista copiado ✓`, 'success');
-                                                }}
-                                                className="btn-secondary"
-                                                style={{ padding: '0.15rem 0.4rem', fontSize: '0.65rem', display: 'inline-flex', alignItems: 'center', gap: '0.2rem', whiteSpace: 'nowrap' }}
-                                              >
-                                                <Copy size={10} /> Copiar
-                                              </button>
+                                            <div key={idx} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', padding: '0.35rem 0.5rem', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.4rem' }}>
+                                                <a
+                                                  href={friendlyLink}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  style={{ fontSize: '0.74rem', color: '#4338ca', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.2rem', textDecoration: 'none', fontFamily: "'Poppins', sans-serif" }}
+                                                  title="Ver catálogo marca blanca"
+                                                >
+                                                  🏷️ /{bizSlug}
+                                                </a>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                    navigator.clipboard.writeText(friendlyLink);
+                                                    showToast(`Enlace marca blanca copiado ✓`, 'success');
+                                                  }}
+                                                  className="btn-secondary"
+                                                  style={{ padding: '0.1rem 0.35rem', fontSize: '0.65rem', display: 'inline-flex', alignItems: 'center', gap: '0.2rem', whiteSpace: 'nowrap', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}
+                                                >
+                                                  <Copy size={10} /> Copiar
+                                                </button>
+                                              </div>
+                                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.4rem' }}>
+                                                <a
+                                                  href={standardLink}
+                                                  target="_blank"
+                                                  rel="noopener noreferrer"
+                                                  style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: '0.2rem', textDecoration: 'none', fontFamily: "'Poppins', sans-serif" }}
+                                                  title="Ver enlace oficial"
+                                                >
+                                                  🏢 Estándar ({phone})
+                                                </a>
+                                                <button
+                                                  type="button"
+                                                  onClick={() => {
+                                                    navigator.clipboard.writeText(standardLink);
+                                                    showToast(`Enlace oficial copiado ✓`, 'success');
+                                                  }}
+                                                  className="btn-secondary"
+                                                  style={{ padding: '0.1rem 0.35rem', fontSize: '0.65rem', display: 'inline-flex', alignItems: 'center', gap: '0.2rem', whiteSpace: 'nowrap', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}
+                                                >
+                                                  <Copy size={10} /> Copiar
+                                                </button>
+                                              </div>
                                             </div>
                                           );
                                         })}
@@ -12086,13 +12225,48 @@ export default function Admin() {
 
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', background: '#f8fafc', padding: '0.55rem 0.75rem', borderRadius: '10px' }}>
                                   <div>
-                                    <span style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block' }}>Teléfonos</span>
-                                    <span style={{ fontSize: '0.78rem', color: '#0f172a', fontWeight: 600 }}>{m.telefono || 'Sin teléfono'}</span>
+                                    <span style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', display: 'block', fontFamily: "'Poppins', sans-serif" }}>Teléfonos</span>
+                                    <span style={{ fontSize: '0.78rem', color: '#0f172a', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>{m.telefono || 'Sin teléfono'}</span>
                                   </div>
                                   <div style={{ textAlign: 'right' }}>
-                                    <span style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block' }}>Total Compras</span>
-                                    <span style={{ fontSize: '0.9rem', color: '#10b981', fontWeight: 800 }}>${totalCompras.toLocaleString()}</span>
+                                    <span style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', display: 'block', fontFamily: "'Poppins', sans-serif" }}>Total Compras</span>
+                                    <span style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: 600, fontFamily: "'Poppins', sans-serif" }}>${totalCompras.toLocaleString()}</span>
                                   </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.2rem' }}>
+                                  {(() => {
+                                    const normalizeSlug = (str?: string) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+                                    const bizSlug = m.nombre_negocio ? normalizeSlug(m.nombre_negocio) : (m.nombre ? normalizeSlug(m.nombre) : getTenantId());
+                                    const cleanP = (m.telefono || '').split(',')[0].trim().replace(/\D/g, '');
+                                    const friendlyLink = `${window.location.origin}/${bizSlug}?ws=${cleanP}`;
+                                    const standardLink = `${window.location.origin}/${m.tenant_id || getTenantId()}?ws=${cleanP}`;
+                                    return (
+                                      <>
+                                        <button
+                                          type="button"
+                                          className="btn-secondary"
+                                          onClick={() => {
+                                            navigator.clipboard.writeText(friendlyLink);
+                                            showToast('Enlace marca blanca copiado ✅', 'success');
+                                          }}
+                                          style={{ flex: 1, padding: '0.35rem 0.5rem', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontFamily: "'Poppins', sans-serif", fontWeight: 500 }}
+                                        >
+                                          <Copy size={11} /> Marca Blanca
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="btn-secondary"
+                                          onClick={() => {
+                                            navigator.clipboard.writeText(standardLink);
+                                            showToast('Enlace oficial copiado ✅', 'success');
+                                          }}
+                                          style={{ flex: 1, padding: '0.35rem 0.5rem', fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontFamily: "'Poppins', sans-serif", fontWeight: 500 }}
+                                        >
+                                          <Copy size={11} /> Estándar
+                                        </button>
+                                      </>
+                                    );
+                                  })()}
                                 </div>
                               </div>
                             );

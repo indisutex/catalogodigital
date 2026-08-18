@@ -56,6 +56,7 @@ export default function MenuDigital() {
   const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
   const [configuracion, setConfiguracion] = useState<Configuracion | null>(null);
   const [mayoristaBranding, setMayoristaBranding] = useState<{nombre: string, logo: string, video: string, color?: string, dominio_personalizado?: string, ajustes_productos?: any} | null>(null);
+  const [effectiveTenant, setEffectiveTenant] = useState<string>(() => normalizeTenantId(getTenantId()));
   const [cargando, setCargando] = useState(true);
   
   const [filtroCategoria, setFiltroCategoria] = useState<string>('todos');
@@ -184,32 +185,73 @@ export default function MenuDigital() {
   }, [typoModal]);
 
   useEffect(() => {
-    async function loadWholesalerMarkup(phone: string) {
+    async function inicializarCatalogoYMayorista() {
       try {
-        const tenant = getTenantId();
+        setCargando(true);
+        const params = new URLSearchParams(window.location.search);
+        const rawPath = window.location.pathname.replace(/^\/+/g, '').trim().split('/')[0].toLowerCase();
+        const normalizeSlug = (str?: string) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+        const rawPathSlug = normalizeSlug(rawPath);
         const currentHost = window.location.hostname.toLowerCase();
-        let matchMayorista: any = null;
 
-        const cleanQuery = phone ? phone.replace(/\D/g, '') : '';
+        const wsParam = params.get('ws') || params.get('asesor') || params.get('wa') || params.get('linea') || params.get('telefono') || params.get('ref');
+        let phoneToQuery = '';
+        if (wsParam) {
+          if (wsParam === 'clear') {
+            sessionStorage.removeItem(`ws_override_${getTenantId()}`);
+            sessionStorage.removeItem(`ws_explicit_${getTenantId()}`);
+            setOverrideWhatsApp(null);
+            setMarkupPorcentaje(0);
+          } else {
+            const cleanNum = wsParam.replace(/\D/g, '');
+            if (cleanNum) {
+              setOverrideWhatsApp(cleanNum);
+              sessionStorage.setItem(`ws_override_${getTenantId()}`, cleanNum);
+              sessionStorage.setItem(`ws_explicit_${getTenantId()}`, 'true');
+              phoneToQuery = cleanNum;
+            }
+          }
+        } else {
+          const isExplicit = sessionStorage.getItem(`ws_explicit_${getTenantId()}`) === 'true';
+          const savedOverride = sessionStorage.getItem(`ws_override_${getTenantId()}`);
+          if (isExplicit && savedOverride) {
+            setOverrideWhatsApp(savedOverride);
+            phoneToQuery = savedOverride;
+          } else {
+            sessionStorage.removeItem(`ws_override_${getTenantId()}`);
+            phoneToQuery = '';
+          }
+        }
+
+        const catParam = params.get('categoria');
+        if (catParam) setFiltroCategoria(catParam);
+        const subcatParam = params.get('subcategoria');
+        if (subcatParam) setFiltroSubcategoria(subcatParam);
+        const tipoParam = params.get('tipo');
+        if (tipoParam === 'mayorista' || tipoParam === 'detal' || tipoParam === '50_unidades') {
+          setBuyerType(tipoParam);
+        }
+
+        // 1. PRIMERO: Buscar en Mayoristas (por slug, ID, teléfono o dominio)
+        let matchMayorista: any = null;
+        const cleanQuery = phoneToQuery ? phoneToQuery.replace(/\D/g, '') : '';
         const normQuery = cleanQuery.length === 12 && cleanQuery.startsWith('57') ? cleanQuery.substring(2) : cleanQuery;
 
-        const normalizeSlug = (str?: string) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
-        const currentTenantSlug = normalizeSlug(tenant);
-
-        // 1. PRIMERO: Buscar en Mayoristas (por teléfono, slug de negocio, ID o dominio personalizado)
         const { data: mayoristasGlobal } = await supabase
           .from('mayoristas')
           .select('id, nombre, telefono, porcentaje_ganancia, ajustes_productos, nombre_negocio, logo_url, foto_url, video_hero_url, color_primario, dominio_personalizado, tenant_id');
 
-        // A. Match por slug de nombre de negocio o ID en la URL (ej: /magentapijamas)
-        if (currentTenantSlug && currentTenantSlug !== 'indisutex' && currentTenantSlug !== 'sublimadosmajestic' && currentTenantSlug !== 'sublimados_majestic' && currentTenantSlug !== 'default' && currentTenantSlug !== 'menu') {
+        const systemRoutes = ['admin', 'superadmin', 'pago', 'guia', 'menu', 'dist', 'assets', 'api', 'sw.js', 'manifest.json', 'products', 'orders', 'favicon.ico', 'robots.txt', 'indisutex', 'sublimadosmajestic', 'sublimados_majestic', 'default'];
+        
+        // A. Match por slug de negocio o nombre en la URL (ej: /magentapijamas)
+        if (rawPathSlug && !systemRoutes.includes(rawPathSlug)) {
           matchMayorista = mayoristasGlobal?.find(m => {
             const bizSlug = normalizeSlug(m.nombre_negocio);
             const nameSlug = normalizeSlug(m.nombre);
-            return (bizSlug && bizSlug === currentTenantSlug) || 
-                   (nameSlug && nameSlug === currentTenantSlug) ||
-                   (m.id && normalizeSlug(m.id) === currentTenantSlug) ||
-                   (m.tenant_id && normalizeSlug(m.tenant_id) === currentTenantSlug);
+            return (bizSlug && bizSlug === rawPathSlug) || 
+                   (nameSlug && nameSlug === rawPathSlug) ||
+                   (m.id && normalizeSlug(m.id) === rawPathSlug) ||
+                   (m.tenant_id && normalizeSlug(m.tenant_id) === rawPathSlug);
           });
         }
 
@@ -232,10 +274,14 @@ export default function MenuDigital() {
           });
         }
 
-        // SI ES MAYORISTA: Configurar tienda propia, precios y contacto directo del mayorista
+        let targetTenant = 'sublimados_majestic';
+
         if (matchMayorista) {
+          targetTenant = matchMayorista.tenant_id || import.meta.env.VITE_TENANT_ID || 'sublimados_majestic';
+          setEffectiveTenant(targetTenant);
+
           const primerTel = (matchMayorista.telefono || '').split(',')[0].trim();
-          const cleanMayoristaPhone = (phone || primerTel).replace(/\D/g, '');
+          const cleanMayoristaPhone = (phoneToQuery || primerTel).replace(/\D/g, '');
           const mayoristaNombre = matchMayorista.nombre_negocio || matchMayorista.nombre || 'Mayorista';
           const mayoristaFoto = matchMayorista.logo_url || matchMayorista.foto_url || '';
           const mayoristaColor = matchMayorista.color_primario || matchMayorista.ajustes_productos?.color_primario || '';
@@ -244,7 +290,7 @@ export default function MenuDigital() {
             id: matchMayorista.id,
             nombre: mayoristaNombre,
             foto_url: mayoristaFoto,
-            telefono: primerTel || phone,
+            telefono: primerTel || phoneToQuery,
             isMayorista: true
           });
 
@@ -262,146 +308,202 @@ export default function MenuDigital() {
 
           if (cleanMayoristaPhone) {
             setOverrideWhatsApp(cleanMayoristaPhone);
-            sessionStorage.setItem(`ws_override_${tenant}`, cleanMayoristaPhone);
+            sessionStorage.setItem(`ws_override_${targetTenant}`, cleanMayoristaPhone);
           }
-          return; // Finalizar: ya quedó asignado el mayorista directamente
-        }
+        } else {
+          // Asesor / Tienda estándar oficial
+          const storeTenant = normalizeTenantId(rawPathSlug || params.get('tienda') || localStorage.getItem('tenant_id') || 'sublimados_majestic');
+          targetTenant = storeTenant;
+          setEffectiveTenant(storeTenant);
 
-        // 2. SEGUNDO: Si NO es mayorista, buscar en la lista de asesores
-        let matchAsesor: any = null;
+          let matchAsesor: any = null;
+          if (phoneToQuery) {
+            const { data: allAsesores } = await supabase
+              .from('asesores')
+              .select('id, nombre, telefono, foto_url, tenant_id')
+              .like('telefono', `%${normQuery}%`);
 
-        if (phone) {
-          const { data: allAsesores } = await supabase
-            .from('asesores')
-            .select('id, nombre, telefono, foto_url, tenant_id')
-            .like('telefono', `%${normQuery}%`);
+            matchAsesor = allAsesores?.[0] || null;
 
-          matchAsesor = allAsesores?.[0] || null;
+            if (!matchAsesor) {
+              const { data: allFallback } = await supabase
+                .from('asesores')
+                .select('id, nombre, telefono, foto_url, tenant_id');
+
+              matchAsesor = allFallback?.find(a => {
+                if (!a.telefono) return false;
+                const phoneList = a.telefono.split(',').map((p: string) => {
+                  const clean = p.replace(/\D/g, '');
+                  return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
+                }).filter(Boolean);
+                return phoneList.some((p: string) => p === normQuery || p.includes(normQuery) || normQuery.includes(p));
+              }) || null;
+            }
+          }
 
           if (!matchAsesor) {
-            const { data: allFallback } = await supabase
+            const { data: tenantAsesores } = await supabase
               .from('asesores')
-              .select('id, nombre, telefono, foto_url, tenant_id');
+              .select('id, nombre, telefono, foto_url, tenant_id')
+              .eq('tenant_id', storeTenant);
 
-            matchAsesor = allFallback?.find(a => {
-              if (!a.telefono) return false;
-              const phoneList = a.telefono.split(',').map((p: string) => {
-                const clean = p.replace(/\D/g, '');
-                return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
-              }).filter(Boolean);
-              return phoneList.some((p: string) => p === normQuery || p.includes(normQuery) || normQuery.includes(p));
-            }) || null;
-          }
-        }
-
-        // Si no hay teléfono o no hubo coincidencia por teléfono, rotación secuencial equitativa (Round-Robin) para asesores de la tienda oficial
-        if (!matchAsesor) {
-          const { data: tenantAsesores } = await supabase
-            .from('asesores')
-            .select('id, nombre, telefono, foto_url, tenant_id')
-            .eq('tenant_id', tenant);
-
-          if (tenantAsesores && tenantAsesores.length > 0) {
-            tenantAsesores.sort((a, b) => (a.id || '').localeCompare(b.id || ''));
-
-            const storageKey = `last_asesor_idx_${tenant}`;
-            let lastIdx = parseInt(localStorage.getItem(storageKey) || '-1', 10);
-            if (isNaN(lastIdx) || lastIdx < 0 || lastIdx >= tenantAsesores.length) {
-              lastIdx = -1;
-            }
-
-            const nextIdx = (lastIdx + 1) % tenantAsesores.length;
-            localStorage.setItem(storageKey, nextIdx.toString());
-            matchAsesor = tenantAsesores[nextIdx];
-          } else {
-            const { data: globalAsesores } = await supabase
-              .from('asesores')
-              .select('id, nombre, telefono, foto_url, tenant_id');
-            if (globalAsesores && globalAsesores.length > 0) {
-              globalAsesores.sort((a, b) => (a.id || '').localeCompare(b.id || ''));
-              const storageKey = `last_asesor_idx_global`;
+            if (tenantAsesores && tenantAsesores.length > 0) {
+              tenantAsesores.sort((a, b) => (a.id || '').localeCompare(b.id || ''));
+              const storageKey = `last_asesor_idx_${storeTenant}`;
               let lastIdx = parseInt(localStorage.getItem(storageKey) || '-1', 10);
-              if (isNaN(lastIdx) || lastIdx < 0 || lastIdx >= globalAsesores.length) {
-                lastIdx = -1;
-              }
-              const nextIdx = (lastIdx + 1) % globalAsesores.length;
+              if (isNaN(lastIdx) || lastIdx < 0 || lastIdx >= tenantAsesores.length) lastIdx = -1;
+              const nextIdx = (lastIdx + 1) % tenantAsesores.length;
               localStorage.setItem(storageKey, nextIdx.toString());
-              matchAsesor = globalAsesores[nextIdx];
+              matchAsesor = tenantAsesores[nextIdx];
+            } else {
+              const { data: globalAsesores } = await supabase
+                .from('asesores')
+                .select('id, nombre, telefono, foto_url, tenant_id');
+              if (globalAsesores && globalAsesores.length > 0) {
+                globalAsesores.sort((a, b) => (a.id || '').localeCompare(b.id || ''));
+                const storageKey = `last_asesor_idx_global`;
+                let lastIdx = parseInt(localStorage.getItem(storageKey) || '-1', 10);
+                if (isNaN(lastIdx) || lastIdx < 0 || lastIdx >= globalAsesores.length) lastIdx = -1;
+                const nextIdx = (lastIdx + 1) % globalAsesores.length;
+                localStorage.setItem(storageKey, nextIdx.toString());
+                matchAsesor = globalAsesores[nextIdx];
+              }
+            }
+          }
+
+          if (matchAsesor) {
+            const primerTel = (matchAsesor.telefono || '').split(',')[0].trim();
+            const cleanAssignedPhone = (phoneToQuery || primerTel).replace(/\D/g, '');
+
+            setActiveAsesor({
+              id: matchAsesor.id,
+              nombre: matchAsesor.nombre || 'Asesor Comercial',
+              foto_url: matchAsesor.foto_url || '',
+              telefono: phoneToQuery || primerTel,
+              isMayorista: false
+            });
+
+            if (cleanAssignedPhone) {
+              setOverrideWhatsApp(cleanAssignedPhone);
+              sessionStorage.setItem(`ws_override_${storeTenant}`, cleanAssignedPhone);
             }
           }
         }
 
-        if (matchAsesor) {
-          const primerTel = (matchAsesor.telefono || '').split(',')[0].trim();
-          const cleanAssignedPhone = (phone || primerTel).replace(/\D/g, '');
+        // 2. CARGAR PRODUCTOS, CATEGORIAS Y CONFIGURACION DEL TENANT EFECTIVO
+        const normT = normalizeTenantId(targetTenant);
+        const tenantFilter = `tenant_id.eq.${targetTenant},tenant_id.eq.${normT}`;
 
-          setActiveAsesor({
-            id: matchAsesor.id,
-            nombre: matchAsesor.nombre || 'Asesor Comercial',
-            foto_url: matchAsesor.foto_url || '',
-            telefono: phone || primerTel,
-            isMayorista: false
-          });
+        const [catRes, subcatRes, confRes] = await Promise.all([
+          supabase.from('categorias').select('*').or(tenantFilter).order('orden', { ascending: true }),
+          supabase.from('subcategorias').select('*').or(tenantFilter).order('orden', { ascending: true }),
+          supabase.from('configuracion').select('*').or(tenantFilter)
+        ]);
 
-          // Guardar el asesor asignado en la sesión
-          if (cleanAssignedPhone) {
-            setOverrideWhatsApp(cleanAssignedPhone);
-            sessionStorage.setItem(`ws_override_${tenant}`, cleanAssignedPhone);
+        if (catRes.data && catRes.data.length > 0) {
+          setCategorias(catRes.data);
+        } else {
+          const { data: defaultCats } = await supabase.from('categorias').select('*').eq('tenant_id', 'sublimados_majestic').order('orden', { ascending: true });
+          if (defaultCats) setCategorias(defaultCats);
+        }
+
+        if (subcatRes.data && subcatRes.data.length > 0) {
+          setSubcategorias(subcatRes.data);
+        } else {
+          const { data: defaultSubcats } = await supabase.from('subcategorias').select('*').eq('tenant_id', 'sublimados_majestic').order('orden', { ascending: true });
+          if (defaultSubcats) setSubcategorias(defaultSubcats);
+        }
+
+        if (confRes.data && confRes.data.length > 0) {
+          const matchingTenantConfigs = confRes.data.filter(c => c.tenant_id === targetTenant || c.tenant_id === normT);
+          const bestConfig = matchingTenantConfigs.find(c => c.logo_url || c.video_hero_url) || matchingTenantConfigs[0] || confRes.data[0];
+          let extraConfig: any = {};
+          let cleanMetodos = bestConfig.metodos_pago || '';
+
+          if (cleanMetodos && typeof cleanMetodos === 'string' && cleanMetodos.includes('__EXTRA_CONFIG__')) {
+            const parts = cleanMetodos.split('__EXTRA_CONFIG__');
+            cleanMetodos = parts[0];
+            try {
+              if (parts[1]) {
+                const parsedExtra = JSON.parse(parts[1]);
+                extraConfig = { ...extraConfig, ...parsedExtra };
+              }
+            } catch (e) {}
+          }
+
+          try {
+            const globalMinijuegos = localStorage.getItem('config_extra_global_activar_minijuegos');
+            if (globalMinijuegos !== null) extraConfig.activar_minijuegos = globalMinijuegos === 'true';
+            const tenantExtra = localStorage.getItem(`config_extra_tenant_${targetTenant}`);
+            if (tenantExtra) {
+              const parsed = JSON.parse(tenantExtra);
+              if (parsed.activar_minijuegos !== undefined) extraConfig.activar_minijuegos = parsed.activar_minijuegos;
+            }
+          } catch (e) {}
+          setConfiguracion({ ...bestConfig, ...extraConfig, metodos_pago: cleanMetodos });
+        } else {
+          const { data: defaultConfs } = await supabase.from('configuracion').select('*').eq('tenant_id', 'sublimados_majestic');
+          if (defaultConfs && defaultConfs.length > 0) {
+            setConfiguracion(defaultConfs[0]);
           }
         }
-      } catch (err) {
-        console.error("Error loading wholesaler / asesor: ", err);
-      }
-    }
 
-    const params = new URLSearchParams(window.location.search);
-    const wsParam = params.get('ws') || params.get('asesor') || params.get('wa') || params.get('linea') || params.get('telefono') || params.get('ref');
-    let phoneToQuery = '';
-    if (wsParam) {
-      if (wsParam === 'clear') {
-        sessionStorage.removeItem(`ws_override_${getTenantId()}`);
-        sessionStorage.removeItem(`ws_explicit_${getTenantId()}`);
-        setOverrideWhatsApp(null);
-        setMarkupPorcentaje(0);
-      } else {
-        const cleanNum = wsParam.replace(/\D/g, '');
-        if (cleanNum) {
-          setOverrideWhatsApp(cleanNum);
-          sessionStorage.setItem(`ws_override_${getTenantId()}`, cleanNum);
-          sessionStorage.setItem(`ws_explicit_${getTenantId()}`, 'true');
-          phoneToQuery = cleanNum;
+        // Fetch products in chunks of 1000
+        let allProducts: any[] = [];
+        let from = 0;
+        let to = 999;
+        let hasMore = true;
+
+        while (hasMore) {
+          const { data: chunk, error: prodError } = await supabase
+            .from('productos')
+            .select('*')
+            .eq('tenant_id', targetTenant)
+            .order('created_at', { ascending: false })
+            .range(from, to);
+
+          if (prodError || !chunk || chunk.length === 0) {
+            hasMore = false;
+          } else {
+            allProducts = [...allProducts, ...chunk];
+            if (chunk.length < 1000) hasMore = false;
+            else { from += 1000; to += 1000; }
+          }
         }
+
+        // Fallback to default store products if targetTenant had 0 products
+        if (allProducts.length === 0 && targetTenant !== 'sublimados_majestic') {
+          from = 0;
+          to = 999;
+          hasMore = true;
+          while (hasMore) {
+            const { data: chunk, error: prodError } = await supabase
+              .from('productos')
+              .select('*')
+              .eq('tenant_id', 'sublimados_majestic')
+              .order('created_at', { ascending: false })
+              .range(from, to);
+
+            if (prodError || !chunk || chunk.length === 0) {
+              hasMore = false;
+            } else {
+              allProducts = [...allProducts, ...chunk];
+              if (chunk.length < 1000) hasMore = false;
+              else { from += 1000; to += 1000; }
+            }
+          }
+        }
+
+        setProductos(allProducts);
+      } catch (err) {
+        console.error('Error inicializando catálogo:', err);
+      } finally {
+        setCargando(false);
       }
-    } else {
-      const isExplicit = sessionStorage.getItem(`ws_explicit_${getTenantId()}`) === 'true';
-      const savedOverride = sessionStorage.getItem(`ws_override_${getTenantId()}`);
-      if (isExplicit && savedOverride) {
-        setOverrideWhatsApp(savedOverride);
-        phoneToQuery = savedOverride;
-      } else {
-        // Enlaces directos a la tienda sin asesor previo: rotación secuencial (Round-Robin) en cada nueva visita
-        sessionStorage.removeItem(`ws_override_${getTenantId()}`);
-        phoneToQuery = '';
-      }
     }
 
-    // Siempre ejecutar para cargar el asesor por turno o específico
-    loadWholesalerMarkup(phoneToQuery);
-
-    const catParam = params.get('categoria');
-    if (catParam) {
-      setFiltroCategoria(catParam);
-    }
-    const subcatParam = params.get('subcategoria');
-    if (subcatParam) {
-      setFiltroSubcategoria(subcatParam);
-    }
-
-    const tipoParam = params.get('tipo');
-    if (tipoParam === 'mayorista' || tipoParam === 'detal' || tipoParam === '50_unidades') {
-      setBuyerType(tipoParam);
-    }
-  }, []);
+    inicializarCatalogoYMayorista();
+  }, [window.location.pathname, window.location.search]);
   
   useEffect(() => {
     const tenant = getTenantId();
@@ -1124,93 +1226,7 @@ export default function MenuDigital() {
     return () => clearTimeout(t);
   }, [configuracion]);
 
-  useEffect(() => {
-    async function cargarDatos() {
-      try {
-        const tenant = getTenantId();
-        const normT = normalizeTenantId(tenant);
-        const tenantFilter = `tenant_id.eq.${tenant},tenant_id.eq.${normT}`;
 
-        const [catRes, subcatRes, confRes] = await Promise.all([
-          supabase.from('categorias').select('*').or(tenantFilter).order('orden', { ascending: true }),
-          supabase.from('subcategorias').select('*').or(tenantFilter).order('orden', { ascending: true }),
-          supabase.from('configuracion').select('*').or(tenantFilter)
-        ]);
-        
-        if (catRes.data) setCategorias(catRes.data);
-        if (subcatRes.data) setSubcategorias(subcatRes.data);
-        if (confRes.data && confRes.data.length > 0) {
-          const matchingTenantConfigs = confRes.data.filter(c => c.tenant_id === tenant || c.tenant_id === normT);
-          const bestConfig = matchingTenantConfigs.find(c => c.logo_url || c.video_hero_url) || matchingTenantConfigs[0] || confRes.data[0];
-          let extraConfig: any = {};
-          let cleanMetodos = bestConfig.metodos_pago || '';
-
-          if (cleanMetodos && typeof cleanMetodos === 'string' && cleanMetodos.includes('__EXTRA_CONFIG__')) {
-            const parts = cleanMetodos.split('__EXTRA_CONFIG__');
-            cleanMetodos = parts[0];
-            try {
-              if (parts[1]) {
-                const parsedExtra = JSON.parse(parts[1]);
-                extraConfig = { ...extraConfig, ...parsedExtra };
-              }
-            } catch (e) {}
-          }
-
-          try {
-            const globalMinijuegos = localStorage.getItem('config_extra_global_activar_minijuegos');
-            if (globalMinijuegos !== null) {
-              extraConfig.activar_minijuegos = globalMinijuegos === 'true';
-            }
-            const tenantExtra = localStorage.getItem(`config_extra_tenant_${tenant}`);
-            if (tenantExtra) {
-              const parsed = JSON.parse(tenantExtra);
-              if (parsed.activar_minijuegos !== undefined) extraConfig.activar_minijuegos = parsed.activar_minijuegos;
-            }
-            const savedExtra = localStorage.getItem(`config_extra_${bestConfig.id}`);
-            if (savedExtra) {
-              const parsed = JSON.parse(savedExtra);
-              extraConfig = { ...extraConfig, ...parsed };
-            }
-          } catch (e) {}
-          setConfiguracion({ ...bestConfig, ...extraConfig, metodos_pago: cleanMetodos });
-        }
-
-        // Fetch products in chunks of 1000 to bypass Supabase defaults
-        let allProducts: any[] = [];
-        let from = 0;
-        let to = 999;
-        let hasMore = true;
-
-        while (hasMore) {
-          const { data: chunk, error: prodError } = await supabase
-            .from('productos')
-            .select('*')
-            .eq('tenant_id', tenant)
-            .order('created_at', { ascending: false })
-            .range(from, to);
-
-          if (prodError || !chunk || chunk.length === 0) {
-            hasMore = false;
-          } else {
-            allProducts = [...allProducts, ...chunk];
-            if (chunk.length < 1000) {
-              hasMore = false;
-            } else {
-              from += 1000;
-              to += 1000;
-            }
-          }
-        }
-
-        setProductos(allProducts);
-      } catch (err) {
-        console.error('Error cargando datos:', err);
-      } finally {
-        setCargando(false);
-      }
-    }
-    cargarDatos();
-  }, [window.location.pathname, window.location.search]);
 
 
 
@@ -1417,7 +1433,7 @@ export default function MenuDigital() {
         total: total,
         productos: productosProcesados,
         linea_whatsapp: numeroWhatsApp,
-        tenant_id: getTenantId(),
+        tenant_id: effectiveTenant || getTenantId(),
         metodo_pago: metodoPagoStr,
         metodo_envio: metodoEnvioLabel,
         modalidad_pago: modalidadPago,
