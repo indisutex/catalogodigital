@@ -49,7 +49,7 @@ export const findClosestTenant = (raw: string): ClosestStoreInfo | null => {
 
   const knownTargets = [
     { tenant_id: 'sublimados_majestic', name: 'Sublimados Majestic', canonicalSlug: 'sublimados_majestic', exactKeys: ['sublimados_majestic', 'sublimados', 'majestic', 'sublimados-majestic', 'sublimadosmajestic'], typoKeys: ['sublimsados_majestic', 'sublimsados', 'majestik', 'majesti'] },
-    { tenant_id: 'lucerito', name: 'Pijamas Lucerito', canonicalSlug: 'lucerito', exactKeys: ['lucerito', 'pijamas_lucerito', 'pijamas-lucerito', 'pijamaslucerito', 'pijamas'], typoKeys: ['luceritoo', 'luceritoos', 'luzerito'] },
+    { tenant_id: 'lucerito', name: 'Pijamas Lucerito', canonicalSlug: 'lucerito', exactKeys: ['lucerito', 'pijamas_lucerito', 'pijamas-lucerito', 'pijamaslucerito'], typoKeys: ['luceritoo', 'luceritoos', 'luzerito'] },
     { tenant_id: 'saramantha', name: 'Saramantha', canonicalSlug: 'saramantha', exactKeys: ['saramantha'], typoKeys: ['saramanta', 'saramantaa', 'saramanthaa'] },
     { tenant_id: 'lovely', name: 'Lovely', canonicalSlug: 'lovely', exactKeys: ['lovely'], typoKeys: ['lovly', 'lovelly'] }
   ];
@@ -68,19 +68,18 @@ export const findClosestTenant = (raw: string): ClosestStoreInfo | null => {
     }
   }
 
-  // 3. Substring / Levenshtein fuzzy match
+  // 3. Levenshtein fuzzy match (only for close typos of the specific brand name, max distance 2)
   let bestMatch: ClosestStoreInfo | null = null;
   let minDistance = Infinity;
 
   for (const t of knownTargets) {
-    for (const key of [...t.exactKeys, ...t.typoKeys]) {
-      if (clean.includes(key) || key.includes(clean)) {
-        return { tenant_id: t.tenant_id, name: t.name, canonicalSlug: t.canonicalSlug, isTypo: true, rawSlug: raw };
-      }
-      const dist = levenshteinDistance(clean, key);
-      if (dist < minDistance && dist <= 4) {
-        minDistance = dist;
-        bestMatch = { tenant_id: t.tenant_id, name: t.name, canonicalSlug: t.canonicalSlug, isTypo: true, rawSlug: raw };
+    for (const key of t.exactKeys) {
+      if (Math.abs(clean.length - key.length) <= 2) {
+        const dist = levenshteinDistance(clean, key);
+        if (dist < minDistance && dist <= 2) {
+          minDistance = dist;
+          bestMatch = { tenant_id: t.tenant_id, name: t.name, canonicalSlug: t.canonicalSlug, isTypo: true, rawSlug: raw };
+        }
       }
     }
   }

@@ -138,10 +138,25 @@ export default function MenuDigital() {
   const heroVideoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    const rawPath = window.location.pathname.replace(/^\/+/g, '').trim().split('/')[0].toLowerCase();
-    if (rawPath) {
+    async function checkTypo() {
+      const rawPath = window.location.pathname.replace(/^\/+/g, '').trim().split('/')[0].toLowerCase();
+      if (!rawPath) return;
+
       const match = findClosestTenant(rawPath);
       if (match && match.isTypo) {
+        try {
+          const { data: mayoristas } = await supabase.from('mayoristas').select('id, nombre, nombre_negocio');
+          const rawNorm = rawPath.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+          const isWholesaler = mayoristas?.some(m => {
+            const biz = (m.nombre_negocio || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+            const nom = (m.nombre || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+            return (biz && biz === rawNorm) || (nom && nom === rawNorm) || m.id === rawPath;
+          });
+          if (isWholesaler) return;
+        } catch {
+          // ignore
+        }
+
         setTypoModal({
           rawSlug: rawPath,
           targetName: match.name,
@@ -149,6 +164,7 @@ export default function MenuDigital() {
         });
       }
     }
+    checkTypo();
   }, []);
 
   useEffect(() => {
