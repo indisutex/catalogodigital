@@ -5,7 +5,7 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista, PQRS } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, ChevronRight, Wrench, ArrowUpDown, Filter, MapPin, XCircle, Truck, Clock, FileCheck, CheckCircle, Landmark, BookOpen, LifeBuoy, ShoppingCart, ClipboardList, Star, Ban } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, ChevronRight, Wrench, ArrowUpDown, Filter, MapPin, XCircle, Truck, Clock, FileCheck, CheckCircle, Landmark, BookOpen, LifeBuoy, ShoppingCart, ClipboardList, Star, Ban, ExternalLink } from 'lucide-react';
 
 import * as XLSX from 'xlsx';
 import { ERPContabilidadService } from '../lib/erpContabilidadService';
@@ -195,12 +195,15 @@ function MiNegocioSettings({
   showToast 
 }: { 
   mayorista: Mayorista, 
-  onSave: (data: { nombre_negocio: string, logo_url: string, video_hero_url: string, ajustes_productos?: any }) => Promise<void>, 
+  onSave: (data: { nombre_negocio: string, logo_url: string, video_hero_url: string, color_primario?: string, dominio_personalizado?: string, ajustes_productos?: any }) => Promise<void>, 
   showToast: (msg: string, type?: 'success' | 'error') => void 
 }) {
   const [nombre, setNombre] = useState(mayorista.nombre_negocio || '');
   const [logo, setLogo] = useState(mayorista.logo_url || '');
   const [video, setVideo] = useState(mayorista.video_hero_url || '');
+  const [colorPrimario, setColorPrimario] = useState(mayorista.color_primario || mayorista.ajustes_productos?.color_primario || '#f36b8e');
+  const [dominio, setDominio] = useState(mayorista.dominio_personalizado || mayorista.ajustes_productos?.dominio_personalizado || '');
+  
   const ajustesIni = mayorista.ajustes_productos?.botones_extra || {};
   const [dsText, setDsText] = useState(ajustesIni.dropshipper_text ?? '');
   const [dsLink, setDsLink] = useState(ajustesIni.dropshipper_link ?? '');
@@ -211,11 +214,24 @@ function MiNegocioSettings({
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
 
+  const presetColors = [
+    { name: 'Fucsia / Rosa', hex: '#f36b8e' },
+    { name: 'Índigo', hex: '#6366f1' },
+    { name: 'Azul Eléctrico', hex: '#2563eb' },
+    { name: 'Esmeralda', hex: '#10b981' },
+    { name: 'Púrpura / Morado', hex: '#8b5cf6' },
+    { name: 'Ámbar / Dorado', hex: '#f59e0b' },
+    { name: 'Rojo Carmesí', hex: '#ef4444' },
+    { name: 'Grafito / Negro', hex: '#1e293b' },
+  ];
+
   const handleSave = async () => {
     setSaving(true);
     try {
       const newAjustes = {
         ...(mayorista.ajustes_productos || {}),
+        color_primario: colorPrimario,
+        dominio_personalizado: dominio.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/$/, ''),
         botones_extra: {
           dropshipper_text: dsText,
           dropshipper_link: dsLink,
@@ -229,6 +245,8 @@ function MiNegocioSettings({
         nombre_negocio: nombre, 
         logo_url: logo, 
         video_hero_url: video,
+        color_primario: colorPrimario,
+        dominio_personalizado: dominio.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/$/, ''),
         ajustes_productos: newAjustes
       });
       showToast('Configuración guardada exitosamente ✓', 'success');
@@ -247,12 +265,13 @@ function MiNegocioSettings({
       if (file.type.startsWith('image/')) {
         file = await compressImage(file) as File;
       }
-      const fileName = `${field}_${Date.now()}.${file.name.split('.').pop()}`;
+      const extension = file.name.split('.').pop() || (file.type.startsWith('image/') ? 'jpg' : 'mp4');
+      const fileName = `${field}_mayorista_${Date.now()}.${extension}`;
       await supabase.storage.from('archivos').upload(fileName, file);
       const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
       if (field === 'logo') setLogo(data.publicUrl);
       if (field === 'video') setVideo(data.publicUrl);
-      showToast(`${field === 'logo' ? 'Logo' : 'Video'} subido ✓`, 'success');
+      showToast(`${field === 'logo' ? 'Logo' : 'Imagen/Video'} subido con éxito ✓`, 'success');
     } catch {
       showToast(`Error subiendo ${field}`, 'error');
     }
@@ -260,88 +279,222 @@ function MiNegocioSettings({
   };
 
   return (
-    <div className="admin-panel" style={{ borderRadius: '20px', padding: '1.5rem 1.75rem', marginTop: '1.5rem' }}>
+    <div className="admin-panel" style={{ borderRadius: '20px', padding: '1.5rem 1.75rem', marginTop: '1.5rem', fontFamily: "'Poppins', sans-serif" }}>
       <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', textAlign: 'left' }}>
         <span style={{ fontSize: '1.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>🏪</span>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left' }}>
-          <h2 className="panel-header-title-custom">Configuración de Mi Catálogo (Marca Blanca)</h2>
-          <p style={{ margin: '0.15rem 0 0 0', color: '#64748b', fontSize: '0.85rem', textAlign: 'left' }}>Personaliza el logo, video y nombre que verán tus clientes en tu catálogo propio.</p>
+          <h2 className="panel-header-title-custom" style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600 }}>Configuración de Mi Catálogo (Marca Blanca)</h2>
+          <p style={{ margin: '0.15rem 0 0 0', color: '#64748b', fontSize: '0.85rem', fontWeight: 400, textAlign: 'left' }}>Personaliza el color, logo, imagen de portada, dominio propio y nombre que verán tus clientes en tu catálogo propio.</p>
         </div>
       </div>
       <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        
+        {/* 1. Nombre del Negocio */}
         <div className="form-group">
-          <label style={{ fontWeight: 600 }}>Nombre de tu Negocio</label>
-          <input type="text" className="form-input" value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Ej: Moda Express" />
+          <label style={{ fontWeight: 500, color: '#334155', fontSize: '0.9rem' }}>Nombre de tu Negocio / Marca</label>
+          <input type="text" className="form-input" value={nombre} onChange={e => setNombre(e.target.value)} placeholder="Ej: Moda Express" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 400 }} />
         </div>
+
+        {/* 2. Color Principal del Mayorista */}
+        <div className="form-group" style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <label style={{ fontWeight: 500, color: '#334155', margin: 0, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              🎨 Color Principal de tu Marca
+            </label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 400 }}>Muestra:</span>
+              <span style={{ display: 'inline-block', width: '24px', height: '24px', borderRadius: '50%', background: colorPrimario, border: '2px solid white', boxShadow: '0 2px 5px rgba(0,0,0,0.15)' }} />
+            </div>
+          </div>
+          <p style={{ margin: '0 0 0.85rem 0', color: '#64748b', fontSize: '0.8rem', fontWeight: 400 }}>
+            Este color vestirá los botones, acentos, íconos y carrito de compras en tu catálogo propio, sin afectar a la tienda oficial ni a otros mayoristas.
+          </p>
+          
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', marginBottom: '0.85rem', flexWrap: 'wrap' }}>
+            <input 
+              type="color" 
+              value={colorPrimario} 
+              onChange={e => setColorPrimario(e.target.value)} 
+              style={{ width: '44px', height: '40px', padding: 0, border: '1px solid #cbd5e1', borderRadius: '8px', cursor: 'pointer', background: 'white' }} 
+              title="Seleccionar color personalizado"
+            />
+            <input 
+              type="text" 
+              className="form-input" 
+              style={{ width: '130px', margin: 0, fontWeight: 500, fontFamily: "'Poppins', sans-serif", fontSize: '0.88rem', textTransform: 'uppercase' }} 
+              value={colorPrimario} 
+              onChange={e => setColorPrimario(e.target.value)} 
+              placeholder="#F36B8E" 
+              maxLength={7}
+            />
+            <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 400 }}>o elige una paleta rápida:</span>
+          </div>
+
+          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            {presetColors.map(preset => (
+              <button
+                key={preset.hex}
+                type="button"
+                onClick={() => setColorPrimario(preset.hex)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  padding: '0.35rem 0.65rem',
+                  background: colorPrimario.toLowerCase() === preset.hex.toLowerCase() ? '#ffffff' : '#f1f5f9',
+                  border: colorPrimario.toLowerCase() === preset.hex.toLowerCase() ? `2px solid ${preset.hex}` : '1px solid #cbd5e1',
+                  borderRadius: '20px',
+                  cursor: 'pointer',
+                  fontSize: '0.75rem',
+                  fontWeight: 500,
+                  color: '#334155',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <span style={{ width: '12px', height: '12px', borderRadius: '50%', background: preset.hex }} />
+                {preset.name}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 3. Logo del Negocio */}
         <div className="form-group">
-          <label style={{ fontWeight: 600 }}>Logo del Negocio</label>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            {logo && <img src={logo} alt="Logo preview" style={{ width: '40px', height: '40px', objectFit: 'cover', borderRadius: '8px' }} />}
-            <input type="text" className="form-input" style={{ flex: 1 }} value={logo} onChange={e => setLogo(e.target.value)} placeholder="URL del logo" />
-            <label className="btn-upload-img" style={{ flexShrink: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.55rem 0.85rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600 }}>
-              <Upload size={12} /> {uploading ? '...' : 'Subir'}
+          <label style={{ fontWeight: 500, color: '#334155', fontSize: '0.9rem' }}>Logo de tu Negocio</label>
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            {logo ? (
+              <img src={logo} alt="Logo preview" style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: '10px', background: '#f8fafc', border: '1px solid #e2e8f0', padding: '2px' }} />
+            ) : (
+              <div style={{ width: '48px', height: '48px', borderRadius: '10px', background: '#f1f5f9', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '0.75rem', fontWeight: 500 }}>Sin Logo</div>
+            )}
+            <input type="text" className="form-input" style={{ flex: 1, margin: 0, fontFamily: "'Poppins', sans-serif", fontWeight: 400 }} value={logo} onChange={e => setLogo(e.target.value)} placeholder="URL del logo" />
+            <label className="btn-upload-img" style={{ flexShrink: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.6rem 1rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 500 }}>
+              <Upload size={14} /> {uploading ? 'Subiendo...' : 'Subir Logo'}
               <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleFileUpload(e, 'logo')} disabled={uploading} />
             </label>
           </div>
         </div>
+
+        {/* 4. Video Principal / Imagen Hero */}
         <div className="form-group">
-          <label style={{ fontWeight: 600 }}>Video Principal / Imagen Hero</label>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-            <input type="text" className="form-input" style={{ flex: 1 }} value={video} onChange={e => setVideo(e.target.value)} placeholder="URL del video o imagen" />
-            <label className="btn-upload-img" style={{ flexShrink: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.55rem 0.85rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 600 }}>
-              <Upload size={12} /> {uploading ? '...' : 'Subir'}
-              <input type="file" accept="video/*,image/*" style={{ display: 'none' }} onChange={e => handleFileUpload(e, 'video')} disabled={uploading} />
+          <label style={{ fontWeight: 500, color: '#334155', fontSize: '0.9rem' }}>Imagen o Video de Portada (Hero Section)</label>
+          <p style={{ margin: '0 0 0.5rem 0', color: '#64748b', fontSize: '0.8rem', fontWeight: 400 }}>
+            Puedes subir una imagen (.jpg, .png, .webp) o un video (.mp4, .webm) vertical o panorámico para el encabezado de tu catálogo.
+          </p>
+          <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            {video ? (
+              isMediaVideo(video) ? (
+                <video src={video} style={{ width: '56px', height: '56px', borderRadius: '10px', objectFit: 'cover', background: '#000', border: '1px solid #e2e8f0' }} muted playsInline />
+              ) : (
+                <img src={video} alt="Hero preview" style={{ width: '56px', height: '56px', borderRadius: '10px', objectFit: 'cover', background: '#f1f5f9', border: '1px solid #e2e8f0' }} />
+              )
+            ) : (
+              <div style={{ width: '56px', height: '56px', borderRadius: '10px', background: '#f1f5f9', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '0.75rem', fontWeight: 500, textAlign: 'center', lineHeight: 1.1, padding: '2px' }}>Sin portada</div>
+            )}
+            <input type="text" className="form-input" style={{ flex: 1, margin: 0, fontFamily: "'Poppins', sans-serif", fontWeight: 400 }} value={video} onChange={e => setVideo(e.target.value)} placeholder="URL de la imagen o video" />
+            <label className="btn-upload-img" style={{ flexShrink: 0, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.6rem 1rem', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 500 }}>
+              <Upload size={14} /> {uploading ? 'Subiendo...' : 'Subir Portada'}
+              <input type="file" accept="image/*,video/*" style={{ display: 'none' }} onChange={e => handleFileUpload(e, 'video')} disabled={uploading} />
             </label>
           </div>
         </div>
-        
-        {/* NUEVOS BOTONES EXTRA */}
-        <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-          <h3 style={{ fontSize: '1.1rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>Configuración de Botones del Catálogo</h3>
+
+        {/* 5. Vincular Dominio Propio (Custom Domain) */}
+        <div className="form-group" style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+            <label style={{ fontWeight: 500, color: '#334155', margin: 0, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              🌐 Vincular Dominio Propio (Marca Blanca)
+            </label>
+            {dominio && (
+              <span style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem', background: '#dcfce7', color: '#15803d', borderRadius: '6px', fontWeight: 500 }}>
+                Dominio asignado
+              </span>
+            )}
+          </div>
+          <p style={{ margin: '0 0 0.85rem 0', color: '#64748b', fontSize: '0.8rem', fontWeight: 400 }}>
+            Ingresa tu propio dominio o subdominio para que tus clientes accedan directamente a tu catálogo sin ver la marca de la fábrica.
+          </p>
           
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', marginBottom: '0.75rem' }}>
+            <div style={{ position: 'relative', flex: 1 }}>
+              <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontSize: '0.85rem', fontWeight: 400 }}>https://</span>
+              <input 
+                type="text" 
+                className="form-input" 
+                style={{ paddingLeft: '70px', margin: 0, fontFamily: "'Poppins', sans-serif", fontWeight: 400 }} 
+                value={dominio} 
+                onChange={e => setDominio(e.target.value)} 
+                placeholder="mitienda.com o catalogo.mitienda.com" 
+              />
+            </div>
+            {dominio && (
+              <a 
+                href={`https://${dominio.replace(/^https?:\/\//, '')}`} 
+                target="_blank" 
+                rel="noreferrer" 
+                className="btn-secondary" 
+                style={{ flexShrink: 0, padding: '0.6rem 0.85rem', borderRadius: '8px', fontSize: '0.8rem', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontWeight: 500 }}
+              >
+                <ExternalLink size={14} /> Probar
+              </a>
+            )}
+          </div>
+
+          <div style={{ padding: '0.75rem 0.9rem', background: '#ffffff', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.78rem', color: '#475569', lineHeight: 1.5 }}>
+            <strong style={{ fontWeight: 600, color: '#1e293b', display: 'block', marginBottom: '0.2rem' }}>📌 Configuración DNS requerida en tu proveedor de dominio:</strong>
+            • Para subdominios (ej. <code>catalogo.tutienda.com</code>): Agrega un registro <strong>CNAME</strong> que apunte a <code>indisutex.com</code> o al dominio principal de la plataforma.<br/>
+            • Para dominio raíz (ej. <code>tutienda.com</code>): Agrega un registro <strong>A</strong> apuntando a la IP del servidor de la plataforma.<br/>
+            • Una vez propagado el DNS, tu catálogo se abrirá automáticamente con tu marca, logo y colores.
+          </div>
+        </div>
+        
+        {/* 6. Botones Extra */}
+        <div style={{ marginTop: '0.5rem', borderTop: '1px solid #e2e8f0', paddingTop: '1.25rem', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          <h3 style={{ fontSize: '1rem', margin: 0, fontWeight: 600, color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>Configuración de Botones del Catálogo</h3>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.25rem' }}>
             <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <h4 style={{ margin: '0 0 0.5rem 0' }}>Botón 1</h4>
+              <h4 style={{ margin: '0 0 0.5rem 0', fontWeight: 600, fontSize: '0.95rem' }}>Botón 1</h4>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '0.5rem' }}>
-                <label htmlFor="ds-enabled" style={{ margin: 0, fontWeight: 600, color: '#334155', cursor: 'pointer' }}>Habilitar Botón 1</label>
+                <label htmlFor="ds-enabled" style={{ margin: 0, fontWeight: 500, color: '#334155', cursor: 'pointer', fontSize: '0.85rem' }}>Habilitar Botón 1</label>
                 <label className="toggle-switch">
                   <input type="checkbox" id="ds-enabled" checked={dsEnabled} onChange={e => setDsEnabled(e.target.checked)} />
                   <span className="toggle-slider"></span>
                 </label>
               </div>
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label style={{ fontWeight: 600 }}>Texto del Botón</label>
-                <input type="text" className="form-input" value={dsText} onChange={e => setDsText(e.target.value)} placeholder="Ej: ¿Eres Mayorista?" />
+                <label style={{ fontWeight: 500, fontSize: '0.85rem' }}>Texto del Botón</label>
+                <input type="text" className="form-input" value={dsText} onChange={e => setDsText(e.target.value)} placeholder="Ej: ¿Eres Mayorista?" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 400 }} />
               </div>
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label style={{ fontWeight: 600 }}>Enlace del Botón (WhatsApp o web)</label>
-                <input type="text" className="form-input" value={dsLink} onChange={e => setDsLink(e.target.value)} placeholder="Ej: https://wa.me/57..." />
+                <label style={{ fontWeight: 500, fontSize: '0.85rem' }}>Enlace del Botón (WhatsApp o web)</label>
+                <input type="text" className="form-input" value={dsLink} onChange={e => setDsLink(e.target.value)} placeholder="Ej: https://wa.me/57..." style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 400 }} />
               </div>
             </div>
 
             <div style={{ background: '#f8fafc', padding: '1.25rem', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-              <h4 style={{ margin: '0 0 0.5rem 0' }}>Botón 2</h4>
+              <h4 style={{ margin: '0 0 0.5rem 0', fontWeight: 600, fontSize: '0.95rem' }}>Botón 2</h4>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem', background: 'white', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '0.5rem' }}>
-                <label htmlFor="earn-enabled" style={{ margin: 0, fontWeight: 600, color: '#334155', cursor: 'pointer' }}>Habilitar Botón 2</label>
+                <label htmlFor="earn-enabled" style={{ margin: 0, fontWeight: 500, color: '#334155', cursor: 'pointer', fontSize: '0.85rem' }}>Habilitar Botón 2</label>
                 <label className="toggle-switch">
                   <input type="checkbox" id="earn-enabled" checked={earnEnabled} onChange={e => setEarnEnabled(e.target.checked)} />
                   <span className="toggle-slider"></span>
                 </label>
               </div>
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label style={{ fontWeight: 600 }}>Texto del Botón</label>
-                <input type="text" className="form-input" value={earnText} onChange={e => setEarnText(e.target.value)} placeholder="Ej: ¿Quieres ganar dinero extra?" />
+                <label style={{ fontWeight: 500, fontSize: '0.85rem' }}>Texto del Botón</label>
+                <input type="text" className="form-input" value={earnText} onChange={e => setEarnText(e.target.value)} placeholder="Ej: ¿Quieres ganar dinero extra?" style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 400 }} />
               </div>
               <div className="form-group" style={{ marginBottom: 0 }}>
-                <label style={{ fontWeight: 600 }}>Enlace del Botón (WhatsApp o web)</label>
-                <input type="text" className="form-input" value={earnLink} onChange={e => setEarnLink(e.target.value)} placeholder="Ej: https://wa.me/57..." />
+                <label style={{ fontWeight: 500, fontSize: '0.85rem' }}>Enlace del Botón (WhatsApp o web)</label>
+                <input type="text" className="form-input" value={earnLink} onChange={e => setEarnLink(e.target.value)} placeholder="Ej: https://wa.me/57..." style={{ fontFamily: "'Poppins', sans-serif", fontWeight: 400 }} />
               </div>
             </div>
           </div>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-start', marginTop: '1rem' }}>
-          <button className="btn-primary" onClick={handleSave} disabled={saving || uploading}>
+          <button className="btn-primary" onClick={handleSave} disabled={saving || uploading} style={{ fontWeight: 600, fontFamily: "'Poppins', sans-serif" }}>
             {saving ? 'Guardando...' : 'Guardar Configuración'}
           </button>
         </div>
@@ -8773,13 +8926,37 @@ export default function Admin() {
                       mayorista={currentAsesorData as Mayorista}
                       showToast={showToast}
                       onSave={async (data) => {
+                        const updateData: any = {
+                          nombre_negocio: data.nombre_negocio,
+                          logo_url: data.logo_url,
+                          video_hero_url: data.video_hero_url,
+                          color_primario: data.color_primario,
+                          dominio_personalizado: data.dominio_personalizado,
+                          ajustes_productos: data.ajustes_productos
+                        };
+                        
                         const { error } = await supabase
                           .from('mayoristas')
-                          .update(data)
+                          .update(updateData)
                           .eq('id', currentAsesorData.id);
-                        if (error) throw error;
+                        
+                        if (error) {
+                          // Si las columnas nuevas aún no existen físicamente en Supabase, guardar en ajustes_productos
+                          const fallbackData = {
+                            nombre_negocio: data.nombre_negocio,
+                            logo_url: data.logo_url,
+                            video_hero_url: data.video_hero_url,
+                            ajustes_productos: data.ajustes_productos
+                          };
+                          const { error: fallbackErr } = await supabase
+                            .from('mayoristas')
+                            .update(fallbackData)
+                            .eq('id', currentAsesorData.id);
+                          if (fallbackErr) throw fallbackErr;
+                        }
                         // Actualizar el estado local
-                        setMayoristas(mayoristas.map(m => m.id === currentAsesorData.id ? { ...m, ...data } : m));
+                        const updatedMayorista = { ...(currentAsesorData as Mayorista), ...updateData };
+                        setMayoristas(mayoristas.map(m => m.id === currentAsesorData.id ? updatedMayorista : m));
                       }}
                     />
                   )}
@@ -9006,10 +9183,10 @@ export default function Admin() {
                       <strong>Error de Sesión:</strong> No se pudo cargar tu perfil de mayorista. Por favor, cierra sesión e ingresa nuevamente.
                     </div>
                   ) : (
-                  <div className="wholesaler-markup-container">
+                  <div className="wholesaler-markup-container" style={{ fontFamily: "'Poppins', sans-serif" }}>
                     <div className="wholesaler-markup-info">
-                      <h4 style={{ margin: 0, fontSize: '1rem', color: '#0f172a', fontWeight: 800 }}>Ganancia Global</h4>
-                      <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.78rem', color: '#64748b' }}>Porcentaje de incremento (%) sobre el precio base de todos los productos</p>
+                      <h4 style={{ margin: 0, fontSize: '1rem', color: '#0f172a', fontWeight: 600 }}>Ganancia Global</h4>
+                      <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.78rem', color: '#64748b', fontWeight: 400 }}>Porcentaje de incremento (%) sobre el precio base de todos los productos</p>
                     </div>
                     <div className="wholesaler-markup-controls">
                       <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
@@ -9019,13 +9196,13 @@ export default function Admin() {
                           defaultValue={currentMayorista.porcentaje_ganancia || 0}
                           min="0"
                           step="0.1"
-                          style={{ width: '100px', padding: '0.55rem 1.5rem 0.55rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 700, textAlign: 'center', outline: 'none', margin: 0 }}
+                          style={{ width: '100px', padding: '0.55rem 1.5rem 0.55rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: 600, textAlign: 'center', outline: 'none', margin: 0, fontFamily: "'Poppins', sans-serif" }}
                         />
-                        <span style={{ position: 'absolute', right: '0.75rem', color: '#64748b', fontWeight: 800, fontSize: '0.88rem' }}>%</span>
+                        <span style={{ position: 'absolute', right: '0.75rem', color: '#64748b', fontWeight: 600, fontSize: '0.88rem' }}>%</span>
                       </div>
                       <button 
                         className="btn-primary"
-                        style={{ margin: 0, padding: '0.55rem 1.25rem', borderRadius: '8px', fontWeight: 700, fontSize: '0.88rem', background: configuracion?.color_primario || '#4f46e5', color: 'white', border: 'none', cursor: 'pointer' }}
+                        style={{ margin: 0, padding: '0.55rem 1.25rem', borderRadius: '8px', fontWeight: 600, fontSize: '0.88rem', background: configuracion?.color_primario || '#4f46e5', color: 'white', border: 'none', cursor: 'pointer', fontFamily: "'Poppins', sans-serif" }}
                         onClick={async () => {
                           try {
                             setLoading(true);
@@ -9113,81 +9290,122 @@ export default function Admin() {
                             <h4>{p.nombre}</h4>
                             <p className="p-cat" style={{ fontSize: '0.75rem', color: '#64748b' }}>{p.referencia}</p>
                             
-                            <div style={{ marginTop: '0.8rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                            <div style={{ marginTop: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.65rem', fontFamily: "'Poppins', sans-serif" }}>
                                {(() => {
                                  const desc = (p.descuento !== undefined && p.descuento > 0) ? p.descuento : (configuracion?.descuento_promocional || 0);
-                                 const precioDetal = p.precio;
-                                 const precioMayor = p.precio_por_mayor;
-                                 const precio50 = p.precio_50_unidades;
+                                 const precioDetalBase = p.precio || 0;
+                                 const precioMayorBase = p.precio_por_mayor;
+                                 const precio50Base = p.precio_50_unidades;
 
                                  const getDiscounted = (val?: number) => {
                                    if (!val) return 0;
                                    return Math.round(val * (1 - desc / 100));
                                  };
 
+                                 const costoDetal = desc > 0 ? getDiscounted(precioDetalBase) : precioDetalBase;
+                                 const costoMayor = precioMayorBase ? (desc > 0 ? getDiscounted(precioMayorBase) : precioMayorBase) : null;
+                                 const costo50 = precio50Base ? (desc > 0 ? getDiscounted(precio50Base) : precio50Base) : null;
+
+                                 const markup = (currentMayorista?.porcentaje_ganancia || 0) / 100;
+
+                                 const vendeDetal = (hasOverride && Number(overrideVal) > 0) 
+                                   ? Number(overrideVal) 
+                                   : Math.round(costoDetal * (1 + markup));
+                                 const vendeMayor = costoMayor ? Math.round(costoMayor * (1 + markup)) : null;
+                                 const vende50 = costo50 ? Math.round(costo50 * (1 + markup)) : null;
+
+                                 const gananciaDetal = vendeDetal - costoDetal;
+
                                  return (
                                    <>
-                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                                       <small style={{ color: '#64748b' }}>Detal:</small>
-                                       <strong style={{ color: desc > 0 ? '#10b981' : '#0f172a' }}>
-                                         {desc > 0 ? (
-                                           <>
-                                             <span style={{ textDecoration: 'line-through', color: '#94a3b8', marginRight: '0.35rem', fontWeight: 500 }}>
-                                               ${precioDetal?.toLocaleString()}
-                                             </span>
-                                             ${getDiscounted(precioDetal).toLocaleString()}
-                                           </>
-                                         ) : (
-                                           `$${precioDetal?.toLocaleString()}`
+                                     {/* BLOQUE 1: TÚ COMPRAS (Costo Fábrica / Indisutex) */}
+                                     <div style={{ background: '#f8fafc', padding: '0.65rem 0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.3rem' }}>
+                                         <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                                           📦 Tú Compras (Fábrica)
+                                         </span>
+                                         {desc > 0 && (
+                                           <span style={{ fontSize: '0.7rem', color: '#059669', background: '#ecfdf5', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: 500 }}>
+                                             -{desc}%
+                                           </span>
                                          )}
-                                       </strong>
+                                       </div>
+                                       
+                                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem', fontSize: '0.8rem' }}>
+                                         <span style={{ color: '#64748b', fontWeight: 400 }}>Detal (1 ud):</span>
+                                         <span style={{ color: '#1e293b', fontWeight: 500 }}>
+                                           {desc > 0 ? (
+                                             <>
+                                               <span style={{ textDecoration: 'line-through', color: '#94a3b8', marginRight: '0.3rem', fontSize: '0.75rem' }}>
+                                                 ${precioDetalBase.toLocaleString()}
+                                               </span>
+                                               ${costoDetal.toLocaleString()}
+                                             </>
+                                           ) : (
+                                             `$${costoDetal.toLocaleString()}`
+                                           )}
+                                         </span>
+                                       </div>
+
+                                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem', fontSize: '0.8rem' }}>
+                                         <span style={{ color: '#64748b', fontWeight: 400 }}>Mayor (≥6 uds):</span>
+                                         <span style={{ color: '#1e293b', fontWeight: 500 }}>
+                                           {costoMayor ? `$${costoMayor.toLocaleString()}` : '-'}
+                                         </span>
+                                       </div>
+
+                                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem' }}>
+                                         <span style={{ color: '#64748b', fontWeight: 400 }}>50 Unidades:</span>
+                                         <span style={{ color: '#1e293b', fontWeight: 500 }}>
+                                           {costo50 ? `$${costo50.toLocaleString()}` : '-'}
+                                         </span>
+                                       </div>
                                      </div>
-                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                                       <small style={{ color: '#64748b' }}>Mayor:</small>
-                                       <strong style={{ color: desc > 0 && precioMayor ? '#10b981' : '#0f172a' }}>
-                                         {desc > 0 && precioMayor ? (
-                                           <>
-                                             <span style={{ textDecoration: 'line-through', color: '#94a3b8', marginRight: '0.35rem', fontWeight: 500 }}>
-                                               ${precioMayor.toLocaleString()}
-                                             </span>
-                                             ${getDiscounted(precioMayor).toLocaleString()}
-                                           </>
-                                         ) : precioMayor ? (
-                                           `$${precioMayor.toLocaleString()}`
-                                         ) : (
-                                           '-'
-                                         )}
-                                       </strong>
-                                     </div>
-                                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                                       <small style={{ color: '#64748b' }}>50 Unid:</small>
-                                       <strong style={{ color: desc > 0 && precio50 ? '#10b981' : '#0f172a' }}>
-                                         {desc > 0 && precio50 ? (
-                                           <>
-                                             <span style={{ textDecoration: 'line-through', color: '#94a3b8', marginRight: '0.35rem', fontWeight: 500 }}>
-                                               ${precio50.toLocaleString()}
-                                             </span>
-                                             ${getDiscounted(precio50).toLocaleString()}
-                                           </>
-                                         ) : precio50 ? (
-                                           `$${precio50.toLocaleString()}`
-                                         ) : (
-                                           '-'
-                                         )}
-                                       </strong>
-                                     </div>
+
+                                     {/* BLOQUE 2: TÚ VENDES (Precios Sugeridos con Margen) */}
+                                     {role === 'mayorista' && currentMayorista && (
+                                       <div style={{ background: '#f0fdf4', padding: '0.65rem 0.75rem', borderRadius: '8px', border: '1px solid #bbf7d0' }}>
+                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem', borderBottom: '1px solid #bbf7d0', paddingBottom: '0.3rem' }}>
+                                           <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.02em' }}>
+                                             🏷️ Tú Vendes (Catálogo)
+                                           </span>
+                                           <span style={{ fontSize: '0.7rem', color: hasOverride ? '#b45309' : '#15803d', background: hasOverride ? '#fef3c7' : '#dcfce7', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 500 }}>
+                                             {hasOverride ? 'Precio Manual' : `+${currentMayorista?.porcentaje_ganancia || 0}% margen`}
+                                           </span>
+                                         </div>
+
+                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem', fontSize: '0.82rem' }}>
+                                           <span style={{ color: '#166534', fontWeight: 500 }}>Detal (1 ud):</span>
+                                           <span style={{ color: '#15803d', fontWeight: 600 }}>
+                                             ${vendeDetal.toLocaleString()}
+                                           </span>
+                                         </div>
+
+                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.2rem', fontSize: '0.8rem' }}>
+                                           <span style={{ color: '#166534', fontWeight: 400 }}>Mayor (≥6 uds):</span>
+                                           <span style={{ color: '#166534', fontWeight: 500 }}>
+                                             {vendeMayor ? `$${vendeMayor.toLocaleString()}` : '-'}
+                                           </span>
+                                         </div>
+
+                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.35rem', fontSize: '0.8rem' }}>
+                                           <span style={{ color: '#166534', fontWeight: 400 }}>50 Unidades:</span>
+                                           <span style={{ color: '#166534', fontWeight: 500 }}>
+                                             {vende50 ? `$${vende50.toLocaleString()}` : '-'}
+                                           </span>
+                                         </div>
+
+                                         <div style={{ borderTop: '1px dashed #86efac', paddingTop: '0.3rem', display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                                           <span style={{ color: '#15803d', fontWeight: 400 }}>Ganancia en Detal:</span>
+                                           <span style={{ color: '#15803d', fontWeight: 600 }}>
+                                             +${gananciaDetal.toLocaleString()} / ud
+                                           </span>
+                                         </div>
+                                       </div>
+                                     )}
                                    </>
                                  );
                                })()}
-                               
-                               {role === 'mayorista' && currentMayorista && (
-                                 <div style={{ borderTop: '1px dashed #cbd5e1', margin: '0.5rem 0 0 0', paddingTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                   <small style={{ color: '#64748b', fontWeight: 600 }}>Tu Precio Final:</small>
-                                   <strong style={{ color: hasOverride ? '#94a3b8' : '#10b981', textDecoration: hasOverride ? 'line-through' : 'none' }}>
-                                     ${Math.round(p.precio * (1 + (currentMayorista?.porcentaje_ganancia || 0) / 100)).toLocaleString()}
-                                   </strong>
-                                 </div>
-                               )}
                             </div>
                           </div>
                           
@@ -9196,9 +9414,9 @@ export default function Admin() {
                               const isHiddenLocally = hiddenProducts.includes(p.id);
                               
                               return (
-                                <div className="product-card-actions" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '0.75rem 0.9rem', background: '#fafafa', borderTop: '1px solid #f1f5f9' }}>
+                                <div className="product-card-actions" style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '0.75rem 0.9rem', background: '#fafafa', borderTop: '1px solid #f1f5f9', fontFamily: "'Poppins', sans-serif" }}>
                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                     <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#475569' }}>Fijar Precio Especial Manual:</label>
+                                     <label style={{ fontSize: '0.75rem', fontWeight: 500, color: '#475569' }}>Fijar Precio Especial Manual:</label>
                                      <button 
                                        style={{ background: isHiddenLocally ? '#fee2e2' : 'transparent', border: isHiddenLocally ? '1px solid #fca5a5' : '1px solid #cbd5e1', borderRadius: '6px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: isHiddenLocally ? '#dc2626' : '#64748b' }}
                                        title={isHiddenLocally ? 'Mostrar en mi catálogo' : 'Ocultar de mi catálogo'}
@@ -9233,11 +9451,11 @@ export default function Admin() {
                                    placeholder="Ej: 50000"
                                    defaultValue={overrideVal}
                                    id={`override-${p.id}`}
-                                   style={{ flex: 1, minWidth: '0', padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.85rem' }}
+                                   style={{ flex: 1, minWidth: '0', padding: '0.4rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.85rem', fontFamily: "'Poppins', sans-serif", fontWeight: 400 }}
                                  />
                                  <button 
                                    className="btn-primary"
-                                   style={{ padding: '0.4rem 0.9rem', fontSize: '0.8rem', background: configuracion?.color_primario || '#4f46e5', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}
+                                   style={{ padding: '0.4rem 0.9rem', fontSize: '0.8rem', background: configuracion?.color_primario || '#4f46e5', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 600, cursor: 'pointer', flexShrink: 0, fontFamily: "'Poppins', sans-serif" }}
                                    onClick={async () => {
                                      try {
                                        setLoading(true);
@@ -9265,7 +9483,7 @@ export default function Admin() {
                                  </button>
                                </div>
                                {hasOverride && (
-                                 <div style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: 600, marginTop: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                 <div style={{ fontSize: '0.8rem', color: '#10b981', fontWeight: 500, marginTop: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                                     <Check size={12} /> Aplicando precio de: ${Number(overrideVal).toLocaleString()}
                                  </div>
                                )}

@@ -54,23 +54,21 @@ export const decodeExtraImage = (str: string): { url: string; ref: string; estam
 };
 
 export const isMediaVideo = (url?: string): boolean => {
-  if (!url) return false;
-  const cleanUrl = url.split('?')[0].split('#')[0].toLowerCase();
-  if (cleanUrl.startsWith('data:video/') || cleanUrl.startsWith('blob:')) return true;
-  return (
-    /\.(mp4|webm|mov|ogg|m4v|3gp|m3u8|avi|flv|mkv)$/i.test(cleanUrl) ||
-    cleanUrl.includes('video') ||
-    cleanUrl.includes('mp4') ||
-    cleanUrl.includes('mov') ||
-    cleanUrl.includes('webm') ||
-    cleanUrl.includes('hero_video') ||
-    cleanUrl.includes('pago_') ||
-    cleanUrl.includes('evidencia_') ||
-    cleanUrl.includes('/archivos/') ||
-    cleanUrl.includes('supabase.co/storage') ||
-    cleanUrl.includes('cloudinary') ||
-    cleanUrl.includes('vimeo')
-  );
+  if (!url || typeof url !== 'string') return false;
+  const cleanUrl = url.split('?')[0].split('#')[0].toLowerCase().trim();
+  if (cleanUrl.startsWith('data:image/')) return false;
+  if (cleanUrl.startsWith('data:video/')) return true;
+  
+  // Si tiene extensión de imagen conocida, definitivamente es una imagen
+  if (/\.(jpeg|jpg|png|webp|gif|svg|avif|bmp|ico)$/i.test(cleanUrl)) return false;
+  
+  // Si tiene extensión de video conocida
+  if (/\.(mp4|webm|mov|ogg|m4v|3gp|m3u8|avi|flv|mkv|wmv)$/i.test(cleanUrl)) return true;
+  
+  // Plataformas de video
+  if (cleanUrl.includes('youtube.com') || cleanUrl.includes('youtu.be') || cleanUrl.includes('vimeo.com')) return true;
+
+  return false;
 };
 
 export interface UnifiedImage {

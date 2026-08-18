@@ -55,7 +55,7 @@ export default function MenuDigital() {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
   const [configuracion, setConfiguracion] = useState<Configuracion | null>(null);
-  const [mayoristaBranding, setMayoristaBranding] = useState<{nombre: string, logo: string, video: string} | null>(null);
+  const [mayoristaBranding, setMayoristaBranding] = useState<{nombre: string, logo: string, video: string, color?: string, dominio_personalizado?: string, ajustes_productos?: any} | null>(null);
   const [cargando, setCargando] = useState(true);
   
   const [filtroCategoria, setFiltroCategoria] = useState<string>('todos');
@@ -124,7 +124,7 @@ export default function MenuDigital() {
   const [recommendedIdx, setRecommendedIdx] = useState(0);
   const [isRecommendedAnimating, setIsRecommendedAnimating] = useState(false);
   const [logoError, setLogoError] = useState(false);
-  const [activeAsesor, setActiveAsesor] = useState<{ nombre: string; foto_url?: string; telefono?: string } | null>(null);
+  const [activeAsesor, setActiveAsesor] = useState<{ id?: string; nombre: string; foto_url?: string; telefono?: string; isMayorista?: boolean } | null>(null);
   const [typoModal, setTypoModal] = useState<{ rawSlug: string; targetName: string; canonicalSlug: string } | null>(null);
   const [countdown, setCountdown] = useState(5);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
@@ -163,13 +163,99 @@ export default function MenuDigital() {
     async function loadWholesalerMarkup(phone: string) {
       try {
         const tenant = getTenantId();
+        const currentHost = window.location.hostname.toLowerCase();
+        let matchMayorista: any = null;
+
+        const cleanQuery = phone ? phone.replace(/\D/g, '') : '';
+        const normQuery = cleanQuery.length === 12 && cleanQuery.startsWith('57') ? cleanQuery.substring(2) : cleanQuery;
+
+        // 1. PRIMERO: Buscar en Mayoristas (por teléfono o dominio personalizado)
+        const { data: mayoristasTenant } = await supabase
+          .from('mayoristas')
+          .select('id, nombre, telefono, porcentaje_ganancia, ajustes_productos, nombre_negocio, logo_url, foto_url, video_hero_url, color_primario, dominio_personalizado')
+          .eq('tenant_id', tenant);
+
+        if (normQuery) {
+          matchMayorista = mayoristasTenant?.find(m => {
+            const phones = (m.telefono || '').split(',').map((p: string) => {
+              const clean = p.replace(/\D/g, '');
+              return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
+            }).filter(Boolean);
+            return phones.includes(normQuery) || (m.telefono && m.telefono.includes(normQuery));
+          });
+        }
+
+        // Buscar por dominio personalizado en el tenant si aplica
+        if (!matchMayorista && currentHost && !currentHost.includes('localhost') && !currentHost.includes('vercel.app')) {
+          matchMayorista = mayoristasTenant?.find(m => {
+            const dom = (m.dominio_personalizado || m.ajustes_productos?.dominio_personalizado || '').toLowerCase().trim();
+            return dom && (dom === currentHost || currentHost.endsWith(dom));
+          });
+        }
+
+        // Buscar a nivel global de mayoristas si aún no hay match
+        if (!matchMayorista) {
+          const { data: mayoristasGlobal } = await supabase
+            .from('mayoristas')
+            .select('id, nombre, telefono, porcentaje_ganancia, ajustes_productos, nombre_negocio, logo_url, foto_url, video_hero_url, color_primario, dominio_personalizado');
+
+          if (normQuery) {
+            matchMayorista = mayoristasGlobal?.find(m => {
+              const phones = (m.telefono || '').split(',').map((p: string) => {
+                const clean = p.replace(/\D/g, '');
+                return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
+              }).filter(Boolean);
+              return phones.includes(normQuery) || (m.telefono && m.telefono.includes(normQuery));
+            });
+          }
+
+          if (!matchMayorista && currentHost && !currentHost.includes('localhost') && !currentHost.includes('vercel.app')) {
+            matchMayorista = mayoristasGlobal?.find(m => {
+              const dom = (m.dominio_personalizado || m.ajustes_productos?.dominio_personalizado || '').toLowerCase().trim();
+              return dom && (dom === currentHost || currentHost.endsWith(dom));
+            });
+          }
+        }
+
+        // SI ES MAYORISTA: Configurar tienda propia, precios y contacto directo del mayorista
+        if (matchMayorista) {
+          const primerTel = (matchMayorista.telefono || '').split(',')[0].trim();
+          const cleanMayoristaPhone = (phone || primerTel).replace(/\D/g, '');
+          const mayoristaNombre = matchMayorista.nombre_negocio || matchMayorista.nombre || 'Mayorista';
+          const mayoristaFoto = matchMayorista.logo_url || matchMayorista.foto_url || '';
+          const mayoristaColor = matchMayorista.color_primario || matchMayorista.ajustes_productos?.color_primario || '';
+
+          setActiveAsesor({
+            id: matchMayorista.id,
+            nombre: mayoristaNombre,
+            foto_url: mayoristaFoto,
+            telefono: primerTel || phone,
+            isMayorista: true
+          });
+
+          setMarkupPorcentaje(Number(matchMayorista.porcentaje_ganancia) || 0);
+          setAjustesProductos(matchMayorista.ajustes_productos || {});
+          setMayoristaBranding({ 
+            nombre: mayoristaNombre, 
+            logo: matchMayorista.logo_url || '', 
+            video: matchMayorista.video_hero_url || '',
+            color: mayoristaColor,
+            dominio_personalizado: matchMayorista.dominio_personalizado || matchMayorista.ajustes_productos?.dominio_personalizado,
+            ajustes_productos: matchMayorista.ajustes_productos || {}
+          });
+          setBuyerType('detal');
+
+          if (cleanMayoristaPhone) {
+            setOverrideWhatsApp(cleanMayoristaPhone);
+            sessionStorage.setItem(`ws_override_${tenant}`, cleanMayoristaPhone);
+          }
+          return; // Finalizar: ya quedó asignado el mayorista directamente
+        }
+
+        // 2. SEGUNDO: Si NO es mayorista, buscar en la lista de asesores
         let matchAsesor: any = null;
 
         if (phone) {
-          const cleanQuery = phone.replace(/\D/g, '');
-          const normQuery = cleanQuery.length === 12 && cleanQuery.startsWith('57') ? cleanQuery.substring(2) : cleanQuery;
-
-          // 1. Buscar por número de teléfono
           const { data: allAsesores } = await supabase
             .from('asesores')
             .select('id, nombre, telefono, foto_url, tenant_id')
@@ -193,7 +279,7 @@ export default function MenuDigital() {
           }
         }
 
-        // Si no hay teléfono o no hubo coincidencia por teléfono, seleccionar asesor mediante rotación equitativa por turnos (Round-Robin)
+        // Si no hay teléfono o no hubo coincidencia por teléfono, rotación secuencial equitativa (Round-Robin) para asesores de la tienda oficial
         if (!matchAsesor) {
           const { data: tenantAsesores } = await supabase
             .from('asesores')
@@ -201,7 +287,6 @@ export default function MenuDigital() {
             .eq('tenant_id', tenant);
 
           if (tenantAsesores && tenantAsesores.length > 0) {
-            // Ordenar de forma estable por ID para garantizar siempre la misma secuencia
             tenantAsesores.sort((a, b) => (a.id || '').localeCompare(b.id || ''));
 
             const storageKey = `last_asesor_idx_${tenant}`;
@@ -214,7 +299,6 @@ export default function MenuDigital() {
             localStorage.setItem(storageKey, nextIdx.toString());
             matchAsesor = tenantAsesores[nextIdx];
           } else {
-            // Si el tenant no tiene asesores específicos, cargar de forma secuencial global
             const { data: globalAsesores } = await supabase
               .from('asesores')
               .select('id, nombre, telefono, foto_url, tenant_id');
@@ -237,9 +321,11 @@ export default function MenuDigital() {
           const cleanAssignedPhone = (phone || primerTel).replace(/\D/g, '');
 
           setActiveAsesor({
+            id: matchAsesor.id,
             nombre: matchAsesor.nombre || 'Asesor Comercial',
             foto_url: matchAsesor.foto_url || '',
-            telefono: phone || primerTel
+            telefono: phone || primerTel,
+            isMayorista: false
           });
 
           // Guardar el asesor asignado en la sesión
@@ -248,51 +334,8 @@ export default function MenuDigital() {
             sessionStorage.setItem(`ws_override_${tenant}`, cleanAssignedPhone);
           }
         }
-
-        // 2. Buscar en mayoristas para markup y branding
-        if (phone) {
-          const cleanQuery = phone.replace(/\D/g, '');
-          const normQuery = cleanQuery.length === 12 && cleanQuery.startsWith('57') ? cleanQuery.substring(2) : cleanQuery;
-
-          const { data: mayoristasTenant } = await supabase
-            .from('mayoristas')
-            .select('id, telefono, porcentaje_ganancia, ajustes_productos, nombre_negocio, logo_url, video_hero_url')
-            .eq('tenant_id', tenant);
-
-          let matchMayorista = mayoristasTenant?.find(m => {
-            const phones = (m.telefono || '').split(',').map((p: string) => {
-              const clean = p.replace(/\D/g, '');
-              return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
-            }).filter(Boolean);
-            return phones.includes(normQuery);
-          });
-
-          if (!matchMayorista) {
-            const { data: mayoristasGlobal } = await supabase
-              .from('mayoristas')
-              .select('id, telefono, porcentaje_ganancia, ajustes_productos, nombre_negocio, logo_url, video_hero_url');
-            matchMayorista = mayoristasGlobal?.find(m => {
-              const phones = (m.telefono || '').split(',').map((p: string) => {
-                const clean = p.replace(/\D/g, '');
-                return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
-              }).filter(Boolean);
-              return phones.includes(normQuery);
-            });
-          }
-
-          if (matchMayorista) {
-            setMarkupPorcentaje(Number((matchMayorista as any).porcentaje_ganancia) || 0);
-            setAjustesProductos((matchMayorista as any).ajustes_productos || {});
-            setMayoristaBranding({ 
-              nombre: (matchMayorista as any).nombre_negocio || '', 
-              logo: (matchMayorista as any).logo_url || '', 
-              video: (matchMayorista as any).video_hero_url || '' 
-            });
-            setBuyerType('detal');
-          }
-        }
       } catch (err) {
-        console.error("Error loading wholesaler markup: ", err);
+        console.error("Error loading wholesaler / asesor: ", err);
       }
     }
 
@@ -349,6 +392,7 @@ export default function MenuDigital() {
     const tenant = getTenantId();
     const storeName = mayoristaBranding?.nombre || configuracion?.nombre_negocio || (tenant ? tenant.charAt(0).toUpperCase() + tenant.slice(1) : 'Catálogo Digital');
     const storeLogo = mayoristaBranding?.logo || configuracion?.logo_url || DEFAULT_LOGOS[tenant] || '';
+    const effectiveColor = mayoristaBranding?.color || configuracion?.color_primario;
 
     document.title = storeName;
 
@@ -357,13 +401,16 @@ export default function MenuDigital() {
       window.history.replaceState(null, '', `/${tenant}${window.location.search}${window.location.hash}`);
     }
 
-    updatePWAManifestAndIcons(storeLogo, storeName, configuracion?.color_primario);
+    updatePWAManifestAndIcons(storeLogo, storeName, effectiveColor);
 
-    if (configuracion?.color_primario) {
-      document.documentElement.style.setProperty('--primary', configuracion.color_primario);
-      document.documentElement.style.setProperty('--primary-color', configuracion.color_primario);
-      localStorage.setItem(`admin_primary_color_${tenant}`, configuracion.color_primario);
-      const hex = configuracion.color_primario.replace('#', '');
+    if (effectiveColor) {
+      document.documentElement.style.setProperty('--primary', effectiveColor);
+      document.documentElement.style.setProperty('--primary-color', effectiveColor);
+      // Solo guardar en la configuración global si no es un color específico de mayorista
+      if (!mayoristaBranding?.color) {
+        localStorage.setItem(`admin_primary_color_${tenant}`, effectiveColor);
+      }
+      const hex = effectiveColor.replace('#', '');
       if (hex.length === 6) {
         const r = parseInt(hex.substring(0, 2), 16);
         const g = parseInt(hex.substring(2, 4), 16);
@@ -1715,7 +1762,7 @@ export default function MenuDigital() {
                   )}
                   <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', overflow: 'hidden' }}>
                     <span style={{ fontSize: '0.6rem', fontWeight: 500, color: '#047857', textTransform: 'uppercase', letterSpacing: '0.2px', lineHeight: 1.1 }}>
-                      Estás con el asesor:
+                      {activeAsesor.isMayorista ? '🏪 Mayorista Oficial:' : 'Estás con el asesor:'}
                     </span>
                     <span style={{ fontSize: '0.78rem', fontWeight: 500, color: '#065f46', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.2 }}>
                       {activeAsesor.nombre} {activeAsesor.telefono ? `· 📱 ${activeAsesor.telefono.split(',')[0].trim()}` : ''}

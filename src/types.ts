@@ -143,6 +143,8 @@ export interface Mayorista {
   nombre_negocio?: string;
   logo_url?: string;
   video_hero_url?: string;
+  color_primario?: string;
+  dominio_personalizado?: string;
 }
 
 export interface PQRS {
