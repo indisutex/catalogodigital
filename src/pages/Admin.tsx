@@ -1521,7 +1521,7 @@ export default function Admin() {
               }}
             >
               <span style={{ fontSize: '0.82rem', flexShrink: 0 }}>💭</span>
-              <span>Contactar</span>
+              <span>Recuperar Venta</span>
               <ChevronRight size={13} color="#ffffff" style={{ flexShrink: 0 }} />
             </button>
           ) : ped.estado === 'completado' ? (
@@ -1574,7 +1574,7 @@ export default function Admin() {
                 minWidth: '95px'
               }}
             >
-              <span>🚚 Despacho</span>
+              <span>🚚 Despachar pedido</span>
               <ChevronRight size={13} color="#ffffff" style={{ flexShrink: 0 }} />
             </button>
           ) : ped.pantallazo_url ? (
@@ -1638,7 +1638,7 @@ export default function Admin() {
                 minWidth: '95px'
               }}
             >
-              <span>📲 Recordar</span>
+              <span>📲 Recordar pago</span>
             </button>
           )}
         </div>
