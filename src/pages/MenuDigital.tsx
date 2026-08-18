@@ -94,6 +94,14 @@ export default function MenuDigital() {
 
   const getCategoryCount = (catSlug: string, catNombre: string) => {
     return productos.filter(p => {
+      if (p.oculto) return false;
+      if (ajustesProductos) {
+        const productSetting = ajustesProductos[p.id];
+        const isHiddenObject = productSetting && typeof productSetting === 'object' && productSetting.oculto;
+        const isHiddenArray = ajustesProductos.hidden_products?.includes(p.id);
+        if (isHiddenObject || isHiddenArray) return false;
+      }
+      if (catSlug === 'todos' || catNombre === 'todos') return true;
       const pCat = (p.categoria || '').toLowerCase().trim();
       return pCat === catSlug.toLowerCase().trim() || pCat === catNombre.toLowerCase().trim();
     }).length;
@@ -1819,7 +1827,7 @@ export default function MenuDigital() {
                 <div className="burger-active-cat-preview" onClick={() => setIsBurgerCatOpen(true)}>
                   <span className="burger-cat-item active" style={{ margin: 0, padding: '0.45rem 0.65rem' }}>
                     <span>{filtroCategoria === 'todos' ? 'Todos los productos' : toTitleCase(categorias.find(c => c.slug === filtroCategoria)?.nombre || filtroCategoria)}</span>
-                    <span className="burger-cat-count">{filtroCategoria === 'todos' ? productos.length : getCategoryCount(filtroCategoria, filtroCategoria)}</span>
+                    <span className="burger-cat-count">{getCategoryCount(filtroCategoria, filtroCategoria)}</span>
                   </span>
                 </div>
               ) : (
@@ -1832,7 +1840,7 @@ export default function MenuDigital() {
                     }}
                   >
                     <span>Todos los productos</span>
-                    <span className="burger-cat-count">{productos.length}</span>
+                    <span className="burger-cat-count">{getCategoryCount('todos', 'todos')}</span>
                   </li>
 
                   {categorias.map(cat => {
@@ -2037,7 +2045,7 @@ export default function MenuDigital() {
                   <div className="story-avatar-inner" style={{ backgroundColor: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <LayoutGrid size={22} color="var(--primary, #f36b8e)" strokeWidth={2.2} />
                   </div>
-                  <span className="cat-story-count">{productos.length}</span>
+                  <span className="cat-story-count">{productos.filter(p => !p.oculto && (!ajustesProductos || (!ajustesProductos.hidden_products?.includes(p.id) && !ajustesProductos[p.id]?.oculto))).length}</span>
                 </div>
                 <div className="cat-info">
                   <h3>Todos</h3>

@@ -2481,6 +2481,7 @@ export default function Admin() {
   }, [configuracion, selectedCompany, currentMayorista, role]);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [copiedHeaderLink, setCopiedHeaderLink] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     return localStorage.getItem('admin_sidebar_collapsed') === 'true';
   });
@@ -6295,24 +6296,132 @@ export default function Admin() {
               (() => {
                 const currentUser = role === 'mayorista' ? currentMayorista : currentAsesor;
                 if (!currentUser) return null;
+
+                const tenant = getTenantId();
+                const cleanPhone = (currentUser.telefono || '').split(',')[0].replace(/\D/g, '');
+                const finalPhone = cleanPhone ? (cleanPhone.length === 10 ? `57${cleanPhone}` : cleanPhone) : '';
+
+                let catalogUrl = '';
+                let displayUrl = '';
+
+                if (role === 'mayorista' && currentMayorista) {
+                  const customDom = currentMayorista.dominio_personalizado || currentMayorista.ajustes_productos?.dominio_personalizado;
+                  if (customDom) {
+                    catalogUrl = customDom.startsWith('http') ? customDom : `https://${customDom}`;
+                    displayUrl = customDom;
+                  } else {
+                    const base = `${window.location.origin}/${tenant}`;
+                    catalogUrl = finalPhone ? `${base}?ws=${finalPhone}` : base;
+                    displayUrl = `${window.location.host}/${tenant}${finalPhone ? `?ws=${finalPhone}` : ''}`;
+                  }
+                } else {
+                  // Rol Asesor: Enlace oficial con su línea WhatsApp asignada
+                  const base = `${window.location.origin}/${tenant}`;
+                  catalogUrl = finalPhone ? `${base}?ws=${finalPhone}` : base;
+                  displayUrl = `${window.location.host}/${tenant}${finalPhone ? `?ws=${finalPhone}` : ''}`;
+                }
+
                 return (
-                  <>
-                    <div style={{ background: currentUser.foto_url ? 'transparent' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '42px', height: '42px', borderRadius: '50%', border: '1px solid #cbd5e1', overflow: 'hidden', flexShrink: 0 }}>
-                      {currentUser.foto_url ? (
-                        <img src={currentUser.foto_url} alt={currentUser.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : (
-                        <span style={{ fontSize: '1.2rem', fontWeight: 800 }}>{currentUser.nombre.charAt(0)}</span>
-                      )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flex: 1, minWidth: 0, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0 }}>
+                      <div style={{ background: currentUser.foto_url ? 'transparent' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '38px', height: '38px', borderRadius: '50%', border: '1.5px solid #cbd5e1', overflow: 'hidden', flexShrink: 0 }}>
+                        {currentUser.foto_url ? (
+                          <img src={currentUser.foto_url} alt={currentUser.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--primary-color, #0ea5e9)' }}>{currentUser.nombre.charAt(0)}</span>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', minWidth: 0 }}>
+                        <h2 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Poppins', sans-serif" }}>
+                          {currentUser.nombre}
+                        </h2>
+                        <p className="topbar-motivational-quote" style={{ margin: '0.05rem 0 0 0', fontSize: '0.76rem', color: configuracion?.color_primario || '#0ea5e9', fontWeight: 400, fontStyle: 'normal', fontFamily: "'Poppins', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {getMotivationalPhrase(currentUser.id)}
+                        </p>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', minWidth: 0, flex: 1 }}>
-                      <h2 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {currentUser.nombre}
-                      </h2>
-                      <p className="topbar-motivational-quote" style={{ margin: '0.05rem 0 0 0', fontSize: '0.85rem', color: configuracion?.color_primario || '#6366f1', fontWeight: 700, fontStyle: 'normal', fontFamily: 'Nunito, sans-serif', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {getMotivationalPhrase(currentUser.id)}
-                      </p>
+
+                    {/* Acceso Directo al Enlace del Catálogo + Botón Copiar al Portapapeles (Una sola fila) */}
+                    <div style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.45rem',
+                      background: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '10px',
+                      padding: '0.25rem 0.45rem 0.25rem 0.65rem',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                      fontFamily: "'Poppins', sans-serif",
+                      maxWidth: '100%'
+                    }}>
+                      <span style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', color: 'var(--primary-color, #0ea5e9)', flexShrink: 0 }}>
+                        🔗
+                      </span>
+                      <a
+                        href={catalogUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={`Abrir mi catálogo: ${catalogUrl}`}
+                        style={{
+                          fontSize: '0.74rem',
+                          fontWeight: 500,
+                          color: '#334155',
+                          textDecoration: 'none',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          maxWidth: '220px',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.25rem'
+                        }}
+                        onMouseEnter={e => (e.currentTarget.style.color = 'var(--primary-color, #0ea5e9)')}
+                        onMouseLeave={e => (e.currentTarget.style.color = '#334155')}
+                      >
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayUrl}</span>
+                        <ExternalLink size={12} style={{ opacity: 0.6, flexShrink: 0 }} />
+                      </a>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigator.clipboard.writeText(catalogUrl);
+                          setCopiedHeaderLink(true);
+                          showToast('¡Enlace copiado al portapapeles! ✓', 'success');
+                          setTimeout(() => setCopiedHeaderLink(false), 2000);
+                        }}
+                        title="Copiar enlace de mi catálogo al portapapeles"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
+                          background: copiedHeaderLink ? '#dcfce7' : 'var(--primary-color, #0ea5e9)',
+                          color: copiedHeaderLink ? '#15803d' : '#ffffff',
+                          border: `1px solid ${copiedHeaderLink ? '#86efac' : 'transparent'}`,
+                          borderRadius: '7px',
+                          padding: '0.22rem 0.55rem',
+                          fontSize: '0.72rem',
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s ease',
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0
+                        }}
+                      >
+                        {copiedHeaderLink ? (
+                          <>
+                            <Check size={12} />
+                            <span>¡Copiado!</span>
+                          </>
+                        ) : (
+                          <>
+                            <Copy size={12} />
+                            <span>Copiar</span>
+                          </>
+                        )}
+                      </button>
                     </div>
-                  </>
+                  </div>
                 );
               })()
             ) : (['clientes','asesores','pedidos','mayoristas','productos','material_apoyo'].includes(activeTab) && !isAddingProduct) ? (
@@ -9817,7 +9926,7 @@ export default function Admin() {
                             </div>
                             
                             {/* Info Area */}
-                            <div className="material-info-area" style={{ padding: '1rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'left' }}>
+                            <div className="material-info-area" style={{ padding: '1rem', flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'left', fontFamily: "'Poppins', sans-serif" }}>
                               <div style={{ display: 'flex', justifyContent: 'flex-start', alignItems: 'start', gap: '0.5rem' }}>
                                 <span style={{ 
                                   fontSize: '0.68rem', 
@@ -9825,17 +9934,17 @@ export default function Admin() {
                                   color: m.tipo === 'video' ? '#ef4444' : m.tipo === 'imagen' ? '#22c55e' : m.tipo === 'carpeta' ? '#d97706' : '#0284c7',
                                   padding: '0.2rem 0.55rem', 
                                   borderRadius: '20px', 
-                                  fontWeight: 800,
+                                  fontWeight: 500,
                                   textTransform: 'uppercase'
                                 }}>
                                   {m.tipo === 'video' ? '🎥 Video' : m.tipo === 'imagen' ? '🖼️ Imagen' : m.tipo === 'carpeta' ? '📁 Carpeta' : '📄 PDF/Doc'}
                                 </span>
                               </div>
-                              <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0f172a', fontWeight: 800 }}>{m.titulo}</h4>
-                              {m.descripcion && <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b', lineHeight: 1.4 }}>{m.descripcion}</p>}
+                              <h4 style={{ margin: 0, fontSize: '0.9rem', color: '#0f172a', fontWeight: 600 }}>{m.titulo}</h4>
+                              {m.descripcion && <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b', lineHeight: 1.4, fontWeight: 400 }}>{m.descripcion}</p>}
                               {m.campana && (
                                 <div style={{ display: 'flex', marginTop: '2px' }}>
-                                  <span style={{ fontSize: '0.68rem', background: '#fce7f3', color: '#db2777', padding: '0.2rem 0.55rem', borderRadius: '20px', fontWeight: 800 }}>
+                                  <span style={{ fontSize: '0.68rem', background: '#fce7f3', color: '#db2777', padding: '0.2rem 0.55rem', borderRadius: '20px', fontWeight: 500 }}>
                                     🌟 {m.campana}
                                   </span>
                                 </div>
@@ -9844,13 +9953,13 @@ export default function Admin() {
                           </div>
                           
                           {/* Action buttons */}
-                          <div className="material-card-actions" style={{ display: 'flex', gap: '0.5rem', padding: '0.75rem 1rem', borderTop: '1px solid #f1f5f9', background: '#fafafa' }}>
+                          <div className="material-card-actions" style={{ display: 'flex', gap: '0.5rem', padding: '0.75rem 1rem', borderTop: '1px solid #f1f5f9', background: '#fafafa', fontFamily: "'Poppins', sans-serif" }}>
                             <a
                               href={m.url}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="btn-secondary"
-                              style={{ flex: 1, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.45rem' }}
+                              style={{ flex: 1, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', padding: '0.45rem', fontWeight: 500 }}
                             >
                               <Eye size={12} /> Ver
                             </a>
@@ -9860,7 +9969,7 @@ export default function Admin() {
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="btn-secondary"
-                                style={{ flex: 1, textDecoration: 'none', padding: '0.45rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', color: '#64748b', borderColor: '#e2e8f0', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', fontWeight: 700 }}
+                                style={{ flex: 1, textDecoration: 'none', padding: '0.45rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.25rem', fontSize: '0.75rem', color: '#64748b', borderColor: '#e2e8f0', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', fontWeight: 500 }}
                               >
                                 <Download size={12} style={{ color: '#0ea5e9' }} /> Descargar
                               </a>
