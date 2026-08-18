@@ -239,7 +239,7 @@ export default function MenuDigital() {
 
         const { data: mayoristasGlobal } = await supabase
           .from('mayoristas')
-          .select('id, nombre, telefono, porcentaje_ganancia, ajustes_productos, nombre_negocio, logo_url, foto_url, video_hero_url, color_primario, dominio_personalizado, tenant_id');
+          .select('*');
 
         const systemRoutes = ['admin', 'superadmin', 'pago', 'guia', 'menu', 'dist', 'assets', 'api', 'sw.js', 'manifest.json', 'products', 'orders', 'favicon.ico', 'robots.txt', 'indisutex', 'sublimadosmajestic', 'sublimados_majestic', 'default'];
         
@@ -250,20 +250,24 @@ export default function MenuDigital() {
             const nameSlug = normalizeSlug(m.nombre);
             return (bizSlug && bizSlug === rawPathSlug) || 
                    (nameSlug && nameSlug === rawPathSlug) ||
-                   (m.id && normalizeSlug(m.id) === rawPathSlug) ||
-                   (m.tenant_id && normalizeSlug(m.tenant_id) === rawPathSlug);
+                   (m.id && normalizeSlug(m.id) === rawPathSlug);
           });
         }
 
         // B. Match por teléfono si no hubo match por slug
         if (!matchMayorista && normQuery) {
-          matchMayorista = mayoristasGlobal?.find(m => {
+          const matchingPhones = mayoristasGlobal?.filter(m => {
             const phones = (m.telefono || '').split(',').map((p: string) => {
               const clean = p.replace(/\D/g, '');
               return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
             }).filter(Boolean);
             return phones.includes(normQuery) || (m.telefono && m.telefono.includes(normQuery));
-          });
+          }) || [];
+
+          if (matchingPhones.length > 0) {
+            const storeTenant = normalizeTenantId(rawPathSlug || params.get('tienda') || localStorage.getItem('tenant_id') || 'sublimados_majestic');
+            matchMayorista = matchingPhones.find(m => m.tenant_id === storeTenant) || matchingPhones[0];
+          }
         }
 
         // C. Match por dominio personalizado
@@ -284,7 +288,9 @@ export default function MenuDigital() {
           const cleanMayoristaPhone = (phoneToQuery || primerTel).replace(/\D/g, '');
           const mayoristaNombre = matchMayorista.nombre_negocio || matchMayorista.nombre || 'Mayorista';
           const mayoristaFoto = matchMayorista.logo_url || matchMayorista.foto_url || '';
+          const mayoristaVideo = matchMayorista.video_hero_url || '';
           const mayoristaColor = matchMayorista.color_primario || matchMayorista.ajustes_productos?.color_primario || '';
+          const mayoristaDominio = matchMayorista.dominio_personalizado || matchMayorista.ajustes_productos?.dominio_personalizado || '';
 
           setActiveAsesor({
             id: matchMayorista.id,
@@ -298,10 +304,10 @@ export default function MenuDigital() {
           setAjustesProductos(matchMayorista.ajustes_productos || {});
           setMayoristaBranding({ 
             nombre: mayoristaNombre, 
-            logo: matchMayorista.logo_url || '', 
-            video: matchMayorista.video_hero_url || '',
+            logo: mayoristaFoto, 
+            video: mayoristaVideo,
             color: mayoristaColor,
-            dominio_personalizado: matchMayorista.dominio_personalizado || matchMayorista.ajustes_productos?.dominio_personalizado,
+            dominio_personalizado: mayoristaDominio,
             ajustes_productos: matchMayorista.ajustes_productos || {}
           });
           setBuyerType('detal');
@@ -1551,7 +1557,13 @@ export default function MenuDigital() {
             {/* ── TICKER STRIP (TOP EDGE OF HERO) ── */}
             <div className="hero-ticker-wrap">
               <div className="hero-ticker-track">
-                {[
+                {(mayoristaBranding ? [
+                  `✨ ${mayoristaBranding.nombre} · Tienda Oficial`,
+                  '🚚 Envíos a toda Colombia',
+                  '📲 Atención directa por WhatsApp',
+                  '💖 Las mejores colecciones y calidad',
+                  '💎 Compra fácil, rápida y 100% segura'
+                ] : [
                   '🇨🇴 Fabricación colombiana · Indisutex SAS',
                   '🚚 Pago contra entrega en todo Colombia',
                   '📲 Catálogo mayorista por WhatsApp',
@@ -1560,7 +1572,13 @@ export default function MenuDigital() {
                   '✅ Precios mayoristas por WhatsApp',
                   '🌟 Envíos a toda Colombia',
                   '💎 Calidad garantizada',
-                ].concat([
+                ]).concat(mayoristaBranding ? [
+                  `✨ ${mayoristaBranding.nombre} · Tienda Oficial`,
+                  '🚚 Envíos a toda Colombia',
+                  '📲 Atención directa por WhatsApp',
+                  '💖 Las mejores colecciones y calidad',
+                  '💎 Compra fácil, rápida y 100% segura'
+                ] : [
                   '🇨🇴 Fabricación colombiana · Indisutex SAS',
                   '🚚 Pago contra entrega en todo Colombia',
                   '📲 Catálogo mayorista por WhatsApp',
@@ -1578,8 +1596,8 @@ export default function MenuDigital() {
             {(mayoristaBranding?.video || configuracion?.video_hero_url) && (
               isMediaVideo(mayoristaBranding?.video || configuracion?.video_hero_url) ? (
                 <video 
-                  key={heroVideoUrl || 'hero-video-key'}
-                  src={heroVideoUrl} 
+                  key={mayoristaBranding?.video || configuracion?.video_hero_url || 'hero-video-key'}
+                  src={mayoristaBranding?.video || configuracion?.video_hero_url} 
                   autoPlay 
                   loop 
                   muted
@@ -2255,7 +2273,7 @@ export default function MenuDigital() {
                   
                   <button 
                     className={`item-add-btn ${addedProductId === producto.id ? 'btn-added' : ''}`}
-                    style={{ background: addedProductId === producto.id ? '#16a34a' : (configuracion?.color_primario || 'var(--primary)') }}
+                    style={{ background: addedProductId === producto.id ? '#16a34a' : (mayoristaBranding?.color || configuracion?.color_primario || 'var(--primary)') }}
                     onClick={e => { 
                       e.stopPropagation(); 
                       const hasOptions = (producto.tallas && producto.tallas.length > 0) || 
@@ -2281,7 +2299,7 @@ export default function MenuDigital() {
                     const priceDetal = getEffectivePrice(producto, 'detal', markupPorcentaje, ajustesProductos, descuentoPromocional);
                     const priceMayor = getEffectivePrice(producto, 'mayorista', markupPorcentaje, ajustesProductos, descuentoPromocional);
                     const hasWholesalePrice = priceMayor > 0 && priceMayor < priceDetal;
-                    const companyColor = configuracion?.color_primario || 'var(--primary, #f36b8e)';
+                    const companyColor = mayoristaBranding?.color || configuracion?.color_primario || 'var(--primary, #f36b8e)';
 
                     if (producto.es_producto_familiar) {
                       return (
@@ -2343,13 +2361,13 @@ export default function MenuDigital() {
           className="floating-cart-btn" 
           onClick={() => setIsCartOpen(true)}
           style={{ 
-            background: configuracion?.color_primario || 'var(--primary, #f36b8e)',
-            boxShadow: `0 -4px 20px ${(configuracion?.color_primario || '#f36b8e')}35`
+            background: mayoristaBranding?.color || configuracion?.color_primario || 'var(--primary, #f36b8e)',
+            boxShadow: `0 -4px 20px ${(mayoristaBranding?.color || configuracion?.color_primario || '#f36b8e')}35`
           }}
         >
           <div className="cart-icon-wrapper">
             <ShoppingBag size={22} />
-            <span className="cart-badge" style={{ color: configuracion?.color_primario || '#0f172a' }}>{totalItems}</span>
+            <span className="cart-badge" style={{ color: mayoristaBranding?.color || configuracion?.color_primario || '#0f172a' }}>{totalItems}</span>
             <span>Ver Carrito</span>
           </div>
           <span className="cart-total-float" style={{ fontWeight: 700, fontSize: '1.05rem' }}>${total.toLocaleString('es-CO')}</span>
@@ -2409,7 +2427,7 @@ export default function MenuDigital() {
                           width: '26px', 
                           height: '26px', 
                           borderRadius: '50%', 
-                          backgroundColor: checkoutStep >= 1 ? (configuracion?.color_primario || 'var(--primary, #f36b8e)') : '#f1f5f9', 
+                          backgroundColor: checkoutStep >= 1 ? (mayoristaBranding?.color || configuracion?.color_primario || 'var(--primary, #f36b8e)') : '#f1f5f9', 
                           color: checkoutStep >= 1 ? '#ffffff' : '#64748b', 
                           display: 'flex', 
                           alignItems: 'center', 
@@ -2426,7 +2444,7 @@ export default function MenuDigital() {
                       </span>
                     </div>
 
-                    <div style={{ flex: 1, height: '2px', background: checkoutStep >= 2 ? (configuracion?.color_primario || 'var(--primary, #f36b8e)') : '#e2e8f0', transition: 'all 0.3s ease', margin: '0 0.3rem' }} />
+                    <div style={{ flex: 1, height: '2px', background: checkoutStep >= 2 ? (mayoristaBranding?.color || configuracion?.color_primario || 'var(--primary, #f36b8e)') : '#e2e8f0', transition: 'all 0.3s ease', margin: '0 0.3rem' }} />
 
                     {/* STEP 2 */}
                     <div 
@@ -2438,7 +2456,7 @@ export default function MenuDigital() {
                           width: '26px', 
                           height: '26px', 
                           borderRadius: '50%', 
-                          backgroundColor: checkoutStep >= 2 ? (configuracion?.color_primario || 'var(--primary, #f36b8e)') : '#f1f5f9', 
+                          backgroundColor: checkoutStep >= 2 ? (mayoristaBranding?.color || configuracion?.color_primario || 'var(--primary, #f36b8e)') : '#f1f5f9', 
                           color: checkoutStep >= 2 ? '#ffffff' : '#64748b', 
                           display: 'flex', 
                           alignItems: 'center', 
@@ -2455,7 +2473,7 @@ export default function MenuDigital() {
                       </span>
                     </div>
 
-                    <div style={{ flex: 1, height: '2px', background: checkoutStep >= 3 ? (configuracion?.color_primario || 'var(--primary, #f36b8e)') : '#e2e8f0', transition: 'all 0.3s ease', margin: '0 0.3rem' }} />
+                    <div style={{ flex: 1, height: '2px', background: checkoutStep >= 3 ? (mayoristaBranding?.color || configuracion?.color_primario || 'var(--primary, #f36b8e)') : '#e2e8f0', transition: 'all 0.3s ease', margin: '0 0.3rem' }} />
 
                     {/* STEP 3 */}
                     <div 
@@ -2467,7 +2485,7 @@ export default function MenuDigital() {
                           width: '26px', 
                           height: '26px', 
                           borderRadius: '50%', 
-                          backgroundColor: checkoutStep >= 3 ? (configuracion?.color_primario || 'var(--primary, #f36b8e)') : '#f1f5f9', 
+                          backgroundColor: checkoutStep >= 3 ? (mayoristaBranding?.color || configuracion?.color_primario || 'var(--primary, #f36b8e)') : '#f1f5f9', 
                           color: checkoutStep >= 3 ? '#ffffff' : '#64748b', 
                           display: 'flex', 
                           alignItems: 'center', 
@@ -2489,8 +2507,8 @@ export default function MenuDigital() {
             ) : (
               <div className="cart-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 1.15rem', background: '#ffffff', borderBottom: '1px solid #f1f5f9' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <div style={{ width: '42px', height: '42px', borderRadius: '14px', background: `${configuracion?.color_primario || 'var(--primary, #f36b8e)'}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <ShoppingBag size={20} color={configuracion?.color_primario || 'var(--primary, #f36b8e)'} />
+                  <div style={{ width: '42px', height: '42px', borderRadius: '14px', background: `${mayoristaBranding?.color || configuracion?.color_primario || 'var(--primary, #f36b8e)'}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <ShoppingBag size={20} color={mayoristaBranding?.color || configuracion?.color_primario || 'var(--primary, #f36b8e)'} />
                   </div>
                   <div>
                     <h3 style={{ fontSize: '1.05rem', fontWeight: 600, color: '#0f172a', margin: 0, lineHeight: 1.2 }}>
@@ -2519,7 +2537,7 @@ export default function MenuDigital() {
             {!isCheckoutMode && items.length > 0 && (
               <div className="shrine-shipping-bar" style={{ padding: '0.75rem 1.1rem', background: '#ffffff', color: '#0f172a', borderBottom: '1px solid #f1f5f9' }}>
                 {(() => {
-                  const brandColor = configuracion?.color_primario || 'var(--primary, #f36b8e)';
+                  const brandColor = mayoristaBranding?.color || configuracion?.color_primario || 'var(--primary, #f36b8e)';
 
                   if (totalUnits < 6) {
                     const remaining = 6 - totalUnits;
