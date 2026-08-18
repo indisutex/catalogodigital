@@ -4443,7 +4443,29 @@ export default function Admin() {
   const canceladosFiltrados = useMemo(() => {
     const canceledOrders = allFilteredPedidos.filter(p => p.estado === 'cancelado').map(p => ({ ...p, isLead: false }));
     
+    const normalizePhone = (phone?: string | null) => {
+      if (!phone) return '';
+      const clean = phone.replace(/\D/g, '');
+      return clean.length >= 10 ? clean.slice(-10) : clean;
+    };
+
     let tempLeads = leads.filter(l => l.estado === 'cancelado');
+
+    if ((role === 'asesor' || role === 'mayorista') && loggedAsesorPhone) {
+      tempLeads = tempLeads.filter(l => {
+        if (!l.linea_whatsapp) return false;
+        const leadPhone = normalizePhone(l.linea_whatsapp);
+        const advisorPhones = loggedAsesorPhone.split(',').map(phone => normalizePhone(phone)).filter(Boolean);
+        return advisorPhones.includes(leadPhone);
+      });
+    } else if (orderFilterAsesor !== 'todos') {
+      tempLeads = tempLeads.filter(l => {
+        const leadPhone = normalizePhone(l.linea_whatsapp);
+        const filterPhones = orderFilterAsesor.split(',').map(phone => normalizePhone(phone)).filter(Boolean);
+        return !!leadPhone && filterPhones.includes(leadPhone);
+      });
+    }
+
     if (orderSearchQuery) {
       const cleanOrderStr = (str: string) => 
         (str || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
@@ -4472,7 +4494,7 @@ export default function Admin() {
     }));
 
     return [...canceledOrders, ...canceledLeads].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  }, [allFilteredPedidos, leads, orderSearchQuery, orderFilterDate]);
+  }, [allFilteredPedidos, leads, orderSearchQuery, orderFilterDate, role, loggedAsesorPhone, orderFilterAsesor]);
 
   const contraEntregaFiltrados = useMemo(() => {
     return allFilteredPedidos.filter(p => {
