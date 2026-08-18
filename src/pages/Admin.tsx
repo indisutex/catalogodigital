@@ -949,12 +949,18 @@ export default function Admin() {
   });
 
   const currentAsesor = useMemo(() => {
-    if (role === 'asesor') return asesores.find(a => a.id === localStorage.getItem(`admin_asesor_id_${getTenantId()}`)) ?? null;
+    if (role === 'asesor') {
+      const storedId = localStorage.getItem(`admin_asesor_id_${getTenantId()}`) || localStorage.getItem('admin_asesor_id') || localStorage.getItem('admin_user_id');
+      return asesores.find(a => a.id === storedId) ?? (asesores.length > 0 ? asesores[0] : null);
+    }
     return null;
   }, [role, asesores]);
 
   const currentMayorista = useMemo(() => {
-    if (role === 'mayorista') return mayoristas.find(m => m.id === localStorage.getItem(`admin_asesor_id_${getTenantId()}`)) ?? null;
+    if (role === 'mayorista') {
+      const storedId = localStorage.getItem(`admin_asesor_id_${getTenantId()}`) || localStorage.getItem('admin_asesor_id') || localStorage.getItem('admin_user_id');
+      return mayoristas.find(m => m.id === storedId) ?? (mayoristas.length > 0 ? mayoristas[0] : null);
+    }
     return null;
   }, [role, mayoristas]);
 
@@ -1486,7 +1492,7 @@ export default function Admin() {
           )}
 
           {/* Main Primary Action Button */}
-          {isLead ? (
+          {(isLead || ped.estado === 'cancelado') ? (
             <button 
               type="button" 
               className="pedido-card-btn"
@@ -1496,10 +1502,12 @@ export default function Admin() {
                 const prodNames = Array.isArray(ped.productos) && ped.productos.length > 0
                   ? ped.productos.map((p: any) => `${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ')
                   : '';
-                const text = `¡Hola ${nombreCliente || ''}! 👋 Vimos que estás interesado en: ${prodNames ? `*${prodNames}*` : 'nuestros productos'}. ¿Tienes alguna duda o te ayudamos a completar tu pedido? Escríbenos y con gusto te colaboramos. 😊`;
+                const text = ped.estado === 'cancelado'
+                  ? `¡Hola ${nombreCliente || ''}! 👋 Vimos que tu pedido de ${prodNames ? `*${prodNames}*` : 'nuestro catálogo'} quedó cancelado. ¿Te gustaría reactivarlo o podemos ayudarte con alguna duda o forma de pago? ¡Logremos recuperar tu compra con gusto! 😊🛍️`
+                  : `¡Hola ${nombreCliente || ''}! 👋 Vimos que estás interesado en: ${prodNames ? `*${prodNames}*` : 'nuestros productos'}. ¿Tienes alguna duda o te ayudamos a completar tu pedido? Escríbenos y con gusto te colaboramos. 😊`;
                 const targetPhone = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
                 window.open(formatWhatsAppLink(targetPhone, text), '_blank');
-                handleUpdateLeadStatus(ped.id, 'contactado');
+                if (isLead) handleUpdateLeadStatus(ped.id, 'contactado');
               }}
               style={{
                 padding: '0.45rem 0.65rem',
@@ -2482,6 +2490,14 @@ export default function Admin() {
 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [copiedHeaderLink, setCopiedHeaderLink] = useState(false);
+  const [hoveredOrderTooltip, setHoveredOrderTooltip] = useState<{
+    id: string;
+    x: number;
+    y: number;
+    productos: any[];
+    total: number;
+    cliente: string;
+  } | null>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(() => {
     return localStorage.getItem('admin_sidebar_collapsed') === 'true';
   });
@@ -6322,8 +6338,8 @@ export default function Admin() {
                 }
 
                 return (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flex: 1, minWidth: 0, flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flex: '1 1 auto', minWidth: 0, flexWrap: 'nowrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0, flexShrink: 1 }}>
                       <div style={{ background: currentUser.foto_url ? 'transparent' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '38px', height: '38px', borderRadius: '50%', border: '1.5px solid #cbd5e1', overflow: 'hidden', flexShrink: 0 }}>
                         {currentUser.foto_url ? (
                           <img src={currentUser.foto_url} alt={currentUser.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -6341,20 +6357,20 @@ export default function Admin() {
                       </div>
                     </div>
 
-                    {/* Acceso Directo al Enlace del Catálogo + Botón Copiar al Portapapeles (Una sola fila) */}
+                    {/* Acceso Directo al Enlace del Catálogo + Botón Copiar al Portapapeles (Una sola fila fija) */}
                     <div style={{
                       display: 'inline-flex',
                       alignItems: 'center',
                       gap: '0.45rem',
                       background: '#f8fafc',
-                      border: '1px solid #e2e8f0',
+                      border: '1.5px solid #e2e8f0',
                       borderRadius: '10px',
                       padding: '0.25rem 0.45rem 0.25rem 0.65rem',
-                      boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
                       fontFamily: "'Poppins', sans-serif",
-                      maxWidth: '100%'
+                      flexShrink: 0
                     }}>
-                      <span style={{ fontSize: '0.8rem', display: 'flex', alignItems: 'center', color: 'var(--primary-color, #0ea5e9)', flexShrink: 0 }}>
+                      <span style={{ fontSize: '0.82rem', display: 'flex', alignItems: 'center', color: 'var(--primary-color, #0ea5e9)', flexShrink: 0 }}>
                         🔗
                       </span>
                       <a
@@ -6370,7 +6386,7 @@ export default function Admin() {
                           whiteSpace: 'nowrap',
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
-                          maxWidth: '220px',
+                          maxWidth: '200px',
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '0.25rem'
@@ -6379,7 +6395,7 @@ export default function Admin() {
                         onMouseLeave={e => (e.currentTarget.style.color = '#334155')}
                       >
                         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayUrl}</span>
-                        <ExternalLink size={12} style={{ opacity: 0.6, flexShrink: 0 }} />
+                        <ExternalLink size={12} style={{ opacity: 0.7, flexShrink: 0 }} />
                       </a>
                       <button
                         type="button"
@@ -14141,6 +14157,68 @@ export default function Admin() {
                             </h3>
                             <span className="badge" style={{ background: '#ffffff', color: '#dc2626', border: '1px solid #fca5a5', padding: '0.15rem 0.6rem', borderRadius: '12px', fontSize: '0.76rem', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>{canceladosFiltrados.length}</span>
                           </div>
+
+                          {/* ⏱️ Aviso de Purga Automática & Incentivo para Recuperar Venta */}
+                          {(() => {
+                            const RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+                            const now = Date.now();
+                            let shortestRemaining = Infinity;
+                            
+                            for (const item of canceladosFiltrados) {
+                              const created = new Date(item.created_at || now).getTime();
+                              const expiry = created + RETENTION_MS;
+                              const rem = expiry - now;
+                              if (rem < shortestRemaining) shortestRemaining = rem;
+                            }
+
+                            let timerText = '7 días';
+                            if (canceladosFiltrados.length > 0 && shortestRemaining !== Infinity) {
+                              if (shortestRemaining <= 0) {
+                                timerText = 'menos de 1 hora';
+                              } else {
+                                const d = Math.floor(shortestRemaining / (1000 * 60 * 60 * 24));
+                                const h = Math.floor((shortestRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                                if (d > 0) {
+                                  timerText = `${d} día${d !== 1 ? 's' : ''} y ${h} hora${h !== 1 ? 's' : ''}`;
+                                } else {
+                                  timerText = `${h} hora${h !== 1 ? 's' : ''}`;
+                                }
+                              }
+                            }
+
+                            return (
+                              <div style={{
+                                background: '#ffffff',
+                                border: '1px solid #fecaca',
+                                borderRadius: '12px',
+                                padding: '0.55rem 0.75rem',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '0.25rem',
+                                boxShadow: '0 1px 4px rgba(220, 38, 38, 0.05)',
+                                fontFamily: "'Poppins', sans-serif"
+                              }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#991b1b', fontSize: '0.73rem', fontWeight: 500 }}>
+                                  <Clock size={13} style={{ color: '#dc2626', flexShrink: 0 }} />
+                                  <span>Faltan <strong style={{ fontWeight: 600, color: '#dc2626' }}>{timerText}</strong> para eliminar tarjetas</span>
+                                </div>
+                                <div style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.3rem',
+                                  background: '#fff1f2',
+                                  padding: '0.2rem 0.45rem',
+                                  borderRadius: '6px',
+                                  fontSize: '0.71rem',
+                                  color: '#b91c1c',
+                                  fontWeight: 500
+                                }}>
+                                  <span>🎯</span>
+                                  <span>¡Logra recuperar esta venta!</span>
+                                </div>
+                              </div>
+                            );
+                          })()}
                           <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
                             {canceladosFiltrados.map(ped => renderLeadOrOrderCard(ped, ped.isLead))}
                             {canceladosFiltrados.length === 0 && (
@@ -14297,14 +14375,61 @@ export default function Admin() {
                               </td>
                               <td style={{ padding: '1rem', color: ped.estado === 'completado' ? '#166534' : '#475569', verticalAlign: 'middle' }}>{ped.cliente_telefono}</td>
                               <td style={{ padding: '1rem', color: ped.estado === 'completado' ? '#166534' : '#475569', verticalAlign: 'middle' }}>{ped.direccion}, {ped.ciudad}</td>
-                              <td style={{ padding: '1rem', color: ped.estado === 'completado' ? '#166534' : '#475569', verticalAlign: 'middle' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px' }}>
-                                  {Array.isArray(ped.productos) && ped.productos.map((prod: any, idx: number) => (
-                                    <div key={idx} style={{ background: ped.estado === 'completado' ? 'white' : '#f8fafc', padding: '3px 6px', borderRadius: '4px', border: ped.estado === 'completado' ? '1px solid #bbf7d0' : '1px solid #e2e8f0', fontSize: '0.78rem', color: ped.estado === 'completado' ? '#14532d' : '#334155' }}>
-                                      <strong>{prod.cantidad}x</strong> {prod.nombre} {prod.talla ? `(${prod.talla})` : ''} {prod.estampado ? `[${prod.estampado}]` : ''}
+                              <td style={{ padding: '0.85rem 1rem', color: ped.estado === 'completado' ? '#166534' : '#475569', verticalAlign: 'middle' }}>
+                                {(() => {
+                                  const prods = Array.isArray(ped.productos) ? ped.productos : [];
+                                  const totalUds = prods.reduce((acc: number, p: any) => acc + (Number(p.cantidad) || 1), 0);
+                                  const firstProd = prods[0];
+
+                                  return (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', minWidth: '170px' }}>
+                                      {/* Preview compacto del producto principal */}
+                                      {firstProd && (
+                                        <div style={{ fontSize: '0.78rem', color: '#0f172a', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '210px' }}>
+                                          <strong style={{ fontWeight: 600 }}>{firstProd.cantidad || 1}x</strong> {firstProd.nombre}
+                                        </div>
+                                      )}
+
+                                      {/* Botón interactivo con Hover Tooltip Popover */}
+                                      <button
+                                        type="button"
+                                        onClick={() => setSelectedPedido(ped)}
+                                        onMouseEnter={(e) => {
+                                          const rect = e.currentTarget.getBoundingClientRect();
+                                          setHoveredOrderTooltip({
+                                            id: ped.id,
+                                            x: Math.min(rect.left, window.innerWidth - 340),
+                                            y: rect.bottom + 6,
+                                            productos: prods,
+                                            total: ped.total,
+                                            cliente: ped.cliente_nombre || 'Cliente'
+                                          });
+                                        }}
+                                        onMouseLeave={() => setHoveredOrderTooltip(null)}
+                                        style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '0.35rem',
+                                          background: '#f8fafc',
+                                          border: '1px solid #cbd5e1',
+                                          borderRadius: '8px',
+                                          padding: '0.22rem 0.55rem',
+                                          fontSize: '0.73rem',
+                                          fontWeight: 500,
+                                          color: 'var(--primary-color, #0ea5e9)',
+                                          cursor: 'pointer',
+                                          transition: 'all 0.15s ease',
+                                          boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                                          width: 'fit-content',
+                                          fontFamily: "'Poppins', sans-serif"
+                                        }}
+                                      >
+                                        <Package size={13} />
+                                        <span>Ver todos ({totalUds} uds)</span>
+                                      </button>
                                     </div>
-                                  ))}
-                                </div>
+                                  );
+                                })()}
                               </td>
                               <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
                                 <span style={{ background: ped.estado === 'completado' ? '#dcfce7' : '#e0f2fe', color: ped.estado === 'completado' ? '#166534' : '#0369a1', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700 }}>
@@ -16156,6 +16281,115 @@ export default function Admin() {
                 {isMigratingProducts ? 'Migrando Productos...' : `Migrar ${selectedProductIdsToMigrate.length} Producto(s)`}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 🛍️ Floating Tooltip Popover para Vista Lista de Productos */}
+      {hoveredOrderTooltip && (
+        <div
+          onMouseEnter={() => {}} 
+          onMouseLeave={() => setHoveredOrderTooltip(null)}
+          style={{
+            position: 'fixed',
+            left: `${hoveredOrderTooltip.x}px`,
+            top: `${hoveredOrderTooltip.y}px`,
+            width: '330px',
+            background: '#ffffff',
+            border: '1.5px solid #cbd5e1',
+            borderRadius: '14px',
+            boxShadow: '0 16px 36px rgba(15, 23, 42, 0.18), 0 4px 12px rgba(0,0,0,0.06)',
+            zIndex: 99999,
+            overflow: 'hidden',
+            fontFamily: "'Poppins', sans-serif",
+            animation: 'fadeIn 0.15s ease-out'
+          }}
+        >
+          <div style={{
+            background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)',
+            padding: '0.65rem 0.85rem',
+            borderBottom: '1px solid #e2e8f0',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', fontWeight: 600, color: '#0f172a' }}>
+              <Package size={14} style={{ color: 'var(--primary-color, #0ea5e9)' }} />
+              <span>Productos ({hoveredOrderTooltip.productos.length} ítems)</span>
+            </div>
+            <span style={{ fontSize: '0.7rem', background: '#e0f2fe', color: '#0369a1', padding: '0.1rem 0.45rem', borderRadius: '10px', fontWeight: 500, maxWidth: '120px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {hoveredOrderTooltip.cliente}
+            </span>
+          </div>
+
+          <div style={{ maxHeight: '260px', overflowY: 'auto', padding: '0.45rem' }}>
+            {hoveredOrderTooltip.productos.map((prod: any, idx: number) => {
+              const matchedProd = productos.find(p => p.id === prod.producto_id || p.id === prod.id || p.nombre === prod.nombre);
+              const imgUrl = prod.imagen || prod.imagen_url || prod.foto || matchedProd?.imagen_url || (matchedProd?.imagenes_extra && matchedProd.imagenes_extra[0]) || (matchedProd as any)?.imagenes?.[0]?.url || '';
+
+              return (
+                <div key={idx} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.55rem',
+                  padding: '0.4rem 0.45rem',
+                  borderBottom: idx === hoveredOrderTooltip.productos.length - 1 ? 'none' : '1px solid #f1f5f9',
+                  borderRadius: '8px',
+                  background: '#fafafa'
+                }}>
+                  {/* Miniatura */}
+                  <div style={{ width: '38px', height: '38px', borderRadius: '6px', background: '#ffffff', overflow: 'hidden', flexShrink: 0, border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {imgUrl ? (
+                      <img src={imgUrl} alt={prod.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => (e.currentTarget.style.display = 'none')} />
+                    ) : (
+                      <span style={{ fontSize: '1.1rem' }}>📦</span>
+                    )}
+                  </div>
+
+                  {/* Datos del Producto */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '0.74rem', fontWeight: 500, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {prod.nombre}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flexWrap: 'wrap', marginTop: '0.15rem' }}>
+                      <span style={{ fontSize: '0.66rem', background: '#e2e8f0', color: '#334155', padding: '0.05rem 0.3rem', borderRadius: '4px', fontWeight: 500 }}>
+                        Cant: {prod.cantidad || 1}
+                      </span>
+                      {prod.talla && (
+                        <span style={{ fontSize: '0.66rem', background: '#eff6ff', color: '#1d4ed8', padding: '0.05rem 0.3rem', borderRadius: '4px', fontWeight: 500 }}>
+                          {prod.talla}
+                        </span>
+                      )}
+                      {prod.estampado && (
+                        <span style={{ fontSize: '0.66rem', background: '#fef3c7', color: '#92400e', padding: '0.05rem 0.3rem', borderRadius: '4px', fontWeight: 500, maxWidth: '100px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {prod.estampado}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Precio */}
+                  {prod.precio && (
+                    <div style={{ fontSize: '0.74rem', fontWeight: 600, color: '#10b981', flexShrink: 0 }}>
+                      ${(Number(prod.precio) * (Number(prod.cantidad) || 1)).toLocaleString()}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{
+            background: '#f8fafc',
+            padding: '0.5rem 0.85rem',
+            borderTop: '1px solid #e2e8f0',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            fontSize: '0.76rem'
+          }}>
+            <span style={{ color: '#64748b', fontWeight: 400 }}>Total Pedido:</span>
+            <strong style={{ color: '#10b981', fontWeight: 600 }}>${hoveredOrderTooltip.total?.toLocaleString() || 0}</strong>
           </div>
         </div>
       )}
