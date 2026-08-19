@@ -7065,20 +7065,21 @@ export default function Admin() {
                 </div>
               </div>
             ) : activeTab === 'config' ? (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', width: '100%' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', width: '100%', minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0, flexShrink: 0 }}>
                   <div className="topbar-left-info">
                     <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '10px', background: '#ffffff', border: '1px solid #e2e8f0', color: 'var(--primary-color, #0ea5e9)', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
                       <Settings size={16} />
                     </div>
                     <span style={{ fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>
-                      Configuración Global
+                      Configuración
                     </span>
                   </div>
                   <div className="topbar-divider" />
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.4rem', overflowX: 'auto', scrollbarWidth: 'none', padding: '0.15rem 0' }}>
+                {/* Vista Escritorio: Botones Horizontales */}
+                <div className="desktop-config-tabs" style={{ alignItems: 'center', justifyContent: 'flex-end', gap: '0.4rem', overflowX: 'auto', scrollbarWidth: 'none', padding: '0.15rem 0' }}>
                 {[
                   { key: 'negocio', label: 'Negocio & Perfil', Icon: Building2 },
                   { key: 'bancos', label: 'Bancos & Pagos', Icon: CreditCard },
@@ -7118,6 +7119,43 @@ export default function Admin() {
                     </button>
                   );
                 })}
+                </div>
+
+                {/* Vista Móvil: Dropdown Elegante que no se amontona */}
+                <div className="mobile-config-dropdown" style={{ alignItems: 'center', flex: '1 1 auto', minWidth: 0, justifyContent: 'flex-end' }}>
+                  <div style={{ position: 'relative', width: '100%', maxWidth: '200px' }}>
+                    <select
+                      value={configSubTab}
+                      onChange={(e) => setConfigSubTab(e.target.value as any)}
+                      style={{
+                        width: '100%',
+                        padding: '0.42rem 1.8rem 0.42rem 0.65rem',
+                        borderRadius: '10px',
+                        border: '1.5px solid var(--primary-color, #0ea5e9)',
+                        background: 'linear-gradient(135deg, rgba(var(--primary-rgb, 14, 165, 233), 0.08), #ffffff)',
+                        color: 'var(--primary-color, #0ea5e9)',
+                        fontWeight: 600,
+                        fontSize: '0.78rem',
+                        fontFamily: "'Poppins', sans-serif",
+                        appearance: 'none',
+                        WebkitAppearance: 'none',
+                        cursor: 'pointer',
+                        outline: 'none',
+                        boxShadow: '0 2px 8px rgba(14, 165, 233, 0.12)',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden'
+                      }}
+                    >
+                      <option value="negocio">🏢 Negocio & Perfil</option>
+                      <option value="bancos">💳 Bancos & Pagos</option>
+                      <option value="apariencia">🎨 Diseño & Catálogo</option>
+                      <option value="pos">🖨️ POS & Impresión</option>
+                      <option value="desarrollador">💻 Desarrollador & APIs</option>
+                      <option value="sistema">⚙️ Reglas & Purga</option>
+                    </select>
+                    <ChevronDown size={13} style={{ position: 'absolute', right: '0.55rem', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--primary-color, #0ea5e9)' }} />
+                  </div>
                 </div>
               </div>
             ) : (
@@ -15957,8 +15995,8 @@ export default function Admin() {
                   </div>
                 )}
                 <div style={{ flex: 1 }}>
-                  <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 800 }}>📊 Analítica — {a.nombre}</h2>
-                  <p style={{ margin: '0.2rem 0 0 0', opacity: 0.85, fontSize: '0.88rem' }}>📲 {(a.telefono || '').split(',').join(' · ')}</p>
+                  <h2 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 600, color: '#ffffff', fontFamily: "'Poppins', sans-serif" }}>📊 Analítica — {a.nombre}</h2>
+                  <p style={{ margin: '0.2rem 0 0 0', color: '#ffffff', opacity: 0.9, fontSize: '0.85rem', fontWeight: 400, fontFamily: "'Poppins', sans-serif" }}>📲 {(a.telefono || '').split(',').join(' · ')}</p>
                 </div>
                 <button onClick={() => setSelectedAsesorAnalytics(null)}
                   style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontSize: '1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>

@@ -550,6 +550,14 @@ body {
   line-height: 1.25;
 }
 
+.desktop-config-tabs {
+  display: flex !important;
+}
+
+.mobile-config-dropdown {
+  display: none !important;
+}
+
 /* Ã¢â€â‚¬Ã¢â€â‚¬ CREATION FORM EXPANDABLE CARD Ã¢â€â‚¬Ã¢â€â‚¬ */
 .creation-form-card {
   background: #ffffff;
@@ -1892,6 +1900,12 @@ body {
     display: flex !important;
     flex-direction: column !important;
     gap: 0.85rem !important;
+  }
+  .desktop-config-tabs {
+    display: none !important;
+  }
+  .mobile-config-dropdown {
+    display: flex !important;
   }
 
   .admin-content {
