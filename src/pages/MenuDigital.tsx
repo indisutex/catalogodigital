@@ -1597,14 +1597,14 @@ export default function MenuDigital() {
               isMediaVideo(mayoristaBranding?.video || configuracion?.video_hero_url) ? (
                 <video 
                   key={mayoristaBranding?.video || configuracion?.video_hero_url || 'hero-video-key'}
-                  src={mayoristaBranding?.video || configuracion?.video_hero_url} 
+                  src={mayoristaBranding?.video || configuracion?.video_hero_url}
                   autoPlay 
                   loop 
-                  muted
+                  muted 
                   playsInline 
                   preload="auto"
                   className="hero-background-video"
-                  style={{ height: '100%', width: '100%', objectFit: 'cover' }}
+                  style={{ height: '100%', width: '100%', objectFit: 'cover', opacity: 1, filter: 'none' }}
                   ref={(el) => {
                     (heroVideoRef as any).current = el;
                     if (el) {
@@ -1630,7 +1630,7 @@ export default function MenuDigital() {
                     const v = (el.target as HTMLVideoElement); 
                     v.muted = true; 
                     v.defaultMuted = true; 
-                    v.playsInline = true;
+                    v.playsInline = true; 
                     v.volume = 0;
                     v.setAttribute('muted', 'muted');
                     v.setAttribute('playsinline', 'true');
@@ -1654,7 +1654,7 @@ export default function MenuDigital() {
                   src={getOptimizedImageUrl(mayoristaBranding?.video || configuracion?.video_hero_url, 1000, 80)}
                   className="hero-background-video"
                   alt="Hero"
-                  style={{ height: '100%', width: '100%', objectFit: 'cover' }}
+                  style={{ height: '100%', width: '100%', objectFit: 'cover', opacity: 1, filter: 'none' }}
                   loading="eager"
                   fetchPriority="high"
                   decoding="async"

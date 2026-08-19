@@ -1263,7 +1263,7 @@
   background: rgba(16, 185, 129, 0.15) !important;
 }
 
-/* ── HERO VIDEO BACKGROUND ── */
+/* ── HERO VIDEO / IMAGE BACKGROUND ── */
 .hero-background-video {
   position: absolute;
   top: 0;
@@ -1272,8 +1272,9 @@
   height: 100%;
   object-fit: cover;
   z-index: 1;
-  opacity: 0.45; /* Soft background overlay */
+  opacity: 1 !important;
   pointer-events: none;
+  filter: none !important;
 }
 
 /* ── HERO TICKER STRIP ── */
