@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, AlertTriangle, MessageCircle, ExternalLink, HelpCircle, Phone } from 'lucide-react';
+import { AlertTriangle, MessageCircle, HelpCircle, Phone, Check } from 'lucide-react';
 
 export interface PhoneValidationResult {
   status: 'empty' | 'typing' | 'valid' | 'invalid_landline' | 'invalid_length';
@@ -73,7 +73,7 @@ export function validateWhatsAppPhone(rawPhone: string): PhoneValidationResult {
       status: 'valid',
       cleanPhone: clean,
       formattedPhone: formatted,
-      message: '✓ WhatsApp Detectado y Válido',
+      message: 'WhatsApp detectado y verificado',
       isValid: true
     };
   }
@@ -104,7 +104,7 @@ interface WhatsAppPhoneVerifierProps {
   style?: React.CSSProperties;
 }
 
-export default function WhatsAppPhoneVerifier({ phone, showTestButton = true, compact = false, style }: WhatsAppPhoneVerifierProps) {
+export default function WhatsAppPhoneVerifier({ phone, compact = false, style }: WhatsAppPhoneVerifierProps) {
   const result = validateWhatsAppPhone(phone);
 
   if (result.status === 'empty' && compact) {
@@ -172,9 +172,14 @@ export default function WhatsAppPhoneVerifier({ phone, showTestButton = true, co
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flex: 1, minWidth: 0 }}>
           {result.status === 'valid' && (
-            <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', borderRadius: '50%', background: '#22c55e', color: '#ffffff', flexShrink: 0 }}>
-              <CheckCircle2 size={14} style={{ strokeWidth: 2.5 }} />
-            </span>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', flexShrink: 0 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '22px', height: '22px', borderRadius: '50%', background: '#25D366', color: '#ffffff', flexShrink: 0, boxShadow: '0 2px 6px rgba(37, 211, 102, 0.25)' }}>
+                <MessageCircle size={13} fill="#ffffff" color="#25D366" />
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '16px', height: '16px', borderRadius: '50%', background: '#22c55e', color: '#ffffff', flexShrink: 0 }}>
+                <Check size={11} style={{ strokeWidth: 3 }} />
+              </span>
+            </div>
           )}
           {result.status === 'invalid_landline' && (
             <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', borderRadius: '50%', background: '#f59e0b', color: '#ffffff', flexShrink: 0 }}>
@@ -197,39 +202,10 @@ export default function WhatsAppPhoneVerifier({ phone, showTestButton = true, co
             </span>
           )}
 
-          <span style={{ fontWeight: 500, fontFamily: "'Poppins', sans-serif", fontSize: compact ? '0.78rem' : '0.82rem' }}>
+          <span style={{ fontWeight: 500, fontFamily: "'Poppins', sans-serif", fontSize: compact ? '0.78rem' : '0.82rem', color: result.status === 'valid' ? '#15803d' : undefined }}>
             {result.message}
           </span>
         </div>
-
-        {result.status === 'valid' && showTestButton && (
-          <a
-            href={`https://wa.me/57${result.cleanPhone}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Abrir chat en WhatsApp para verificar recepción de mensajes"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '0.25rem',
-              padding: '0.2rem 0.55rem',
-              background: '#dcfce7',
-              border: '1px solid #86efac',
-              borderRadius: '8px',
-              color: '#15803d',
-              fontSize: '0.73rem',
-              fontWeight: 500,
-              textDecoration: 'none',
-              fontFamily: "'Poppins', sans-serif",
-              flexShrink: 0,
-              transition: 'background 0.2s ease'
-            }}
-          >
-            <MessageCircle size={12} color="#16a34a" />
-            <span>Probar Chat</span>
-            <ExternalLink size={10} color="#16a34a" />
-          </a>
-        )}
       </div>
 
       {result.status === 'valid' && (
