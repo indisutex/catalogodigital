@@ -5,7 +5,7 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista, PQRS } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, ChevronRight, Wrench, ArrowUpDown, Filter, MapPin, XCircle, Truck, Clock, FileCheck, CheckCircle, Landmark, BookOpen, LifeBuoy, ShoppingCart, ClipboardList, Star, Ban, ExternalLink } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, ChevronRight, Wrench, ArrowUpDown, Filter, MapPin, XCircle, Truck, Clock, FileCheck, CheckCircle, Landmark, BookOpen, LifeBuoy, ShoppingCart, ClipboardList, Star, Ban, ExternalLink, Flame } from 'lucide-react';
 
 import * as XLSX from 'xlsx';
 import { ERPContabilidadService } from '../lib/erpContabilidadService';
@@ -996,6 +996,70 @@ export default function Admin() {
     const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0).getTime()) / 86400000);
     const seed = (dayOfYear + String(asesorId).charCodeAt(0)) % phrases.length;
     return phrases[seed];
+  };
+
+  const parseOrderLocationAndContact = (ped: any) => {
+    if (!ped) {
+      return {
+        direccion: 'No registrada',
+        ciudad: '—',
+        departamento: '—',
+        cedula: '—',
+        email: '—'
+      };
+    }
+
+    const rawDir = (ped.direccion || '').trim();
+    
+    // 1. Extraer Cédula / Identificación
+    let cedula = ped.cliente_cedula || ped.cedula || ped.dni || ped.documento || '';
+    if (!cedula && rawDir) {
+      const m = rawDir.match(/(?:CC|Cédula|Cedula|DNI):\s*([0-9a-zA-Z]+)/i);
+      if (m) cedula = m[1];
+    }
+
+    // 2. Extraer Correo Electrónico
+    let email = ped.cliente_email || ped.email || ped.correo || '';
+    if (!email && rawDir) {
+      const m = rawDir.match(/(?:Email|Correo):\s*([^\s|,]+)/i);
+      if (m) email = m[1];
+    }
+
+    // 3. Extraer Ciudad y Departamento
+    let ciudad = (ped.ciudad || '').trim();
+    let departamento = (ped.departamento || '').trim();
+
+    if (ciudad.includes(',')) {
+      const parts = ciudad.split(',').map((p: string) => p.trim());
+      ciudad = parts[0] || '';
+      if (!departamento && parts[1]) {
+        departamento = parts.slice(1).join(', ');
+      }
+    }
+
+    // 4. Limpiar Dirección pura
+    let cleanDir = rawDir;
+    // Quitar "| CC: ... | Email: ..."
+    cleanDir = cleanDir.split(/\s*\|\s*(?:CC|Cédula|Cedula|Email|Correo):/i)[0].trim();
+    
+    // Si la dirección incluye ", Ciudad, Departamento" al final, removerlos para no duplicar
+    if (ciudad && ciudad !== '—' && cleanDir.toLowerCase().includes(ciudad.toLowerCase())) {
+      cleanDir = cleanDir.replace(new RegExp(`[,\\s]*${ciudad}[,\\s]*${departamento || ''}`, 'i'), '').trim();
+    }
+    cleanDir = cleanDir.replace(/^[|,\s]+|[|,\s]+$/g, '');
+
+    const metodoEnv = ((ped.metodo_envio || '') + ' ' + (ped.metodo_recepcion || '')).toLowerCase();
+    if (!cleanDir && (rawDir.toLowerCase().includes('recoger') || metodoEnv.includes('recoger') || metodoEnv.includes('tienda'))) {
+      cleanDir = 'Recoger en Tienda (Sede Principal)';
+    }
+
+    return {
+      direccion: cleanDir || (rawDir.toLowerCase().includes('recoger') ? 'Recoger en Tienda (Sede Principal)' : 'No registrada'),
+      ciudad: ciudad && ciudad !== 'Por definir' ? ciudad : '—',
+      departamento: departamento && departamento !== 'Por definir' ? departamento : '—',
+      cedula: cedula || '—',
+      email: email || '—'
+    };
   };
 
   const renderLeadOrOrderCard = (ped: any, forceIsLead?: boolean) => {
@@ -14582,167 +14646,206 @@ export default function Admin() {
                       <div className="orders-desktop-table-container" style={{ overflowX: 'auto', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', textAlign: 'left' }}>
                               <thead>
-                                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b', fontWeight: 600 }}>
-                                  <th style={{ padding: '1rem' }}>Fecha</th>
-                                  <th style={{ padding: '1rem' }}>Cliente</th>
-                                  <th style={{ padding: '1rem' }}>Teléfono</th>
-                                  <th style={{ padding: '1rem' }}>Dirección</th>
-                                  <th style={{ padding: '1rem' }}>Productos</th>
-                                  <th style={{ padding: '1rem' }}>Línea Receptora</th>
-                                  <th style={{ padding: '1rem' }}>Estado de Pago</th>
-                                  <th style={{ padding: '1rem' }}>Total</th>
-                                  <th style={{ padding: '1rem', textAlign: 'center' }}>Acción</th>
+                                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b', fontWeight: 600, fontSize: '0.82rem', fontFamily: "'Poppins', sans-serif" }}>
+                                  <th style={{ padding: '0.85rem 0.8rem', whiteSpace: 'nowrap' }}>Fecha</th>
+                                  <th style={{ padding: '0.85rem 0.8rem', whiteSpace: 'nowrap' }}>Cliente</th>
+                                  <th style={{ padding: '0.85rem 0.8rem', whiteSpace: 'nowrap' }}>Identificación</th>
+                                  <th style={{ padding: '0.85rem 0.8rem', whiteSpace: 'nowrap' }}>Teléfono</th>
+                                  <th style={{ padding: '0.85rem 0.8rem', whiteSpace: 'nowrap' }}>Correo</th>
+                                  <th style={{ padding: '0.85rem 0.8rem', whiteSpace: 'nowrap' }}>Dirección</th>
+                                  <th style={{ padding: '0.85rem 0.8rem', whiteSpace: 'nowrap' }}>Ciudad</th>
+                                  <th style={{ padding: '0.85rem 0.8rem', whiteSpace: 'nowrap' }}>Departamento</th>
+                                  <th style={{ padding: '0.85rem 0.8rem', whiteSpace: 'nowrap' }}>Productos</th>
+                                  <th style={{ padding: '0.85rem 0.8rem', whiteSpace: 'nowrap' }}>Línea Receptora</th>
+                                  <th style={{ padding: '0.85rem 0.8rem', whiteSpace: 'nowrap' }}>Estado de Pago</th>
+                                  <th style={{ padding: '0.85rem 0.8rem', whiteSpace: 'nowrap' }}>Total</th>
+                                  <th style={{ padding: '0.85rem 0.8rem', textAlign: 'center', whiteSpace: 'nowrap' }}>Acción</th>
                                 </tr>
                               </thead>
                               <tbody>
-                                {combinedList.map((ped) => (
-                                  <tr key={ped.id} style={{ borderBottom: '1px solid #f1f5f9', background: ped.estado === 'completado' ? '#f0fdf4' : ped.isLead ? 'rgba(239, 68, 68, 0.02)' : 'transparent' }}>
-                              <td style={{ padding: '1rem', color: ped.estado === 'completado' ? '#166534' : '#64748b', verticalAlign: 'middle' }}>
-                                {new Date(ped.created_at).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}
-                              </td>
-                              <td style={{ padding: '0.9rem 1rem', fontWeight: 600, color: ped.estado === 'completado' ? '#14532d' : '#0f172a', verticalAlign: 'middle', fontFamily: "'Poppins', sans-serif" }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                                  <span>{ped.cliente_nombre}</span>
-                                  {ped.isLead && (
-                                    <span style={{ fontSize: '0.68rem', background: '#fee2e2', color: '#ef4444', padding: '1px 6px', borderRadius: '6px', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>🔴 Lead</span>
-                                  )}
-                                  {ped.origen === 'pos' ? (
-                                    <span style={{ fontSize: '0.68rem', background: '#dcfce7', color: '#166534', padding: '1px 6px', borderRadius: '6px', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>💻 POS</span>
-                                  ) : (
-                                    <span style={{ fontSize: '0.68rem', background: '#e0f2fe', color: '#0369a1', padding: '1px 6px', borderRadius: '6px', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>📱 Catálogo</span>
-                                  )}
-                                </div>
-                              </td>
-                              <td style={{ padding: '1rem', color: ped.estado === 'completado' ? '#166534' : '#475569', verticalAlign: 'middle' }}>{ped.cliente_telefono}</td>
-                              <td style={{ padding: '1rem', color: ped.estado === 'completado' ? '#166534' : '#475569', verticalAlign: 'middle' }}>{ped.direccion}, {ped.ciudad}</td>
-                              <td style={{ padding: '0.85rem 1rem', color: ped.estado === 'completado' ? '#166534' : '#475569', verticalAlign: 'middle' }}>
-                                {(() => {
-                                  const prods = Array.isArray(ped.productos) ? ped.productos : [];
-                                  const totalUds = prods.reduce((acc: number, p: any) => acc + (Number(p.cantidad) || 1), 0);
-                                  const firstProd = prods[0];
-
+                                {combinedList.map((ped) => {
+                                  const loc = parseOrderLocationAndContact(ped);
                                   return (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', minWidth: '170px' }}>
-                                      {/* Preview compacto del producto principal */}
-                                      {firstProd && (
-                                        <div style={{ fontSize: '0.78rem', color: '#0f172a', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '210px' }}>
-                                          <strong style={{ fontWeight: 600 }}>{firstProd.cantidad || 1}x</strong> {firstProd.nombre}
+                                    <tr key={ped.id} style={{ borderBottom: '1px solid #f1f5f9', background: ped.estado === 'completado' ? '#f0fdf4' : ped.isLead ? 'rgba(239, 68, 68, 0.02)' : 'transparent' }}>
+                                      <td style={{ padding: '0.85rem 0.8rem', color: ped.estado === 'completado' ? '#166534' : '#64748b', verticalAlign: 'middle', whiteSpace: 'nowrap', fontSize: '0.8rem' }}>
+                                        {new Date(ped.created_at).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}
+                                      </td>
+                                      <td style={{ padding: '0.85rem 0.8rem', fontWeight: 600, color: ped.estado === 'completado' ? '#14532d' : '#0f172a', verticalAlign: 'middle', fontFamily: "'Poppins', sans-serif", fontSize: '0.84rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                                          <span>{ped.cliente_nombre}</span>
+                                          {ped.isLead && (
+                                            <span style={{ fontSize: '0.68rem', background: '#fee2e2', color: '#ef4444', padding: '1px 6px', borderRadius: '6px', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>🔴 Lead</span>
+                                          )}
+                                          {ped.origen === 'pos' ? (
+                                            <span style={{ fontSize: '0.68rem', background: '#dcfce7', color: '#166534', padding: '1px 6px', borderRadius: '6px', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>💻 POS</span>
+                                          ) : (
+                                            <span style={{ fontSize: '0.68rem', background: '#e0f2fe', color: '#0369a1', padding: '1px 6px', borderRadius: '6px', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>📱 Catálogo</span>
+                                          )}
                                         </div>
-                                      )}
+                                      </td>
+                                      <td style={{ padding: '0.85rem 0.8rem', color: '#334155', verticalAlign: 'middle', fontSize: '0.82rem', fontFamily: "'Poppins', sans-serif", whiteSpace: 'nowrap' }}>
+                                        {loc.cedula}
+                                      </td>
+                                      <td style={{ padding: '0.85rem 0.8rem', color: ped.estado === 'completado' ? '#166534' : '#475569', verticalAlign: 'middle', fontSize: '0.82rem', fontFamily: "'Poppins', sans-serif", whiteSpace: 'nowrap' }}>
+                                        {ped.cliente_telefono || '—'}
+                                      </td>
+                                      <td style={{ padding: '0.85rem 0.8rem', color: '#334155', verticalAlign: 'middle', fontSize: '0.82rem', fontFamily: "'Poppins', sans-serif", maxWidth: '170px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={loc.email}>
+                                        {loc.email}
+                                      </td>
+                                      <td style={{ padding: '0.85rem 0.8rem', color: ped.estado === 'completado' ? '#166534' : '#475569', verticalAlign: 'middle', fontSize: '0.82rem', fontFamily: "'Poppins', sans-serif", minWidth: '160px' }}>
+                                        {loc.direccion}
+                                      </td>
+                                      <td style={{ padding: '0.85rem 0.8rem', color: '#334155', verticalAlign: 'middle', fontSize: '0.82rem', fontFamily: "'Poppins', sans-serif", whiteSpace: 'nowrap' }}>
+                                        {loc.ciudad}
+                                      </td>
+                                      <td style={{ padding: '0.85rem 0.8rem', color: '#334155', verticalAlign: 'middle', fontSize: '0.82rem', fontFamily: "'Poppins', sans-serif", whiteSpace: 'nowrap' }}>
+                                        {loc.departamento}
+                                      </td>
+                                      <td style={{ padding: '0.85rem 0.8rem', color: ped.estado === 'completado' ? '#166534' : '#475569', verticalAlign: 'middle' }}>
+                                        {(() => {
+                                          const prods = Array.isArray(ped.productos) ? ped.productos : [];
+                                          const totalUds = prods.reduce((acc: number, p: any) => acc + (Number(p.cantidad) || 1), 0);
+                                          const firstProd = prods[0];
 
-                                      {/* Botón interactivo con Hover Tooltip Popover */}
-                                      <button
-                                        type="button"
-                                        onClick={() => setSelectedPedido(ped)}
-                                        onMouseEnter={(e) => {
-                                          const rect = e.currentTarget.getBoundingClientRect();
-                                          setHoveredOrderTooltip({
-                                            id: ped.id,
-                                            x: Math.min(rect.left, window.innerWidth - 340),
-                                            y: rect.bottom + 6,
-                                            productos: prods,
-                                            total: ped.total,
-                                            cliente: ped.cliente_nombre || 'Cliente'
-                                          });
-                                        }}
-                                        onMouseLeave={() => setHoveredOrderTooltip(null)}
-                                        style={{
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          gap: '0.35rem',
-                                          background: '#f8fafc',
-                                          border: '1px solid #cbd5e1',
-                                          borderRadius: '8px',
-                                          padding: '0.22rem 0.55rem',
-                                          fontSize: '0.73rem',
-                                          fontWeight: 500,
-                                          color: 'var(--primary-color, #0ea5e9)',
-                                          cursor: 'pointer',
-                                          transition: 'all 0.15s ease',
-                                          boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
-                                          width: 'fit-content',
-                                          fontFamily: "'Poppins', sans-serif"
-                                        }}
-                                      >
-                                        <Package size={13} />
-                                        <span>Ver todos ({totalUds} uds)</span>
-                                      </button>
-                                    </div>
+                                          return (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', minWidth: '160px' }}>
+                                              {/* Preview compacto del producto principal */}
+                                              {firstProd && (
+                                                <div style={{ fontSize: '0.78rem', color: '#0f172a', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '190px' }}>
+                                  <strong style={{ fontWeight: 600 }}>{firstProd.cantidad || 1}x</strong> {firstProd.nombre}
+                                                </div>
+                                              )}
+                                              <button
+                                                type="button"
+                                                onClick={() => setSelectedPedido(ped)}
+                                                onMouseEnter={(e) => {
+                                                  const rect = e.currentTarget.getBoundingClientRect();
+                                                  setHoveredOrderTooltip({
+                                                    id: ped.id,
+                                                    x: Math.min(rect.left, window.innerWidth - 340),
+                                                    y: rect.bottom + 6,
+                                                    productos: prods,
+                                                    total: ped.total,
+                                                    cliente: ped.cliente_nombre || 'Cliente'
+                                                  });
+                                                }}
+                                                onMouseLeave={() => setHoveredOrderTooltip(null)}
+                                                style={{
+                                                  display: 'inline-flex',
+                                                  alignItems: 'center',
+                                                  gap: '0.35rem',
+                                                  background: '#f8fafc',
+                                                  border: '1px solid #cbd5e1',
+                                                  borderRadius: '8px',
+                                                  padding: '0.22rem 0.55rem',
+                                                  fontSize: '0.73rem',
+                                                  fontWeight: 500,
+                                                  color: 'var(--primary-color, #0ea5e9)',
+                                                  cursor: 'pointer',
+                                                  transition: 'all 0.15s ease',
+                                                  boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                                                  width: 'fit-content',
+                                                  fontFamily: "'Poppins', sans-serif"
+                                                }}
+                                              >
+                                                <Package size={13} />
+                                                <span>Ver todos ({totalUds} uds)</span>
+                                              </button>
+                                            </div>
+                                          );
+                                        })()}
+                                      </td>
+                                      <td style={{ padding: '0.85rem 0.8rem', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                                        <span style={{ color: '#1e293b', fontSize: '0.84rem', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
+                                          {getAsesorNameByPhone(ped.linea_whatsapp)}
+                                        </span>
+                                      </td>
+                                      <td style={{ padding: '0.85rem 0.8rem', verticalAlign: 'middle', whiteSpace: 'nowrap' }}>
+                                        {ped.isLead ? (
+                                          <span style={{ background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', padding: '0.35rem 0.75rem', borderRadius: '8px', fontSize: '0.76rem', fontWeight: 500, display: 'inline-block', lineHeight: '1.2', fontFamily: "'Poppins', sans-serif" }}>
+                                            🛒 Abandonado
+                                          </span>
+                                        ) : ped.estado === 'completado' ? (
+                                          <span style={{ background: '#dcfce7', color: '#15803d', border: '1px solid #86efac', padding: '0.35rem 0.75rem', borderRadius: '8px', fontSize: '0.76rem', fontWeight: 500, display: 'inline-block', lineHeight: '1.2', fontFamily: "'Poppins', sans-serif" }}>
+                                            ✓ Pago Verificado
+                                          </span>
+                                        ) : ped.pantallazo_url ? (
+                                          <span style={{ background: '#e0f2fe', color: '#0369a1', border: '1px solid #bae6fd', padding: '0.35rem 0.75rem', borderRadius: '8px', fontSize: '0.76rem', fontWeight: 500, display: 'inline-block', lineHeight: '1.2', fontFamily: "'Poppins', sans-serif" }}>
+                                            ✅ Comprobante subido
+                                          </span>
+                                        ) : (
+                                          <span style={{ background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', padding: '0.35rem 0.75rem', borderRadius: '8px', fontSize: '0.76rem', fontWeight: 500, display: 'inline-block', lineHeight: '1.2', fontFamily: "'Poppins', sans-serif" }}>
+                                            ⏳ Pendiente de pago
+                                          </span>
+                                        )}
+                                      </td>
+                                      <td style={{ padding: '0.85rem 0.8rem', fontWeight: 600, color: ped.estado === 'completado' ? '#15803d' : '#059669', verticalAlign: 'middle', fontSize: '0.9rem', fontFamily: "'Poppins', sans-serif", whiteSpace: 'nowrap' }}>
+                                        ${ped.total.toLocaleString()}
+                                      </td>
+                                      <td style={{ padding: '0.8rem 0.6rem', textAlign: 'center', verticalAlign: 'middle' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'stretch', justifyContent: 'center', maxWidth: '125px', margin: '0 auto' }}>
+                                          <button 
+                                            className="btn-secondary" 
+                                            style={{ padding: '0.42rem 0.75rem', fontSize: '0.78rem', borderRadius: '8px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', background: 'white', border: '1px solid #cbd5e1', color: '#475569', cursor: 'pointer', transition: 'background 0.2s', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}
+                                            onClick={() => setSelectedPedido(ped)}
+                                          >
+                                            <Eye size={12} /> Ver Detalle
+                                          </button>
+                                          
+                                          {ped.estado === 'completado' ? (
+                                            <button
+                                              disabled
+                                              style={{ padding: '0.42rem 0.75rem', fontSize: '0.78rem', borderRadius: '8px', background: '#dcfce7', color: '#16a34a', border: '1px solid #86efac', cursor: 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', fontWeight: 600, width: '100%', fontFamily: "'Poppins', sans-serif" }}
+                                            >
+                                              <Check size={12} /> Completado
+                                            </button>
+                                          ) : ped.pantallazo_url ? (
+                                            <button 
+                                              className="btn-success" 
+                                              style={{ padding: '0.42rem 0.75rem', fontSize: '0.78rem', borderRadius: '8px', background: '#6366f1', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 600, width: '100%', fontFamily: "'Poppins', sans-serif" }}
+                                              onClick={() => setSelectedPedido(ped)}
+                                            >
+                                              Verificar pago
+                                            </button>
+                                          ) : ped.estado === 'cancelado' ? (
+                                            <button 
+                                              style={{ 
+                                                padding: '0.42rem 0.75rem', 
+                                                fontSize: '0.78rem', 
+                                                borderRadius: '8px', 
+                                                background: 'linear-gradient(135deg, #ef4444, #dc2626)', 
+                                                color: 'white', 
+                                                border: 'none', 
+                                                cursor: 'pointer', 
+                                                fontWeight: 600, 
+                                                width: '100%', 
+                                                fontFamily: "'Poppins', sans-serif",
+                                                boxShadow: '0 2px 6px rgba(239, 68, 68, 0.3)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                gap: '0.3rem'
+                                              }}
+                                              onClick={() => setSelectedPedido(ped)}
+                                            >
+                                              <Flame size={12} /> Incentivar Venta
+                                            </button>
+                                          ) : (
+                                            <button 
+                                              className="btn-primary" 
+                                              style={{ padding: '0.42rem 0.75rem', fontSize: '0.78rem', borderRadius: '8px', background: '#10b981', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 600, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontFamily: "'Poppins', sans-serif" }}
+                                              onClick={() => handleAtenderPedido(ped)}
+                                            >
+                                              <Phone size={12} /> Atender
+                                            </button>
+                                          )}
+                                        </div>
+                                      </td>
+                                    </tr>
                                   );
-                                })()}
-                              </td>
-                              <td style={{ padding: '0.9rem 1rem', verticalAlign: 'middle' }}>
-                                <span style={{ color: '#1e293b', fontSize: '0.86rem', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
-                                  {getAsesorNameByPhone(ped.linea_whatsapp)}
-                                </span>
-                              </td>
-                              <td style={{ padding: '0.9rem 1rem', verticalAlign: 'middle' }}>
-                                {ped.isLead ? (
-                                  <span style={{ background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', padding: '0.35rem 0.75rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 500, display: 'inline-block', lineHeight: '1.2', fontFamily: "'Poppins', sans-serif" }}>
-                                    🛒 Abandonado
-                                  </span>
-                                ) : ped.estado === 'completado' ? (
-                                  <span style={{ background: '#dcfce7', color: '#15803d', border: '1px solid #86efac', padding: '0.35rem 0.75rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 500, display: 'inline-block', lineHeight: '1.2', fontFamily: "'Poppins', sans-serif" }}>
-                                    ✓ Pago Verificado
-                                  </span>
-                                ) : ped.pantallazo_url ? (
-                                  <span style={{ background: '#e0f2fe', color: '#0369a1', border: '1px solid #bae6fd', padding: '0.35rem 0.75rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 500, display: 'inline-block', lineHeight: '1.2', fontFamily: "'Poppins', sans-serif" }}>
-                                    ✅ Comprobante subido
-                                  </span>
-                                ) : (
-                                  <span style={{ background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', padding: '0.35rem 0.75rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 500, display: 'inline-block', lineHeight: '1.2', fontFamily: "'Poppins', sans-serif" }}>
-                                    ⏳ Pendiente de pago
-                                  </span>
-                                )}
-                              </td>
-                              <td style={{ padding: '0.9rem 1rem', fontWeight: 600, color: ped.estado === 'completado' ? '#15803d' : '#059669', verticalAlign: 'middle', fontSize: '0.92rem', fontFamily: "'Poppins', sans-serif" }}>
-                                ${ped.total.toLocaleString()}
-                              </td>
-                              <td style={{ padding: '0.8rem', textAlign: 'center', verticalAlign: 'middle' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'stretch', justifyContent: 'center', maxWidth: '130px', margin: '0 auto' }}>
-                                  <button 
-                                    className="btn-secondary" 
-                                    style={{ padding: '0.45rem 0.8rem', fontSize: '0.8rem', borderRadius: '8px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', background: 'white', border: '1px solid #cbd5e1', color: '#475569', cursor: 'pointer', transition: 'background 0.2s', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}
-                                    onClick={() => setSelectedPedido(ped)}
-                                  >
-                                    <Eye size={12} /> Ver Detalle
-                                  </button>
-                                  
-                                  {ped.estado === 'completado' ? (
-                                    <button
-                                      disabled
-                                      style={{ padding: '0.45rem 0.8rem', fontSize: '0.8rem', borderRadius: '8px', background: '#dcfce7', color: '#16a34a', border: '1px solid #86efac', cursor: 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', fontWeight: 600, width: '100%', fontFamily: "'Poppins', sans-serif" }}
-                                    >
-                                      <Check size={12} /> Completado
-                                    </button>
-                                  ) : ped.pantallazo_url ? (
-                                    <button
-                                      style={{ padding: '0.45rem 0.8rem', fontSize: '0.8rem', borderRadius: '8px', background: configuracion?.color_primario || '#3b82f6', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', fontWeight: 700, width: '100%', transition: 'background 0.2s' }}
-                                      onClick={() => setSelectedPedido(ped)}
-                                    >
-                                      <Check size={12} /> Verificar pago
-                                    </button>
-                                  ) : ped.atendido ? (
-                                    <button
-                                      disabled
-                                      style={{ padding: '0.45rem 0.8rem', fontSize: '0.8rem', borderRadius: '8px', background: '#f1f5f9', color: '#64748b', border: '1px solid #cbd5e1', cursor: 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', fontWeight: 700, width: '100%' }}
-                                    >
-                                      <Check size={12} /> Atendido
-                                    </button>
-                                  ) : (
-                                    <button
-                                      style={{ padding: '0.45rem 0.8rem', fontSize: '0.8rem', borderRadius: '8px', background: '#25D366', color: 'white', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', fontWeight: 700, width: '100%', transition: 'background 0.2s' }}
-                                      onClick={() => handleAtenderPedido(ped)}
-                                    >
-                                      <Phone size={12} /> Atender
-                                    </button>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
+                                })}
+                              </tbody>
+                        </table>
                     </div>
                   )}
                 </div>
@@ -14912,67 +15015,66 @@ export default function Admin() {
                 </div>
                 
                 {/* ── CLIENT INFO GRID (Estilo Carrito Digital) ── */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.8rem 1rem', marginBottom: '1rem', background: '#f8fafc', padding: '1rem 1.1rem', borderRadius: '16px', border: '1px solid #e2e8f0', fontFamily: "'Poppins', sans-serif" }}>
-                  <div>
-                    <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Cliente</h5>
-                    <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.88rem' }}>{selectedPedido.cliente_nombre || (selectedPedido as any).nombre || 'Borrador Anónimo'}</p>
-                    <p style={{ margin: '0.15rem 0 0 0', color: '#64748b', fontSize: '0.82rem', fontWeight: 400 }}>{selectedPedido.cliente_telefono || (selectedPedido as any).telefono || 'Sin teléfono'}</p>
-                  </div>
-                  <div>
-                    <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Cédula / DNI</h5>
-                    <p style={{ margin: 0, fontWeight: 400, color: '#0f172a', fontSize: '0.85rem' }}>
-                      {selectedPedido.cliente_cedula || (selectedPedido as any).cedula || (selectedPedido as any).dni || (selectedPedido as any).documento || (selectedPedido.direccion?.match(/(?:CC|Cédula|Cedula):\s*([0-9a-zA-Z]+)/i)?.[1]) || 'No registrada'}
-                    </p>
-                  </div>
-                  <div>
-                    <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Correo Electrónico</h5>
-                    <p style={{ margin: 0, fontWeight: 400, color: '#0f172a', fontSize: '0.84rem', wordBreak: 'break-all' }}>
-                      {selectedPedido.cliente_email || (selectedPedido as any).email || (selectedPedido as any).correo || (selectedPedido.direccion?.match(/(?:Email|Correo):\s*([^\s|]+)/i)?.[1]) || 'No registrado'}
-                    </p>
-                  </div>
-                  <div>
-                    <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Método de Pago</h5>
-                    <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.84rem' }}>
-                      {getMetodoPago(selectedPedido) || (selectedPedido as any).modalidad_pago || 'Por definir'}
-                    </p>
-                  </div>
-                  <div>
-                    <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Método de Envío</h5>
-                    <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.84rem' }}>
-                      {(selectedPedido as any).metodo_envio || (Array.isArray(selectedPedido.productos) && selectedPedido.productos[0]?._metodo_envio) || ((selectedPedido.direccion || '').toLowerCase().includes('recoger') ? '🏪 Recoger en tienda' : '🚚 Envío a domicilio')}
-                    </p>
-                  </div>
-                  <div>
-                    <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Línea / Asesor</h5>
-                    <div style={{ display: 'flex', alignItems: 'center', marginTop: '0.15rem' }}>
-                      {renderAsesorBadge(selectedPedido.linea_whatsapp, selectedPedido.origen)}
+                {(() => {
+                  const loc = parseOrderLocationAndContact(selectedPedido);
+                  return (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.8rem 1rem', marginBottom: '1rem', background: '#f8fafc', padding: '1rem 1.1rem', borderRadius: '16px', border: '1px solid #e2e8f0', fontFamily: "'Poppins', sans-serif" }}>
+                      <div>
+                        <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Cliente</h5>
+                        <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.88rem' }}>{selectedPedido.cliente_nombre || (selectedPedido as any).nombre || 'Borrador Anónimo'}</p>
+                        <p style={{ margin: '0.15rem 0 0 0', color: '#64748b', fontSize: '0.82rem', fontWeight: 400 }}>{selectedPedido.cliente_telefono || (selectedPedido as any).telefono || 'Sin teléfono'}</p>
+                      </div>
+                      <div>
+                        <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Cédula / Identificación</h5>
+                        <p style={{ margin: 0, fontWeight: 400, color: '#0f172a', fontSize: '0.85rem' }}>
+                          {loc.cedula}
+                        </p>
+                      </div>
+                      <div>
+                        <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Correo Electrónico</h5>
+                        <p style={{ margin: 0, fontWeight: 400, color: '#0f172a', fontSize: '0.84rem', wordBreak: 'break-all' }}>
+                          {loc.email}
+                        </p>
+                      </div>
+                      <div>
+                        <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Ciudad</h5>
+                        <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.85rem' }}>
+                          {loc.ciudad}
+                        </p>
+                      </div>
+                      <div>
+                        <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Departamento</h5>
+                        <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.85rem' }}>
+                          {loc.departamento}
+                        </p>
+                      </div>
+                      <div>
+                        <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Método de Pago</h5>
+                        <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.84rem' }}>
+                          {getMetodoPago(selectedPedido) || (selectedPedido as any).modalidad_pago || 'Por definir'}
+                        </p>
+                      </div>
+                      <div>
+                        <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Método de Envío</h5>
+                        <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.84rem' }}>
+                          {(selectedPedido as any).metodo_envio || (Array.isArray(selectedPedido.productos) && selectedPedido.productos[0]?._metodo_envio) || ((selectedPedido.direccion || '').toLowerCase().includes('recoger') ? '🏪 Recoger en tienda' : '🚚 Envío a domicilio')}
+                        </p>
+                      </div>
+                      <div>
+                        <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Línea / Asesor</h5>
+                        <div style={{ display: 'flex', alignItems: 'center', marginTop: '0.15rem' }}>
+                          {renderAsesorBadge(selectedPedido.linea_whatsapp, selectedPedido.origen)}
+                        </div>
+                      </div>
+                      <div style={{ gridColumn: '1 / -1', borderTop: '1px dashed #cbd5e1', paddingTop: '0.65rem', marginTop: '0.2rem' }}>
+                        <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Dirección de Entrega</h5>
+                        <p style={{ margin: 0, color: '#0f172a', fontSize: '0.86rem', fontWeight: 500 }}>
+                          {loc.direccion}
+                        </p>
+                      </div>
                     </div>
-                  </div>
-                  <div style={{ gridColumn: '1 / -1', borderTop: '1px dashed #cbd5e1', paddingTop: '0.65rem', marginTop: '0.2rem' }}>
-                    <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Dirección y Ciudad de Entrega</h5>
-                    <p style={{ margin: 0, color: '#0f172a', fontSize: '0.86rem', fontWeight: 500 }}>
-                      {(() => {
-                        let dir = (selectedPedido.direccion || '').replace(/\s*\|\s*CC:.*$/i, '').replace(/\s*\|\s*Email:.*$/i, '').trim();
-                        const ciu = (selectedPedido.ciudad || '').trim();
-                        const metodoEnv = ((selectedPedido as any).metodo_envio || '').toLowerCase();
-                        const metodoRec = ((selectedPedido as any).metodo_recepcion || '').toLowerCase();
-                        
-                        if (metodoEnv.includes('recoger') || metodoRec === 'tienda' || (dir.toLowerCase().includes('recoger en tienda') && !metodoEnv.includes('domicilio'))) {
-                          return `🏪 Recoger en Tienda (${configuracion?.direccion || 'Sede Principal'})`;
-                        }
-
-                        if (dir.toLowerCase().includes('recoger en tienda')) {
-                          dir = '';
-                        }
-
-                        const ciuLimpia = (ciu && ciu !== 'Por definir') ? ciu : '';
-                        if (!dir && !ciuLimpia) return 'Por definir';
-                        if (dir && ciuLimpia && (dir.toLowerCase().includes(ciuLimpia.toLowerCase()) || ciuLimpia.toLowerCase().includes(dir.toLowerCase()))) return dir || ciuLimpia;
-                        return [dir, ciuLimpia].filter(Boolean).join(', ');
-                      })()}
-                    </p>
-                  </div>
-                </div>
+                  );
+                })()}
 
                 {/* ── PRODUCTOS SOLICITADOS ── */}
                 <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '0.9rem', fontFamily: "'Poppins', sans-serif" }}>
