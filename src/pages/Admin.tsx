@@ -14600,16 +14600,16 @@ export default function Admin() {
                               <td style={{ padding: '1rem', color: ped.estado === 'completado' ? '#166534' : '#64748b', verticalAlign: 'middle' }}>
                                 {new Date(ped.created_at).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}
                               </td>
-                              <td style={{ padding: '1rem', fontWeight: 600, color: ped.estado === 'completado' ? '#14532d' : '#0f172a', verticalAlign: 'middle' }}>
+                              <td style={{ padding: '0.9rem 1rem', fontWeight: 600, color: ped.estado === 'completado' ? '#14532d' : '#0f172a', verticalAlign: 'middle', fontFamily: "'Poppins', sans-serif" }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                                   <span>{ped.cliente_nombre}</span>
                                   {ped.isLead && (
-                                    <span style={{ fontSize: '0.68rem', background: '#fee2e2', color: '#ef4444', padding: '1px 5px', borderRadius: '4px', fontWeight: 800 }}>🔴 Lead</span>
+                                    <span style={{ fontSize: '0.68rem', background: '#fee2e2', color: '#ef4444', padding: '1px 6px', borderRadius: '6px', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>🔴 Lead</span>
                                   )}
                                   {ped.origen === 'pos' ? (
-                                    <span style={{ fontSize: '0.68rem', background: '#dcfce7', color: '#166534', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>💻 POS</span>
+                                    <span style={{ fontSize: '0.68rem', background: '#dcfce7', color: '#166534', padding: '1px 6px', borderRadius: '6px', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>💻 POS</span>
                                   ) : (
-                                    <span style={{ fontSize: '0.68rem', background: '#e0f2fe', color: '#0369a1', padding: '1px 5px', borderRadius: '4px', fontWeight: 700 }}>📱 Catálogo</span>
+                                    <span style={{ fontSize: '0.68rem', background: '#e0f2fe', color: '#0369a1', padding: '1px 6px', borderRadius: '6px', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>📱 Catálogo</span>
                                   )}
                                 </div>
                               </td>
@@ -14671,38 +14671,38 @@ export default function Admin() {
                                   );
                                 })()}
                               </td>
-                              <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
-                                <span style={{ background: ped.estado === 'completado' ? '#dcfce7' : '#e0f2fe', color: ped.estado === 'completado' ? '#166534' : '#0369a1', padding: '0.2rem 0.6rem', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 700 }}>
-                                  📞 {getAsesorNameByPhone(ped.linea_whatsapp)}
+                              <td style={{ padding: '0.9rem 1rem', verticalAlign: 'middle' }}>
+                                <span style={{ color: '#1e293b', fontSize: '0.86rem', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
+                                  {getAsesorNameByPhone(ped.linea_whatsapp)}
                                 </span>
                               </td>
-                              <td style={{ padding: '1rem', verticalAlign: 'middle' }}>
+                              <td style={{ padding: '0.9rem 1rem', verticalAlign: 'middle' }}>
                                 {ped.isLead ? (
-                                  <span style={{ background: '#fee2e2', color: '#ef4444', border: '1px solid #fca5a5', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 600, display: 'inline-block', lineHeight: '1.2' }}>
+                                  <span style={{ background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', padding: '0.35rem 0.75rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 500, display: 'inline-block', lineHeight: '1.2', fontFamily: "'Poppins', sans-serif" }}>
                                     🛒 Abandonado
                                   </span>
                                 ) : ped.estado === 'completado' ? (
-                                  <span style={{ background: '#dcfce7', color: '#16a34a', border: '1px solid #86efac', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 600, display: 'inline-block', lineHeight: '1.2' }}>
+                                  <span style={{ background: '#dcfce7', color: '#15803d', border: '1px solid #86efac', padding: '0.35rem 0.75rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 500, display: 'inline-block', lineHeight: '1.2', fontFamily: "'Poppins', sans-serif" }}>
                                     ✓ Pago Verificado
                                   </span>
                                 ) : ped.pantallazo_url ? (
-                                  <span style={{ background: '#e0f2fe', color: '#0369a1', border: '1px solid #bae6fd', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 600, display: 'inline-block', lineHeight: '1.2' }}>
+                                  <span style={{ background: '#e0f2fe', color: '#0369a1', border: '1px solid #bae6fd', padding: '0.35rem 0.75rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 500, display: 'inline-block', lineHeight: '1.2', fontFamily: "'Poppins', sans-serif" }}>
                                     ✅ Comprobante subido
                                   </span>
                                 ) : (
-                                  <span style={{ background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', padding: '0.4rem 0.8rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 600, display: 'inline-block', lineHeight: '1.2' }}>
+                                  <span style={{ background: '#fffbeb', color: '#b45309', border: '1px solid #fde68a', padding: '0.35rem 0.75rem', borderRadius: '8px', fontSize: '0.78rem', fontWeight: 500, display: 'inline-block', lineHeight: '1.2', fontFamily: "'Poppins', sans-serif" }}>
                                     ⏳ Pendiente de pago
                                   </span>
                                 )}
                               </td>
-                              <td style={{ padding: '1rem', fontWeight: 700, color: ped.estado === 'completado' ? '#16a34a' : '#10b981', verticalAlign: 'middle' }}>
+                              <td style={{ padding: '0.9rem 1rem', fontWeight: 600, color: ped.estado === 'completado' ? '#15803d' : '#059669', verticalAlign: 'middle', fontSize: '0.92rem', fontFamily: "'Poppins', sans-serif" }}>
                                 ${ped.total.toLocaleString()}
                               </td>
                               <td style={{ padding: '0.8rem', textAlign: 'center', verticalAlign: 'middle' }}>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'stretch', justifyContent: 'center', maxWidth: '130px', margin: '0 auto' }}>
                                   <button 
                                     className="btn-secondary" 
-                                    style={{ padding: '0.45rem 0.8rem', fontSize: '0.8rem', borderRadius: '8px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', background: 'white', border: '1px solid #cbd5e1', color: '#475569', cursor: 'pointer', transition: 'background 0.2s', fontWeight: 600 }}
+                                    style={{ padding: '0.45rem 0.8rem', fontSize: '0.8rem', borderRadius: '8px', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', background: 'white', border: '1px solid #cbd5e1', color: '#475569', cursor: 'pointer', transition: 'background 0.2s', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}
                                     onClick={() => setSelectedPedido(ped)}
                                   >
                                     <Eye size={12} /> Ver Detalle
@@ -14711,7 +14711,7 @@ export default function Admin() {
                                   {ped.estado === 'completado' ? (
                                     <button
                                       disabled
-                                      style={{ padding: '0.45rem 0.8rem', fontSize: '0.8rem', borderRadius: '8px', background: '#dcfce7', color: '#16a34a', border: '1px solid #86efac', cursor: 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', fontWeight: 700, width: '100%' }}
+                                      style={{ padding: '0.45rem 0.8rem', fontSize: '0.8rem', borderRadius: '8px', background: '#dcfce7', color: '#16a34a', border: '1px solid #86efac', cursor: 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', fontWeight: 600, width: '100%', fontFamily: "'Poppins', sans-serif" }}
                                     >
                                       <Check size={12} /> Completado
                                     </button>
