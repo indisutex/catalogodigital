@@ -1527,7 +1527,7 @@ export default function Admin() {
                 padding: '0.45rem 0.65rem',
                 borderRadius: '8px',
                 border: 'none',
-                background: 'linear-gradient(135deg, #10b981, #059669)',
+                background: ped.estado === 'cancelado' ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #10b981, #059669)',
                 color: '#ffffff',
                 fontSize: '0.76rem',
                 fontWeight: 600,
@@ -1536,14 +1536,15 @@ export default function Admin() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '0.25rem',
-                boxShadow: '0 3px 10px rgba(16, 185, 129, 0.3)',
+                boxShadow: ped.estado === 'cancelado' ? '0 3px 10px rgba(220, 38, 38, 0.3)' : '0 3px 10px rgba(16, 185, 129, 0.3)',
                 whiteSpace: 'nowrap',
                 flex: 1,
-                minWidth: '95px'
+                minWidth: '95px',
+                fontFamily: "'Poppins', sans-serif"
               }}
             >
-              <span style={{ fontSize: '0.82rem', flexShrink: 0 }}>💭</span>
-              <span>Recuperar Venta</span>
+              <span style={{ fontSize: '0.82rem', flexShrink: 0 }}>{ped.estado === 'cancelado' ? '💭' : '💭'}</span>
+              <span>{ped.estado === 'cancelado' ? 'Incentivar Venta' : 'Recuperar Venta'}</span>
               <ChevronRight size={13} color="#ffffff" style={{ flexShrink: 0 }} />
             </button>
           ) : ped.estado === 'completado' ? (
@@ -14415,7 +14416,7 @@ export default function Admin() {
                                   fontWeight: 500
                                 }}>
                                   <span>🎯</span>
-                                  <span>¡Logra recuperar esta venta!</span>
+                                  <span>¡Logra incentivar esta venta!</span>
                                 </div>
                               </div>
                             );
