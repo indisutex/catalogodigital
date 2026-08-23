@@ -1566,20 +1566,19 @@ export default function Admin() {
                 width: '36px',
                 height: '36px',
                 borderRadius: '10px',
-                border: 'none',
-                background: '#25D366',
+                border: '1.5px solid #bbf7d0',
+                background: '#f0fdf4',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
-                color: '#ffffff',
+                color: '#25D366',
                 flexShrink: 0,
-                transition: 'all 0.2s',
-                boxShadow: '0 2px 6px rgba(37, 211, 102, 0.35)'
+                transition: 'all 0.2s'
               }}
               title="Abrir WhatsApp del cliente"
             >
-              <WhatsAppIcon size={19} color="#ffffff" />
+              <WhatsAppIcon size={20} color="#25D366" />
             </button>
           )}
 
