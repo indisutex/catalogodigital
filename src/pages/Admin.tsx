@@ -14922,7 +14922,7 @@ export default function Admin() {
                           className="kanban-column"
                           onDragOver={(e) => e.preventDefault()}
                           onDrop={(e) => handleDropKanban(e, 'cancelado')}
-                          style={{ background: '#fef2f2', borderRadius: '16px', border: '1px solid #fee2e2', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(220,38,38,0.02)' }}
+                          style={{ background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
                         >
                           <div style={{
                             display: 'flex',
@@ -15082,7 +15082,7 @@ export default function Admin() {
                           className="kanban-column"
                           onDragOver={(e) => e.preventDefault()}
                           onDrop={(e) => handleDropKanban(e, 'contra_entrega')}
-                          style={{ background: '#fff7ed', borderRadius: '16px', border: '1px solid #ffedd5', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(234,88,12,0.03)' }}
+                          style={{ background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
                         >
                           <div style={{
                             display: 'flex',
