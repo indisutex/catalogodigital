@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useMemo } from 'react';
 import { supabase, getTenantId, normalizeTenantId, findClosestTenant } from '../lib/supabase';
 import { updatePWAManifestAndIcons } from '../lib/pwa';
 import type { Producto, Categoria, Subcategoria, Configuracion } from '../types';
-import { Loader2, Search, Plus, ShoppingBag, X, ShoppingCart, Volume2, VolumeX, Package, HelpCircle, RefreshCw, Menu, Check, Filter, LayoutGrid, Users, Sparkles, Shirt, Baby, Moon, Layers, Tag, Heart, Gift, ChevronDown, Share2, Trash2, CreditCard, MessageCircle, ArrowLeft, ChevronRight } from 'lucide-react';
+import { Loader2, Search, Plus, ShoppingBag, X, ShoppingCart, Volume2, VolumeX, Package, HelpCircle, RefreshCw, Menu, Check, Filter, LayoutGrid, Users, Sparkles, Shirt, Baby, Moon, Layers, Tag, Heart, Gift, ChevronDown, ChevronLeft, Share2, Trash2, CreditCard, MessageCircle, ArrowLeft, ChevronRight, Truck } from 'lucide-react';
 import { useCart, getEffectivePrice } from '../context/CartContext';
 import PqrsModal from '../components/PqrsModal';
 import { getOptimizedImageUrl } from '../lib/imageOptimizer';
@@ -643,6 +643,102 @@ export default function MenuDigital() {
   const [selectedMiembroFamilia, setSelectedMiembroFamilia] = useState<string>('');
   const [famOptionQuantities, setFamOptionQuantities] = useState<Record<string, number>>({});
 
+  // Swipe & Touch Refs for Product Detail Carousel
+  const touchStartX = useRef<number | null>(null);
+  const touchEndX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+  const touchEndY = useRef<number | null>(null);
+  const isDraggingCarousel = useRef<boolean>(false);
+
+  const handleCarouselTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.targetTouches[0].clientX;
+    touchEndX.current = e.targetTouches[0].clientX;
+    touchStartY.current = e.targetTouches[0].clientY;
+    touchEndY.current = e.targetTouches[0].clientY;
+  };
+
+  const handleCarouselTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.targetTouches[0].clientX;
+    touchEndY.current = e.targetTouches[0].clientY;
+  };
+
+  const handleCarouselTouchEnd = (allImagesList: any[], estampadosList: string[]) => {
+    if (touchStartX.current === null || touchEndX.current === null) return;
+    const diffX = touchStartX.current - touchEndX.current;
+    const diffY = (touchStartY.current || 0) - (touchEndY.current || 0);
+
+    if (Math.abs(diffX) > 30 && Math.abs(diffX) > Math.abs(diffY)) {
+      if (diffX > 0) {
+        handleNextDetailImage(allImagesList, estampadosList);
+      } else {
+        handlePrevDetailImage(allImagesList, estampadosList);
+      }
+    }
+    touchStartX.current = null;
+    touchEndX.current = null;
+    touchStartY.current = null;
+    touchEndY.current = null;
+  };
+
+  const handleCarouselMouseDown = (e: React.MouseEvent) => {
+    touchStartX.current = e.clientX;
+    touchEndX.current = e.clientX;
+    isDraggingCarousel.current = true;
+  };
+
+  const handleCarouselMouseMove = (e: React.MouseEvent) => {
+    if (!isDraggingCarousel.current) return;
+    touchEndX.current = e.clientX;
+  };
+
+  const handleCarouselMouseUp = (allImagesList: any[], estampadosList: string[]) => {
+    if (!isDraggingCarousel.current) return;
+    isDraggingCarousel.current = false;
+    if (touchStartX.current === null || touchEndX.current === null) return;
+    const diffX = touchStartX.current - touchEndX.current;
+    if (Math.abs(diffX) > 30) {
+      if (diffX > 0) {
+        handleNextDetailImage(allImagesList, estampadosList);
+      } else {
+        handlePrevDetailImage(allImagesList, estampadosList);
+      }
+    }
+    touchStartX.current = null;
+    touchEndX.current = null;
+  };
+
+  const handleNextDetailImage = (allImagesList: any[], estampadosList: string[]) => {
+    if (allImagesList.length <= 1) return;
+    setCarouselIdx(prev => {
+      const nextIdx = prev + 1 >= allImagesList.length ? 0 : prev + 1;
+      const targetImg = allImagesList[nextIdx];
+      const estRaw = (targetImg?.estampado || targetImg?.ref)?.trim();
+      if (estRaw) {
+        const match = estampadosList.find(e => e.toLowerCase() === estRaw.toLowerCase());
+        setSelectedEstampado(match || estRaw.toUpperCase());
+      } else if (estampadosList.length > 0) {
+        setSelectedEstampado(estampadosList[nextIdx % estampadosList.length]);
+      }
+      return nextIdx;
+    });
+  };
+
+  const handlePrevDetailImage = (allImagesList: any[], estampadosList: string[]) => {
+    if (allImagesList.length <= 1) return;
+    setCarouselIdx(prev => {
+      const nextIdx = prev - 1 < 0 ? allImagesList.length - 1 : prev - 1;
+      const targetImg = allImagesList[nextIdx];
+      const estRaw = (targetImg?.estampado || targetImg?.ref)?.trim();
+      if (estRaw) {
+        const match = estampadosList.find(e => e.toLowerCase() === estRaw.toLowerCase());
+        setSelectedEstampado(match || estRaw.toUpperCase());
+      } else if (estampadosList.length > 0) {
+        setSelectedEstampado(estampadosList[nextIdx % estampadosList.length]);
+      }
+      return nextIdx;
+    });
+  };
+
   // Prevenir scroll del body cuando algún modal está abierto
   useEffect(() => {
     if (isCartOpen || isPqrsOpen || !!detailProduct) {
@@ -677,7 +773,10 @@ export default function MenuDigital() {
     setDetailProduct(producto);
     setCarouselIdx(0);
     setSelectedTalla('');
-    setSelectedEstampado('');
+    const rawAllImages = (producto.imagenes_extra || []).map(u => decodeExtraImage(u)).filter(i => i.url);
+    const firstImg = rawAllImages.length > 0 ? rawAllImages[0] : (producto.imagen_url ? { url: producto.imagen_url, ref: producto.referencia || '', estampado: '' } : null);
+    const initialEst = (firstImg?.estampado || firstImg?.ref)?.trim() || producto.estampados?.split(',')[0]?.trim() || '';
+    setSelectedEstampado(initialEst.toUpperCase());
     setSelectedCantidad(1);
     setFamOptionQuantities({
       dama_unica: 0,
@@ -2161,7 +2260,7 @@ export default function MenuDigital() {
             <button 
               onClick={() => selectSubcategoria('todas')}
               style={{
-                padding: '0.4rem 1rem', borderRadius: '20px', border: 'none', fontWeight: 700, fontSize: '0.8rem',
+                padding: '0.4rem 1rem', borderRadius: '20px', border: 'none', fontWeight: 600, fontSize: '0.8rem',
                 backgroundColor: filtroSubcategoria === 'todas' ? 'var(--primary)' : '#eee',
                 color: filtroSubcategoria === 'todas' ? 'white' : '#555', cursor: 'pointer', whiteSpace: 'nowrap'
               }}
@@ -2174,7 +2273,7 @@ export default function MenuDigital() {
                   key={subcat.id}
                   onClick={() => selectSubcategoria(subcat.slug)}
                   style={{
-                    padding: '0.4rem 1rem', borderRadius: '20px', border: 'none', fontWeight: 700, fontSize: '0.8rem',
+                    padding: '0.4rem 1rem', borderRadius: '20px', border: 'none', fontWeight: 600, fontSize: '0.8rem',
                     backgroundColor: filtroSubcategoria === subcat.slug ? 'var(--primary)' : '#eee',
                     color: filtroSubcategoria === subcat.slug ? 'white' : '#555', cursor: 'pointer', whiteSpace: 'nowrap'
                   }}
@@ -2370,7 +2469,7 @@ export default function MenuDigital() {
             <span className="cart-badge" style={{ color: mayoristaBranding?.color || configuracion?.color_primario || '#0f172a' }}>{totalItems}</span>
             <span>Ver Carrito</span>
           </div>
-          <span className="cart-total-float" style={{ fontWeight: 700, fontSize: '1.05rem' }}>${total.toLocaleString('es-CO')}</span>
+          <span className="cart-total-float" style={{ fontWeight: 600, fontSize: '1.05rem' }}>${total.toLocaleString('es-CO')}</span>
         </button>
       )}
 
@@ -2396,7 +2495,7 @@ export default function MenuDigital() {
                     <ArrowLeft size={22} />
                   </button>
 
-                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
+                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
                     Formulario de compra
                   </h3>
 
@@ -2433,7 +2532,7 @@ export default function MenuDigital() {
                           alignItems: 'center', 
                           justifyContent: 'center', 
                           fontSize: '0.8rem', 
-                          fontWeight: 700,
+                          fontWeight: 600,
                           transition: 'all 0.2s ease'
                         }}
                       >
@@ -2462,7 +2561,7 @@ export default function MenuDigital() {
                           alignItems: 'center', 
                           justifyContent: 'center', 
                           fontSize: '0.8rem', 
-                          fontWeight: 700,
+                          fontWeight: 600,
                           transition: 'all 0.2s ease'
                         }}
                       >
@@ -2491,7 +2590,7 @@ export default function MenuDigital() {
                           alignItems: 'center', 
                           justifyContent: 'center', 
                           fontSize: '0.8rem', 
-                          fontWeight: 700,
+                          fontWeight: 600,
                           transition: 'all 0.2s ease'
                         }}
                       >
@@ -2728,7 +2827,7 @@ export default function MenuDigital() {
                       {/* ── PASO 2: ENVÍO ── */}
                       {checkoutStep === 2 && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
-                          <h4 style={{ margin: '0 0 0.15rem 0', fontSize: '1.08rem', fontWeight: 700, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
+                          <h4 style={{ margin: '0 0 0.15rem 0', fontSize: '1.08rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
                             ¿Cómo quieres recibir tu pedido?
                           </h4>
 
@@ -2794,7 +2893,7 @@ export default function MenuDigital() {
                                   <div style={{ fontSize: '0.92rem', fontWeight: 600, color: metodoRecepcion === 'tienda' ? brandColor : '#1e293b', fontFamily: "'Poppins', sans-serif" }}>
                                     🏪 Recoger en tienda
                                   </div>
-                                  <span style={{ fontSize: '0.76rem', fontWeight: 700, color: '#10b981', background: '#d1fae5', padding: '2px 8px', borderRadius: '10px', fontFamily: "'Poppins', sans-serif" }}>
+                                  <span style={{ fontSize: '0.76rem', fontWeight: 600, color: '#10b981', background: '#d1fae5', padding: '2px 8px', borderRadius: '10px', fontFamily: "'Poppins', sans-serif" }}>
                                     Gratis
                                   </span>
                                 </div>
@@ -3035,7 +3134,7 @@ export default function MenuDigital() {
                       {/* ── PASO 3: PAGO ── */}
                       {checkoutStep === 3 && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
-                          <h4 style={{ margin: '0 0 0.15rem 0', fontSize: '1.08rem', fontWeight: 700, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
+                          <h4 style={{ margin: '0 0 0.15rem 0', fontSize: '1.08rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
                             ¿Cómo quieres pagar?
                           </h4>
 
@@ -3086,18 +3185,23 @@ export default function MenuDigital() {
                                 gap: '0.75rem', 
                                 padding: '0.85rem 1rem', 
                                 borderRadius: '14px', 
-                                border: `2px solid ${modalidadPago === 'contra_entrega' ? brandColor : '#e2e8f0'}`, 
-                                background: modalidadPago === 'contra_entrega' ? `${brandColor}0d` : '#fafafa', 
+                                border: `2px solid ${modalidadPago === 'contra_entrega' ? '#ea580c' : '#e2e8f0'}`, 
+                                background: modalidadPago === 'contra_entrega' ? '#fff7ed' : '#fafafa', 
                                 cursor: 'pointer',
                                 transition: 'all 0.15s ease'
                               }}
                             >
-                              <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1.1rem' }}>
+                              <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: modalidadPago === 'contra_entrega' ? '#fed7aa' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1.1rem' }}>
                                 🚚
                               </div>
                               <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: '0.92rem', fontWeight: 600, color: modalidadPago === 'contra_entrega' ? brandColor : '#1e293b', fontFamily: "'Poppins', sans-serif" }}>
-                                  Pago contra entrega
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                  <div style={{ fontSize: '0.92rem', fontWeight: 600, color: modalidadPago === 'contra_entrega' ? '#ea580c' : '#1e293b', fontFamily: "'Poppins', sans-serif" }}>
+                                    Pago contra entrega
+                                  </div>
+                                  <span style={{ fontSize: '0.68rem', fontWeight: 500, color: '#c2410c', background: '#ffedd5', padding: '0.1rem 0.45rem', borderRadius: '6px', fontFamily: "'Poppins', sans-serif" }}>
+                                    🔥 Paga al recibir
+                                  </span>
                                 </div>
                                 <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.15rem', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
                                   Pagas tus prendas y domicilio al recibir en tu puerta
@@ -3112,7 +3216,7 @@ export default function MenuDigital() {
                                   setModalidadPago('contra_entrega');
                                   setIsPagoSeleccionado(true);
                                 }}
-                                style={{ accentColor: brandColor, width: '18px', height: '18px', cursor: 'pointer', flexShrink: 0 }}
+                                style={{ accentColor: '#ea580c', width: '18px', height: '18px', cursor: 'pointer', flexShrink: 0 }}
                               />
                             </label>
 
@@ -3166,7 +3270,7 @@ export default function MenuDigital() {
                                       return parsed.map((m: any, idx: number) => (
                                         <div key={idx} style={{ padding: '0.35rem 0', color: '#475569', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: idx < parsed.length - 1 ? '1px dashed #e2e8f0' : 'none' }}>
                                           <span><strong>{m.banco}</strong> {m.tipo ? `(${m.tipo})` : ''}</span>
-                                          <span style={{ fontWeight: 700, color: '#0f172a', fontFamily: 'monospace' }}>{m.numero}</span>
+                                          <span style={{ fontWeight: 600, color: '#0f172a', fontFamily: 'monospace' }}>{m.numero}</span>
                                         </div>
                                       ));
                                     }
@@ -3214,7 +3318,7 @@ export default function MenuDigital() {
                                 background: brandColor,
                                 color: '#ffffff',
                                 fontSize: '0.98rem',
-                                fontWeight: 700,
+                                fontWeight: 600,
                                 cursor: 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
@@ -3233,7 +3337,7 @@ export default function MenuDigital() {
                       {/* ── RESUMEN DEL PEDIDO (SE MUESTRA ABAJO EN CADA PASO CON CONTENEDOR DE FONDO #f8fafc) ── */}
                       <div style={{ marginTop: '1.25rem', padding: '1.2rem 1.25rem', background: '#f8fafc', borderRadius: '18px', border: '1px solid #e2e8f0' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.95rem' }}>
-                          <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
+                          <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
                             Resumen del pedido <span style={{ fontWeight: 400, color: '#64748b', fontSize: '0.82rem' }}>({totalUnits} {totalUnits === 1 ? 'producto' : 'productos'})</span>
                           </h4>
                         </div>
@@ -3254,7 +3358,7 @@ export default function MenuDigital() {
                                       <Package size={18} color="#94a3b8" />
                                     </div>
                                   )}
-                                  <span style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#ef4444', color: '#fff', fontSize: '0.68rem', fontWeight: 700, width: '18px', height: '18px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.18)' }}>
+                                  <span style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#ef4444', color: '#fff', fontSize: '0.68rem', fontWeight: 600, width: '18px', height: '18px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.18)' }}>
                                     {item.cantidad}
                                   </span>
                                 </div>
@@ -3306,7 +3410,7 @@ export default function MenuDigital() {
                             <span>Envío</span>
                             <span style={{ fontWeight: 500, color: '#0f172a', fontSize: '0.84rem' }}>Por calcular</span>
                           </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', color: '#0f172a', fontWeight: 700, fontSize: '0.96rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.6rem', marginTop: '0.25rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', color: '#0f172a', fontWeight: 600, fontSize: '0.96rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.6rem', marginTop: '0.25rem' }}>
                             <span>Total</span>
                             <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.3rem' }}>
                               <span>${total.toLocaleString('es-CO')}</span>
@@ -3390,7 +3494,7 @@ export default function MenuDigital() {
                             {/* FILA DE PRECIO Y STEPPER DE CANTIDAD */}
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.2rem' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                                <span style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>
+                                <span style={{ fontSize: '1rem', fontWeight: 600, color: '#0f172a' }}>
                                   $ {itemTotalPrice.toLocaleString('es-CO')}
                                 </span>
                                 {isItemDiscounted && (
@@ -3493,7 +3597,7 @@ export default function MenuDigital() {
                           <h5 style={{ margin: 0, fontSize: '0.82rem', fontWeight: 500, color: '#0f172a', lineHeight: '1.2', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {toTitleCase(p.nombre)}
                           </h5>
-                          <p style={{ margin: '2px 0 0 0', color: '#0f172a', fontWeight: 700, fontSize: '0.86rem' }}>
+                          <p style={{ margin: '2px 0 0 0', color: '#0f172a', fontWeight: 600, fontSize: '0.86rem' }}>
                             ${recPrice.toLocaleString('es-CO')}
                           </p>
                         </div>
@@ -3553,26 +3657,34 @@ export default function MenuDigital() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.85rem' }}>
                     <span style={{ fontSize: '1.02rem', fontWeight: 600, color: '#0f172a' }}>Total estimado</span>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem' }}>
-                      <strong style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>${total.toLocaleString('es-CO')}</strong>
+                      <strong style={{ fontSize: '1.25rem', fontWeight: 600, color: '#0f172a' }}>${total.toLocaleString('es-CO')}</strong>
                       <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 400 }}>+ envío</span>
                     </div>
                   </div>
 
                   {buyerType === 'mayorista' && totalUnits < 6 && (
-                    <div style={{ marginBottom: '0.6rem', background: '#fef2f2', border: '1px solid #fecdd3', color: '#991b1b', padding: '0.45rem 0.65rem', borderRadius: '8px', fontSize: '0.76rem', fontWeight: 700, textAlign: 'center' }}>
+                    <div style={{ marginBottom: '0.6rem', background: '#fef2f2', border: '1px solid #fecdd3', color: '#991b1b', padding: '0.45rem 0.65rem', borderRadius: '8px', fontSize: '0.76rem', fontWeight: 600, textAlign: 'center' }}>
                       ⚠️ Mínimo 6 unidades para comprar al por mayor. Agrega {6 - totalUnits} {6 - totalUnits === 1 ? 'unidad más' : 'unidades más'}.
                     </div>
                   )}
 
-                  {/* MAIN CTA BUTTON */}
+                  {/* TRUST BADGE CONTRA ENTREGA */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontSize: '0.74rem', color: '#059669', background: '#ecfdf5', padding: '0.4rem 0.65rem', borderRadius: '10px', marginBottom: '0.75rem', fontWeight: 500, border: '1px solid #a7f3d0', fontFamily: "'Poppins', sans-serif" }}>
+                    <Truck size={15} style={{ color: '#059669', flexShrink: 0 }} />
+                    <span>¡Pago contra entrega disponible en todo el país!</span>
+                  </div>
+
+                  {/* BOTÓN PRINCIPAL 1: PEDIR CONTRA ENTREGA */}
                   <button 
-                    className="checkout-btn" 
+                    className="checkout-btn btn-contraentrega" 
                     disabled={items.length === 0}
                     onClick={() => {
                       if (buyerType === 'mayorista' && totalUnits < 6) {
                         alert(`Tienes que comprar mínimo 6 unidades para poder comprar en nuestro catálogo mayorista. Actualmente llevas ${totalUnits} ${totalUnits === 1 ? 'unidad' : 'unidades'}. Agrega ${6 - totalUnits} más a tu carrito o cambia a modo Detal.`);
                         return;
                       }
+                      setModalidadPago('contra_entrega');
+                      setMetodoRecepcion('domicilio');
                       setCheckoutStep(1);
                       setIsCheckoutMode(true);
                     }}
@@ -3582,7 +3694,9 @@ export default function MenuDigital() {
                       fontSize: '0.98rem', 
                       fontWeight: 600,
                       borderRadius: '14px', 
-                      background: (buyerType === 'mayorista' && totalUnits < 6) ? '#cbd5e1' : (configuracion?.color_primario || 'var(--primary, #f36b8e)'), 
+                      background: (buyerType === 'mayorista' && totalUnits < 6) 
+                        ? '#cbd5e1' 
+                        : 'linear-gradient(135deg, #ea580c, #c2410c)', 
                       color: '#ffffff',
                       border: 'none',
                       cursor: (buyerType === 'mayorista' && totalUnits < 6) ? 'not-allowed' : 'pointer',
@@ -3590,11 +3704,47 @@ export default function MenuDigital() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       gap: '0.55rem',
-                      boxShadow: (buyerType === 'mayorista' && totalUnits < 6) ? 'none' : `0 4px 14px ${(configuracion?.color_primario || '#f36b8e')}40`
+                      boxShadow: (buyerType === 'mayorista' && totalUnits < 6) ? 'none' : '0 4px 14px rgba(234, 88, 12, 0.35)',
+                      fontFamily: "'Poppins', sans-serif"
                     }}
                   >
-                    <CreditCard size={18} />
-                    Continuar con tu compra
+                    <Truck size={19} />
+                    <span>Pedir Contra Entrega</span>
+                  </button>
+
+                  {/* BOTÓN SECUNDARIO 2: TRANSFERENCIA / CONTINUAR */}
+                  <button 
+                    className="checkout-btn btn-transferencia" 
+                    disabled={items.length === 0}
+                    onClick={() => {
+                      if (buyerType === 'mayorista' && totalUnits < 6) {
+                        alert(`Tienes que comprar mínimo 6 unidades para poder comprar en nuestro catálogo mayorista. Actualmente llevas ${totalUnits} ${totalUnits === 1 ? 'unidad' : 'unidades'}. Agrega ${6 - totalUnits} más a tu carrito o cambia a modo Detal.`);
+                        return;
+                      }
+                      setModalidadPago('transferencia');
+                      setCheckoutStep(1);
+                      setIsCheckoutMode(true);
+                    }}
+                    style={{ 
+                      width: '100%',
+                      padding: '0.8rem 1rem', 
+                      fontSize: '0.9rem', 
+                      fontWeight: 500,
+                      borderRadius: '14px', 
+                      background: (buyerType === 'mayorista' && totalUnits < 6) ? '#f8fafc' : '#ffffff', 
+                      color: (buyerType === 'mayorista' && totalUnits < 6) ? '#94a3b8' : (configuracion?.color_primario || 'var(--primary, #f36b8e)'),
+                      border: `1.5px solid ${(configuracion?.color_primario || '#f36b8e')}40`,
+                      cursor: (buyerType === 'mayorista' && totalUnits < 6) ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.45rem',
+                      marginTop: '0.5rem',
+                      fontFamily: "'Poppins', sans-serif"
+                    }}
+                  >
+                    <CreditCard size={17} />
+                    <span>Pagar con Transferencia Bancaria</span>
                   </button>
 
                   {/* HELP LINK */}
@@ -3667,57 +3817,225 @@ export default function MenuDigital() {
               {/* Close button */}
               <button className="detail-close" onClick={() => setDetailProduct(null)}><X size={20} /></button>
 
-              {/* ── CAROUSEL ── */}
-              <div className="detail-carousel">
-                {detailProduct.video_url ? (
-                  <video src={detailProduct.video_url} autoPlay loop muted playsInline preload="metadata" className="detail-carousel-img" ref={el => { if (el && el.paused) el.play().catch(() => {}); }} />
-                ) : allImages.length > 0 ? (
-                  <img src={getOptimizedImageUrl(allImages[safeIdx].url, 800, 80)} alt={detailProduct.nombre} className="detail-carousel-img" loading="eager" fetchPriority="high" decoding="async" />
-                ) : (
-                  <div className="detail-carousel-placeholder" />
-                )}
+              {/* ── CAROUSEL INTERACTIVO CON SWIPE Y SINCRONIZACIÓN DE ESTAMPADOS ── */}
+              {(() => {
+                const imgEstampadosList = allImages.map(img => (img.estampado || img.ref)?.trim().toUpperCase()).filter(Boolean);
+                const estampadosList = imgEstampadosList.length > 0 ? Array.from(new Set(imgEstampadosList)) : legacyEstampados;
 
-                {/* Share button (bottom-left INSIDE image frame) */}
-                <button 
-                  className="detail-share-btn" 
-                  onClick={() => {
-                    const shareUrl = window.location.href;
-                    const shareData = {
-                      title: detailProduct.nombre,
-                      text: `Mira este producto en el catálogo digital: ${detailProduct.nombre}`,
-                      url: shareUrl,
-                    };
-                    if (navigator.share) {
-                      navigator.share(shareData).catch(() => {});
-                    } else {
-                      navigator.clipboard.writeText(shareUrl);
-                      alert('¡Enlace del producto copiado al portapapeles!');
-                    }
-                  }}
-                  title="Compartir producto"
-                >
-                  <Share2 size={16} color="#0f172a" />
-                  <span>Compartir</span>
-                </button>
+                return (
+                  <div 
+                    className="detail-carousel"
+                    onTouchStart={handleCarouselTouchStart}
+                    onTouchMove={handleCarouselTouchMove}
+                    onTouchEnd={() => handleCarouselTouchEnd(allImages, estampadosList)}
+                    onMouseDown={handleCarouselMouseDown}
+                    onMouseMove={handleCarouselMouseMove}
+                    onMouseUp={() => handleCarouselMouseUp(allImages, estampadosList)}
+                    onMouseLeave={() => handleCarouselMouseUp(allImages, estampadosList)}
+                    style={{ 
+                      cursor: allImages.length > 1 ? 'grab' : 'default', 
+                      userSelect: 'none', 
+                      touchAction: 'pan-y', 
+                      position: 'relative', 
+                      overflow: 'hidden' 
+                    }}
+                  >
+                    {detailProduct.video_url ? (
+                      <video src={detailProduct.video_url} autoPlay loop muted playsInline preload="metadata" className="detail-carousel-img" ref={el => { if (el && el.paused) el.play().catch(() => {}); }} />
+                    ) : allImages.length > 0 ? (
+                      <div style={{
+                        display: 'flex',
+                        width: `${allImages.length * 100}%`,
+                        height: '100%',
+                        transform: `translateX(-${(safeIdx * 100) / allImages.length}%)`,
+                        transition: 'transform 0.32s cubic-bezier(0.25, 1, 0.5, 1)'
+                      }}>
+                        {allImages.map((img, i) => (
+                          <div key={i} style={{ width: `${100 / allImages.length}%`, height: '100%', flexShrink: 0, position: 'relative' }}>
+                            <img 
+                              src={getOptimizedImageUrl(img.url, 800, 80)} 
+                              alt={`${detailProduct.nombre} ${img.estampado || img.ref || i}`} 
+                              className="detail-carousel-img" 
+                              loading={i === safeIdx ? "eager" : "lazy"} 
+                              fetchPriority={i === safeIdx ? "high" : "low"} 
+                              decoding="async" 
+                              draggable={false}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover', userSelect: 'none', pointerEvents: 'none' }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="detail-carousel-placeholder" />
+                    )}
 
-                {/* ── LABELS REFERENCIA Y ESTAMPADO (ABAJO DERECHO - EFECTO GLASS) ── */}
-                <div style={{ position: 'absolute', bottom: '0.65rem', right: '0.65rem', left: 'auto', display: 'flex', flexDirection: 'column', gap: '0.4rem', zIndex: 10, alignItems: 'flex-end', pointerEvents: 'none', maxWidth: '60%' }}>
-                  <div style={{ fontSize: '0.72rem', padding: '0.28rem 0.65rem', background: 'rgba(255, 255, 255, 0.88)', color: '#0f172a', fontWeight: 500, borderRadius: '8px', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', border: '1px solid rgba(255, 255, 255, 0.7)', boxShadow: '0 2px 8px rgba(0,0,0,0.12)', maxWidth: '100%', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.3, textAlign: 'right' }}>
-                    Ref: {toTitleCase(detailProduct.nombre)} {(detailProduct.referencia || detailProduct.sku) ? `(${detailProduct.referencia || detailProduct.sku})` : ''}
-                  </div>
-                  {currentImgRef && (
-                    <div style={{ fontSize: '0.74rem', padding: '0.3rem 0.7rem', background: 'rgba(255, 255, 255, 0.88)', color: '#0f172a', fontWeight: 500, borderRadius: '8px', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', border: '1px solid rgba(255, 255, 255, 0.7)', boxShadow: '0 2px 8px rgba(0,0,0,0.12)', maxWidth: '100%', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.3, textAlign: 'right' }}>
-                      Estampado: {toTitleCase(currentImgRef)}
+                    {/* Botones de navegación flecha izquierda y derecha */}
+                    {allImages.length > 1 && (
+                      <>
+                        <button
+                          type="button"
+                          className="carousel-btn carousel-btn-left"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handlePrevDetailImage(allImages, estampadosList);
+                          }}
+                          style={{
+                            position: 'absolute',
+                            left: '10px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            width: '36px',
+                            height: '36px',
+                            borderRadius: '50%',
+                            background: 'rgba(255, 255, 255, 0.88)',
+                            border: '1px solid rgba(255, 255, 255, 0.7)',
+                            boxShadow: '0 2px 10px rgba(0,0,0,0.18)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            zIndex: 20,
+                            backdropFilter: 'blur(8px)',
+                            WebkitBackdropFilter: 'blur(8px)',
+                            color: '#0f172a'
+                          }}
+                          title="Estampado anterior (O desliza hacia la derecha)"
+                        >
+                          <ChevronLeft size={20} />
+                        </button>
+
+                        <button
+                          type="button"
+                          className="carousel-btn carousel-btn-right"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleNextDetailImage(allImages, estampadosList);
+                          }}
+                          style={{
+                            position: 'absolute',
+                            right: '10px',
+                            top: '50%',
+                            transform: 'translateY(-50%)',
+                            width: '36px',
+                            height: '36px',
+                            borderRadius: '50%',
+                            background: 'rgba(255, 255, 255, 0.88)',
+                            border: '1px solid rgba(255, 255, 255, 0.7)',
+                            boxShadow: '0 2px 10px rgba(0,0,0,0.18)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            zIndex: 20,
+                            backdropFilter: 'blur(8px)',
+                            WebkitBackdropFilter: 'blur(8px)',
+                            color: '#0f172a'
+                          }}
+                          title="Siguiente estampado (O desliza hacia la izquierda)"
+                        >
+                          <ChevronRight size={20} />
+                        </button>
+                      </>
+                    )}
+
+                    {/* Contador de fotos en la parte superior izquierda */}
+                    {allImages.length > 1 && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '12px',
+                        left: '12px',
+                        background: 'rgba(15, 23, 42, 0.65)',
+                        color: '#ffffff',
+                        backdropFilter: 'blur(6px)',
+                        WebkitBackdropFilter: 'blur(6px)',
+                        padding: '0.2rem 0.55rem',
+                        borderRadius: '20px',
+                        fontSize: '0.72rem',
+                        fontWeight: 500,
+                        zIndex: 15,
+                        fontFamily: "'Poppins', sans-serif"
+                      }}>
+                        {safeIdx + 1} / {allImages.length}
+                      </div>
+                    )}
+
+                    {/* Share button (bottom-left INSIDE image frame) */}
+                    <button 
+                      className="detail-share-btn" 
+                      onClick={() => {
+                        const shareUrl = window.location.href;
+                        const shareData = {
+                          title: detailProduct.nombre,
+                          text: `Mira este producto en el catálogo digital: ${detailProduct.nombre}`,
+                          url: shareUrl,
+                        };
+                        if (navigator.share) {
+                          navigator.share(shareData).catch(() => {});
+                        } else {
+                          navigator.clipboard.writeText(shareUrl);
+                          alert('¡Enlace del producto copiado al portapapeles!');
+                        }
+                      }}
+                      title="Compartir producto"
+                    >
+                      <Share2 size={16} color="#0f172a" />
+                      <span>Compartir</span>
+                    </button>
+
+                    {/* ── LABELS REFERENCIA Y ESTAMPADO (ABAJO DERECHO - EFECTO GLASS) ── */}
+                    <div style={{ position: 'absolute', bottom: '0.65rem', right: '0.65rem', left: 'auto', display: 'flex', flexDirection: 'column', gap: '0.4rem', zIndex: 10, alignItems: 'flex-end', pointerEvents: 'none', maxWidth: '60%' }}>
+                      <div style={{ fontSize: '0.72rem', padding: '0.28rem 0.65rem', background: 'rgba(255, 255, 255, 0.88)', color: '#0f172a', fontWeight: 500, borderRadius: '8px', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', border: '1px solid rgba(255, 255, 255, 0.7)', boxShadow: '0 2px 8px rgba(0,0,0,0.12)', maxWidth: '100%', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.3, textAlign: 'right', fontFamily: "'Poppins', sans-serif" }}>
+                        Ref: {toTitleCase(detailProduct.nombre)} {(detailProduct.referencia || detailProduct.sku) ? `(${detailProduct.referencia || detailProduct.sku})` : ''}
+                      </div>
+                      {currentImgRef && (
+                        <div style={{ fontSize: '0.74rem', padding: '0.3rem 0.7rem', background: 'rgba(255, 255, 255, 0.88)', color: '#0f172a', fontWeight: 600, borderRadius: '8px', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', border: '1px solid rgba(255, 255, 255, 0.7)', boxShadow: '0 2px 8px rgba(0,0,0,0.12)', maxWidth: '100%', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.3, textAlign: 'right', fontFamily: "'Poppins', sans-serif" }}>
+                          Estampado: {toTitleCase(currentImgRef)}
+                        </div>
+                      )}
                     </div>
-                  )}
-                </div>
-              </div>
+
+                    {/* Dots indicators abajo al centro */}
+                    {allImages.length > 1 && allImages.length <= 15 && (
+                      <div className="carousel-dots" style={{ zIndex: 15, bottom: '8px' }}>
+                        {allImages.map((_, dotIdx) => (
+                          <button
+                            key={dotIdx}
+                            type="button"
+                            className={`carousel-dot${dotIdx === safeIdx ? ' active' : ''}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCarouselIdx(dotIdx);
+                              const targetImg = allImages[dotIdx];
+                              const estRaw = (targetImg?.estampado || targetImg?.ref)?.trim();
+                              if (estRaw) {
+                                const match = estampadosList.find(item => item.toLowerCase() === estRaw.toLowerCase());
+                                setSelectedEstampado(match || estRaw.toUpperCase());
+                              } else if (estampadosList.length > 0) {
+                                setSelectedEstampado(estampadosList[dotIdx % estampadosList.length]);
+                              }
+                            }}
+                            style={{
+                              width: dotIdx === safeIdx ? '16px' : '6px',
+                              height: '6px',
+                              borderRadius: '4px',
+                              background: dotIdx === safeIdx ? '#ffffff' : 'rgba(255, 255, 255, 0.45)',
+                              boxShadow: '0 1px 4px rgba(0,0,0,0.2)',
+                              transition: 'all 0.25s ease',
+                              cursor: 'pointer'
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* ── INFO ── */}
               <div className="detail-info">
                 <div className="detail-header-row" style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.75rem', width: '100%', marginBottom: '0.4rem' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-                    <h3 className="detail-name" style={{ fontFamily: "'Poppins', sans-serif", fontSize: '1.15rem', fontWeight: 700, color: '#0f172a', margin: 0, lineHeight: 1.25 }}>
+                    <h3 className="detail-name" style={{ fontFamily: "'Poppins', sans-serif", fontSize: '1.15rem', fontWeight: 600, color: '#0f172a', margin: 0, lineHeight: 1.25 }}>
                       {toTitleCase(detailProduct.nombre)}
                     </h3>
                     {detailProduct.descripcion ? (

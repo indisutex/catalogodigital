@@ -641,18 +641,18 @@ export default function SuperAdmin() {
       <aside className="super-sidebar" style={{ width: '260px', background: '#ffffff', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', height: '100vh', position: 'sticky', top: 0, flexShrink: 0 }}>
         {/* Brand Header */}
         <div className="sidebar-brand" style={{ padding: '1.5rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div className="brand-icon" style={{ width: '38px', height: '38px', background: 'linear-gradient(135deg, #6366f1, #0ea5e9)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: '1.1rem' }}>
+          <div className="brand-icon" style={{ width: '38px', height: '38px', background: 'linear-gradient(135deg, #6366f1, #0ea5e9)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 600, fontSize: '1.1rem' }}>
             <Shield size={18} />
           </div>
           <div className="brand-text">
-            <h2 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>INDISUTEX</h2>
+            <h2 style={{ fontSize: '1rem', fontWeight: 600, margin: 0, color: '#0f172a' }}>INDISUTEX</h2>
             <p style={{ fontSize: '0.72rem', color: '#64748b', margin: 0, fontWeight: 500 }}>Super Admin</p>
           </div>
         </div>
 
         {/* Navigation List (1 columna vertical) */}
         <div className="sidebar-nav" style={{ padding: '1.25rem', flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-          <p className="sidebar-nav-label" style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px', color: '#94a3b8', margin: '0 0 0.5rem 0', paddingLeft: '0.5rem' }}>Navegación</p>
+          <p className="sidebar-nav-label" style={{ fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '1px', color: '#94a3b8', margin: '0 0 0.5rem 0', paddingLeft: '0.5rem' }}>Navegación</p>
           
           <button 
             className={`nav-item ${viewMode === 'tiendas' ? 'active' : ''}`}
@@ -745,7 +745,7 @@ export default function SuperAdmin() {
               color: '#dc2626', 
               borderRadius: '10px', 
               cursor: 'pointer', 
-              fontWeight: 700, 
+              fontWeight: 600, 
               fontSize: '0.84rem', 
               display: 'flex', 
               alignItems: 'center', 
@@ -763,10 +763,10 @@ export default function SuperAdmin() {
       <div className="super-main" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         {/* Top Header */}
         <header className="super-header" style={{ height: '64px', background: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '0 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 10 }}>
-          <h2 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#0f172a' }}>
+          <h2 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 600, color: '#0f172a' }}>
             {viewMode === 'dashboard' ? 'Panel de Analíticas' : 'Tablero CRM Kanban'}
           </h2>
-          <span style={{ fontSize: '0.75rem', background: '#f1f5f9', padding: '0.25rem 0.5rem', borderRadius: '6px', fontWeight: 700, color: '#64748b' }}>
+          <span style={{ fontSize: '0.75rem', background: '#f1f5f9', padding: '0.25rem 0.5rem', borderRadius: '6px', fontWeight: 600, color: '#64748b' }}>
             GLOBAL
           </span>
         </header>
@@ -802,7 +802,7 @@ export default function SuperAdmin() {
             {/* Header Top Bar */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', background: '#ffffff', padding: '1.25rem 1.5rem', borderRadius: '16px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                   <Building size={22} color="#6366f1" /> Tiendas y Marcas Registradas ({configuracionesList.filter(cfg => cfg.tenant_id !== 'indisutex').length})
                 </h3>
                 <p style={{ margin: '0.25rem 0 0 0', color: '#64748b', fontSize: '0.85rem' }}>Administra, crea y clona nuevas tiendas para otros negocios en el sistema multi-tenant</p>
@@ -831,7 +831,7 @@ export default function SuperAdmin() {
                   border: 'none',
                   padding: '0.75rem 1.25rem',
                   borderRadius: '12px',
-                  fontWeight: 700,
+                  fontWeight: 600,
                   fontSize: '0.9rem',
                   cursor: 'pointer',
                   boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
@@ -857,15 +857,15 @@ export default function SuperAdmin() {
                       {cfg.logo_url ? (
                         <img src={cfg.logo_url} alt={cfg.nombre_negocio} style={{ width: '56px', height: '56px', borderRadius: '14px', objectFit: 'cover', border: '1px solid #e2e8f0' }} />
                       ) : (
-                        <div style={{ width: '56px', height: '56px', borderRadius: '14px', background: 'linear-gradient(135deg, #e0e7ff, #c7d2fe)', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.2rem' }}>
+                        <div style={{ width: '56px', height: '56px', borderRadius: '14px', background: 'linear-gradient(135deg, #e0e7ff, #c7d2fe)', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '1.2rem' }}>
                           {cfg.nombre_negocio ? cfg.nombre_negocio.substring(0, 2).toUpperCase() : 'TN'}
                         </div>
                       )}
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <h4 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 600, color: '#0f172a', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {cfg.nombre_negocio || cfg.tenant_id}
                         </h4>
-                        <span style={{ fontSize: '0.75rem', color: '#6366f1', background: '#e0e7ff', padding: '0.15rem 0.5rem', borderRadius: '6px', fontWeight: 700, display: 'inline-block', marginTop: '0.2rem' }}>
+                        <span style={{ fontSize: '0.75rem', color: '#6366f1', background: '#e0e7ff', padding: '0.15rem 0.5rem', borderRadius: '6px', fontWeight: 600, display: 'inline-block', marginTop: '0.2rem' }}>
                           /{cfg.tenant_id}
                         </span>
                       </div>
@@ -893,7 +893,7 @@ export default function SuperAdmin() {
                         href={catalogUrl}
                         target="_blank"
                         rel="noreferrer"
-                        style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', color: '#334155', textDecoration: 'none', fontSize: '0.78rem', fontWeight: 700 }}
+                        style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', padding: '0.5rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: 'white', color: '#334155', textDecoration: 'none', fontSize: '0.78rem', fontWeight: 600 }}
                         title="Abrir Catálogo Digital"
                       >
                         <ExternalLink size={14} /> Catálogo
@@ -903,7 +903,7 @@ export default function SuperAdmin() {
                         href={adminUrl}
                         target="_blank"
                         rel="noreferrer"
-                        style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', padding: '0.5rem', borderRadius: '8px', border: '1px solid #c7d2fe', background: '#e0e7ff', color: '#4338ca', textDecoration: 'none', fontSize: '0.78rem', fontWeight: 700 }}
+                        style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', padding: '0.5rem', borderRadius: '8px', border: '1px solid #c7d2fe', background: '#e0e7ff', color: '#4338ca', textDecoration: 'none', fontSize: '0.78rem', fontWeight: 600 }}
                         title="Abrir Panel Admin"
                       >
                         <Shield size={14} /> Admin
@@ -1014,7 +1014,7 @@ export default function SuperAdmin() {
                                 </span>
                               </td>
                               <td style={{ fontWeight: 600 }}>{ped.cliente_nombre}</td>
-                              <td style={{ fontWeight: 700, color: '#0f172a' }}>${ped.total.toLocaleString()}</td>
+                              <td style={{ fontWeight: 600, color: '#0f172a' }}>${ped.total.toLocaleString()}</td>
                               <td>
                                 <span className={`badge-status ${ped.atendido ? 'atendido' : 'pendiente'}`}>
                                   {ped.atendido ? '✓ Atendido' : '⏳ Espera'}
@@ -1056,7 +1056,7 @@ export default function SuperAdmin() {
                         {rendimientoNegocios.map(n => (
                           <tr key={n.name}>
                             <td style={{ fontWeight: 600 }}>{n.name}</td>
-                            <td style={{ color: '#059669', fontWeight: 700 }}>${n.total.toLocaleString()}</td>
+                            <td style={{ color: '#059669', fontWeight: 600 }}>${n.total.toLocaleString()}</td>
                             <td style={{ color: '#475569', fontSize: '0.85rem' }}>{n.productos} referencias</td>
                             <td>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: '100px' }}>
@@ -1117,7 +1117,7 @@ export default function SuperAdmin() {
                                 padding: '0.2rem 0.5rem', 
                                 borderRadius: '6px', 
                                 fontSize: '0.8rem', 
-                                fontWeight: 700,
+                                fontWeight: 600,
                                 textTransform: 'capitalize'
                               }}>
                                 {a.rol}
@@ -1130,7 +1130,7 @@ export default function SuperAdmin() {
                                 )) : <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Ninguno</span>}
                               </div>
                             </td>
-                            <td style={{ color: '#059669', fontWeight: 700 }}>${a.ventas.toLocaleString()}</td>
+                            <td style={{ color: '#059669', fontWeight: 600 }}>${a.ventas.toLocaleString()}</td>
                             <td style={{ color: '#475569', fontSize: '0.85rem' }}>{a.atendidos} de {a.pedidos + a.leads} leads</td>
                             <td>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: '100px' }}>
@@ -1252,14 +1252,14 @@ export default function SuperAdmin() {
                     {/* Lista de productos comprados */}
                     {Array.isArray(ped.productos) && ped.productos.length > 0 && (
                       <div className="card-products-summary" style={{ margin: '0.6rem 0', padding: '0.5rem 0.65rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                        <p style={{ margin: '0 0 0.3rem 0', fontSize: '0.72rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📦 Artículos:</p>
+                        <p style={{ margin: '0 0 0.3rem 0', fontSize: '0.72rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📦 Artículos:</p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
                           {ped.productos.map((prod: any, idx: number) => (
                             <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#334155' }}>
                               <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '170px' }} title={prod.nombre}>
                                 {prod.nombre} {prod.talla ? `(${prod.talla})` : ''}
                               </span>
-                              <span style={{ color: '#64748b', fontWeight: 700 }}>
+                              <span style={{ color: '#64748b', fontWeight: 600 }}>
                                 x{prod.cantidad}
                               </span>
                             </div>
@@ -1307,14 +1307,14 @@ export default function SuperAdmin() {
                     {/* Lista de productos comprados */}
                     {Array.isArray(ped.productos) && ped.productos.length > 0 && (
                       <div className="card-products-summary" style={{ margin: '0.6rem 0', padding: '0.5rem 0.65rem', background: '#f8fafc', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
-                        <p style={{ margin: '0 0 0.3rem 0', fontSize: '0.72rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📦 Artículos:</p>
+                        <p style={{ margin: '0 0 0.3rem 0', fontSize: '0.72rem', fontWeight: 600, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>📦 Artículos:</p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
                           {ped.productos.map((prod: any, idx: number) => (
                             <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: '#334155' }}>
                               <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '170px' }} title={prod.nombre}>
                                 {prod.nombre} {prod.talla ? `(${prod.talla})` : ''}
                               </span>
-                              <span style={{ color: '#64748b', fontWeight: 700 }}>
+                              <span style={{ color: '#64748b', fontWeight: 600 }}>
                                 x{prod.cantidad}
                               </span>
                             </div>
@@ -1380,7 +1380,7 @@ export default function SuperAdmin() {
                 }}>
                   <span style={{ fontSize: '2rem' }}>✅</span>
                 </div>
-                <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 800, fontSize: '1.3rem', color: '#14532d' }}>
+                <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 600, fontSize: '1.3rem', color: '#14532d' }}>
                   ¡Pago Aprobado y Completado!
                 </h3>
                 <p style={{ margin: '0 0 1.25rem 0', color: '#475569', fontSize: '0.85rem' }}>
@@ -1389,7 +1389,7 @@ export default function SuperAdmin() {
 
                 {/* Seccion 99 Envios */}
                 <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '1rem', marginBottom: '1.25rem', textAlign: 'left' }}>
-                  <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.85rem', fontWeight: 600, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                     🚚 Logística (99 Envíos)
                   </h4>
                   <p style={{ margin: '0 0 0.75rem 0', fontSize: '0.78rem', color: '#64748b' }}>
@@ -1402,7 +1402,7 @@ export default function SuperAdmin() {
                         <span style={{ fontSize: '0.7rem', color: '#166534', fontWeight: 600, display: 'block', textTransform: 'uppercase' }}>Guía Generada</span>
                         <strong style={{ fontSize: '0.95rem', color: '#14532d' }}>{numeroGuia}</strong>
                       </div>
-                      <span style={{ fontSize: '0.75rem', background: '#dcfce7', color: '#166534', padding: '0.2rem 0.5rem', borderRadius: '12px', fontWeight: 700 }}>Activa</span>
+                      <span style={{ fontSize: '0.75rem', background: '#dcfce7', color: '#166534', padding: '0.2rem 0.5rem', borderRadius: '12px', fontWeight: 600 }}>Activa</span>
                     </div>
                   ) : (
                     <button
@@ -1417,7 +1417,7 @@ export default function SuperAdmin() {
                         border: 'none',
                         borderRadius: '10px',
                         cursor: 'pointer',
-                        fontWeight: 700,
+                        fontWeight: 600,
                         fontSize: '0.82rem',
                         display: 'flex',
                         alignItems: 'center',
@@ -1461,7 +1461,7 @@ export default function SuperAdmin() {
                       border: 'none',
                       borderRadius: '12px',
                       cursor: 'pointer',
-                      fontWeight: 700,
+                      fontWeight: 600,
                       fontSize: '0.9rem',
                       display: 'flex',
                       alignItems: 'center',
@@ -1503,7 +1503,7 @@ export default function SuperAdmin() {
             ) : (
               <>
                 <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1rem' }}>
-                  <h3 style={{ margin: 0, fontWeight: 800, fontSize: '1.2rem', color: '#0f172a' }}>📦 Detalle del Pedido</h3>
+                  <h3 style={{ margin: 0, fontWeight: 600, fontSize: '1.2rem', color: '#0f172a' }}>📦 Detalle del Pedido</h3>
                   <button onClick={() => { setSelectedPedido(null); setShowSuccessScreen(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8' }}>
                     <X size={20} />
                   </button>
@@ -1512,12 +1512,12 @@ export default function SuperAdmin() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
                   <div>
                     <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase', fontWeight: 600 }}>Cliente</h5>
-                    <p style={{ margin: 0, fontWeight: 700, color: '#0f172a' }}>{selectedPedido.cliente_nombre}</p>
+                    <p style={{ margin: 0, fontWeight: 600, color: '#0f172a' }}>{selectedPedido.cliente_nombre}</p>
                     <p style={{ margin: '0.2rem 0 0 0', color: '#475569', fontSize: '0.9rem' }}>{selectedPedido.cliente_telefono}</p>
                   </div>
                   <div>
                     <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.8rem', textTransform: 'uppercase', fontWeight: 600 }}>Negocio / Línea</h5>
-                    <p style={{ margin: 0, fontWeight: 700, color: '#2563eb' }}>{selectedPedido.tenant_id || 'Indisutex'}</p>
+                    <p style={{ margin: 0, fontWeight: 600, color: '#2563eb' }}>{selectedPedido.tenant_id || 'Indisutex'}</p>
                     <p style={{ margin: '0.2rem 0 0 0', color: '#0ea5e9', fontSize: '0.9rem', fontWeight: 600 }}>📞 {selectedPedido.linea_whatsapp}</p>
                   </div>
                   <div style={{ gridColumn: 'span 2' }}>
@@ -1527,7 +1527,7 @@ export default function SuperAdmin() {
                 </div>
 
                 <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
-                  <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>Productos Solicitados</h4>
+                  <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '0.9rem', fontWeight: 600, color: '#0f172a' }}>Productos Solicitados</h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '160px', overflowY: 'auto' }}>
                     {(() => {
                       const prodsList = Array.isArray(selectedPedido.productos) ? selectedPedido.productos : [];
@@ -1557,11 +1557,11 @@ export default function SuperAdmin() {
                               </span>
                             </div>
                             <div style={{ textAlign: 'right' }}>
-                              <span style={{ fontWeight: 700, color: '#0f172a', display: 'block' }}>
+                              <span style={{ fontWeight: 600, color: '#0f172a', display: 'block' }}>
                                 ${lineTotal.toLocaleString('es-CO')}
                               </span>
                               {isWholesaleOrder && (
-                                <span style={{ fontSize: '0.68rem', color: '#166534', background: '#dcfce7', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 700, display: 'inline-block', marginTop: '0.2rem' }}>
+                                <span style={{ fontSize: '0.68rem', color: '#166534', background: '#dcfce7', padding: '0.15rem 0.4rem', borderRadius: '4px', fontWeight: 600, display: 'inline-block', marginTop: '0.2rem' }}>
                                   Valor aplicado por mayor
                                 </span>
                               )}
@@ -1576,7 +1576,7 @@ export default function SuperAdmin() {
                 {/* Pantallazo de Pago */}
                 {selectedPedido.pantallazo_url && (
                   <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
-                    <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.9rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700 }}>
+                    <h4 style={{ margin: '0 0 0.5rem', fontSize: '0.9rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600 }}>
                       💳 Comprobante de Pago (Nequi)
                     </h4>
                     <div onClick={() => setPagoModalUrl(selectedPedido.pantallazo_url || null)} style={{ cursor: 'pointer' }}>
@@ -1592,7 +1592,7 @@ export default function SuperAdmin() {
                 {/* Seccion 99 Envios y Guía de Envío (para pedidos completados) */}
                 {selectedPedido.estado === 'completado' && (
                   <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '1rem' }}>
-                    <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', fontWeight: 700, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                    <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '0.9rem', fontWeight: 600, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                       🚚 Datos de Envío (99 Envíos)
                     </h4>
                     
@@ -1611,7 +1611,7 @@ export default function SuperAdmin() {
                             const msg = `¡Felicidades ${name}! 🎉 Has hecho una compra exitosa con *${business}*.\n\nTu número de guía de envío es: *${numeroGuia}*\n\n¡Muchas gracias por confiar en nosotros! 😊`;
                             window.open(`https://wa.me/57${num}?text=${encodeURIComponent(msg)}`, '_blank');
                           }}
-                          style={{ padding: '0.3rem 0.6rem', background: '#25D366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}
+                          style={{ padding: '0.3rem 0.6rem', background: '#25D366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
                         >
                           💬 Enviar Guía
                         </button>
@@ -1622,7 +1622,7 @@ export default function SuperAdmin() {
                           type="button"
                           disabled={loadingGuia}
                           onClick={() => handleGenerarGuia99Envios(selectedPedido.id)}
-                          style={{ flex: 1, padding: '0.5rem', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700 }}
+                          style={{ flex: 1, padding: '0.5rem', background: '#4f46e5', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}
                         >
                           {loadingGuia ? 'Generando...' : '🔌 Generar Guía con 99 Envíos'}
                         </button>
@@ -1649,8 +1649,8 @@ export default function SuperAdmin() {
                 )}
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e2e8f0', marginTop: '1rem', paddingTop: '1rem' }}>
-                  <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#0f172a' }}>Total del Pedido:</span>
-                  <span style={{ fontSize: '1.3rem', fontWeight: 800, color: '#059669' }}>
+                  <span style={{ fontSize: '0.95rem', fontWeight: 600, color: '#0f172a' }}>Total del Pedido:</span>
+                  <span style={{ fontSize: '1.3rem', fontWeight: 600, color: '#059669' }}>
                     ${selectedPedido.total.toLocaleString()}
                   </span>
                 </div>
@@ -1664,7 +1664,7 @@ export default function SuperAdmin() {
                       color: '#15803d', 
                       border: '1px solid #bbf7d0', 
                       borderRadius: '12px', 
-                      fontWeight: 700, 
+                      fontWeight: 600, 
                       textAlign: 'center',
                       fontSize: '0.95rem'
                     }}>
@@ -1678,7 +1678,7 @@ export default function SuperAdmin() {
                         color: '#0369a1', 
                         border: '1px solid #bae6fd', 
                         borderRadius: '10px', 
-                        fontWeight: 700, 
+                        fontWeight: 600, 
                         fontSize: '0.82rem',
                         textAlign: 'center'
                       }}>
@@ -1692,7 +1692,7 @@ export default function SuperAdmin() {
                           border: 'none', 
                           borderRadius: '12px', 
                           cursor: 'pointer', 
-                          fontWeight: 700, 
+                          fontWeight: 600, 
                           fontSize: '0.95rem', 
                           display: 'flex', 
                           alignItems: 'center', 
@@ -1716,7 +1716,7 @@ export default function SuperAdmin() {
                             border: 'none', 
                             borderRadius: '12px', 
                             cursor: 'pointer', 
-                            fontWeight: 700, 
+                            fontWeight: 600, 
                             fontSize: '0.95rem', 
                             display: 'flex', 
                             alignItems: 'center', 
@@ -1735,7 +1735,7 @@ export default function SuperAdmin() {
                           color: '#b45309', 
                           border: '1px solid #fde68a', 
                           borderRadius: '12px', 
-                          fontWeight: 700, 
+                          fontWeight: 600, 
                           textAlign: 'center',
                           fontSize: '0.95rem'
                         }}>
@@ -1764,7 +1764,7 @@ export default function SuperAdmin() {
         }}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '90%', maxHeight: '90%', background: 'none', border: 'none', padding: 0 }}>
             <img src={pagoModalUrl} alt="Pago Completo" style={{ maxWidth: '100%', maxHeight: '85vh', objectFit: 'contain', borderRadius: '8px' }} />
-            <button onClick={() => setPagoModalUrl(null)} style={{ display: 'block', margin: '1rem auto 0', padding: '0.5rem 2rem', background: 'white', border: 'none', borderRadius: '20px', fontWeight: 700, cursor: 'pointer' }}>
+            <button onClick={() => setPagoModalUrl(null)} style={{ display: 'block', margin: '1rem auto 0', padding: '0.5rem 2rem', background: 'white', border: 'none', borderRadius: '20px', fontWeight: 600, cursor: 'pointer' }}>
               Cerrar Vista
             </button>
           </div>
@@ -1775,7 +1775,7 @@ export default function SuperAdmin() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '1rem' }}>
           <div style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '520px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', overflow: 'hidden' }}>
             <div style={{ padding: '1.25rem 1.5rem', background: 'linear-gradient(135deg, #6366f1, #4f46e5)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Building size={20} /> Crear Nueva Tienda Multi-Tenant
               </h3>
               <button onClick={() => setShowCrearTiendaModal(false)} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer' }}>
@@ -1785,7 +1785,7 @@ export default function SuperAdmin() {
 
             <form onSubmit={handleCrearTienda} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '0.3rem' }}>Nombre de la Tienda / Marca *</label>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#334155', marginBottom: '0.3rem' }}>Nombre de la Tienda / Marca *</label>
                 <input
                   type="text"
                   required
@@ -1801,7 +1801,7 @@ export default function SuperAdmin() {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '0.3rem' }}>Identificador (URL Slug / tenant_id) *</label>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#334155', marginBottom: '0.3rem' }}>Identificador (URL Slug / tenant_id) *</label>
                 <div style={{ display: 'flex', alignItems: 'center', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: '10px', overflow: 'hidden' }}>
                   <span style={{ padding: '0.6rem 0.6rem 0.6rem 0.8rem', fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>{window.location.host}/</span>
                   <input
@@ -1810,14 +1810,14 @@ export default function SuperAdmin() {
                     placeholder="lucerito"
                     value={tiendaForm.tenant_id}
                     onChange={e => setTiendaForm(prev => ({ ...prev, tenant_id: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_') }))}
-                    style={{ flex: 1, padding: '0.6rem 0.8rem 0.6rem 0', border: 'none', background: 'transparent', fontSize: '0.9rem', outline: 'none', fontWeight: 700, color: '#4f46e5' }}
+                    style={{ flex: 1, padding: '0.6rem 0.8rem 0.6rem 0', border: 'none', background: 'transparent', fontSize: '0.9rem', outline: 'none', fontWeight: 600, color: '#4f46e5' }}
                   />
                 </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '0.3rem' }}>WhatsApp de Ventas</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#334155', marginBottom: '0.3rem' }}>WhatsApp de Ventas</label>
                   <input
                     type="text"
                     placeholder="573185637317"
@@ -1827,7 +1827,7 @@ export default function SuperAdmin() {
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '0.3rem' }}>PIN Admin Tienda</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#334155', marginBottom: '0.3rem' }}>PIN Admin Tienda</label>
                   <input
                     type="text"
                     placeholder="0000"
@@ -1839,7 +1839,7 @@ export default function SuperAdmin() {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '0.3rem' }}>Logo de la Tienda</label>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#334155', marginBottom: '0.3rem' }}>Logo de la Tienda</label>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                   <input
                     type="text"
@@ -1859,7 +1859,7 @@ export default function SuperAdmin() {
                 <button type="button" onClick={() => setShowCrearTiendaModal(false)} style={{ padding: '0.6rem 1.2rem', borderRadius: '10px', border: '1px solid #cbd5e1', background: 'white', fontWeight: 600, cursor: 'pointer' }}>
                   Cancelar
                 </button>
-                <button type="submit" disabled={loading} style={{ padding: '0.6rem 1.5rem', borderRadius: '10px', border: 'none', background: '#4f46e5', color: 'white', fontWeight: 700, cursor: 'pointer' }}>
+                <button type="submit" disabled={loading} style={{ padding: '0.6rem 1.5rem', borderRadius: '10px', border: 'none', background: '#4f46e5', color: 'white', fontWeight: 600, cursor: 'pointer' }}>
                   {loading ? 'Creando...' : 'Crear Tienda'}
                 </button>
               </div>
@@ -1873,7 +1873,7 @@ export default function SuperAdmin() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '1rem' }}>
           <div style={{ background: 'white', borderRadius: '20px', width: '100%', maxWidth: '520px', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', overflow: 'hidden' }}>
             <div style={{ padding: '1.25rem 1.5rem', background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Edit size={20} /> Editar Tienda ({editingTienda.tenant_id})
               </h3>
               <button onClick={() => setEditingTienda(null)} style={{ background: 'transparent', border: 'none', color: 'white', cursor: 'pointer' }}>
@@ -1883,7 +1883,7 @@ export default function SuperAdmin() {
 
             <form onSubmit={handleGuardarEditTienda} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '0.3rem' }}>Nombre de la Tienda *</label>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#334155', marginBottom: '0.3rem' }}>Nombre de la Tienda *</label>
                 <input
                   type="text"
                   required
@@ -1895,7 +1895,7 @@ export default function SuperAdmin() {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '0.3rem' }}>WhatsApp de Ventas</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#334155', marginBottom: '0.3rem' }}>WhatsApp de Ventas</label>
                   <input
                     type="text"
                     value={editingTienda.whatsapp || ''}
@@ -1904,7 +1904,7 @@ export default function SuperAdmin() {
                   />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '0.3rem' }}>PIN Admin</label>
+                  <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#334155', marginBottom: '0.3rem' }}>PIN Admin</label>
                   <input
                     type="text"
                     value={editingTienda.admin_pin || '0000'}
@@ -1915,7 +1915,7 @@ export default function SuperAdmin() {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '0.3rem' }}>Logo URL</label>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, color: '#334155', marginBottom: '0.3rem' }}>Logo URL</label>
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                   <input
                     type="text"
@@ -1934,7 +1934,7 @@ export default function SuperAdmin() {
                 <button type="button" onClick={() => setEditingTienda(null)} style={{ padding: '0.6rem 1.2rem', borderRadius: '10px', border: '1px solid #cbd5e1', background: 'white', fontWeight: 600, cursor: 'pointer' }}>
                   Cancelar
                 </button>
-                <button type="submit" disabled={loading} style={{ padding: '0.6rem 1.5rem', borderRadius: '10px', border: 'none', background: '#0284c7', color: 'white', fontWeight: 700, cursor: 'pointer' }}>
+                <button type="submit" disabled={loading} style={{ padding: '0.6rem 1.5rem', borderRadius: '10px', border: 'none', background: '#0284c7', color: 'white', fontWeight: 600, cursor: 'pointer' }}>
                   {loading ? 'Guardando...' : 'Guardar Cambios'}
                 </button>
               </div>

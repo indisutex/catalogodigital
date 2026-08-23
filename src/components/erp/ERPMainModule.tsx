@@ -172,7 +172,7 @@ export const ERPMainModule: React.FC<Props> = ({
             <div style={{ textAlign: 'center' }}>
               <h2 style={{
                 fontFamily: 'Outfit, sans-serif', fontSize: '1.5rem',
-                fontWeight: 800, color: '#0f172a', margin: '0 0 .5rem'
+                fontWeight: 600, color: '#0f172a', margin: '0 0 .5rem'
               }}>
                 {NAV_ITEMS.find(n => n.key === activeTab)?.label} — En Desarrollo
               </h2>
@@ -188,7 +188,7 @@ export const ERPMainModule: React.FC<Props> = ({
               <span style={{
                 background: '#334155', color: '#94a3b8',
                 padding: '.3rem .7rem', borderRadius: '8px',
-                fontSize: '.78rem', fontWeight: 800, letterSpacing: '.05em'
+                fontSize: '.78rem', fontWeight: 600, letterSpacing: '.05em'
               }}>
                 {NAV_ITEMS.find(n => n.key === activeTab)?.badge}
               </span>

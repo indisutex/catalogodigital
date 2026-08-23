@@ -185,7 +185,7 @@ export default function PqrsModal({ onClose, configuracion }: { onClose: () => v
                     <div className="info-icon"><MapPin size={18} /></div>
                     <div className="info-content" style={{ flex: 1 }}>
                       <span className="info-label">Dirección & Ubicación Física</span>
-                      <span className="info-value" style={{ fontWeight: 700, fontSize: '0.95rem' }}>{direccion || 'Punto Físico de Venta'}</span>
+                      <span className="info-value" style={{ fontWeight: 600, fontSize: '0.95rem' }}>{direccion || 'Punto Físico de Venta'}</span>
                     </div>
                   </div>
 
@@ -219,7 +219,7 @@ export default function PqrsModal({ onClose, configuracion }: { onClose: () => v
                       background: 'linear-gradient(135deg, #0284c7 0%, #0369a1 100%)',
                       color: 'white',
                       borderRadius: '999px',
-                      fontWeight: 800,
+                      fontWeight: 600,
                       fontSize: '0.9rem',
                       textDecoration: 'none',
                       boxShadow: '0 4px 14px rgba(2, 132, 199, 0.35)',

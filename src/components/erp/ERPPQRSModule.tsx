@@ -73,8 +73,8 @@ export const ERPPQRSModule: React.FC<Props> = ({ tenantId, configuracion }) => {
             transition: 'all 0.2s'
           }}
         >
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0f172a' }}>{listaPqrs.length}</div>
-          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginTop: '0.2rem' }}>Total Solicitudes</div>
+          <div style={{ fontSize: '1.8rem', fontWeight: 600, color: '#0f172a' }}>{listaPqrs.length}</div>
+          <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b', marginTop: '0.2rem' }}>Total Solicitudes</div>
         </div>
 
         <div
@@ -88,13 +88,13 @@ export const ERPPQRSModule: React.FC<Props> = ({ tenantId, configuracion }) => {
             transition: 'all 0.2s'
           }}
         >
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <div style={{ fontSize: '1.8rem', fontWeight: 600, color: '#ef4444', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
             {listaPqrs.filter(p => p.estado === 'pendiente').length}
             {listaPqrs.filter(p => p.estado === 'pendiente').length > 0 && (
               <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#ef4444' }} />
             )}
           </div>
-          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginTop: '0.2rem' }}>🔴 Pendientes</div>
+          <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b', marginTop: '0.2rem' }}>🔴 Pendientes</div>
         </div>
 
         <div
@@ -108,10 +108,10 @@ export const ERPPQRSModule: React.FC<Props> = ({ tenantId, configuracion }) => {
             transition: 'all 0.2s'
           }}
         >
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#f59e0b' }}>
+          <div style={{ fontSize: '1.8rem', fontWeight: 600, color: '#f59e0b' }}>
             {listaPqrs.filter(p => p.estado === 'en_proceso').length}
           </div>
-          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginTop: '0.2rem' }}>🟠 En Proceso</div>
+          <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b', marginTop: '0.2rem' }}>🟠 En Proceso</div>
         </div>
 
         <div
@@ -125,10 +125,10 @@ export const ERPPQRSModule: React.FC<Props> = ({ tenantId, configuracion }) => {
             transition: 'all 0.2s'
           }}
         >
-          <div style={{ fontSize: '1.8rem', fontWeight: 800, color: '#10b981' }}>
+          <div style={{ fontSize: '1.8rem', fontWeight: 600, color: '#10b981' }}>
             {listaPqrs.filter(p => p.estado === 'resuelto').length}
           </div>
-          <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#64748b', marginTop: '0.2rem' }}>🟢 Resueltos</div>
+          <div style={{ fontSize: '0.8rem', fontWeight: 600, color: '#64748b', marginTop: '0.2rem' }}>🟢 Resueltos</div>
         </div>
       </div>
 
@@ -146,14 +146,14 @@ export const ERPPQRSModule: React.FC<Props> = ({ tenantId, configuracion }) => {
               style={{ width: '100%', padding: '0.55rem 0.85rem 0.55rem 2.3rem', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '0.84rem', outline: 'none', background: '#f8fafc' }}
             />
             {pqrsBusqueda && (
-              <button onClick={() => setPqrsBusqueda('')} style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontWeight: 700 }}>✕</button>
+              <button onClick={() => setPqrsBusqueda('')} style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontWeight: 600 }}>✕</button>
             )}
           </div>
 
           <button
             onClick={cargarPqrs}
             disabled={loading}
-            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 0.9rem', borderRadius: '10px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#475569', fontSize: '0.83rem', fontWeight: 700, cursor: 'pointer' }}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.55rem 0.9rem', borderRadius: '10px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#475569', fontSize: '0.83rem', fontWeight: 600, cursor: 'pointer' }}
           >
             <RefreshCw size={14} className={loading ? 'spin-icon-active' : ''} /> Actualizar
           </button>
@@ -171,13 +171,13 @@ export const ERPPQRSModule: React.FC<Props> = ({ tenantId, configuracion }) => {
             <table className="admin-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid #f1f5f9', background: '#f8fafc' }}>
-                  <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Fecha</th>
-                  <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Cliente</th>
-                  <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Motivo</th>
-                  <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Caso</th>
-                  <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Adjunto</th>
-                  <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase' }}>Estado</th>
-                  <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Acciones</th>
+                  <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 600, color: '#475569', textTransform: 'uppercase' }}>Fecha</th>
+                  <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 600, color: '#475569', textTransform: 'uppercase' }}>Cliente</th>
+                  <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 600, color: '#475569', textTransform: 'uppercase' }}>Motivo</th>
+                  <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 600, color: '#475569', textTransform: 'uppercase' }}>Caso</th>
+                  <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 600, color: '#475569', textTransform: 'uppercase' }}>Adjunto</th>
+                  <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 600, color: '#475569', textTransform: 'uppercase' }}>Estado</th>
+                  <th style={{ padding: '0.85rem 1rem', fontSize: '0.74rem', fontWeight: 600, color: '#475569', textTransform: 'uppercase', textAlign: 'center' }}>Acciones</th>
                 </tr>
               </thead>
               <tbody>
@@ -197,7 +197,7 @@ export const ERPPQRSModule: React.FC<Props> = ({ tenantId, configuracion }) => {
                         <span style={{ fontSize: '0.78rem', color: '#64748b' }}>📞 {pqrs.telefono_cliente}</span>
                         {pqrs.numero_pedido && (
                           <div style={{ marginTop: '0.15rem' }}>
-                            <span style={{ fontSize: '0.7rem', background: '#e0f2fe', color: '#0369a1', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 700 }}>
+                            <span style={{ fontSize: '0.7rem', background: '#e0f2fe', color: '#0369a1', padding: '0.1rem 0.4rem', borderRadius: '4px', fontWeight: 600 }}>
                               Pedido: #{pqrs.numero_pedido}
                             </span>
                           </div>
@@ -206,7 +206,7 @@ export const ERPPQRSModule: React.FC<Props> = ({ tenantId, configuracion }) => {
                       <td style={{ padding: '0.85rem 1rem' }}>
                         <span style={{
                           fontSize: '0.75rem',
-                          fontWeight: 800,
+                          fontWeight: 600,
                           padding: '0.2rem 0.6rem',
                           borderRadius: '20px',
                           background: isReclamo ? '#fee2e2' : isQueja ? '#fef3c7' : '#e0f2fe',
@@ -221,14 +221,14 @@ export const ERPPQRSModule: React.FC<Props> = ({ tenantId, configuracion }) => {
                         </p>
                         <button
                           onClick={() => setDetailPqrs(pqrs)}
-                          style={{ background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', padding: 0, marginTop: '0.2rem' }}
+                          style={{ background: 'none', border: 'none', color: '#0ea5e9', fontSize: '0.74rem', fontWeight: 600, cursor: 'pointer', padding: 0, marginTop: '0.2rem' }}
                         >
                           Ver detalle completo
                         </button>
                       </td>
                       <td style={{ padding: '0.85rem 1rem' }}>
                         {pqrs.evidencia_url ? (
-                          <a href={pqrs.evidencia_url} target="_blank" rel="noreferrer" style={{ fontSize: '0.75rem', color: '#0284c7', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
+                          <a href={pqrs.evidencia_url} target="_blank" rel="noreferrer" style={{ fontSize: '0.75rem', color: '#0284c7', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
                             <Link size={12} /> Adjunto
                           </a>
                         ) : (
@@ -248,7 +248,7 @@ export const ERPPQRSModule: React.FC<Props> = ({ tenantId, configuracion }) => {
                             borderRadius: '8px',
                             border: '1px solid #cbd5e1',
                             fontSize: '0.78rem',
-                            fontWeight: 800,
+                            fontWeight: 600,
                             outline: 'none',
                             cursor: 'pointer',
                             background: pqrs.estado === 'completado' || pqrs.estado === 'resuelto' ? '#dcfce7' : pqrs.estado === 'en_proceso' ? '#fef3c7' : '#fee2e2',
@@ -285,14 +285,14 @@ export const ERPPQRSModule: React.FC<Props> = ({ tenantId, configuracion }) => {
             <button onClick={() => setDetailPqrs(null)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}><X size={20} /></button>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.85rem' }}>
-              <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.1rem' }}>
+              <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '1.1rem' }}>
                 {(detailPqrs.nombre_cliente || 'C').substring(0, 2).toUpperCase()}
               </div>
               <div style={{ flex: 1 }}>
                 <h3 style={{ margin: 0, fontSize: '1.1rem', color: '#0f172a' }}>{detailPqrs.nombre_cliente}</h3>
                 <span style={{ fontSize: '0.85rem', color: '#64748b' }}>📞 {detailPqrs.telefono_cliente}</span>
               </div>
-              <span style={{ fontSize: '0.78rem', background: '#f1f5f9', padding: '0.2rem 0.6rem', borderRadius: '20px', fontWeight: 700 }}>
+              <span style={{ fontSize: '0.78rem', background: '#f1f5f9', padding: '0.2rem 0.6rem', borderRadius: '20px', fontWeight: 600 }}>
                 {detailPqrs.motivo}
               </span>
             </div>
@@ -311,7 +311,7 @@ export const ERPPQRSModule: React.FC<Props> = ({ tenantId, configuracion }) => {
             </div>
 
             <div style={{ marginBottom: '1.2rem' }}>
-              <label style={{ display: 'block', fontWeight: 700, fontSize: '0.84rem', color: '#334155', marginBottom: '0.4rem' }}>Descripción del caso:</label>
+              <label style={{ display: 'block', fontWeight: 600, fontSize: '0.84rem', color: '#334155', marginBottom: '0.4rem' }}>Descripción del caso:</label>
               <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.85rem', fontSize: '0.88rem', color: '#1e293b', lineHeight: '1.5', whiteSpace: 'pre-wrap', maxHeight: '180px', overflowY: 'auto' }}>
                 {detailPqrs.descripcion}
               </div>
@@ -319,8 +319,8 @@ export const ERPPQRSModule: React.FC<Props> = ({ tenantId, configuracion }) => {
 
             {detailPqrs.evidencia_url && (
               <div style={{ marginBottom: '1.2rem' }}>
-                <label style={{ display: 'block', fontWeight: 700, fontSize: '0.84rem', color: '#334155', marginBottom: '0.4rem' }}>Evidencia adjunta:</label>
-                <a href={detailPqrs.evidencia_url} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.9rem', borderRadius: '8px', background: '#eff6ff', color: '#0284c7', textDecoration: 'none', fontWeight: 700, fontSize: '0.82rem' }}>
+                <label style={{ display: 'block', fontWeight: 600, fontSize: '0.84rem', color: '#334155', marginBottom: '0.4rem' }}>Evidencia adjunta:</label>
+                <a href={detailPqrs.evidencia_url} target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.9rem', borderRadius: '8px', background: '#eff6ff', color: '#0284c7', textDecoration: 'none', fontWeight: 600, fontSize: '0.82rem' }}>
                   <Link size={14} /> Abrir evidencia adjunta
                 </a>
               </div>
@@ -331,7 +331,7 @@ export const ERPPQRSModule: React.FC<Props> = ({ tenantId, configuracion }) => {
                 href={formatWhatsAppLink(detailPqrs.telefono_cliente, `Hola ${detailPqrs.nombre_cliente}, te escribimos de ${configuracion?.nombre_negocio || 'la tienda'} referente a tu solicitud de soporte: "${detailPqrs.motivo}". Estamos aquí para ayudarte.`)}
                 target="_blank"
                 rel="noreferrer"
-                style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: '#25D366', color: 'white', border: 'none', borderRadius: '10px', padding: '0.7rem', fontWeight: 800, textDecoration: 'none', fontSize: '0.85rem' }}
+                style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', background: '#25D366', color: 'white', border: 'none', borderRadius: '10px', padding: '0.7rem', fontWeight: 600, textDecoration: 'none', fontSize: '0.85rem' }}
               >
                 <MessageSquare size={16} /> Abrir WhatsApp con respuesta
               </a>
