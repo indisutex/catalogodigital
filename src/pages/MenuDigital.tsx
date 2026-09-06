@@ -2739,12 +2739,23 @@ export default function MenuDigital() {
                                     type="tel" 
                                     required 
                                     value={formData.telefono}
-                                    onChange={e => setFormData({...formData, telefono: e.target.value})}
+                                    onChange={e => {
+                                      let clean = e.target.value.replace(/\D/g, '');
+                                      if (clean.startsWith('57') && clean.length > 10) clean = clean.slice(2);
+                                      if (clean.startsWith('0') && clean.length > 10) clean = clean.slice(1);
+                                      setFormData({...formData, telefono: clean.slice(0, 10)});
+                                    }}
+                                    maxLength={10}
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
                                     placeholder="300 123 4567"
                                     style={{ flex: 1, minWidth: 0, padding: '0.78rem 0.95rem', borderRadius: '14px', border: inputBorder, background: phoneVal.status === 'valid' ? '#f0fdf4' : '#fafafa', fontSize: '0.9rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif", transition: 'border-color 0.2s ease, background 0.2s ease' }}
                                   />
                                 </div>
                                 <WhatsAppPhoneVerifier phone={formData.telefono} showTestButton={true} />
+                                <small style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 400, marginTop: '0.35rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
+                                  Máximo 10 dígitos (el WhatsApp desde el cual enviarás tu pedido)
+                                </small>
                               </div>
                             );
                           })()}
@@ -2784,13 +2795,18 @@ export default function MenuDigital() {
                                 alert('Por favor ingresa tu número de teléfono.');
                                 return;
                               }
+                              const cleanP = formData.telefono.replace(/\D/g, '');
+                              if (cleanP.length !== 10) {
+                                alert('Por favor verifica tu número celular. Debe tener exactamente 10 dígitos (ej: 300 123 4567).');
+                                return;
+                              }
+                              if (!cleanP.startsWith('3')) {
+                                alert('Los números celulares en Colombia inician por 3 (ej: 300 123 4567). Por favor verifica tu número.');
+                                return;
+                              }
                               const phoneVal = validateWhatsAppPhone(formData.telefono);
                               if (phoneVal.status === 'invalid_landline') {
                                 alert('El número ingresado parece ser un teléfono fijo y los fijos no tienen WhatsApp. Por favor ingresa tu número celular de 10 dígitos (inicia por 3) para enviarte la información de tu pedido.');
-                                return;
-                              }
-                              if (phoneVal.status === 'invalid_length') {
-                                alert('Por favor verifica tu número celular. Debe tener exactamente 10 dígitos (ej: 300 123 4567).');
                                 return;
                               }
                               if (!formData.email.trim() || !formData.email.includes('@')) {

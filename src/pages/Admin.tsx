@@ -948,6 +948,9 @@ export default function Admin() {
   const [copyCatTargetTenant, setCopyCatTargetTenant] = useState<string>('saramantha');
   const [copyingCategories, setCopyingCategories] = useState(false);
   const [selectedPedido, setSelectedPedido] = useState<Pedido | null>(null);
+  const [isEditingOrderPhone, setIsEditingOrderPhone] = useState(false);
+  const [tempOrderPhone, setTempOrderPhone] = useState('');
+  const [savingOrderPhone, setSavingOrderPhone] = useState(false);
   const [clientes, setClientes] = useState<any[]>([]);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [clienteSearchQuery, setClienteSearchQuery] = useState('');
@@ -4849,6 +4852,33 @@ export default function Admin() {
       showToast('Error al reactivar pedido: ' + err.message, 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveOrderPhone = async () => {
+    if (!selectedPedido) return;
+    const cleanPhone = tempOrderPhone.replace(/\D/g, '').slice(0, 10);
+    if (cleanPhone.length !== 10) {
+      alert('El número celular debe tener exactamente 10 dígitos.');
+      return;
+    }
+    setSavingOrderPhone(true);
+    try {
+      const isLead = (selectedPedido as any).isLead;
+      if (isLead) {
+        await supabase.from('leads').update({ telefono: cleanPhone, cliente_telefono: cleanPhone }).eq('id', selectedPedido.id);
+        setLeads(prev => prev.map(l => l.id === selectedPedido.id ? { ...l, telefono: cleanPhone, cliente_telefono: cleanPhone } : l));
+      } else {
+        await supabase.from('pedidos').update({ cliente_telefono: cleanPhone }).eq('id', selectedPedido.id);
+        setPedidos(prev => prev.map(p => p.id === selectedPedido.id ? { ...p, cliente_telefono: cleanPhone } : p));
+      }
+      setSelectedPedido(prev => prev ? { ...prev, cliente_telefono: cleanPhone, telefono: cleanPhone } : null);
+      setIsEditingOrderPhone(false);
+      showToast('Teléfono del cliente actualizado con éxito ✓', 'success');
+    } catch (err: any) {
+      showToast('Error al actualizar teléfono: ' + (err.message || 'Error desconocido'), 'error');
+    } finally {
+      setSavingOrderPhone(false);
     }
   };
 
@@ -15440,7 +15470,7 @@ export default function Admin() {
 
       {/* MODAL DETALLE PEDIDO */}
       {selectedPedido && (
-        <div className="modal-overlay" onClick={() => { setSelectedPedido(null); setShowSuccessScreen(false); }}>
+        <div className="modal-overlay" onClick={() => { setSelectedPedido(null); setShowSuccessScreen(false); setIsEditingOrderPhone(false); }}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', width: '100%', borderRadius: '16px', padding: '1.25rem', maxHeight: '92vh', overflowY: 'auto' }}>
             {showSuccessScreen ? (
               <div style={{ textAlign: 'center', padding: '1rem 0' }}>
@@ -15575,7 +15605,7 @@ export default function Admin() {
               <>
                 <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1rem', fontFamily: "'Poppins', sans-serif" }}>
                   <h3 style={{ margin: 0, fontSize: '1.08rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>📦 Detalle del Pedido</h3>
-                  <button onClick={() => { setSelectedPedido(null); setShowSuccessScreen(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 0 }}>
+                  <button onClick={() => { setSelectedPedido(null); setShowSuccessScreen(false); setIsEditingOrderPhone(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 0 }}>
                     <X size={20} />
                   </button>
                 </div>
@@ -15588,7 +15618,103 @@ export default function Admin() {
                       <div>
                         <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Cliente</h5>
                         <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.88rem' }}>{selectedPedido.cliente_nombre || (selectedPedido as any).nombre || 'Borrador Anónimo'}</p>
-                        <p style={{ margin: '0.15rem 0 0 0', color: '#64748b', fontSize: '0.82rem', fontWeight: 400 }}>{selectedPedido.cliente_telefono || (selectedPedido as any).telefono || 'Sin teléfono'}</p>
+                        
+                        {!isEditingOrderPhone ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.15rem' }}>
+                            <p style={{ margin: 0, color: '#64748b', fontSize: '0.82rem', fontWeight: 400 }}>
+                              {selectedPedido.cliente_telefono || (selectedPedido as any).telefono || 'Sin teléfono'}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setTempOrderPhone(((selectedPedido.cliente_telefono || (selectedPedido as any).telefono || '').replace(/\D/g, '')).slice(0, 10));
+                                setIsEditingOrderPhone(true);
+                              }}
+                              title="Editar número de teléfono del cliente"
+                              style={{
+                                background: '#f1f5f9',
+                                border: '1px solid #cbd5e1',
+                                borderRadius: '6px',
+                                padding: '1px 6px',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.25rem',
+                                color: '#475569',
+                                fontSize: '0.72rem',
+                                fontWeight: 500,
+                                fontFamily: "'Poppins', sans-serif"
+                              }}
+                            >
+                              <Pencil size={11} />
+                              <span>Editar</span>
+                            </button>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
+                            <input
+                              type="tel"
+                              value={tempOrderPhone}
+                              maxLength={10}
+                              autoFocus
+                              onChange={e => {
+                                let val = e.target.value.replace(/\D/g, '');
+                                if (val.startsWith('57') && val.length > 10) val = val.slice(2);
+                                if (val.startsWith('0') && val.length > 10) val = val.slice(1);
+                                setTempOrderPhone(val.slice(0, 10));
+                              }}
+                              placeholder="Celular 10 dígitos"
+                              style={{
+                                width: '120px',
+                                padding: '0.2rem 0.4rem',
+                                borderRadius: '6px',
+                                border: '1.5px solid var(--primary-color, #0ea5e9)',
+                                fontSize: '0.8rem',
+                                outline: 'none',
+                                fontFamily: "'Poppins', sans-serif",
+                                fontWeight: 400
+                              }}
+                            />
+                            <button
+                              type="button"
+                              disabled={savingOrderPhone}
+                              onClick={handleSaveOrderPhone}
+                              style={{
+                                background: '#16a34a',
+                                color: '#ffffff',
+                                border: 'none',
+                                borderRadius: '6px',
+                                padding: '0.25rem 0.5rem',
+                                cursor: 'pointer',
+                                fontSize: '0.74rem',
+                                fontWeight: 600,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.2rem',
+                                fontFamily: "'Poppins', sans-serif"
+                              }}
+                            >
+                              <Check size={12} />
+                              <span>{savingOrderPhone ? '...' : 'Guardar'}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setIsEditingOrderPhone(false)}
+                              style={{
+                                background: '#f1f5f9',
+                                color: '#64748b',
+                                border: '1px solid #cbd5e1',
+                                borderRadius: '6px',
+                                padding: '0.25rem 0.4rem',
+                                cursor: 'pointer',
+                                fontSize: '0.74rem',
+                                fontFamily: "'Poppins', sans-serif"
+                              }}
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        )}
                       </div>
                       <div>
                         <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Cédula / Identificación</h5>

@@ -313,7 +313,21 @@ export default function PqrsModal({ onClose, configuracion }: { onClose: () => v
                 <div className="form-row">
                   <div className="form-field">
                     <label>Teléfono / WhatsApp *</label>
-                    <input type="tel" value={formData.telefono} onChange={e => setFormData({...formData, telefono: e.target.value})} placeholder="Ej: 3001234567" required />
+                    <input 
+                      type="tel" 
+                      value={formData.telefono} 
+                      onChange={e => {
+                        let clean = e.target.value.replace(/\D/g, '');
+                        if (clean.startsWith('57') && clean.length > 10) clean = clean.slice(2);
+                        if (clean.startsWith('0') && clean.length > 10) clean = clean.slice(1);
+                        setFormData({...formData, telefono: clean.slice(0, 10)});
+                      }} 
+                      maxLength={10}
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      placeholder="Ej: 3001234567" 
+                      required 
+                    />
                     <WhatsAppPhoneVerifier phone={formData.telefono} compact={true} />
                   </div>
                   <div className="form-field">
