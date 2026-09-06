@@ -1257,17 +1257,17 @@ export default function Admin() {
                 {nombreCliente.charAt(0).toUpperCase()}
               </div>
               <div style={{ minWidth: 0 }}>
-                <h4 className="pedido-card-name" style={{ margin: 0, fontSize: '0.94rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.25, wordBreak: 'break-word' }}>
+                <h4 className="pedido-card-name" style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.25, wordBreak: 'break-word', fontFamily: "'Poppins', sans-serif" }}>
                   {nombreCliente}
                 </h4>
-                <p className="pedido-card-phone" style={{ margin: '0.15rem 0 0 0', fontSize: '0.78rem', color: '#64748b', fontWeight: 400, display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                <p className="pedido-card-phone" style={{ margin: '0.15rem 0 0 0', fontSize: '0.76rem', color: '#64748b', fontWeight: 400, display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap', wordBreak: 'break-all', fontFamily: "'Poppins', sans-serif" }}>
                   <span>📞 {telefonoCliente || 'Sin número'}</span>
                   {(() => {
                     const clean = (telefonoCliente || '').replace(/\D/g, '');
                     if (clean && clean.length !== 10) {
                       return (
-                        <span style={{ fontSize: '0.66rem', color: '#dc2626', background: '#fee2e2', padding: '0.05rem 0.35rem', borderRadius: '4px', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
-                          {clean.length < 10 ? `⚠️ Incompleto (${clean.length}/10)` : `⚠️ ${clean.length} dígitos`}
+                        <span style={{ fontSize: '0.64rem', color: '#dc2626', background: '#fee2e2', padding: '0.05rem 0.35rem', borderRadius: '4px', fontWeight: 500, fontFamily: "'Poppins', sans-serif", flexShrink: 0 }}>
+                          {clean.length < 10 ? `⚠️ (${clean.length}/10)` : `⚠️ ${clean.length} dígitos`}
                         </span>
                       );
                     }
@@ -1278,42 +1278,42 @@ export default function Admin() {
             </div>
 
             {/* Asesor */}
-            <div className="pedido-card-advisor" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#f8fafc', padding: '0.2rem 0.5rem', borderRadius: '10px', border: '1px solid #e2e8f0', flexShrink: 0, maxWidth: '130px' }}>
+            <div className="pedido-card-advisor" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#f8fafc', padding: '0.2rem 0.45rem', borderRadius: '10px', border: '1px solid #e2e8f0', flexShrink: 0, maxWidth: '120px' }}>
               {adv.foto_url ? (
-                <img src={adv.foto_url} alt="" style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                <img src={adv.foto_url} alt="" style={{ width: '18px', height: '18px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
               ) : (
-                <div style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#e0e7ff', color: '#4338ca', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.68rem', fontWeight: 600, flexShrink: 0 }}>
+                <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#e0e7ff', color: '#4338ca', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.66rem', fontWeight: 600, flexShrink: 0 }}>
                   {adv.nombre.charAt(0).toUpperCase()}
                 </div>
               )}
-              <span style={{ fontSize: '0.74rem', fontWeight: 500, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{adv.nombre}</span>
+              <span style={{ fontSize: '0.72rem', fontWeight: 500, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Poppins', sans-serif" }}>{adv.nombre}</span>
             </div>
           </div>
         </div>
 
         {/* ── MIDDLE RESUMEN BLOCK (Total & Cantidad) ── */}
-        <div className="pedido-card-summary" style={{ background: '#ffffff', border: '1px solid #f1f5f9', borderRadius: '16px', padding: '0.8rem 1.1rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 8px rgba(15,23,42,0.02)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem' }}>
+        <div className="pedido-card-summary" style={{ background: '#ffffff', border: '1px solid #f1f5f9', borderRadius: '14px', padding: '0.65rem 0.85rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 8px rgba(15,23,42,0.02)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', minWidth: 0, flex: 1 }}>
+            <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', flexShrink: 0 }}>
               💰
             </div>
-            <div>
-              <span style={{ fontSize: '0.68rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'block' }}>TOTAL DEL PEDIDO</span>
-              <span className="pedido-card-total" style={{ fontSize: '1.3rem', fontWeight: 600, color: '#ea580c', lineHeight: 1.1, display: 'block' }}>
+            <div style={{ minWidth: 0 }}>
+              <span style={{ fontSize: '0.64rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>TOTAL DEL PEDIDO</span>
+              <span className="pedido-card-total" style={{ fontSize: '1.18rem', fontWeight: 600, color: '#ea580c', lineHeight: 1.15, display: 'block', whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>
                 ${ped.total.toLocaleString()}
               </span>
             </div>
           </div>
 
-          <div style={{ width: '1px', height: '36px', background: '#e2e8f0' }} />
+          <div style={{ width: '1px', height: '32px', background: '#e2e8f0', margin: '0 0.4rem', flexShrink: 0 }} />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', minWidth: 0, flex: 1 }}>
+            <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', flexShrink: 0 }}>
               📦
             </div>
-            <div>
-              <span style={{ fontSize: '0.68rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.4px', display: 'block' }}>PRODUCTOS</span>
-              <span className="pedido-card-units" style={{ fontSize: '1.05rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.1, display: 'block' }}>
+            <div style={{ minWidth: 0 }}>
+              <span style={{ fontSize: '0.64rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>PRODUCTOS</span>
+              <span className="pedido-card-units" style={{ fontSize: '0.98rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.15, display: 'block', whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>
                 {totalUnits} {totalUnits === 1 ? 'unidad' : 'uds'}
               </span>
             </div>
@@ -1562,95 +1562,112 @@ export default function Admin() {
           </div>
         )}
 
-        {/* ── FOOTER ACTIONS ROW ── */}
-        <div className="pedido-card-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', width: '100%', flexWrap: 'wrap' }}>
-          {ped.estado !== 'cancelado' ? (
+        {/* ── FOOTER ACTIONS (2-TIER RESPONSIVE: AUXILIARY + FULL-WIDTH PRIMARY CTA) ── */}
+        <div className="pedido-card-actions" style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', width: '100%', marginTop: '0.35rem' }}>
+          {/* Fila 1: Botones secundarios (Cancelar/Eliminar + Ver detalles + Selector de estado si es lead) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', width: '100%' }}>
+            {ped.estado !== 'cancelado' ? (
+              <button 
+                type="button" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCancelarPedido(ped.id, isLead);
+                }}
+                style={{
+                  width: '34px',
+                  height: '34px',
+                  borderRadius: '10px',
+                  border: '1.5px solid #fee2e2',
+                  background: '#fef2f2',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#dc2626',
+                  flexShrink: 0
+                }}
+                title="Cancelar pedido (Mover a Cancelados)"
+              >
+                <XCircle size={15} />
+              </button>
+            ) : (
+              <button 
+                type="button" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEliminarPedidoDirecto(ped.id, isLead);
+                }}
+                style={{
+                  width: '34px',
+                  height: '34px',
+                  borderRadius: '10px',
+                  border: '1.5px solid #fca5a5',
+                  background: '#fef2f2',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#dc2626',
+                  flexShrink: 0
+                }}
+                title="Eliminar tarjeta cancelada definitivamente"
+              >
+                <Trash2 size={15} />
+              </button>
+            )}
+
             <button 
               type="button" 
-              onClick={(e) => {
-                e.stopPropagation();
-                handleCancelarPedido(ped.id, isLead);
-              }}
+              onClick={() => setSelectedPedido(ped)}
               style={{
-                width: '36px',
-                height: '36px',
+                flex: 1,
+                height: '34px',
+                padding: '0 0.65rem',
                 borderRadius: '10px',
-                border: '1.5px solid #fee2e2',
-                background: '#fef2f2',
-                display: 'flex',
+                border: '1.5px solid #e2e8f0',
+                background: '#ffffff',
+                color: '#334155',
+                fontSize: '0.78rem',
+                fontWeight: 500,
+                cursor: 'pointer',
+                display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                cursor: 'pointer',
-                color: '#dc2626',
-                flexShrink: 0
+                gap: '0.35rem',
+                whiteSpace: 'nowrap',
+                fontFamily: "'Poppins', sans-serif"
               }}
-              title="Cancelar pedido (Mover a Cancelados)"
             >
-              <XCircle size={16} />
+              <span>Ver detalles</span>
+              <ChevronRight size={14} color="#64748b" />
             </button>
-          ) : (
-            <button 
-              type="button" 
-              onClick={(e) => {
-                e.stopPropagation();
-                handleEliminarPedidoDirecto(ped.id, isLead);
-              }}
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '10px',
-                border: '1.5px solid #fca5a5',
-                background: '#fef2f2',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                color: '#dc2626',
-                flexShrink: 0
-              }}
-              title="Eliminar tarjeta cancelada definitivamente"
-            >
-              <Trash2 size={16} />
-            </button>
-          )}
 
-          <button 
-            type="button" 
-            onClick={() => setSelectedPedido(ped)}
-            style={{
-              padding: '0.5rem 0.55rem',
-              borderRadius: '10px',
-              border: '1.5px solid #e2e8f0',
-              background: '#ffffff',
-              color: '#0f172a',
-              fontSize: '0.76rem',
-              fontWeight: 500,
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '0.2rem',
-              whiteSpace: 'nowrap',
-              flexShrink: 0
-            }}
-          >
-            <span>Ver detalles</span>
-            <ChevronRight size={14} color="#64748b" />
-          </button>
+            {isLead && (
+              <select 
+                value={ped.retargeting_estado || ''}
+                onChange={(e) => handleUpdateLeadStatus(ped.id, e.target.value)}
+                style={{
+                  height: '34px',
+                  fontSize: '0.74rem',
+                  padding: '0 0.45rem',
+                  borderRadius: '10px',
+                  border: '1.5px solid #cbd5e1',
+                  background: 'white',
+                  cursor: 'pointer',
+                  fontWeight: 400,
+                  flexShrink: 0,
+                  maxWidth: '105px',
+                  fontFamily: "'Poppins', sans-serif"
+                }}
+              >
+                <option value="">Estado...</option>
+                <option value="contactado">Contactado</option>
+                <option value="descartado">Descartado</option>
+              </select>
+            )}
+          </div>
 
-          {isLead && (
-            <select 
-              value={ped.retargeting_estado || ''}
-              onChange={(e) => handleUpdateLeadStatus(ped.id, e.target.value)}
-              style={{ fontSize: '0.72rem', padding: '0.5rem 0.25rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', background: 'white', cursor: 'pointer', fontWeight: 400, flexShrink: 0, maxWidth: '85px' }}
-            >
-              <option value="">Estado...</option>
-              <option value="contactado">Contactado</option>
-              <option value="descartado">Descartado</option>
-            </select>
-          )}
-
-          {/* Main Primary Action Button */}
+          {/* Fila 2: Botón de acción principal (100% ANCHO - NUNCA SE DESBORDA) */}
           {(isLead || ped.estado === 'cancelado') ? (
             <button 
               type="button" 
@@ -1672,28 +1689,27 @@ export default function Admin() {
                 if (isLead) handleUpdateLeadStatus(ped.id, 'contactado');
               }}
               style={{
-                padding: '0.45rem 0.65rem',
-                borderRadius: '8px',
+                width: '100%',
+                height: '36px',
+                padding: '0 0.75rem',
+                borderRadius: '10px',
                 border: 'none',
                 background: ped.estado === 'cancelado' ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #10b981, #059669)',
                 color: '#ffffff',
-                fontSize: '0.76rem',
+                fontSize: '0.8rem',
                 fontWeight: 600,
                 cursor: 'pointer',
-                display: 'inline-flex',
+                display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.25rem',
-                boxShadow: ped.estado === 'cancelado' ? '0 3px 10px rgba(220, 38, 38, 0.3)' : '0 3px 10px rgba(16, 185, 129, 0.3)',
+                gap: '0.35rem',
+                boxShadow: ped.estado === 'cancelado' ? '0 3px 10px rgba(220, 38, 38, 0.25)' : '0 3px 10px rgba(16, 185, 129, 0.25)',
                 whiteSpace: 'nowrap',
-                flex: 1,
-                minWidth: '95px',
                 fontFamily: "'Poppins', sans-serif"
               }}
             >
-              <span style={{ fontSize: '0.82rem', flexShrink: 0 }}>{ped.estado === 'cancelado' ? '💭' : '💭'}</span>
-              <span>{ped.estado === 'cancelado' ? 'Incentivar Venta' : 'Recuperar Venta'}</span>
-              <ChevronRight size={13} color="#ffffff" style={{ flexShrink: 0 }} />
+              <span>{ped.estado === 'cancelado' ? '🎯 Incentivar Venta' : '💬 Recuperar Venta'}</span>
+              <ChevronRight size={14} color="#ffffff" />
             </button>
           ) : ped.estado === 'completado' ? (
             <button 
@@ -1701,25 +1717,27 @@ export default function Admin() {
               className="pedido-card-btn"
               onClick={() => setSelectedPedido(ped)}
               style={{
-                padding: '0.45rem 0.65rem',
-                borderRadius: '8px',
+                width: '100%',
+                height: '36px',
+                padding: '0 0.75rem',
+                borderRadius: '10px',
                 border: 'none',
-                background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+                background: 'linear-gradient(135deg, #10b981, #059669)',
                 color: '#ffffff',
-                fontSize: '0.76rem',
+                fontSize: '0.8rem',
                 fontWeight: 600,
                 cursor: 'pointer',
-                display: 'inline-flex',
+                display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.25rem',
-                boxShadow: '0 4px 14px rgba(59, 130, 246, 0.35)',
+                gap: '0.35rem',
+                boxShadow: '0 3px 10px rgba(16, 185, 129, 0.25)',
                 whiteSpace: 'nowrap',
-                flex: 1,
-                minWidth: '85px'
+                fontFamily: "'Poppins', sans-serif"
               }}
             >
-              <span>👁️ Factura</span>
+              <span>🧾 Ver Factura / Recibo</span>
+              <ChevronRight size={14} color="#ffffff" />
             </button>
           ) : isContra ? (
             <button 
@@ -1727,26 +1745,27 @@ export default function Admin() {
               className="pedido-card-btn"
               onClick={() => setSelectedPedido(ped)}
               style={{
-                padding: '0.45rem 0.65rem',
-                borderRadius: '8px',
+                width: '100%',
+                height: '36px',
+                padding: '0 0.75rem',
+                borderRadius: '10px',
                 border: 'none',
                 background: 'linear-gradient(135deg, #ff5722, #ea580c)',
                 color: '#ffffff',
-                fontSize: '0.76rem',
+                fontSize: '0.8rem',
                 fontWeight: 600,
                 cursor: 'pointer',
-                display: 'inline-flex',
+                display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.25rem',
-                boxShadow: '0 3px 10px rgba(234, 88, 12, 0.3)',
+                gap: '0.35rem',
+                boxShadow: '0 3px 10px rgba(234, 88, 12, 0.25)',
                 whiteSpace: 'nowrap',
-                flex: 1,
-                minWidth: '95px'
+                fontFamily: "'Poppins', sans-serif"
               }}
             >
               <span>🚚 Despachar pedido</span>
-              <ChevronRight size={13} color="#ffffff" style={{ flexShrink: 0 }} />
+              <ChevronRight size={14} color="#ffffff" />
             </button>
           ) : ped.pantallazo_url ? (
             <button 
@@ -1754,25 +1773,27 @@ export default function Admin() {
               className="pedido-card-btn"
               onClick={() => setSelectedPedido(ped)}
               style={{
-                padding: '0.45rem 0.65rem',
-                borderRadius: '8px',
+                width: '100%',
+                height: '36px',
+                padding: '0 0.75rem',
+                borderRadius: '10px',
                 border: 'none',
                 background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
                 color: '#ffffff',
-                fontSize: '0.76rem',
+                fontSize: '0.8rem',
                 fontWeight: 600,
                 cursor: 'pointer',
-                display: 'inline-flex',
+                display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.25rem',
-                boxShadow: '0 4px 14px rgba(59, 130, 246, 0.35)',
+                gap: '0.35rem',
+                boxShadow: '0 3px 10px rgba(59, 130, 246, 0.25)',
                 whiteSpace: 'nowrap',
-                flex: 1,
-                minWidth: '95px'
+                fontFamily: "'Poppins', sans-serif"
               }}
             >
-              <span>💳 Verificar</span>
+              <span>💳 Verificar Comprobante</span>
+              <ChevronRight size={14} color="#ffffff" />
             </button>
           ) : (
             <button 
@@ -1791,25 +1812,27 @@ export default function Admin() {
                 window.open(formatWhatsAppLink(targetPhone, text), '_blank');
               }}
               style={{
-                padding: '0.45rem 0.65rem',
-                borderRadius: '8px',
+                width: '100%',
+                height: '36px',
+                padding: '0 0.75rem',
+                borderRadius: '10px',
                 border: 'none',
                 background: 'linear-gradient(135deg, #10b981, #059669)',
                 color: '#ffffff',
-                fontSize: '0.76rem',
+                fontSize: '0.8rem',
                 fontWeight: 600,
                 cursor: 'pointer',
-                display: 'inline-flex',
+                display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.25rem',
-                boxShadow: '0 4px 14px rgba(16, 185, 129, 0.35)',
+                gap: '0.35rem',
+                boxShadow: '0 3px 10px rgba(16, 185, 129, 0.25)',
                 whiteSpace: 'nowrap',
-                flex: 1,
-                minWidth: '95px'
+                fontFamily: "'Poppins', sans-serif"
               }}
             >
               <span>📲 Recordar pago</span>
+              <ChevronRight size={14} color="#ffffff" />
             </button>
           )}
         </div>
@@ -2697,6 +2720,7 @@ export default function Admin() {
   };
 
   const isPurgingExpiredRef = useRef(false);
+  const activeDroppingIdsRef = useRef<Set<string>>(new Set());
 
   const purgarCanceladosExpirados = useCallback(async () => {
     if (isPurgingExpiredRef.current) return;
@@ -4954,6 +4978,18 @@ export default function Admin() {
     }
     if (!lead) throw new Error('Lead no encontrado en la base de datos');
 
+    // 🛡️ Protección estricta anti-duplicados: si ya existe un pedido idéntico recién generado en los últimos 15s
+    const now = Date.now();
+    const existingRecent = pedidos.find(p => 
+      p.cliente_telefono === (lead.telefono || '') && 
+      Number(p.total) === (Number(lead.total) || 0) &&
+      Math.abs(now - new Date(p.created_at).getTime()) < 15000
+    );
+    if (existingRecent) {
+      console.warn('Protección anti-duplicados: Reutilizando pedido recién generado:', existingRecent.id);
+      return existingRecent;
+    }
+
     const parsedProds = getParsedProducts(lead.productos);
 
     const orderPayload: any = {
@@ -4985,17 +5021,30 @@ export default function Admin() {
 
     // Actualizar estados reactivamente
     setLeads(prev => prev.filter(l => l.id !== leadId));
-    setPedidos(prev => [newOrder, ...prev]);
+    setPedidos(prev => {
+      if (prev.some(p => p.id === newOrder.id)) return prev;
+      return [newOrder, ...prev];
+    });
 
     return newOrder;
   };
 
   const handleDropKanban = async (e: React.DragEvent, targetCol: string) => {
     e.preventDefault();
+    e.stopPropagation();
+    let droppedId: string | null = null;
     try {
       const dataStr = e.dataTransfer.getData('text/plain');
       if (!dataStr) return;
       const { id, isLead: rawIsLead } = JSON.parse(dataStr);
+      if (!id) return;
+      droppedId = id;
+
+      // Candado anti-duplicados y anti-rebote: Si ya se está procesando este elemento, ignorar
+      if (activeDroppingIdsRef.current.has(id)) {
+        return;
+      }
+      activeDroppingIdsRef.current.add(id);
 
       // Determinación 100% certera de si es Pedido o Lead existente
       const existingPedido = pedidos.find(p => p.id === id);
@@ -5089,6 +5138,12 @@ export default function Admin() {
     } catch (err: any) {
       console.error('Error al arrastrar pedido:', err);
       showToast('Error al mover tarjeta: ' + (err.message || ''), 'error');
+    } finally {
+      if (droppedId) {
+        setTimeout(() => {
+          activeDroppingIdsRef.current.delete(droppedId!);
+        }, 1200);
+      }
     }
   };
 
@@ -15006,7 +15061,22 @@ export default function Admin() {
 
                           <div className="orders-desktop-view">
                             {pedidosViewMode === 'kanban' ? (
-                              <div className="super-crm-kanban" style={{ alignItems: 'start' }}>
+                              <div 
+                                className="super-crm-kanban" 
+                                style={{ 
+                                  display: 'flex', 
+                                  flexDirection: 'row', 
+                                  flexWrap: 'nowrap', 
+                                  overflowX: 'auto', 
+                                  overflowY: 'hidden', 
+                                  gap: '1.15rem', 
+                                  alignItems: 'start', 
+                                  paddingBottom: '1.25rem', 
+                                  width: '100%', 
+                                  boxSizing: 'border-box',
+                                  WebkitOverflowScrolling: 'touch'
+                                }}
+                              >
                         {/* Columna 0: Cancelados */}
                         <div
                           className="kanban-column"
@@ -15015,7 +15085,7 @@ export default function Admin() {
                             e.dataTransfer.dropEffect = 'move';
                           }}
                           onDrop={(e) => handleDropKanban(e, 'cancelado')}
-                          style={{ background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
+                          style={{ flex: '0 0 315px', minWidth: '310px', maxWidth: '335px', boxSizing: 'border-box', background: '#f8fafc', borderRadius: '18px', border: '1px solid #e2e8f0', padding: '1rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
                         >
                           <div style={{
                             display: 'flex',
@@ -15130,8 +15200,6 @@ export default function Admin() {
                           })()}
                           <div 
                             className="kanban-cards-list" 
-                            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-                            onDrop={(e) => handleDropKanban(e, 'cancelado')}
                             style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}
                           >
                             {canceladosFiltrados.map(ped => renderLeadOrOrderCard(ped, ped.isLead))}
@@ -15146,7 +15214,7 @@ export default function Admin() {
                           className="kanban-column"
                           onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
                           onDrop={(e) => handleDropKanban(e, 'abandonado')}
-                          style={{ background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
+                          style={{ flex: '0 0 315px', minWidth: '310px', maxWidth: '335px', boxSizing: 'border-box', background: '#f8fafc', borderRadius: '18px', border: '1px solid #e2e8f0', padding: '1rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
                         >
                           <div style={{
                             display: 'flex',
@@ -15168,8 +15236,6 @@ export default function Admin() {
                           </div>
                           <div 
                             className="kanban-cards-list" 
-                            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-                            onDrop={(e) => handleDropKanban(e, 'abandonado')}
                             style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}
                           >
                             {leadsFiltrados.map(lead => renderLeadOrOrderCard(lead, (lead as any).isLead !== undefined ? (lead as any).isLead : true))}
@@ -15184,7 +15250,7 @@ export default function Admin() {
                           className="kanban-column"
                           onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
                           onDrop={(e) => handleDropKanban(e, 'contra_entrega')}
-                          style={{ background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
+                          style={{ flex: '0 0 315px', minWidth: '310px', maxWidth: '335px', boxSizing: 'border-box', background: '#f8fafc', borderRadius: '18px', border: '1px solid #e2e8f0', padding: '1rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
                         >
                           <div style={{
                             display: 'flex',
@@ -15206,8 +15272,6 @@ export default function Admin() {
                           </div>
                           <div 
                             className="kanban-cards-list" 
-                            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-                            onDrop={(e) => handleDropKanban(e, 'contra_entrega')}
                             style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}
                           >
                             {contraEntregaFiltrados.map(ped => renderLeadOrOrderCard(ped))}
@@ -15222,7 +15286,7 @@ export default function Admin() {
                           className="kanban-column"
                           onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
                           onDrop={(e) => handleDropKanban(e, 'pendiente')}
-                          style={{ background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
+                          style={{ flex: '0 0 315px', minWidth: '310px', maxWidth: '335px', boxSizing: 'border-box', background: '#f8fafc', borderRadius: '18px', border: '1px solid #e2e8f0', padding: '1rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
                         >
                           <div style={{
                             display: 'flex',
@@ -15244,8 +15308,6 @@ export default function Admin() {
                           </div>
                           <div 
                             className="kanban-cards-list" 
-                            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-                            onDrop={(e) => handleDropKanban(e, 'pendiente')}
                             style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}
                           >
                             {pendientePagoFiltrados.map(ped => renderLeadOrOrderCard(ped))}
@@ -15260,7 +15322,7 @@ export default function Admin() {
                           className="kanban-column"
                           onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
                           onDrop={(e) => handleDropKanban(e, 'comprobante')}
-                          style={{ background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
+                          style={{ flex: '0 0 315px', minWidth: '310px', maxWidth: '335px', boxSizing: 'border-box', background: '#f8fafc', borderRadius: '18px', border: '1px solid #e2e8f0', padding: '1rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
                         >
                           <div style={{
                             display: 'flex',
@@ -15282,8 +15344,6 @@ export default function Admin() {
                           </div>
                           <div 
                             className="kanban-cards-list" 
-                            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-                            onDrop={(e) => handleDropKanban(e, 'comprobante')}
                             style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}
                           >
                             {comprobarPagosFiltrados.map(ped => renderLeadOrOrderCard(ped))}
@@ -15298,7 +15358,7 @@ export default function Admin() {
                           className="kanban-column"
                           onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
                           onDrop={(e) => handleDropKanban(e, 'completado')}
-                          style={{ background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
+                          style={{ flex: '0 0 315px', minWidth: '310px', maxWidth: '335px', boxSizing: 'border-box', background: '#f8fafc', borderRadius: '18px', border: '1px solid #e2e8f0', padding: '1rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
                         >
                           <div style={{
                             display: 'flex',
@@ -15320,8 +15380,6 @@ export default function Admin() {
                           </div>
                           <div 
                             className="kanban-cards-list" 
-                            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-                            onDrop={(e) => handleDropKanban(e, 'completado')}
                             style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}
                           >
                             {clientesFiltrados.map(ped => renderLeadOrOrderCard(ped))}

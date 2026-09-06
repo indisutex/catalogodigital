@@ -458,20 +458,30 @@
 }
 
 .super-crm-kanban {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
-  margin-top: 1.5rem;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: flex-start !important;
+  gap: 1.15rem !important;
+  margin-top: 1.25rem !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  padding-bottom: 1.25rem !important;
+  -webkit-overflow-scrolling: touch;
 }
 
 .kanban-column {
-  background: #f1f5f9;
-  border-radius: 20px;
-  padding: 1.5rem;
+  flex: 0 0 315px !important;
+  min-width: 310px !important;
+  max-width: 335px !important;
+  background: #f8fafc;
+  border-radius: 18px;
+  padding: 1rem 0.85rem !important;
   border: 1px solid #e2e8f0;
   display: flex;
   flex-direction: column;
   height: fit-content;
+  box-sizing: border-box !important;
 }
 
 .kanban-column-header {

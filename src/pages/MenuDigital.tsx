@@ -9,7 +9,7 @@ import { getOptimizedImageUrl } from '../lib/imageOptimizer';
 import { PromoWelcomeBanner as TemuWelcomeBanner } from '../components/NochePerfectaGameModal';
 import { JuegosHubModal } from '../components/JuegosHubModal';
 import { DEPARTAMENTOS_COLOMBIA, TODAS_LAS_CIUDADES_COLOMBIA } from '../data/colombiaData';
-import WhatsAppPhoneVerifier, { validateWhatsAppPhone } from '../components/WhatsAppPhoneVerifier';
+import { validateWhatsAppPhone } from '../components/WhatsAppPhoneVerifier';
 import AddressVerifier, { validateAddressFormat } from '../components/AddressVerifier';
 import './MenuDigital.css';
 
@@ -111,7 +111,6 @@ export default function MenuDigital() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isPqrsOpen, setIsPqrsOpen] = useState(false);
   const [isCheckoutMode, setIsCheckoutMode] = useState(false);
-  const [checkoutStep, setCheckoutStep] = useState<1 | 2 | 3>(1);
   const [metodoRecepcion, setMetodoRecepcion] = useState<'domicilio' | 'tienda'>('domicilio');
   const [selectedDepartamento, setSelectedDepartamento] = useState<string>('');
   const [isCityFocused, setIsCityFocused] = useState<boolean>(false);
@@ -1069,8 +1068,6 @@ export default function MenuDigital() {
   const leadIdRef = useRef<string | null>(null);
   const isInsertingRef = useRef(false);
   const isOrderSubmittedRef = useRef(false);
-  const [isPagoSeleccionado, setIsPagoSeleccionado] = useState(true);  // Transferencia Bancaria predefinida
-  const [isEnvioSeleccionado, setIsEnvioSeleccionado] = useState(true); // Domicilio predefinido
 
   const getStoreWhatsAppNumber = (customerPhone?: string) => {
     const cleanCustomer = (customerPhone || formData?.telefono || '').replace(/\D/g, '');
@@ -1094,19 +1091,15 @@ export default function MenuDigital() {
       const tenant = getTenantId();
       const numeroWhatsApp = getStoreWhatsAppNumber(customFormData.telefono);
       
-      const metodoEnvioLabel = isEnvioSeleccionado 
-        ? (metodoRecepcion === 'tienda' 
-          ? `Recoger en Tienda (${configuracion?.direccion || 'Sede Principal'})` 
-          : `Envío a domicilio`)
-        : 'Por definir';
+      const metodoEnvioLabel = metodoRecepcion === 'tienda' 
+        ? `Recoger en Tienda (${configuracion?.direccion || 'Sede Principal'})` 
+        : `Envío a domicilio`;
 
-      const metodoPagoLabel = isPagoSeleccionado 
-        ? (modalidadPago === 'transferencia' 
-          ? '[ Transferencia Bancaria ]' 
-          : modalidadPago === 'contra_entrega' 
-          ? '[ Pago Contra Entrega ]' 
-          : '[ Coordinar por WhatsApp ]')
-        : 'Por definir';
+      const metodoPagoLabel = modalidadPago === 'transferencia' 
+        ? '[ Transferencia Bancaria ]' 
+        : modalidadPago === 'contra_entrega' 
+        ? '[ Pago Contra Entrega ]' 
+        : '[ Coordinar por WhatsApp ]';
 
       let buyerLabel = '';
       if (buyerType === 'mayorista') buyerLabel = 'Mayorista';
@@ -1133,7 +1126,7 @@ export default function MenuDigital() {
         : (selectedDepartamento || '');
 
       let direccionFormateada = '';
-      if (isEnvioSeleccionado && metodoRecepcion === 'tienda') {
+      if (metodoRecepcion === 'tienda') {
         direccionFormateada = `Recoger en Tienda (${configuracion?.direccion || 'Sede Principal'})`;
       } else {
         const barrioTxt = customFormData.barrio ? ` (Barrio: ${customFormData.barrio.trim()})` : '';
@@ -1160,8 +1153,8 @@ export default function MenuDigital() {
         total: total,
         metodo_pago: metodoPagoLabel,
         metodo_envio: metodoEnvioLabel,
-        modalidad_pago: isPagoSeleccionado ? modalidadPago : 'por_definir',
-        metodo_recepcion: isEnvioSeleccionado ? metodoRecepcion : 'por_definir',
+        modalidad_pago: modalidadPago,
+        metodo_recepcion: metodoRecepcion,
         tipo_compra: buyerLabel,
         departamento: selectedDepartamento || ''
       };
@@ -1432,6 +1425,51 @@ export default function MenuDigital() {
     if (buyerType === 'mayorista' && totalUnits < 6) {
       alert(`Tienes que comprar mínimo 6 unidades para poder comprar en nuestro catálogo mayorista. Actualmente llevas ${totalUnits} ${totalUnits === 1 ? 'unidad' : 'unidades'}. Agrega ${6 - totalUnits} más a tu carrito.`);
       return;
+    }
+
+    if (!formData.nombre.trim()) {
+      alert('Por favor ingresa tu nombre completo.');
+      return;
+    }
+    if (!formData.telefono.trim()) {
+      alert('Por favor ingresa tu número de teléfono / WhatsApp.');
+      return;
+    }
+    const phoneVal = validateWhatsAppPhone(formData.telefono);
+    if (!phoneVal.isValid) {
+      alert(phoneVal.message || 'Por favor verifica tu número celular. Debe tener 10 dígitos y pertenecer a un operador en Colombia (iniciando por 3, ej: 300 123 4567).');
+      return;
+    }
+    if (!formData.email.trim() || !formData.email.includes('@')) {
+      alert('Por favor ingresa un correo electrónico válido.');
+      return;
+    }
+    if (!formData.cedula.trim()) {
+      alert('Por favor ingresa tu número de cédula o DNI.');
+      return;
+    }
+    if (metodoRecepcion === 'domicilio') {
+      if (!selectedDepartamento.trim()) {
+        alert('Por favor selecciona tu departamento de residencia.');
+        return;
+      }
+      if (!formData.ciudad.trim()) {
+        alert('Por favor selecciona o ingresa tu ciudad o municipio.');
+        return;
+      }
+      if (!formData.barrio.trim()) {
+        alert('Por favor ingresa el nombre de tu barrio.');
+        return;
+      }
+      if (!formData.direccion.trim()) {
+        alert('Por favor ingresa tu dirección exacta de entrega (Calle, Carrera, número, apto).');
+        return;
+      }
+      const addrVal = validateAddressFormat(formData.direccion, formData.barrio, formData.ciudad, selectedDepartamento);
+      if (!addrVal.isValidFormat) {
+        alert(addrVal.message);
+        return;
+      }
     }
     
     // Construir el mensaje para WhatsApp
@@ -2476,21 +2514,16 @@ export default function MenuDigital() {
       {/* Cart Modal */}
       {isCartOpen && (
         <div className="cart-modal-overlay">
-          <div className="cart-modal">
+          <div className="cart-modal" style={isCheckoutMode ? { maxWidth: '640px' } : undefined}>
              {isCheckoutMode ? (
               <>
                 {/* TOP ROW HEADER WITH BACK BUTTON & TITLE & CLOSE BUTTON */}
                 <div className="checkout-top-bar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1rem 1.25rem', background: '#ffffff', borderBottom: '1px solid #f1f5f9' }}>
                   <button
                     type="button"
-                    onClick={() => {
-                      if (checkoutStep > 1) {
-                        setCheckoutStep(prev => (prev - 1) as 1 | 2 | 3);
-                      } else {
-                        setIsCheckoutMode(false);
-                      }
-                    }}
+                    onClick={() => setIsCheckoutMode(false)}
                     style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#0f172a', display: 'flex', alignItems: 'center', padding: '0.2rem' }}
+                    title="Volver al carrito"
                   >
                     <ArrowLeft size={22} />
                   </button>
@@ -2511,96 +2544,6 @@ export default function MenuDigital() {
                   >
                     <X size={22} />
                   </button>
-                </div>
-
-                {/* SEPARATE STEPPER PROGRESS BAR ROW WITH DIVIDER (EN OTRO CAMPO SEPARADO) */}
-                <div className="checkout-stepper-row" style={{ padding: '0.95rem 1.25rem', background: '#ffffff', borderBottom: '1px solid #f1f5f9' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.4rem' }}>
-                    {/* STEP 1 */}
-                    <div 
-                      onClick={() => setCheckoutStep(1)}
-                      style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', cursor: 'pointer' }}
-                    >
-                      <div 
-                        style={{ 
-                          width: '26px', 
-                          height: '26px', 
-                          borderRadius: '50%', 
-                          backgroundColor: checkoutStep >= 1 ? (mayoristaBranding?.color || configuracion?.color_primario || 'var(--primary, #f36b8e)') : '#f1f5f9', 
-                          color: checkoutStep >= 1 ? '#ffffff' : '#64748b', 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'center', 
-                          fontSize: '0.8rem', 
-                          fontWeight: 600,
-                          transition: 'all 0.2s ease'
-                        }}
-                      >
-                        1
-                      </div>
-                      <span style={{ fontSize: '0.84rem', fontWeight: checkoutStep === 1 ? 700 : 500, color: checkoutStep === 1 ? '#0f172a' : '#64748b' }}>
-                        Contacto
-                      </span>
-                    </div>
-
-                    <div style={{ flex: 1, height: '2px', background: checkoutStep >= 2 ? (mayoristaBranding?.color || configuracion?.color_primario || 'var(--primary, #f36b8e)') : '#e2e8f0', transition: 'all 0.3s ease', margin: '0 0.3rem' }} />
-
-                    {/* STEP 2 */}
-                    <div 
-                      onClick={() => { if (formData.nombre && formData.telefono) setCheckoutStep(2); }}
-                      style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', cursor: 'pointer' }}
-                    >
-                      <div 
-                        style={{ 
-                          width: '26px', 
-                          height: '26px', 
-                          borderRadius: '50%', 
-                          backgroundColor: checkoutStep >= 2 ? (mayoristaBranding?.color || configuracion?.color_primario || 'var(--primary, #f36b8e)') : '#f1f5f9', 
-                          color: checkoutStep >= 2 ? '#ffffff' : '#64748b', 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'center', 
-                          fontSize: '0.8rem', 
-                          fontWeight: 600,
-                          transition: 'all 0.2s ease'
-                        }}
-                      >
-                        2
-                      </div>
-                      <span style={{ fontSize: '0.84rem', fontWeight: checkoutStep === 2 ? 700 : 500, color: checkoutStep === 2 ? '#0f172a' : '#64748b' }}>
-                        Envío
-                      </span>
-                    </div>
-
-                    <div style={{ flex: 1, height: '2px', background: checkoutStep >= 3 ? (mayoristaBranding?.color || configuracion?.color_primario || 'var(--primary, #f36b8e)') : '#e2e8f0', transition: 'all 0.3s ease', margin: '0 0.3rem' }} />
-
-                    {/* STEP 3 */}
-                    <div 
-                      onClick={() => { if (formData.nombre && formData.telefono && formData.ciudad && formData.direccion) setCheckoutStep(3); }}
-                      style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', cursor: 'pointer' }}
-                    >
-                      <div 
-                        style={{ 
-                          width: '26px', 
-                          height: '26px', 
-                          borderRadius: '50%', 
-                          backgroundColor: checkoutStep >= 3 ? (mayoristaBranding?.color || configuracion?.color_primario || 'var(--primary, #f36b8e)') : '#f1f5f9', 
-                          color: checkoutStep >= 3 ? '#ffffff' : '#64748b', 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'center', 
-                          fontSize: '0.8rem', 
-                          fontWeight: 600,
-                          transition: 'all 0.2s ease'
-                        }}
-                      >
-                        3
-                      </div>
-                      <span style={{ fontSize: '0.84rem', fontWeight: checkoutStep === 3 ? 700 : 500, color: checkoutStep === 3 ? '#0f172a' : '#64748b' }}>
-                        Pago
-                      </span>
-                    </div>
-                  </div>
                 </div>
               </>
             ) : (
@@ -2684,24 +2627,39 @@ export default function MenuDigital() {
                 })()}
               </div>
             )}
-            
+
             {isCheckoutMode ? (
-              <form className="checkout-form" onSubmit={handleEnviarPedido} style={{ padding: '1.15rem', display: 'flex', flexDirection: 'column', flex: 1, gap: '1rem', overflowY: 'auto' }}>
+              <form className="checkout-form" onSubmit={handleEnviarPedido} style={{ padding: '1.15rem', display: 'flex', flexDirection: 'column', flex: 1, gap: '1.15rem', overflowY: 'auto' }}>
                 {(() => {
                   const brandColor = configuracion?.color_primario || 'var(--primary, #f36b8e)';
+                  const phoneVal = validateWhatsAppPhone(formData.telefono);
+                  let phoneInputBorder = '1.5px solid #e2e8f0';
+                  if (phoneVal.status === 'valid') phoneInputBorder = '1.5px solid #22c55e';
+                  else if (phoneVal.status === 'invalid_landline') phoneInputBorder = '1.5px solid #f59e0b';
+                  else if (phoneVal.status === 'invalid_length') phoneInputBorder = '1.5px solid #ea580c';
 
                   return (
                     <>
-                      {/* ── PASO 1: CONTACTO ── */}
-                      {checkoutStep === 1 && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
-                          <h4 style={{ margin: '0 0 0.15rem 0', fontSize: '1.05rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
-                            Tus datos de contacto
-                          </h4>
+                      {/* ── 1. DATOS PERSONALES Y DE CONTACTO (2 Columnas x 2 Filas) ── */}
+                      <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #f1f5f9', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                            <span style={{ fontSize: '1.1rem' }}>👤</span>
+                            <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
+                              Tus datos de contacto
+                            </h4>
+                          </div>
+                          <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
+                            Paso único
+                          </span>
+                        </div>
 
+                        {/* Grid 2 Columnas x 2 Filas */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
+                          {/* Fila 1 - Col 1: Nombre */}
                           <div className="form-group" style={{ margin: 0 }}>
-                            <label style={{ fontSize: '0.85rem', fontWeight: 500, color: '#334155', marginBottom: '0.4rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
-                              Nombre *
+                            <label style={{ fontSize: '0.82rem', fontWeight: 500, color: '#334155', marginBottom: '0.3rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
+                              Nombre completo *
                             </label>
                             <input 
                               type="text" 
@@ -2709,60 +2667,47 @@ export default function MenuDigital() {
                               value={formData.nombre}
                               onChange={e => setFormData({...formData, nombre: e.target.value})}
                               placeholder="Ej. Juan Pérez"
-                              style={{ width: '100%', padding: '0.78rem 0.95rem', borderRadius: '14px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.9rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif", fontWeight: 400 }}
+                              style={{ width: '100%', boxSizing: 'border-box', padding: '0.72rem 0.85rem', borderRadius: '12px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.88rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif", fontWeight: 400 }}
                             />
                           </div>
 
-                          {(() => {
-                            const phoneVal = validateWhatsAppPhone(formData.telefono);
-                            let inputBorder = '1.5px solid #e2e8f0';
-                            if (phoneVal.status === 'valid') inputBorder = '1.5px solid #22c55e';
-                            else if (phoneVal.status === 'invalid_landline') inputBorder = '1.5px solid #f59e0b';
-                            else if (phoneVal.status === 'invalid_length') inputBorder = '1.5px solid #ea580c';
-
-                            return (
-                              <div className="form-group" style={{ margin: 0 }}>
-                                <label style={{ fontSize: '0.85rem', fontWeight: 500, color: '#334155', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: "'Poppins', sans-serif" }}>
-                                  <span>Teléfono / WhatsApp *</span>
-                                  {phoneVal.status === 'valid' && (
-                                    <span style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                                      <Check size={13} style={{ strokeWidth: 3 }} /> WhatsApp Válido
-                                    </span>
-                                  )}
-                                </label>
-                                <div style={{ display: 'flex', gap: '0.55rem' }}>
-                                  <div style={{ padding: '0.78rem 0.85rem', background: '#fafafa', border: '1.5px solid #e2e8f0', borderRadius: '14px', fontSize: '0.88rem', fontWeight: 500, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0, fontFamily: "'Poppins', sans-serif" }}>
-                                    <span>CO +57</span>
-                                    <ChevronDown size={14} color="#64748b" />
-                                  </div>
-                                  <input 
-                                    type="tel" 
-                                    required 
-                                    value={formData.telefono}
-                                    onChange={e => {
-                                      let clean = e.target.value.replace(/\D/g, '');
-                                      if (clean.startsWith('57') && clean.length > 10) clean = clean.slice(2);
-                                      if (clean.startsWith('0') && clean.length > 10) clean = clean.slice(1);
-                                      setFormData({...formData, telefono: clean.slice(0, 10)});
-                                    }}
-                                    maxLength={10}
-                                    inputMode="numeric"
-                                    pattern="[0-9]*"
-                                    placeholder="300 123 4567"
-                                    style={{ flex: 1, minWidth: 0, padding: '0.78rem 0.95rem', borderRadius: '14px', border: inputBorder, background: phoneVal.status === 'valid' ? '#f0fdf4' : '#fafafa', fontSize: '0.9rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif", transition: 'border-color 0.2s ease, background 0.2s ease' }}
-                                  />
-                                </div>
-                                <WhatsAppPhoneVerifier phone={formData.telefono} showTestButton={true} />
-                                <small style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 400, marginTop: '0.35rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
-                                  Máximo 10 dígitos (el WhatsApp desde el cual enviarás tu pedido)
-                                </small>
-                              </div>
-                            );
-                          })()}
-
+                          {/* Fila 1 - Col 2: WhatsApp / Teléfono */}
                           <div className="form-group" style={{ margin: 0 }}>
-                            <label style={{ fontSize: '0.85rem', fontWeight: 500, color: '#334155', marginBottom: '0.4rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
-                              Correo Electrónico *
+                            <label style={{ fontSize: '0.82rem', fontWeight: 500, color: '#334155', marginBottom: '0.3rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: "'Poppins', sans-serif" }}>
+                              <span>Teléfono / WhatsApp *</span>
+                              {phoneVal.status === 'valid' && (
+                                <span style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
+                                  <Check size={12} style={{ strokeWidth: 3 }} /> Válido
+                                </span>
+                              )}
+                            </label>
+                            <div style={{ display: 'flex', gap: '0.4rem' }}>
+                              <div style={{ padding: '0.72rem 0.65rem', background: '#f1f5f9', border: '1.5px solid #e2e8f0', borderRadius: '12px', fontSize: '0.82rem', fontWeight: 500, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.25rem', flexShrink: 0, fontFamily: "'Poppins', sans-serif" }}>
+                                <span>CO +57</span>
+                              </div>
+                              <input 
+                                type="tel" 
+                                required 
+                                value={formData.telefono}
+                                onChange={e => {
+                                  let clean = e.target.value.replace(/\D/g, '');
+                                  if (clean.startsWith('57') && clean.length > 10) clean = clean.slice(2);
+                                  if (clean.startsWith('0') && clean.length > 10) clean = clean.slice(1);
+                                  setFormData({...formData, telefono: clean.slice(0, 10)});
+                                }}
+                                maxLength={10}
+                                inputMode="numeric"
+                                pattern="[0-9]*"
+                                placeholder="300 123 4567"
+                                style={{ flex: 1, minWidth: 0, boxSizing: 'border-box', padding: '0.72rem 0.85rem', borderRadius: '12px', border: phoneInputBorder, background: phoneVal.status === 'valid' ? '#f0fdf4' : '#fafafa', fontSize: '0.88rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Fila 2 - Col 1: Correo */}
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label style={{ fontSize: '0.82rem', fontWeight: 500, color: '#334155', marginBottom: '0.3rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
+                              Correo electrónico *
                             </label>
                             <input 
                               type="email" 
@@ -2770,151 +2715,121 @@ export default function MenuDigital() {
                               value={formData.email}
                               onChange={e => setFormData({...formData, email: e.target.value})}
                               placeholder="tu@correo.com"
-                              style={{ width: '100%', padding: '0.78rem 0.95rem', borderRadius: '14px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.9rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif", fontWeight: 400 }}
+                              style={{ width: '100%', boxSizing: 'border-box', padding: '0.72rem 0.85rem', borderRadius: '12px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.88rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif", fontWeight: 400 }}
                             />
                           </div>
 
-                          <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.65rem', fontSize: '0.8rem', color: '#475569', cursor: 'pointer', marginTop: '0.15rem', lineHeight: 1.35 }}>
+                          {/* Fila 2 - Col 2: Cédula */}
+                          <div className="form-group" style={{ margin: 0 }}>
+                            <label style={{ fontSize: '0.82rem', fontWeight: 500, color: '#334155', marginBottom: '0.3rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
+                              Número de Cédula / DNI *
+                            </label>
                             <input 
-                              type="checkbox" 
-                              defaultChecked 
-                              style={{ accentColor: brandColor, width: '18px', height: '18px', borderRadius: '4px', cursor: 'pointer', flexShrink: 0, marginTop: '2px' }} 
+                              type="text" 
+                              required 
+                              value={formData.cedula}
+                              onChange={e => setFormData({...formData, cedula: e.target.value})}
+                              placeholder="Ej. 1098765432"
+                              style={{ width: '100%', boxSizing: 'border-box', padding: '0.72rem 0.85rem', borderRadius: '12px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.88rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif", fontWeight: 400 }}
                             />
-                            <span>Acepto recibir novedades y promociones de {toTitleCase(configuracion?.nombre_negocio || 'la tienda')}</span>
-                          </label>
+                          </div>
+                        </div>
 
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              if (!formData.nombre.trim()) {
-                                alert('Por favor ingresa tu nombre completo.');
-                                return;
-                              }
-                              if (!formData.telefono.trim()) {
-                                alert('Por favor ingresa tu número de teléfono.');
-                                return;
-                              }
-                              const phoneVal = validateWhatsAppPhone(formData.telefono);
-                              if (!phoneVal.isValid) {
-                                alert(phoneVal.message || 'Por favor verifica tu número celular. Debe tener exactamente 10 dígitos y pertenecer a un operador celular en Colombia (iniciando por 3, ej: 300 123 4567).');
-                                return;
-                              }
-                              if (!formData.email.trim() || !formData.email.includes('@')) {
-                                alert('Por favor ingresa un correo electrónico válido.');
-                                return;
-                              }
-                              saveOrUpdateLead(formData);
-                              setCheckoutStep(2);
-                            }}
-                            style={{
-                              width: '100%',
-                              padding: '0.88rem 1rem',
-                              borderRadius: '14px',
-                              border: 'none',
-                              background: brandColor,
-                              color: '#ffffff',
-                              fontSize: '0.98rem',
-                              fontWeight: 600,
+                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.55rem', fontSize: '0.78rem', color: '#64748b', cursor: 'pointer', marginTop: '0.1rem', lineHeight: 1.35, fontFamily: "'Poppins', sans-serif" }}>
+                          <input 
+                            type="checkbox" 
+                            defaultChecked 
+                            style={{ accentColor: brandColor, width: '16px', height: '16px', borderRadius: '4px', cursor: 'pointer', flexShrink: 0, marginTop: '2px' }} 
+                          />
+                          <span>Acepto recibir novedades y promociones de {toTitleCase(configuracion?.nombre_negocio || 'la tienda')}</span>
+                        </label>
+                      </div>
+
+                      {/* ── 2. MÉTODO DE ENTREGA Y DIRECCIÓN (2 Columnas x 2 Filas) ── */}
+                      <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #f1f5f9', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem' }}>
+                          <span style={{ fontSize: '1.1rem' }}>🚚</span>
+                          <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
+                            Método de entrega
+                          </h4>
+                        </div>
+
+                        {/* Selector Entrega (2 Columnas) */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                          <label 
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '0.55rem', 
+                              padding: '0.75rem 0.85rem', 
+                              borderRadius: '12px', 
+                              border: `2px solid ${metodoRecepcion === 'domicilio' ? brandColor : '#e2e8f0'}`, 
+                              background: metodoRecepcion === 'domicilio' ? `${brandColor}0d` : '#fafafa', 
                               cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '0.4rem',
-                              marginTop: '0.5rem',
-                              boxShadow: `0 4px 14px ${brandColor}35`
+                              transition: 'all 0.15s ease'
                             }}
                           >
-                            <span>Continuar</span>
-                            <ChevronRight size={18} />
-                          </button>
+                            <input 
+                              type="radio" 
+                              name="metodoRecepcion" 
+                              value="domicilio"
+                              checked={metodoRecepcion === 'domicilio'}
+                              onChange={() => setMetodoRecepcion('domicilio')}
+                              style={{ accentColor: brandColor, width: '16px', height: '16px', cursor: 'pointer', flexShrink: 0 }}
+                            />
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontSize: '0.86rem', fontWeight: 600, color: metodoRecepcion === 'domicilio' ? brandColor : '#1e293b', fontFamily: "'Poppins', sans-serif" }}>
+                                🚚 Domicilio
+                              </div>
+                              <div style={{ fontSize: '0.72rem', color: '#64748b', fontFamily: "'Poppins', sans-serif", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                A tu dirección
+                              </div>
+                            </div>
+                          </label>
+
+                          <label 
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '0.55rem', 
+                              padding: '0.75rem 0.85rem', 
+                              borderRadius: '12px', 
+                              border: `2px solid ${metodoRecepcion === 'tienda' ? brandColor : '#e2e8f0'}`, 
+                              background: metodoRecepcion === 'tienda' ? `${brandColor}0d` : '#fafafa', 
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease'
+                            }}
+                          >
+                            <input 
+                              type="radio" 
+                              name="metodoRecepcion" 
+                              value="tienda"
+                              checked={metodoRecepcion === 'tienda'}
+                              onChange={() => {
+                                setMetodoRecepcion('tienda');
+                                setFormData({ ...formData, direccion: `Recoger en Tienda (${configuracion?.direccion || 'Sede Principal'})` });
+                              }}
+                              style={{ accentColor: brandColor, width: '16px', height: '16px', cursor: 'pointer', flexShrink: 0 }}
+                            />
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontSize: '0.86rem', fontWeight: 600, color: metodoRecepcion === 'tienda' ? brandColor : '#1e293b', fontFamily: "'Poppins', sans-serif", display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                <span>🏪 En tienda</span>
+                                <span style={{ fontSize: '0.66rem', color: '#16a34a', background: '#dcfce7', padding: '1px 5px', borderRadius: '6px', fontWeight: 500 }}>Gratis</span>
+                              </div>
+                              <div style={{ fontSize: '0.72rem', color: '#64748b', fontFamily: "'Poppins', sans-serif", whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                Retirar en sede
+                              </div>
+                            </div>
+                          </label>
                         </div>
-                      )}
 
-                      {/* ── PASO 2: ENVÍO ── */}
-                      {checkoutStep === 2 && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
-                          <h4 style={{ margin: '0 0 0.15rem 0', fontSize: '1.08rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
-                            ¿Cómo quieres recibir tu pedido?
-                          </h4>
-
-                          {/* SELECTOR DE MÉTODO DE RECEPCIÓN (DOMICILIO vs RECOGER EN TIENDA) */}
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-                            <label 
-                              style={{ 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                gap: '0.75rem', 
-                                padding: '0.85rem 1rem', 
-                                borderRadius: '14px', 
-                                border: `2px solid ${metodoRecepcion === 'domicilio' ? brandColor : '#e2e8f0'}`, 
-                                background: metodoRecepcion === 'domicilio' ? `${brandColor}0d` : '#fafafa', 
-                                cursor: 'pointer',
-                                transition: 'all 0.15s ease'
-                              }}
-                            >
-                              <input 
-                                type="radio" 
-                                name="metodoRecepcion" 
-                                value="domicilio"
-                                checked={metodoRecepcion === 'domicilio'}
-                                onChange={() => setMetodoRecepcion('domicilio')}
-                                style={{ accentColor: brandColor, width: '18px', height: '18px', cursor: 'pointer', flexShrink: 0 }}
-                              />
-                              <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: '0.92rem', fontWeight: 600, color: metodoRecepcion === 'domicilio' ? brandColor : '#1e293b', fontFamily: "'Poppins', sans-serif" }}>
-                                  🚚 Envío a domicilio
-                                </div>
-                                <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.15rem', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
-                                  Te lo enviamos a tu dirección exacta
-                                </div>
-                              </div>
-                            </label>
-
-                            <label 
-                              style={{ 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                gap: '0.75rem', 
-                                padding: '0.85rem 1rem', 
-                                borderRadius: '14px', 
-                                border: `2px solid ${metodoRecepcion === 'tienda' ? brandColor : '#e2e8f0'}`, 
-                                background: metodoRecepcion === 'tienda' ? `${brandColor}0d` : '#fafafa', 
-                                cursor: 'pointer',
-                                transition: 'all 0.15s ease'
-                              }}
-                            >
-                              <input 
-                                type="radio" 
-                                name="metodoRecepcion" 
-                                value="tienda"
-                                checked={metodoRecepcion === 'tienda'}
-                                onChange={() => {
-                                  setMetodoRecepcion('tienda');
-                                  setFormData({ ...formData, direccion: `Recoger en Tienda (${configuracion?.direccion || 'Sede Principal'})` });
-                                }}
-                                style={{ accentColor: brandColor, width: '18px', height: '18px', cursor: 'pointer', flexShrink: 0 }}
-                              />
-                              <div style={{ flex: 1 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                  <div style={{ fontSize: '0.92rem', fontWeight: 600, color: metodoRecepcion === 'tienda' ? brandColor : '#1e293b', fontFamily: "'Poppins', sans-serif" }}>
-                                    🏪 Recoger en tienda
-                                  </div>
-                                  <span style={{ fontSize: '0.76rem', fontWeight: 600, color: '#10b981', background: '#d1fae5', padding: '2px 8px', borderRadius: '10px', fontFamily: "'Poppins', sans-serif" }}>
-                                    Gratis
-                                  </span>
-                                </div>
-                                <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.15rem', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
-                                  📍 {configuracion?.direccion || 'Calle 45 # 33-26 (Sede Principal)'}
-                                </div>
-                              </div>
-                            </label>
-                          </div>
-
-                          {metodoRecepcion === 'domicilio' ? (
-                            <>
+                        {metodoRecepcion === 'domicilio' ? (
+                          <>
+                            {/* Dirección en 2 Columnas x 2 Filas */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
+                              {/* Fila 1 - Col 1: Departamento */}
                               <div className="form-group" style={{ margin: 0 }}>
-                                <label style={{ fontSize: '0.86rem', fontWeight: 500, color: '#1e293b', marginBottom: '0.4rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
+                                <label style={{ fontSize: '0.82rem', fontWeight: 500, color: '#334155', marginBottom: '0.3rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
                                   Departamento *
                                 </label>
                                 <select
@@ -2923,18 +2838,18 @@ export default function MenuDigital() {
                                     setSelectedDepartamento(e.target.value);
                                     setFormData({ ...formData, ciudad: '' });
                                   }}
-                                  style={{ width: '100%', padding: '0.78rem 0.95rem', borderRadius: '14px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.9rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}
+                                  style={{ width: '100%', boxSizing: 'border-box', padding: '0.72rem 0.85rem', borderRadius: '12px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.88rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}
                                 >
-                                  <option value="">Selecciona tu departamento</option>
+                                  <option value="">Selecciona departamento</option>
                                   {Object.keys(DEPARTAMENTOS_COLOMBIA).map(depto => (
                                     <option key={depto} value={depto}>{depto}</option>
                                   ))}
                                 </select>
                               </div>
 
-                              {/* ── DESPLEGABLE PERSONALIZADO DE CIUDADES (POP-OVER BLANCO Y ELEGANTE) ── */}
+                              {/* Fila 1 - Col 2: Ciudad / Municipio */}
                               <div className="form-group" style={{ margin: 0, position: 'relative' }}>
-                                <label style={{ fontSize: '0.86rem', fontWeight: 500, color: '#1e293b', marginBottom: '0.4rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
+                                <label style={{ fontSize: '0.82rem', fontWeight: 500, color: '#334155', marginBottom: '0.3rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
                                   Ciudad / Municipio *
                                 </label>
                                 <div style={{ position: 'relative' }}>
@@ -2948,10 +2863,10 @@ export default function MenuDigital() {
                                       setFormData({...formData, ciudad: e.target.value});
                                       setIsCityFocused(true);
                                     }}
-                                    placeholder="Ej. Cali, Bogotá, Medellín, Rionegro..."
-                                    style={{ width: '100%', padding: '0.78rem 2.2rem 0.78rem 0.95rem', borderRadius: '14px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.9rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}
+                                    placeholder="Ej. Cali, Bogotá, Medellín..."
+                                    style={{ width: '100%', boxSizing: 'border-box', padding: '0.72rem 2rem 0.72rem 0.85rem', borderRadius: '12px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.88rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}
                                   />
-                                  <ChevronDown size={18} color="#64748b" style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+                                  <ChevronDown size={16} color="#64748b" style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
                                 </div>
 
                                 {isCityFocused && (
@@ -2963,10 +2878,10 @@ export default function MenuDigital() {
                                       right: 0, 
                                       zIndex: 9999, 
                                       background: '#ffffff', 
-                                      borderRadius: '16px', 
+                                      borderRadius: '14px', 
                                       border: '1px solid #e2e8f0', 
-                                      boxShadow: '0 12px 28px rgba(15, 23, 42, 0.15)', 
-                                      maxHeight: '210px', 
+                                      boxShadow: '0 10px 25px rgba(15, 23, 42, 0.15)', 
+                                      maxHeight: '190px', 
                                       overflowY: 'auto',
                                       fontFamily: "'Poppins', sans-serif"
                                     }}
@@ -2978,11 +2893,11 @@ export default function MenuDigital() {
                                       
                                       const filtered = availableCities.filter(item => 
                                         !formData.ciudad || item.ciudad.toLowerCase().includes(formData.ciudad.toLowerCase())
-                                      ).slice(0, 35);
+                                      ).slice(0, 30);
 
                                       if (filtered.length === 0) {
                                         return (
-                                          <div style={{ padding: '0.75rem 1rem', fontSize: '0.84rem', color: '#94a3b8', textAlign: 'center' }}>
+                                          <div style={{ padding: '0.65rem 0.85rem', fontSize: '0.82rem', color: '#94a3b8', textAlign: 'center' }}>
                                             No se encontraron municipios coincidentes
                                           </div>
                                         );
@@ -2997,8 +2912,8 @@ export default function MenuDigital() {
                                             setIsCityFocused(false);
                                           }}
                                           style={{ 
-                                            padding: '0.65rem 1rem', 
-                                            fontSize: '0.86rem', 
+                                            padding: '0.55rem 0.85rem', 
+                                            fontSize: '0.84rem', 
                                             color: '#1e293b', 
                                             cursor: 'pointer', 
                                             borderBottom: idx < filtered.length - 1 ? '1px solid #f1f5f9' : 'none',
@@ -3012,7 +2927,7 @@ export default function MenuDigital() {
                                           onMouseLeave={(e) => e.currentTarget.style.background = '#ffffff'}
                                         >
                                           <span>{item.ciudad}</span>
-                                          <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>📍 Colombia</span>
+                                          <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>📍 Colombia</span>
                                         </div>
                                       ));
                                     })()}
@@ -3020,8 +2935,9 @@ export default function MenuDigital() {
                                 )}
                               </div>
 
+                              {/* Fila 2 - Col 1: Barrio */}
                               <div className="form-group" style={{ margin: 0 }}>
-                                <label style={{ fontSize: '0.86rem', fontWeight: 500, color: '#1e293b', marginBottom: '0.4rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
+                                <label style={{ fontSize: '0.82rem', fontWeight: 500, color: '#334155', marginBottom: '0.3rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
                                   Barrio *
                                 </label>
                                 <input 
@@ -3029,359 +2945,244 @@ export default function MenuDigital() {
                                   required 
                                   value={formData.barrio}
                                   onChange={e => setFormData({...formData, barrio: e.target.value})}
-                                  placeholder="Ej. El Poblado, Chapinero, San Fernando..."
-                                  style={{ width: '100%', padding: '0.78rem 0.95rem', borderRadius: '14px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.9rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}
+                                  placeholder="Ej. El Poblado, Chapinero..."
+                                  style={{ width: '100%', boxSizing: 'border-box', padding: '0.72rem 0.85rem', borderRadius: '12px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.88rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}
                                 />
                               </div>
 
+                              {/* Fila 2 - Col 2: Dirección exacta */}
                               <div className="form-group" style={{ margin: 0 }}>
-                                <label style={{ fontSize: '0.86rem', fontWeight: 500, color: '#1e293b', marginBottom: '0.4rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
-                                  Dirección exacta de residencia (Calle / Carrera #) *
+                                <label style={{ fontSize: '0.82rem', fontWeight: 500, color: '#334155', marginBottom: '0.3rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
+                                  Dirección exacta (Calle, Carrera #) *
                                 </label>
-                                <textarea 
+                                <input 
+                                  type="text" 
                                   required 
-                                  rows={2}
                                   value={formData.direccion}
                                   onChange={e => setFormData({...formData, direccion: e.target.value})}
-                                  placeholder="Ej. Calle 45 # 23-15 Apt 302, Edificio Los Pinos"
-                                  style={{ width: '100%', padding: '0.78rem 0.95rem', borderRadius: '14px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.9rem', outline: 'none', resize: 'vertical', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}
+                                  placeholder="Ej. Calle 45 # 23-15 Apt 302"
+                                  style={{ width: '100%', boxSizing: 'border-box', padding: '0.72rem 0.85rem', borderRadius: '12px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.88rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}
                                 />
                               </div>
+                            </div>
 
-                              {/* ── AUTO VERIFICADOR DE DIRECCIÓN ── */}
-                              <AddressVerifier 
-                                direccion={formData.direccion}
-                                barrio={formData.barrio}
-                                ciudad={formData.ciudad}
-                                departamento={selectedDepartamento}
-                              />
-                            </>
-                          ) : (
-                            <div style={{ background: '#ecfdf5', padding: '0.85rem 1rem', borderRadius: '14px', border: '1px solid #a7f3d0', color: '#065f46', fontSize: '0.86rem' }}>
-                              <strong>📍 Dirección para retirar tu pedido:</strong>
-                              <p style={{ margin: '0.25rem 0 0 0', fontWeight: 500 }}>
+                            <AddressVerifier 
+                              direccion={formData.direccion}
+                              barrio={formData.barrio}
+                              ciudad={formData.ciudad}
+                              departamento={selectedDepartamento}
+                            />
+                          </>
+                        ) : (
+                          <div style={{ background: '#ecfdf5', padding: '0.75rem 0.9rem', borderRadius: '12px', border: '1px solid #a7f3d0', color: '#065f46', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ fontSize: '1.1rem' }}>📍</span>
+                            <div>
+                              <strong>Dirección de entrega en tienda:</strong>
+                              <p style={{ margin: '0.15rem 0 0 0', fontWeight: 500 }}>
                                 {configuracion?.direccion || 'Calle 45 # 33-26 (Sede Principal)'}
                               </p>
                             </div>
-                          )}
-
-                          <div className="form-group" style={{ margin: 0 }}>
-                            <label style={{ fontSize: '0.86rem', fontWeight: 500, color: '#1e293b', marginBottom: '0.4rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
-                              Número de Cédula / DNI *
-                            </label>
-                            <input 
-                              type="text" 
-                              required 
-                              value={formData.cedula}
-                              onChange={e => setFormData({...formData, cedula: e.target.value})}
-                              placeholder="Ej. 1098765432"
-                              style={{ width: '100%', padding: '0.78rem 0.95rem', borderRadius: '14px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.9rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}
-                            />
                           </div>
+                        )}
+                      </div>
 
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              if (metodoRecepcion === 'domicilio') {
-                                if (!selectedDepartamento.trim()) {
-                                  alert('Por favor selecciona tu departamento de residencia.');
-                                  return;
-                                }
-                                if (!formData.ciudad.trim()) {
-                                  alert('Por favor ingresa o selecciona tu ciudad/municipio.');
-                                  return;
-                                }
-                                if (!formData.barrio.trim()) {
-                                  alert('Por favor ingresa el nombre de tu barrio.');
-                                  return;
-                                }
-                                if (!formData.direccion.trim()) {
-                                  alert('Por favor ingresa tu dirección exacta de residencia (Calle, Carrera, número, etc.).');
-                                  return;
-                                }
-                                const addrVal = validateAddressFormat(formData.direccion, formData.barrio, formData.ciudad, selectedDepartamento);
-                                if (!addrVal.isValidFormat) {
-                                  alert(addrVal.message);
-                                  return;
-                                }
-                              }
-                              if (!formData.cedula.trim()) {
-                                alert('Por favor ingresa tu número de cédula o DNI para la factura.');
-                                return;
-                              }
-                              saveOrUpdateLead(formData);
-                              setIsEnvioSeleccionado(true);
-                              setCheckoutStep(3);
-                            }}
-                            style={{
-                              width: '100%',
-                              padding: '0.88rem 1rem',
-                              borderRadius: '14px',
-                              border: 'none',
-                              background: brandColor,
-                              color: '#ffffff',
-                              fontSize: '0.98rem',
-                              fontWeight: 600,
+                      {/* ── 3. FORMA DE PAGO ── */}
+                      <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #f1f5f9', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem' }}>
+                          <span style={{ fontSize: '1.1rem' }}>💳</span>
+                          <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
+                            Forma de pago
+                          </h4>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+                          {/* Opción 1: Contra Entrega */}
+                          <label 
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '0.65rem', 
+                              padding: '0.75rem 0.85rem', 
+                              borderRadius: '12px', 
+                              border: `2px solid ${modalidadPago === 'contra_entrega' ? '#ea580c' : '#e2e8f0'}`, 
+                              background: modalidadPago === 'contra_entrega' ? '#fff7ed' : '#fafafa', 
                               cursor: 'pointer',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '0.4rem',
-                              marginTop: '0.5rem',
-                              boxShadow: `0 4px 14px ${brandColor}35`
+                              transition: 'all 0.15s ease'
                             }}
                           >
-                            <span>Continuar a Pago</span>
-                            <ChevronRight size={18} />
-                          </button>
-                        </div>
-                      )}
-
-                      {/* ── PASO 3: PAGO ── */}
-                      {checkoutStep === 3 && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.15rem' }}>
-                          <h4 style={{ margin: '0 0 0.15rem 0', fontSize: '1.08rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
-                            ¿Cómo quieres pagar?
-                          </h4>
-
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-                            {/* OPCIÓN 1: TRANSFERENCIA BANCARIA */}
-                            <label 
-                              style={{ 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                gap: '0.75rem', 
-                                padding: '0.85rem 1rem', 
-                                borderRadius: '14px', 
-                                border: `2px solid ${modalidadPago === 'transferencia' ? brandColor : '#e2e8f0'}`, 
-                                background: modalidadPago === 'transferencia' ? `${brandColor}0d` : '#fafafa', 
-                                cursor: 'pointer',
-                                transition: 'all 0.15s ease'
+                            <input 
+                              type="radio" 
+                              name="modalidadPago" 
+                              value="contra_entrega"
+                              checked={modalidadPago === 'contra_entrega'}
+                              onChange={() => {
+                                setModalidadPago('contra_entrega');
                               }}
-                            >
-                              <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1.1rem' }}>
-                                🏦
-                              </div>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: '0.92rem', fontWeight: 600, color: modalidadPago === 'transferencia' ? brandColor : '#1e293b', fontFamily: "'Poppins', sans-serif" }}>
-                                  Transferencia Bancaria
-                                </div>
-                                <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.15rem', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
-                                  Bancolombia · Nequi · Daviplata
-                                </div>
-                              </div>
-                              <input 
-                                type="radio" 
-                                name="modalidadPago" 
-                                value="transferencia"
-                                checked={modalidadPago === 'transferencia'}
-                                onChange={() => {
-                                  setModalidadPago('transferencia');
-                                  setIsPagoSeleccionado(true);
-                                }}
-                                style={{ accentColor: brandColor, width: '18px', height: '18px', cursor: 'pointer', flexShrink: 0 }}
-                              />
-                            </label>
-
-                            {/* OPCIÓN 2: PAGO CONTRA ENTREGA */}
-                            <label 
-                              style={{ 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                gap: '0.75rem', 
-                                padding: '0.85rem 1rem', 
-                                borderRadius: '14px', 
-                                border: `2px solid ${modalidadPago === 'contra_entrega' ? '#ea580c' : '#e2e8f0'}`, 
-                                background: modalidadPago === 'contra_entrega' ? '#fff7ed' : '#fafafa', 
-                                cursor: 'pointer',
-                                transition: 'all 0.15s ease'
-                              }}
-                            >
-                              <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: modalidadPago === 'contra_entrega' ? '#fed7aa' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1.1rem' }}>
-                                🚚
-                              </div>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                                  <div style={{ fontSize: '0.92rem', fontWeight: 600, color: modalidadPago === 'contra_entrega' ? '#ea580c' : '#1e293b', fontFamily: "'Poppins', sans-serif" }}>
-                                    Pago contra entrega
-                                  </div>
-                                  <span style={{ fontSize: '0.68rem', fontWeight: 500, color: '#c2410c', background: '#ffedd5', padding: '0.1rem 0.45rem', borderRadius: '6px', fontFamily: "'Poppins', sans-serif" }}>
-                                    🔥 Paga al recibir
-                                  </span>
-                                </div>
-                                <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.15rem', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
-                                  Pagas tus prendas y domicilio al recibir en tu puerta
-                                </div>
-                              </div>
-                              <input 
-                                type="radio" 
-                                name="modalidadPago" 
-                                value="contra_entrega"
-                                checked={modalidadPago === 'contra_entrega'}
-                                onChange={() => {
-                                  setModalidadPago('contra_entrega');
-                                  setIsPagoSeleccionado(true);
-                                }}
-                                style={{ accentColor: '#ea580c', width: '18px', height: '18px', cursor: 'pointer', flexShrink: 0 }}
-                              />
-                            </label>
-
-                            {/* OPCIÓN 3: COORDINAR POR WHATSAPP */}
-                            <label 
-                              style={{ 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                gap: '0.75rem', 
-                                padding: '0.85rem 1rem', 
-                                borderRadius: '14px', 
-                                border: `2px solid ${modalidadPago === 'whatsapp' ? brandColor : '#e2e8f0'}`, 
-                                background: modalidadPago === 'whatsapp' ? `${brandColor}0d` : '#fafafa', 
-                                cursor: 'pointer',
-                                transition: 'all 0.15s ease'
-                              }}
-                            >
-                              <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '1.1rem' }}>
-                                💬
-                              </div>
-                              <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: '0.92rem', fontWeight: 600, color: modalidadPago === 'whatsapp' ? brandColor : '#1e293b', fontFamily: "'Poppins', sans-serif" }}>
-                                  Coordinar por WhatsApp
-                                </div>
-                                <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '0.15rem', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
-                                  Coordina el pago y el costo del envío con la tienda
-                                </div>
-                              </div>
-                              <input 
-                                type="radio" 
-                                name="modalidadPago" 
-                                value="whatsapp"
-                                checked={modalidadPago === 'whatsapp'}
-                                onChange={() => setModalidadPago('whatsapp')}
-                                style={{ accentColor: brandColor, width: '18px', height: '18px', cursor: 'pointer', flexShrink: 0 }}
-                              />
-                            </label>
-                          </div>
-
-                          {/* MOSTRAR CUENTAS BANCARIAS SI SELECCIONA TRANSFERENCIA */}
-                          {modalidadPago === 'transferencia' && (
-                            <div style={{ background: '#f8fafc', padding: '0.9rem 1rem', borderRadius: '14px', border: '1px solid #e2e8f0', fontSize: '0.84rem' }}>
-                              <strong style={{ color: '#1e293b', display: 'block', marginBottom: '0.45rem', fontSize: '0.86rem' }}>
-                                💳 Datos para la Transferencia:
-                              </strong>
-                              {(() => {
-                                if (configuracion?.metodos_pago) {
-                                  try {
-                                    const parsed = JSON.parse(configuracion.metodos_pago);
-                                    if (Array.isArray(parsed) && parsed.length > 0) {
-                                      return parsed.map((m: any, idx: number) => (
-                                        <div key={idx} style={{ padding: '0.35rem 0', color: '#475569', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: idx < parsed.length - 1 ? '1px dashed #e2e8f0' : 'none' }}>
-                                          <span><strong>{m.banco}</strong> {m.tipo ? `(${m.tipo})` : ''}</span>
-                                          <span style={{ fontWeight: 600, color: '#0f172a', fontFamily: 'monospace' }}>{m.numero}</span>
-                                        </div>
-                                      ));
-                                    }
-                                  } catch {}
-                                }
-                                return (
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', color: '#475569' }}>
-                                    <div><strong>Bancolombia Ahorros:</strong> 456-789456-01</div>
-                                    <div><strong>Nequi / Daviplata:</strong> 318 563 7317</div>
-                                  </div>
-                                );
-                              })()}
+                              style={{ accentColor: '#ea580c', width: '16px', height: '16px', cursor: 'pointer', flexShrink: 0 }}
+                            />
+                            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: modalidadPago === 'contra_entrega' ? '#fed7aa' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '0.95rem' }}>
+                              🚚
                             </div>
-                          )}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                                <span style={{ fontSize: '0.88rem', fontWeight: 600, color: modalidadPago === 'contra_entrega' ? '#ea580c' : '#1e293b', fontFamily: "'Poppins', sans-serif" }}>
+                                  Pago contra entrega
+                                </span>
+                                <span style={{ fontSize: '0.66rem', fontWeight: 500, color: '#c2410c', background: '#ffedd5', padding: '1px 6px', borderRadius: '6px', fontFamily: "'Poppins', sans-serif" }}>
+                                  🔥 Paga al recibir
+                                </span>
+                              </div>
+                              <div style={{ fontSize: '0.74rem', color: '#64748b', fontFamily: "'Poppins', sans-serif" }}>
+                                Pagas al recibir en tu puerta
+                              </div>
+                            </div>
+                          </label>
 
-                          {/* BOTONES INFERIORES (BOTÓN VOLVER Y CONFIRMAR PEDIDO) */}
-                          <div style={{ display: 'flex', gap: '0.65rem', marginTop: '0.5rem' }}>
-                            <button
-                              type="button"
-                              onClick={() => setCheckoutStep(2)}
-                              style={{
-                                padding: '0.85rem 1.1rem',
-                                borderRadius: '14px',
-                                border: '1.5px solid #e2e8f0',
-                                background: '#ffffff',
-                                color: '#0f172a',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                transition: 'all 0.15s ease'
+                          {/* Opción 2: Transferencia Bancaria */}
+                          <label 
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '0.65rem', 
+                              padding: '0.75rem 0.85rem', 
+                              borderRadius: '12px', 
+                              border: `2px solid ${modalidadPago === 'transferencia' ? brandColor : '#e2e8f0'}`, 
+                              background: modalidadPago === 'transferencia' ? `${brandColor}0d` : '#fafafa', 
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease'
+                            }}
+                          >
+                            <input 
+                              type="radio" 
+                              name="modalidadPago" 
+                              value="transferencia"
+                              checked={modalidadPago === 'transferencia'}
+                              onChange={() => {
+                                setModalidadPago('transferencia');
                               }}
-                              title="Volver"
-                            >
-                              <ArrowLeft size={20} />
-                            </button>
+                              style={{ accentColor: brandColor, width: '16px', height: '16px', cursor: 'pointer', flexShrink: 0 }}
+                            />
+                            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '0.95rem' }}>
+                              🏦
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: '0.88rem', fontWeight: 600, color: modalidadPago === 'transferencia' ? brandColor : '#1e293b', fontFamily: "'Poppins', sans-serif" }}>
+                                Transferencia Bancaria
+                              </div>
+                              <div style={{ fontSize: '0.74rem', color: '#64748b', fontFamily: "'Poppins', sans-serif" }}>
+                                Bancolombia · Nequi · Daviplata
+                              </div>
+                            </div>
+                          </label>
 
-                            <button 
-                              type="submit" 
-                              style={{
-                                flex: 1,
-                                padding: '0.88rem 1rem',
-                                borderRadius: '14px',
-                                border: 'none',
-                                background: brandColor,
-                                color: '#ffffff',
-                                fontSize: '0.98rem',
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '0.5rem',
-                                boxShadow: `0 4px 14px ${brandColor}35`
-                              }}
-                            >
-                              <Check size={20} />
-                              <span>Confirmar pedido</span>
-                            </button>
-                          </div>
+                          {/* Opción 3: Coordinar por WhatsApp */}
+                          <label 
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '0.65rem', 
+                              padding: '0.75rem 0.85rem', 
+                              borderRadius: '12px', 
+                              border: `2px solid ${modalidadPago === 'whatsapp' ? brandColor : '#e2e8f0'}`, 
+                              background: modalidadPago === 'whatsapp' ? `${brandColor}0d` : '#fafafa', 
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease'
+                            }}
+                          >
+                            <input 
+                              type="radio" 
+                              name="modalidadPago" 
+                              value="whatsapp"
+                              checked={modalidadPago === 'whatsapp'}
+                              onChange={() => setModalidadPago('whatsapp')}
+                              style={{ accentColor: brandColor, width: '16px', height: '16px', cursor: 'pointer', flexShrink: 0 }}
+                            />
+                            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '0.95rem' }}>
+                              💬
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: '0.88rem', fontWeight: 600, color: modalidadPago === 'whatsapp' ? brandColor : '#1e293b', fontFamily: "'Poppins', sans-serif" }}>
+                                Coordinar por WhatsApp
+                              </div>
+                              <div style={{ fontSize: '0.74rem', color: '#64748b', fontFamily: "'Poppins', sans-serif" }}>
+                                Coordina el pago y envío directamente con el asesor
+                              </div>
+                            </div>
+                          </label>
                         </div>
-                      )}
 
-                      {/* ── RESUMEN DEL PEDIDO (SE MUESTRA ABAJO EN CADA PASO CON CONTENEDOR DE FONDO #f8fafc) ── */}
-                      <div style={{ marginTop: '1.25rem', padding: '1.2rem 1.25rem', background: '#f8fafc', borderRadius: '18px', border: '1px solid #e2e8f0' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.95rem' }}>
-                          <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
-                            Resumen del pedido <span style={{ fontWeight: 400, color: '#64748b', fontSize: '0.82rem' }}>({totalUnits} {totalUnits === 1 ? 'producto' : 'productos'})</span>
+                        {/* Cuentas bancarias si seleccionó transferencia */}
+                        {modalidadPago === 'transferencia' && (
+                          <div style={{ background: '#f8fafc', padding: '0.85rem 0.95rem', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '0.82rem' }}>
+                            <strong style={{ color: '#1e293b', display: 'block', marginBottom: '0.4rem', fontSize: '0.84rem' }}>
+                              💳 Cuentas para Transferencia:
+                            </strong>
+                            {(() => {
+                              if (configuracion?.metodos_pago) {
+                                try {
+                                  const parsed = JSON.parse(configuracion.metodos_pago);
+                                  if (Array.isArray(parsed) && parsed.length > 0) {
+                                    return parsed.map((m: any, idx: number) => (
+                                      <div key={idx} style={{ padding: '0.3rem 0', color: '#475569', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: idx < parsed.length - 1 ? '1px dashed #e2e8f0' : 'none' }}>
+                                        <span><strong>{m.banco}</strong> {m.tipo ? `(${m.tipo})` : ''}</span>
+                                        <span style={{ fontWeight: 600, color: '#0f172a', fontFamily: 'monospace' }}>{m.numero}</span>
+                                      </div>
+                                    ));
+                                  }
+                                } catch {}
+                              }
+                              return (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', color: '#475569' }}>
+                                  <div><strong>Bancolombia Ahorros:</strong> 456-789456-01</div>
+                                  <div><strong>Nequi / Daviplata:</strong> 318 563 7317</div>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ── 4. RESUMEN DEL PEDIDO ── */}
+                      <div style={{ padding: '1rem', background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                          <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
+                            Resumen de tu pedido <span style={{ fontWeight: 400, color: '#64748b', fontSize: '0.78rem' }}>({totalUnits} {totalUnits === 1 ? 'producto' : 'productos'})</span>
                           </h4>
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '0.95rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginBottom: '0.85rem' }}>
                           {items.map(item => {
                             const itemUnitPrice = getEffectivePrice(item, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
                             const itemTotal = itemUnitPrice * item.cantidad;
                             const thumbUrl = item.imagen_url || (item.imagenes_extra && item.imagenes_extra.length > 0 ? decodeExtraImage(item.imagenes_extra[0]).url : '');
 
                             return (
-                              <div key={`${item.id}-${item.talla}-${item.estampado}`} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                <div style={{ position: 'relative', width: '46px', height: '46px', flexShrink: 0 }}>
+                              <div key={`${item.id}-${item.talla}-${item.estampado}`} style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                                <div style={{ position: 'relative', width: '42px', height: '42px', flexShrink: 0 }}>
                                   {thumbUrl ? (
-                                    <img src={getOptimizedImageUrl(thumbUrl, 150, 75)} alt={item.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px', border: '1px solid #e2e8f0' }} />
+                                    <img src={getOptimizedImageUrl(thumbUrl, 150, 75)} alt={item.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '10px', border: '1px solid #e2e8f0' }} />
                                   ) : (
-                                    <div style={{ width: '100%', height: '100%', background: '#ffffff', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                      <Package size={18} color="#94a3b8" />
+                                    <div style={{ width: '100%', height: '100%', background: '#ffffff', borderRadius: '10px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                      <Package size={16} color="#94a3b8" />
                                     </div>
                                   )}
-                                  <span style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#ef4444', color: '#fff', fontSize: '0.68rem', fontWeight: 600, width: '18px', height: '18px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.18)' }}>
+                                  <span style={{ position: 'absolute', top: '-5px', right: '-5px', background: '#ef4444', color: '#fff', fontSize: '0.66rem', fontWeight: 600, width: '17px', height: '17px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.18)' }}>
                                     {item.cantidad}
                                   </span>
                                 </div>
 
                                 <div style={{ flex: 1, minWidth: 0 }}>
-                                  <h5 style={{ margin: 0, fontSize: '0.84rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Poppins', sans-serif" }}>
+                                  <h5 style={{ margin: 0, fontSize: '0.82rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.25, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Poppins', sans-serif" }}>
                                     {toTitleCase(item.nombre)}
                                   </h5>
                                   {(item.talla || item.estampado) && (
-                                    <span style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
+                                    <span style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '1px', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
                                       {[item.talla ? `Talla: ${toTitleCase(item.talla)}` : '', item.estampado ? `Estampado: ${toTitleCase(item.estampado)}` : ''].filter(Boolean).join(' • ')}
                                     </span>
                                   )}
                                 </div>
 
-                                <span style={{ fontSize: '0.86rem', fontWeight: 600, color: '#0f172a', flexShrink: 0, fontFamily: "'Poppins', sans-serif" }}>
+                                <span style={{ fontSize: '0.84rem', fontWeight: 600, color: '#0f172a', flexShrink: 0, fontFamily: "'Poppins', sans-serif" }}>
                                   ${itemTotal.toLocaleString('es-CO')}
                                 </span>
                               </div>
@@ -3396,11 +3197,11 @@ export default function MenuDigital() {
                               margin: '0.2rem 0 0.65rem 0', 
                               display: 'flex', 
                               alignItems: 'center', 
-                              gap: '0.4rem',
-                              color: '#059669',
-                              fontSize: '0.8rem',
-                              fontWeight: 600,
-                              fontFamily: "'Poppins', sans-serif"
+                              gap: '0.4rem', 
+                              color: '#059669', 
+                              fontSize: '0.8rem', 
+                              fontWeight: 600, 
+                              fontFamily: "'Poppins', sans-serif" 
                             }}
                           >
                             <span>🎉</span>
@@ -3408,24 +3209,55 @@ export default function MenuDigital() {
                           </div>
                         )}
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', borderTop: '1px dashed #cbd5e1', paddingTop: '0.8rem', fontSize: '0.86rem', fontFamily: "'Poppins', sans-serif" }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', borderTop: '1px dashed #cbd5e1', paddingTop: '0.65rem', fontSize: '0.82rem', fontFamily: "'Poppins', sans-serif" }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
                             <span>Subtotal</span>
-                            <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.86rem' }}>${total.toLocaleString('es-CO')}</span>
+                            <span style={{ fontWeight: 600, color: '#0f172a' }}>${total.toLocaleString('es-CO')}</span>
                           </div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
                             <span>Envío</span>
-                            <span style={{ fontWeight: 500, color: '#0f172a', fontSize: '0.84rem' }}>Por calcular</span>
+                            <span style={{ fontWeight: 500, color: metodoRecepcion === 'tienda' ? '#16a34a' : '#0f172a' }}>
+                              {metodoRecepcion === 'tienda' ? 'Gratis' : (modalidadPago === 'contra_entrega' ? 'Contra entrega' : 'Por calcular')}
+                            </span>
                           </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', color: '#0f172a', fontWeight: 600, fontSize: '0.96rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.6rem', marginTop: '0.25rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', color: '#0f172a', fontWeight: 600, fontSize: '0.94rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.5rem', marginTop: '0.2rem' }}>
                             <span>Total</span>
-                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.3rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem' }}>
                               <span>${total.toLocaleString('es-CO')}</span>
-                              <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 500 }}>+ envío</span>
+                              {metodoRecepcion === 'domicilio' && (
+                                <span style={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 500 }}>+ envío</span>
+                              )}
                             </div>
                           </div>
                         </div>
                       </div>
+
+                      {/* ── 5. BOTÓN DE CONFIRMACIÓN FINAL (UNA SOLA ACCIÓN) ── */}
+                      <button 
+                        type="submit" 
+                        style={{
+                          width: '100%',
+                          padding: '0.92rem 1.25rem',
+                          borderRadius: '14px',
+                          border: 'none',
+                          background: brandColor,
+                          color: '#ffffff',
+                          fontSize: '1rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.5rem',
+                          boxShadow: `0 4px 16px ${brandColor}40`,
+                          fontFamily: "'Poppins', sans-serif",
+                          marginTop: '0.25rem',
+                          transition: 'transform 0.15s ease'
+                        }}
+                      >
+                        <Check size={20} />
+                        <span>Confirmar Pedido — ${total.toLocaleString('es-CO')}</span>
+                      </button>
                     </>
                   );
                 })()}
@@ -3684,7 +3516,6 @@ export default function MenuDigital() {
                         alert(`Tienes que comprar mínimo 6 unidades para poder comprar en nuestro catálogo mayorista. Actualmente llevas ${totalUnits} ${totalUnits === 1 ? 'unidad' : 'unidades'}. Agrega ${6 - totalUnits} más a tu carrito o cambia a modo Detal.`);
                         return;
                       }
-                      setCheckoutStep(1);
                       setIsCheckoutMode(true);
                     }}
                     style={{ 
