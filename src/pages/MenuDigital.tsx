@@ -1083,12 +1083,12 @@ export default function MenuDigital() {
 
   const saveOrUpdateLead = async (customFormData = formData) => {
     if (isOrderSubmittedRef.current) return;
-    const cleanPhone = (customFormData.telefono || '').replace(/\D/g, '');
+    const phoneVal = validateWhatsAppPhone(customFormData.telefono);
     const currentLeadId = leadIdRef.current || leadId;
     
-    // Guardar borrador desde que ingresa al menos 7 dígitos en el teléfono y tenga productos en el carrito.
-    // Si ya existe un leadId, actualiza la información con cada cambio.
-    if ((!currentLeadId && cleanPhone.length < 7) || items.length === 0) return;
+    // NUNCA guardar o crear borrador/lead si el teléfono no es un celular colombiano válido de 10 dígitos (inicia por 3)
+    // Esto evita que la columna de abandonos se llene de números incompletos o inexistentes en WhatsApp.
+    if ((!currentLeadId && !phoneVal.isValid) || items.length === 0) return;
 
     try {
       const tenant = getTenantId();
@@ -1301,14 +1301,14 @@ export default function MenuDigital() {
     return () => clearTimeout(timer);
   }, [formData.telefono]);
 
-  // Disparar o actualizar lead en tiempo real tan pronto el cliente llena o modifica cualquier campo
+  // Disparar o actualizar lead en tiempo real tan pronto el cliente llena o modifica cualquier campo con celular válido
   useEffect(() => {
     if (isOrderSubmittedRef.current) return;
-    const cleanPhone = (formData.telefono || '').replace(/\D/g, '');
+    const phoneVal = validateWhatsAppPhone(formData.telefono);
     const currentLeadId = leadIdRef.current || leadId;
 
-    // Se dispara desde que hay al menos 7 dígitos en teléfono (o ya existe un leadId) y hay items en el carrito
-    if ((!currentLeadId && cleanPhone.length < 7) || items.length === 0) return;
+    // Solo se dispara si ya existe un leadId o si el teléfono ya es un celular de WhatsApp válido (10 dígitos)
+    if ((!currentLeadId && !phoneVal.isValid) || items.length === 0) return;
 
     const delayDebounceFn = setTimeout(() => {
       saveOrUpdateLead(formData);
@@ -1321,8 +1321,8 @@ export default function MenuDigital() {
   useEffect(() => {
     if (!configuracion) return;
     if (isOrderSubmittedRef.current) return;
-    const cleanPhone = (formData.telefono || '').replace(/\D/g, '');
-    if (cleanPhone.length < 7 || items.length === 0) return;
+    const phoneVal = validateWhatsAppPhone(formData.telefono);
+    if (!phoneVal.isValid || items.length === 0) return;
     if (leadIdRef.current || leadId) return; // ya existe el lead, no crear duplicado
     
     const t = setTimeout(() => {
@@ -2795,18 +2795,9 @@ export default function MenuDigital() {
                                 alert('Por favor ingresa tu número de teléfono.');
                                 return;
                               }
-                              const cleanP = formData.telefono.replace(/\D/g, '');
-                              if (cleanP.length !== 10) {
-                                alert('Por favor verifica tu número celular. Debe tener exactamente 10 dígitos (ej: 300 123 4567).');
-                                return;
-                              }
-                              if (!cleanP.startsWith('3')) {
-                                alert('Los números celulares en Colombia inician por 3 (ej: 300 123 4567). Por favor verifica tu número.');
-                                return;
-                              }
                               const phoneVal = validateWhatsAppPhone(formData.telefono);
-                              if (phoneVal.status === 'invalid_landline') {
-                                alert('El número ingresado parece ser un teléfono fijo y los fijos no tienen WhatsApp. Por favor ingresa tu número celular de 10 dígitos (inicia por 3) para enviarte la información de tu pedido.');
+                              if (!phoneVal.isValid) {
+                                alert(phoneVal.message || 'Por favor verifica tu número celular. Debe tener exactamente 10 dígitos y pertenecer a un operador celular en Colombia (iniciando por 3, ej: 300 123 4567).');
                                 return;
                               }
                               if (!formData.email.trim() || !formData.email.includes('@')) {

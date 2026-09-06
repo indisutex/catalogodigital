@@ -1,8 +1,8 @@
 import React from 'react';
-import { AlertTriangle, MessageCircle, HelpCircle, Phone, Check } from 'lucide-react';
+import { AlertTriangle, MessageCircle, HelpCircle, Phone, Check, ExternalLink } from 'lucide-react';
 
 export interface PhoneValidationResult {
-  status: 'empty' | 'typing' | 'valid' | 'invalid_landline' | 'invalid_length';
+  status: 'empty' | 'typing' | 'valid' | 'invalid_landline' | 'invalid_prefix' | 'invalid_fake' | 'invalid_length';
   cleanPhone: string;
   formattedPhone: string;
   message: string;
@@ -10,13 +10,14 @@ export interface PhoneValidationResult {
 }
 
 /**
- * Valida si un número telefónico ingresado corresponde a una línea celular válida de WhatsApp en Colombia o internacional.
+ * Valida si un número telefónico ingresado corresponde a una línea celular válida de WhatsApp en Colombia.
+ * Regla CRC Colombia: Celulares de 10 dígitos iniciando por prefijos móviles válidos (300-305, 310-324, 350-351).
  */
 export function validateWhatsAppPhone(rawPhone: string): PhoneValidationResult {
   let clean = (rawPhone || '').replace(/\D/g, '');
   
-  // Si empieza con 57 (código de país Colombia) y tiene 12 dígitos, extraer los 10 dígitos celulares
-  if (clean.startsWith('57') && clean.length === 12) {
+  // Si empieza con 57 (código país Colombia) repetido o con más de 10 dígitos, remover prefijos
+  while (clean.startsWith('57') && clean.length > 10) {
     clean = clean.slice(2);
   }
   // Si empieza con 0 inicial (ej: 03001234567), remover el 0
@@ -34,11 +35,10 @@ export function validateWhatsAppPhone(rawPhone: string): PhoneValidationResult {
     };
   }
 
-  const startsWithMobile = clean.startsWith('3');
   const isLandlinePrefix = clean.startsWith('60') || clean.startsWith('4') || clean.startsWith('7') || clean.startsWith('8');
 
-  // Si empieza por prefijos fijos (601, 602, 604, 605, etc.) o no empieza por 3 en longitud >= 7
-  if (isLandlinePrefix || (!startsWithMobile && clean.length >= 7)) {
+  // Si empieza por prefijos fijos (601, 602, 604, 605, etc.) o no empieza por 3 en longitud >= 3
+  if (isLandlinePrefix || (!clean.startsWith('3') && clean.length >= 2)) {
     let prefijoNombre = 'teléfono fijo';
     if (clean.startsWith('601')) prefijoNombre = 'fijo Bogotá / Cundinamarca (601)';
     else if (clean.startsWith('602')) prefijoNombre = 'fijo Valle / Cali (602)';
@@ -51,9 +51,24 @@ export function validateWhatsAppPhone(rawPhone: string): PhoneValidationResult {
       status: 'invalid_landline',
       cleanPhone: clean,
       formattedPhone: clean,
-      message: `⚠️ Número detectado como ${prefijoNombre}. Los teléfonos fijos NO tienen WhatsApp. Ingresa tu número celular (empieza por 3).`,
+      message: `⚠️ Número detectado como ${prefijoNombre}. Los teléfonos fijos NO tienen WhatsApp. Ingresa tu número celular de 10 dígitos (inicia por 3).`,
       isValid: false
     };
+  }
+
+  // Verificar si el prefijo de 3 dígitos es de un operador móvil en Colombia
+  if (clean.length >= 3 && clean.startsWith('3')) {
+    const p3 = parseInt(clean.slice(0, 3), 10);
+    const isColMobile = (p3 >= 300 && p3 <= 305) || (p3 >= 310 && p3 <= 324) || (p3 >= 350 && p3 <= 351);
+    if (!isColMobile) {
+      return {
+        status: 'invalid_prefix',
+        cleanPhone: clean,
+        formattedPhone: clean,
+        message: `⚠️ El prefijo ${clean.slice(0, 3)} no es un operador celular en Colombia. Debe iniciar por 300-305, 310-324 o 350-351.`,
+        isValid: false
+      };
+    }
   }
 
   if (clean.length < 10) {
@@ -67,17 +82,6 @@ export function validateWhatsAppPhone(rawPhone: string): PhoneValidationResult {
     };
   }
 
-  if (clean.length === 10 && startsWithMobile) {
-    const formatted = `${clean.slice(0, 3)} ${clean.slice(3, 6)} ${clean.slice(6)}`;
-    return {
-      status: 'valid',
-      cleanPhone: clean,
-      formattedPhone: formatted,
-      message: 'WhatsApp detectado y verificado',
-      isValid: true
-    };
-  }
-
   if (clean.length > 10) {
     return {
       status: 'invalid_length',
@@ -85,6 +89,29 @@ export function validateWhatsAppPhone(rawPhone: string): PhoneValidationResult {
       formattedPhone: clean,
       message: '⚠️ El número celular tiene más de 10 dígitos. Por favor verifica que esté correcto.',
       isValid: false
+    };
+  }
+
+  // Detección de números falsos o spam con dígitos repetidos (ej. 3111111111, 3000000000)
+  const uniqueDigits = new Set(clean.split(''));
+  if (clean.length === 10 && uniqueDigits.size <= 2) {
+    return {
+      status: 'invalid_fake',
+      cleanPhone: clean,
+      formattedPhone: clean,
+      message: '⚠️ Número no válido (dígitos repetidos). Por favor ingresa tu WhatsApp celular real.',
+      isValid: false
+    };
+  }
+
+  if (clean.length === 10 && clean.startsWith('3')) {
+    const formatted = `${clean.slice(0, 3)} ${clean.slice(3, 6)} ${clean.slice(6)}`;
+    return {
+      status: 'valid',
+      cleanPhone: clean,
+      formattedPhone: formatted,
+      message: 'WhatsApp detectado y verificado',
+      isValid: true
     };
   }
 
@@ -104,7 +131,7 @@ interface WhatsAppPhoneVerifierProps {
   style?: React.CSSProperties;
 }
 
-export default function WhatsAppPhoneVerifier({ phone, compact = false, style }: WhatsAppPhoneVerifierProps) {
+export default function WhatsAppPhoneVerifier({ phone, showTestButton = false, compact = false, style }: WhatsAppPhoneVerifierProps) {
   const result = validateWhatsAppPhone(phone);
 
   if (result.status === 'empty' && compact) {
@@ -136,6 +163,8 @@ export default function WhatsAppPhoneVerifier({ phone, compact = false, style }:
           color: '#166534'
         };
       case 'invalid_landline':
+      case 'invalid_prefix':
+      case 'invalid_fake':
         return {
           ...base,
           background: '#fffbeb',
@@ -181,7 +210,7 @@ export default function WhatsAppPhoneVerifier({ phone, compact = false, style }:
               </span>
             </div>
           )}
-          {result.status === 'invalid_landline' && (
+          {(result.status === 'invalid_landline' || result.status === 'invalid_prefix' || result.status === 'invalid_fake') && (
             <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', borderRadius: '50%', background: '#f59e0b', color: '#ffffff', flexShrink: 0 }}>
               <AlertTriangle size={13} style={{ strokeWidth: 2.5 }} />
             </span>
@@ -206,6 +235,35 @@ export default function WhatsAppPhoneVerifier({ phone, compact = false, style }:
             {result.message}
           </span>
         </div>
+
+        {result.status === 'valid' && showTestButton && (
+          <a
+            href={`https://wa.me/57${result.cleanPhone}?text=${encodeURIComponent('Hola, este es un mensaje de prueba para verificar mi WhatsApp.')}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Abrir WhatsApp para comprobar que el número existe y funciona"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.25rem',
+              padding: '0.22rem 0.6rem',
+              background: '#dcfce7',
+              border: '1px solid #86efac',
+              borderRadius: '8px',
+              color: '#15803d',
+              fontSize: '0.73rem',
+              fontWeight: 500,
+              textDecoration: 'none',
+              fontFamily: "'Poppins', sans-serif",
+              flexShrink: 0,
+              cursor: 'pointer'
+            }}
+          >
+            <MessageCircle size={12} color="#16a34a" />
+            <span>Probar mi WhatsApp</span>
+            <ExternalLink size={10} color="#16a34a" />
+          </a>
+        )}
       </div>
 
       {result.status === 'valid' && (

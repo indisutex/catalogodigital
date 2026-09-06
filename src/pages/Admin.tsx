@@ -16,9 +16,15 @@ const SECRET_PIN = '0000';
 
 const formatWhatsAppLink = (phone: string, text?: string) => {
   if (!phone) return '#';
-  const clean = phone.replace(/\D/g, '');
+  let clean = phone.replace(/\D/g, '');
   if (!clean) return '#';
-  const finalNum = clean.length === 10 ? '57' + clean : clean.startsWith('57') ? clean : '57' + clean;
+  while (clean.startsWith('57') && clean.length > 10) {
+    clean = clean.slice(2);
+  }
+  if (clean.startsWith('0') && clean.length > 10) {
+    clean = clean.slice(1);
+  }
+  const finalNum = clean.length === 10 ? '57' + clean : clean;
   return `https://wa.me/${finalNum}${text ? `?text=${encodeURIComponent(text)}` : ''}`;
 };
 
@@ -1263,8 +1269,19 @@ export default function Admin() {
                 <h4 className="pedido-card-name" style={{ margin: 0, fontSize: '0.94rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.25, wordBreak: 'break-word' }}>
                   {nombreCliente}
                 </h4>
-                <p className="pedido-card-phone" style={{ margin: '0.15rem 0 0 0', fontSize: '0.78rem', color: '#64748b', fontWeight: 400 }}>
-                  📞 {telefonoCliente || 'Sin número'}
+                <p className="pedido-card-phone" style={{ margin: '0.15rem 0 0 0', fontSize: '0.78rem', color: '#64748b', fontWeight: 400, display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                  <span>📞 {telefonoCliente || 'Sin número'}</span>
+                  {(() => {
+                    const clean = (telefonoCliente || '').replace(/\D/g, '');
+                    if (clean && clean.length !== 10) {
+                      return (
+                        <span style={{ fontSize: '0.66rem', color: '#dc2626', background: '#fee2e2', padding: '0.05rem 0.35rem', borderRadius: '4px', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
+                          {clean.length < 10 ? `⚠️ Incompleto (${clean.length}/10)` : `⚠️ ${clean.length} dígitos`}
+                        </span>
+                      );
+                    }
+                    return null;
+                  })()}
                 </p>
               </div>
             </div>
@@ -1561,9 +1578,12 @@ export default function Admin() {
               type="button" 
               onClick={(e) => {
                 e.stopPropagation();
-                const cleanPhone = telefonoCliente.replace(/\D/g, '');
-                const target = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
-                window.open(formatWhatsAppLink(target), '_blank');
+                const cleanPhone = (telefonoCliente || '').replace(/\D/g, '');
+                if (cleanPhone.length < 10) {
+                  showToast(`⚠️ Teléfono incompleto (${cleanPhone.length}/10 dígitos). Abre 'Ver detalles' y usa ✏️ Editar para corregirlo.`, 'error');
+                  return;
+                }
+                window.open(formatWhatsAppLink(telefonoCliente), '_blank');
               }}
               style={{
                 width: '36px',
@@ -1679,14 +1699,17 @@ export default function Admin() {
               onClick={() => {
                 const cleanPhone = (telefonoCliente || '').replace(/\D/g, '');
                 if (!cleanPhone) { showToast('Teléfono inválido para WhatsApp', 'error'); return; }
+                if (cleanPhone.length < 10) {
+                  showToast(`⚠️ Teléfono incompleto (${cleanPhone.length}/10 dígitos). Abre 'Ver detalles' y usa ✏️ Editar para corregirlo antes de contactar.`, 'error');
+                  return;
+                }
                 const prodNames = Array.isArray(ped.productos) && ped.productos.length > 0
                   ? ped.productos.map((p: any) => `${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ')
                   : '';
                 const text = ped.estado === 'cancelado'
                   ? `¡Hola ${nombreCliente || ''}! 👋 Vimos que tu pedido de ${prodNames ? `*${prodNames}*` : 'nuestro catálogo'} quedó cancelado. ¿Te gustaría reactivarlo o podemos ayudarte con alguna duda o forma de pago? ¡Logremos recuperar tu compra con gusto! 😊🛍️`
                   : `¡Hola ${nombreCliente || ''}! 👋 Vimos que estás interesado en: ${prodNames ? `*${prodNames}*` : 'nuestros productos'}. ¿Tienes alguna duda o te ayudamos a completar tu pedido? Escríbenos y con gusto te colaboramos. 😊`;
-                const targetPhone = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
-                window.open(formatWhatsAppLink(targetPhone, text), '_blank');
+                window.open(formatWhatsAppLink(telefonoCliente, text), '_blank');
                 if (isLead) handleUpdateLeadStatus(ped.id, 'contactado');
               }}
               style={{
