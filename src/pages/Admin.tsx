@@ -1116,7 +1116,9 @@ export default function Admin() {
   };
 
   const renderLeadOrOrderCard = (ped: any, forceIsLead?: boolean) => {
-    const isLead = forceIsLead || ped.isLead || !ped.estado || (ped.retargeting_estado !== undefined);
+    const isLead = forceIsLead !== undefined 
+      ? forceIsLead 
+      : (ped.isLead !== undefined ? ped.isLead : Boolean(ped.retargeting_estado || (!ped.estado && !ped.atendido && !ped.numero_guia)));
     const elapsedMs = new Date().getTime() - new Date(ped.created_at).getTime();
     const elapsedMins = Math.floor(elapsedMs / 60000);
     let timeLabel = 'Hace un momento';
@@ -1169,7 +1171,8 @@ export default function Admin() {
         className="pedido-card-item"
         draggable={true}
         onDragStart={(e) => {
-          e.dataTransfer.setData('text/plain', JSON.stringify({ id: ped.id, isLead }));
+          e.dataTransfer.effectAllowed = 'move';
+          e.dataTransfer.setData('text/plain', JSON.stringify({ id: ped.id, isLead: Boolean(isLead) }));
         }}
         style={{
           background: '#ffffff',
@@ -4629,7 +4632,9 @@ export default function Admin() {
         nombre: p.cliente_nombre || 'Cliente',
         telefono: p.cliente_telefono || '',
         ciudad: p.ciudad || '',
-        estado: 'abandonado'
+        estado: 'abandonado',
+        linea_whatsapp: p.linea_whatsapp || '',
+        created_at: p.created_at || new Date().toISOString()
       }));
 
     temp = [...temp, ...pedidosAbandonados];
@@ -4747,7 +4752,7 @@ export default function Admin() {
   const contraEntregaFiltrados = useMemo(() => {
     return allFilteredPedidos.filter(p => {
       const mp = getMetodoPago(p);
-      const isContra = mp === 'Contra Entrega' || (mp && mp.toLowerCase().includes('contra')) || p.estado === 'contra_entrega';
+      const isContra = p.estado === 'contra_entrega' || mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra'));
       return isContra && p.estado !== 'completado' && p.estado !== 'cancelado' && p.estado !== 'abandonado';
     });
   }, [allFilteredPedidos]);
@@ -4755,7 +4760,7 @@ export default function Admin() {
   const pendientePagoFiltrados = useMemo(() => {
     return allFilteredPedidos.filter(p => {
       const mp = getMetodoPago(p);
-      const isContra = mp === 'Contra Entrega' || (mp && mp.toLowerCase().includes('contra')) || p.estado === 'contra_entrega';
+      const isContra = p.estado === 'contra_entrega' || mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra'));
       return !p.pantallazo_url && p.estado !== 'completado' && p.estado !== 'cancelado' && p.estado !== 'abandonado' && !isContra;
     });
   }, [allFilteredPedidos]);
@@ -4763,13 +4768,13 @@ export default function Admin() {
   const comprobarPagosFiltrados = useMemo(() => {
     return allFilteredPedidos.filter(p => {
       const mp = getMetodoPago(p);
-      const isContra = mp === 'Contra Entrega' || (mp && mp.toLowerCase().includes('contra')) || p.estado === 'contra_entrega';
-      return p.pantallazo_url && p.estado !== 'completado' && p.estado !== 'cancelado' && p.estado !== 'abandonado' && !isContra;
+      const isContra = p.estado === 'contra_entrega' || mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra'));
+      return Boolean(p.pantallazo_url) && p.estado !== 'completado' && p.estado !== 'cancelado' && p.estado !== 'abandonado' && !isContra;
     });
   }, [allFilteredPedidos]);
 
   const clientesFiltrados = useMemo(() => {
-    return allFilteredPedidos.filter(p => p.estado === 'completado' && p.origen !== 'pos');
+    return allFilteredPedidos.filter(p => p.estado === 'completado');
   }, [allFilteredPedidos]);
 
   const handleCancelarPedido = async (id: string, isLead?: boolean) => {
@@ -4941,7 +4946,7 @@ export default function Admin() {
     }
   };
 
-  const convertLeadToPedido = async (leadId: string, initialFields: { metodo_pago?: string; estado?: string; pantallazo_url?: string }) => {
+  const convertLeadToPedido = async (leadId: string, initialFields: { metodo_pago?: string; estado?: string; pantallazo_url?: string | null }) => {
     let lead = leads.find(l => l.id === leadId);
     if (!lead) {
       const { data: dbLead } = await supabase.from('leads').select('*').eq('id', leadId).maybeSingle();
@@ -4949,24 +4954,25 @@ export default function Admin() {
     }
     if (!lead) throw new Error('Lead no encontrado en la base de datos');
 
+    const parsedProds = getParsedProducts(lead.productos);
+
     const orderPayload: any = {
-      cliente_nombre: lead.nombre || 'Cliente Lead',
-      cliente_telefono: lead.telefono || '',
+      cliente_nombre: lead.nombre || lead.cliente_nombre || 'Cliente Lead',
+      cliente_telefono: lead.telefono || lead.cliente_telefono || '',
       cliente_cedula: lead.cedula || lead.cliente_cedula || '',
       cliente_email: lead.email || lead.cliente_email || '',
       direccion: lead.direccion || '',
       ciudad: lead.ciudad || '',
       departamento: lead.departamento || '',
-      total: lead.total || 0,
-      productos: Array.isArray(lead.productos) ? lead.productos : [],
+      total: Number(lead.total) || 0,
+      productos: parsedProds,
       linea_whatsapp: lead.linea_whatsapp || '',
-      tenant_id: lead.tenant_id || getTenantId() || 'sublimados_majestic',
-      metodo_pago: initialFields.metodo_pago || lead.metodo_pago || 'Pago Anticipado',
-      estado: initialFields.estado || 'pendiente'
+      tenant_id: lead.tenant_id || getTenantId() || 'lucerito',
+      metodo_pago: initialFields.metodo_pago || 'Pago Anticipado',
+      estado: initialFields.estado || 'pendiente',
+      pantallazo_url: initialFields.pantallazo_url !== undefined ? initialFields.pantallazo_url : null,
+      origen: 'catalogo'
     };
-    if (initialFields.pantallazo_url) {
-      orderPayload.pantallazo_url = initialFields.pantallazo_url;
-    }
 
     const { data: newOrder, error } = await supabase.from('pedidos').insert(orderPayload).select('*').single();
     if (error) {
@@ -4975,7 +4981,11 @@ export default function Admin() {
     }
 
     // Marcar lead como completado para que no figure más como abandono
-    await supabase.from('leads').update({ estado: 'completado' }).eq('id', leadId);
+    await supabase.from('leads').update({ estado: 'completado', retargeting_estado: 'completado' }).eq('id', leadId);
+
+    // Actualizar estados reactivamente
+    setLeads(prev => prev.filter(l => l.id !== leadId));
+    setPedidos(prev => [newOrder, ...prev]);
 
     return newOrder;
   };
@@ -4985,14 +4995,21 @@ export default function Admin() {
     try {
       const dataStr = e.dataTransfer.getData('text/plain');
       if (!dataStr) return;
-      const { id, isLead } = JSON.parse(dataStr);
+      const { id, isLead: rawIsLead } = JSON.parse(dataStr);
+
+      // Determinación 100% certera de si es Pedido o Lead existente
+      const existingPedido = pedidos.find(p => p.id === id);
+      const existingLead = leads.find(l => l.id === id);
+      const isLead = !existingPedido && (Boolean(rawIsLead) || Boolean(existingLead));
 
       if (targetCol === 'cancelado') {
         if (isLead) {
-          setLeads(prev => prev.map(l => l.id === id ? { ...l, estado: 'cancelado' } : l));
+          setLeads(prev => prev.map(l => l.id === id ? { ...l, estado: 'cancelado', retargeting_estado: 'cancelado' } : l));
           showToast('Lead movido a Cancelados 🚫', 'success');
-          const { error } = await supabase.from('leads').update({ estado: 'cancelado' }).eq('id', id);
-          if (error) console.error(error);
+          const { error } = await supabase.from('leads').update({ estado: 'cancelado', retargeting_estado: 'cancelado' }).eq('id', id);
+          if (error) {
+            await supabase.from('leads').update({ retargeting_estado: 'cancelado' }).eq('id', id);
+          }
         } else {
           setPedidos(prev => prev.map(p => p.id === id ? { ...p, estado: 'cancelado' } : p));
           showToast('Pedido movido a Cancelados 🚫', 'success');
@@ -5000,73 +5017,11 @@ export default function Admin() {
           if (error) console.error(error);
         }
         cargarDatos();
-      } else if (targetCol === 'completado') {
-        if (isLead) {
-          const newOrder = await convertLeadToPedido(id, { estado: 'completado' });
-          if (newOrder) {
-            showToast('¡Lead convertido a Pedido Aprobado ✅!', 'success');
-            handleAprobarPago(newOrder);
-          }
-        } else {
-          const targetPed = pedidos.find(p => p.id === id);
-          if (targetPed) {
-            handleAprobarPago(targetPed);
-          } else {
-            showToast('Pedido no encontrado para aprobación', 'error');
-          }
-        }
-      } else if (targetCol === 'contra_entrega') {
-        if (isLead) {
-          await convertLeadToPedido(id, { metodo_pago: 'Contra Entrega', estado: 'pendiente' });
-          showToast('¡Lead convertido a Contra Entrega 🚚!', 'success');
-          cargarDatos();
-        } else {
-          setPedidos(prev => prev.map(p => p.id === id ? { ...p, metodo_pago: 'Contra Entrega', estado: 'pendiente' } : p));
-          showToast('Pedido movido a Contra Entrega 🚚', 'success');
-          let { error } = await supabase.from('pedidos').update({ metodo_pago: 'Contra Entrega', estado: 'pendiente' }).eq('id', id);
-          if (error && error.message && error.message.includes('metodo_pago')) {
-            const retry = await supabase.from('pedidos').update({ estado: 'pendiente' }).eq('id', id);
-            error = retry.error;
-          }
-          if (error) {
-            console.error(error);
-            showToast('Error al actualizar en BD: ' + error.message, 'error');
-          }
-          cargarDatos();
-        }
-      } else if (targetCol === 'comprobante') {
-        if (isLead) {
-          await convertLeadToPedido(id, { estado: 'pendiente', pantallazo_url: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=300&q=80' });
-          showToast('¡Lead convertido y movido a Comprobantes 📸!', 'success');
-          cargarDatos();
-        } else {
-          setPedidos(prev => prev.map(p => p.id === id ? { ...p, estado: 'pendiente' } : p));
-          showToast('Pedido movido a Comprobantes 📸', 'success');
-          const { error } = await supabase.from('pedidos').update({ estado: 'pendiente' }).eq('id', id);
-          if (error) console.error(error);
-          cargarDatos();
-        }
-      } else if (targetCol === 'pendiente') {
-        if (isLead) {
-          await convertLeadToPedido(id, { metodo_pago: 'Pago Anticipado', estado: 'pendiente' });
-          showToast('¡Lead convertido a Pendientes 🟡!', 'success');
-          cargarDatos();
-        } else {
-          setPedidos(prev => prev.map(p => p.id === id ? { ...p, estado: 'pendiente', metodo_pago: 'Pago Anticipado' } : p));
-          showToast('Pedido movido a Pendientes 🟡', 'success');
-          let { error } = await supabase.from('pedidos').update({ estado: 'pendiente', metodo_pago: 'Pago Anticipado' }).eq('id', id);
-          if (error && error.message && error.message.includes('metodo_pago')) {
-            const retry = await supabase.from('pedidos').update({ estado: 'pendiente' }).eq('id', id);
-            error = retry.error;
-          }
-          if (error) console.error(error);
-          cargarDatos();
-        }
       } else if (targetCol === 'abandonado') {
         if (isLead) {
-          setLeads(prev => prev.map(l => l.id === id ? { ...l, estado: 'abandonado' } : l));
+          setLeads(prev => prev.map(l => l.id === id ? { ...l, estado: 'abandonado', retargeting_estado: null } : l));
           showToast('Lead movido a No Interesados 🔴', 'success');
-          const { error } = await supabase.from('leads').update({ estado: 'abandonado' }).eq('id', id);
+          const { error } = await supabase.from('leads').update({ estado: 'abandonado', retargeting_estado: null }).eq('id', id);
           if (error) console.error(error);
         } else {
           setPedidos(prev => prev.map(p => p.id === id ? { ...p, estado: 'abandonado' } : p));
@@ -5075,13 +5030,67 @@ export default function Admin() {
           if (error) console.error(error);
         }
         cargarDatos();
+      } else if (targetCol === 'contra_entrega') {
+        if (isLead) {
+          await convertLeadToPedido(id, { metodo_pago: 'Contra Entrega', estado: 'contra_entrega', pantallazo_url: null });
+          showToast('¡Lead convertido a Contra Entrega 🚚!', 'success');
+          cargarDatos();
+        } else {
+          setPedidos(prev => prev.map(p => p.id === id ? { ...p, metodo_pago: 'Contra Entrega', estado: 'contra_entrega' } : p));
+          showToast('Pedido movido a Contra Entrega 🚚', 'success');
+          const { error } = await supabase.from('pedidos').update({ metodo_pago: 'Contra Entrega', estado: 'contra_entrega' }).eq('id', id);
+          if (error) {
+            console.error(error);
+            showToast('Error al actualizar en BD: ' + error.message, 'error');
+          }
+          cargarDatos();
+        }
+      } else if (targetCol === 'pendiente') {
+        if (isLead) {
+          await convertLeadToPedido(id, { metodo_pago: 'Pago Anticipado', estado: 'pendiente', pantallazo_url: null });
+          showToast('¡Lead convertido a Pendientes 🟡!', 'success');
+          cargarDatos();
+        } else {
+          setPedidos(prev => prev.map(p => p.id === id ? { ...p, estado: 'pendiente', metodo_pago: 'Pago Anticipado', pantallazo_url: null } : p));
+          showToast('Pedido movido a Pendientes 🟡', 'success');
+          const { error } = await supabase.from('pedidos').update({ estado: 'pendiente', metodo_pago: 'Pago Anticipado', pantallazo_url: null }).eq('id', id);
+          if (error) console.error(error);
+          cargarDatos();
+        }
+      } else if (targetCol === 'comprobante') {
+        const defaultReceipt = 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=300&q=80';
+        if (isLead) {
+          await convertLeadToPedido(id, { estado: 'pendiente', metodo_pago: 'Pago Anticipado', pantallazo_url: defaultReceipt });
+          showToast('¡Lead convertido y movido a Comprobantes 📸!', 'success');
+          cargarDatos();
+        } else {
+          const receiptUrl = existingPedido?.pantallazo_url || defaultReceipt;
+          setPedidos(prev => prev.map(p => p.id === id ? { ...p, estado: 'pendiente', metodo_pago: 'Pago Anticipado', pantallazo_url: receiptUrl } : p));
+          showToast('Pedido movido a Comprobantes 📸', 'success');
+          const { error } = await supabase.from('pedidos').update({ estado: 'pendiente', metodo_pago: 'Pago Anticipado', pantallazo_url: receiptUrl }).eq('id', id);
+          if (error) console.error(error);
+          cargarDatos();
+        }
+      } else if (targetCol === 'completado') {
+        if (isLead) {
+          const newOrder = await convertLeadToPedido(id, { estado: 'completado', metodo_pago: 'Pago Anticipado' });
+          if (newOrder) {
+            showToast('¡Lead convertido a Pedido Aprobado ✅!', 'success');
+            handleAprobarPago(newOrder);
+          }
+        } else {
+          if (existingPedido) {
+            handleAprobarPago(existingPedido);
+          } else {
+            showToast('Pedido no encontrado para aprobación', 'error');
+          }
+        }
       }
     } catch (err: any) {
       console.error('Error al arrastrar pedido:', err);
       showToast('Error al mover tarjeta: ' + (err.message || ''), 'error');
     }
   };
-
 
   const filteredClientes = useMemo(() => {
     let list = [...clientes];
@@ -15001,7 +15010,10 @@ export default function Admin() {
                         {/* Columna 0: Cancelados */}
                         <div
                           className="kanban-column"
-                          onDragOver={(e) => e.preventDefault()}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            e.dataTransfer.dropEffect = 'move';
+                          }}
                           onDrop={(e) => handleDropKanban(e, 'cancelado')}
                           style={{ background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
                         >
@@ -15116,7 +15128,12 @@ export default function Admin() {
                               </div>
                             );
                           })()}
-                          <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
+                          <div 
+                            className="kanban-cards-list" 
+                            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                            onDrop={(e) => handleDropKanban(e, 'cancelado')}
+                            style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}
+                          >
                             {canceladosFiltrados.map(ped => renderLeadOrOrderCard(ped, ped.isLead))}
                             {canceladosFiltrados.length === 0 && (
                               <p className="empty-column-msg" style={{ textAlign: 'center', color: '#991b1b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay pedidos cancelados.</p>
@@ -15125,10 +15142,9 @@ export default function Admin() {
                         </div>
 
                         {/* Columna 1: No Interesados (Abandonos) */}
-                        {/* Columna 1: No Interesados (Abandonos) */}
                         <div
                           className="kanban-column"
-                          onDragOver={(e) => e.preventDefault()}
+                          onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
                           onDrop={(e) => handleDropKanban(e, 'abandonado')}
                           style={{ background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
                         >
@@ -15150,7 +15166,12 @@ export default function Admin() {
                             </div>
                             <span style={{ background: '#64748b', color: '#ffffff', minWidth: '24px', height: '22px', borderRadius: '11px', padding: '0 0.55rem', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(100, 116, 139, 0.2)', fontFamily: "'Poppins', sans-serif" }}>{leadsFiltrados.length}</span>
                           </div>
-                          <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
+                          <div 
+                            className="kanban-cards-list" 
+                            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                            onDrop={(e) => handleDropKanban(e, 'abandonado')}
+                            style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}
+                          >
                             {leadsFiltrados.map(lead => renderLeadOrOrderCard(lead, (lead as any).isLead !== undefined ? (lead as any).isLead : true))}
                             {leadsFiltrados.length === 0 && (
                               <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay carritos abandonados.</p>
@@ -15161,7 +15182,7 @@ export default function Admin() {
                         {/* Columna 2: Contra Entregas (Auto-detectado) */}
                         <div
                           className="kanban-column"
-                          onDragOver={(e) => e.preventDefault()}
+                          onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
                           onDrop={(e) => handleDropKanban(e, 'contra_entrega')}
                           style={{ background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
                         >
@@ -15183,7 +15204,12 @@ export default function Admin() {
                             </div>
                             <span style={{ background: '#ea580c', color: '#ffffff', minWidth: '24px', height: '22px', borderRadius: '11px', padding: '0 0.55rem', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(234, 88, 12, 0.25)', fontFamily: "'Poppins', sans-serif" }}>{contraEntregaFiltrados.length}</span>
                           </div>
-                          <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
+                          <div 
+                            className="kanban-cards-list" 
+                            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                            onDrop={(e) => handleDropKanban(e, 'contra_entrega')}
+                            style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}
+                          >
                             {contraEntregaFiltrados.map(ped => renderLeadOrOrderCard(ped))}
                             {contraEntregaFiltrados.length === 0 && (
                               <p className="empty-column-msg" style={{ textAlign: 'center', color: '#9a3412', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay pedidos contra entrega pendientes.</p>
@@ -15194,7 +15220,7 @@ export default function Admin() {
                         {/* Columna 3: Pendientes (Esperando Pago) */}
                         <div
                           className="kanban-column"
-                          onDragOver={(e) => e.preventDefault()}
+                          onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
                           onDrop={(e) => handleDropKanban(e, 'pendiente')}
                           style={{ background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
                         >
@@ -15216,7 +15242,12 @@ export default function Admin() {
                             </div>
                             <span style={{ background: '#ca8a04', color: '#ffffff', minWidth: '24px', height: '22px', borderRadius: '11px', padding: '0 0.55rem', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(202, 138, 4, 0.25)', fontFamily: "'Poppins', sans-serif" }}>{pendientePagoFiltrados.length}</span>
                           </div>
-                          <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
+                          <div 
+                            className="kanban-cards-list" 
+                            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                            onDrop={(e) => handleDropKanban(e, 'pendiente')}
+                            style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}
+                          >
                             {pendientePagoFiltrados.map(ped => renderLeadOrOrderCard(ped))}
                             {pendientePagoFiltrados.length === 0 && (
                               <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay pedidos pendientes.</p>
@@ -15227,7 +15258,7 @@ export default function Admin() {
                         {/* Columna 4: Comprobante Recibido (Comprobar Pagos) */}
                         <div
                           className="kanban-column"
-                          onDragOver={(e) => e.preventDefault()}
+                          onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
                           onDrop={(e) => handleDropKanban(e, 'comprobante')}
                           style={{ background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
                         >
@@ -15249,7 +15280,12 @@ export default function Admin() {
                             </div>
                             <span style={{ background: '#2563eb', color: '#ffffff', minWidth: '24px', height: '22px', borderRadius: '11px', padding: '0 0.55rem', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(37, 99, 235, 0.25)', fontFamily: "'Poppins', sans-serif" }}>{comprobarPagosFiltrados.length}</span>
                           </div>
-                          <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
+                          <div 
+                            className="kanban-cards-list" 
+                            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                            onDrop={(e) => handleDropKanban(e, 'comprobante')}
+                            style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}
+                          >
                             {comprobarPagosFiltrados.map(ped => renderLeadOrOrderCard(ped))}
                             {comprobarPagosFiltrados.length === 0 && (
                               <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay comprobantes por revisar.</p>
@@ -15260,7 +15296,7 @@ export default function Admin() {
                         {/* Columna 5: Clientes (Venta Exitosa) */}
                         <div
                           className="kanban-column"
-                          onDragOver={(e) => e.preventDefault()}
+                          onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
                           onDrop={(e) => handleDropKanban(e, 'completado')}
                           style={{ background: '#f8fafc', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.1rem', display: 'flex', flexDirection: 'column', gap: '1rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
                         >
@@ -15282,7 +15318,12 @@ export default function Admin() {
                             </div>
                             <span style={{ background: '#16a34a', color: '#ffffff', minWidth: '24px', height: '22px', borderRadius: '11px', padding: '0 0.55rem', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(22, 163, 74, 0.25)', fontFamily: "'Poppins', sans-serif" }}>{clientesFiltrados.length}</span>
                           </div>
-                          <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
+                          <div 
+                            className="kanban-cards-list" 
+                            onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                            onDrop={(e) => handleDropKanban(e, 'completado')}
+                            style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}
+                          >
                             {clientesFiltrados.map(ped => renderLeadOrOrderCard(ped))}
                             {clientesFiltrados.length === 0 && (
                               <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay ventas exitosas aún.</p>

@@ -105,17 +105,17 @@ export interface Pedido {
   linea_whatsapp: string;
   tenant_id: string;
   created_at: string;
-  pantallazo_url?: string;
+  pantallazo_url?: string | null;
   atendido?: boolean;
   estado?: string;
-  numero_guia?: string;
+  numero_guia?: string | null;
   origen?: string;
   numero_factura?: string;
   asesor?: string;
-  evidencia_despacho_url?: string;
-  evidencia_cancelacion_url?: string;
-  evidencia_url?: string;
-  metodo_pago?: string;
+  evidencia_despacho_url?: string | null;
+  evidencia_cancelacion_url?: string | null;
+  evidencia_url?: string | null;
+  metodo_pago?: string | null;
   envio_metodo?: string;
 }
 
