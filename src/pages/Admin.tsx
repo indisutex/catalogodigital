@@ -4664,6 +4664,20 @@ export default function Admin() {
       return !hasOrder;
     });
 
+    // Incluir también pedidos de la tabla `pedidos` que hayan sido movidos manualmente a 'abandonado'
+    const pedidosAbandonados = pedidos
+      .filter(p => p.estado === 'abandonado')
+      .map(p => ({
+        ...p,
+        isLead: false,
+        nombre: p.cliente_nombre || 'Cliente',
+        telefono: p.cliente_telefono || '',
+        ciudad: p.ciudad || '',
+        estado: 'abandonado'
+      }));
+
+    temp = [...temp, ...pedidosAbandonados];
+
     if (orderSearchQuery) {
         const cleanOrderStr = (str: string) => 
           (str || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
@@ -4778,7 +4792,7 @@ export default function Admin() {
     return allFilteredPedidos.filter(p => {
       const mp = getMetodoPago(p);
       const isContra = mp === 'Contra Entrega' || (mp && mp.toLowerCase().includes('contra')) || p.estado === 'contra_entrega';
-      return isContra && p.estado !== 'completado' && p.estado !== 'cancelado';
+      return isContra && p.estado !== 'completado' && p.estado !== 'cancelado' && p.estado !== 'abandonado';
     });
   }, [allFilteredPedidos]);
 
@@ -4786,7 +4800,7 @@ export default function Admin() {
     return allFilteredPedidos.filter(p => {
       const mp = getMetodoPago(p);
       const isContra = mp === 'Contra Entrega' || (mp && mp.toLowerCase().includes('contra')) || p.estado === 'contra_entrega';
-      return !p.pantallazo_url && p.estado !== 'completado' && p.estado !== 'cancelado' && !isContra;
+      return !p.pantallazo_url && p.estado !== 'completado' && p.estado !== 'cancelado' && p.estado !== 'abandonado' && !isContra;
     });
   }, [allFilteredPedidos]);
 
@@ -4794,7 +4808,7 @@ export default function Admin() {
     return allFilteredPedidos.filter(p => {
       const mp = getMetodoPago(p);
       const isContra = mp === 'Contra Entrega' || (mp && mp.toLowerCase().includes('contra')) || p.estado === 'contra_entrega';
-      return p.pantallazo_url && p.estado !== 'completado' && p.estado !== 'cancelado' && !isContra;
+      return p.pantallazo_url && p.estado !== 'completado' && p.estado !== 'cancelado' && p.estado !== 'abandonado' && !isContra;
     });
   }, [allFilteredPedidos]);
 
@@ -4971,6 +4985,45 @@ export default function Admin() {
     }
   };
 
+  const convertLeadToPedido = async (leadId: string, initialFields: { metodo_pago?: string; estado?: string; pantallazo_url?: string }) => {
+    let lead = leads.find(l => l.id === leadId);
+    if (!lead) {
+      const { data: dbLead } = await supabase.from('leads').select('*').eq('id', leadId).maybeSingle();
+      lead = dbLead;
+    }
+    if (!lead) throw new Error('Lead no encontrado en la base de datos');
+
+    const orderPayload: any = {
+      cliente_nombre: lead.nombre || 'Cliente Lead',
+      cliente_telefono: lead.telefono || '',
+      cliente_cedula: lead.cedula || lead.cliente_cedula || '',
+      cliente_email: lead.email || lead.cliente_email || '',
+      direccion: lead.direccion || '',
+      ciudad: lead.ciudad || '',
+      departamento: lead.departamento || '',
+      total: lead.total || 0,
+      productos: Array.isArray(lead.productos) ? lead.productos : [],
+      linea_whatsapp: lead.linea_whatsapp || '',
+      tenant_id: lead.tenant_id || getTenantId() || 'sublimados_majestic',
+      metodo_pago: initialFields.metodo_pago || lead.metodo_pago || 'Pago Anticipado',
+      estado: initialFields.estado || 'pendiente'
+    };
+    if (initialFields.pantallazo_url) {
+      orderPayload.pantallazo_url = initialFields.pantallazo_url;
+    }
+
+    const { data: newOrder, error } = await supabase.from('pedidos').insert(orderPayload).select('*').single();
+    if (error) {
+      console.error('Error convirtiendo lead a pedido:', error);
+      throw error;
+    }
+
+    // Marcar lead como completado para que no figure más como abandono
+    await supabase.from('leads').update({ estado: 'completado' }).eq('id', leadId);
+
+    return newOrder;
+  };
+
   const handleDropKanban = async (e: React.DragEvent, targetCol: string) => {
     e.preventDefault();
     try {
@@ -4992,47 +5045,67 @@ export default function Admin() {
         }
         cargarDatos();
       } else if (targetCol === 'completado') {
-        const targetPed = pedidos.find(p => p.id === id);
-        if (targetPed) {
-          handleAprobarPago(targetPed);
+        if (isLead) {
+          const newOrder = await convertLeadToPedido(id, { estado: 'completado' });
+          if (newOrder) {
+            showToast('¡Lead convertido a Pedido Aprobado ✅!', 'success');
+            handleAprobarPago(newOrder);
+          }
         } else {
-          showToast('Pedido no encontrado para aprobación', 'error');
+          const targetPed = pedidos.find(p => p.id === id);
+          if (targetPed) {
+            handleAprobarPago(targetPed);
+          } else {
+            showToast('Pedido no encontrado para aprobación', 'error');
+          }
         }
       } else if (targetCol === 'contra_entrega') {
-        setPedidos(prev => prev.map(p => p.id === id ? { ...p, metodo_pago: 'Contra Entrega', estado: 'pendiente' } : p));
-        showToast('Pedido movido a Contra Entrega 🚚', 'success');
-
         if (isLead) {
-          await supabase.from('leads').update({ estado: 'contra_entrega' }).eq('id', id);
+          await convertLeadToPedido(id, { metodo_pago: 'Contra Entrega', estado: 'pendiente' });
+          showToast('¡Lead convertido a Contra Entrega 🚚!', 'success');
+          cargarDatos();
+        } else {
+          setPedidos(prev => prev.map(p => p.id === id ? { ...p, metodo_pago: 'Contra Entrega', estado: 'pendiente' } : p));
+          showToast('Pedido movido a Contra Entrega 🚚', 'success');
+          let { error } = await supabase.from('pedidos').update({ metodo_pago: 'Contra Entrega', estado: 'pendiente' }).eq('id', id);
+          if (error && error.message && error.message.includes('metodo_pago')) {
+            const retry = await supabase.from('pedidos').update({ estado: 'pendiente' }).eq('id', id);
+            error = retry.error;
+          }
+          if (error) {
+            console.error(error);
+            showToast('Error al actualizar en BD: ' + error.message, 'error');
+          }
+          cargarDatos();
         }
-        let { error } = await supabase.from('pedidos').update({ metodo_pago: 'Contra Entrega', estado: 'pendiente' }).eq('id', id);
-        if (error && error.message && error.message.includes('metodo_pago')) {
-          const retry = await supabase.from('pedidos').update({ estado: 'pendiente' }).eq('id', id);
-          error = retry.error;
-        }
-        if (error) {
-          console.error(error);
-          showToast('Error al actualizar en BD: ' + error.message, 'error');
-        }
-        cargarDatos();
       } else if (targetCol === 'comprobante') {
-        setPedidos(prev => prev.map(p => p.id === id ? { ...p, estado: 'pendiente' } : p));
-        showToast('Pedido movido a Comprobantes 📸', 'success');
-
-        const { error } = await supabase.from('pedidos').update({ estado: 'pendiente' }).eq('id', id);
-        if (error) console.error(error);
-        cargarDatos();
-      } else if (targetCol === 'pendiente') {
-        setPedidos(prev => prev.map(p => p.id === id ? { ...p, estado: 'pendiente', metodo_pago: 'Pago Anticipado' } : p));
-        showToast('Pedido movido a Pendientes 🟡', 'success');
-
-        let { error } = await supabase.from('pedidos').update({ estado: 'pendiente', metodo_pago: 'Pago Anticipado' }).eq('id', id);
-        if (error && error.message && error.message.includes('metodo_pago')) {
-          const retry = await supabase.from('pedidos').update({ estado: 'pendiente' }).eq('id', id);
-          error = retry.error;
+        if (isLead) {
+          await convertLeadToPedido(id, { estado: 'pendiente', pantallazo_url: 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=300&q=80' });
+          showToast('¡Lead convertido y movido a Comprobantes 📸!', 'success');
+          cargarDatos();
+        } else {
+          setPedidos(prev => prev.map(p => p.id === id ? { ...p, estado: 'pendiente' } : p));
+          showToast('Pedido movido a Comprobantes 📸', 'success');
+          const { error } = await supabase.from('pedidos').update({ estado: 'pendiente' }).eq('id', id);
+          if (error) console.error(error);
+          cargarDatos();
         }
-        if (error) console.error(error);
-        cargarDatos();
+      } else if (targetCol === 'pendiente') {
+        if (isLead) {
+          await convertLeadToPedido(id, { metodo_pago: 'Pago Anticipado', estado: 'pendiente' });
+          showToast('¡Lead convertido a Pendientes 🟡!', 'success');
+          cargarDatos();
+        } else {
+          setPedidos(prev => prev.map(p => p.id === id ? { ...p, estado: 'pendiente', metodo_pago: 'Pago Anticipado' } : p));
+          showToast('Pedido movido a Pendientes 🟡', 'success');
+          let { error } = await supabase.from('pedidos').update({ estado: 'pendiente', metodo_pago: 'Pago Anticipado' }).eq('id', id);
+          if (error && error.message && error.message.includes('metodo_pago')) {
+            const retry = await supabase.from('pedidos').update({ estado: 'pendiente' }).eq('id', id);
+            error = retry.error;
+          }
+          if (error) console.error(error);
+          cargarDatos();
+        }
       } else if (targetCol === 'abandonado') {
         if (isLead) {
           setLeads(prev => prev.map(l => l.id === id ? { ...l, estado: 'abandonado' } : l));
@@ -5049,7 +5122,7 @@ export default function Admin() {
       }
     } catch (err: any) {
       console.error('Error al arrastrar pedido:', err);
-      showToast('Error al mover tarjeta', 'error');
+      showToast('Error al mover tarjeta: ' + (err.message || ''), 'error');
     }
   };
 
@@ -15122,7 +15195,7 @@ export default function Admin() {
                             <span style={{ background: '#64748b', color: '#ffffff', minWidth: '24px', height: '22px', borderRadius: '11px', padding: '0 0.55rem', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(100, 116, 139, 0.2)', fontFamily: "'Poppins', sans-serif" }}>{leadsFiltrados.length}</span>
                           </div>
                           <div className="kanban-cards-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}>
-                            {leadsFiltrados.map(lead => renderLeadOrOrderCard(lead, true))}
+                            {leadsFiltrados.map(lead => renderLeadOrOrderCard(lead, (lead as any).isLead !== undefined ? (lead as any).isLead : true))}
                             {leadsFiltrados.length === 0 && (
                               <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay carritos abandonados.</p>
                             )}
