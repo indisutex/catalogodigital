@@ -12,6 +12,7 @@ import { PWAInstallPrompt } from '../components/PWAInstallPrompt';
 import { DEPARTAMENTOS_COLOMBIA, TODAS_LAS_CIUDADES_COLOMBIA } from '../data/colombiaData';
 import { validateWhatsAppPhone } from '../components/WhatsAppPhoneVerifier';
 import AddressVerifier, { validateAddressFormat } from '../components/AddressVerifier';
+import { ChristmasHeroLights } from '../components/ChristmasHeroLights';
 import './MenuDigital.css';
 
 const DEFAULT_LOGOS: Record<string, string> = {
@@ -1795,6 +1796,7 @@ export default function MenuDigital() {
       {Boolean(configuracion?.tematica_navidad) && <SnowfallEffect />}
       <div className={`menu-app-header ${isMediaVideo(mayoristaBranding?.video || configuracion?.video_hero_url) ? 'has-video' : ''}`} style={{ position: 'relative', overflow: 'visible' }}>
         <div className="hero-media-wrap" style={{ position: 'relative', overflow: 'visible', height: 'clamp(240px, 60vw, 360px)', width: '100%' }}>
+          {Boolean(configuracion?.tematica_navidad ?? true) && <ChristmasHeroLights />}
           {/* ── CLIPPED VIDEO / IMAGE BACKGROUND ── */}
           <div className="hero-video-clipper" style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
             {/* ── TICKER STRIP (TOP EDGE OF HERO) ── */}
