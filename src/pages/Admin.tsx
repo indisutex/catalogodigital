@@ -15856,166 +15856,202 @@ export default function Admin() {
                         {/* ════════════════════════════════════════════════════════
                             COLUMNA 1: 👤 DATOS DEL CLIENTE Y ENVÍO
                         ════════════════════════════════════════════════════════ */}
-                        <div className="modal-col-card">
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem' }}>
-                            <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                              <User size={16} color="var(--primary-color, #0ea5e9)" /> Datos del Cliente
-                            </h4>
-                            <span style={{ fontSize: '0.72rem', color: '#64748b', background: '#f8fafc', border: '1px solid #e2e8f0', padding: '0.12rem 0.5rem', borderRadius: '6px', fontWeight: 500 }}>
-                              Info Personal
-                            </span>
-                          </div>
+                        {(() => {
+                          const rawMp = getMetodoPago(selectedPedido) || (selectedPedido as any).modalidad_pago || (selectedPedido as any).metodo_pago || '';
+                          const cleanMp = String(rawMp).replace(/[\[\]"']/g, '').trim();
+                          const displayMetodoPago = cleanMp.toLowerCase().includes('contra')
+                            ? '🚚 Pago Contra Entrega'
+                            : cleanMp.toLowerCase().includes('transf')
+                            ? '💳 Transferencia Bancaria'
+                            : cleanMp || 'Por definir';
 
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                            {/* Cliente / Nombre & Celular */}
-                            <div>
-                              <h5 style={{ margin: '0 0 0.15rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Nombre del Cliente</h5>
-                              <p style={{ margin: 0, fontWeight: 600, color: '#0f172a', fontSize: '0.92rem' }}>{selectedPedido.cliente_nombre || (selectedPedido as any).nombre || 'Borrador Anónimo'}</p>
-                              
-                              {!isEditingOrderPhone ? (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.2rem' }}>
-                                  <p style={{ margin: 0, color: '#475569', fontSize: '0.84rem', fontWeight: 500 }}>
-                                    📱 {selectedPedido.cliente_telefono || (selectedPedido as any).telefono || 'Sin teléfono'}
+                          const rawEnvio = (selectedPedido as any).metodo_envio || (Array.isArray(selectedPedido.productos) && selectedPedido.productos[0]?._metodo_envio) || '';
+                          const cleanEnvio = String(rawEnvio).replace(/[\[\]"']/g, '').trim();
+                          const displayMetodoEnvio = cleanEnvio 
+                            ? (cleanEnvio.toLowerCase().includes('recoger') ? '🏪 Recoger en tienda' : cleanEnvio.toLowerCase().includes('domicilio') ? '🚚 Envío a domicilio' : cleanEnvio)
+                            : ((selectedPedido.direccion || '').toLowerCase().includes('recoger') ? '🏪 Recoger en tienda' : '🚚 Envío a domicilio');
+
+                          const formatName = (str?: string) => {
+                            if (!str) return 'Borrador Anónimo';
+                            return str.toLowerCase().replace(/(?:^|\s)\S/g, a => a.toUpperCase());
+                          };
+
+                          return (
+                            <div className="modal-col-card">
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem' }}>
+                                <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                                  <User size={16} color="var(--primary-color, #0ea5e9)" /> Datos del Cliente
+                                </h4>
+                              </div>
+
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                                {/* Cliente / Nombre & Celular */}
+                                <div>
+                                  <h5 style={{ margin: '0 0 0.15rem 0', color: '#64748b', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Nombre del Cliente</h5>
+                                  <p style={{ margin: 0, fontWeight: 600, color: '#0f172a', fontSize: '0.96rem' }}>
+                                    {formatName(selectedPedido.cliente_nombre || (selectedPedido as any).nombre)}
                                   </p>
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      setTempOrderPhone(((selectedPedido.cliente_telefono || (selectedPedido as any).telefono || '').replace(/\D/g, '')).slice(0, 10));
-                                      setIsEditingOrderPhone(true);
-                                    }}
-                                    title="Editar número de teléfono"
-                                    style={{
-                                      background: '#f1f5f9',
-                                      border: '1px solid #cbd5e1',
-                                      borderRadius: '6px',
-                                      padding: '1px 6px',
-                                      cursor: 'pointer',
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: '0.25rem',
-                                      color: '#475569',
-                                      fontSize: '0.72rem',
-                                      fontWeight: 500
-                                    }}
-                                  >
-                                    <Pencil size={11} />
-                                    <span>Editar</span>
-                                  </button>
+                                  
+                                  {!isEditingOrderPhone ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
+                                      <span style={{ color: '#0369a1', fontSize: '0.82rem', fontWeight: 500, background: '#f0f9ff', padding: '0.15rem 0.45rem', borderRadius: '6px', border: '1px solid #e0f2fe' }}>
+                                        📱 {selectedPedido.cliente_telefono || (selectedPedido as any).telefono || 'Sin teléfono'}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setTempOrderPhone(((selectedPedido.cliente_telefono || (selectedPedido as any).telefono || '').replace(/\D/g, '')).slice(0, 10));
+                                          setIsEditingOrderPhone(true);
+                                        }}
+                                        title="Editar número de teléfono"
+                                        style={{
+                                          background: '#ffffff',
+                                          border: '1px solid #cbd5e1',
+                                          borderRadius: '6px',
+                                          padding: '2px 7px',
+                                          cursor: 'pointer',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '0.25rem',
+                                          color: '#475569',
+                                          fontSize: '0.72rem',
+                                          fontWeight: 500
+                                        }}
+                                      >
+                                        <Pencil size={11} />
+                                        <span>Editar</span>
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
+                                      <input
+                                        type="tel"
+                                        value={tempOrderPhone}
+                                        maxLength={10}
+                                        autoFocus
+                                        onChange={e => {
+                                          let val = e.target.value.replace(/\D/g, '');
+                                          if (val.startsWith('57') && val.length > 10) val = val.slice(2);
+                                          if (val.startsWith('0') && val.length > 10) val = val.slice(1);
+                                          setTempOrderPhone(val.slice(0, 10));
+                                        }}
+                                        placeholder="Celular 10 dígitos"
+                                        style={{
+                                          width: '125px',
+                                          padding: '0.25rem 0.45rem',
+                                          borderRadius: '6px',
+                                          border: '1.5px solid var(--primary-color, #0ea5e9)',
+                                          fontSize: '0.8rem',
+                                          outline: 'none'
+                                        }}
+                                      />
+                                      <button
+                                        type="button"
+                                        disabled={savingOrderPhone}
+                                        onClick={handleSaveOrderPhone}
+                                        style={{
+                                          background: '#16a34a',
+                                          color: '#ffffff',
+                                          border: 'none',
+                                          borderRadius: '6px',
+                                          padding: '0.25rem 0.5rem',
+                                          cursor: 'pointer',
+                                          fontSize: '0.74rem',
+                                          fontWeight: 600,
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '0.2rem'
+                                        }}
+                                      >
+                                        <Check size={12} />
+                                        <span>{savingOrderPhone ? '...' : 'Guardar'}</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setIsEditingOrderPhone(false)}
+                                        style={{
+                                          background: '#f1f5f9',
+                                          color: '#64748b',
+                                          border: '1px solid #cbd5e1',
+                                          borderRadius: '6px',
+                                          padding: '0.25rem 0.4rem',
+                                          cursor: 'pointer',
+                                          fontSize: '0.74rem'
+                                        }}
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
-                              ) : (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
-                                  <input
-                                    type="tel"
-                                    value={tempOrderPhone}
-                                    maxLength={10}
-                                    autoFocus
-                                    onChange={e => {
-                                      let val = e.target.value.replace(/\D/g, '');
-                                      if (val.startsWith('57') && val.length > 10) val = val.slice(2);
-                                      if (val.startsWith('0') && val.length > 10) val = val.slice(1);
-                                      setTempOrderPhone(val.slice(0, 10));
-                                    }}
-                                    placeholder="Celular 10 dígitos"
-                                    style={{
-                                      width: '125px',
-                                      padding: '0.25rem 0.45rem',
-                                      borderRadius: '6px',
-                                      border: '1.5px solid var(--primary-color, #0ea5e9)',
-                                      fontSize: '0.8rem',
-                                      outline: 'none'
-                                    }}
-                                  />
-                                  <button
-                                    type="button"
-                                    disabled={savingOrderPhone}
-                                    onClick={handleSaveOrderPhone}
-                                    style={{
-                                      background: '#16a34a',
-                                      color: '#ffffff',
-                                      border: 'none',
-                                      borderRadius: '6px',
-                                      padding: '0.25rem 0.5rem',
-                                      cursor: 'pointer',
-                                      fontSize: '0.74rem',
-                                      fontWeight: 600,
-                                      display: 'inline-flex',
-                                      alignItems: 'center',
-                                      gap: '0.2rem'
-                                    }}
-                                  >
-                                    <Check size={12} />
-                                    <span>{savingOrderPhone ? '...' : 'Guardar'}</span>
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={() => setIsEditingOrderPhone(false)}
-                                    style={{
-                                      background: '#f1f5f9',
-                                      color: '#64748b',
-                                      border: '1px solid #cbd5e1',
-                                      borderRadius: '6px',
-                                      padding: '0.25rem 0.4rem',
-                                      cursor: 'pointer',
-                                      fontSize: '0.74rem'
-                                    }}
-                                  >
-                                    ✕
-                                  </button>
+
+                                {/* Correo Electrónico & Cédula (Formato limpio sin cortes raros) */}
+                                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '0.55rem 0.75rem', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                                  {loc.email ? (
+                                    <div>
+                                      <h5 style={{ margin: '0 0 0.1rem 0', color: '#64748b', fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.3px', fontWeight: 500 }}>Correo Electrónico</h5>
+                                      <p style={{ margin: 0, fontWeight: 400, color: '#0f172a', fontSize: '0.82rem', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+                                        ✉️ {loc.email}
+                                      </p>
+                                    </div>
+                                  ) : (
+                                    <div>
+                                      <h5 style={{ margin: '0 0 0.1rem 0', color: '#64748b', fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.3px', fontWeight: 500 }}>Correo Electrónico</h5>
+                                      <p style={{ margin: 0, fontWeight: 400, color: '#94a3b8', fontSize: '0.78rem', fontStyle: 'italic' }}>Sin correo registrado</p>
+                                    </div>
+                                  )}
+
+                                  {loc.cedula && loc.cedula.trim() && loc.cedula !== 'No registrada' && (
+                                    <div style={{ borderTop: '1px dashed #e2e8f0', paddingTop: '0.3rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                      <span style={{ color: '#64748b', fontSize: '0.68rem', textTransform: 'uppercase', fontWeight: 500 }}>Cédula / ID:</span>
+                                      <span style={{ fontWeight: 500, color: '#0f172a', fontSize: '0.82rem' }}>{loc.cedula}</span>
+                                    </div>
+                                  )}
                                 </div>
-                              )}
-                            </div>
 
-                            {/* Cédula y Correo */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
-                              <div>
-                                <h5 style={{ margin: '0 0 0.15rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Cédula / Identificación</h5>
-                                <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.84rem' }}>{loc.cedula || 'No registrada'}</p>
-                              </div>
-                              <div>
-                                <h5 style={{ margin: '0 0 0.15rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Correo Electrónico</h5>
-                                <p style={{ margin: 0, fontWeight: 400, color: '#0f172a', fontSize: '0.8rem', wordBreak: 'break-all' }}>{loc.email || 'No registrado'}</p>
-                              </div>
-                            </div>
+                                {/* Ubicación y Dirección de Entrega (Unificados elegantemente) */}
+                                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '0.55rem 0.75rem', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                                  <div>
+                                    <h5 style={{ margin: '0 0 0.1rem 0', color: '#64748b', fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.3px', fontWeight: 500 }}>Ciudad / Departamento</h5>
+                                    <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.84rem' }}>
+                                      📍 {loc.ciudad || 'No especificada'}{loc.departamento ? `, ${loc.departamento}` : ''}
+                                    </p>
+                                  </div>
+                                  <div style={{ borderTop: '1px dashed #e2e8f0', paddingTop: '0.25rem' }}>
+                                    <h5 style={{ margin: '0 0 0.1rem 0', color: '#64748b', fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.3px', fontWeight: 500 }}>Dirección de Entrega</h5>
+                                    <p style={{ margin: 0, color: '#0f172a', fontSize: '0.84rem', fontWeight: 500 }}>
+                                      🏠 {loc.direccion || 'Sin dirección registrada'}
+                                    </p>
+                                  </div>
+                                </div>
 
-                            {/* Ciudad y Departamento */}
-                            <div>
-                              <h5 style={{ margin: '0 0 0.15rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Ciudad / Departamento</h5>
-                              <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.85rem' }}>
-                                📍 {loc.ciudad || 'No especificada'}{loc.departamento ? `, ${loc.departamento}` : ''}
-                              </p>
-                            </div>
+                                {/* Método de Envío y Método de Pago (Sin corchetes y ordenado) */}
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
+                                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '0.5rem 0.65rem', borderRadius: '10px' }}>
+                                    <h5 style={{ margin: '0 0 0.15rem 0', color: '#64748b', fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.3px', fontWeight: 500 }}>Método de Envío</h5>
+                                    <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.8rem', lineHeight: 1.25 }}>
+                                      {displayMetodoEnvio}
+                                    </p>
+                                  </div>
+                                  <div style={{ background: isContra ? '#fff7ed' : '#f0fdf4', border: isContra ? '1px solid #fed7aa' : '1px solid #bbf7d0', padding: '0.5rem 0.65rem', borderRadius: '10px' }}>
+                                    <h5 style={{ margin: '0 0 0.15rem 0', color: isContra ? '#9a3412' : '#166534', fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.3px', fontWeight: 500 }}>Método de Pago</h5>
+                                    <p style={{ margin: 0, fontWeight: 600, color: isContra ? '#c2410c' : '#15803d', fontSize: '0.8rem', lineHeight: 1.25 }}>
+                                      {displayMetodoPago}
+                                    </p>
+                                  </div>
+                                </div>
 
-                            {/* Dirección de Entrega */}
-                            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '0.65rem 0.8rem', borderRadius: '10px' }}>
-                              <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Dirección de Entrega</h5>
-                              <p style={{ margin: 0, color: '#0f172a', fontSize: '0.85rem', fontWeight: 500 }}>{loc.direccion || 'Sin dirección registrada'}</p>
-                            </div>
-
-                            {/* Método de Envío y Método de Pago */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
-                              <div>
-                                <h5 style={{ margin: '0 0 0.15rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Método de Envío</h5>
-                                <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.82rem' }}>
-                                  {(selectedPedido as any).metodo_envio || (Array.isArray(selectedPedido.productos) && selectedPedido.productos[0]?._metodo_envio) || ((selectedPedido.direccion || '').toLowerCase().includes('recoger') ? '🏪 Recoger en tienda' : '🚚 Envío a domicilio')}
-                                </p>
-                              </div>
-                              <div>
-                                <h5 style={{ margin: '0 0 0.15rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Método de Pago</h5>
-                                <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.82rem' }}>
-                                  {getMetodoPago(selectedPedido) || (selectedPedido as any).modalidad_pago || 'Por definir'}
-                                </p>
+                                {/* Línea / Asesor */}
+                                <div>
+                                  <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Línea / Asesor Asignado</h5>
+                                  <div style={{ display: 'flex', alignItems: 'center', marginTop: '0.15rem' }}>
+                                    {renderAsesorBadge(selectedPedido.linea_whatsapp, selectedPedido.origen)}
+                                  </div>
+                                </div>
                               </div>
                             </div>
-
-                            {/* Línea / Asesor */}
-                            <div>
-                              <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Línea / Asesor Asignado</h5>
-                              <div style={{ display: 'flex', alignItems: 'center', marginTop: '0.15rem' }}>
-                                {renderAsesorBadge(selectedPedido.linea_whatsapp, selectedPedido.origen)}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                          );
+                        })()}
 
                         {/* ════════════════════════════════════════════════════════
                             COLUMNA 2: 🛍️ PRODUCTOS SOLICITADOS
