@@ -1,196 +1,97 @@
-/* Christmas Hero Lights - Guirnalda y Luces Navideñas Animadas */
+/* Christmas Hero Lights - Luces Navideñas Optimizadas para 60FPS */
 
 .christmas-hero-lights-container {
   position: absolute;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   pointer-events: none;
-  z-index: 15;
-  overflow: visible;
+  z-index: 12;
+  overflow: hidden;
   user-select: none;
+  contain: strict;
+  transform: translateZ(0);
 }
 
-/* Cables principales */
+/* Cable de guirnalda limpio y festivo */
 .xmas-wire {
   fill: none;
   stroke: #164e2d;
-  stroke-width: 2.2;
+  stroke-width: 1.8;
   stroke-linecap: round;
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
-}
-
-.xmas-wire-secondary {
-  fill: none;
-  stroke: #0d381e;
-  stroke-width: 1.4;
-  stroke-linecap: round;
-  stroke-dasharray: 4, 2;
+  stroke-linejoin: round;
   opacity: 0.85;
-}
-
-/* Ramitas de pino decorativas */
-.xmas-pine-needle {
-  stroke: #1b6339;
-  stroke-width: 1.6;
-  stroke-linecap: round;
-}
-
-.xmas-pine-needle-light {
-  stroke: #22c55e;
-  stroke-width: 1.2;
-  stroke-linecap: round;
 }
 
 /* Casquillo / base del bombillo */
 .xmas-socket {
-  fill: #14532d;
-  stroke: #052e16;
-  stroke-width: 0.8;
+  fill: #064e3b;
 }
 
-/* Bombillos con gradientes y brillo */
+/* Bombillos con aceleración de GPU pura (cero repintados de filtros pesados) */
 .xmas-bulb {
-  transform-origin: center top;
-  cursor: default;
+  will-change: opacity, transform;
+  transform-origin: 0 2px;
 }
 
-/* Animaciones de destello y alumbrado ("alumbran") */
-.xmas-bulb-red {
-  animation: xmasTwinkleRed 2.2s ease-in-out infinite alternate;
+/* 4 grupos de titileo suave escalonados para efecto natural */
+.xmas-twinkle-0 {
+  animation: xmasTwinkleA 2.2s ease-in-out infinite alternate;
 }
 
-.xmas-bulb-gold {
-  animation: xmasTwinkleGold 1.8s ease-in-out infinite alternate 0.4s;
+.xmas-twinkle-1 {
+  animation: xmasTwinkleB 1.9s ease-in-out infinite alternate 0.35s;
 }
 
-.xmas-bulb-green {
-  animation: xmasTwinkleGreen 2.4s ease-in-out infinite alternate 0.8s;
+.xmas-twinkle-2 {
+  animation: xmasTwinkleA 2.6s ease-in-out infinite alternate 0.7s;
 }
 
-.xmas-bulb-blue {
-  animation: xmasTwinkleBlue 2.0s ease-in-out infinite alternate 0.2s;
+.xmas-twinkle-3 {
+  animation: xmasTwinkleB 2.1s ease-in-out infinite alternate 1.15s;
 }
 
-.xmas-bulb-pink {
-  animation: xmasTwinklePink 2.6s ease-in-out infinite alternate 0.6s;
-}
-
-.xmas-bulb-white {
-  animation: xmasTwinkleWhite 1.9s ease-in-out infinite alternate 1.1s;
-}
-
-/* Keyframes de alumbrado de bombillos con resplandor suave y vivo */
-@keyframes xmasTwinkleRed {
-  0% {
-    opacity: 0.45;
-    filter: drop-shadow(0 0 2px rgba(255, 46, 85, 0.4));
-    transform: scale(0.94);
-  }
-  100% {
-    opacity: 1;
-    filter: drop-shadow(0 0 8px #ff2e55) drop-shadow(0 0 16px rgba(255, 46, 85, 0.7));
-    transform: scale(1.06);
-  }
-}
-
-@keyframes xmasTwinkleGold {
+@keyframes xmasTwinkleA {
   0% {
     opacity: 0.5;
-    filter: drop-shadow(0 0 2px rgba(255, 190, 11, 0.4));
-    transform: scale(0.94);
+    transform: scale(0.96);
   }
   100% {
     opacity: 1;
-    filter: drop-shadow(0 0 9px #ffbe0b) drop-shadow(0 0 18px rgba(255, 190, 11, 0.75));
-    transform: scale(1.08);
+    transform: scale(1.04);
   }
 }
 
-@keyframes xmasTwinkleGreen {
-  0% {
-    opacity: 0.4;
-    filter: drop-shadow(0 0 2px rgba(16, 185, 129, 0.3));
-    transform: scale(0.93);
-  }
-  100% {
-    opacity: 1;
-    filter: drop-shadow(0 0 8px #10b981) drop-shadow(0 0 16px rgba(16, 185, 129, 0.7));
-    transform: scale(1.05);
-  }
-}
-
-@keyframes xmasTwinkleBlue {
+@keyframes xmasTwinkleB {
   0% {
     opacity: 0.45;
-    filter: drop-shadow(0 0 2px rgba(56, 189, 248, 0.4));
-    transform: scale(0.94);
-  }
-  100% {
-    opacity: 1;
-    filter: drop-shadow(0 0 8px #38bdf8) drop-shadow(0 0 17px rgba(56, 189, 248, 0.75));
-    transform: scale(1.07);
-  }
-}
-
-@keyframes xmasTwinklePink {
-  0% {
-    opacity: 0.5;
-    filter: drop-shadow(0 0 2px rgba(236, 72, 153, 0.4));
     transform: scale(0.95);
   }
   100% {
-    opacity: 1;
-    filter: drop-shadow(0 0 9px #ec4899) drop-shadow(0 0 18px rgba(236, 72, 153, 0.75));
-    transform: scale(1.08);
+    opacity: 0.98;
+    transform: scale(1.03);
   }
 }
 
-@keyframes xmasTwinkleWhite {
-  0% {
-    opacity: 0.55;
-    filter: drop-shadow(0 0 3px rgba(254, 240, 138, 0.5));
-    transform: scale(0.94);
-  }
-  100% {
-    opacity: 1;
-    filter: drop-shadow(0 0 10px #fef08a) drop-shadow(0 0 20px rgba(254, 240, 138, 0.85));
-    transform: scale(1.1);
-  }
-}
-
-/* Pequeños destellos de estrellas mágicas */
-.xmas-sparkle {
-  animation: xmasSparkleAnim 3s ease-in-out infinite;
-  transform-origin: center;
-}
-
-@keyframes xmasSparkleAnim {
-  0%, 100% {
-    opacity: 0;
-    transform: scale(0.2) rotate(0deg);
-  }
-  50% {
-    opacity: 0.9;
-    transform: scale(1) rotate(180deg);
-  }
-}
-
-/* Guirnalda superior que cuelga elegantemente */
+/* Guirnalda superior que enmarca el borde alto del hero */
 .xmas-top-garland {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
-  height: 48px;
+  height: 42px;
   overflow: visible;
 }
 
-/* Guirnaldas laterales que se van enredando */
+/* Guirnaldas laterales confinadas exclusivamente a la mitad superior (lejos de la barra rosada) */
 .xmas-left-garland {
   position: absolute;
   top: 0;
   left: 0;
-  width: 38px;
-  height: 100%;
+  width: 28px;
+  height: 50%;
+  max-height: 150px;
   overflow: visible;
 }
 
@@ -198,29 +99,22 @@
   position: absolute;
   top: 0;
   right: 0;
-  width: 38px;
-  height: 100%;
+  width: 28px;
+  height: 50%;
+  max-height: 150px;
   overflow: visible;
 }
 
-/* Guirnalda inferior que enmarca el borde */
-.xmas-bottom-garland {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 42px;
-  overflow: visible;
-}
-
-/* Adaptabilidad móvil */
+/* Adaptabilidad móvil: aún más esbelta para no interferir con botones */
 @media (max-width: 600px) {
+  .xmas-top-garland {
+    height: 34px;
+  }
+
   .xmas-left-garland,
   .xmas-right-garland {
-    width: 26px;
-  }
-  
-  .xmas-top-garland {
-    height: 40px;
+    width: 22px;
+    height: 45%;
+    max-height: 125px;
   }
 }
