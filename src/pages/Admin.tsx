@@ -5,12 +5,13 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista, PQRS } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Minus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, ChevronRight, Wrench, ArrowUpDown, Filter, MapPin, XCircle, Truck, Clock, FileCheck, CheckCircle, Landmark, BookOpen, LifeBuoy, ShoppingCart, ClipboardList, Star, Ban, ExternalLink, Flame, RotateCcw, Sparkles } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Minus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, ChevronRight, Wrench, ArrowUpDown, Filter, MapPin, XCircle, Truck, Clock, FileCheck, CheckCircle, Landmark, BookOpen, LifeBuoy, ShoppingCart, ClipboardList, Star, Ban, ExternalLink, Flame, RotateCcw, Sparkles, QrCode } from 'lucide-react';
 
 import * as XLSX from 'xlsx';
 import { ERPContabilidadService } from '../lib/erpContabilidadService';
 import { ERPMainModule, type ERPTab } from '../components/erp/ERPMainModule';
 import WhatsAppPhoneVerifier, { validateWhatsAppPhone } from '../components/WhatsAppPhoneVerifier';
+import { QRCodeGeneratorModule } from '../components/QRCodeGeneratorModule';
 
 const SECRET_PIN = '0000';
 
@@ -2679,7 +2680,7 @@ export default function Admin() {
   const [orderSearchQuery, setOrderSearchQuery] = useState<string>('');
   const [orderFilterDate, setOrderFilterDate] = useState<string>('');
   const [orderSortBy, setOrderSortBy] = useState<string>('date_desc');
-  const [configSubTab, setConfigSubTab] = useState<'negocio' | 'bancos' | 'apariencia' | 'pos' | 'desarrollador' | 'sistema'>('negocio');
+  const [configSubTab, setConfigSubTab] = useState<'negocio' | 'bancos' | 'apariencia' | 'pos' | 'qr' | 'desarrollador' | 'sistema'>('negocio');
   const [showCatalogOtherOptions, setShowCatalogOtherOptions] = useState(false);
 
   // Filtros para Ventas POS
@@ -8232,6 +8233,7 @@ export default function Admin() {
                   { key: 'bancos', label: 'Bancos & Pagos', Icon: CreditCard },
                   { key: 'apariencia', label: 'Diseño & Catálogo', Icon: Palette },
                   { key: 'pos', label: 'POS & Impresión', Icon: Printer },
+                  { key: 'qr', label: 'Código QR', Icon: QrCode },
                   { key: 'desarrollador', label: 'Desarrollador & APIs', Icon: Code2 },
                   { key: 'sistema', label: 'Reglas & Purga', Icon: Settings }
                 ].map(sub => {
@@ -8298,6 +8300,7 @@ export default function Admin() {
                       <option value="bancos">💳 Bancos & Pagos</option>
                       <option value="apariencia">🎨 Diseño & Catálogo</option>
                       <option value="pos">🖨️ POS & Impresión</option>
+                      <option value="qr">📱 Código QR</option>
                       <option value="desarrollador">💻 Desarrollador & APIs</option>
                       <option value="sistema">⚙️ Reglas & Purga</option>
                     </select>
@@ -12058,6 +12061,14 @@ export default function Admin() {
                         </div>
                       </div>
                     </>
+                  )}
+
+                  {/* ── SUB-TAB: CÓDIGO QR ── */}
+                  {configSubTab === 'qr' && (
+                    <QRCodeGeneratorModule
+                      configuracion={configuracion}
+                      mayoristas={mayoristas}
+                    />
                   )}
 
                   {/* ── SUB-TAB 5: DESARROLLADOR & APIS ── */}
