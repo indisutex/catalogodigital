@@ -15677,7 +15677,7 @@ export default function Admin() {
       {/* MODAL DETALLE PEDIDO */}
       {selectedPedido && (
         <div className="modal-overlay" onClick={() => { setSelectedPedido(null); setShowSuccessScreen(false); setIsEditingOrderPhone(false); }}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '600px', width: '100%', borderRadius: '16px', padding: '1.25rem', maxHeight: '92vh', overflowY: 'auto' }}>
+          <div className="modal-content modal-detalle-pedido-dialog" onClick={e => e.stopPropagation()}>
             {showSuccessScreen ? (
               <div style={{ textAlign: 'center', padding: '1rem 0' }}>
                 <div style={{ 
@@ -15809,1129 +15809,891 @@ export default function Admin() {
               </div>
             ) : (
               <>
-                <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.75rem', marginBottom: '1rem', fontFamily: "'Poppins', sans-serif" }}>
-                  <h3 style={{ margin: 0, fontSize: '1.08rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>📦 Detalle del Pedido</h3>
-                  <button onClick={() => { setSelectedPedido(null); setShowSuccessScreen(false); setIsEditingOrderPhone(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: 0 }}>
-                    <X size={20} />
-                  </button>
-                </div>
-                
-                {/* ── CLIENT INFO GRID (Estilo Carrito Digital) ── */}
                 {(() => {
                   const loc = parseOrderLocationAndContact(selectedPedido);
-                  return (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '0.8rem 1rem', marginBottom: '1rem', background: '#f8fafc', padding: '1rem 1.1rem', borderRadius: '16px', border: '1px solid #e2e8f0', fontFamily: "'Poppins', sans-serif" }}>
-                      <div>
-                        <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Cliente</h5>
-                        <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.88rem' }}>{selectedPedido.cliente_nombre || (selectedPedido as any).nombre || 'Borrador Anónimo'}</p>
-                        
-                        {!isEditingOrderPhone ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.15rem' }}>
-                            <p style={{ margin: 0, color: '#64748b', fontSize: '0.82rem', fontWeight: 400 }}>
-                              {selectedPedido.cliente_telefono || (selectedPedido as any).telefono || 'Sin teléfono'}
-                            </p>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setTempOrderPhone(((selectedPedido.cliente_telefono || (selectedPedido as any).telefono || '').replace(/\D/g, '')).slice(0, 10));
-                                setIsEditingOrderPhone(true);
-                              }}
-                              title="Editar número de teléfono del cliente"
-                              style={{
-                                background: '#f1f5f9',
-                                border: '1px solid #cbd5e1',
-                                borderRadius: '6px',
-                                padding: '1px 6px',
-                                cursor: 'pointer',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '0.25rem',
-                                color: '#475569',
-                                fontSize: '0.72rem',
-                                fontWeight: 500,
-                                fontFamily: "'Poppins', sans-serif"
-                              }}
-                            >
-                              <Pencil size={11} />
-                              <span>Editar</span>
-                            </button>
-                          </div>
-                        ) : (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
-                            <input
-                              type="tel"
-                              value={tempOrderPhone}
-                              maxLength={10}
-                              autoFocus
-                              onChange={e => {
-                                let val = e.target.value.replace(/\D/g, '');
-                                if (val.startsWith('57') && val.length > 10) val = val.slice(2);
-                                if (val.startsWith('0') && val.length > 10) val = val.slice(1);
-                                setTempOrderPhone(val.slice(0, 10));
-                              }}
-                              placeholder="Celular 10 dígitos"
-                              style={{
-                                width: '120px',
-                                padding: '0.2rem 0.4rem',
-                                borderRadius: '6px',
-                                border: '1.5px solid var(--primary-color, #0ea5e9)',
-                                fontSize: '0.8rem',
-                                outline: 'none',
-                                fontFamily: "'Poppins', sans-serif",
-                                fontWeight: 400
-                              }}
-                            />
-                            <button
-                              type="button"
-                              disabled={savingOrderPhone}
-                              onClick={handleSaveOrderPhone}
-                              style={{
-                                background: '#16a34a',
-                                color: '#ffffff',
-                                border: 'none',
-                                borderRadius: '6px',
-                                padding: '0.25rem 0.5rem',
-                                cursor: 'pointer',
-                                fontSize: '0.74rem',
-                                fontWeight: 600,
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '0.2rem',
-                                fontFamily: "'Poppins', sans-serif"
-                              }}
-                            >
-                              <Check size={12} />
-                              <span>{savingOrderPhone ? '...' : 'Guardar'}</span>
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setIsEditingOrderPhone(false)}
-                              style={{
-                                background: '#f1f5f9',
-                                color: '#64748b',
-                                border: '1px solid #cbd5e1',
-                                borderRadius: '6px',
-                                padding: '0.25rem 0.4rem',
-                                cursor: 'pointer',
-                                fontSize: '0.74rem',
-                                fontFamily: "'Poppins', sans-serif"
-                              }}
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                      <div>
-                        <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Cédula / Identificación</h5>
-                        <p style={{ margin: 0, fontWeight: 400, color: '#0f172a', fontSize: '0.85rem' }}>
-                          {loc.cedula}
-                        </p>
-                      </div>
-                      <div>
-                        <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Correo Electrónico</h5>
-                        <p style={{ margin: 0, fontWeight: 400, color: '#0f172a', fontSize: '0.84rem', wordBreak: 'break-all' }}>
-                          {loc.email}
-                        </p>
-                      </div>
-                      <div>
-                        <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Ciudad</h5>
-                        <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.85rem' }}>
-                          {loc.ciudad}
-                        </p>
-                      </div>
-                      <div>
-                        <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Departamento</h5>
-                        <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.85rem' }}>
-                          {loc.departamento}
-                        </p>
-                      </div>
-                      <div>
-                        <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Método de Pago</h5>
-                        <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.84rem' }}>
-                          {getMetodoPago(selectedPedido) || (selectedPedido as any).modalidad_pago || 'Por definir'}
-                        </p>
-                      </div>
-                      <div>
-                        <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Método de Envío</h5>
-                        <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.84rem' }}>
-                          {(selectedPedido as any).metodo_envio || (Array.isArray(selectedPedido.productos) && selectedPedido.productos[0]?._metodo_envio) || ((selectedPedido.direccion || '').toLowerCase().includes('recoger') ? '🏪 Recoger en tienda' : '🚚 Envío a domicilio')}
-                        </p>
-                      </div>
-                      <div>
-                        <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Línea / Asesor</h5>
-                        <div style={{ display: 'flex', alignItems: 'center', marginTop: '0.15rem' }}>
-                          {renderAsesorBadge(selectedPedido.linea_whatsapp, selectedPedido.origen)}
-                        </div>
-                      </div>
-                      <div style={{ gridColumn: '1 / -1', borderTop: '1px dashed #cbd5e1', paddingTop: '0.65rem', marginTop: '0.2rem' }}>
-                        <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Dirección de Entrega</h5>
-                        <p style={{ margin: 0, color: '#0f172a', fontSize: '0.86rem', fontWeight: 500 }}>
-                          {loc.direccion}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* ── PRODUCTOS SOLICITADOS ── */}
-                <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '0.9rem', fontFamily: "'Poppins', sans-serif" }}>
-                  {(() => {
-                    const prodsList = Array.isArray(selectedPedido.productos) ? selectedPedido.productos : [];
-                    const totalUnitsInOrder = prodsList.reduce((sum: number, p: any) => sum + (Number(p.cantidad) || 1), 0);
-                    const isWholesaleOrder = totalUnitsInOrder >= 6 || (selectedPedido as any).descuento_mayor_aplicado || prodsList.some((p: any) => p.precio_aplicado_mayor);
-
-                    return (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
-                        <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a' }}>📦 Productos Solicitados</h4>
-                        {isWholesaleOrder ? (
-                          <span style={{ background: '#f3e8ff', color: '#7e22ce', border: '1px solid #d8b4fe', padding: '0.2rem 0.6rem', borderRadius: '12px', fontSize: '0.74rem', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                            📦 Venta Por Mayor ({totalUnitsInOrder} unds)
-                          </span>
-                        ) : (
-                          <span style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '0.2rem 0.6rem', borderRadius: '12px', fontSize: '0.74rem', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                            🛍️ Venta Al Detal ({totalUnitsInOrder} unds)
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })()}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxHeight: '160px', overflowY: 'auto', paddingRight: '0.4rem' }}>
-                    {(() => {
-                      const prodsList = Array.isArray(selectedPedido.productos) ? selectedPedido.productos : [];
-                      const totalUnitsInOrder = prodsList.reduce((sum: number, p: any) => sum + (Number(p.cantidad) || 1), 0);
-                      const isWholesaleOrder = totalUnitsInOrder >= 6 || (selectedPedido as any).descuento_mayor_aplicado || prodsList.some((p: any) => p.precio_aplicado_mayor);
-
-                      return prodsList.map((prod: any, idx: number) => {
-                        const cant = Number(prod.cantidad) || 1;
-                        let unitPrice = Number(prod.precio) || 0;
-                        
-                        if (isWholesaleOrder) {
-                          if (prod.precio_aplicado_mayor) {
-                            unitPrice = Number(prod.precio) || 0;
-                          } else if (prod.precio_por_mayor && Number(prod.precio_por_mayor) > 0 && Number(prod.precio_por_mayor) < unitPrice) {
-                            unitPrice = Number(prod.precio_por_mayor);
-                          }
-                        }
-
-                        const lineTotal = unitPrice * cant;
-
-                        return (
-                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '0.55rem 0.8rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                            <div>
-                              <h5 style={{ margin: 0, color: '#0f172a', fontSize: '0.85rem', fontWeight: 500 }}>{prod.nombre}</h5>
-                              <span style={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 400 }}>
-                                Cantidad: {prod.cantidad} {prod.talla ? ` | Talla: ${prod.talla}` : ''} {prod.estampado ? ` | Estampado: ${prod.estampado}` : ''}
-                              </span>
-                            </div>
-                            <div style={{ textAlign: 'right' }}>
-                              <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.88rem', display: 'block' }}>
-                                ${lineTotal.toLocaleString('es-CO')}
-                              </span>
-                              {isWholesaleOrder && (
-                                <span style={{ fontSize: '0.66rem', color: '#166534', background: '#dcfce7', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: 500, display: 'inline-block', marginTop: '0.15rem' }}>
-                                  Precio por mayor
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      });
-                    })()}
-                  </div>
-                </div>
-
-                {(() => {
+                  const prodsList = Array.isArray(selectedPedido.productos) ? selectedPedido.productos : [];
+                  const totalUnitsInOrder = prodsList.reduce((sum: number, p: any) => sum + (Number(p.cantidad) || 1), 0);
+                  const isWholesaleOrder = totalUnitsInOrder >= 6 || (selectedPedido as any).descuento_mayor_aplicado || prodsList.some((p: any) => p.precio_aplicado_mayor);
                   const mp = getMetodoPago(selectedPedido);
                   const isContra = mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra')) || selectedPedido.estado === 'contra_entrega' || selectedPedido.estado === 'mensaje_enviado' || selectedPedido.estado === 'confirmado' || selectedPedido.estado === 'despachado';
                   const contraStatus = getContraStatus(selectedPedido);
+                  const auditLogs = getOrderAuditLogs(selectedPedido);
 
                   return (
                     <div style={{ fontFamily: "'Poppins', sans-serif" }}>
-                      {/* Evidencia de Cancelación (Si el pedido está cancelado) */}
-                      {selectedPedido.estado === 'cancelado' && (
-                        <div style={{ marginTop: '0.9rem', borderTop: '1px solid #fca5a5', paddingTop: '0.85rem', background: '#fef2f2', padding: '0.9rem 1rem', borderRadius: '14px', border: '1.5px solid #fca5a5' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                            <h4 style={{ margin: 0, fontSize: '0.88rem', color: '#991b1b', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600 }}>
-                              🚫 Evidencia de Cancelación (Foto / Captura de Chat)
-                            </h4>
-                          </div>
-
-                          {selectedPedido.evidencia_cancelacion_url ? (
-                            <div style={{ textAlign: 'center' }}>
-                              <div onClick={() => setPagoModalUrl(selectedPedido.evidencia_cancelacion_url || null)} style={{ cursor: 'pointer', textAlign: 'center' }}>
-                                <img
-                                  src={selectedPedido.evidencia_cancelacion_url}
-                                  alt="Evidencia de Cancelación"
-                                  style={{ width: '100%', maxHeight: '180px', objectFit: 'contain', borderRadius: '12px', border: '1px solid #fca5a5', background: '#ffffff' }}
-                                />
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', marginTop: '0.5rem' }}>
-                                <p style={{ fontSize: '0.76rem', color: '#991b1b', fontWeight: 500, margin: 0 }}>
-                                  ✅ Captura subida — Clic para ampliar
-                                </p>
-                                <label style={{ background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '6px', padding: '0.2rem 0.55rem', fontSize: '0.72rem', cursor: 'pointer', fontWeight: 500 }}>
-                                  Cambiar Foto
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    style={{ display: 'none' }}
-                                    onChange={(e) => handleUploadEvidenciaCancelacion(e, selectedPedido.id)}
-                                  />
-                                </label>
-                              </div>
-                            </div>
-                          ) : (
-                            <div>
-                              <p style={{ fontSize: '0.78rem', color: '#7f1d1d', margin: '0 0 0.55rem 0', fontWeight: 400 }}>
-                                Sube la foto o captura del chat de WhatsApp donde se confirme la cancelación del pedido:
-                              </p>
-                              <label style={{ padding: '0.65rem 1rem', background: '#dc2626', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', boxShadow: '0 2px 6px rgba(220,38,38,0.25)' }}>
-                                📸 Subir Captura / Evidencia de Cancelación
-                                <input
-                                  type="file"
-                                  accept="image/*"
-                                  style={{ display: 'none' }}
-                                  onChange={(e) => handleUploadEvidenciaCancelacion(e, selectedPedido.id)}
-                                />
-                              </label>
-                            </div>
-                          )}
+                      {/* ── ENCABEZADO DEL MODAL ── */}
+                      <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.85rem', marginBottom: '1.25rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
+                          <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                            📦 Detalle del Pedido #{selectedPedido.id.slice(0, 8)}
+                          </h3>
+                          <span style={{
+                            fontSize: '0.72rem',
+                            padding: '0.2rem 0.6rem',
+                            borderRadius: '20px',
+                            fontWeight: 600,
+                            textTransform: 'uppercase',
+                            background: isContra ? '#ffedd5' : selectedPedido.estado === 'completado' ? '#dcfce7' : selectedPedido.estado === 'cancelado' ? '#fee2e2' : '#f1f5f9',
+                            color: isContra ? '#c2410c' : selectedPedido.estado === 'completado' ? '#166534' : selectedPedido.estado === 'cancelado' ? '#991b1b' : '#475569',
+                            border: '1px solid currentColor'
+                          }}>
+                            {isContra ? '🚚 Pago Contra Entrega' : selectedPedido.estado === 'completado' ? '✅ Pago Verificado' : selectedPedido.estado === 'cancelado' ? '🚫 Cancelado' : '💳 Pago Transferencia'}
+                          </span>
                         </div>
-                      )}
+                        <button
+                          type="button"
+                          onClick={() => { setSelectedPedido(null); setShowSuccessScreen(false); setIsEditingOrderPhone(false); }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '0.25rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px' }}
+                          title="Cerrar modal"
+                        >
+                          <X size={22} />
+                        </button>
+                      </div>
 
-                      {selectedPedido.estado === 'cancelado' ? (
-                        <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #fee2e2', paddingTop: '0.85rem' }}>
-                            <span style={{ fontSize: '0.95rem', fontWeight: 500, color: '#0f172a' }}>Total del Pedido Cancelado:</span>
-                            <span style={{ fontSize: '1.25rem', fontWeight: 600, color: '#dc2626' }}>
-                              ${selectedPedido.total.toLocaleString()}
+                      {/* ── GRID DE 3 COLUMNAS ORGANIZADAS ── */}
+                      <div className="modal-detalle-pedido-3cols">
+                        
+                        {/* ════════════════════════════════════════════════════════
+                            COLUMNA 1: 👤 DATOS DEL CLIENTE Y ENVÍO
+                        ════════════════════════════════════════════════════════ */}
+                        <div className="modal-col-card">
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem' }}>
+                            <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                              <User size={16} color="var(--primary-color, #0ea5e9)" /> Datos del Cliente
+                            </h4>
+                            <span style={{ fontSize: '0.72rem', color: '#64748b', background: '#f8fafc', border: '1px solid #e2e8f0', padding: '0.12rem 0.5rem', borderRadius: '6px', fontWeight: 500 }}>
+                              Info Personal
                             </span>
                           </div>
 
-                          {/* Info de Retención y Purga */}
-                          {(() => {
-                            const RETENTION_MS = 3 * 24 * 60 * 60 * 1000;
-                            const now = Date.now();
-                            const created = new Date(selectedPedido.created_at || now).getTime();
-                            const rem = (created + RETENTION_MS) - now;
-                            let remText = 'menos de 1 hora';
-                            if (rem > 0) {
-                              const d = Math.floor(rem / (1000 * 60 * 60 * 24));
-                              const h = Math.floor((rem % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                              if (d > 0) remText = `${d} día${d !== 1 ? 's' : ''} y ${h} h`;
-                              else remText = `${h} hora${h !== 1 ? 's' : ''}`;
-                            }
-                            return (
-                              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', padding: '0.5rem 0.75rem', fontSize: '0.78rem', color: '#991b1b', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
-                                <Clock size={14} style={{ color: '#dc2626', flexShrink: 0 }} />
-                                <span>Esta tarjeta se eliminará automáticamente en: <strong style={{ fontWeight: 600, color: '#dc2626' }}>${remText}</strong> (retención de 3 días).</span>
-                              </div>
-                            );
-                          })()}
-
-                          <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.3rem' }}>
-                            <button
-                              type="button"
-                              onClick={() => handleReactivarPedido(selectedPedido.id, (selectedPedido as any).isLead)}
-                              style={{
-                                flex: 1,
-                                padding: '0.65rem',
-                                background: '#f0fdf4',
-                                color: '#16a34a',
-                                border: '1.5px solid #bbf7d0',
-                                borderRadius: '12px',
-                                cursor: 'pointer',
-                                fontWeight: 600,
-                                fontSize: '0.82rem',
-                                fontFamily: "'Poppins', sans-serif",
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '0.35rem'
-                              }}
-                            >
-                              <RotateCcw size={14} />
-                              <span>Reactivar Pedido</span>
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => handleEliminarPedidoDirecto(selectedPedido.id, (selectedPedido as any).isLead)}
-                              style={{
-                                flex: 1,
-                                padding: '0.65rem',
-                                background: '#fef2f2',
-                                color: '#dc2626',
-                                border: '1.5px solid #fca5a5',
-                                borderRadius: '12px',
-                                cursor: 'pointer',
-                                fontWeight: 600,
-                                fontSize: '0.82rem',
-                                fontFamily: "'Poppins', sans-serif",
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                gap: '0.35rem'
-                              }}
-                            >
-                              <Trash2 size={14} />
-                              <span>Eliminar Ahora</span>
-                            </button>
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedPedido(null);
-                              setShowSuccessScreen(false);
-                            }}
-                            style={{
-                              width: '100%',
-                              padding: '0.65rem',
-                              background: '#ffffff',
-                              color: '#64748b',
-                              border: '1px solid #cbd5e1',
-                              borderRadius: '12px',
-                              cursor: 'pointer',
-                              fontWeight: 500,
-                              fontSize: '0.84rem',
-                              fontFamily: "'Poppins', sans-serif"
-                            }}
-                          >
-                            Cerrar Ventana
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          {/* Evidencia del Comprobante de Pago (Transferencias) */}
-                          {!isContra ? (
-                            selectedPedido.pantallazo_url ? (
-                              <div style={{ marginTop: '0.9rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.85rem' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                                  <h4 style={{ margin: 0, fontSize: '0.86rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 600 }}>
-                                    💳 Comprobante de Pago Subido
-                                  </h4>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            {/* Cliente / Nombre & Celular */}
+                            <div>
+                              <h5 style={{ margin: '0 0 0.15rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Nombre del Cliente</h5>
+                              <p style={{ margin: 0, fontWeight: 600, color: '#0f172a', fontSize: '0.92rem' }}>{selectedPedido.cliente_nombre || (selectedPedido as any).nombre || 'Borrador Anónimo'}</p>
+                              
+                              {!isEditingOrderPhone ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.2rem' }}>
+                                  <p style={{ margin: 0, color: '#475569', fontSize: '0.84rem', fontWeight: 500 }}>
+                                    📱 {selectedPedido.cliente_telefono || (selectedPedido as any).telefono || 'Sin teléfono'}
+                                  </p>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setTempOrderPhone(((selectedPedido.cliente_telefono || (selectedPedido as any).telefono || '').replace(/\D/g, '')).slice(0, 10));
+                                      setIsEditingOrderPhone(true);
+                                    }}
+                                    title="Editar número de teléfono"
+                                    style={{
+                                      background: '#f1f5f9',
+                                      border: '1px solid #cbd5e1',
+                                      borderRadius: '6px',
+                                      padding: '1px 6px',
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '0.25rem',
+                                      color: '#475569',
+                                      fontSize: '0.72rem',
+                                      fontWeight: 500
+                                    }}
+                                  >
+                                    <Pencil size={11} />
+                                    <span>Editar</span>
+                                  </button>
                                 </div>
-                                <div onClick={() => setPagoModalUrl(selectedPedido.pantallazo_url || null)} style={{ cursor: 'pointer', textAlign: 'center' }}>
-                                  <img
-                                    src={selectedPedido.pantallazo_url}
-                                    alt="Comprobante de Pago"
-                                    style={{ width: '100%', maxHeight: '140px', objectFit: 'contain', borderRadius: '12px', border: '1px solid #e2e8f0', background: '#f8fafc' }}
-                                  />
-                                </div>
-                                <p style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: 500, marginTop: '0.4rem', textAlign: 'center', margin: '0.4rem 0 0 0' }}>
-                                  ✅ Comprobante recibido — Clic en la imagen para ver en pantalla completa
-                                </p>
-                              </div>
-                            ) : (
-                              <div style={{ marginTop: '0.9rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.75rem' }}>
-                                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '0.85rem 1rem', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem' }}>
-                                  <div>
-                                    <p style={{ color: '#475569', fontWeight: 600, fontSize: '0.84rem', margin: 0, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                                      ⏳ Pendiente comprobante de transferencia
-                                    </p>
-                                    <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '0.15rem 0 0 0', fontWeight: 400 }}>
-                                      Si el cliente te lo envió por WhatsApp, puedes subirlo aquí.
-                                    </p>
-                                  </div>
-                                  <label style={{ padding: '0.55rem 0.9rem', background: 'var(--primary-color, #0ea5e9)', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 600, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', boxShadow: '0 2px 6px rgba(14,165,233,0.25)' }}>
-                                    📷 Subir comprobante
-                                    <input
-                                      type="file"
-                                      accept="image/*"
-                                      hidden
-                                      onChange={async (e) => {
-                                        if (e.target.files && e.target.files[0]) {
-                                          const file = e.target.files[0];
-                                          try {
-                                            showToast('Subiendo comprobante...', 'success');
-                                            const fileExt = file.name.split('.').pop();
-                                            const fileName = `comprobante_${selectedPedido.id}_${Date.now()}.${fileExt}`;
-                                            const { error: upErr } = await supabase.storage.from('archivos').upload(fileName, file);
-                                            if (upErr) throw upErr;
-                                            const { data: urlData } = supabase.storage.from('archivos').getPublicUrl(fileName);
-                                            const newUrl = urlData.publicUrl;
-                                            await supabase.from('pedidos').update({ pantallazo_url: newUrl }).eq('id', selectedPedido.id);
-                                            setSelectedPedido({ ...selectedPedido, pantallazo_url: newUrl });
-                                            setPedidos(prev => prev.map(p => p.id === selectedPedido.id ? { ...p, pantallazo_url: newUrl } : p));
-                                            showToast('¡Comprobante guardado con éxito! ✓', 'success');
-                                          } catch (err) {
-                                            showToast('Error al subir el comprobante', 'error');
-                                          }
-                                        }
-                                      }}
-                                    />
-                                  </label>
-                                </div>
-                              </div>
-                            )
-                          ) : (
-                            /* Modalidad Contra Entrega banner y estado */
-                            <div style={{ marginTop: '0.9rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.75rem' }}>
-                              <div style={{ background: '#fff7ed', border: '1px solid #fed7aa', padding: '0.65rem 0.85rem', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                <span style={{ color: '#ea580c', fontWeight: 500, fontSize: '0.84rem', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', fontFamily: "'Poppins', sans-serif" }}>
-                                  🚚 Modalidad: Pago Contra Entrega (Paga al recibir)
-                                </span>
-                                <span style={{
-                                  fontSize: '0.68rem',
-                                  padding: '0.15rem 0.55rem',
-                                  borderRadius: '8px',
-                                  fontWeight: 600,
-                                  textTransform: 'uppercase',
-                                  fontFamily: "'Poppins', sans-serif",
-                                  background: contraStatus === 'entregado_pagado' ? '#dcfce7' : contraStatus === 'cancelado' ? '#fee2e2' : contraStatus === 'despachado' ? '#e0f2fe' : contraStatus === 'confirmado' ? '#f3e8ff' : '#ffedd5',
-                                  color: contraStatus === 'entregado_pagado' ? '#166534' : contraStatus === 'cancelado' ? '#991b1b' : contraStatus === 'despachado' ? '#0369a1' : contraStatus === 'confirmado' ? '#7e22ce' : '#c2410c',
-                                  border: '1px solid currentColor'
-                                }}>
-                                  {contraStatus.replace(/_/g, ' ')}
-                                </span>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Guía y Evidencia de Envío (Manual) */}
-                          {(selectedPedido.estado === 'completado' || (isContra && (contraStatus === 'confirmado' || contraStatus === 'despachado' || contraStatus === 'entregado_pagado'))) && (
-                            <div style={{ marginTop: '0.85rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.85rem 1rem' }}>
-                              <h4 style={{ margin: '0 0 0.65rem 0', fontSize: '0.86rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                                🚚 Guía y Evidencia de Envío
-                              </h4>
-
-                              {/* Foto de la Guía de Envío */}
-                              <div style={{ marginBottom: '0.85rem' }}>
-                                <span style={{ fontSize: '0.76rem', color: '#475569', fontWeight: 400, display: 'block', marginBottom: '0.35rem' }}>
-                                  📸 Foto de la Guía / Comprobante de Envío:
-                                </span>
-                                {selectedPedido.evidencia_despacho_url ? (
-                                  <div>
-                                    <div onClick={() => setPagoModalUrl(selectedPedido.evidencia_despacho_url || null)} style={{ cursor: 'pointer', textAlign: 'center' }}>
-                                      <img
-                                        src={selectedPedido.evidencia_despacho_url}
-                                        alt="Evidencia Despacho"
-                                        style={{ width: '100%', maxHeight: '130px', objectFit: 'contain', borderRadius: '10px', border: '1px solid #cbd5e1' }}
-                                      />
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', marginTop: '0.4rem' }}>
-                                      <p style={{ fontSize: '0.76rem', color: '#16a34a', fontWeight: 500, margin: 0 }}>
-                                        ✅ Foto de guía subida
-                                      </p>
-                                      <button
-                                        type="button"
-                                        onClick={async () => {
-                                          try {
-                                            await supabase.from('pedidos').update({ evidencia_despacho_url: null }).eq('id', selectedPedido.id);
-                                             setSelectedPedido({ ...selectedPedido, evidencia_despacho_url: undefined });
-                                             setPedidos(prev => prev.map(p => p.id === selectedPedido.id ? { ...p, evidencia_despacho_url: undefined } : p));
-                                             showToast('Evidencia eliminada, puedes subir otra', 'success');
-                                           } catch (err: any) {
-                                             showToast('Error al eliminar evidencia', 'error');
-                                           }
-                                        }}
-                                        style={{ background: '#fee2e2', color: '#ef4444', border: '1px solid #fca5a5', borderRadius: '6px', padding: '0.2rem 0.5rem', fontSize: '0.72rem', cursor: 'pointer', fontWeight: 500 }}
-                                      >
-                                        Eliminar / Cambiar Foto
-                                      </button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div style={{ textAlign: 'center' }}>
-                                    <label className="btn-upload-img" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', width: '100%', padding: '0.65rem 0.9rem', background: '#ffffff', border: '2px dashed #cbd5e1', borderRadius: '10px', cursor: 'pointer', fontWeight: 500, color: 'var(--primary-color, #0ea5e9)', fontSize: '0.82rem' }}>
-                                      {uploadingEvidenciaDespacho ? 'Subiendo...' : '📸 Subir Foto de la Guía de Envío'}
-                                      <input type="file" accept="image/*" style={{ display: 'none' }} disabled={uploadingEvidenciaDespacho} onChange={async (e) => {
-                                        if (!e.target.files || e.target.files.length === 0) return;
-                                        setUploadingEvidenciaDespacho(true);
-                                        try {
-                                          let file = e.target.files[0];
-                                          if (file.type.startsWith('image/')) {
-                                            file = await compressImage(file) as File;
-                                          }
-                                          const fileName = `despacho_${selectedPedido.id}_${Date.now()}.${file.name.split('.').pop()}`;
-                                          const { error } = await supabase.storage.from('archivos').upload(fileName, file);
-                                          if (error) throw error;
-                                          const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
-                                          
-                                          await supabase.from('pedidos').update({ evidencia_despacho_url: data.publicUrl }).eq('id', selectedPedido.id);
-                                          setSelectedPedido({ ...selectedPedido, evidencia_despacho_url: data.publicUrl });
-                                          setPedidos(prev => prev.map(p => p.id === selectedPedido.id ? { ...p, evidencia_despacho_url: data.publicUrl } : p));
-                                          
-                                          showToast('Foto de la guía subida ✓', 'success');
-                                        } catch (err: any) {
-                                          showToast('Error al subir la foto de la guía', 'error');
-                                        } finally {
-                                          setUploadingEvidenciaDespacho(false);
-                                        }
-                                      }} />
-                                    </label>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Número de Guía Manual */}
-                              <div>
-                                <span style={{ fontSize: '0.76rem', color: '#475569', fontWeight: 400, display: 'block', marginBottom: '0.35rem' }}>
-                                  🔢 Número de Guía o Código de Rastreo:
-                                </span>
-                                {numeroGuia ? (
-                                  <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '0.5rem 0.75rem', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.45rem' }}>
-                                    <div>
-                                      <span style={{ fontSize: '0.66rem', color: '#166534', fontWeight: 500, display: 'block', textTransform: 'uppercase' }}>Número de Guía Registrado</span>
-                                      <strong style={{ fontSize: '0.9rem', color: '#14532d', fontWeight: 600 }}>{numeroGuia}</strong>
-                                    </div>
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        const name = selectedPedido.cliente_nombre;
-                                        const business = configuracion?.nombre_negocio || 'Indisutex';
-                                        const msg = `¡Hola ${name}! 👋 Tu pedido en modalidad *Pago Contra Entrega* ya fue enviado. 🚚\n\nTu número de guía de envío es: *${numeroGuia}*\nEmpresa: *${business}*\nTotal a pagar al recibir: *$${selectedPedido.total.toLocaleString()} COP*\n\n¡Gracias por tu compra! 😊`;
-                                        window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
-                                      }}
-                                      style={{ padding: '0.35rem 0.65rem', background: '#25D366', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.76rem', fontWeight: 500 }}
-                                    >
-                                      💬 Enviar Guía por WA
-                                    </button>
-                                  </div>
-                                ) : null}
-
-                                <div style={{ display: 'flex', gap: '0.45rem', alignItems: 'center' }}>
+                              ) : (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.25rem', flexWrap: 'wrap' }}>
                                   <input
-                                    type="text"
-                                    placeholder="Ingresar número de guía manualmente..."
-                                    value={numeroGuia}
-                                    onChange={e => setNumeroGuia(e.target.value)}
-                                    style={{ flex: 1, padding: '0.45rem 0.65rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.82rem', outline: 'none', background: '#ffffff', fontFamily: "'Poppins', sans-serif" }}
+                                    type="tel"
+                                    value={tempOrderPhone}
+                                    maxLength={10}
+                                    autoFocus
+                                    onChange={e => {
+                                      let val = e.target.value.replace(/\D/g, '');
+                                      if (val.startsWith('57') && val.length > 10) val = val.slice(2);
+                                      if (val.startsWith('0') && val.length > 10) val = val.slice(1);
+                                      setTempOrderPhone(val.slice(0, 10));
+                                    }}
+                                    placeholder="Celular 10 dígitos"
+                                    style={{
+                                      width: '125px',
+                                      padding: '0.25rem 0.45rem',
+                                      borderRadius: '6px',
+                                      border: '1.5px solid var(--primary-color, #0ea5e9)',
+                                      fontSize: '0.8rem',
+                                      outline: 'none'
+                                    }}
                                   />
                                   <button
                                     type="button"
-                                    onClick={() => handleGuardarGuiaManual(selectedPedido.id, numeroGuia)}
-                                    style={{ padding: '0.45rem 0.75rem', background: '#0f172a', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 500 }}
+                                    disabled={savingOrderPhone}
+                                    onClick={handleSaveOrderPhone}
+                                    style={{
+                                      background: '#16a34a',
+                                      color: '#ffffff',
+                                      border: 'none',
+                                      borderRadius: '6px',
+                                      padding: '0.25rem 0.5rem',
+                                      cursor: 'pointer',
+                                      fontSize: '0.74rem',
+                                      fontWeight: 600,
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '0.2rem'
+                                    }}
                                   >
-                                    Guardar Guía
+                                    <Check size={12} />
+                                    <span>{savingOrderPhone ? '...' : 'Guardar'}</span>
                                   </button>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Evidencia de Pago / Entrega Recaudada (Contra Entrega en estado despachado o entregado_pagado) */}
-                          {isContra && (contraStatus === 'despachado' || contraStatus === 'entregado_pagado') && (
-                            <div style={{ marginTop: '0.85rem', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.85rem 1rem' }}>
-                              <h4 style={{ margin: '0 0 0.55rem 0', fontSize: '0.86rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.35rem', fontFamily: "'Poppins', sans-serif" }}>
-                                💵 Evidencia de Pago / Recaudo de Entrega
-                              </h4>
-                              <p style={{ margin: '0 0 0.65rem 0', fontSize: '0.74rem', color: '#64748b' }}>
-                                Comprobante o confirmación de entrega y recaudo (distinto de la guía de envío).
-                              </p>
-
-                              {selectedPedido.pantallazo_url ? (
-                                <div>
-                                  <div onClick={() => setPagoModalUrl(selectedPedido.pantallazo_url || null)} style={{ cursor: 'pointer', textAlign: 'center' }}>
-                                    <img
-                                      src={selectedPedido.pantallazo_url}
-                                      alt="Evidencia Pago Entrega"
-                                      style={{ width: '100%', maxHeight: '130px', objectFit: 'contain', borderRadius: '10px', border: '1px solid #cbd5e1', background: '#ffffff' }}
-                                    />
-                                  </div>
-                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.6rem', marginTop: '0.4rem' }}>
-                                    <p style={{ fontSize: '0.76rem', color: '#16a34a', fontWeight: 500, margin: 0 }}>
-                                      ✅ Evidencia de recaudo registrada
-                                    </p>
-                                    <button
-                                      type="button"
-                                      onClick={async () => {
-                                        try {
-                                          await supabase.from('pedidos').update({ pantallazo_url: null }).eq('id', selectedPedido.id);
-                                          setSelectedPedido({ ...selectedPedido, pantallazo_url: null });
-                                          setPedidos(prev => prev.map(p => p.id === selectedPedido.id ? { ...p, pantallazo_url: null } : p));
-                                          showToast('Evidencia eliminada', 'success');
-                                        } catch (err) {
-                                          showToast('Error al eliminar evidencia', 'error');
-                                        }
-                                      }}
-                                      style={{ background: '#fee2e2', color: '#ef4444', border: '1px solid #fca5a5', borderRadius: '6px', padding: '0.2rem 0.5rem', fontSize: '0.72rem', cursor: 'pointer', fontWeight: 500 }}
-                                    >
-                                      Eliminar / Cambiar
-                                    </button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div style={{ textAlign: 'center' }}>
-                                  <label className="btn-upload-img" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', width: '100%', padding: '0.65rem 0.9rem', background: '#ffffff', border: '2px dashed #cbd5e1', borderRadius: '10px', cursor: 'pointer', fontWeight: 500, color: '#ea580c', fontSize: '0.82rem' }}>
-                                    {uploadingEvidenciaDespacho ? 'Subiendo...' : '📸 Subir Evidencia de Pago / Entrega'}
-                                    <input type="file" accept="image/*" style={{ display: 'none' }} disabled={uploadingEvidenciaDespacho} onChange={async (e) => {
-                                      if (!e.target.files || e.target.files.length === 0) return;
-                                      setUploadingEvidenciaDespacho(true);
-                                      try {
-                                        let file = e.target.files[0];
-                                        if (file.type.startsWith('image/')) {
-                                          file = await compressImage(file) as File;
-                                        }
-                                        const fileName = `recaudo_${selectedPedido.id}_${Date.now()}.${file.name.split('.').pop()}`;
-                                        const { error } = await supabase.storage.from('archivos').upload(fileName, file);
-                                        if (error) throw error;
-                                        const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
-                                        
-                                        await supabase.from('pedidos').update({ pantallazo_url: data.publicUrl }).eq('id', selectedPedido.id);
-                                        setSelectedPedido({ ...selectedPedido, pantallazo_url: data.publicUrl });
-                                        setPedidos(prev => prev.map(p => p.id === selectedPedido.id ? { ...p, pantallazo_url: data.publicUrl } : p));
-                                        
-                                        showToast('Evidencia de recaudo subida ✓', 'success');
-                                      } catch (err: any) {
-                                        showToast('Error al subir evidencia de recaudo', 'error');
-                                      } finally {
-                                        setUploadingEvidenciaDespacho(false);
-                                      }
-                                    }} />
-                                  </label>
+                                  <button
+                                    type="button"
+                                    onClick={() => setIsEditingOrderPhone(false)}
+                                    style={{
+                                      background: '#f1f5f9',
+                                      color: '#64748b',
+                                      border: '1px solid #cbd5e1',
+                                      borderRadius: '6px',
+                                      padding: '0.25rem 0.4rem',
+                                      cursor: 'pointer',
+                                      fontSize: '0.74rem'
+                                    }}
+                                  >
+                                    ✕
+                                  </button>
                                 </div>
                               )}
                             </div>
-                          )}
 
-                          {/* Total del Pedido (Elegante, sin negritas exageradas) */}
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid #e2e8f0', marginTop: '0.9rem', paddingTop: '0.85rem' }}>
-                            <span style={{ fontSize: '0.95rem', fontWeight: 500, color: '#0f172a' }}>Total del Pedido:</span>
+                            {/* Cédula y Correo */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                              <div>
+                                <h5 style={{ margin: '0 0 0.15rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Cédula / Identificación</h5>
+                                <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.84rem' }}>{loc.cedula || 'No registrada'}</p>
+                              </div>
+                              <div>
+                                <h5 style={{ margin: '0 0 0.15rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Correo Electrónico</h5>
+                                <p style={{ margin: 0, fontWeight: 400, color: '#0f172a', fontSize: '0.8rem', wordBreak: 'break-all' }}>{loc.email || 'No registrado'}</p>
+                              </div>
+                            </div>
+
+                            {/* Ciudad y Departamento */}
+                            <div>
+                              <h5 style={{ margin: '0 0 0.15rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Ciudad / Departamento</h5>
+                              <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.85rem' }}>
+                                📍 {loc.ciudad || 'No especificada'}{loc.departamento ? `, ${loc.departamento}` : ''}
+                              </p>
+                            </div>
+
+                            {/* Dirección de Entrega */}
+                            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '0.65rem 0.8rem', borderRadius: '10px' }}>
+                              <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Dirección de Entrega</h5>
+                              <p style={{ margin: 0, color: '#0f172a', fontSize: '0.85rem', fontWeight: 500 }}>{loc.direccion || 'Sin dirección registrada'}</p>
+                            </div>
+
+                            {/* Método de Envío y Método de Pago */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem' }}>
+                              <div>
+                                <h5 style={{ margin: '0 0 0.15rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Método de Envío</h5>
+                                <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.82rem' }}>
+                                  {(selectedPedido as any).metodo_envio || (Array.isArray(selectedPedido.productos) && selectedPedido.productos[0]?._metodo_envio) || ((selectedPedido.direccion || '').toLowerCase().includes('recoger') ? '🏪 Recoger en tienda' : '🚚 Envío a domicilio')}
+                                </p>
+                              </div>
+                              <div>
+                                <h5 style={{ margin: '0 0 0.15rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Método de Pago</h5>
+                                <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.82rem' }}>
+                                  {getMetodoPago(selectedPedido) || (selectedPedido as any).modalidad_pago || 'Por definir'}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Línea / Asesor */}
+                            <div>
+                              <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Línea / Asesor Asignado</h5>
+                              <div style={{ display: 'flex', alignItems: 'center', marginTop: '0.15rem' }}>
+                                {renderAsesorBadge(selectedPedido.linea_whatsapp, selectedPedido.origen)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* ════════════════════════════════════════════════════════
+                            COLUMNA 2: 🛍️ PRODUCTOS SOLICITADOS
+                        ════════════════════════════════════════════════════════ */}
+                        <div className="modal-col-card">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem' }}>
+                            <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                              <Package size={16} color="var(--primary-color, #0ea5e9)" /> Productos ({prodsList.length})
+                            </h4>
+                            {isWholesaleOrder ? (
+                              <span style={{ background: '#f3e8ff', color: '#7e22ce', border: '1px solid #d8b4fe', padding: '0.15rem 0.55rem', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 500 }}>
+                                Mayorista ({totalUnitsInOrder} uds)
+                              </span>
+                            ) : (
+                              <span style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '0.15rem 0.55rem', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 500 }}>
+                                Al Detal ({totalUnitsInOrder} uds)
+                              </span>
+                            )}
+                          </div>
+
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxHeight: '430px', overflowY: 'auto', paddingRight: '0.25rem' }}>
+                            {prodsList.length === 0 ? (
+                              <p style={{ margin: '1rem 0', textAlign: 'center', color: '#94a3b8', fontSize: '0.82rem', fontStyle: 'italic' }}>
+                                No hay productos detallados en este registro.
+                              </p>
+                            ) : (
+                              prodsList.map((prod: any, idx: number) => {
+                                const cant = Number(prod.cantidad) || 1;
+                                let unitPrice = Number(prod.precio) || 0;
+                                if (isWholesaleOrder) {
+                                  if (prod.precio_aplicado_mayor) {
+                                    unitPrice = Number(prod.precio) || 0;
+                                  } else if (prod.precio_por_mayor && Number(prod.precio_por_mayor) > 0 && Number(prod.precio_por_mayor) < unitPrice) {
+                                    unitPrice = Number(prod.precio_por_mayor);
+                                  }
+                                }
+                                const lineTotal = unitPrice * cant;
+
+                                return (
+                                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '0.65rem 0.8rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                                    <div style={{ flex: 1, minWidth: 0, paddingRight: '0.5rem' }}>
+                                      <h5 style={{ margin: 0, color: '#0f172a', fontSize: '0.84rem', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{prod.nombre}</h5>
+                                      <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 400, display: 'block', marginTop: '0.1rem' }}>
+                                        Cant: {prod.cantidad} {prod.talla ? ` | Talla: ${prod.talla}` : ''} {prod.estampado ? ` | Estampado: ${prod.estampado}` : ''}
+                                      </span>
+                                    </div>
+                                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                                      <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.86rem', display: 'block' }}>
+                                        ${lineTotal.toLocaleString('es-CO')}
+                                      </span>
+                                      {isWholesaleOrder && (
+                                        <span style={{ fontSize: '0.64rem', color: '#166534', background: '#dcfce7', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: 500, display: 'inline-block', marginTop: '0.1rem' }}>
+                                          P. Mayor
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })
+                            )}
+                          </div>
+
+                          {/* Resumen al pie de la columna de productos */}
+                          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '0.6rem 0.85rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
+                            <span style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 500 }}>Total de Prendas:</span>
+                            <span style={{ fontSize: '0.86rem', color: '#0f172a', fontWeight: 600 }}>{totalUnitsInOrder} unidades</span>
+                          </div>
+                        </div>
+
+                        {/* ════════════════════════════════════════════════════════
+                            COLUMNA 3: 🚚 LOGÍSTICA, COBRO Y ACCIONES
+                        ════════════════════════════════════════════════════════ */}
+                        <div className="modal-col-card">
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem' }}>
+                            <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                              <Truck size={16} color="var(--primary-color, #0ea5e9)" /> Logística y Acciones
+                            </h4>
+                            <span style={{
+                              fontSize: '0.68rem',
+                              padding: '0.15rem 0.55rem',
+                              borderRadius: '8px',
+                              fontWeight: 600,
+                              textTransform: 'uppercase',
+                              background: contraStatus === 'entregado_pagado' || selectedPedido.estado === 'completado' ? '#dcfce7' : contraStatus === 'cancelado' || selectedPedido.estado === 'cancelado' ? '#fee2e2' : contraStatus === 'despachado' ? '#e0f2fe' : contraStatus === 'confirmado' ? '#f3e8ff' : '#ffedd5',
+                              color: contraStatus === 'entregado_pagado' || selectedPedido.estado === 'completado' ? '#166534' : contraStatus === 'cancelado' || selectedPedido.estado === 'cancelado' ? '#991b1b' : contraStatus === 'despachado' ? '#0369a1' : contraStatus === 'confirmado' ? '#7e22ce' : '#c2410c',
+                              border: '1px solid currentColor'
+                            }}>
+                              {isContra ? contraStatus.replace(/_/g, ' ') : selectedPedido.estado}
+                            </span>
+                          </div>
+
+                          {/* Total del Pedido */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '0.75rem 0.95rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                            <span style={{ fontSize: '0.88rem', fontWeight: 500, color: '#334155' }}>Total a Cobrar:</span>
                             <span style={{ fontSize: '1.25rem', fontWeight: 600, color: isContra ? '#ea580c' : 'var(--primary-color, #0ea5e9)' }}>
                               ${selectedPedido.total.toLocaleString()}
                             </span>
                           </div>
 
-                          {/* ── BOTONES DE ACCIÓN PRINCIPALES ── */}
-                          {isContra ? (
-                            /* ── FLUJO LINEAL CONTRA ENTREGA SEGÚN STATUS ── */
-                            <div style={{ display: 'flex', gap: '0.65rem', marginTop: '0.9rem', flexDirection: 'column' }}>
-                              {/* 1. STATUS = 'pendiente' */}
-                              {contraStatus === 'pendiente' && (
-                                <button
-                                  type="button"
-                                  style={{
-                                    width: '100%',
-                                    padding: '0.75rem 1rem',
-                                    background: '#25D366',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '14px',
-                                    cursor: 'pointer',
-                                    fontWeight: 600,
-                                    fontSize: '0.92rem',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '0.45rem',
-                                    fontFamily: "'Poppins', sans-serif",
-                                    boxShadow: '0 4px 12px rgba(37, 211, 102, 0.25)'
-                                  }}
-                                  onClick={async () => {
-                                    const prodsStr = Array.isArray(selectedPedido.productos) ? selectedPedido.productos.map((p: any) => `${p.cantidad}x ${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ') : '';
-                                    const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋 Confirmamos tu pedido de *${prodsStr}* por valor de *$${selectedPedido.total.toLocaleString()} COP* en modalidad *Pago Contra Entrega*. 🚚\n\nDirección registrada: *${selectedPedido.direccion}, ${selectedPedido.ciudad}*\n\n¿Nos confirmas si todos los datos están correctos para programar tu envío hoy mismo? 😊`;
-                                    window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
-                                    
-                                    const nowIso = new Date().toISOString();
-                                    await saveOrderAuditLog(selectedPedido.id, {
-                                      estado: 'mensaje_enviado',
-                                      usuario: getCurrentUserName(),
-                                      fecha: nowIso,
-                                      accion: 'Mensaje de confirmación enviado al cliente por WhatsApp'
-                                    }, 'mensaje_enviado', { fecha_envio_mensaje: nowIso });
-                                    
-                                    showToast('Mensaje enviado. Esperando confirmación del cliente', 'success');
-                                  }}
-                                >
-                                  <MessageSquare size={18} /> Enviar Confirmación al Cliente
-                                </button>
-                              )}
-
-                              {/* 2. STATUS = 'mensaje_enviado' */}
-                              {contraStatus === 'mensaje_enviado' && (() => {
-                                const logs = getOrderAuditLogs(selectedPedido);
-                                const lastMsgLog = [...logs].reverse().find(l => l.estado === 'mensaje_enviado');
-                                const timeStr = lastMsgLog ? new Date(lastMsgLog.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-                                const dateStr = lastMsgLog ? new Date(lastMsgLog.fecha).toLocaleDateString() : '';
-
-                                return (
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
-                                    {/* Banner informativo de espera */}
-                                    <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '14px', padding: '0.75rem 0.95rem' }}>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', color: '#b45309', fontWeight: 600, fontSize: '0.86rem' }}>
-                                        <Clock size={16} /> Esperando respuesta del cliente
-                                      </div>
-                                      <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.74rem', color: '#78350f', fontWeight: 400 }}>
-                                        {timeStr ? `Mensaje enviado el ${dateStr} a las ${timeStr}. ` : 'Mensaje de confirmación enviado. '}
-                                        Revisa la conversación y confirma manualmente cuando el cliente responda.
-                                      </p>
+                          {/* Caso Especial: Pedido Cancelado */}
+                          {selectedPedido.estado === 'cancelado' ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                              {/* Evidencia de Cancelación */}
+                              <div style={{ background: '#fef2f2', padding: '0.75rem 0.85rem', borderRadius: '12px', border: '1px solid #fca5a5' }}>
+                                <h5 style={{ margin: '0 0 0.45rem 0', fontSize: '0.82rem', color: '#991b1b', fontWeight: 600 }}>
+                                  🚫 Evidencia de Cancelación (Chat / Foto)
+                                </h5>
+                                {selectedPedido.evidencia_cancelacion_url ? (
+                                  <div style={{ textAlign: 'center' }}>
+                                    <div onClick={() => setPagoModalUrl(selectedPedido.evidencia_cancelacion_url || null)} style={{ cursor: 'pointer', textAlign: 'center' }}>
+                                      <img
+                                        src={selectedPedido.evidencia_cancelacion_url}
+                                        alt="Evidencia Cancelación"
+                                        style={{ width: '100%', maxHeight: '130px', objectFit: 'contain', borderRadius: '10px', border: '1px solid #fca5a5', background: '#ffffff' }}
+                                      />
                                     </div>
-
-                                    {/* Botón principal: Marcar como Confirmado */}
-                                    <button
-                                      type="button"
-                                      style={{
-                                        width: '100%',
-                                        padding: '0.75rem 1rem',
-                                        background: 'linear-gradient(135deg, #10b981, #059669)',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '14px',
-                                        cursor: 'pointer',
-                                        fontWeight: 600,
-                                        fontSize: '0.92rem',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '0.45rem',
-                                        fontFamily: "'Poppins', sans-serif",
-                                        boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)'
-                                      }}
-                                      onClick={async () => {
-                                        const nowIso = new Date().toISOString();
-                                        await saveOrderAuditLog(selectedPedido.id, {
-                                          estado: 'confirmado',
-                                          usuario: getCurrentUserName(),
-                                          fecha: nowIso,
-                                          accion: 'Cliente confirmó el pedido (verificado y marcado manualmente)'
-                                        }, 'confirmado');
-                                        showToast('¡Pedido marcado como confirmado! ✓', 'success');
-                                      }}
-                                    >
-                                      <Check size={18} /> Marcar como Confirmado
-                                    </button>
-
-                                    {/* Fila secundaria: Reenviar Mensaje + Ver Conversación */}
-                                    <div style={{ display: 'flex', gap: '0.55rem', width: '100%' }}>
-                                      <button
-                                        type="button"
-                                        style={{
-                                          flex: 1,
-                                          padding: '0.65rem 0.8rem',
-                                          background: '#ffffff',
-                                          border: '1.5px solid #cbd5e1',
-                                          color: '#334155',
-                                          borderRadius: '12px',
-                                          cursor: 'pointer',
-                                          fontWeight: 500,
-                                          fontSize: '0.8rem',
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          justifyContent: 'center',
-                                          gap: '0.35rem',
-                                          fontFamily: "'Poppins', sans-serif"
-                                        }}
-                                        onClick={async () => {
-                                          const prodsStr = Array.isArray(selectedPedido.productos) ? selectedPedido.productos.map((p: any) => `${p.cantidad}x ${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ') : '';
-                                          const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋 Te reenviamos la confirmación de tu pedido de *${prodsStr}* por valor de *$${selectedPedido.total.toLocaleString()} COP* (Pago Contra Entrega). 🚚\n\nDirección registrada: *${selectedPedido.direccion}, ${selectedPedido.ciudad}*\n\n¿Nos confirmas si todo está correcto para programar tu envío hoy mismo? 😊`;
-                                          window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
-                                          
-                                          const nowIso = new Date().toISOString();
-                                          await saveOrderAuditLog(selectedPedido.id, {
-                                            estado: 'mensaje_enviado',
-                                            usuario: getCurrentUserName(),
-                                            fecha: nowIso,
-                                            accion: 'Reenvío de mensaje de confirmación por WhatsApp'
-                                          }, 'mensaje_enviado', { fecha_envio_mensaje: nowIso });
-                                          
-                                          showToast('Mensaje reenviado ✓', 'success');
-                                        }}
-                                      >
-                                        <RotateCcw size={14} /> Reenviar Mensaje
-                                      </button>
-
-                                      <button
-                                        type="button"
-                                        style={{
-                                          flex: 1,
-                                          padding: '0.65rem 0.8rem',
-                                          background: '#25D366',
-                                          border: 'none',
-                                          color: '#ffffff',
-                                          borderRadius: '12px',
-                                          cursor: 'pointer',
-                                          fontWeight: 500,
-                                          fontSize: '0.8rem',
-                                          display: 'flex',
-                                          alignItems: 'center',
-                                          justifyContent: 'center',
-                                          gap: '0.35rem',
-                                          fontFamily: "'Poppins', sans-serif"
-                                        }}
-                                        onClick={() => {
-                                          const clean = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
-                                          const target = clean.length === 10 ? '57' + clean : clean;
-                                          window.open(`https://wa.me/${target}`, '_blank');
-                                        }}
-                                        title="Abrir chat de WhatsApp para leer respuestas sin enviar mensaje automático"
-                                      >
-                                        <MessageSquare size={14} /> Ver Conversación
-                                      </button>
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginTop: '0.4rem' }}>
+                                      <span style={{ fontSize: '0.74rem', color: '#991b1b', fontWeight: 500 }}>✅ Captura guardada</span>
+                                      <label style={{ background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '6px', padding: '0.15rem 0.45rem', fontSize: '0.7rem', cursor: 'pointer', fontWeight: 500 }}>
+                                        Cambiar
+                                        <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleUploadEvidenciaCancelacion(e, selectedPedido.id)} />
+                                      </label>
                                     </div>
-                                  </div>
-                                );
-                              })()}
-
-                              {/* 3. STATUS = 'confirmado' */}
-                              {contraStatus === 'confirmado' && (() => {
-                                const hasGuiaOrFoto = Boolean(numeroGuia?.trim() || selectedPedido.evidencia_despacho_url);
-
-                                return (
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-                                    <button
-                                      type="button"
-                                      disabled={!hasGuiaOrFoto}
-                                      style={{
-                                        width: '100%',
-                                        padding: '0.75rem 1rem',
-                                        background: 'var(--primary-color, #0ea5e9)',
-                                        color: 'white',
-                                        border: 'none',
-                                        borderRadius: '14px',
-                                        cursor: hasGuiaOrFoto ? 'pointer' : 'not-allowed',
-                                        fontWeight: 600,
-                                        fontSize: '0.92rem',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '0.45rem',
-                                        fontFamily: "'Poppins', sans-serif",
-                                        opacity: hasGuiaOrFoto ? 1 : 0.5,
-                                        boxShadow: hasGuiaOrFoto ? '0 4px 12px rgba(14, 165, 233, 0.25)' : 'none'
-                                      }}
-                                      onClick={async () => {
-                                        if (!hasGuiaOrFoto) {
-                                          showToast('Debes registrar el número de guía o subir la foto antes de notificar', 'error');
-                                          return;
-                                        }
-                                        const guiaLink = `${window.location.origin}/guia/${selectedPedido.id.slice(0, 8)}`;
-                                        const msg = `¡Hola ${selectedPedido.cliente_nombre}! 🚚 Tu pedido en modalidad *Pago Contra Entrega* ha sido *DESPACHADO y va en camino*.\n\n${numeroGuia ? `Número de guía: *${numeroGuia}*\n` : ''}Total a pagar al recibir: *$${selectedPedido.total.toLocaleString()} COP*\nDirección: ${selectedPedido.direccion}, ${selectedPedido.ciudad}\n\n📸 *Ver detalles y evidencia del envío aquí:* ${guiaLink}\n\nPor favor ten listo el dinero en efectivo para la entrega. ¡Gracias por tu compra! 📦`;
-                                        window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
-                                        
-                                        const nowIso = new Date().toISOString();
-                                        await saveOrderAuditLog(selectedPedido.id, {
-                                          estado: 'despachado',
-                                          usuario: getCurrentUserName(),
-                                          fecha: nowIso,
-                                          accion: `Notificación de despacho enviada al cliente por WhatsApp (${numeroGuia ? `Guía: ${numeroGuia}` : 'Foto de guía adjunta'})`
-                                        }, 'despachado');
-                                        
-                                        showToast('¡Despacho notificado exitosamente! 🚚', 'success');
-                                      }}
-                                    >
-                                      <Truck size={18} /> Notificar Despacho
-                                    </button>
-                                    {!hasGuiaOrFoto && (
-                                      <span style={{ fontSize: '0.72rem', color: '#64748b', textAlign: 'center', fontWeight: 400 }}>
-                                        ⚠️ Sube la foto de la guía o registra el número de rastreo arriba para habilitar este botón.
-                                      </span>
-                                    )}
-                                  </div>
-                                );
-                              })()}
-
-                              {/* 4. STATUS = 'despachado' */}
-                              {contraStatus === 'despachado' && (
-                                <button
-                                  type="button"
-                                  style={{
-                                    width: '100%',
-                                    padding: '0.75rem 1rem',
-                                    background: '#ea580c',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '14px',
-                                    cursor: 'pointer',
-                                    fontWeight: 600,
-                                    fontSize: '0.92rem',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '0.45rem',
-                                    fontFamily: "'Poppins', sans-serif",
-                                    boxShadow: '0 4px 12px rgba(234, 88, 12, 0.25)'
-                                  }}
-                                  onClick={async () => {
-                                    await handleAprobarPago(selectedPedido);
-                                    const nowIso = new Date().toISOString();
-                                    await saveOrderAuditLog(selectedPedido.id, {
-                                      estado: 'entregado_pagado',
-                                      usuario: getCurrentUserName(),
-                                      fecha: nowIso,
-                                      accion: 'Pedido entregado y recaudado exitosamente (Venta finalizada y contabilizada)'
-                                    }, 'entregado_pagado');
-                                    showToast('¡Pedido completado y recaudado exitosamente! ✅', 'success');
-                                  }}
-                                >
-                                  <Check size={18} /> Confirmar Entregado y Pagado
-                                </button>
-                              )}
-
-                              {/* 5. STATUS = 'entregado_pagado' */}
-                              {contraStatus === 'entregado_pagado' && (
-                                <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: '14px', padding: '0.85rem 1rem', textAlign: 'center' }}>
-                                  <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: '#dcfce7', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.35rem auto' }}>
-                                    <Check size={20} />
-                                  </div>
-                                  <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#166534', fontFamily: "'Poppins', sans-serif" }}>
-                                    Pedido Completado y Recaudado
-                                  </h4>
-                                  <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.76rem', color: '#15803d', fontWeight: 400 }}>
-                                    Este pedido en modalidad contra entrega ya fue recaudado y liquidado en contabilidad.
-                                  </p>
-                                </div>
-                              )}
-
-                              {/* Botón Cancelar Pedido: visible en cualquier estado excepto entregado_pagado o cancelado */}
-                              {contraStatus !== 'entregado_pagado' && contraStatus !== 'cancelado' && (
-                                <button
-                                  type="button"
-                                  style={{ width: '100%', padding: '0.65rem', background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '12px', cursor: 'pointer', fontWeight: 600, fontSize: '0.84rem', marginTop: '0.35rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontFamily: "'Poppins', sans-serif" }}
-                                  onClick={async () => {
-                                    handleCancelarPedido(selectedPedido.id);
-                                    const nowIso = new Date().toISOString();
-                                    await saveOrderAuditLog(selectedPedido.id, {
-                                      estado: 'cancelado',
-                                      usuario: getCurrentUserName(),
-                                      fecha: nowIso,
-                                      accion: 'Pedido cancelado desde el panel'
-                                    }, 'cancelado');
-                                    setSelectedPedido(prev => prev ? { ...prev, estado: 'cancelado' } : null);
-                                  }}
-                                >
-                                  <Trash2 size={15} /> Cancelar Pedido
-                                </button>
-                              )}
-                            </div>
-                          ) : (
-                            /* ── FLUJO NORMAL PARA TRANSFERENCIAS ── */
-                            <div style={{ display: 'flex', gap: '0.65rem', marginTop: '0.9rem', flexDirection: 'column' }}>
-                              {selectedPedido.estado !== 'completado' && (
-                                <button
-                                  style={{
-                                    width: '100%',
-                                    padding: '0.75rem 1rem',
-                                    background: '#10b981',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '14px',
-                                    cursor: 'pointer',
-                                    fontWeight: 600,
-                                    fontSize: '0.92rem',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '0.4rem',
-                                    fontFamily: "'Poppins', sans-serif",
-                                    boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)'
-                                  }}
-                                  onClick={() => handleAprobarPago(selectedPedido)}
-                                >
-                                  <Check size={18} /> ✓ Aprobar y completar pago
-                                </button>
-                              )}
-                              
-                              <div style={{ display: 'flex', gap: '0.65rem', width: '100%' }}>
-                                <button
-                                  style={{ flex: 1, padding: '0.7rem 0.85rem', background: '#25D366', color: 'white', border: 'none', borderRadius: '14px', cursor: 'pointer', fontWeight: 600, fontSize: '0.86rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontFamily: "'Poppins', sans-serif" }}
-                                  onClick={() => {
-                                    const uploadLink = `${window.location.origin}/pago/${selectedPedido.id.slice(0, 8)}`;
-                                    let metodosStr = '';
-                                    if (configuracion?.metodos_pago) {
-                                      try {
-                                        const parsed = JSON.parse(configuracion.metodos_pago);
-                                        if (Array.isArray(parsed) && parsed.length > 0) {
-                                          metodosStr = `💳 *Métodos de pago:*\n` + parsed.map((m: any) => `- ${m.banco} ${m.tipo ? `(${m.tipo})` : ''}: ${m.numero}`).join('\n') + `\n\n`;
-                                        } else {
-                                          metodosStr = `💳 *Métodos de pago:*\n${configuracion.metodos_pago}\n\n`;
-                                        }
-                                      } catch {
-                                        metodosStr = `💳 *Métodos de pago:*\n${configuracion.metodos_pago}\n\n`;
-                                      }
-                                    }
-                                    const metodosInfo = metodosStr || `💳 *Datos del banco:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\n`;
-                                    const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: ${selectedPedido.total.toLocaleString()} COP*\n\n${metodosInfo}Para poder completar tu pedido, haz la captura de pantalla de tu pago o de transacción y envíala por este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
-                                    window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
-                                  }}
-                                >
-                                  💬 Cobrar por WhatsApp
-                                </button>
-                                <button
-                                  style={{ flex: 1, padding: '0.7rem 0.85rem', background: 'var(--primary-color, #0ea5e9)', color: 'white', border: 'none', borderRadius: '14px', cursor: 'pointer', fontWeight: 600, fontSize: '0.86rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontFamily: "'Poppins', sans-serif" }}
-                                  onClick={() => {
-                                    const guiaLink = `${window.location.origin}/guia/${selectedPedido.id.slice(0, 8)}`;
-                                    const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋 Tu pedido ha sido *VERIFICADO y DESPACHADO* 🚚\n\nPedido: ${selectedPedido.productos?.map((p: any) => `${p.cantidad}x ${p.nombre}`).join(', ')}\nTotal: ${selectedPedido.total.toLocaleString()} COP\n\n📸 *Ver detalles y evidencia del envío aquí:* ${guiaLink}\n\n¡Tu paquete está en camino. Gracias por tu compra! 🚀`;
-                                    window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
-                                  }}
-                                >
-                                  🚚 Confirmar Despacho
-                                </button>
-                              </div>
-
-                              {selectedPedido.estado !== 'cancelado' && (
-                                <button
-                                  type="button"
-                                  style={{ width: '100%', padding: '0.65rem', background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '12px', cursor: 'pointer', fontWeight: 600, fontSize: '0.84rem', marginTop: '0.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontFamily: "'Poppins', sans-serif" }}
-                                  onClick={() => {
-                                    handleCancelarPedido(selectedPedido.id);
-                                    setSelectedPedido(prev => prev ? { ...prev, estado: 'cancelado' } : null);
-                                  }}
-                                >
-                                  <Trash2 size={15} /> Cancelar Pedido
-                                </button>
-                              )}
-                            </div>
-                          )}
-
-                          {/* ── HISTORIAL DE AUDITORÍA Y ESTADOS (TIMELINE) ── */}
-                          {(() => {
-                            const auditLogs = getOrderAuditLogs(selectedPedido);
-                            return (
-                              <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.85rem' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.55rem' }}>
-                                  <h5 style={{ margin: 0, fontSize: '0.82rem', fontWeight: 600, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.35rem', fontFamily: "'Poppins', sans-serif" }}>
-                                    <ClipboardList size={14} color="#64748b" /> Historial de Estados (Auditoría)
-                                  </h5>
-                                  <span style={{ fontSize: '0.7rem', color: '#64748b', background: '#f1f5f9', padding: '0.1rem 0.45rem', borderRadius: '6px', fontWeight: 500 }}>
-                                    {auditLogs.length} {auditLogs.length === 1 ? 'registro' : 'registros'}
-                                  </span>
-                                </div>
-
-                                {auditLogs.length === 0 ? (
-                                  <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '10px', padding: '0.65rem 0.85rem', textAlign: 'center' }}>
-                                    <p style={{ margin: 0, fontSize: '0.74rem', color: '#94a3b8', fontStyle: 'italic', fontFamily: "'Poppins', sans-serif" }}>
-                                      Pedido registrado inicialmente el {new Date(selectedPedido.created_at).toLocaleDateString()} a las {new Date(selectedPedido.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.
-                                    </p>
                                   </div>
                                 ) : (
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', maxHeight: '180px', overflowY: 'auto', paddingRight: '2px' }}>
-                                    {auditLogs.map((log, idx) => (
-                                      <div key={idx} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '0.5rem 0.75rem', fontSize: '0.74rem' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
-                                          <span style={{
-                                            fontSize: '0.66rem',
-                                            fontWeight: 600,
-                                            textTransform: 'uppercase',
-                                            padding: '0.1rem 0.4rem',
-                                            borderRadius: '6px',
-                                            background: log.estado === 'entregado_pagado' || log.estado === 'completado' ? '#dcfce7' : log.estado === 'cancelado' ? '#fee2e2' : log.estado === 'despachado' ? '#e0f2fe' : log.estado === 'confirmado' ? '#f3e8ff' : '#ffedd5',
-                                            color: log.estado === 'entregado_pagado' || log.estado === 'completado' ? '#166534' : log.estado === 'cancelado' ? '#991b1b' : log.estado === 'despachado' ? '#0369a1' : log.estado === 'confirmado' ? '#7e22ce' : '#c2410c',
-                                            fontFamily: "'Poppins', sans-serif"
-                                          }}>
-                                            {log.estado.replace(/_/g, ' ')}
-                                          </span>
-                                          <span style={{ color: '#94a3b8', fontSize: '0.68rem', fontWeight: 400 }}>
-                                            🕒 {new Date(log.fecha).toLocaleDateString()} {new Date(log.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                          </span>
-                                        </div>
-                                        <p style={{ margin: '0.15rem 0 0 0', color: '#1e293b', fontWeight: 500, lineHeight: 1.3 }}>
-                                          {log.accion}
-                                        </p>
-                                        <span style={{ fontSize: '0.66rem', color: '#64748b', display: 'block', marginTop: '0.15rem' }}>
-                                          Por: <strong>{log.usuario}</strong>
-                                        </span>
-                                      </div>
-                                    ))}
-                                  </div>
+                                  <label style={{ padding: '0.55rem 0.85rem', background: '#dc2626', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem' }}>
+                                    📸 Subir Captura de Cancelación
+                                    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => handleUploadEvidenciaCancelacion(e, selectedPedido.id)} />
+                                  </label>
                                 )}
                               </div>
-                            );
-                          })()}
-                        </>
-                      )}
+
+                              <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleReactivarPedido(selectedPedido.id, (selectedPedido as any).isLead)}
+                                  style={{ flex: 1, padding: '0.6rem', background: '#f0fdf4', color: '#16a34a', border: '1.5px solid #bbf7d0', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
+                                >
+                                  <RotateCcw size={14} /> Reactivar
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleEliminarPedidoDirecto(selectedPedido.id, (selectedPedido as any).isLead)}
+                                  style={{ flex: 1, padding: '0.6rem', background: '#fef2f2', color: '#dc2626', border: '1.5px solid #fca5a5', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
+                                >
+                                  <Trash2 size={14} /> Eliminar
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              {/* Comprobante de Pago (Transferencias) */}
+                              {!isContra && (
+                                selectedPedido.pantallazo_url ? (
+                                  <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.65rem 0.8rem', background: '#f8fafc' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                                      <h5 style={{ margin: 0, fontSize: '0.8rem', color: '#0f172a', fontWeight: 600 }}>💳 Comprobante Recibido</h5>
+                                      <span style={{ fontSize: '0.7rem', color: '#16a34a', fontWeight: 500 }}>✓ Verificado</span>
+                                    </div>
+                                    <div onClick={() => setPagoModalUrl(selectedPedido.pantallazo_url || null)} style={{ cursor: 'pointer', textAlign: 'center' }}>
+                                      <img
+                                        src={selectedPedido.pantallazo_url}
+                                        alt="Comprobante"
+                                        style={{ width: '100%', maxHeight: '120px', objectFit: 'contain', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#ffffff' }}
+                                      />
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '0.65rem 0.85rem', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                                    <div>
+                                      <p style={{ color: '#475569', fontWeight: 600, fontSize: '0.8rem', margin: 0 }}>⏳ Pendiente comprobante</p>
+                                      <p style={{ fontSize: '0.72rem', color: '#64748b', margin: '0.1rem 0 0 0' }}>Puedes adjuntarlo si te lo enviaron</p>
+                                    </div>
+                                    <label style={{ padding: '0.45rem 0.75rem', background: 'var(--primary-color, #0ea5e9)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.76rem', fontWeight: 600, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                                      📷 Subir
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        hidden
+                                        onChange={async (e) => {
+                                          if (e.target.files && e.target.files[0]) {
+                                            const file = e.target.files[0];
+                                            try {
+                                              showToast('Subiendo comprobante...', 'success');
+                                              const fileExt = file.name.split('.').pop();
+                                              const fileName = `comprobante_${selectedPedido.id}_${Date.now()}.${fileExt}`;
+                                              const { error: upErr } = await supabase.storage.from('archivos').upload(fileName, file);
+                                              if (upErr) throw upErr;
+                                              const { data: urlData } = supabase.storage.from('archivos').getPublicUrl(fileName);
+                                              const newUrl = urlData.publicUrl;
+                                              await supabase.from('pedidos').update({ pantallazo_url: newUrl }).eq('id', selectedPedido.id);
+                                              setSelectedPedido({ ...selectedPedido, pantallazo_url: newUrl });
+                                              setPedidos(prev => prev.map(p => p.id === selectedPedido.id ? { ...p, pantallazo_url: newUrl } : p));
+                                              showToast('¡Comprobante guardado con éxito! ✓', 'success');
+                                            } catch (err) {
+                                              showToast('Error al subir el comprobante', 'error');
+                                            }
+                                          }
+                                        }}
+                                      />
+                                    </label>
+                                  </div>
+                                )
+                              )}
+
+                              {/* Guía y Evidencia de Envío */}
+                              {(selectedPedido.estado === 'completado' || (isContra && (contraStatus === 'confirmado' || contraStatus === 'despachado' || contraStatus === 'entregado_pagado'))) && (
+                                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.75rem 0.85rem' }}>
+                                  <h5 style={{ margin: '0 0 0.5rem 0', fontSize: '0.82rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                    🚚 Guía y Evidencia de Envío
+                                  </h5>
+
+                                  {/* Foto de la Guía */}
+                                  <div style={{ marginBottom: '0.65rem' }}>
+                                    {selectedPedido.evidencia_despacho_url ? (
+                                      <div>
+                                        <div onClick={() => setPagoModalUrl(selectedPedido.evidencia_despacho_url || null)} style={{ cursor: 'pointer', textAlign: 'center' }}>
+                                          <img
+                                            src={selectedPedido.evidencia_despacho_url}
+                                            alt="Guía Envío"
+                                            style={{ width: '100%', maxHeight: '110px', objectFit: 'contain', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#ffffff' }}
+                                          />
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginTop: '0.3rem' }}>
+                                          <span style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: 500 }}>✅ Foto de guía subida</span>
+                                          <button
+                                            type="button"
+                                            onClick={async () => {
+                                              try {
+                                                await supabase.from('pedidos').update({ evidencia_despacho_url: null }).eq('id', selectedPedido.id);
+                                                setSelectedPedido({ ...selectedPedido, evidencia_despacho_url: undefined });
+                                                setPedidos(prev => prev.map(p => p.id === selectedPedido.id ? { ...p, evidencia_despacho_url: undefined } : p));
+                                                showToast('Evidencia eliminada', 'success');
+                                              } catch (err: any) {
+                                                showToast('Error al eliminar evidencia', 'error');
+                                              }
+                                            }}
+                                            style={{ background: '#fee2e2', color: '#ef4444', border: '1px solid #fca5a5', borderRadius: '6px', padding: '0.15rem 0.45rem', fontSize: '0.68rem', cursor: 'pointer', fontWeight: 500 }}
+                                          >
+                                            Eliminar
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', width: '100%', padding: '0.55rem', background: '#ffffff', border: '1.5px dashed #cbd5e1', borderRadius: '8px', cursor: 'pointer', fontWeight: 500, color: 'var(--primary-color, #0ea5e9)', fontSize: '0.78rem' }}>
+                                        {uploadingEvidenciaDespacho ? 'Subiendo...' : '📸 Subir Foto de Guía'}
+                                        <input type="file" accept="image/*" style={{ display: 'none' }} disabled={uploadingEvidenciaDespacho} onChange={async (e) => {
+                                          if (!e.target.files || e.target.files.length === 0) return;
+                                          setUploadingEvidenciaDespacho(true);
+                                          try {
+                                            let file = e.target.files[0];
+                                            if (file.type.startsWith('image/')) {
+                                              file = await compressImage(file) as File;
+                                            }
+                                            const fileName = `despacho_${selectedPedido.id}_${Date.now()}.${file.name.split('.').pop()}`;
+                                            const { error } = await supabase.storage.from('archivos').upload(fileName, file);
+                                            if (error) throw error;
+                                            const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
+                                            await supabase.from('pedidos').update({ evidencia_despacho_url: data.publicUrl }).eq('id', selectedPedido.id);
+                                            setSelectedPedido({ ...selectedPedido, evidencia_despacho_url: data.publicUrl });
+                                            setPedidos(prev => prev.map(p => p.id === selectedPedido.id ? { ...p, evidencia_despacho_url: data.publicUrl } : p));
+                                            showToast('Foto de la guía subida ✓', 'success');
+                                          } catch (err: any) {
+                                            showToast('Error al subir la foto de la guía', 'error');
+                                          } finally {
+                                            setUploadingEvidenciaDespacho(false);
+                                          }
+                                        }} />
+                                      </label>
+                                    )}
+                                  </div>
+
+                                  {/* Número de Guía */}
+                                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                                    <input
+                                      type="text"
+                                      placeholder="Número de guía o rastreo..."
+                                      value={numeroGuia}
+                                      onChange={e => setNumeroGuia(e.target.value)}
+                                      style={{ flex: 1, padding: '0.4rem 0.6rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.8rem', outline: 'none', background: '#ffffff', fontFamily: "'Poppins', sans-serif" }}
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => handleGuardarGuiaManual(selectedPedido.id, numeroGuia)}
+                                      style={{ padding: '0.4rem 0.65rem', background: '#0f172a', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.76rem', fontWeight: 500 }}
+                                    >
+                                      Guardar
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Evidencia de Recaudo (Contra Entrega en despachado o entregado_pagado) */}
+                              {isContra && (contraStatus === 'despachado' || contraStatus === 'entregado_pagado') && (
+                                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.75rem 0.85rem' }}>
+                                  <h5 style={{ margin: '0 0 0.35rem 0', fontSize: '0.82rem', fontWeight: 600, color: '#0f172a' }}>
+                                    💵 Evidencia de Recaudo de Entrega
+                                  </h5>
+                                  {selectedPedido.pantallazo_url ? (
+                                    <div>
+                                      <div onClick={() => setPagoModalUrl(selectedPedido.pantallazo_url || null)} style={{ cursor: 'pointer', textAlign: 'center' }}>
+                                        <img
+                                          src={selectedPedido.pantallazo_url}
+                                          alt="Evidencia Recaudo"
+                                          style={{ width: '100%', maxHeight: '110px', objectFit: 'contain', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#ffffff' }}
+                                        />
+                                      </div>
+                                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginTop: '0.3rem' }}>
+                                        <span style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: 500 }}>✅ Recaudo registrado</span>
+                                        <button
+                                          type="button"
+                                          onClick={async () => {
+                                            try {
+                                              await supabase.from('pedidos').update({ pantallazo_url: null }).eq('id', selectedPedido.id);
+                                              setSelectedPedido({ ...selectedPedido, pantallazo_url: null });
+                                              setPedidos(prev => prev.map(p => p.id === selectedPedido.id ? { ...p, pantallazo_url: null } : p));
+                                              showToast('Evidencia eliminada', 'success');
+                                            } catch (err) {
+                                              showToast('Error al eliminar evidencia', 'error');
+                                            }
+                                          }}
+                                          style={{ background: '#fee2e2', color: '#ef4444', border: '1px solid #fca5a5', borderRadius: '6px', padding: '0.15rem 0.45rem', fontSize: '0.68rem', cursor: 'pointer', fontWeight: 500 }}
+                                        >
+                                          Eliminar
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', width: '100%', padding: '0.55rem', background: '#ffffff', border: '1.5px dashed #cbd5e1', borderRadius: '8px', cursor: 'pointer', fontWeight: 500, color: '#ea580c', fontSize: '0.78rem' }}>
+                                      {uploadingEvidenciaDespacho ? 'Subiendo...' : '📸 Subir Evidencia de Recaudo'}
+                                      <input type="file" accept="image/*" style={{ display: 'none' }} disabled={uploadingEvidenciaDespacho} onChange={async (e) => {
+                                        if (!e.target.files || e.target.files.length === 0) return;
+                                        setUploadingEvidenciaDespacho(true);
+                                        try {
+                                          let file = e.target.files[0];
+                                          if (file.type.startsWith('image/')) file = await compressImage(file) as File;
+                                          const fileName = `recaudo_${selectedPedido.id}_${Date.now()}.${file.name.split('.').pop()}`;
+                                          const { error } = await supabase.storage.from('archivos').upload(fileName, file);
+                                          if (error) throw error;
+                                          const { data } = supabase.storage.from('archivos').getPublicUrl(fileName);
+                                          await supabase.from('pedidos').update({ pantallazo_url: data.publicUrl }).eq('id', selectedPedido.id);
+                                          setSelectedPedido({ ...selectedPedido, pantallazo_url: data.publicUrl });
+                                          setPedidos(prev => prev.map(p => p.id === selectedPedido.id ? { ...p, pantallazo_url: data.publicUrl } : p));
+                                          showToast('Evidencia de recaudo subida ✓', 'success');
+                                        } catch (err: any) {
+                                          showToast('Error al subir evidencia de recaudo', 'error');
+                                        } finally {
+                                          setUploadingEvidenciaDespacho(false);
+                                        }
+                                      }} />
+                                    </label>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* ── BOTONES DE ACCIÓN ── */}
+                              {isContra ? (
+                                <div style={{ display: 'flex', gap: '0.55rem', flexDirection: 'column' }}>
+                                  {/* Estado 1: pendiente */}
+                                  {contraStatus === 'pendiente' && (
+                                    <button
+                                      type="button"
+                                      style={{ width: '100%', padding: '0.7rem 0.9rem', background: '#25D366', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 600, fontSize: '0.88rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontFamily: "'Poppins', sans-serif", boxShadow: '0 4px 12px rgba(37, 211, 102, 0.25)' }}
+                                      onClick={async () => {
+                                        const prodsStr = prodsList.map((p: any) => `${p.cantidad}x ${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ');
+                                        const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋 Confirmamos tu pedido de *${prodsStr}* por valor de *$${selectedPedido.total.toLocaleString()} COP* en modalidad *Pago Contra Entrega*. 🚚\n\nDirección registrada: *${selectedPedido.direccion}, ${selectedPedido.ciudad}*\n\n¿Nos confirmas si todos los datos están correctos para programar tu envío hoy mismo? 😊`;
+                                        window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
+                                        const nowIso = new Date().toISOString();
+                                        await saveOrderAuditLog(selectedPedido.id, {
+                                          estado: 'mensaje_enviado',
+                                          usuario: getCurrentUserName(),
+                                          fecha: nowIso,
+                                          accion: 'Mensaje de confirmación enviado al cliente por WhatsApp'
+                                        }, 'mensaje_enviado', { fecha_envio_mensaje: nowIso });
+                                        showToast('Mensaje enviado. Esperando confirmación del cliente', 'success');
+                                      }}
+                                    >
+                                      <MessageSquare size={16} /> Enviar Confirmación al Cliente
+                                    </button>
+                                  )}
+
+                                  {/* Estado 2: mensaje_enviado */}
+                                  {contraStatus === 'mensaje_enviado' && (() => {
+                                    const lastMsgLog = [...auditLogs].reverse().find(l => l.estado === 'mensaje_enviado');
+                                    const timeStr = lastMsgLog ? new Date(lastMsgLog.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                                    return (
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+                                        <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '0.65rem 0.8rem' }}>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#b45309', fontWeight: 600, fontSize: '0.82rem' }}>
+                                            <Clock size={15} /> Esperando respuesta del cliente
+                                          </div>
+                                          <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.72rem', color: '#78350f' }}>
+                                            {timeStr ? `Enviado a las ${timeStr}. ` : ''}Confirma manualmente cuando el cliente responda.
+                                          </p>
+                                        </div>
+
+                                        <button
+                                          type="button"
+                                          style={{ width: '100%', padding: '0.7rem 0.9rem', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 600, fontSize: '0.88rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontFamily: "'Poppins', sans-serif", boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)' }}
+                                          onClick={async () => {
+                                            const nowIso = new Date().toISOString();
+                                            await saveOrderAuditLog(selectedPedido.id, {
+                                              estado: 'confirmado',
+                                              usuario: getCurrentUserName(),
+                                              fecha: nowIso,
+                                              accion: 'Cliente confirmó el pedido (verificado manualmente)'
+                                            }, 'confirmado');
+                                            showToast('¡Pedido marcado como confirmado! ✓', 'success');
+                                          }}
+                                        >
+                                          <Check size={16} /> Marcar como Confirmado
+                                        </button>
+
+                                        <div style={{ display: 'flex', gap: '0.45rem' }}>
+                                          <button
+                                            type="button"
+                                            style={{ flex: 1, padding: '0.55rem 0.65rem', background: '#ffffff', border: '1.5px solid #cbd5e1', color: '#334155', borderRadius: '10px', cursor: 'pointer', fontWeight: 500, fontSize: '0.76rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
+                                            onClick={async () => {
+                                              const prodsStr = prodsList.map((p: any) => `${p.cantidad}x ${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ');
+                                              const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋 Te reenviamos la confirmación de tu pedido de *${prodsStr}* por valor de *$${selectedPedido.total.toLocaleString()} COP* (Pago Contra Entrega). 🚚\n\nDirección registrada: *${selectedPedido.direccion}, ${selectedPedido.ciudad}*\n\n¿Nos confirmas si todo está correcto para programar tu envío hoy mismo? 😊`;
+                                              window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
+                                              const nowIso = new Date().toISOString();
+                                              await saveOrderAuditLog(selectedPedido.id, {
+                                                estado: 'mensaje_enviado',
+                                                usuario: getCurrentUserName(),
+                                                fecha: nowIso,
+                                                accion: 'Reenvío de mensaje de confirmación por WhatsApp'
+                                              }, 'mensaje_enviado', { fecha_envio_mensaje: nowIso });
+                                              showToast('Mensaje reenviado ✓', 'success');
+                                            }}
+                                          >
+                                            <RotateCcw size={13} /> Reenviar
+                                          </button>
+                                          <button
+                                            type="button"
+                                            style={{ flex: 1, padding: '0.55rem 0.65rem', background: '#25D366', border: 'none', color: '#ffffff', borderRadius: '10px', cursor: 'pointer', fontWeight: 500, fontSize: '0.76rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
+                                            onClick={() => {
+                                              const clean = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
+                                              const target = clean.length === 10 ? '57' + clean : clean;
+                                              window.open(`https://wa.me/${target}`, '_blank');
+                                            }}
+                                            title="Abrir chat para leer respuestas"
+                                          >
+                                            <MessageSquare size={13} /> Ver Chat
+                                          </button>
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
+
+                                  {/* Estado 3: confirmado */}
+                                  {contraStatus === 'confirmado' && (() => {
+                                    const hasGuiaOrFoto = Boolean(numeroGuia?.trim() || selectedPedido.evidencia_despacho_url);
+                                    return (
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                        <button
+                                          type="button"
+                                          disabled={!hasGuiaOrFoto}
+                                          style={{
+                                            width: '100%',
+                                            padding: '0.7rem 0.9rem',
+                                            background: 'var(--primary-color, #0ea5e9)',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '12px',
+                                            cursor: hasGuiaOrFoto ? 'pointer' : 'not-allowed',
+                                            fontWeight: 600,
+                                            fontSize: '0.88rem',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '0.4rem',
+                                            fontFamily: "'Poppins', sans-serif",
+                                            opacity: hasGuiaOrFoto ? 1 : 0.5,
+                                            boxShadow: hasGuiaOrFoto ? '0 4px 12px rgba(14, 165, 233, 0.25)' : 'none'
+                                          }}
+                                          onClick={async () => {
+                                            if (!hasGuiaOrFoto) {
+                                              showToast('Debes registrar el número de guía o subir la foto antes de notificar', 'error');
+                                              return;
+                                            }
+                                            const guiaLink = `${window.location.origin}/guia/${selectedPedido.id.slice(0, 8)}`;
+                                            const msg = `¡Hola ${selectedPedido.cliente_nombre}! 🚚 Tu pedido en modalidad *Pago Contra Entrega* ha sido *DESPACHADO y va en camino*.\n\n${numeroGuia ? `Número de guía: *${numeroGuia}*\n` : ''}Total a pagar al recibir: *$${selectedPedido.total.toLocaleString()} COP*\nDirección: ${selectedPedido.direccion}, ${selectedPedido.ciudad}\n\n📸 *Ver detalles y evidencia del envío aquí:* ${guiaLink}\n\nPor favor ten listo el dinero en efectivo para la entrega. ¡Gracias por tu compra! 📦`;
+                                            window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
+                                            const nowIso = new Date().toISOString();
+                                            await saveOrderAuditLog(selectedPedido.id, {
+                                              estado: 'despachado',
+                                              usuario: getCurrentUserName(),
+                                              fecha: nowIso,
+                                              accion: `Notificación de despacho enviada (${numeroGuia ? `Guía: ${numeroGuia}` : 'Foto de guía'})`
+                                            }, 'despachado');
+                                            showToast('¡Despacho notificado exitosamente! 🚚', 'success');
+                                          }}
+                                        >
+                                          <Truck size={16} /> Notificar Despacho
+                                        </button>
+                                        {!hasGuiaOrFoto && (
+                                          <span style={{ fontSize: '0.7rem', color: '#64748b', textAlign: 'center', fontWeight: 400 }}>
+                                            ⚠️ Sube la guía o foto arriba para habilitar.
+                                          </span>
+                                        )}
+                                      </div>
+                                    );
+                                  })()}
+
+                                  {/* Estado 4: despachado */}
+                                  {contraStatus === 'despachado' && (
+                                    <button
+                                      type="button"
+                                      style={{ width: '100%', padding: '0.7rem 0.9rem', background: '#ea580c', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 600, fontSize: '0.88rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontFamily: "'Poppins', sans-serif", boxShadow: '0 4px 12px rgba(234, 88, 12, 0.25)' }}
+                                      onClick={async () => {
+                                        await handleAprobarPago(selectedPedido);
+                                        const nowIso = new Date().toISOString();
+                                        await saveOrderAuditLog(selectedPedido.id, {
+                                          estado: 'entregado_pagado',
+                                          usuario: getCurrentUserName(),
+                                          fecha: nowIso,
+                                          accion: 'Pedido entregado y recaudado exitosamente (Venta finalizada y contabilizada)'
+                                        }, 'entregado_pagado');
+                                        showToast('¡Pedido completado y recaudado! ✅', 'success');
+                                      }}
+                                    >
+                                      <Check size={16} /> Confirmar Entregado y Pagado
+                                    </button>
+                                  )}
+
+                                  {/* Estado 5: entregado_pagado */}
+                                  {contraStatus === 'entregado_pagado' && (
+                                    <div style={{ background: '#f0fdf4', border: '1.5px solid #86efac', borderRadius: '12px', padding: '0.75rem 0.85rem', textAlign: 'center' }}>
+                                      <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: '#dcfce7', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.25rem auto' }}>
+                                        <Check size={18} />
+                                      </div>
+                                      <h5 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 600, color: '#166534' }}>Pedido Completado y Recaudado</h5>
+                                      <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.74rem', color: '#15803d' }}>
+                                        Recaudado y liquidado en contabilidad.
+                                      </p>
+                                    </div>
+                                  )}
+
+                                  {/* Botón Cancelar Pedido */}
+                                  {contraStatus !== 'entregado_pagado' && contraStatus !== 'cancelado' && (
+                                    <button
+                                      type="button"
+                                      style={{ width: '100%', padding: '0.55rem', background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', marginTop: '0.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', fontFamily: "'Poppins', sans-serif" }}
+                                      onClick={async () => {
+                                        handleCancelarPedido(selectedPedido.id);
+                                        const nowIso = new Date().toISOString();
+                                        await saveOrderAuditLog(selectedPedido.id, {
+                                          estado: 'cancelado',
+                                          usuario: getCurrentUserName(),
+                                          fecha: nowIso,
+                                          accion: 'Pedido cancelado desde el panel'
+                                        }, 'cancelado');
+                                        setSelectedPedido(prev => prev ? { ...prev, estado: 'cancelado' } : null);
+                                      }}
+                                    >
+                                      <Trash2 size={14} /> Cancelar Pedido
+                                    </button>
+                                  )}
+                                </div>
+                              ) : (
+                                /* Flujo Normal para Transferencias */
+                                <div style={{ display: 'flex', gap: '0.55rem', flexDirection: 'column' }}>
+                                  {selectedPedido.estado !== 'completado' && (
+                                    <button
+                                      type="button"
+                                      style={{ width: '100%', padding: '0.7rem 0.9rem', background: '#10b981', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 600, fontSize: '0.88rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontFamily: "'Poppins', sans-serif", boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)' }}
+                                      onClick={() => handleAprobarPago(selectedPedido)}
+                                    >
+                                      <Check size={16} /> ✓ Aprobar y completar pago
+                                    </button>
+                                  )}
+
+                                  <div style={{ display: 'flex', gap: '0.45rem' }}>
+                                    <button
+                                      type="button"
+                                      style={{ flex: 1, padding: '0.6rem 0.75rem', background: '#25D366', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontFamily: "'Poppins', sans-serif" }}
+                                      onClick={() => {
+                                        const uploadLink = `${window.location.origin}/pago/${selectedPedido.id.slice(0, 8)}`;
+                                        let metodosStr = '';
+                                        if (configuracion?.metodos_pago) {
+                                          try {
+                                            const parsed = JSON.parse(configuracion.metodos_pago);
+                                            if (Array.isArray(parsed) && parsed.length > 0) {
+                                              metodosStr = `💳 *Métodos de pago:*\n` + parsed.map((m: any) => `- ${m.banco} ${m.tipo ? `(${m.tipo})` : ''}: ${m.numero}`).join('\n') + `\n\n`;
+                                            } else {
+                                              metodosStr = `💳 *Métodos de pago:*\n${configuracion.metodos_pago}\n\n`;
+                                            }
+                                          } catch {
+                                            metodosStr = `💳 *Métodos de pago:*\n${configuracion.metodos_pago}\n\n`;
+                                          }
+                                        }
+                                        const metodosInfo = metodosStr || `💳 *Datos del banco:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\n`;
+                                        const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: ${selectedPedido.total.toLocaleString()} COP*\n\n${metodosInfo}Para poder completar tu pedido, haz la captura de pantalla de tu pago o de transacción y envíala por este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
+                                        window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
+                                      }}
+                                    >
+                                      💬 Cobrar WA
+                                    </button>
+                                    <button
+                                      type="button"
+                                      style={{ flex: 1, padding: '0.6rem 0.75rem', background: 'var(--primary-color, #0ea5e9)', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontFamily: "'Poppins', sans-serif" }}
+                                      onClick={() => {
+                                        const guiaLink = `${window.location.origin}/guia/${selectedPedido.id.slice(0, 8)}`;
+                                        const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋 Tu pedido ha sido *VERIFICADO y DESPACHADO* 🚚\n\nPedido: ${prodsList.map((p: any) => `${p.cantidad}x ${p.nombre}`).join(', ')}\nTotal: ${selectedPedido.total.toLocaleString()} COP\n\n📸 *Ver detalles y evidencia del envío aquí:* ${guiaLink}\n\n¡Tu paquete está en camino. Gracias por tu compra! 🚀`;
+                                        window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
+                                      }}
+                                    >
+                                      🚚 Despachar
+                                    </button>
+                                  </div>
+
+                                  {selectedPedido.estado !== 'cancelado' && (
+                                    <button
+                                      type="button"
+                                      style={{ width: '100%', padding: '0.55rem', background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', marginTop: '0.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', fontFamily: "'Poppins', sans-serif" }}
+                                      onClick={() => {
+                                        handleCancelarPedido(selectedPedido.id);
+                                        setSelectedPedido(prev => prev ? { ...prev, estado: 'cancelado' } : null);
+                                      }}
+                                    >
+                                      <Trash2 size={14} /> Cancelar Pedido
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </>
+                          )}
+
+                          {/* ── TIMELINE DE AUDITORÍA (COMPACTO) ── */}
+                          <div style={{ marginTop: '0.65rem', borderTop: '1px solid #f1f5f9', paddingTop: '0.65rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.45rem' }}>
+                              <h5 style={{ margin: 0, fontSize: '0.78rem', fontWeight: 600, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                <ClipboardList size={13} color="#64748b" /> Historial de Estados
+                              </h5>
+                              <span style={{ fontSize: '0.68rem', color: '#64748b', background: '#f1f5f9', padding: '0.1rem 0.4rem', borderRadius: '6px', fontWeight: 500 }}>
+                                {auditLogs.length} reg.
+                              </span>
+                            </div>
+
+                            {auditLogs.length === 0 ? (
+                              <p style={{ margin: 0, fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic', textAlign: 'center', padding: '0.4rem' }}>
+                                Registrado el {new Date(selectedPedido.created_at).toLocaleDateString()} a las {new Date(selectedPedido.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.
+                              </p>
+                            ) : (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxHeight: '160px', overflowY: 'auto', paddingRight: '2px' }}>
+                                {auditLogs.map((log, idx) => (
+                                  <div key={idx} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.4rem 0.6rem', fontSize: '0.72rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.15rem' }}>
+                                      <span style={{
+                                        fontSize: '0.64rem',
+                                        fontWeight: 600,
+                                        textTransform: 'uppercase',
+                                        padding: '0.05rem 0.35rem',
+                                        borderRadius: '5px',
+                                        background: log.estado === 'entregado_pagado' || log.estado === 'completado' ? '#dcfce7' : log.estado === 'cancelado' ? '#fee2e2' : log.estado === 'despachado' ? '#e0f2fe' : log.estado === 'confirmado' ? '#f3e8ff' : '#ffedd5',
+                                        color: log.estado === 'entregado_pagado' || log.estado === 'completado' ? '#166534' : log.estado === 'cancelado' ? '#991b1b' : log.estado === 'despachado' ? '#0369a1' : log.estado === 'confirmado' ? '#7e22ce' : '#c2410c'
+                                      }}>
+                                        {log.estado.replace(/_/g, ' ')}
+                                      </span>
+                                      <span style={{ color: '#94a3b8', fontSize: '0.66rem' }}>
+                                        🕒 {new Date(log.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                      </span>
+                                    </div>
+                                    <p style={{ margin: '0.1rem 0 0 0', color: '#1e293b', fontWeight: 500, lineHeight: 1.25 }}>
+                                      {log.accion}
+                                    </p>
+                                    <span style={{ fontSize: '0.64rem', color: '#64748b', display: 'block', marginTop: '0.1rem' }}>
+                                      Por: <strong>{log.usuario}</strong>
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                      </div>
                     </div>
                   );
                 })()}
