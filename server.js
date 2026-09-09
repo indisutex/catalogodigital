@@ -26,11 +26,37 @@ app.get('/manifest.json', (req, res) => {
     } catch (_) {}
   }
 
-  const cleanTenant = (tenant || '').replace(/^\/+|\/+$/g, '').trim();
-  const name = req.query.name || (cleanTenant ? cleanTenant.charAt(0).toUpperCase() + cleanTenant.slice(1).replace(/_/g, ' ') : 'Catálogo Digital');
-  const color = req.query.color || req.query.theme || '#6366f1';
-  const icon = req.query.icon || '/indisutex-logo.png';
+  const cleanTenant = (tenant || '').replace(/^\/+|\/+$/g, '').trim().toLowerCase();
+
+  const KNOWN_STORE_LOGOS = {
+    sublimados_majestic: 'https://dowbsbxvxjzjjhyqmyfr.supabase.co/storage/v1/object/public/archivos/logo_1788193731295.webp',
+    lucerito: 'https://dowbsbxvxjzjjhyqmyfr.supabase.co/storage/v1/object/public/archivos/logo_1788197445120.webp',
+    saramantha: 'https://dowbsbxvxjzjjhyqmyfr.supabase.co/storage/v1/object/public/archivos/logo_1788197423178.webp',
+    lovely: 'https://dowbsbxvxjzjjhyqmyfr.supabase.co/storage/v1/object/public/archivos/logo_1788197761050.webp'
+  };
+
+  const KNOWN_STORE_NAMES = {
+    sublimados_majestic: 'Sublimados Majestic',
+    lucerito: 'Pijamas Lucerito',
+    saramantha: 'Saramantha',
+    lovely: 'Lovely'
+  };
+
+  const KNOWN_STORE_COLORS = {
+    sublimados_majestic: '#f50081',
+    lucerito: '#cd8dff',
+    saramantha: '#ff0fdf',
+    lovely: '#d561ff'
+  };
+
+  const name = req.query.name || KNOWN_STORE_NAMES[cleanTenant] || (cleanTenant ? cleanTenant.charAt(0).toUpperCase() + cleanTenant.slice(1).replace(/_/g, ' ') : 'Catálogo Digital');
+  const color = req.query.color || req.query.theme || KNOWN_STORE_COLORS[cleanTenant] || '#6366f1';
+  const icon = req.query.icon || KNOWN_STORE_LOGOS[cleanTenant] || '/indisutex-logo.png';
   const appPath = cleanTenant ? `/${cleanTenant}` : '/';
+
+  const iconType = icon.toLowerCase().endsWith('.svg')
+    ? 'image/svg+xml'
+    : (icon.toLowerCase().endsWith('.webp') ? 'image/webp' : 'image/png');
 
   res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8');
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
@@ -49,14 +75,14 @@ app.get('/manifest.json', (req, res) => {
       {
         src: icon,
         sizes: '192x192',
-        type: icon.toLowerCase().endsWith('.svg') ? 'image/svg+xml' : 'image/png',
-        purpose: 'any maskable'
+        type: iconType,
+        purpose: 'any'
       },
       {
         src: icon,
         sizes: '512x512',
-        type: icon.toLowerCase().endsWith('.svg') ? 'image/svg+xml' : 'image/png',
-        purpose: 'any maskable'
+        type: iconType,
+        purpose: 'any'
       }
     ]
   });

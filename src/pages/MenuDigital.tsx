@@ -17,8 +17,10 @@ import { ChristmasLogoWreath } from '../components/ChristmasLogoWreath';
 import './MenuDigital.css';
 
 const DEFAULT_LOGOS: Record<string, string> = {
-  'saramantha': 'https://dowbsbxvxjzjjhyqmyfr.supabase.co/storage/v1/object/public/archivos/logo_1782527997229.jpg',
-  'lucerito': 'https://dowbsbxvxjzjjhyqmyfr.supabase.co/storage/v1/object/public/archivos/logo_1785611120589.webp',
+  'sublimados_majestic': 'https://dowbsbxvxjzjjhyqmyfr.supabase.co/storage/v1/object/public/archivos/logo_1788193731295.webp',
+  'lucerito': 'https://dowbsbxvxjzjjhyqmyfr.supabase.co/storage/v1/object/public/archivos/logo_1788197445120.webp',
+  'saramantha': 'https://dowbsbxvxjzjjhyqmyfr.supabase.co/storage/v1/object/public/archivos/logo_1788197423178.webp',
+  'lovely': 'https://dowbsbxvxjzjjhyqmyfr.supabase.co/storage/v1/object/public/archivos/logo_1788197761050.webp'
 };
 
 // Ejecutar sincrónicamente para evitar parpadeo de color
