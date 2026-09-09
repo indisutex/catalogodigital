@@ -51,55 +51,16 @@ export function updatePWAManifestAndIcons(
     }
     appleTitle.content = name;
 
-    const iconType = icon.toLowerCase().endsWith('.svg') ? 'image/svg+xml' : 'image/png';
-
     // Normalize slug for multi-tenant PWA isolation (e.g. /lucerito, /sublimados_majestic, /saramantha)
     const cleanSlug = tenantSlug?.trim().replace(/^\/+|\/+$/g, '') || '';
-    const appPath = cleanSlug ? `/${cleanSlug}` : '/';
 
-    // 4. Generate dynamic PWA Manifest isolated per tenant/store
-    const manifestData = {
-      id: appPath,
-      name: `${name} — Catálogo Digital`,
-      short_name: name.length > 15 ? name.substring(0, 15) : name,
-      description: `Catálogo Digital e Interactivo de ${name}`,
-      start_url: appPath,
-      scope: appPath,
-      display: 'standalone',
-      orientation: 'portrait-primary',
-      background_color: '#ffffff',
-      theme_color: activeColor,
-      icons: [
-        {
-          src: icon,
-          sizes: '192x192',
-          type: iconType,
-          purpose: 'any'
-        },
-        {
-          src: icon,
-          sizes: '512x512',
-          type: iconType,
-          purpose: 'any'
-        },
-        {
-          src: icon,
-          sizes: '192x192',
-          type: iconType,
-          purpose: 'maskable'
-        },
-        {
-          src: icon,
-          sizes: '512x512',
-          type: iconType,
-          purpose: 'maskable'
-        }
-      ]
-    };
-
-    const stringManifest = JSON.stringify(manifestData);
-    const blob = new Blob([stringManifest], { type: 'application/json' });
-    const manifestUrl = URL.createObjectURL(blob);
+    // 4. Update manifest link with query params so Service Worker & backend serve the exact isolated manifest with proper start_url
+    const manifestParams = new URLSearchParams();
+    if (cleanSlug) manifestParams.set('tenant', cleanSlug);
+    manifestParams.set('name', name);
+    manifestParams.set('color', activeColor);
+    manifestParams.set('icon', icon);
+    const manifestUrl = `/manifest.json?${manifestParams.toString()}`;
 
     let manifestLink = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
     if (!manifestLink) {

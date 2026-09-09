@@ -5,6 +5,18 @@
     <link rel="icon" type="image/png" href="/indisutex-logo.png" />
     <link rel="apple-touch-icon" href="/indisutex-logo.png" />
     <link rel="manifest" href="/manifest.json" />
+    <script>
+      (function() {
+        try {
+          var p = window.location.pathname.replace(/^\/+/g, '').split('/')[0];
+          var sys = ['admin', 'superadmin', 'pago', 'guia', 'menu', 'dist', 'assets', 'api'];
+          var m = document.querySelector('link[rel="manifest"]');
+          if (m && p && sys.indexOf(p.toLowerCase()) === -1) {
+            m.href = '/manifest.json?tenant=' + encodeURIComponent(p);
+          }
+        } catch(e) {}
+      })();
+    </script>
     <meta name="theme-color" content="#6366f1" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />

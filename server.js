@@ -11,6 +11,57 @@ const app = express();
 // Hostinger NodeJS defaults port to 3000, 8080, or reads process.env.PORT
 const PORT = process.env.PORT || 3000;
 
+// Servir manifest.json dinámico aislado por tenant / catálogo
+app.get('/manifest.json', (req, res) => {
+  let tenant = req.query.tenant;
+  if (!tenant && req.headers.referer) {
+    try {
+      const refUrl = new URL(req.headers.referer);
+      const parts = refUrl.pathname.replace(/^\/+|\/+$/g, '').split('/');
+      const first = parts[0];
+      const systemRoutes = ['admin', 'superadmin', 'pago', 'guia', 'menu', 'dist', 'assets', 'api'];
+      if (first && !systemRoutes.includes(first.toLowerCase())) {
+        tenant = first;
+      }
+    } catch (_) {}
+  }
+
+  const cleanTenant = (tenant || '').replace(/^\/+|\/+$/g, '').trim();
+  const name = req.query.name || (cleanTenant ? cleanTenant.charAt(0).toUpperCase() + cleanTenant.slice(1).replace(/_/g, ' ') : 'Catálogo Digital');
+  const color = req.query.color || req.query.theme || '#6366f1';
+  const icon = req.query.icon || '/indisutex-logo.png';
+  const appPath = cleanTenant ? `/${cleanTenant}` : '/';
+
+  res.setHeader('Content-Type', 'application/manifest+json; charset=utf-8');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+  res.json({
+    id: appPath,
+    name: `${name} — Catálogo Digital`,
+    short_name: name.length > 15 ? name.substring(0, 15) : name,
+    description: `Catálogo Digital e Interactivo de ${name}`,
+    start_url: appPath,
+    scope: appPath,
+    display: 'standalone',
+    orientation: 'portrait-primary',
+    background_color: '#ffffff',
+    theme_color: color,
+    icons: [
+      {
+        src: icon,
+        sizes: '192x192',
+        type: icon.toLowerCase().endsWith('.svg') ? 'image/svg+xml' : 'image/png',
+        purpose: 'any maskable'
+      },
+      {
+        src: icon,
+        sizes: '512x512',
+        type: icon.toLowerCase().endsWith('.svg') ? 'image/svg+xml' : 'image/png',
+        purpose: 'any maskable'
+      }
+    ]
+  });
+});
+
 // Servir archivos estáticos generados por Vite (carpeta dist)
 app.use(express.static(path.join(__dirname, 'dist')));
 

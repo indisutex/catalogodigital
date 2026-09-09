@@ -1,5 +1,5 @@
-const CACHE_NAME = 'indisutex-images-v2';
-const IMAGE_CACHE_NAME = 'indisutex-media-v2';
+const CACHE_NAME = 'indisutex-images-v3';
+const IMAGE_CACHE_NAME = 'indisutex-media-v3';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -22,6 +22,56 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
+
+  // 1. Interceptar solicitudes de manifest.json para aislar el PWA con el start_url del tenant actual
+  if (url.pathname.endsWith('/manifest.json') || url.pathname.endsWith('manifest.webmanifest')) {
+    const tenantParam = url.searchParams.get('tenant') || '';
+    const nameParam = url.searchParams.get('name') || '';
+    const colorParam = url.searchParams.get('color') || url.searchParams.get('theme') || '#6366f1';
+    const iconParam = url.searchParams.get('icon') || '/indisutex-logo.png';
+
+    // Limpiar slug para determinar start_url y scope
+    const cleanTenant = tenantParam.replace(/^\/+|\/+$/g, '').trim();
+    const appPath = cleanTenant ? `/${cleanTenant}` : '/';
+    const displayName = nameParam || (cleanTenant ? cleanTenant.charAt(0).toUpperCase() + cleanTenant.slice(1).replace(/_/g, ' ') : 'Catálogo Digital');
+
+    const dynamicManifest = {
+      id: appPath,
+      name: `${displayName} — Catálogo Digital`,
+      short_name: displayName.length > 15 ? displayName.substring(0, 15) : displayName,
+      description: `Catálogo Digital e Interactivo de ${displayName}`,
+      start_url: appPath,
+      scope: appPath,
+      display: 'standalone',
+      orientation: 'portrait-primary',
+      background_color: '#ffffff',
+      theme_color: colorParam,
+      icons: [
+        {
+          src: iconParam,
+          sizes: '192x192',
+          type: iconParam.toLowerCase().endsWith('.svg') ? 'image/svg+xml' : 'image/png',
+          purpose: 'any maskable'
+        },
+        {
+          src: iconParam,
+          sizes: '512x512',
+          type: iconParam.toLowerCase().endsWith('.svg') ? 'image/svg+xml' : 'image/png',
+          purpose: 'any maskable'
+        }
+      ]
+    };
+
+    event.respondWith(
+      new Response(JSON.stringify(dynamicManifest, null, 2), {
+        headers: {
+          'Content-Type': 'application/manifest+json; charset=utf-8',
+          'Cache-Control': 'no-cache, no-store, must-revalidate'
+        }
+      })
+    );
+    return;
+  }
 
   // Solo interceptar peticiones GET
   if (request.method !== 'GET') return;
