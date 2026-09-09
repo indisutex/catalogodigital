@@ -16789,7 +16789,7 @@ export default function Admin() {
                           };
 
                           return (
-                            <div className="modal-col-card">
+                            <div className="modal-col-card modal-col-cliente">
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem' }}>
                                 <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                                   <User size={16} color="var(--primary-color, #0ea5e9)" /> Datos del Cliente
@@ -16968,7 +16968,7 @@ export default function Admin() {
                         {/* ════════════════════════════════════════════════════════
                             COLUMNA 2: 🛍️ PRODUCTOS SOLICITADOS
                         ════════════════════════════════════════════════════════ */}
-                        <div className="modal-col-card">
+                        <div className="modal-col-card modal-col-productos">
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem', gap: '0.5rem', flexWrap: 'wrap' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0, flexWrap: 'wrap' }}>
                               <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap' }}>
@@ -17188,7 +17188,7 @@ export default function Admin() {
                         {/* ════════════════════════════════════════════════════════
                             COLUMNA 3: 🚚 LOGÍSTICA, COBRO Y ACCIONES
                         ════════════════════════════════════════════════════════ */}
-                        <div className="modal-col-card">
+                        <div className="modal-col-card modal-col-logistica">
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem' }}>
                             <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                               <Truck size={16} color="var(--primary-color, #0ea5e9)" /> Logística y Acciones
@@ -17864,27 +17864,29 @@ export default function Admin() {
                                     </button>
                                   )}
 
-                                  <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
+                                  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.35fr) minmax(0, 1fr)', gap: '0.45rem', width: '100%', boxSizing: 'border-box' }}>
                                     <button
                                       type="button"
                                       style={{
-                                        flex: '1 1 130px',
-                                        minWidth: '120px',
-                                        padding: '0.65rem 0.75rem',
+                                        width: '100%',
+                                        minWidth: 0,
+                                        padding: '0.65rem 0.5rem',
                                         background: '#25D366',
                                         color: '#ffffff',
                                         border: 'none',
                                         borderRadius: '10px',
                                         cursor: 'pointer',
                                         fontWeight: 500,
-                                        fontSize: '0.8rem',
+                                        fontSize: '0.78rem',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        gap: '0.4rem',
+                                        gap: '0.35rem',
                                         fontFamily: "'Poppins', sans-serif",
                                         boxShadow: '0 2px 8px rgba(37, 211, 102, 0.22)',
-                                        transition: 'all 0.15s ease'
+                                        transition: 'all 0.15s ease',
+                                        boxSizing: 'border-box',
+                                        whiteSpace: 'nowrap'
                                       }}
                                       onClick={() => {
                                         let msg = '';
@@ -17911,28 +17913,30 @@ export default function Admin() {
                                         window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
                                       }}
                                     >
-                                      <MessageSquare size={14} /> <span>{selectedPedido.pantallazo_url ? 'Escribir por WhatsApp' : 'Cobrar por WhatsApp'}</span>
+                                      <MessageSquare size={14} style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedPedido.pantallazo_url ? 'WhatsApp' : 'Cobrar WhatsApp'}</span>
                                     </button>
 
                                     <button
                                       type="button"
                                       style={{
-                                        flex: '1 1 95px',
-                                        minWidth: '90px',
-                                        padding: '0.65rem 0.75rem',
+                                        width: '100%',
+                                        minWidth: 0,
+                                        padding: '0.65rem 0.5rem',
                                         background: '#f8fafc',
                                         color: '#334155',
                                         border: '1.5px solid #cbd5e1',
                                         borderRadius: '10px',
                                         cursor: 'pointer',
                                         fontWeight: 500,
-                                        fontSize: '0.8rem',
+                                        fontSize: '0.78rem',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        gap: '0.4rem',
+                                        gap: '0.35rem',
                                         fontFamily: "'Poppins', sans-serif",
-                                        transition: 'all 0.15s ease'
+                                        transition: 'all 0.15s ease',
+                                        boxSizing: 'border-box',
+                                        whiteSpace: 'nowrap'
                                       }}
                                       onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.borderColor = '#94a3b8'; }}
                                       onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
@@ -17942,7 +17946,7 @@ export default function Admin() {
                                         window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
                                       }}
                                     >
-                                      <Truck size={15} color="var(--primary-color, #0ea5e9)" /> <span>Despachar</span>
+                                      <Truck size={15} color="var(--primary-color, #0ea5e9)" style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Despachar</span>
                                     </button>
                                   </div>
 

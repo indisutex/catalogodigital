@@ -4120,7 +4120,8 @@ button:active { transform: scale(0.95); }
     grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
     gap: 1rem;
   }
-  .modal-detalle-pedido-3cols > .modal-col-card:nth-child(3) {
+  .modal-detalle-pedido-3cols > .modal-col-card:nth-child(3),
+  .modal-detalle-pedido-3cols > .modal-col-logistica {
     grid-column: 1 / -1;
   }
 }
@@ -4135,7 +4136,8 @@ button:active { transform: scale(0.95); }
     grid-template-columns: minmax(0, 1fr);
     gap: 0.85rem;
   }
-  .modal-detalle-pedido-3cols > .modal-col-card:nth-child(3) {
+  .modal-detalle-pedido-3cols > .modal-col-card:nth-child(3),
+  .modal-detalle-pedido-3cols > .modal-col-logistica {
     grid-column: auto;
   }
 }
