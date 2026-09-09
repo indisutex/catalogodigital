@@ -8,6 +8,7 @@ import PqrsModal from '../components/PqrsModal';
 import { getOptimizedImageUrl } from '../lib/imageOptimizer';
 import { PromoWelcomeBanner as TemuWelcomeBanner } from '../components/NochePerfectaGameModal';
 import { JuegosHubModal } from '../components/JuegosHubModal';
+import { PWAInstallPrompt } from '../components/PWAInstallPrompt';
 import { DEPARTAMENTOS_COLOMBIA, TODAS_LAS_CIUDADES_COLOMBIA } from '../data/colombiaData';
 import { validateWhatsAppPhone } from '../components/WhatsAppPhoneVerifier';
 import AddressVerifier, { validateAddressFormat } from '../components/AddressVerifier';
@@ -41,6 +42,15 @@ try {
 
 import { decodeExtraImage, isMediaVideo } from '../lib/mediaUtils';
 
+const normalizeSlug = (str?: string) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+
+const SYSTEM_ROUTES = [
+  'admin', 'superadmin', 'pago', 'guia', 'menu', 'dist', 
+  'assets', 'api', 'sw.js', 'manifest.json', 'products', 
+  'orders', 'favicon.ico', 'robots.txt', 'indisutex', 
+  'sublimadosmajestic', 'sublimados_majestic', 'default'
+];
+
 const toTitleCase = (str?: string): string => {
   if (!str) return '';
   return str
@@ -55,7 +65,7 @@ export default function MenuDigital() {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [subcategorias, setSubcategorias] = useState<Subcategoria[]>([]);
   const [configuracion, setConfiguracion] = useState<Configuracion | null>(null);
-  const [mayoristaBranding, setMayoristaBranding] = useState<{nombre: string, logo: string, video: string, color?: string, dominio_personalizado?: string, ajustes_productos?: any} | null>(null);
+  const [mayoristaBranding, setMayoristaBranding] = useState<{slug?: string, nombre: string, logo: string, video: string, color?: string, dominio_personalizado?: string, ajustes_productos?: any} | null>(null);
   const [effectiveTenant, setEffectiveTenant] = useState<string>(() => normalizeTenantId(getTenantId()));
   const [cargando, setCargando] = useState(true);
   
@@ -301,7 +311,9 @@ export default function MenuDigital() {
 
           setMarkupPorcentaje(Number(matchMayorista.porcentaje_ganancia) || 0);
           setAjustesProductos(matchMayorista.ajustes_productos || {});
+          const mayoristaSlug = rawPathSlug || normalizeSlug(matchMayorista.nombre_negocio) || normalizeSlug(matchMayorista.nombre) || matchMayorista.id;
           setMayoristaBranding({ 
+            slug: mayoristaSlug,
             nombre: mayoristaNombre, 
             logo: mayoristaFoto, 
             video: mayoristaVideo,
@@ -512,6 +524,10 @@ export default function MenuDigital() {
   
   useEffect(() => {
     const tenant = getTenantId();
+    const rawPath = window.location.pathname.replace(/^\/+/g, '').trim().split('/')[0].toLowerCase();
+    const pathSlug = normalizeSlug(rawPath);
+    const effectiveSlug = mayoristaBranding?.slug || (pathSlug && !SYSTEM_ROUTES.includes(pathSlug) ? pathSlug : (tenant && tenant !== 'default' ? tenant : ''));
+
     const storeName = mayoristaBranding?.nombre || configuracion?.nombre_negocio || (tenant ? tenant.charAt(0).toUpperCase() + tenant.slice(1) : 'Catálogo Digital');
     const storeLogo = mayoristaBranding?.logo || configuracion?.logo_url || DEFAULT_LOGOS[tenant] || '';
     const effectiveColor = mayoristaBranding?.color || configuracion?.color_primario;
@@ -523,7 +539,7 @@ export default function MenuDigital() {
       window.history.replaceState(null, '', `/${tenant}${window.location.search}${window.location.hash}`);
     }
 
-    updatePWAManifestAndIcons(storeLogo, storeName, effectiveColor);
+    updatePWAManifestAndIcons(storeLogo, storeName, effectiveColor, effectiveSlug);
 
     if (effectiveColor) {
       document.documentElement.style.setProperty('--primary', effectiveColor);
@@ -4590,6 +4606,14 @@ export default function MenuDigital() {
           </div>
         </div>
       )}
+
+      {/* ── Promotor de Instalación PWA (Engagement para cada negocio) ── */}
+      <PWAInstallPrompt 
+        storeName={mayoristaBranding?.nombre || configuracion?.nombre_negocio || (effectiveTenant ? effectiveTenant.charAt(0).toUpperCase() + effectiveTenant.slice(1) : 'Catálogo Digital')}
+        storeLogo={mayoristaBranding?.logo || configuracion?.logo_url || DEFAULT_LOGOS[effectiveTenant] || ''}
+        primaryColor={mayoristaBranding?.color || configuracion?.color_primario || '#6366f1'}
+        tenantSlug={mayoristaBranding?.slug || (effectiveTenant && effectiveTenant !== 'default' ? effectiveTenant : '')}
+      />
 
     </div>
   );

@@ -1176,22 +1176,22 @@ export default function Admin() {
         }}
         style={{
           background: '#ffffff',
-          borderRadius: '18px',
+          borderRadius: '16px',
           border: '1px solid #f1f5f9',
           borderLeft: `5px solid ${borderLeftColor}`,
-          boxShadow: '0 4px 18px rgba(15, 23, 42, 0.04)',
-          padding: '0.9rem 1rem',
-          margin: '0 0 0.85rem 0',
+          boxShadow: '0 3px 14px rgba(15, 23, 42, 0.04)',
+          padding: '0.75rem 0.8rem',
+          margin: '0 0 0.65rem 0',
           cursor: 'grab'
         }}
       >
         {/* ── HEADER BLOCK ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', marginBottom: '0.75rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', marginBottom: '0.65rem' }}>
           {/* Line 1: Status Pill Badge & Timestamp */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.35rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.3rem' }}>
             {ped.estado === 'cancelado' ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
-                <span className="pedido-card-status-pill" style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#dc2626', fontSize: '0.72rem', fontWeight: 500, padding: '0.2rem 0.55rem', borderRadius: '10px', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexWrap: 'wrap' }}>
+                <span className="pedido-card-status-pill" style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#dc2626', fontSize: '0.7rem', fontWeight: 500, padding: '0.15rem 0.45rem', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
                   🚫 Cancelado
                 </span>
                 {(() => {
@@ -1202,72 +1202,72 @@ export default function Admin() {
                   if (rem <= 0) return null;
                   const d = Math.floor(rem / (1000 * 60 * 60 * 24));
                   const h = Math.floor((rem % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                  const badgeTxt = d > 0 ? `⏳ Se borra en ${d}d ${h}h` : `⏳ Se borra en ${Math.max(1, h)}h`;
+                  const badgeTxt = d > 0 ? `⏳ ${d}d ${h}h` : `⏳ ${Math.max(1, h)}h`;
                   return (
-                    <span style={{ fontSize: '0.68rem', color: '#991b1b', background: '#fee2e2', padding: '0.15rem 0.4rem', borderRadius: '6px', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
+                    <span style={{ fontSize: '0.66rem', color: '#991b1b', background: '#fee2e2', padding: '0.1rem 0.35rem', borderRadius: '5px', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
                       {badgeTxt}
                     </span>
                   );
                 })()}
               </div>
             ) : isLead ? (
-              <span className="pedido-card-status-pill" style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: '0.72rem', fontWeight: 500, padding: '0.2rem 0.55rem', borderRadius: '10px' }}>
+              <span className="pedido-card-status-pill" style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: '0.7rem', fontWeight: 500, padding: '0.15rem 0.5rem', borderRadius: '8px' }}>
                 ⚠️ Carrito Abandonado
               </span>
             ) : ped.estado === 'completado' ? (
-              <span className="pedido-card-status-pill" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', fontSize: '0.72rem', fontWeight: 500, padding: '0.2rem 0.55rem', borderRadius: '10px' }}>
+              <span className="pedido-card-status-pill" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', fontSize: '0.7rem', fontWeight: 500, padding: '0.15rem 0.5rem', borderRadius: '8px' }}>
                 ✅ Verificado
               </span>
             ) : isContra ? (
-              <span className="pedido-card-status-pill" style={{ background: '#fff7ed', border: '1px solid #ffedd5', color: '#ea580c', fontSize: '0.72rem', fontWeight: 500, padding: '0.2rem 0.55rem', borderRadius: '10px', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+              <span className="pedido-card-status-pill" style={{ background: '#fff7ed', border: '1px solid #ffedd5', color: '#ea580c', fontSize: '0.7rem', fontWeight: 500, padding: '0.15rem 0.5rem', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
                 🚚 Contra Entrega
               </span>
             ) : ped.pantallazo_url ? (
-              <span className="pedido-card-status-pill" style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: '0.72rem', fontWeight: 500, padding: '0.2rem 0.55rem', borderRadius: '10px' }}>
+              <span className="pedido-card-status-pill" style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: '0.7rem', fontWeight: 500, padding: '0.15rem 0.5rem', borderRadius: '8px' }}>
                 📸 Comprobante recibido
               </span>
             ) : (
-              <span className="pedido-card-status-pill" style={{ background: '#fffbeb', border: '1px solid #fef3c7', color: '#b45309', fontSize: '0.72rem', fontWeight: 500, padding: '0.2rem 0.55rem', borderRadius: '10px' }}>
+              <span className="pedido-card-status-pill" style={{ background: '#fffbeb', border: '1px solid #fef3c7', color: '#b45309', fontSize: '0.7rem', fontWeight: 500, padding: '0.15rem 0.5rem', borderRadius: '8px' }}>
                 ⏳ Esperando pago
               </span>
             )}
 
-            <span className="pedido-card-time" style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 400 }}>
+            <span className="pedido-card-time" style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 400 }}>
               🕒 {timeLabel}
             </span>
           </div>
 
           {/* Line 2: Customer Info & Advisor Pill */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.5rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.45rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', minWidth: 0, flex: 1 }}>
               <div className="pedido-card-avatar" style={{
-                width: '38px',
-                height: '38px',
+                width: '32px',
+                height: '32px',
                 borderRadius: '50%',
                 background: '#fff7ed',
                 border: '1.5px solid #ffedd5',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: '1rem',
+                fontSize: '0.85rem',
                 fontWeight: 600,
                 color: '#ea580c',
                 flexShrink: 0
               }}>
                 {nombreCliente.charAt(0).toUpperCase()}
               </div>
-              <div style={{ minWidth: 0 }}>
-                <h4 className="pedido-card-name" style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.25, wordBreak: 'break-word', fontFamily: "'Poppins', sans-serif" }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <h4 className="pedido-card-name" style={{ margin: 0, fontSize: '0.86rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Poppins', sans-serif" }} title={nombreCliente}>
                   {nombreCliente}
                 </h4>
-                <p className="pedido-card-phone" style={{ margin: '0.15rem 0 0 0', fontSize: '0.76rem', color: '#64748b', fontWeight: 400, display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap', wordBreak: 'break-all', fontFamily: "'Poppins', sans-serif" }}>
+                <p className="pedido-card-phone" style={{ margin: '0.1rem 0 0 0', fontSize: '0.73rem', color: '#64748b', fontWeight: 400, display: 'flex', alignItems: 'center', gap: '0.25rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Poppins', sans-serif" }}>
                   <span>📞 {telefonoCliente || 'Sin número'}</span>
                   {(() => {
                     const clean = (telefonoCliente || '').replace(/\D/g, '');
                     if (clean && clean.length !== 10) {
                       return (
-                        <span style={{ fontSize: '0.64rem', color: '#dc2626', background: '#fee2e2', padding: '0.05rem 0.35rem', borderRadius: '4px', fontWeight: 500, fontFamily: "'Poppins', sans-serif", flexShrink: 0 }}>
-                          {clean.length < 10 ? `⚠️ (${clean.length}/10)` : `⚠️ ${clean.length} dígitos`}
+                        <span style={{ fontSize: '0.62rem', color: '#dc2626', background: '#fee2e2', padding: '0.04rem 0.3rem', borderRadius: '4px', fontWeight: 500, fontFamily: "'Poppins', sans-serif", flexShrink: 0 }}>
+                          {clean.length < 10 ? `⚠️ (${clean.length}/10)` : `⚠️ ${clean.length} d`}
                         </span>
                       );
                     }
@@ -1278,42 +1278,42 @@ export default function Admin() {
             </div>
 
             {/* Asesor */}
-            <div className="pedido-card-advisor" style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', background: '#f8fafc', padding: '0.2rem 0.45rem', borderRadius: '10px', border: '1px solid #e2e8f0', flexShrink: 0, maxWidth: '120px' }}>
+            <div className="pedido-card-advisor" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: '#f8fafc', padding: '0.15rem 0.4rem', borderRadius: '8px', border: '1px solid #e2e8f0', flexShrink: 0, maxWidth: '95px' }} title={`Asesor: ${adv.nombre}`}>
               {adv.foto_url ? (
-                <img src={adv.foto_url} alt="" style={{ width: '18px', height: '18px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                <img src={adv.foto_url} alt="" style={{ width: '16px', height: '16px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
               ) : (
-                <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: '#e0e7ff', color: '#4338ca', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.66rem', fontWeight: 600, flexShrink: 0 }}>
+                <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: '#e0e7ff', color: '#4338ca', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.62rem', fontWeight: 600, flexShrink: 0 }}>
                   {adv.nombre.charAt(0).toUpperCase()}
                 </div>
               )}
-              <span style={{ fontSize: '0.72rem', fontWeight: 500, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Poppins', sans-serif" }}>{adv.nombre}</span>
+              <span style={{ fontSize: '0.68rem', fontWeight: 500, color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Poppins', sans-serif" }}>{adv.nombre}</span>
             </div>
           </div>
         </div>
 
         {/* ── MIDDLE RESUMEN BLOCK (Total & Cantidad) ── */}
-        <div className="pedido-card-summary" style={{ background: '#ffffff', border: '1px solid #f1f5f9', borderRadius: '14px', padding: '0.65rem 0.85rem', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 8px rgba(15,23,42,0.02)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', minWidth: 0, flex: 1 }}>
-            <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', flexShrink: 0 }}>
+        <div className="pedido-card-summary" style={{ background: '#ffffff', border: '1px solid #f1f5f9', borderRadius: '12px', padding: '0.45rem 0.65rem', marginBottom: '0.65rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 2px 6px rgba(15,23,42,0.02)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', minWidth: 0, flex: 1 }}>
+            <div style={{ width: '26px', height: '26px', borderRadius: '8px', background: '#fff7ed', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.82rem', flexShrink: 0 }}>
               💰
             </div>
             <div style={{ minWidth: 0 }}>
-              <span style={{ fontSize: '0.64rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>TOTAL DEL PEDIDO</span>
-              <span className="pedido-card-total" style={{ fontSize: '1.18rem', fontWeight: 600, color: '#ea580c', lineHeight: 1.15, display: 'block', whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>
+              <span style={{ fontSize: '0.6rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>TOTAL</span>
+              <span className="pedido-card-total" style={{ fontSize: '1.02rem', fontWeight: 600, color: '#ea580c', lineHeight: 1.15, display: 'block', whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>
                 ${ped.total.toLocaleString()}
               </span>
             </div>
           </div>
 
-          <div style={{ width: '1px', height: '32px', background: '#e2e8f0', margin: '0 0.4rem', flexShrink: 0 }} />
+          <div style={{ width: '1px', height: '26px', background: '#e2e8f0', margin: '0 0.35rem', flexShrink: 0 }} />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', minWidth: 0, flex: 1 }}>
-            <div style={{ width: '34px', height: '34px', borderRadius: '10px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', minWidth: 0, flex: 1 }}>
+            <div style={{ width: '26px', height: '26px', borderRadius: '8px', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.82rem', flexShrink: 0 }}>
               📦
             </div>
             <div style={{ minWidth: 0 }}>
-              <span style={{ fontSize: '0.64rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>PRODUCTOS</span>
-              <span className="pedido-card-units" style={{ fontSize: '0.98rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.15, display: 'block', whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>
+              <span style={{ fontSize: '0.6rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>PRODUCTOS</span>
+              <span className="pedido-card-units" style={{ fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.15, display: 'block', whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>
                 {totalUnits} {totalUnits === 1 ? 'unidad' : 'uds'}
               </span>
             </div>
@@ -1322,46 +1322,46 @@ export default function Admin() {
 
         {/* ── PRODUCT ITEM PREVIEW BOX ── */}
         {firstProd ? (
-          <div className="pedido-card-prod-box" style={{ background: '#fffbf5', border: '1px solid #ffedd5', borderRadius: '16px', padding: '0.75rem 1rem', marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.85rem', position: 'relative', overflow: 'hidden' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ea580c', flexShrink: 0 }} />
+          <div className="pedido-card-prod-box" style={{ background: '#fffbf5', border: '1px solid #ffedd5', borderRadius: '14px', padding: '0.55rem 0.75rem', marginBottom: '0.65rem', display: 'flex', alignItems: 'center', gap: '0.65rem', position: 'relative', overflow: 'hidden' }}>
+            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ea580c', flexShrink: 0 }} />
             
             {firstProdImg ? (
-              <img src={firstProdImg} alt="" style={{ width: '48px', height: '48px', borderRadius: '12px', objectFit: 'cover', border: '1px solid #e2e8f0', background: 'white', flexShrink: 0 }} />
+              <img src={firstProdImg} alt="" style={{ width: '40px', height: '40px', borderRadius: '10px', objectFit: 'cover', border: '1px solid #e2e8f0', background: 'white', flexShrink: 0 }} />
             ) : (
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', flexShrink: 0 }}>
+              <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.05rem', flexShrink: 0 }}>
                 🛍️
               </div>
             )}
 
             <div style={{ flex: 1, minWidth: 0, zIndex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                <h5 className="pedido-card-prod-name" style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'nowrap' }}>
+                <h5 className="pedido-card-prod-name" style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, color: '#0f172a', textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={firstProd.nombre}>
                   {firstProd.nombre}
                 </h5>
                 {firstProd.talla && (
-                  <span style={{ background: '#f3e8ff', color: '#7e22ce', fontSize: '0.72rem', fontWeight: 500, padding: '2px 7px', borderRadius: '8px' }}>
+                  <span style={{ background: '#f3e8ff', color: '#7e22ce', fontSize: '0.68rem', fontWeight: 500, padding: '1px 6px', borderRadius: '6px', flexShrink: 0 }}>
                     {firstProd.talla}
                   </span>
                 )}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.2rem', flexWrap: 'wrap' }}>
-                <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b', fontWeight: 400 }}>
-                  Cantidad: {firstProd.cantidad || 1} {firstProd.cantidad === 1 ? 'unidad' : 'unidades'}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginTop: '0.15rem', flexWrap: 'wrap' }}>
+                <p style={{ margin: 0, fontSize: '0.74rem', color: '#64748b', fontWeight: 400 }}>
+                  Cant: {firstProd.cantidad || 1} {firstProd.cantidad === 1 ? 'ud' : 'uds'}
                 </p>
                 {parsedProds.length > 1 && (
                   <span 
                     onClick={() => setSelectedPedido(ped)}
-                    style={{ position: 'relative', zIndex: 2, fontSize: '0.72rem', fontWeight: 600, color: '#ea580c', background: '#ffffff', padding: '0.2rem 0.55rem', borderRadius: '8px', border: '1px solid #ffedd5', cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
+                    style={{ position: 'relative', zIndex: 2, fontSize: '0.68rem', fontWeight: 600, color: '#ea580c', background: '#ffffff', padding: '0.15rem 0.45rem', borderRadius: '6px', border: '1px solid #ffedd5', cursor: 'pointer', whiteSpace: 'nowrap', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}
                   >
-                    + Ver {parsedProds.length - 1} más
+                    +{parsedProds.length - 1} más
                   </span>
                 )}
               </div>
             </div>
 
-            {/* 3D Box Vector Graphic + (Billetes Verdes 💵 + Relojito 🕒 EXCLUSIVAMENTE en Pendiente por Pago) */}
-            <div style={{ position: 'absolute', right: '-4px', bottom: '-4px', pointerEvents: 'none', zIndex: 0, opacity: 0.45 }}>
-              <svg width="90" height="82" viewBox="0 0 115 100" fill="none" style={{ overflow: 'visible' }} xmlns="http://www.w3.org/2000/svg">
+            {/* 3D Box Vector Graphic */}
+            <div style={{ position: 'absolute', right: '-4px', bottom: '-4px', pointerEvents: 'none', zIndex: 0, opacity: 0.35 }}>
+              <svg width="76" height="70" viewBox="0 0 115 100" fill="none" style={{ overflow: 'visible' }} xmlns="http://www.w3.org/2000/svg">
                 <defs>
                   {/* Cardboard Box Gradients */}
                   <linearGradient id="boxTopGrad" x1="20" y1="20" x2="80" y2="50" gradientUnits="userSpaceOnUse">
@@ -1563,9 +1563,9 @@ export default function Admin() {
         )}
 
         {/* ── FOOTER ACTIONS (2-TIER RESPONSIVE: AUXILIARY + FULL-WIDTH PRIMARY CTA) ── */}
-        <div className="pedido-card-actions" style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', width: '100%', marginTop: '0.35rem' }}>
+        <div className="pedido-card-actions" style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', width: '100%', marginTop: '0.25rem' }}>
           {/* Fila 1: Botones secundarios (Cancelar/Eliminar + Ver detalles + Selector de estado si es lead) */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', width: '100%' }}>
             {ped.estado !== 'cancelado' ? (
               <button 
                 type="button" 
@@ -1574,9 +1574,9 @@ export default function Admin() {
                   handleCancelarPedido(ped.id, isLead);
                 }}
                 style={{
-                  width: '34px',
-                  height: '34px',
-                  borderRadius: '10px',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '9px',
                   border: '1.5px solid #fee2e2',
                   background: '#fef2f2',
                   display: 'flex',
@@ -1588,7 +1588,7 @@ export default function Admin() {
                 }}
                 title="Cancelar pedido (Mover a Cancelados)"
               >
-                <XCircle size={15} />
+                <XCircle size={14} />
               </button>
             ) : (
               <button 
@@ -1598,9 +1598,9 @@ export default function Admin() {
                   handleEliminarPedidoDirecto(ped.id, isLead);
                 }}
                 style={{
-                  width: '34px',
-                  height: '34px',
-                  borderRadius: '10px',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '9px',
                   border: '1.5px solid #fca5a5',
                   background: '#fef2f2',
                   display: 'flex',
@@ -1612,7 +1612,7 @@ export default function Admin() {
                 }}
                 title="Eliminar tarjeta cancelada definitivamente"
               >
-                <Trash2 size={15} />
+                <Trash2 size={14} />
               </button>
             )}
 
@@ -1621,50 +1621,26 @@ export default function Admin() {
               onClick={() => setSelectedPedido(ped)}
               style={{
                 flex: 1,
-                height: '34px',
-                padding: '0 0.65rem',
-                borderRadius: '10px',
+                height: '32px',
+                padding: '0 0.5rem',
+                borderRadius: '9px',
                 border: '1.5px solid #e2e8f0',
                 background: '#ffffff',
                 color: '#334155',
-                fontSize: '0.78rem',
+                fontSize: '0.74rem',
                 fontWeight: 500,
                 cursor: 'pointer',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.35rem',
+                gap: '0.25rem',
                 whiteSpace: 'nowrap',
                 fontFamily: "'Poppins', sans-serif"
               }}
             >
               <span>Ver detalles</span>
-              <ChevronRight size={14} color="#64748b" />
+              <ChevronRight size={13} color="#64748b" />
             </button>
-
-            {isLead && (
-              <select 
-                value={ped.retargeting_estado || ''}
-                onChange={(e) => handleUpdateLeadStatus(ped.id, e.target.value)}
-                style={{
-                  height: '34px',
-                  fontSize: '0.74rem',
-                  padding: '0 0.45rem',
-                  borderRadius: '10px',
-                  border: '1.5px solid #cbd5e1',
-                  background: 'white',
-                  cursor: 'pointer',
-                  fontWeight: 400,
-                  flexShrink: 0,
-                  maxWidth: '105px',
-                  fontFamily: "'Poppins', sans-serif"
-                }}
-              >
-                <option value="">Estado...</option>
-                <option value="contactado">Contactado</option>
-                <option value="descartado">Descartado</option>
-              </select>
-            )}
           </div>
 
           {/* Fila 2: Botón de acción principal (100% ANCHO - NUNCA SE DESBORDA) */}
@@ -2653,7 +2629,7 @@ export default function Admin() {
       window.history.replaceState(null, '', `${expectedPath}${window.location.search}${window.location.hash}`);
     }
 
-    updatePWAManifestAndIcons(logoUrl, titleStr, configuracion?.color_primario);
+    updatePWAManifestAndIcons(logoUrl, titleStr, configuracion?.color_primario, tenant);
 
     if (configuracion) {
       if (configuracion.color_primario) {
@@ -15227,7 +15203,7 @@ export default function Admin() {
                                       </div>
                                     </div>
 
-                                    {/* Columna 1: No Interesados (Abandonos) */}
+                                    {/* Columna 1: Interesados */}
                                     <div
                                       className="kanban-column"
                                       onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
@@ -15248,7 +15224,7 @@ export default function Admin() {
                                           <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#ffffff', border: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                             <XCircle size={15} color="#64748b" />
                                           </div>
-                                          <span style={{ margin: 0, fontSize: '0.86rem', fontWeight: 600, color: '#475569', fontFamily: "'Poppins', sans-serif" }}>No Interesados (Abandonos)</span>
+                                          <span style={{ margin: 0, fontSize: '0.86rem', fontWeight: 600, color: '#475569', fontFamily: "'Poppins', sans-serif" }}>Interesados</span>
                                         </div>
                                         <span style={{ background: '#64748b', color: '#ffffff', minWidth: '24px', height: '22px', borderRadius: '11px', padding: '0 0.55rem', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(100, 116, 139, 0.2)', fontFamily: "'Poppins', sans-serif" }}>{leadsFiltrados.length}</span>
                                       </div>
@@ -15258,7 +15234,7 @@ export default function Admin() {
                                       >
                                         {leadsFiltrados.map(lead => renderLeadOrOrderCard(lead, (lead as any).isLead !== undefined ? (lead as any).isLead : true))}
                                         {leadsFiltrados.length === 0 && (
-                                          <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay carritos abandonados.</p>
+                                          <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay clientes interesados pendientes.</p>
                                         )}
                                       </div>
                                     </div>

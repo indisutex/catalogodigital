@@ -3899,11 +3899,19 @@ button:active { transform: scale(0.95); }
   }
 }
 
-/* ── Vista Kanban Pedidos en 2 Filas x 3 Columnas ── */
+/* ── Vista Kanban Pedidos en 2 Filas x 3 Columnas (Optimizado para Máximo Ancho) ── */
+.admin-content:has(.pedidos-kanban-2rows-container) {
+  padding: 1.15rem 1.25rem !important;
+}
+
+.admin-panel:has(.pedidos-kanban-2rows-container) .panel-body {
+  padding: 0.85rem 1rem !important;
+}
+
 .pedidos-kanban-2rows-container {
   display: flex !important;
   flex-direction: column !important;
-  gap: 1.75rem !important;
+  gap: 1.25rem !important;
   width: 100% !important;
   box-sizing: border-box !important;
 }
@@ -3916,7 +3924,7 @@ button:active { transform: scale(0.95); }
 .pedidos-kanban-grid-row {
   display: grid !important;
   grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  gap: 1.15rem !important;
+  gap: 0.75rem !important;
   width: 100% !important;
   box-sizing: border-box !important;
   align-items: stretch !important;
@@ -3927,13 +3935,21 @@ button:active { transform: scale(0.95); }
   min-width: 0 !important;
   max-width: 100% !important;
   width: 100% !important;
-  height: 100% !important;
   box-sizing: border-box !important;
+  padding: 0.85rem 0.65rem !important;
+  border-radius: 16px !important;
   margin: 0 !important;
 }
 
 .pedidos-kanban-grid-row .kanban-cards-list {
-  max-height: 480px !important;
+  max-height: 520px !important;
   overflow-y: auto !important;
-  padding-right: 4px;
+  padding-right: 3px;
+}
+
+.pedidos-kanban-grid-row .pedido-card-item {
+  padding: 0.75rem 0.75rem !important;
+  border-radius: 14px !important;
+  margin: 0 0 0.65rem 0 !important;
+  box-sizing: border-box !important;
 }

@@ -3,7 +3,12 @@
  * Allows each company (Majestic, Saramantha, Lucerito, Mayoristas, etc.) to have its own PWA icon & app name 
  * when the user clicks "Instalar aplicación" on Desktop or Mobile.
  */
-export function updatePWAManifestAndIcons(logoUrl?: string | null, storeName?: string | null, themeColor?: string | null) {
+export function updatePWAManifestAndIcons(
+  logoUrl?: string | null, 
+  storeName?: string | null, 
+  themeColor?: string | null,
+  tenantSlug?: string | null
+) {
   try {
     const name = storeName?.trim() || 'Catálogo Digital';
     const icon = logoUrl?.trim() || '/indisutex-logo.png';
@@ -37,18 +42,29 @@ export function updatePWAManifestAndIcons(logoUrl?: string | null, storeName?: s
     }
     appleIconEl.href = icon;
 
+    // 3.1 Update Apple Web App Title
+    let appleTitle = document.querySelector<HTMLMetaElement>('meta[name="apple-mobile-web-app-title"]');
+    if (!appleTitle) {
+      appleTitle = document.createElement('meta');
+      appleTitle.name = 'apple-mobile-web-app-title';
+      document.head.appendChild(appleTitle);
+    }
+    appleTitle.content = name;
+
     const iconType = icon.toLowerCase().endsWith('.svg') ? 'image/svg+xml' : 'image/png';
 
-    const currentPath = window.location.pathname + window.location.search;
+    // Normalize slug for multi-tenant PWA isolation (e.g. /lucerito, /sublimados_majestic, /saramantha)
+    const cleanSlug = tenantSlug?.trim().replace(/^\/+|\/+$/g, '') || '';
+    const appPath = cleanSlug ? `/${cleanSlug}` : '/';
 
-    // 4. Generate dynamic PWA Manifest using Blob URL
+    // 4. Generate dynamic PWA Manifest isolated per tenant/store
     const manifestData = {
-      id: currentPath || '/',
+      id: appPath,
       name: `${name} — Catálogo Digital`,
-      short_name: name,
+      short_name: name.length > 15 ? name.substring(0, 15) : name,
       description: `Catálogo Digital e Interactivo de ${name}`,
-      start_url: currentPath || '/',
-      scope: '/',
+      start_url: appPath,
+      scope: appPath,
       display: 'standalone',
       orientation: 'portrait-primary',
       background_color: '#ffffff',
