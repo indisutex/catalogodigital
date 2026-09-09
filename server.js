@@ -37,7 +37,7 @@ app.get('/manifest.json', (req, res) => {
   res.json({
     id: appPath,
     name: `${name} — Catálogo Digital`,
-    short_name: name.length > 15 ? name.substring(0, 15) : name,
+    short_name: name.length > 35 ? name.substring(0, 35).trim() : name,
     description: `Catálogo Digital e Interactivo de ${name}`,
     start_url: appPath,
     scope: appPath,

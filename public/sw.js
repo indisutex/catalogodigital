@@ -1,5 +1,5 @@
-const CACHE_NAME = 'indisutex-images-v3';
-const IMAGE_CACHE_NAME = 'indisutex-media-v3';
+const CACHE_NAME = 'indisutex-images-v4';
+const IMAGE_CACHE_NAME = 'indisutex-media-v4';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
@@ -38,7 +38,7 @@ self.addEventListener('fetch', (event) => {
     const dynamicManifest = {
       id: appPath,
       name: `${displayName} — Catálogo Digital`,
-      short_name: displayName.length > 15 ? displayName.substring(0, 15) : displayName,
+      short_name: displayName.length > 35 ? displayName.substring(0, 35).trim() : displayName,
       description: `Catálogo Digital e Interactivo de ${displayName}`,
       start_url: appPath,
       scope: appPath,
