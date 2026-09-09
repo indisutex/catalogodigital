@@ -2289,13 +2289,6 @@ body {
     position: relative;
   }
   
-  /* Left status indicator strips */
-  .order-mobile-card.lead-abandonado { border-left: 5px solid #ef4444; }
-  .order-mobile-card.order-pendiente { border-left: 5px solid #eab308; }
-  .order-mobile-card.order-contraentrega { border-left: 5px solid #ea580c; }
-  .order-mobile-card.order-comprobante { border-left: 5px solid #3b82f6; }
-  .order-mobile-card.order-completado { border-left: 5px solid #22c55e; }
-  
   /* Header Row Layout */
   .card-header-row {
     display: flex;

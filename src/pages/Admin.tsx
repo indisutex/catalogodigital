@@ -1146,16 +1146,6 @@ export default function Admin() {
     const mp = getMetodoPago(ped);
     const isContra = mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra'));
     
-    // Status border color
-    let borderLeftColor = '#ef4444'; // Lead default
-    if (ped.estado === 'cancelado') borderLeftColor = '#dc2626';
-    else if (!isLead) {
-      if (ped.estado === 'completado') borderLeftColor = '#10b981';
-      else if (isContra) borderLeftColor = '#ea580c';
-      else if (ped.pantallazo_url) borderLeftColor = '#3b82f6';
-      else borderLeftColor = '#f59e0b';
-    }
-
     const firstProd = parsedProds[0] || null;
     const firstProdImg = firstProd ? (
       firstProd.imagen_url || firstProd.imagen || firstProd.image_url || 
@@ -1177,8 +1167,7 @@ export default function Admin() {
         style={{
           background: '#ffffff',
           borderRadius: '16px',
-          border: '1px solid #f1f5f9',
-          borderLeft: `5px solid ${borderLeftColor}`,
+          border: '1px solid #e2e8f0',
           boxShadow: '0 3px 14px rgba(15, 23, 42, 0.04)',
           padding: '0.75rem 0.8rem',
           margin: '0 0 0.65rem 0',
@@ -1187,50 +1176,25 @@ export default function Admin() {
       >
         {/* ── HEADER BLOCK ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', marginBottom: '0.65rem' }}>
-          {/* Line 1: Status Pill Badge & Timestamp */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.3rem' }}>
+          {/* Metadata Row: Purge countdown (only for Cancelados) & Timestamp */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.3rem' }}>
             {ped.estado === 'cancelado' ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexWrap: 'wrap' }}>
-                <span className="pedido-card-status-pill" style={{ background: '#fef2f2', border: '1px solid #fca5a5', color: '#dc2626', fontSize: '0.7rem', fontWeight: 500, padding: '0.15rem 0.45rem', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
-                  🚫 Cancelado
-                </span>
-                {(() => {
-                  const RETENTION_MS = 3 * 24 * 60 * 60 * 1000;
-                  const now = Date.now();
-                  const created = new Date(ped.created_at || now).getTime();
-                  const rem = (created + RETENTION_MS) - now;
-                  if (rem <= 0) return null;
-                  const d = Math.floor(rem / (1000 * 60 * 60 * 24));
-                  const h = Math.floor((rem % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                  const badgeTxt = d > 0 ? `⏳ ${d}d ${h}h` : `⏳ ${Math.max(1, h)}h`;
-                  return (
-                    <span style={{ fontSize: '0.66rem', color: '#991b1b', background: '#fee2e2', padding: '0.1rem 0.35rem', borderRadius: '5px', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
-                      {badgeTxt}
-                    </span>
-                  );
-                })()}
-              </div>
-            ) : isLead ? (
-              <span className="pedido-card-status-pill" style={{ background: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: '0.7rem', fontWeight: 500, padding: '0.15rem 0.5rem', borderRadius: '8px' }}>
-                ⚠️ Carrito Abandonado
-              </span>
-            ) : ped.estado === 'completado' ? (
-              <span className="pedido-card-status-pill" style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', fontSize: '0.7rem', fontWeight: 500, padding: '0.15rem 0.5rem', borderRadius: '8px' }}>
-                ✅ Verificado
-              </span>
-            ) : isContra ? (
-              <span className="pedido-card-status-pill" style={{ background: '#fff7ed', border: '1px solid #ffedd5', color: '#ea580c', fontSize: '0.7rem', fontWeight: 500, padding: '0.15rem 0.5rem', borderRadius: '8px', display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
-                🚚 Contra Entrega
-              </span>
-            ) : ped.pantallazo_url ? (
-              <span className="pedido-card-status-pill" style={{ background: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: '0.7rem', fontWeight: 500, padding: '0.15rem 0.5rem', borderRadius: '8px' }}>
-                📸 Comprobante recibido
-              </span>
-            ) : (
-              <span className="pedido-card-status-pill" style={{ background: '#fffbeb', border: '1px solid #fef3c7', color: '#b45309', fontSize: '0.7rem', fontWeight: 500, padding: '0.15rem 0.5rem', borderRadius: '8px' }}>
-                ⏳ Esperando pago
-              </span>
-            )}
+              (() => {
+                const RETENTION_MS = 3 * 24 * 60 * 60 * 1000;
+                const now = Date.now();
+                const created = new Date(ped.created_at || now).getTime();
+                const rem = (created + RETENTION_MS) - now;
+                if (rem <= 0) return <div />;
+                const d = Math.floor(rem / (1000 * 60 * 60 * 24));
+                const h = Math.floor((rem % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const badgeTxt = d > 0 ? `⏳ Se borra en ${d}d ${h}h` : `⏳ Se borra en ${Math.max(1, h)}h`;
+                return (
+                  <span style={{ fontSize: '0.66rem', color: '#991b1b', background: '#fee2e2', padding: '0.1rem 0.4rem', borderRadius: '6px', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
+                    {badgeTxt}
+                  </span>
+                );
+              })()
+            ) : <div />}
 
             <span className="pedido-card-time" style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 400 }}>
               🕒 {timeLabel}
