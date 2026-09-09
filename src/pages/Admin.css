@@ -3940,9 +3940,13 @@ button:active { transform: scale(0.95); }
   padding-right: 3px;
 }
 
-.pedidos-kanban-grid-row .pedido-card-item {
+.pedidos-kanban-grid-row .pedido-card-item,
+.pedido-card-item {
   padding: 0.75rem 0.75rem !important;
+  border: 1px solid #e2e8f0 !important;
+  border-left: 1px solid #e2e8f0 !important;
   border-radius: 14px !important;
   margin: 0 0 0.65rem 0 !important;
   box-sizing: border-box !important;
 }
+
