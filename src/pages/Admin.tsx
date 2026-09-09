@@ -1056,6 +1056,24 @@ export default function Admin() {
     if (el) el.remove();
   };
 
+  useEffect(() => {
+    const handleGlobalDragEnd = () => {
+      setDraggingCardId(null);
+      setIsDragActive(false);
+      setDragOverCol(null);
+      const el = document.getElementById('trello-drag-ghost');
+      if (el) el.remove();
+    };
+    window.addEventListener('dragend', handleGlobalDragEnd);
+    window.addEventListener('drop', handleGlobalDragEnd);
+    window.addEventListener('mouseup', handleGlobalDragEnd);
+    return () => {
+      window.removeEventListener('dragend', handleGlobalDragEnd);
+      window.removeEventListener('drop', handleGlobalDragEnd);
+      window.removeEventListener('mouseup', handleGlobalDragEnd);
+    };
+  }, []);
+
   const uniqueCampanas = useMemo(() => {
     const campanas = materiales.map(m => m.campana).filter(Boolean);
     return Array.from(new Set(campanas));
@@ -1229,15 +1247,16 @@ export default function Admin() {
         onDragStart={(e) => handleCardDragStart(e, ped, Boolean(isLead))}
         onDragEnd={handleCardDragEnd}
         style={{
-          background: isThisCardBeingDragged ? '#f1f5f9' : '#ffffff',
+          background: '#ffffff',
           borderRadius: '16px',
-          border: isThisCardBeingDragged ? '2px dashed #94a3b8' : '1px solid #e2e8f0',
+          border: isThisCardBeingDragged ? '1.5px dashed #cbd5e1' : '1px solid #e2e8f0',
           boxShadow: isThisCardBeingDragged ? 'none' : '0 3px 14px rgba(15, 23, 42, 0.04)',
           padding: '0.75rem 0.8rem',
           margin: '0 0 0.65rem 0',
           cursor: isThisCardBeingDragged ? 'grabbing' : 'grab',
-          opacity: isThisCardBeingDragged ? 0.35 : 1,
-          transform: isThisCardBeingDragged ? 'scale(0.98)' : undefined
+          opacity: isThisCardBeingDragged ? 0.55 : 1,
+          transform: isThisCardBeingDragged ? 'scale(0.99)' : undefined,
+          transition: 'border 0.2s ease, opacity 0.15s ease'
         }}
       >
         {/* ── HEADER BLOCK (Compact & Clean without redundant status pills) ── */}
@@ -5618,6 +5637,11 @@ export default function Admin() {
   const handleDropKanban = async (e: React.DragEvent, targetCol: string) => {
     e.preventDefault();
     e.stopPropagation();
+    setDraggingCardId(null);
+    setIsDragActive(false);
+    setDragOverCol(null);
+    const ghostEl = document.getElementById('trello-drag-ghost');
+    if (ghostEl) ghostEl.remove();
     let droppedId: string | null = null;
     try {
       const dataStr = e.dataTransfer.getData('text/plain');
@@ -5725,6 +5749,9 @@ export default function Admin() {
       console.error('Error al arrastrar pedido:', err);
       showToast('Error al mover tarjeta: ' + (err.message || ''), 'error');
     } finally {
+      setDraggingCardId(null);
+      setIsDragActive(false);
+      setDragOverCol(null);
       if (droppedId) {
         setTimeout(() => {
           activeDroppingIdsRef.current.delete(droppedId!);

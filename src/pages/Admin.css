@@ -3738,12 +3738,12 @@ button:active { transform: scale(0.95); }
 }
 
 .pedido-card-item.is-trello-placeholder {
-  opacity: 0.35 !important;
-  background: #f1f5f9 !important;
-  border: 2px dashed #94a3b8 !important;
+  opacity: 0.55 !important;
+  background: #ffffff !important;
+  border: 1.5px dashed #cbd5e1 !important;
   box-shadow: none !important;
-  transform: scale(0.98) !important;
-  filter: grayscale(0.6) blur(0.2px);
+  transform: scale(0.99) !important;
+  filter: none !important;
   pointer-events: none;
 }
 
