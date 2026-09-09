@@ -5,7 +5,7 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista, PQRS } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, ChevronRight, Wrench, ArrowUpDown, Filter, MapPin, XCircle, Truck, Clock, FileCheck, CheckCircle, Landmark, BookOpen, LifeBuoy, ShoppingCart, ClipboardList, Star, Ban, ExternalLink, Flame, RotateCcw, Sparkles } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Minus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, ChevronRight, Wrench, ArrowUpDown, Filter, MapPin, XCircle, Truck, Clock, FileCheck, CheckCircle, Landmark, BookOpen, LifeBuoy, ShoppingCart, ClipboardList, Star, Ban, ExternalLink, Flame, RotateCcw, Sparkles } from 'lucide-react';
 
 import * as XLSX from 'xlsx';
 import { ERPContabilidadService } from '../lib/erpContabilidadService';
@@ -1318,6 +1318,43 @@ export default function Admin() {
                     +{parsedProds.length - 1} más
                   </span>
                 )}
+                {ped.estado !== 'cancelado' && ped.estado !== 'completado' && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedPedido(ped);
+                      setShowAddProductOrderModal(true);
+                      setSelectedProductToAdd(null);
+                      setSelectedSizeToAdd('');
+                      setSelectedPrintToAdd('');
+                      setQuantityToAdd(1);
+                      setCustomPriceToAdd(0);
+                      setSearchProductOrderQuery('');
+                    }}
+                    style={{
+                      position: 'relative',
+                      zIndex: 2,
+                      fontSize: '0.68rem',
+                      fontWeight: 500,
+                      color: '#7c3aed',
+                      background: '#faf5ff',
+                      border: '1px solid #e9d5ff',
+                      padding: '0.12rem 0.45rem',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.2rem',
+                      fontFamily: "'Poppins', sans-serif",
+                      boxShadow: '0 1px 3px rgba(124, 58, 237, 0.08)'
+                    }}
+                    title="Añadir más productos a este pedido"
+                  >
+                    <Plus size={11} />
+                    <span>Añadir</span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -2506,6 +2543,223 @@ export default function Admin() {
       }
     }
     return [];
+  };
+
+  // ── Estados para Añadir / Gestionar Productos en un Pedido o Interesado ──
+  const [showAddProductOrderModal, setShowAddProductOrderModal] = useState<boolean>(false);
+  const [searchProductOrderQuery, setSearchProductOrderQuery] = useState<string>('');
+  const [selectedProductToAdd, setSelectedProductToAdd] = useState<Producto | null>(null);
+  const [selectedSizeToAdd, setSelectedSizeToAdd] = useState<string>('');
+  const [selectedPrintToAdd, setSelectedPrintToAdd] = useState<string>('');
+  const [quantityToAdd, setQuantityToAdd] = useState<number>(1);
+  const [customPriceToAdd, setCustomPriceToAdd] = useState<number>(0);
+  const [savingOrderProducts, setSavingOrderProducts] = useState<boolean>(false);
+
+  const getProductSizes = (prod?: Producto | null): string[] => {
+    if (!prod || !prod.tallas) return [];
+    if (Array.isArray(prod.tallas)) return prod.tallas;
+    try {
+      const parsed = JSON.parse(prod.tallas);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+    return String(prod.tallas).split(',').map(s => s.trim()).filter(Boolean);
+  };
+
+  const getProductPrints = (prod?: Producto | null): string[] => {
+    if (!prod || !prod.estampados) return [];
+    if (Array.isArray(prod.estampados)) return prod.estampados;
+    try {
+      const parsed = JSON.parse(prod.estampados);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {}
+    return String(prod.estampados).split(',').map(s => s.trim()).filter(Boolean);
+  };
+
+  const saveUpdatedOrderProducts = async (newProdsList: any[]) => {
+    if (!selectedPedido) return;
+    setSavingOrderProducts(true);
+    try {
+      const totalUnits = newProdsList.reduce((sum, p) => sum + (Number(p.cantidad) || 1), 0);
+      const isWholesale = totalUnits >= 6 || Boolean((selectedPedido as any).descuento_mayor_aplicado);
+
+      const finalProds = newProdsList.map(p => {
+        let unitPrice = Number(p.precio) || 0;
+        const catalogProd = productos.find(cp => cp.id === p.id || (cp.referencia && cp.referencia === p.referencia));
+
+        if (isWholesale) {
+          if (catalogProd && catalogProd.precio_por_mayor && Number(catalogProd.precio_por_mayor) > 0) {
+            unitPrice = Number(catalogProd.precio_por_mayor);
+          } else if (p.precio_por_mayor && Number(p.precio_por_mayor) > 0) {
+            unitPrice = Number(p.precio_por_mayor);
+          }
+        } else {
+          if (catalogProd && catalogProd.precio && Number(catalogProd.precio) > 0) {
+            unitPrice = Number(catalogProd.precio);
+          } else if (p.precio_detal && Number(p.precio_detal) > 0) {
+            unitPrice = Number(p.precio_detal);
+          }
+        }
+
+        return {
+          ...p,
+          precio: unitPrice,
+          precio_aplicado_mayor: isWholesale
+        };
+      });
+
+      const newTotal = finalProds.reduce((acc, p) => acc + (Number(p.precio || 0) * (Number(p.cantidad) || 1)), 0);
+      const isLead = Boolean((selectedPedido as any).isLead || (selectedPedido as any).retargeting_estado || (!selectedPedido.estado && !selectedPedido.atendido && !selectedPedido.numero_guia));
+
+      if (isLead) {
+        const { error } = await supabase.from('leads').update({
+          productos: finalProds,
+          total: newTotal
+        }).eq('id', selectedPedido.id);
+        if (error) throw error;
+        setLeads(prev => prev.map(l => l.id === selectedPedido.id ? { ...l, productos: finalProds, total: newTotal } : l));
+      } else {
+        const { error } = await supabase.from('pedidos').update({
+          productos: finalProds,
+          total: newTotal
+        }).eq('id', selectedPedido.id);
+        if (error) throw error;
+        setPedidos(prev => prev.map(p => p.id === selectedPedido.id ? { ...p, productos: finalProds, total: newTotal } : p));
+      }
+
+      setSelectedPedido((prev: any) => prev ? { ...prev, productos: finalProds, total: newTotal } : null);
+      showToast('Productos del pedido actualizados con éxito ✨', 'success');
+    } catch (err: any) {
+      console.error('Error actualizando productos del pedido:', err);
+      showToast('Error al actualizar productos: ' + (err.message || 'Error desconocido'), 'error');
+    } finally {
+      setSavingOrderProducts(false);
+    }
+  };
+
+  const handleUpdateOrderProductQuantity = async (index: number, delta: number) => {
+    if (!selectedPedido) return;
+    const currentProds = getParsedProducts(selectedPedido.productos);
+    const updated = [...currentProds];
+    if (!updated[index]) return;
+    const currentCant = Number(updated[index].cantidad) || 1;
+    const newCant = currentCant + delta;
+    if (newCant <= 0) {
+      updated.splice(index, 1);
+    } else {
+      updated[index] = { ...updated[index], cantidad: newCant };
+    }
+    await saveUpdatedOrderProducts(updated);
+  };
+
+  const handleRemoveOrderProduct = async (index: number) => {
+    if (!selectedPedido) return;
+    const currentProds = getParsedProducts(selectedPedido.productos);
+    const updated = [...currentProds];
+    updated.splice(index, 1);
+    await saveUpdatedOrderProducts(updated);
+  };
+
+  const handleAddProductToOrderSubmit = async () => {
+    if (!selectedProductToAdd || !selectedPedido) return;
+    const currentProds = getParsedProducts(selectedPedido.productos);
+    const currentTotalUnits = currentProds.reduce((sum: number, p: any) => sum + (Number(p.cantidad) || 1), 0);
+    const willBeWholesale = (currentTotalUnits + quantityToAdd) >= 6;
+
+    let unitPrice = customPriceToAdd;
+    if (!unitPrice || unitPrice <= 0) {
+      if (willBeWholesale && selectedProductToAdd.precio_por_mayor && Number(selectedProductToAdd.precio_por_mayor) > 0) {
+        unitPrice = Number(selectedProductToAdd.precio_por_mayor);
+      } else {
+        unitPrice = Number(selectedProductToAdd.precio) || 0;
+      }
+    }
+
+    const newItem: any = {
+      id: selectedProductToAdd.id,
+      nombre: selectedProductToAdd.nombre,
+      precio: unitPrice,
+      precio_detal: selectedProductToAdd.precio || unitPrice,
+      precio_por_mayor: selectedProductToAdd.precio_por_mayor || null,
+      cantidad: Number(quantityToAdd) || 1,
+      talla: selectedSizeToAdd || null,
+      estampado: selectedPrintToAdd || null,
+      imagen_url: selectedProductToAdd.imagen_url || null,
+      referencia: selectedProductToAdd.referencia || null,
+      precio_aplicado_mayor: willBeWholesale
+    };
+
+    const existingIdx = currentProds.findIndex((p: any) => 
+      (p.id === newItem.id || (p.referencia && p.referencia === newItem.referencia)) &&
+      (p.talla || '') === (newItem.talla || '') &&
+      (p.estampado || '') === (newItem.estampado || '')
+    );
+
+    let updated = [...currentProds];
+    if (existingIdx >= 0) {
+      updated[existingIdx] = {
+        ...updated[existingIdx],
+        cantidad: (Number(updated[existingIdx].cantidad) || 1) + newItem.cantidad
+      };
+    } else {
+      updated.push(newItem);
+    }
+
+    await saveUpdatedOrderProducts(updated);
+    setShowAddProductOrderModal(false);
+    setSelectedProductToAdd(null);
+    setSelectedSizeToAdd('');
+    setSelectedPrintToAdd('');
+    setQuantityToAdd(1);
+    setCustomPriceToAdd(0);
+    setSearchProductOrderQuery('');
+  };
+
+  const filteredCatalogProducts = useMemo(() => {
+    if (!searchProductOrderQuery.trim()) {
+      return productos.filter(p => !p.oculto).slice(0, 25);
+    }
+    const q = searchProductOrderQuery.toLowerCase().trim();
+    return productos.filter(p => 
+      !p.oculto && (
+        (p.nombre && p.nombre.toLowerCase().includes(q)) ||
+        (p.referencia && p.referencia.toLowerCase().includes(q)) ||
+        (p.categoria && p.categoria.toLowerCase().includes(q))
+      )
+    ).slice(0, 35);
+  }, [productos, searchProductOrderQuery]);
+
+  const onSelectProductOrder = (product: Producto) => {
+    setSelectedProductToAdd(product);
+    const sizes = getProductSizes(product);
+    setSelectedSizeToAdd(sizes.length > 0 ? sizes[0] : '');
+    const prints = getProductPrints(product);
+    setSelectedPrintToAdd(prints.length > 0 ? prints[0] : '');
+    setQuantityToAdd(1);
+
+    const currentProds = getParsedProducts(selectedPedido?.productos);
+    const currentUnits = currentProds.reduce((sum: number, p: any) => sum + (Number(p.cantidad) || 1), 0);
+    const isWholesale = (currentUnits + 1) >= 6;
+
+    if (isWholesale && product.precio_por_mayor && Number(product.precio_por_mayor) > 0) {
+      setCustomPriceToAdd(Number(product.precio_por_mayor));
+    } else {
+      setCustomPriceToAdd(Number(product.precio) || 0);
+    }
+  };
+
+  const onUpdateQuantityOrder = (newQty: number) => {
+    if (newQty < 1) return;
+    setQuantityToAdd(newQty);
+    if (selectedProductToAdd) {
+      const currentProds = getParsedProducts(selectedPedido?.productos);
+      const currentUnits = currentProds.reduce((sum: number, p: any) => sum + (Number(p.cantidad) || 1), 0);
+      const willBeWholesale = (currentUnits + newQty) >= 6;
+      if (willBeWholesale && selectedProductToAdd.precio_por_mayor && Number(selectedProductToAdd.precio_por_mayor) > 0) {
+        setCustomPriceToAdd(Number(selectedProductToAdd.precio_por_mayor));
+      } else {
+        setCustomPriceToAdd(Number(selectedProductToAdd.precio) || 0);
+      }
+    }
   };
 
   const renderAsesorBadge = (phone?: string, origen?: string) => {
@@ -16060,26 +16314,93 @@ export default function Admin() {
                             COLUMNA 2: 🛍️ PRODUCTOS SOLICITADOS
                         ════════════════════════════════════════════════════════ */}
                         <div className="modal-col-card">
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem' }}>
-                            <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                              <Package size={16} color="var(--primary-color, #0ea5e9)" /> Productos ({prodsList.length})
-                            </h4>
-                            {isWholesaleOrder ? (
-                              <span style={{ background: '#f3e8ff', color: '#7e22ce', border: '1px solid #d8b4fe', padding: '0.15rem 0.55rem', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 500 }}>
-                                Mayorista ({totalUnitsInOrder} uds)
-                              </span>
-                            ) : (
-                              <span style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '0.15rem 0.55rem', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 500 }}>
-                                Al Detal ({totalUnitsInOrder} uds)
-                              </span>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem', flexWrap: 'wrap', gap: '0.45rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+                              <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                                <Package size={16} color="var(--primary-color, #0ea5e9)" /> Productos ({prodsList.length})
+                              </h4>
+                              {isWholesaleOrder ? (
+                                <span style={{ background: '#f3e8ff', color: '#7e22ce', border: '1px solid #d8b4fe', padding: '0.12rem 0.5rem', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 500 }}>
+                                  Mayorista ({totalUnitsInOrder} uds)
+                                </span>
+                              ) : (
+                                <span style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '0.12rem 0.5rem', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 500 }}>
+                                  Al Detal ({totalUnitsInOrder} uds)
+                                </span>
+                              )}
+                            </div>
+
+                            {selectedPedido.estado !== 'cancelado' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setShowAddProductOrderModal(true);
+                                  setSelectedProductToAdd(null);
+                                  setSelectedSizeToAdd('');
+                                  setSelectedPrintToAdd('');
+                                  setQuantityToAdd(1);
+                                  setCustomPriceToAdd(0);
+                                  setSearchProductOrderQuery('');
+                                }}
+                                style={{
+                                  background: 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+                                  color: '#ffffff',
+                                  border: 'none',
+                                  borderRadius: '8px',
+                                  padding: '0.35rem 0.65rem',
+                                  fontSize: '0.75rem',
+                                  fontWeight: 500,
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.3rem',
+                                  fontFamily: "'Poppins', sans-serif",
+                                  boxShadow: '0 2px 6px rgba(14, 165, 233, 0.25)',
+                                  transition: 'all 0.15s ease'
+                                }}
+                              >
+                                <Plus size={13} />
+                                <span>Añadir Producto</span>
+                              </button>
                             )}
                           </div>
 
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', maxHeight: '430px', overflowY: 'auto', paddingRight: '0.25rem' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', maxHeight: '430px', overflowY: 'auto', paddingRight: '0.25rem' }}>
                             {prodsList.length === 0 ? (
-                              <p style={{ margin: '1rem 0', textAlign: 'center', color: '#94a3b8', fontSize: '0.82rem', fontStyle: 'italic' }}>
-                                No hay productos detallados en este registro.
-                              </p>
+                              <div style={{ padding: '2rem 1rem', textAlign: 'center', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1', margin: '0.5rem 0' }}>
+                                <p style={{ margin: '0 0 0.75rem 0', color: '#64748b', fontSize: '0.82rem', fontStyle: 'italic' }}>
+                                  No hay productos registrados en este pedido / interesado.
+                                </p>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setShowAddProductOrderModal(true);
+                                    setSelectedProductToAdd(null);
+                                    setSelectedSizeToAdd('');
+                                    setSelectedPrintToAdd('');
+                                    setQuantityToAdd(1);
+                                    setCustomPriceToAdd(0);
+                                    setSearchProductOrderQuery('');
+                                  }}
+                                  style={{
+                                    background: 'var(--primary-color, #0ea5e9)',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    padding: '0.4rem 0.8rem',
+                                    fontSize: '0.78rem',
+                                    fontWeight: 500,
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '0.35rem',
+                                    fontFamily: "'Poppins', sans-serif"
+                                  }}
+                                >
+                                  <Plus size={13} />
+                                  <span>Agregar el primer producto</span>
+                                </button>
+                              </div>
                             ) : (
                               prodsList.map((prod: any, idx: number) => {
                                 const cant = Number(prod.cantidad) || 1;
@@ -16092,25 +16413,93 @@ export default function Admin() {
                                   }
                                 }
                                 const lineTotal = unitPrice * cant;
+                                const prodImg = prod.imagen_url || prod.imagen || prod.image_url ||
+                                  (productos.find((p: any) => p.id === prod.id || (p.referencia && p.referencia === prod.referencia))?.imagen_url);
 
                                 return (
-                                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '0.65rem 0.8rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                                    <div style={{ flex: 1, minWidth: 0, paddingRight: '0.5rem' }}>
-                                      <h5 style={{ margin: 0, color: '#0f172a', fontSize: '0.84rem', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{prod.nombre}</h5>
-                                      <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 400, display: 'block', marginTop: '0.1rem' }}>
-                                        Cant: {prod.cantidad} {prod.talla ? ` | Talla: ${prod.talla}` : ''} {prod.estampado ? ` | Estampado: ${prod.estampado}` : ''}
-                                      </span>
+                                  <div key={idx} style={{ display: 'flex', alignItems: 'center', background: '#f8fafc', padding: '0.55rem 0.75rem', borderRadius: '12px', border: '1px solid #e2e8f0', gap: '0.55rem' }}>
+                                    {/* Miniatura */}
+                                    {prodImg ? (
+                                      <img src={prodImg} alt="" style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #e2e8f0', background: '#ffffff', flexShrink: 0 }} />
+                                    ) : (
+                                      <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', flexShrink: 0 }}>
+                                        🛍️
+                                      </div>
+                                    )}
+
+                                    {/* Info Producto */}
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                      <h5 style={{ margin: 0, color: '#0f172a', fontSize: '0.84rem', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={prod.nombre}>
+                                        {prod.nombre}
+                                      </h5>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.15rem', flexWrap: 'wrap' }}>
+                                        {prod.talla && (
+                                          <span style={{ background: '#f3e8ff', color: '#7e22ce', fontSize: '0.66rem', fontWeight: 500, padding: '1px 5px', borderRadius: '4px' }}>
+                                            {prod.talla}
+                                          </span>
+                                        )}
+                                        {prod.estampado && (
+                                          <span style={{ background: '#e0f2fe', color: '#0369a1', fontSize: '0.66rem', fontWeight: 500, padding: '1px 5px', borderRadius: '4px' }}>
+                                            {prod.estampado}
+                                          </span>
+                                        )}
+                                        <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                                          ${unitPrice.toLocaleString('es-CO')} c/u
+                                        </span>
+                                      </div>
                                     </div>
-                                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+
+                                    {/* Stepper Cantidad */}
+                                    {selectedPedido.estado !== 'cancelado' && (
+                                      <div style={{ display: 'flex', alignItems: 'center', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '2px', flexShrink: 0 }}>
+                                        <button
+                                          type="button"
+                                          disabled={savingOrderProducts}
+                                          onClick={() => handleUpdateOrderProductQuantity(idx, -1)}
+                                          style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px 5px', color: '#64748b', display: 'flex', alignItems: 'center', borderRadius: '4px' }}
+                                          title={cant === 1 ? 'Eliminar del pedido' : 'Disminuir cantidad'}
+                                        >
+                                          <Minus size={11} />
+                                        </button>
+                                        <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#0f172a', minWidth: '18px', textAlign: 'center', fontFamily: "'Poppins', sans-serif" }}>
+                                          {cant}
+                                        </span>
+                                        <button
+                                          type="button"
+                                          disabled={savingOrderProducts}
+                                          onClick={() => handleUpdateOrderProductQuantity(idx, 1)}
+                                          style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px 5px', color: '#64748b', display: 'flex', alignItems: 'center', borderRadius: '4px' }}
+                                          title="Aumentar cantidad"
+                                        >
+                                          <Plus size={11} />
+                                        </button>
+                                      </div>
+                                    )}
+
+                                    {/* Total Línea */}
+                                    <div style={{ textAlign: 'right', flexShrink: 0, minWidth: '60px' }}>
                                       <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.86rem', display: 'block' }}>
                                         ${lineTotal.toLocaleString('es-CO')}
                                       </span>
                                       {isWholesaleOrder && (
-                                        <span style={{ fontSize: '0.64rem', color: '#166534', background: '#dcfce7', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: 500, display: 'inline-block', marginTop: '0.1rem' }}>
+                                        <span style={{ fontSize: '0.62rem', color: '#166534', background: '#dcfce7', padding: '0.05rem 0.3rem', borderRadius: '4px', fontWeight: 500, display: 'inline-block' }}>
                                           P. Mayor
                                         </span>
                                       )}
                                     </div>
+
+                                    {/* Botón Borrar */}
+                                    {selectedPedido.estado !== 'cancelado' && (
+                                      <button
+                                        type="button"
+                                        disabled={savingOrderProducts}
+                                        onClick={() => handleRemoveOrderProduct(idx)}
+                                        style={{ border: 'none', background: '#fee2e2', color: '#dc2626', borderRadius: '7px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'background 0.15s ease' }}
+                                        title="Eliminar producto"
+                                      >
+                                        <Trash2 size={13} />
+                                      </button>
+                                    )}
                                   </div>
                                 );
                               })
@@ -16975,7 +17364,337 @@ export default function Admin() {
             )}
           </div>
         </div>
-      )}      {/* MODAL PAGO SREENSHOT */}
+      )}
+
+      {/* ── MODAL: AÑADIR PRODUCTO AL PEDIDO / INTERESADO ── */}
+      {showAddProductOrderModal && selectedPedido && (
+        <div 
+          className="modal-overlay" 
+          onClick={() => {
+            setShowAddProductOrderModal(false);
+            setSelectedProductToAdd(null);
+          }}
+          style={{ zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)' }}
+        >
+          <div 
+            className="modal-content" 
+            onClick={e => e.stopPropagation()} 
+            style={{ 
+              maxWidth: '560px', 
+              width: '100%', 
+              maxHeight: '90vh', 
+              overflowY: 'auto', 
+              borderRadius: '20px', 
+              padding: '1.5rem', 
+              background: '#ffffff', 
+              boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.25)',
+              fontFamily: "'Poppins', sans-serif"
+            }}
+          >
+            {/* Encabezado */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.85rem', marginBottom: '1rem' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <Package size={18} color="var(--primary-color, #0ea5e9)" /> Añadir Prenda al Pedido
+                </h3>
+                <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.75rem', color: '#64748b', fontWeight: 400 }}>
+                  Selecciona una prenda del catálogo para agregarla a {selectedPedido.cliente_nombre || (selectedPedido as any).nombre || 'este cliente'}.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddProductOrderModal(false);
+                  setSelectedProductToAdd(null);
+                }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', padding: '0.2rem', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '6px' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Buscador de Productos */}
+            <div style={{ position: 'relative', marginBottom: '1rem' }}>
+              <Search size={15} color="#94a3b8" style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)' }} />
+              <input
+                type="text"
+                placeholder="Buscar prenda por nombre, referencia o categoría..."
+                value={searchProductOrderQuery}
+                onChange={e => setSearchProductOrderQuery(e.target.value)}
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  padding: '0.55rem 0.8rem 0.55rem 2.2rem',
+                  borderRadius: '10px',
+                  border: '1.5px solid #e2e8f0',
+                  fontSize: '0.82rem',
+                  outline: 'none',
+                  fontFamily: "'Poppins', sans-serif"
+                }}
+                autoFocus
+              />
+            </div>
+
+            {/* Lista de Productos del Catálogo */}
+            <div style={{ marginBottom: '1.25rem' }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.3px', display: 'block', marginBottom: '0.4rem' }}>
+                1. Selecciona la Prenda ({filteredCatalogProducts.length} disponibles)
+              </span>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', maxHeight: '190px', overflowY: 'auto', paddingRight: '0.2rem' }}>
+                {filteredCatalogProducts.length === 0 ? (
+                  <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: '0.8rem', margin: '1rem 0', fontStyle: 'italic' }}>
+                    No se encontraron productos coincidentes.
+                  </p>
+                ) : (
+                  filteredCatalogProducts.map((prod) => {
+                    const isSelected = selectedProductToAdd?.id === prod.id;
+                    const prodImg = prod.imagen_url || (Array.isArray(prod.imagenes_extra) && prod.imagenes_extra[0] ? (typeof prod.imagenes_extra[0] === 'string' ? prod.imagenes_extra[0] : (prod.imagenes_extra[0] as any)?.url) : null);
+                    
+                    return (
+                      <div
+                        key={prod.id}
+                        onClick={() => onSelectProductOrder(prod)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '0.5rem 0.65rem',
+                          borderRadius: '10px',
+                          border: isSelected ? '1.5px solid var(--primary-color, #0ea5e9)' : '1px solid #e2e8f0',
+                          background: isSelected ? '#f0f9ff' : '#ffffff',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', minWidth: 0, flex: 1 }}>
+                          {prodImg ? (
+                            <img src={prodImg} alt="" style={{ width: '36px', height: '36px', borderRadius: '7px', objectFit: 'cover', border: '1px solid #e2e8f0', flexShrink: 0 }} />
+                          ) : (
+                            <div style={{ width: '36px', height: '36px', borderRadius: '7px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', flexShrink: 0 }}>
+                              🛍️
+                            </div>
+                          )}
+                          <div style={{ minWidth: 0 }}>
+                            <h5 style={{ margin: 0, fontSize: '0.82rem', fontWeight: 500, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {prod.nombre}
+                            </h5>
+                            <span style={{ fontSize: '0.68rem', color: '#64748b' }}>
+                              {prod.referencia ? `Ref: ${prod.referencia} • ` : ''}{prod.categoria || 'Catálogo'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div style={{ textAlign: 'right', flexShrink: 0, paddingLeft: '0.5rem' }}>
+                          <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#0f172a', display: 'block' }}>
+                            ${Number(prod.precio || 0).toLocaleString('es-CO')}
+                          </span>
+                          {prod.precio_por_mayor && Number(prod.precio_por_mayor) > 0 && (
+                            <span style={{ fontSize: '0.64rem', color: '#166534', fontWeight: 500 }}>
+                              Mayor: ${Number(prod.precio_por_mayor).toLocaleString('es-CO')}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* 2. Configurar Variantes y Cantidad (Solo si hay producto seleccionado) */}
+            {selectedProductToAdd ? (
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
+                <span style={{ fontSize: '0.72rem', fontWeight: 500, color: '#0369a1', textTransform: 'uppercase', letterSpacing: '0.3px' }}>
+                  2. Configurar Detalles de {selectedProductToAdd.nombre}
+                </span>
+
+                {/* Talla */}
+                {(() => {
+                  const sizes = getProductSizes(selectedProductToAdd);
+                  if (sizes.length === 0) return null;
+                  return (
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 500, color: '#334155', marginBottom: '0.35rem' }}>
+                        Talla / Tamaño:
+                      </label>
+                      <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                        {sizes.map(s => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => setSelectedSizeToAdd(s)}
+                            style={{
+                              padding: '0.25rem 0.6rem',
+                              borderRadius: '7px',
+                              border: selectedSizeToAdd === s ? '1.5px solid var(--primary-color, #0ea5e9)' : '1px solid #cbd5e1',
+                              background: selectedSizeToAdd === s ? '#e0f2fe' : '#ffffff',
+                              color: selectedSizeToAdd === s ? '#0369a1' : '#334155',
+                              fontSize: '0.74rem',
+                              fontWeight: 500,
+                              cursor: 'pointer',
+                              fontFamily: "'Poppins', sans-serif"
+                            }}
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Estampado / Color */}
+                {(() => {
+                  const prints = getProductPrints(selectedProductToAdd);
+                  if (prints.length === 0) return null;
+                  return (
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 500, color: '#334155', marginBottom: '0.35rem' }}>
+                        Estampado / Color / Variación:
+                      </label>
+                      <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
+                        {prints.map(p => (
+                          <button
+                            key={p}
+                            type="button"
+                            onClick={() => setSelectedPrintToAdd(p)}
+                            style={{
+                              padding: '0.25rem 0.6rem',
+                              borderRadius: '7px',
+                              border: selectedPrintToAdd === p ? '1.5px solid var(--primary-color, #0ea5e9)' : '1px solid #cbd5e1',
+                              background: selectedPrintToAdd === p ? '#e0f2fe' : '#ffffff',
+                              color: selectedPrintToAdd === p ? '#0369a1' : '#334155',
+                              fontSize: '0.74rem',
+                              fontWeight: 500,
+                              cursor: 'pointer',
+                              fontFamily: "'Poppins', sans-serif"
+                            }}
+                          >
+                            {p}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Cantidad y Precio Unitario */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', alignItems: 'center' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 500, color: '#334155', marginBottom: '0.35rem' }}>
+                      Cantidad de unidades:
+                    </label>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '3px' }}>
+                      <button
+                        type="button"
+                        onClick={() => onUpdateQuantityOrder(quantityToAdd - 1)}
+                        style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '3px 8px', color: '#64748b', display: 'flex', alignItems: 'center' }}
+                      >
+                        <Minus size={13} />
+                      </button>
+                      <span style={{ fontSize: '0.88rem', fontWeight: 600, color: '#0f172a', minWidth: '28px', textAlign: 'center' }}>
+                        {quantityToAdd}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => onUpdateQuantityOrder(quantityToAdd + 1)}
+                        style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '3px 8px', color: '#64748b', display: 'flex', alignItems: 'center' }}
+                      >
+                        <Plus size={13} />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 500, color: '#334155', marginBottom: '0.35rem' }}>
+                      Precio unitario ($ COP):
+                    </label>
+                    <input
+                      type="number"
+                      value={customPriceToAdd}
+                      onChange={e => setCustomPriceToAdd(Math.max(0, Number(e.target.value)))}
+                      style={{
+                        width: '100%',
+                        boxSizing: 'border-box',
+                        padding: '0.4rem 0.6rem',
+                        borderRadius: '8px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '0.82rem',
+                        fontFamily: "'Poppins', sans-serif"
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Subtotal Línea */}
+                <div style={{ borderTop: '1px dashed #e2e8f0', paddingTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 500 }}>Subtotal a sumar al pedido:</span>
+                  <span style={{ fontSize: '0.96rem', color: 'var(--primary-color, #0ea5e9)', fontWeight: 600 }}>
+                    ${(customPriceToAdd * quantityToAdd).toLocaleString('es-CO')} COP
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div style={{ background: '#f8fafc', border: '1px dashed #cbd5e1', borderRadius: '12px', padding: '1rem', textAlign: 'center', marginBottom: '1rem' }}>
+                <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b', fontStyle: 'italic' }}>
+                  👆 Selecciona arriba una prenda para configurar su talla y cantidad.
+                </p>
+              </div>
+            )}
+
+            {/* Acciones */}
+            <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowAddProductOrderModal(false);
+                  setSelectedProductToAdd(null);
+                }}
+                style={{
+                  padding: '0.55rem 1rem',
+                  borderRadius: '10px',
+                  border: '1px solid #cbd5e1',
+                  background: '#ffffff',
+                  color: '#475569',
+                  fontSize: '0.8rem',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  fontFamily: "'Poppins', sans-serif"
+                }}
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                disabled={!selectedProductToAdd || savingOrderProducts}
+                onClick={handleAddProductToOrderSubmit}
+                style={{
+                  padding: '0.55rem 1.25rem',
+                  borderRadius: '10px',
+                  border: 'none',
+                  background: !selectedProductToAdd || savingOrderProducts ? '#cbd5e1' : 'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
+                  color: '#ffffff',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  cursor: !selectedProductToAdd || savingOrderProducts ? 'not-allowed' : 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  fontFamily: "'Poppins', sans-serif",
+                  boxShadow: !selectedProductToAdd || savingOrderProducts ? 'none' : '0 4px 12px rgba(14, 165, 233, 0.3)'
+                }}
+              >
+                <Plus size={15} />
+                <span>{savingOrderProducts ? 'Guardando...' : 'Agregar al Pedido'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL PAGO SREENSHOT */}
       {pagoModalUrl && (
         <div className="modal-overlay" onClick={() => setPagoModalUrl(null)}>
           <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '460px', width: '100%', borderRadius: '16px', padding: '1.5rem', textAlign: 'center', background: 'white' }}>
