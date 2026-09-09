@@ -1490,7 +1490,7 @@ export default function Admin() {
                     +{parsedProds.length - 1} más
                   </span>
                 )}
-                {ped.estado !== 'cancelado' && !isExitoso && (
+                {Boolean(isLead) && ped.estado !== 'cancelado' && !isExitoso && (
                   <button
                     type="button"
                     onClick={(e) => {
@@ -16724,6 +16724,7 @@ export default function Admin() {
                   const isContra = mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra')) || selectedPedido.estado === 'contra_entrega' || selectedPedido.estado === 'mensaje_enviado' || selectedPedido.estado === 'confirmado' || selectedPedido.estado === 'despachado';
                   const contraStatus = getContraStatus(selectedPedido);
                   const auditLogs = getOrderAuditLogs(selectedPedido);
+                  const isLeadOrder = Boolean((selectedPedido as any).isLead || selectedPedido.estado === 'abandonado' || (selectedPedido as any).retargeting_estado || (!selectedPedido.estado && !selectedPedido.atendido && !selectedPedido.numero_guia));
 
                   return (
                     <div style={{ fontFamily: "'Poppins', sans-serif" }}>
@@ -16937,16 +16938,16 @@ export default function Admin() {
                                 </div>
 
                                 {/* Método de Envío y Método de Pago (Sin corchetes y ordenado) */}
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
-                                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '0.5rem 0.65rem', borderRadius: '10px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '0.55rem' }}>
+                                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '0.5rem 0.65rem', borderRadius: '10px', minWidth: 0 }}>
                                     <h5 style={{ margin: '0 0 0.15rem 0', color: '#64748b', fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.3px', fontWeight: 500 }}>Método de Envío</h5>
-                                    <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.8rem', lineHeight: 1.25 }}>
+                                    <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.78rem', lineHeight: 1.3, overflowWrap: 'break-word' }}>
                                       {displayMetodoEnvio}
                                     </p>
                                   </div>
-                                  <div style={{ background: isContra ? '#fff7ed' : '#f0fdf4', border: isContra ? '1px solid #fed7aa' : '1px solid #bbf7d0', padding: '0.5rem 0.65rem', borderRadius: '10px' }}>
+                                  <div style={{ background: isContra ? '#fff7ed' : '#f0fdf4', border: isContra ? '1px solid #fed7aa' : '1px solid #bbf7d0', padding: '0.5rem 0.65rem', borderRadius: '10px', minWidth: 0 }}>
                                     <h5 style={{ margin: '0 0 0.15rem 0', color: isContra ? '#9a3412' : '#166534', fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.3px', fontWeight: 500 }}>Método de Pago</h5>
-                                    <p style={{ margin: 0, fontWeight: 500, color: isContra ? '#c2410c' : '#15803d', fontSize: '0.82rem', lineHeight: 1.25, whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>
+                                    <p style={{ margin: 0, fontWeight: 500, color: isContra ? '#c2410c' : '#15803d', fontSize: '0.8rem', lineHeight: 1.3, overflowWrap: 'break-word', fontFamily: "'Poppins', sans-serif" }}>
                                       {displayMetodoPago}
                                     </p>
                                   </div>
@@ -16968,8 +16969,8 @@ export default function Admin() {
                             COLUMNA 2: 🛍️ PRODUCTOS SOLICITADOS
                         ════════════════════════════════════════════════════════ */}
                         <div className="modal-col-card">
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem', gap: '0.5rem' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0, flexWrap: 'wrap' }}>
                               <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap' }}>
                                 <Package size={16} color="var(--primary-color, #0ea5e9)" /> Productos ({prodsList.length})
                               </h4>
@@ -16984,7 +16985,7 @@ export default function Admin() {
                               )}
                             </div>
 
-                            {selectedPedido.estado !== 'cancelado' && (
+                            {Boolean(isLeadOrder) && selectedPedido.estado !== 'cancelado' && (
                               <button
                                 type="button"
                                 onClick={() => {
@@ -17026,35 +17027,37 @@ export default function Admin() {
                                 <p style={{ margin: '0 0 0.75rem 0', color: '#64748b', fontSize: '0.82rem', fontStyle: 'italic' }}>
                                   No hay productos registrados en este pedido / interesado.
                                 </p>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setShowAddProductOrderModal(true);
-                                    setSelectedProductToAdd(null);
-                                    setSelectedSizeToAdd('');
-                                    setSelectedPrintToAdd('');
-                                    setQuantityToAdd(1);
-                                    setCustomPriceToAdd(0);
-                                    setSearchProductOrderQuery('');
-                                  }}
-                                  style={{
-                                    background: 'var(--primary-color, #0ea5e9)',
-                                    color: '#ffffff',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    padding: '0.4rem 0.8rem',
-                                    fontSize: '0.78rem',
-                                    fontWeight: 500,
-                                    cursor: 'pointer',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '0.35rem',
-                                    fontFamily: "'Poppins', sans-serif"
-                                  }}
-                                >
-                                  <Plus size={13} />
-                                  <span>Agregar el primer producto</span>
-                                </button>
+                                {Boolean(isLeadOrder) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setShowAddProductOrderModal(true);
+                                      setSelectedProductToAdd(null);
+                                      setSelectedSizeToAdd('');
+                                      setSelectedPrintToAdd('');
+                                      setQuantityToAdd(1);
+                                      setCustomPriceToAdd(0);
+                                      setSearchProductOrderQuery('');
+                                    }}
+                                    style={{
+                                      background: 'var(--primary-color, #0ea5e9)',
+                                      color: '#ffffff',
+                                      border: 'none',
+                                      borderRadius: '8px',
+                                      padding: '0.4rem 0.8rem',
+                                      fontSize: '0.78rem',
+                                      fontWeight: 500,
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '0.35rem',
+                                      fontFamily: "'Poppins', sans-serif"
+                                    }}
+                                  >
+                                    <Plus size={13} />
+                                    <span>Agregar el primer producto</span>
+                                  </button>
+                                )}
                               </div>
                             ) : (
                               prodsList.map((prod: any, idx: number) => {
@@ -17179,9 +17182,9 @@ export default function Admin() {
                           </div>
 
                           {/* Total del Pedido */}
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '0.75rem 0.95rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                            <span style={{ fontSize: '0.88rem', fontWeight: 500, color: '#334155' }}>Total a Cobrar:</span>
-                            <span style={{ fontSize: '1.25rem', fontWeight: 600, color: isContra ? '#ea580c' : 'var(--primary-color, #0ea5e9)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '0.75rem 0.95rem', borderRadius: '12px', border: '1px solid #e2e8f0', minWidth: 0, gap: '0.5rem' }}>
+                            <span style={{ fontSize: '0.88rem', fontWeight: 500, color: '#334155', flexShrink: 0, whiteSpace: 'nowrap' }}>Total a Cobrar:</span>
+                            <span style={{ fontSize: '1.2rem', fontWeight: 600, color: isContra ? '#ea580c' : 'var(--primary-color, #0ea5e9)', textAlign: 'right', whiteSpace: 'nowrap', minWidth: 0 }}>
                               ${selectedPedido.total.toLocaleString()}
                             </span>
                           </div>
@@ -17847,11 +17850,12 @@ export default function Admin() {
                                     </button>
                                   )}
 
-                                  <div style={{ display: 'flex', gap: '0.45rem' }}>
+                                  <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
                                     <button
                                       type="button"
                                       style={{
-                                        flex: 1,
+                                        flex: '1 1 130px',
+                                        minWidth: '120px',
                                         padding: '0.65rem 0.75rem',
                                         background: '#25D366',
                                         color: '#ffffff',
@@ -17899,7 +17903,8 @@ export default function Admin() {
                                     <button
                                       type="button"
                                       style={{
-                                        flex: 1,
+                                        flex: '1 1 95px',
+                                        minWidth: '90px',
                                         padding: '0.65rem 0.75rem',
                                         background: '#f8fafc',
                                         color: '#334155',
