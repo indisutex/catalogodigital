@@ -15061,335 +15061,390 @@ export default function Admin() {
 
                           <div className="orders-desktop-view">
                             {pedidosViewMode === 'kanban' ? (
-                              <div 
-                                className="super-crm-kanban" 
-                                style={{ 
-                                  display: 'flex', 
-                                  flexDirection: 'row', 
-                                  flexWrap: 'nowrap', 
-                                  overflowX: 'auto', 
-                                  overflowY: 'hidden', 
-                                  gap: '1.15rem', 
-                                  alignItems: 'start', 
-                                  paddingBottom: '1.25rem', 
-                                  width: '100%', 
-                                  boxSizing: 'border-box',
-                                  WebkitOverflowScrolling: 'touch'
-                                }}
-                              >
-                        {/* Columna 0: Cancelados */}
-                        <div
-                          className="kanban-column"
-                          onDragOver={(e) => {
-                            e.preventDefault();
-                            e.dataTransfer.dropEffect = 'move';
-                          }}
-                          onDrop={(e) => handleDropKanban(e, 'cancelado')}
-                          style={{ flex: '0 0 315px', minWidth: '310px', maxWidth: '335px', boxSizing: 'border-box', background: '#f8fafc', borderRadius: '18px', border: '1px solid #e2e8f0', padding: '1rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
-                        >
-                          <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            background: 'linear-gradient(135deg, #fff1f2 0%, #fee2e2 100%)',
-                            border: '1px solid #fecaca',
-                            borderRadius: '12px',
-                            padding: '0.65rem 0.85rem',
-                            boxShadow: '0 2px 6px rgba(220, 38, 38, 0.06)'
-                          }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-                              <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#fee2e2', border: '1px solid #fca5a5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <Ban size={15} color="#dc2626" />
-                              </div>
-                              <span style={{ margin: 0, fontSize: '0.86rem', fontWeight: 600, color: '#991b1b', fontFamily: "'Poppins', sans-serif" }}>Cancelados</span>
-                            </div>
-                            <span style={{ background: '#dc2626', color: '#ffffff', minWidth: '24px', height: '22px', borderRadius: '11px', padding: '0 0.55rem', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(220, 38, 38, 0.25)', fontFamily: "'Poppins', sans-serif" }}>{canceladosFiltrados.length}</span>
-                          </div>
-
-                          {/* ⏱️ Aviso de Purga Automática & Acciones de Cancelados */}
-                          {(() => {
-                            const RETENTION_MS = 3 * 24 * 60 * 60 * 1000;
-                            const now = Date.now();
-                            let shortestRemaining = Infinity;
-                            
-                            for (const item of canceladosFiltrados) {
-                              const created = new Date(item.created_at || now).getTime();
-                              const expiry = created + RETENTION_MS;
-                              const rem = expiry - now;
-                              if (rem > 0 && rem < shortestRemaining) {
-                                shortestRemaining = rem;
-                              }
-                            }
-
-                            let timerText = '3 días';
-                            if (canceladosFiltrados.length > 0 && shortestRemaining !== Infinity) {
-                              const d = Math.floor(shortestRemaining / (1000 * 60 * 60 * 24));
-                              const h = Math.floor((shortestRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                              const m = Math.floor((shortestRemaining % (1000 * 60 * 60)) / (1000 * 60));
-                              if (d > 0) {
-                                timerText = `${d} día${d !== 1 ? 's' : ''} y ${h} h`;
-                              } else if (h > 0) {
-                                timerText = `${h} hora${h !== 1 ? 's' : ''} y ${m} min`;
-                              } else {
-                                timerText = `${Math.max(1, m)} min`;
-                              }
-                            }
-
-                            return (
-                              <div style={{
-                                background: '#ffffff',
-                                border: '1px solid #fecaca',
-                                borderRadius: '12px',
-                                padding: '0.6rem 0.75rem',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                gap: '0.4rem',
-                                boxShadow: '0 1px 4px rgba(220, 38, 38, 0.05)',
-                                fontFamily: "'Poppins', sans-serif"
-                              }}>
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.35rem', color: '#991b1b', fontSize: '0.73rem', fontWeight: 500 }}>
-                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                                    <Clock size={13} style={{ color: '#dc2626', flexShrink: 0 }} />
-                                    {canceladosFiltrados.length > 0 ? (
-                                      <span>Próxima purga en: <strong style={{ fontWeight: 600, color: '#dc2626' }}>{timerText}</strong></span>
-                                    ) : (
-                                      <span>Autoborrado tras <strong style={{ fontWeight: 600, color: '#dc2626' }}>3 días</strong></span>
-                                    )}
+                              <div className="pedidos-kanban-2rows-container" style={{ display: 'flex', flexDirection: 'column', gap: '1.75rem', width: '100%', boxSizing: 'border-box' }}>
+                                {/* ── Fila 1: Cancelados, No Interesados (Abandonos), Pago Contra Entrega ── */}
+                                <div className="pedidos-kanban-row-wrapper">
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.85rem' }}>
+                                    <span style={{ 
+                                      fontSize: '0.76rem', 
+                                      fontWeight: 600, 
+                                      color: '#475569', 
+                                      textTransform: 'uppercase', 
+                                      letterSpacing: '0.6px',
+                                      background: '#f1f5f9',
+                                      border: '1px solid #e2e8f0',
+                                      padding: '0.22rem 0.65rem',
+                                      borderRadius: '8px',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '0.4rem',
+                                      fontFamily: "'Poppins', sans-serif"
+                                    }}>
+                                      <span>📌 Fila 1</span>
+                                      <span style={{ color: '#94a3b8' }}>•</span>
+                                      <span>Cancelados, Interesados y Contra Entrega</span>
+                                    </span>
+                                    <div style={{ height: '1px', flex: 1, background: 'linear-gradient(to right, #e2e8f0, transparent)' }} />
                                   </div>
-                                  {canceladosFiltrados.length > 0 && (
-                                    <button
-                                      type="button"
-                                      onClick={handleVaciarCancelados}
-                                      title="Vaciar todas las tarjetas canceladas definitivamente"
-                                      style={{
-                                        background: '#fef2f2',
-                                        border: '1px solid #fca5a5',
-                                        borderRadius: '6px',
-                                        padding: '0.15rem 0.45rem',
-                                        color: '#dc2626',
-                                        fontSize: '0.68rem',
-                                        fontWeight: 500,
-                                        cursor: 'pointer',
-                                        display: 'inline-flex',
-                                        alignItems: 'center',
-                                        gap: '0.2rem',
-                                        fontFamily: "'Poppins', sans-serif"
+
+                                  <div className="pedidos-kanban-grid-row" style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                                    gap: '1.15rem',
+                                    width: '100%',
+                                    boxSizing: 'border-box',
+                                    alignItems: 'start'
+                                  }}>
+                                    {/* Columna 0: Cancelados */}
+                                    <div
+                                      className="kanban-column"
+                                      onDragOver={(e) => {
+                                        e.preventDefault();
+                                        e.dataTransfer.dropEffect = 'move';
                                       }}
+                                      onDrop={(e) => handleDropKanban(e, 'cancelado')}
+                                      style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', background: '#f8fafc', borderRadius: '18px', border: '1px solid #e2e8f0', padding: '1rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', minHeight: '380px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
                                     >
-                                      <Trash2 size={11} />
-                                      <span>Vaciar</span>
-                                    </button>
-                                  )}
+                                      <div style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        background: 'linear-gradient(135deg, #fff1f2 0%, #fee2e2 100%)',
+                                        border: '1px solid #fecaca',
+                                        borderRadius: '12px',
+                                        padding: '0.65rem 0.85rem',
+                                        boxShadow: '0 2px 6px rgba(220, 38, 38, 0.06)'
+                                      }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                                          <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#fee2e2', border: '1px solid #fca5a5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <Ban size={15} color="#dc2626" />
+                                          </div>
+                                          <span style={{ margin: 0, fontSize: '0.86rem', fontWeight: 600, color: '#991b1b', fontFamily: "'Poppins', sans-serif" }}>Cancelados</span>
+                                        </div>
+                                        <span style={{ background: '#dc2626', color: '#ffffff', minWidth: '24px', height: '22px', borderRadius: '11px', padding: '0 0.55rem', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(220, 38, 38, 0.25)', fontFamily: "'Poppins', sans-serif" }}>{canceladosFiltrados.length}</span>
+                                      </div>
+
+                                      {/* ⏱️ Aviso de Purga Automática & Acciones de Cancelados */}
+                                      {(() => {
+                                        const RETENTION_MS = 3 * 24 * 60 * 60 * 1000;
+                                        const now = Date.now();
+                                        let shortestRemaining = Infinity;
+                                        
+                                        for (const item of canceladosFiltrados) {
+                                          const created = new Date(item.created_at || now).getTime();
+                                          const expiry = created + RETENTION_MS;
+                                          const rem = expiry - now;
+                                          if (rem > 0 && rem < shortestRemaining) {
+                                            shortestRemaining = rem;
+                                          }
+                                        }
+
+                                        let timerText = '3 días';
+                                        if (canceladosFiltrados.length > 0 && shortestRemaining !== Infinity) {
+                                          const d = Math.floor(shortestRemaining / (1000 * 60 * 60 * 24));
+                                          const h = Math.floor((shortestRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                                          const m = Math.floor((shortestRemaining % (1000 * 60 * 60)) / (1000 * 60));
+                                          if (d > 0) {
+                                            timerText = `${d} día${d !== 1 ? 's' : ''} y ${h} h`;
+                                          } else if (h > 0) {
+                                            timerText = `${h} hora${h !== 1 ? 's' : ''} y ${m} min`;
+                                          } else {
+                                            timerText = `${Math.max(1, m)} min`;
+                                          }
+                                        }
+
+                                        return (
+                                          <div style={{
+                                            background: '#ffffff',
+                                            border: '1px solid #fecaca',
+                                            borderRadius: '12px',
+                                            padding: '0.6rem 0.75rem',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: '0.4rem',
+                                            boxShadow: '0 1px 4px rgba(220, 38, 38, 0.05)',
+                                            fontFamily: "'Poppins', sans-serif"
+                                          }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.35rem', color: '#991b1b', fontSize: '0.73rem', fontWeight: 500 }}>
+                                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                                <Clock size={13} style={{ color: '#dc2626', flexShrink: 0 }} />
+                                                {canceladosFiltrados.length > 0 ? (
+                                                  <span>Próxima purga en: <strong style={{ fontWeight: 600, color: '#dc2626' }}>{timerText}</strong></span>
+                                                ) : (
+                                                  <span>Autoborrado tras <strong style={{ fontWeight: 600, color: '#dc2626' }}>3 días</strong></span>
+                                                )}
+                                              </div>
+                                              {canceladosFiltrados.length > 0 && (
+                                                <button
+                                                  type="button"
+                                                  onClick={handleVaciarCancelados}
+                                                  title="Vaciar todas las tarjetas canceladas definitivamente"
+                                                  style={{
+                                                    background: '#fef2f2',
+                                                    border: '1px solid #fca5a5',
+                                                    borderRadius: '6px',
+                                                    padding: '0.15rem 0.45rem',
+                                                    color: '#dc2626',
+                                                    fontSize: '0.68rem',
+                                                    fontWeight: 500,
+                                                    cursor: 'pointer',
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.2rem',
+                                                    fontFamily: "'Poppins', sans-serif"
+                                                  }}
+                                                >
+                                                  <Trash2 size={11} />
+                                                  <span>Vaciar</span>
+                                                </button>
+                                              )}
+                                            </div>
+                                            <div style={{
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              gap: '0.3rem',
+                                              background: '#fff1f2',
+                                              padding: '0.2rem 0.45rem',
+                                              borderRadius: '6px',
+                                              fontSize: '0.71rem',
+                                              color: '#b91c1c',
+                                              fontWeight: 500
+                                            }}>
+                                              <span>🎯</span>
+                                              <span>¡Logra incentivar esta venta o elimínala!</span>
+                                            </div>
+                                          </div>
+                                        );
+                                      })()}
+                                      <div 
+                                        className="kanban-cards-list" 
+                                        style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '480px', overflowY: 'auto' }}
+                                      >
+                                        {canceladosFiltrados.map(ped => renderLeadOrOrderCard(ped, ped.isLead))}
+                                        {canceladosFiltrados.length === 0 && (
+                                          <p className="empty-column-msg" style={{ textAlign: 'center', color: '#991b1b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay pedidos cancelados.</p>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Columna 1: No Interesados (Abandonos) */}
+                                    <div
+                                      className="kanban-column"
+                                      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                                      onDrop={(e) => handleDropKanban(e, 'abandonado')}
+                                      style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', background: '#f8fafc', borderRadius: '18px', border: '1px solid #e2e8f0', padding: '1rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', minHeight: '380px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
+                                    >
+                                      <div style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+                                        border: '1px solid #e2e8f0',
+                                        borderRadius: '12px',
+                                        padding: '0.65rem 0.85rem',
+                                        boxShadow: '0 2px 6px rgba(100, 116, 139, 0.06)'
+                                      }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                                          <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#ffffff', border: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <XCircle size={15} color="#64748b" />
+                                          </div>
+                                          <span style={{ margin: 0, fontSize: '0.86rem', fontWeight: 600, color: '#475569', fontFamily: "'Poppins', sans-serif" }}>No Interesados (Abandonos)</span>
+                                        </div>
+                                        <span style={{ background: '#64748b', color: '#ffffff', minWidth: '24px', height: '22px', borderRadius: '11px', padding: '0 0.55rem', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(100, 116, 139, 0.2)', fontFamily: "'Poppins', sans-serif" }}>{leadsFiltrados.length}</span>
+                                      </div>
+                                      <div 
+                                        className="kanban-cards-list" 
+                                        style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '480px', overflowY: 'auto' }}
+                                      >
+                                        {leadsFiltrados.map(lead => renderLeadOrOrderCard(lead, (lead as any).isLead !== undefined ? (lead as any).isLead : true))}
+                                        {leadsFiltrados.length === 0 && (
+                                          <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay carritos abandonados.</p>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Columna 2: Contra Entregas (Auto-detectado) */}
+                                    <div
+                                      className="kanban-column"
+                                      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                                      onDrop={(e) => handleDropKanban(e, 'contra_entrega')}
+                                      style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', background: '#f8fafc', borderRadius: '18px', border: '1px solid #e2e8f0', padding: '1rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', minHeight: '380px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
+                                    >
+                                      <div style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        background: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)',
+                                        border: '1px solid #fed7aa',
+                                        borderRadius: '12px',
+                                        padding: '0.65rem 0.85rem',
+                                        boxShadow: '0 2px 6px rgba(234, 88, 12, 0.08)'
+                                      }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                                          <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#ffedd5', border: '1px solid #fdba74', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <Truck size={15} color="#ea580c" />
+                                          </div>
+                                          <span style={{ margin: 0, fontSize: '0.86rem', fontWeight: 600, color: '#9a3412', fontFamily: "'Poppins', sans-serif" }}>Pago Contra Entrega</span>
+                                        </div>
+                                        <span style={{ background: '#ea580c', color: '#ffffff', minWidth: '24px', height: '22px', borderRadius: '11px', padding: '0 0.55rem', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(234, 88, 12, 0.25)', fontFamily: "'Poppins', sans-serif" }}>{contraEntregaFiltrados.length}</span>
+                                      </div>
+                                      <div 
+                                        className="kanban-cards-list" 
+                                        style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '480px', overflowY: 'auto' }}
+                                      >
+                                        {contraEntregaFiltrados.map(ped => renderLeadOrOrderCard(ped))}
+                                        {contraEntregaFiltrados.length === 0 && (
+                                          <p className="empty-column-msg" style={{ textAlign: 'center', color: '#9a3412', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay pedidos contra entrega pendientes.</p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
                                 </div>
-                                <div style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '0.3rem',
-                                  background: '#fff1f2',
-                                  padding: '0.2rem 0.45rem',
-                                  borderRadius: '6px',
-                                  fontSize: '0.71rem',
-                                  color: '#b91c1c',
-                                  fontWeight: 500
-                                }}>
-                                  <span>🎯</span>
-                                  <span>¡Logra incentivar esta venta o elimínala!</span>
+
+                                {/* ── Fila 2: Pendientes por Pago, Comprobante Recibido, Ventas Exitosas ── */}
+                                <div className="pedidos-kanban-row-wrapper">
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.85rem' }}>
+                                    <span style={{ 
+                                      fontSize: '0.76rem', 
+                                      fontWeight: 600, 
+                                      color: '#475569', 
+                                      textTransform: 'uppercase', 
+                                      letterSpacing: '0.6px',
+                                      background: '#f1f5f9',
+                                      border: '1px solid #e2e8f0',
+                                      padding: '0.22rem 0.65rem',
+                                      borderRadius: '8px',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '0.4rem',
+                                      fontFamily: "'Poppins', sans-serif"
+                                    }}>
+                                      <span>💰 Fila 2</span>
+                                      <span style={{ color: '#94a3b8' }}>•</span>
+                                      <span>Pendientes por Pago, Comprobante Recibido y Ventas Exitosas</span>
+                                    </span>
+                                    <div style={{ height: '1px', flex: 1, background: 'linear-gradient(to right, #e2e8f0, transparent)' }} />
+                                  </div>
+
+                                  <div className="pedidos-kanban-grid-row" style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
+                                    gap: '1.15rem',
+                                    width: '100%',
+                                    boxSizing: 'border-box',
+                                    alignItems: 'start'
+                                  }}>
+                                    {/* Columna 3: Pendientes (Esperando Pago) */}
+                                    <div
+                                      className="kanban-column"
+                                      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                                      onDrop={(e) => handleDropKanban(e, 'pendiente')}
+                                      style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', background: '#f8fafc', borderRadius: '18px', border: '1px solid #e2e8f0', padding: '1rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', minHeight: '380px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
+                                    >
+                                      <div style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        background: 'linear-gradient(135deg, #fefce8 0%, #fef9c3 100%)',
+                                        border: '1px solid #fef08a',
+                                        borderRadius: '12px',
+                                        padding: '0.65rem 0.85rem',
+                                        boxShadow: '0 2px 6px rgba(202, 138, 4, 0.08)'
+                                      }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                                          <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#fef9c3', border: '1px solid #fde047', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <Clock size={15} color="#ca8a04" />
+                                          </div>
+                                          <span style={{ margin: 0, fontSize: '0.86rem', fontWeight: 600, color: '#854d0e', fontFamily: "'Poppins', sans-serif" }}>Pendientes por Pago</span>
+                                        </div>
+                                        <span style={{ background: '#ca8a04', color: '#ffffff', minWidth: '24px', height: '22px', borderRadius: '11px', padding: '0 0.55rem', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(202, 138, 4, 0.25)', fontFamily: "'Poppins', sans-serif" }}>{pendientePagoFiltrados.length}</span>
+                                      </div>
+                                      <div 
+                                        className="kanban-cards-list" 
+                                        style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '480px', overflowY: 'auto' }}
+                                      >
+                                        {pendientePagoFiltrados.map(ped => renderLeadOrOrderCard(ped))}
+                                        {pendientePagoFiltrados.length === 0 && (
+                                          <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay pedidos pendientes.</p>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Columna 4: Comprobante Recibido (Comprobar Pagos) */}
+                                    <div
+                                      className="kanban-column"
+                                      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                                      onDrop={(e) => handleDropKanban(e, 'comprobante')}
+                                      style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', background: '#f8fafc', borderRadius: '18px', border: '1px solid #e2e8f0', padding: '1rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', minHeight: '380px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
+                                    >
+                                      <div style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+                                        border: '1px solid #bfdbfe',
+                                        borderRadius: '12px',
+                                        padding: '0.65rem 0.85rem',
+                                        boxShadow: '0 2px 6px rgba(37, 99, 235, 0.08)'
+                                      }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                                          <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#dbeafe', border: '1px solid #93c5fd', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <FileCheck size={15} color="#2563eb" />
+                                          </div>
+                                          <span style={{ margin: 0, fontSize: '0.86rem', fontWeight: 600, color: '#1e40af', fontFamily: "'Poppins', sans-serif" }}>Comprobante Recibido</span>
+                                        </div>
+                                        <span style={{ background: '#2563eb', color: '#ffffff', minWidth: '24px', height: '22px', borderRadius: '11px', padding: '0 0.55rem', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(37, 99, 235, 0.25)', fontFamily: "'Poppins', sans-serif" }}>{comprobarPagosFiltrados.length}</span>
+                                      </div>
+                                      <div 
+                                        className="kanban-cards-list" 
+                                        style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '480px', overflowY: 'auto' }}
+                                      >
+                                        {comprobarPagosFiltrados.map(ped => renderLeadOrOrderCard(ped))}
+                                        {comprobarPagosFiltrados.length === 0 && (
+                                          <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay comprobantes por revisar.</p>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Columna 5: Clientes (Venta Exitosa) */}
+                                    <div
+                                      className="kanban-column"
+                                      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                                      onDrop={(e) => handleDropKanban(e, 'completado')}
+                                      style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', background: '#f8fafc', borderRadius: '18px', border: '1px solid #e2e8f0', padding: '1rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', minHeight: '380px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
+                                    >
+                                      <div style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+                                        border: '1px solid #bbf7d0',
+                                        borderRadius: '12px',
+                                        padding: '0.65rem 0.85rem',
+                                        boxShadow: '0 2px 6px rgba(220, 38, 38, 0.08)'
+                                      }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                                          <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#dcfce7', border: '1px solid #86efac', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <CheckCircle size={15} color="#16a34a" />
+                                          </div>
+                                          <span style={{ margin: 0, fontSize: '0.86rem', fontWeight: 600, color: '#166534', fontFamily: "'Poppins', sans-serif" }}>Ventas Exitosas</span>
+                                        </div>
+                                        <span style={{ background: '#16a34a', color: '#ffffff', minWidth: '24px', height: '22px', borderRadius: '11px', padding: '0 0.55rem', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(22, 163, 74, 0.25)', fontFamily: "'Poppins', sans-serif" }}>{clientesFiltrados.length}</span>
+                                      </div>
+                                      <div 
+                                        className="kanban-cards-list" 
+                                        style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '480px', overflowY: 'auto' }}
+                                      >
+                                        {clientesFiltrados.map(ped => renderLeadOrOrderCard(ped))}
+                                        {clientesFiltrados.length === 0 && (
+                                          <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay ventas exitosas aún.</p>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
-                            );
-                          })()}
-                          <div 
-                            className="kanban-cards-list" 
-                            style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}
-                          >
-                            {canceladosFiltrados.map(ped => renderLeadOrOrderCard(ped, ped.isLead))}
-                            {canceladosFiltrados.length === 0 && (
-                              <p className="empty-column-msg" style={{ textAlign: 'center', color: '#991b1b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay pedidos cancelados.</p>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Columna 1: No Interesados (Abandonos) */}
-                        <div
-                          className="kanban-column"
-                          onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-                          onDrop={(e) => handleDropKanban(e, 'abandonado')}
-                          style={{ flex: '0 0 315px', minWidth: '310px', maxWidth: '335px', boxSizing: 'border-box', background: '#f8fafc', borderRadius: '18px', border: '1px solid #e2e8f0', padding: '1rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
-                        >
-                          <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
-                            border: '1px solid #e2e8f0',
-                            borderRadius: '12px',
-                            padding: '0.65rem 0.85rem',
-                            boxShadow: '0 2px 6px rgba(100, 116, 139, 0.06)'
-                          }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-                              <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#ffffff', border: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <XCircle size={15} color="#64748b" />
-                              </div>
-                              <span style={{ margin: 0, fontSize: '0.86rem', fontWeight: 600, color: '#475569', fontFamily: "'Poppins', sans-serif" }}>No Interesados (Abandonos)</span>
-                            </div>
-                            <span style={{ background: '#64748b', color: '#ffffff', minWidth: '24px', height: '22px', borderRadius: '11px', padding: '0 0.55rem', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(100, 116, 139, 0.2)', fontFamily: "'Poppins', sans-serif" }}>{leadsFiltrados.length}</span>
-                          </div>
-                          <div 
-                            className="kanban-cards-list" 
-                            style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}
-                          >
-                            {leadsFiltrados.map(lead => renderLeadOrOrderCard(lead, (lead as any).isLead !== undefined ? (lead as any).isLead : true))}
-                            {leadsFiltrados.length === 0 && (
-                              <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay carritos abandonados.</p>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Columna 2: Contra Entregas (Auto-detectado) */}
-                        <div
-                          className="kanban-column"
-                          onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-                          onDrop={(e) => handleDropKanban(e, 'contra_entrega')}
-                          style={{ flex: '0 0 315px', minWidth: '310px', maxWidth: '335px', boxSizing: 'border-box', background: '#f8fafc', borderRadius: '18px', border: '1px solid #e2e8f0', padding: '1rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
-                        >
-                          <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            background: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)',
-                            border: '1px solid #fed7aa',
-                            borderRadius: '12px',
-                            padding: '0.65rem 0.85rem',
-                            boxShadow: '0 2px 6px rgba(234, 88, 12, 0.08)'
-                          }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-                              <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#ffedd5', border: '1px solid #fdba74', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <Truck size={15} color="#ea580c" />
-                              </div>
-                              <span style={{ margin: 0, fontSize: '0.86rem', fontWeight: 600, color: '#9a3412', fontFamily: "'Poppins', sans-serif" }}>Pago Contra Entrega</span>
-                            </div>
-                            <span style={{ background: '#ea580c', color: '#ffffff', minWidth: '24px', height: '22px', borderRadius: '11px', padding: '0 0.55rem', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(234, 88, 12, 0.25)', fontFamily: "'Poppins', sans-serif" }}>{contraEntregaFiltrados.length}</span>
-                          </div>
-                          <div 
-                            className="kanban-cards-list" 
-                            style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}
-                          >
-                            {contraEntregaFiltrados.map(ped => renderLeadOrOrderCard(ped))}
-                            {contraEntregaFiltrados.length === 0 && (
-                              <p className="empty-column-msg" style={{ textAlign: 'center', color: '#9a3412', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay pedidos contra entrega pendientes.</p>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Columna 3: Pendientes (Esperando Pago) */}
-                        <div
-                          className="kanban-column"
-                          onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-                          onDrop={(e) => handleDropKanban(e, 'pendiente')}
-                          style={{ flex: '0 0 315px', minWidth: '310px', maxWidth: '335px', boxSizing: 'border-box', background: '#f8fafc', borderRadius: '18px', border: '1px solid #e2e8f0', padding: '1rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
-                        >
-                          <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            background: 'linear-gradient(135deg, #fefce8 0%, #fef9c3 100%)',
-                            border: '1px solid #fef08a',
-                            borderRadius: '12px',
-                            padding: '0.65rem 0.85rem',
-                            boxShadow: '0 2px 6px rgba(202, 138, 4, 0.08)'
-                          }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-                              <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#fef9c3', border: '1px solid #fde047', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <Clock size={15} color="#ca8a04" />
-                              </div>
-                              <span style={{ margin: 0, fontSize: '0.86rem', fontWeight: 600, color: '#854d0e', fontFamily: "'Poppins', sans-serif" }}>Pendientes por Pago</span>
-                            </div>
-                            <span style={{ background: '#ca8a04', color: '#ffffff', minWidth: '24px', height: '22px', borderRadius: '11px', padding: '0 0.55rem', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(202, 138, 4, 0.25)', fontFamily: "'Poppins', sans-serif" }}>{pendientePagoFiltrados.length}</span>
-                          </div>
-                          <div 
-                            className="kanban-cards-list" 
-                            style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}
-                          >
-                            {pendientePagoFiltrados.map(ped => renderLeadOrOrderCard(ped))}
-                            {pendientePagoFiltrados.length === 0 && (
-                              <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay pedidos pendientes.</p>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Columna 4: Comprobante Recibido (Comprobar Pagos) */}
-                        <div
-                          className="kanban-column"
-                          onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-                          onDrop={(e) => handleDropKanban(e, 'comprobante')}
-                          style={{ flex: '0 0 315px', minWidth: '310px', maxWidth: '335px', boxSizing: 'border-box', background: '#f8fafc', borderRadius: '18px', border: '1px solid #e2e8f0', padding: '1rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
-                        >
-                          <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
-                            border: '1px solid #bfdbfe',
-                            borderRadius: '12px',
-                            padding: '0.65rem 0.85rem',
-                            boxShadow: '0 2px 6px rgba(37, 99, 235, 0.08)'
-                          }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-                              <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#dbeafe', border: '1px solid #93c5fd', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <FileCheck size={15} color="#2563eb" />
-                              </div>
-                              <span style={{ margin: 0, fontSize: '0.86rem', fontWeight: 600, color: '#1e40af', fontFamily: "'Poppins', sans-serif" }}>Comprobante Recibido</span>
-                            </div>
-                            <span style={{ background: '#2563eb', color: '#ffffff', minWidth: '24px', height: '22px', borderRadius: '11px', padding: '0 0.55rem', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(37, 99, 235, 0.25)', fontFamily: "'Poppins', sans-serif" }}>{comprobarPagosFiltrados.length}</span>
-                          </div>
-                          <div 
-                            className="kanban-cards-list" 
-                            style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}
-                          >
-                            {comprobarPagosFiltrados.map(ped => renderLeadOrOrderCard(ped))}
-                            {comprobarPagosFiltrados.length === 0 && (
-                              <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay comprobantes por revisar.</p>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Columna 5: Clientes (Venta Exitosa) */}
-                        <div
-                          className="kanban-column"
-                          onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-                          onDrop={(e) => handleDropKanban(e, 'completado')}
-                          style={{ flex: '0 0 315px', minWidth: '310px', maxWidth: '335px', boxSizing: 'border-box', background: '#f8fafc', borderRadius: '18px', border: '1px solid #e2e8f0', padding: '1rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', minHeight: '500px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
-                        >
-                          <div style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
-                            border: '1px solid #bbf7d0',
-                            borderRadius: '12px',
-                            padding: '0.65rem 0.85rem',
-                            boxShadow: '0 2px 6px rgba(22, 163, 74, 0.08)'
-                          }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-                              <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#dcfce7', border: '1px solid #86efac', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <CheckCircle size={15} color="#16a34a" />
-                              </div>
-                              <span style={{ margin: 0, fontSize: '0.86rem', fontWeight: 600, color: '#166534', fontFamily: "'Poppins', sans-serif" }}>Ventas Exitosas</span>
-                            </div>
-                            <span style={{ background: '#16a34a', color: '#ffffff', minWidth: '24px', height: '22px', borderRadius: '11px', padding: '0 0.55rem', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(22, 163, 74, 0.25)', fontFamily: "'Poppins', sans-serif" }}>{clientesFiltrados.length}</span>
-                          </div>
-                          <div 
-                            className="kanban-cards-list" 
-                            style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }}
-                          >
-                            {clientesFiltrados.map(ped => renderLeadOrOrderCard(ped))}
-                            {clientesFiltrados.length === 0 && (
-                              <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay ventas exitosas aún.</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
+                            ) : (
                       <div className="orders-desktop-table-container" style={{ overflowX: 'auto', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', textAlign: 'left' }}>
                               <thead>

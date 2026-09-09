@@ -3899,7 +3899,41 @@ button:active { transform: scale(0.95); }
   }
 }
 
+/* ── Vista Kanban Pedidos en 2 Filas x 3 Columnas ── */
+.pedidos-kanban-2rows-container {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 1.75rem !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
 
+.pedidos-kanban-row-wrapper {
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
 
+.pedidos-kanban-grid-row {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 1.15rem !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  align-items: stretch !important;
+}
 
+.pedidos-kanban-grid-row .kanban-column {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  width: 100% !important;
+  height: 100% !important;
+  box-sizing: border-box !important;
+  margin: 0 !important;
+}
 
+.pedidos-kanban-grid-row .kanban-cards-list {
+  max-height: 480px !important;
+  overflow-y: auto !important;
+  padding-right: 4px;
+}
