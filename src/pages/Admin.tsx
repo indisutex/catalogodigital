@@ -17075,33 +17075,47 @@ export default function Admin() {
                                   (productos.find((p: any) => p.id === prod.id || (p.referencia && p.referencia === prod.referencia))?.imagen_url);
 
                                 return (
-                                  <div key={idx} style={{ display: 'flex', alignItems: 'center', background: '#f8fafc', padding: '0.55rem 0.75rem', borderRadius: '12px', border: '1px solid #e2e8f0', gap: '0.55rem' }}>
+                                  <div key={idx} style={{ display: 'flex', alignItems: 'center', background: '#f8fafc', padding: '0.45rem 0.65rem', borderRadius: '12px', border: '1px solid #e2e8f0', gap: '0.45rem', width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
                                     {/* Miniatura */}
                                     {prodImg ? (
-                                      <img src={prodImg} alt="" style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #e2e8f0', background: '#ffffff', flexShrink: 0 }} />
+                                      <img src={prodImg} alt="" style={{ width: '38px', height: '38px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #e2e8f0', background: '#ffffff', flexShrink: 0 }} />
                                     ) : (
-                                      <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', flexShrink: 0 }}>
+                                      <div style={{ width: '38px', height: '38px', borderRadius: '8px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', flexShrink: 0 }}>
                                         🛍️
                                       </div>
                                     )}
 
                                     {/* Info Producto */}
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                      <h5 style={{ margin: 0, color: '#0f172a', fontSize: '0.84rem', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={prod.nombre}>
+                                    <div style={{ flex: '1 1 0%', minWidth: 0, overflow: 'hidden' }}>
+                                      <h5
+                                        style={{
+                                          margin: 0,
+                                          color: '#0f172a',
+                                          fontSize: '0.82rem',
+                                          fontWeight: 500,
+                                          lineHeight: 1.25,
+                                          display: '-webkit-box',
+                                          WebkitLineClamp: 2,
+                                          WebkitBoxOrient: 'vertical',
+                                          overflow: 'hidden',
+                                          wordBreak: 'break-word'
+                                        }}
+                                        title={prod.nombre}
+                                      >
                                         {prod.nombre}
                                       </h5>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.15rem', flexWrap: 'wrap' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.15rem', flexWrap: 'wrap' }}>
                                         {prod.talla && (
-                                          <span style={{ background: '#f3e8ff', color: '#7e22ce', fontSize: '0.66rem', fontWeight: 500, padding: '1px 5px', borderRadius: '4px' }}>
+                                          <span style={{ background: '#f3e8ff', color: '#7e22ce', fontSize: '0.64rem', fontWeight: 500, padding: '1px 5px', borderRadius: '4px' }}>
                                             {prod.talla}
                                           </span>
                                         )}
                                         {prod.estampado && (
-                                          <span style={{ background: '#e0f2fe', color: '#0369a1', fontSize: '0.66rem', fontWeight: 500, padding: '1px 5px', borderRadius: '4px' }}>
+                                          <span style={{ background: '#e0f2fe', color: '#0369a1', fontSize: '0.64rem', fontWeight: 500, padding: '1px 5px', borderRadius: '4px' }}>
                                             {prod.estampado}
                                           </span>
                                         )}
-                                        <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                                        <span style={{ fontSize: '0.7rem', color: '#64748b' }}>
                                           ${unitPrice.toLocaleString('es-CO')} c/u
                                         </span>
                                       </div>
@@ -17109,38 +17123,38 @@ export default function Admin() {
 
                                     {/* Stepper Cantidad */}
                                     {selectedPedido.estado !== 'cancelado' && (
-                                      <div style={{ display: 'flex', alignItems: 'center', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '2px', flexShrink: 0 }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '7px', padding: '1px', flexShrink: 0 }}>
                                         <button
                                           type="button"
                                           disabled={savingOrderProducts}
                                           onClick={() => handleUpdateOrderProductQuantity(idx, -1)}
-                                          style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px 5px', color: '#64748b', display: 'flex', alignItems: 'center', borderRadius: '4px' }}
+                                          style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '1px 4px', color: '#64748b', display: 'flex', alignItems: 'center', borderRadius: '3px' }}
                                           title={cant === 1 ? 'Eliminar del pedido' : 'Disminuir cantidad'}
                                         >
-                                          <Minus size={11} />
+                                          <Minus size={10} />
                                         </button>
-                                        <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#0f172a', minWidth: '18px', textAlign: 'center', fontFamily: "'Poppins', sans-serif" }}>
+                                        <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#0f172a', minWidth: '16px', textAlign: 'center', fontFamily: "'Poppins', sans-serif" }}>
                                           {cant}
                                         </span>
                                         <button
                                           type="button"
                                           disabled={savingOrderProducts}
                                           onClick={() => handleUpdateOrderProductQuantity(idx, 1)}
-                                          style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px 5px', color: '#64748b', display: 'flex', alignItems: 'center', borderRadius: '4px' }}
+                                          style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '1px 4px', color: '#64748b', display: 'flex', alignItems: 'center', borderRadius: '3px' }}
                                           title="Aumentar cantidad"
                                         >
-                                          <Plus size={11} />
+                                          <Plus size={10} />
                                         </button>
                                       </div>
                                     )}
 
                                     {/* Total Línea */}
-                                    <div style={{ textAlign: 'right', flexShrink: 0, minWidth: '60px' }}>
-                                      <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.86rem', display: 'block' }}>
+                                    <div style={{ textAlign: 'right', flexShrink: 0, minWidth: '55px' }}>
+                                      <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.82rem', display: 'block', whiteSpace: 'nowrap' }}>
                                         ${lineTotal.toLocaleString('es-CO')}
                                       </span>
                                       {isWholesaleOrder && (
-                                        <span style={{ fontSize: '0.62rem', color: '#166534', background: '#dcfce7', padding: '0.05rem 0.3rem', borderRadius: '4px', fontWeight: 500, display: 'inline-block' }}>
+                                        <span style={{ fontSize: '0.6rem', color: '#166534', background: '#dcfce7', padding: '0.05rem 0.25rem', borderRadius: '4px', fontWeight: 500, display: 'inline-block', whiteSpace: 'nowrap' }}>
                                           P. Mayor
                                         </span>
                                       )}
@@ -17152,10 +17166,10 @@ export default function Admin() {
                                         type="button"
                                         disabled={savingOrderProducts}
                                         onClick={() => handleRemoveOrderProduct(idx)}
-                                        style={{ border: 'none', background: '#fee2e2', color: '#dc2626', borderRadius: '7px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'background 0.15s ease' }}
+                                        style={{ border: 'none', background: '#fee2e2', color: '#dc2626', borderRadius: '6px', width: '26px', height: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'background 0.15s ease' }}
                                         title="Eliminar producto"
                                       >
-                                        <Trash2 size={13} />
+                                        <Trash2 size={12} />
                                       </button>
                                     )}
                                   </div>
