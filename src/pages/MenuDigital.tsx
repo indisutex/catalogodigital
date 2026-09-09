@@ -1951,23 +1951,6 @@ export default function MenuDigital() {
           {/* ── CENTRAL OVERLAPPING LOGO (HERBARIA STYLE - ANCHORED DIRECTLY TO HERO MEDIA BOTTOM) ── */}
           <div className="hero-center-logo" style={{ position: 'relative' }}>
             {Boolean(configuracion?.tematica_navidad ?? true) && <ChristmasLogoWreath />}
-            {Boolean(configuracion?.tematica_navidad ?? true) && (
-              <span 
-                style={{ 
-                  position: 'absolute', 
-                  top: '-15px', 
-                  right: '-10px', 
-                  fontSize: '1.65rem', 
-                  zIndex: 12, 
-                  pointerEvents: 'none', 
-                  filter: 'drop-shadow(0 2px 5px rgba(0,0,0,0.35))',
-                  transform: 'rotate(18deg)'
-                }} 
-                title="¡Feliz Navidad!"
-              >
-                🎅
-              </span>
-            )}
             {(() => {
               const logoSrc = mayoristaBranding?.logo || configuracion?.logo_url || DEFAULT_LOGOS[getTenantId()];
               if (logoSrc && !logoError) {
