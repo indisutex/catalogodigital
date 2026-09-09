@@ -132,7 +132,6 @@ export default function MenuDigital() {
     modalidadPago: 'transferencia' | 'contra_entrega' | 'whatsapp';
     whatsappUrl: string;
   } | null>(null);
-  const [copiedField, setCopiedField] = useState(false);
   const [overrideWhatsApp, setOverrideWhatsApp] = useState<string | null>(null);
   const [heroMuted, setHeroMuted] = useState(true);
   const [showTipoModal, setShowTipoModal] = useState(false);
@@ -1460,10 +1459,6 @@ export default function MenuDigital() {
       alert('Por favor ingresa un correo electrónico válido.');
       return;
     }
-    if (!formData.cedula.trim()) {
-      alert('Por favor ingresa tu número de cédula o DNI.');
-      return;
-    }
     if (metodoRecepcion === 'domicilio') {
       if (!selectedDepartamento.trim()) {
         alert('Por favor selecciona tu departamento de residencia.');
@@ -1503,9 +1498,7 @@ export default function MenuDigital() {
     }
     const metodoPagoLabel = modalidadPago === 'transferencia' 
       ? '[ Transferencia Bancaria ]' 
-      : modalidadPago === 'contra_entrega' 
-      ? '[ Pago Contra Entrega ]' 
-      : '[ Coordinar por WhatsApp ]';
+      : '[ Pago Contra Entrega ]';
 
     mensaje += `*Tipo de compra:* ${buyerLabel}\n`;
     mensaje += `*Método de pago:* ${metodoPagoLabel}\n`;
@@ -1527,14 +1520,31 @@ export default function MenuDigital() {
     
     if (modalidadPago === 'transferencia') {
       mensaje += `\n\n*TOTAL PRODUCTOS:* $${total.toLocaleString('es-CO')}`;
-      mensaje += `\n*ENVIO:* Pendiente por calcular.`;
-      mensaje += `\n\n*Nota de pago:* Por favor solicita los datos de transferencia bancaria para realizar el pago de *$${total.toLocaleString('es-CO')} COP*.`;
-    } else if (modalidadPago === 'contra_entrega') {
-      mensaje += `\n\n*TOTAL PRODUCTOS:* $${total.toLocaleString('es-CO')}`;
-      mensaje += `\n*ENVÍO:* PAGO CONTRA ENTREGA\n\nCancela al momento de recibir tu pedido el valor de las prendas + el costo del envío. ¡Fácil, seguro y sin pagos anticipados!`;
+      mensaje += `\n*ENVÍO:* Pendiente por calcular.`;
+      
+      let metodosInfo = '';
+      if (configuracion?.metodos_pago) {
+        try {
+          const parsed = JSON.parse(configuracion.metodos_pago);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            metodosInfo = `\n\n💳 *DATOS PARA TRANSFERENCIA:*\n` + parsed.map((m: any) => `• *${m.banco}* ${m.tipo ? `(${m.tipo})` : ''}: \`${m.numero}\``).join('\n');
+          } else if (typeof configuracion.metodos_pago === 'string' && configuracion.metodos_pago.trim()) {
+            metodosInfo = `\n\n💳 *DATOS PARA TRANSFERENCIA:*\n${configuracion.metodos_pago}`;
+          }
+        } catch {
+          if (typeof configuracion.metodos_pago === 'string' && configuracion.metodos_pago.trim()) {
+            metodosInfo = `\n\n💳 *DATOS PARA TRANSFERENCIA:*\n${configuracion.metodos_pago}`;
+          }
+        }
+      }
+      if (!metodosInfo) {
+        metodosInfo = `\n\n💳 *DATOS PARA TRANSFERENCIA:*\n• *Bancolombia Ahorros:* \`456-789456-01\`\n• *Nequi / Daviplata:* \`318 563 7317\``;
+      }
+      mensaje += metodosInfo;
+      mensaje += `\n\n_Por favor envía el comprobante de pago por este chat para procesar y despachar tu pedido._`;
     } else {
       mensaje += `\n\n*TOTAL PRODUCTOS:* $${total.toLocaleString('es-CO')}`;
-      mensaje += `\n\n*Coordinacion por WhatsApp:* Acordaremos el pago y envio directamente por este chat.`;
+      mensaje += `\n*ENVÍO:* PAGO CONTRA ENTREGA\n\nCancela al momento de recibir tu pedido el valor de las prendas + el costo del envío. ¡Fácil, seguro y sin pagos anticipados!`;
     }
 
     const numeroWhatsApp = getStoreWhatsAppNumber(formData.telefono);
@@ -2508,22 +2518,28 @@ export default function MenuDigital() {
       {/* PQRS Modal */}
       {isPqrsOpen && <PqrsModal onClose={() => setIsPqrsOpen(false)} configuracion={configuracion} />}
 
-      {/* Floating Cart Button (Color Sólido Único de la Empresa) */}
+      {/* Floating Cart Button (Cápsula Flotante Elegante y Práctica) */}
       {totalItems > 0 && !isCartOpen && (
         <button 
           className="floating-cart-btn" 
           onClick={() => setIsCartOpen(true)}
           style={{ 
             background: mayoristaBranding?.color || configuracion?.color_primario || 'var(--primary, #f36b8e)',
-            boxShadow: `0 -4px 20px ${(mayoristaBranding?.color || configuracion?.color_primario || '#f36b8e')}35`
+            boxShadow: `0 10px 25px -4px ${(mayoristaBranding?.color || configuracion?.color_primario || '#f36b8e')}45, 0 4px 12px rgba(0,0,0,0.12)`
           }}
+          aria-label={`Ver carrito: ${totalItems} producto${totalItems > 1 ? 's' : ''}, total $${total.toLocaleString('es-CO')}`}
         >
           <div className="cart-icon-wrapper">
-            <ShoppingBag size={22} />
-            <span className="cart-badge" style={{ color: mayoristaBranding?.color || configuracion?.color_primario || '#0f172a' }}>{totalItems}</span>
-            <span>Ver Carrito</span>
+            <div className="cart-icon-pill">
+              <ShoppingBag size={17} strokeWidth={2.3} />
+              <span className="cart-badge" style={{ color: mayoristaBranding?.color || configuracion?.color_primario || '#0f172a' }}>{totalItems}</span>
+            </div>
+            <span className="cart-btn-label">Ver Carrito</span>
           </div>
-          <span className="cart-total-float" style={{ fontWeight: 600, fontSize: '1.05rem' }}>${total.toLocaleString('es-CO')}</span>
+          <div className="cart-total-chip">
+            <span className="cart-total-float">${total.toLocaleString('es-CO')}</span>
+            <ChevronRight size={17} strokeWidth={2.4} className="cart-chevron-icon" />
+          </div>
         </button>
       )}
 
@@ -2721,7 +2737,8 @@ export default function MenuDigital() {
                           </div>
 
                           {/* Fila 2 - Col 1: Correo */}
-                          <div className="form-group" style={{ margin: 0 }}>
+                          {/* Fila 2: Correo */}
+                          <div className="form-group" style={{ margin: 0, gridColumn: '1 / -1' }}>
                             <label style={{ fontSize: '0.82rem', fontWeight: 500, color: '#334155', marginBottom: '0.3rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
                               Correo electrónico *
                             </label>
@@ -2731,21 +2748,6 @@ export default function MenuDigital() {
                               value={formData.email}
                               onChange={e => setFormData({...formData, email: e.target.value})}
                               placeholder="tu@correo.com"
-                              style={{ width: '100%', boxSizing: 'border-box', padding: '0.72rem 0.85rem', borderRadius: '12px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.88rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif", fontWeight: 400 }}
-                            />
-                          </div>
-
-                          {/* Fila 2 - Col 2: Cédula */}
-                          <div className="form-group" style={{ margin: 0 }}>
-                            <label style={{ fontSize: '0.82rem', fontWeight: 500, color: '#334155', marginBottom: '0.3rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
-                              Número de Cédula / DNI *
-                            </label>
-                            <input 
-                              type="text" 
-                              required 
-                              value={formData.cedula}
-                              onChange={e => setFormData({...formData, cedula: e.target.value})}
-                              placeholder="Ej. 1098765432"
                               style={{ width: '100%', boxSizing: 'border-box', padding: '0.72rem 0.85rem', borderRadius: '12px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.88rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif", fontWeight: 400 }}
                             />
                           </div>
@@ -3090,72 +3092,7 @@ export default function MenuDigital() {
                               </div>
                             </div>
                           </label>
-
-                          {/* Opción 3: Coordinar por WhatsApp */}
-                          <label 
-                            style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: '0.65rem', 
-                              padding: '0.75rem 0.85rem', 
-                              borderRadius: '12px', 
-                              border: `2px solid ${modalidadPago === 'whatsapp' ? brandColor : '#e2e8f0'}`, 
-                              background: modalidadPago === 'whatsapp' ? `${brandColor}0d` : '#fafafa', 
-                              cursor: 'pointer',
-                              transition: 'all 0.15s ease'
-                            }}
-                          >
-                            <input 
-                              type="radio" 
-                              name="modalidadPago" 
-                              value="whatsapp"
-                              checked={modalidadPago === 'whatsapp'}
-                              onChange={() => setModalidadPago('whatsapp')}
-                              style={{ accentColor: brandColor, width: '16px', height: '16px', cursor: 'pointer', flexShrink: 0 }}
-                            />
-                            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: '0.95rem' }}>
-                              💬
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: '0.88rem', fontWeight: 600, color: modalidadPago === 'whatsapp' ? brandColor : '#1e293b', fontFamily: "'Poppins', sans-serif" }}>
-                                Coordinar por WhatsApp
-                              </div>
-                              <div style={{ fontSize: '0.74rem', color: '#64748b', fontFamily: "'Poppins', sans-serif" }}>
-                                Coordina el pago y envío directamente con el asesor
-                              </div>
-                            </div>
-                          </label>
                         </div>
-
-                        {/* Cuentas bancarias si seleccionó transferencia */}
-                        {modalidadPago === 'transferencia' && (
-                          <div style={{ background: '#f8fafc', padding: '0.85rem 0.95rem', borderRadius: '12px', border: '1px solid #e2e8f0', fontSize: '0.82rem' }}>
-                            <strong style={{ color: '#1e293b', display: 'block', marginBottom: '0.4rem', fontSize: '0.84rem' }}>
-                              💳 Cuentas para Transferencia:
-                            </strong>
-                            {(() => {
-                              if (configuracion?.metodos_pago) {
-                                try {
-                                  const parsed = JSON.parse(configuracion.metodos_pago);
-                                  if (Array.isArray(parsed) && parsed.length > 0) {
-                                    return parsed.map((m: any, idx: number) => (
-                                      <div key={idx} style={{ padding: '0.3rem 0', color: '#475569', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: idx < parsed.length - 1 ? '1px dashed #e2e8f0' : 'none' }}>
-                                        <span><strong>{m.banco}</strong> {m.tipo ? `(${m.tipo})` : ''}</span>
-                                        <span style={{ fontWeight: 600, color: '#0f172a', fontFamily: 'monospace' }}>{m.numero}</span>
-                                      </div>
-                                    ));
-                                  }
-                                } catch {}
-                              }
-                              return (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', color: '#475569' }}>
-                                  <div><strong>Bancolombia Ahorros:</strong> 456-789456-01</div>
-                                  <div><strong>Nequi / Daviplata:</strong> 318 563 7317</div>
-                                </div>
-                              );
-                            })()}
-                          </div>
-                        )}
                       </div>
 
                       {/* ── 4. RESUMEN DEL PEDIDO ── */}
@@ -4386,66 +4323,18 @@ export default function MenuDigital() {
             {/* DETALLES DE LA FORMA DE PAGO */}
             <div style={{ background: '#fafafa', border: '1px solid #f1f5f9', borderRadius: '16px', padding: '0.95rem 1rem', textAlign: 'left', marginBottom: '1.4rem', fontSize: '0.84rem' }}>
               <div style={{ fontSize: '0.88rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.65rem' }}>
-                {orderSummaryData.modalidadPago === 'transferencia' ? '🏦 Transferencia Bancaria' : orderSummaryData.modalidadPago === 'contra_entrega' ? '🚚 Pago contra entrega' : '💬 Coordinar por WhatsApp'}
+                {orderSummaryData.modalidadPago === 'transferencia' ? '🏦 Transferencia Bancaria' : '🚚 Pago contra entrega'}
               </div>
 
               {orderSummaryData.modalidadPago === 'transferencia' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
-                    💳 Cuentas para Transferencia / Nequi:
-                  </div>
-                  {(() => {
-                    if (configuracion?.metodos_pago) {
-                      try {
-                        const parsed = JSON.parse(configuracion.metodos_pago);
-                        if (Array.isArray(parsed) && parsed.length > 0) {
-                          return parsed.map((m: any, idx: number) => (
-                            <div key={idx} style={{ padding: '0.35rem 0', color: '#475569', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: idx < parsed.length - 1 ? '1px dashed #e2e8f0' : 'none', fontFamily: "'Poppins', sans-serif" }}>
-                              <span><strong>{m.banco}</strong> {m.tipo ? `(${m.tipo})` : ''}</span>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                                <span style={{ fontWeight: 600, color: '#0f172a', fontFamily: 'monospace' }}>{m.numero}</span>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    navigator.clipboard.writeText(m.numero);
-                                    setCopiedField(true);
-                                    setTimeout(() => setCopiedField(false), 2000);
-                                  }}
-                                  style={{ background: '#e2e8f0', border: 'none', borderRadius: '6px', cursor: 'pointer', padding: '2px 6px', fontSize: '0.74rem', color: '#0f172a', fontWeight: 500 }}
-                                  title="Copiar número de cuenta"
-                                >
-                                  {copiedField ? '✓ Copiado' : '📋 Copiar'}
-                                </button>
-                              </div>
-                            </div>
-                          ));
-                        } else if (typeof configuracion.metodos_pago === 'string' && configuracion.metodos_pago.trim() !== '') {
-                          return <div style={{ whiteSpace: 'pre-line', color: '#334155', fontFamily: "'Poppins', sans-serif", fontSize: '0.82rem' }}>{configuracion.metodos_pago}</div>;
-                        }
-                      } catch {
-                        if (typeof configuracion.metodos_pago === 'string' && configuracion.metodos_pago.trim() !== '') {
-                          return <div style={{ whiteSpace: 'pre-line', color: '#334155', fontFamily: "'Poppins', sans-serif", fontSize: '0.82rem' }}>{configuracion.metodos_pago}</div>;
-                        }
-                      }
-                    }
-                    return (
-                      <div style={{ color: '#475569', fontSize: '0.8rem', fontFamily: "'Poppins', sans-serif" }}>
-                        Solicita los datos bancarios directamente por WhatsApp al asesor.
-                      </div>
-                    );
-                  })()}
+                <div style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.45, fontFamily: "'Poppins', sans-serif" }}>
+                  📲 Los datos para la transferencia bancaria han sido adjuntados en tu mensaje de WhatsApp. Por favor envía tu comprobante de pago por el chat para despachar tu pedido.
                 </div>
               )}
 
               {orderSummaryData.modalidadPago === 'contra_entrega' && (
                 <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.4, fontFamily: "'Poppins', sans-serif" }}>
                   Cancela al momento de recibir tu pedido el valor de las prendas + el costo del envío. ¡Fácil, seguro y sin pagos anticipados!
-                </div>
-              )}
-
-              {orderSummaryData.modalidadPago === 'whatsapp' && (
-                <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.4 }}>
-                  Coordina la cuenta de pago y el valor del envío directamente a través del chat de WhatsApp con la tienda.
                 </div>
               )}
             </div>
