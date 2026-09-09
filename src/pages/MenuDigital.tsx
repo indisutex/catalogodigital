@@ -13,6 +13,7 @@ import { DEPARTAMENTOS_COLOMBIA, TODAS_LAS_CIUDADES_COLOMBIA } from '../data/col
 import { validateWhatsAppPhone } from '../components/WhatsAppPhoneVerifier';
 import AddressVerifier, { validateAddressFormat } from '../components/AddressVerifier';
 import { ChristmasHeroLights } from '../components/ChristmasHeroLights';
+import { ChristmasLogoWreath } from '../components/ChristmasLogoWreath';
 import './MenuDigital.css';
 
 const DEFAULT_LOGOS: Record<string, string> = {
@@ -1949,7 +1950,8 @@ export default function MenuDigital() {
 
           {/* ── CENTRAL OVERLAPPING LOGO (HERBARIA STYLE - ANCHORED DIRECTLY TO HERO MEDIA BOTTOM) ── */}
           <div className="hero-center-logo" style={{ position: 'relative' }}>
-            {Boolean(configuracion?.tematica_navidad) && (
+            {Boolean(configuracion?.tematica_navidad ?? true) && <ChristmasLogoWreath />}
+            {Boolean(configuracion?.tematica_navidad ?? true) && (
               <span 
                 style={{ 
                   position: 'absolute', 
