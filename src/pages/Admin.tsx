@@ -5,7 +5,7 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista, PQRS } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Minus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, ChevronRight, Wrench, ArrowUpDown, Filter, MapPin, XCircle, Truck, Clock, FileCheck, CheckCircle, Landmark, BookOpen, LifeBuoy, ShoppingCart, ClipboardList, Star, Ban, ExternalLink, Flame, RotateCcw, Sparkles } from 'lucide-react';
+import { X, FileText, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Minus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, ChevronRight, Wrench, ArrowUpDown, Filter, MapPin, XCircle, Truck, Clock, FileCheck, CheckCircle, Landmark, BookOpen, LifeBuoy, ShoppingCart, ClipboardList, Star, Ban, ExternalLink, Flame, RotateCcw, Sparkles } from 'lucide-react';
 
 import * as XLSX from 'xlsx';
 import { ERPContabilidadService } from '../lib/erpContabilidadService';
@@ -1835,137 +1835,98 @@ export default function Admin() {
                 window.open(formatWhatsAppLink(telefonoCliente, text), '_blank');
                 if (isLead) handleUpdateLeadStatus(ped.id, 'contactado');
               }}
+              className="btn-action-outline pedido-card-btn"
               style={{
                 width: '100%',
                 height: '36px',
                 padding: '0 0.75rem',
-                borderRadius: '10px',
-                border: 'none',
-                background: ped.estado === 'cancelado' ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #10b981, #059669)',
-                color: '#ffffff',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.35rem',
-                boxShadow: ped.estado === 'cancelado' ? '0 3px 10px rgba(220, 38, 38, 0.25)' : '0 3px 10px rgba(16, 185, 129, 0.25)',
-                whiteSpace: 'nowrap',
-                fontFamily: "'Poppins', sans-serif"
+                justifyContent: 'space-between'
               }}
             >
-              <span>{ped.estado === 'cancelado' ? '🎯 Incentivar Venta' : '💬 Recuperar Venta'}</span>
-              <ChevronRight size={14} color="#ffffff" />
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
+                {ped.estado === 'cancelado' ? (
+                  <Sparkles size={14} color="#ef4444" />
+                ) : (
+                  <MessageSquare size={14} color="#16a34a" />
+                )}
+                <span>{ped.estado === 'cancelado' ? 'Incentivar Venta' : 'Recuperar Venta'}</span>
+              </div>
+              <ChevronRight size={13} color="#94a3b8" />
             </button>
           ) : isExitoso ? (
             <button 
               type="button" 
-              className="pedido-card-btn"
+              className="btn-action-outline pedido-card-btn"
               onClick={() => setSelectedPedido(ped)}
               style={{
                 width: '100%',
                 height: '36px',
                 padding: '0 0.75rem',
-                borderRadius: '10px',
-                border: 'none',
-                background: 'linear-gradient(135deg, #10b981, #059669)',
-                color: '#ffffff',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.35rem',
-                boxShadow: '0 3px 10px rgba(16, 185, 129, 0.25)',
-                whiteSpace: 'nowrap',
-                fontFamily: "'Poppins', sans-serif"
+                justifyContent: 'space-between'
               }}
             >
-              <span>🧾 Ver Factura / Recibo</span>
-              <ChevronRight size={14} color="#ffffff" />
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
+                <FileText size={14} color="#16a34a" />
+                <span>Ver Factura / Recibo</span>
+              </div>
+              <ChevronRight size={13} color="#94a3b8" />
             </button>
           ) : isContra ? (() => {
-            let btnText = '🚚 Despachar pedido';
-            let btnGrad = 'linear-gradient(135deg, #ff5722, #ea580c)';
-            let btnShadow = '0 3px 10px rgba(234, 88, 12, 0.25)';
+            let btnText = 'Despachar pedido';
+            let btnIcon = <Truck size={14} color="#ea580c" />;
 
             if (contraSubStatus === 'confirmado') {
-              btnText = '📦 Despachar Pedido Confirmado';
-              btnGrad = 'linear-gradient(135deg, #059669, #10b981)';
-              btnShadow = '0 3px 10px rgba(16, 185, 129, 0.25)';
+              btnText = 'Despachar Pedido Confirmado';
+              btnIcon = <PackageCheck size={14} color="#16a34a" />;
             } else if (contraSubStatus === 'mensaje_enviado') {
-              btnText = '💬 Ver Chat / Respuestas';
-              btnGrad = 'linear-gradient(135deg, #0284c7, #0ea5e9)';
-              btnShadow = '0 3px 10px rgba(14, 165, 233, 0.25)';
+              btnText = 'Ver Chat / Respuestas';
+              btnIcon = <MessageSquare size={14} color="#0ea5e9" />;
             } else if (contraSubStatus === 'despachado') {
-              btnText = '🚚 Ver Guía de Envío';
-              btnGrad = 'linear-gradient(135deg, #475569, #334155)';
-              btnShadow = '0 3px 10px rgba(51, 65, 85, 0.25)';
+              btnText = 'Ver Guía de Envío';
+              btnIcon = <Truck size={14} color="#64748b" />;
             }
 
             return (
               <button 
                 type="button" 
-                className="pedido-card-btn"
+                className="btn-action-outline pedido-card-btn"
                 onClick={() => setSelectedPedido(ped)}
                 style={{
                   width: '100%',
                   height: '36px',
                   padding: '0 0.75rem',
-                  borderRadius: '10px',
-                  border: 'none',
-                  background: btnGrad,
-                  color: '#ffffff',
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.35rem',
-                  boxShadow: btnShadow,
-                  whiteSpace: 'nowrap',
-                  fontFamily: "'Poppins', sans-serif"
+                  justifyContent: 'space-between'
                 }}
               >
-                <span>{btnText}</span>
-                <ChevronRight size={14} color="#ffffff" />
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
+                  {btnIcon}
+                  <span>{btnText}</span>
+                </div>
+                <ChevronRight size={13} color="#94a3b8" />
               </button>
             );
           })() : ped.pantallazo_url ? (
             <button 
               type="button" 
-              className="pedido-card-btn"
+              className="btn-action-outline pedido-card-btn"
               onClick={() => setSelectedPedido(ped)}
               style={{
                 width: '100%',
                 height: '36px',
                 padding: '0 0.75rem',
-                borderRadius: '10px',
-                border: 'none',
-                background: 'linear-gradient(135deg, #3b82f6, #2563eb)',
-                color: '#ffffff',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.35rem',
-                boxShadow: '0 3px 10px rgba(59, 130, 246, 0.25)',
-                whiteSpace: 'nowrap',
-                fontFamily: "'Poppins', sans-serif"
+                justifyContent: 'space-between'
               }}
             >
-              <span>💳 Verificar Comprobante</span>
-              <ChevronRight size={14} color="#ffffff" />
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
+                <FileCheck size={14} color="#2563eb" />
+                <span>Verificar Comprobante</span>
+              </div>
+              <ChevronRight size={13} color="#94a3b8" />
             </button>
           ) : (
             <button 
               type="button" 
-              className="pedido-card-btn"
+              className="btn-action-outline pedido-card-btn"
               onClick={() => {
                 const cleanPhone = (telefonoCliente || '').replace(/\D/g, '');
                 if (!cleanPhone) { showToast('Teléfono inválido para WhatsApp', 'error'); return; }
@@ -1982,24 +1943,14 @@ export default function Admin() {
                 width: '100%',
                 height: '36px',
                 padding: '0 0.75rem',
-                borderRadius: '10px',
-                border: 'none',
-                background: 'linear-gradient(135deg, #10b981, #059669)',
-                color: '#ffffff',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.35rem',
-                boxShadow: '0 3px 10px rgba(16, 185, 129, 0.25)',
-                whiteSpace: 'nowrap',
-                fontFamily: "'Poppins', sans-serif"
+                justifyContent: 'space-between'
               }}
             >
-              <span>📲 Recordar pago</span>
-              <ChevronRight size={14} color="#ffffff" />
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
+                <MessageSquare size={14} color="#16a34a" />
+                <span>Recordar pago</span>
+              </div>
+              <ChevronRight size={13} color="#94a3b8" />
             </button>
           )}
         </div>
@@ -17567,7 +17518,7 @@ export default function Admin() {
                                   {contraStatus === 'pendiente' && (
                                     <button
                                       type="button"
-                                      style={{ width: '100%', padding: '0.7rem 0.9rem', background: '#25D366', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 600, fontSize: '0.88rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontFamily: "'Poppins', sans-serif", boxShadow: '0 4px 12px rgba(37, 211, 102, 0.25)' }}
+                                      className="btn-action-outline" style={{ width: '100%', padding: '0.7rem 0.9rem', fontSize: '0.85rem' }}
                                       onClick={async () => {
                                         const prodsStr = prodsList.map((p: any) => `${p.cantidad}x ${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ');
                                         const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋 Confirmamos tu pedido de *${prodsStr}* por valor de *$${selectedPedido.total.toLocaleString()} COP* en modalidad *Pago Contra Entrega*. 🚚\n\nDirección registrada: *${selectedPedido.direccion}, ${selectedPedido.ciudad}*\n\n¿Nos confirmas si todos los datos están correctos para programar tu envío hoy mismo? 😊`;
@@ -17582,7 +17533,7 @@ export default function Admin() {
                                         showToast('Mensaje enviado. Esperando confirmación del cliente', 'success');
                                       }}
                                     >
-                                      <MessageSquare size={16} /> Enviar Confirmación al Cliente
+                                      <MessageSquare size={16} color="#16a34a" /> <span>Enviar Confirmación al Cliente</span>
                                     </button>
                                   )}
 
@@ -17617,7 +17568,7 @@ export default function Admin() {
 
                                         <button
                                           type="button"
-                                          style={{ width: '100%', padding: '0.7rem 0.9rem', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 600, fontSize: '0.88rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontFamily: "'Poppins', sans-serif", boxShadow: '0 4px 12px rgba(16, 185, 129, 0.25)' }}
+                                          className="btn-action-outline" style={{ width: '100%', padding: '0.7rem 0.9rem', fontSize: '0.85rem' }}
                                           onClick={async () => {
                                             const nowIso = new Date().toISOString();
                                             await saveOrderAuditLog(selectedPedido.id, {
@@ -17629,13 +17580,13 @@ export default function Admin() {
                                             showToast('¡Pedido marcado como confirmado! ✓', 'success');
                                           }}
                                         >
-                                          <Check size={16} /> Marcar como Confirmado
+                                          <Check size={16} color="#10b981" /> <span>Marcar como Confirmado</span>
                                         </button>
 
                                         <div style={{ display: 'flex', gap: '0.45rem' }}>
                                           <button
                                             type="button"
-                                            style={{ flex: 1, padding: '0.55rem 0.65rem', background: '#ffffff', border: '1.5px solid #cbd5e1', color: '#334155', borderRadius: '10px', cursor: 'pointer', fontWeight: 500, fontSize: '0.76rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
+                                            className="btn-action-outline btn-sm" style={{ flex: 1 }}
                                             onClick={async () => {
                                               const prodsStr = prodsList.map((p: any) => `${p.cantidad}x ${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ');
                                               const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋 Te reenviamos la confirmación de tu pedido de *${prodsStr}* por valor de *$${selectedPedido.total.toLocaleString()} COP* (Pago Contra Entrega). 🚚\n\nDirección registrada: *${selectedPedido.direccion}, ${selectedPedido.ciudad}*\n\n¿Nos confirmas si todo está correcto para programar tu envío hoy mismo? 😊`;
@@ -17650,11 +17601,11 @@ export default function Admin() {
                                               showToast('Mensaje reenviado ✓', 'success');
                                             }}
                                           >
-                                            <RotateCcw size={13} /> Reenviar
+                                            <RotateCcw size={13} color="#3b82f6" /> <span>Reenviar</span>
                                           </button>
                                           <button
                                             type="button"
-                                            style={{ flex: 1, padding: '0.55rem 0.65rem', background: '#25D366', border: 'none', color: '#ffffff', borderRadius: '10px', cursor: 'pointer', fontWeight: 500, fontSize: '0.76rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}
+                                            className="btn-action-outline btn-sm" style={{ flex: 1 }}
                                             onClick={() => {
                                               const clean = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
                                               const target = clean.length === 10 ? '57' + clean : clean;
@@ -17662,7 +17613,7 @@ export default function Admin() {
                                             }}
                                             title="Abrir chat para leer respuestas"
                                           >
-                                            <MessageSquare size={13} /> Ver Chat
+                                            <MessageSquare size={13} color="#16a34a" /> <span>Ver Chat</span>
                                           </button>
                                         </div>
                                       </div>
@@ -17713,7 +17664,7 @@ export default function Admin() {
                                             showToast('¡Despacho notificado exitosamente! 🚚', 'success');
                                           }}
                                         >
-                                          <Truck size={16} /> Notificar Despacho
+                                          <Truck size={16} color={hasGuiaOrFoto ? "var(--primary-color, #0ea5e9)" : "#94a3b8"} /> <span>Notificar Despacho</span>
                                         </button>
                                         {!hasGuiaOrFoto && (
                                           <span style={{ fontSize: '0.7rem', color: '#64748b', textAlign: 'center', fontWeight: 400 }}>
@@ -17728,7 +17679,7 @@ export default function Admin() {
                                   {contraStatus === 'despachado' && (
                                     <button
                                       type="button"
-                                      style={{ width: '100%', padding: '0.7rem 0.9rem', background: '#ea580c', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 600, fontSize: '0.88rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontFamily: "'Poppins', sans-serif", boxShadow: '0 4px 12px rgba(234, 88, 12, 0.25)' }}
+                                      className="btn-action-outline" style={{ width: '100%', padding: '0.7rem 0.9rem', fontSize: '0.85rem' }}
                                       onClick={async () => {
                                         await handleAprobarPago(selectedPedido);
                                         const nowIso = new Date().toISOString();
@@ -17741,7 +17692,7 @@ export default function Admin() {
                                         showToast('¡Pedido completado y recaudado! ✅', 'success');
                                       }}
                                     >
-                                      <Check size={16} /> Confirmar Entregado y Pagado
+                                      <Check size={16} color="#16a34a" /> <span>Confirmar Entregado y Pagado</span>
                                     </button>
                                   )}
 
@@ -17762,7 +17713,7 @@ export default function Admin() {
                                   {contraStatus !== 'entregado_pagado' && contraStatus !== 'cancelado' && (
                                     <button
                                       type="button"
-                                      style={{ width: '100%', padding: '0.55rem', background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', marginTop: '0.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', fontFamily: "'Poppins', sans-serif" }}
+                                      className="btn-action-outline" style={{ width: '100%', padding: '0.55rem', marginTop: '0.25rem' }}
                                       onClick={async () => {
                                         handleCancelarPedido(selectedPedido.id);
                                         const nowIso = new Date().toISOString();
@@ -17775,7 +17726,7 @@ export default function Admin() {
                                         setSelectedPedido(prev => prev ? { ...prev, estado: 'cancelado' } : null);
                                       }}
                                     >
-                                      <Trash2 size={14} /> Cancelar Pedido
+                                      <Trash2 size={14} color="#ef4444" /> <span>Cancelar Pedido</span>
                                     </button>
                                   )}
                                 </div>
@@ -17805,7 +17756,7 @@ export default function Admin() {
                                       }}
                                       onClick={() => handleAprobarPago(selectedPedido)}
                                     >
-                                      <CheckCircle size={16} /> <span>Aprobar y Confirmar Pago</span>
+                                      <CheckCircle size={16} color="#10b981" /> <span>Aprobar y Confirmar Pago</span>
                                     </button>
                                   )}
 
@@ -17855,7 +17806,7 @@ export default function Admin() {
                                         window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
                                       }}
                                     >
-                                      <MessageSquare size={14} /> <span>{selectedPedido.pantallazo_url ? 'Escribir por WhatsApp' : 'Cobrar por WhatsApp'}</span>
+                                      <MessageSquare size={15} color="#16a34a" /> <span>{selectedPedido.pantallazo_url ? 'Escribir por WhatsApp' : 'Cobrar por WhatsApp'}</span>
                                     </button>
 
                                     <button
@@ -17885,7 +17836,7 @@ export default function Admin() {
                                         window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
                                       }}
                                     >
-                                      <Truck size={15} color="var(--primary-color, #0ea5e9)" /> <span>Despachar</span>
+                                      <Truck size={15} color="#0ea5e9" /> <span>Despachar</span>
                                     </button>
                                   </div>
 
@@ -17917,7 +17868,7 @@ export default function Admin() {
                                         setSelectedPedido(prev => prev ? { ...prev, estado: 'cancelado' } : null);
                                       }}
                                     >
-                                      <XCircle size={14} /> <span>Cancelar Pedido</span>
+                                      <XCircle size={14} color="#ef4444" /> <span>Cancelar Pedido</span>
                                     </button>
                                   )}
                                 </div>
