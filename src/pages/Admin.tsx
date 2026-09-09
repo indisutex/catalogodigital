@@ -1174,83 +1174,81 @@ export default function Admin() {
           cursor: 'grab'
         }}
       >
-        {/* ── HEADER BLOCK ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', marginBottom: '0.65rem' }}>
-          {/* Metadata Row: Purge countdown (only for Cancelados) & Timestamp */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.3rem' }}>
-            {ped.estado === 'cancelado' ? (
-              (() => {
-                const RETENTION_MS = 3 * 24 * 60 * 60 * 1000;
-                const now = Date.now();
-                const created = new Date(ped.created_at || now).getTime();
-                const rem = (created + RETENTION_MS) - now;
-                if (rem <= 0) return <div />;
-                const d = Math.floor(rem / (1000 * 60 * 60 * 24));
-                const h = Math.floor((rem % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const badgeTxt = d > 0 ? `⏳ Se borra en ${d}d ${h}h` : `⏳ Se borra en ${Math.max(1, h)}h`;
-                return (
-                  <span style={{ fontSize: '0.66rem', color: '#991b1b', background: '#fee2e2', padding: '0.1rem 0.4rem', borderRadius: '6px', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
-                    {badgeTxt}
-                  </span>
-                );
-              })()
-            ) : <div />}
-
-            <span className="pedido-card-time" style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: 400 }}>
-              🕒 {timeLabel}
-            </span>
+        {/* ── HEADER BLOCK (Compact & Clean without redundant status pills) ── */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '0.45rem', marginBottom: '0.55rem' }}>
+          {/* Customer Info (Avatar + Name + Phone) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', minWidth: 0, flex: 1 }}>
+            <div className="pedido-card-avatar" style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              background: '#fff7ed',
+              border: '1.5px solid #ffedd5',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              color: '#ea580c',
+              flexShrink: 0
+            }}>
+              {nombreCliente.charAt(0).toUpperCase()}
+            </div>
+            <div style={{ minWidth: 0, flex: 1 }}>
+              <h4 className="pedido-card-name" style={{ margin: 0, fontSize: '0.86rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Poppins', sans-serif" }} title={nombreCliente}>
+                {nombreCliente}
+              </h4>
+              <p className="pedido-card-phone" style={{ margin: '0.1rem 0 0 0', fontSize: '0.73rem', color: '#64748b', fontWeight: 400, display: 'flex', alignItems: 'center', gap: '0.25rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Poppins', sans-serif" }}>
+                <span>📞 {telefonoCliente || 'Sin número'}</span>
+                {(() => {
+                  const clean = (telefonoCliente || '').replace(/\D/g, '');
+                  if (clean && clean.length !== 10) {
+                    return (
+                      <span style={{ fontSize: '0.62rem', color: '#dc2626', background: '#fee2e2', padding: '0.04rem 0.3rem', borderRadius: '4px', fontWeight: 500, fontFamily: "'Poppins', sans-serif", flexShrink: 0 }}>
+                        {clean.length < 10 ? `⚠️ (${clean.length}/10)` : `⚠️ ${clean.length} d`}
+                      </span>
+                    );
+                  }
+                  return null;
+                })()}
+              </p>
+            </div>
           </div>
 
-          {/* Line 2: Customer Info & Advisor Pill */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.45rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', minWidth: 0, flex: 1 }}>
-              <div className="pedido-card-avatar" style={{
-                width: '32px',
-                height: '32px',
-                borderRadius: '50%',
-                background: '#fff7ed',
-                border: '1.5px solid #ffedd5',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '0.85rem',
-                fontWeight: 600,
-                color: '#ea580c',
-                flexShrink: 0
-              }}>
-                {nombreCliente.charAt(0).toUpperCase()}
-              </div>
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <h4 className="pedido-card-name" style={{ margin: 0, fontSize: '0.86rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Poppins', sans-serif" }} title={nombreCliente}>
-                  {nombreCliente}
-                </h4>
-                <p className="pedido-card-phone" style={{ margin: '0.1rem 0 0 0', fontSize: '0.73rem', color: '#64748b', fontWeight: 400, display: 'flex', alignItems: 'center', gap: '0.25rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Poppins', sans-serif" }}>
-                  <span>📞 {telefonoCliente || 'Sin número'}</span>
-                  {(() => {
-                    const clean = (telefonoCliente || '').replace(/\D/g, '');
-                    if (clean && clean.length !== 10) {
-                      return (
-                        <span style={{ fontSize: '0.62rem', color: '#dc2626', background: '#fee2e2', padding: '0.04rem 0.3rem', borderRadius: '4px', fontWeight: 500, fontFamily: "'Poppins', sans-serif", flexShrink: 0 }}>
-                          {clean.length < 10 ? `⚠️ (${clean.length}/10)` : `⚠️ ${clean.length} d`}
-                        </span>
-                      );
-                    }
-                    return null;
-                  })()}
-                </p>
-              </div>
-            </div>
-
+          {/* Right Meta: Advisor Pill & Time */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem', flexShrink: 0 }}>
             {/* Asesor */}
-            <div className="pedido-card-advisor" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: '#f8fafc', padding: '0.15rem 0.4rem', borderRadius: '8px', border: '1px solid #e2e8f0', flexShrink: 0, maxWidth: '95px' }} title={`Asesor: ${adv.nombre}`}>
+            <div className="pedido-card-advisor" style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: '#f8fafc', padding: '0.15rem 0.4rem', borderRadius: '8px', border: '1px solid #e2e8f0', maxWidth: '95px' }} title={`Asesor: ${adv.nombre}`}>
               {adv.foto_url ? (
-                <img src={adv.foto_url} alt="" style={{ width: '16px', height: '16px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                <img src={adv.foto_url} alt="" style={{ width: '15px', height: '15px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
               ) : (
-                <div style={{ width: '16px', height: '16px', borderRadius: '50%', background: '#e0e7ff', color: '#4338ca', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.62rem', fontWeight: 600, flexShrink: 0 }}>
+                <div style={{ width: '15px', height: '15px', borderRadius: '50%', background: '#e0e7ff', color: '#4338ca', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', fontWeight: 600, flexShrink: 0 }}>
                   {adv.nombre.charAt(0).toUpperCase()}
                 </div>
               )}
               <span style={{ fontSize: '0.68rem', fontWeight: 500, color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Poppins', sans-serif" }}>{adv.nombre}</span>
+            </div>
+
+            {/* Time / Purge label */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              {ped.estado === 'cancelado' && (() => {
+                const RETENTION_MS = 3 * 24 * 60 * 60 * 1000;
+                const now = Date.now();
+                const created = new Date(ped.created_at || now).getTime();
+                const rem = (created + RETENTION_MS) - now;
+                if (rem <= 0) return null;
+                const d = Math.floor(rem / (1000 * 60 * 60 * 24));
+                const h = Math.floor((rem % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const badgeTxt = d > 0 ? `⏳ ${d}d ${h}h` : `⏳ ${Math.max(1, h)}h`;
+                return (
+                  <span style={{ fontSize: '0.62rem', color: '#991b1b', background: '#fee2e2', padding: '0.04rem 0.3rem', borderRadius: '4px', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
+                    {badgeTxt}
+                  </span>
+                );
+              })()}
+              <span className="pedido-card-time" style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 400 }}>
+                🕒 {timeLabel}
+              </span>
             </div>
           </div>
         </div>
