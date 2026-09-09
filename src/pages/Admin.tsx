@@ -3266,13 +3266,17 @@ export default function Admin() {
         bestConfig.metodos_pago = cleanMetodos;
         if (extraFromMetodos.activar_minijuegos !== undefined) bestConfig.activar_minijuegos = extraFromMetodos.activar_minijuegos;
         if (extraFromMetodos.descuento_mayor_carrito_activo !== undefined) bestConfig.descuento_mayor_carrito_activo = extraFromMetodos.descuento_mayor_carrito_activo;
+        if (extraFromMetodos.tematica_navidad !== undefined) bestConfig.tematica_navidad = extraFromMetodos.tematica_navidad;
 
         try {
+          const globalNavidad = localStorage.getItem('config_extra_global_tematica_navidad');
+          if (globalNavidad !== null) bestConfig.tematica_navidad = globalNavidad === 'true';
           const localExtra = localStorage.getItem(`config_extra_${bestConfig.id}`);
           if (localExtra) {
             const parsed = JSON.parse(localExtra);
             if (parsed.activar_minijuegos !== undefined) bestConfig.activar_minijuegos = parsed.activar_minijuegos;
             if (parsed.descuento_mayor_carrito_activo !== undefined) bestConfig.descuento_mayor_carrito_activo = parsed.descuento_mayor_carrito_activo;
+            if (parsed.tematica_navidad !== undefined) bestConfig.tematica_navidad = parsed.tematica_navidad;
             if (!bestConfig.impresora_termica_ancho) bestConfig.impresora_termica_ancho = parsed.impresora_termica_ancho;
             if (!bestConfig.formato_ticket_pos) bestConfig.formato_ticket_pos = parsed.formato_ticket_pos;
             if (!bestConfig.tarjeta_imagen_fit) bestConfig.tarjeta_imagen_fit = parsed.tarjeta_imagen_fit;
@@ -11308,6 +11312,7 @@ export default function Admin() {
                     const extraPayloadJson = JSON.stringify({
                       activar_minijuegos: configuracion.activar_minijuegos ?? true,
                       descuento_mayor_carrito_activo: configuracion.descuento_mayor_carrito_activo ?? true,
+                      tematica_navidad: configuracion.tematica_navidad ?? false,
                       impresora_termica_ancho: configuracion.impresora_termica_ancho || '58mm',
                       formato_ticket_pos: configuracion.formato_ticket_pos || 'termico',
                       google_maps_url: configuracion.google_maps_url || ''
@@ -11332,6 +11337,7 @@ export default function Admin() {
                       preguntar_tipo_cliente: configuracion.preguntar_tipo_cliente || false,
                       descuento_mayor_carrito_activo: configuracion.descuento_mayor_carrito_activo ?? true,
                       activar_minijuegos: configuracion.activar_minijuegos ?? true,
+                      tematica_navidad: configuracion.tematica_navidad ?? false,
                       metodos_pago: `${baseMetodos}__EXTRA_CONFIG__${extraPayloadJson}`,
                       impresora_termica_ancho: configuracion.impresora_termica_ancho || '58mm',
                       formato_ticket_pos: configuracion.formato_ticket_pos || 'termico',
@@ -11343,15 +11349,18 @@ export default function Admin() {
                     try {
                       const currentTenant = configuracion.tenant_id || getTenantId();
                       localStorage.setItem('config_extra_global_activar_minijuegos', String(updateData.activar_minijuegos));
+                      localStorage.setItem('config_extra_global_tematica_navidad', String(updateData.tematica_navidad));
                       localStorage.setItem(`config_extra_tenant_${currentTenant}`, JSON.stringify({
                         ...(JSON.parse(localStorage.getItem(`config_extra_tenant_${currentTenant}`) || '{}')),
-                        activar_minijuegos: updateData.activar_minijuegos
+                        activar_minijuegos: updateData.activar_minijuegos,
+                        tematica_navidad: updateData.tematica_navidad
                       }));
                       localStorage.setItem(`config_extra_${configuracion.id}`, JSON.stringify({
                         impresora_termica_ancho: updateData.impresora_termica_ancho,
                         formato_ticket_pos: updateData.formato_ticket_pos,
                         descuento_mayor_carrito_activo: updateData.descuento_mayor_carrito_activo,
                         activar_minijuegos: updateData.activar_minijuegos,
+                        tematica_navidad: updateData.tematica_navidad,
                         tarjeta_imagen_fit: updateData.tarjeta_imagen_fit,
                         tarjeta_imagen_posicion: updateData.tarjeta_imagen_posicion,
                         tarjeta_imagen_aspecto: updateData.tarjeta_imagen_aspecto,
@@ -11758,6 +11767,7 @@ export default function Admin() {
                           </div>
 
                           {/* Link Ganar Dinero */}
+                          {/* Enlace Trabaja con Nosotros */}
                           <div className="form-field">
                             <label>Enlace 'Trabaja con Nosotros' (Opcional)</label>
                             <input 
@@ -11765,6 +11775,46 @@ export default function Admin() {
                               onChange={e => setConfiguracion({ ...configuracion, link_ganar_dinero: e.target.value })} 
                               placeholder="https://..."
                             />
+                          </div>
+
+                          {/* Temática de Navidad */}
+                          <div className="form-field full" style={{ background: configuracion.tematica_navidad ? '#fef2f2' : '#f8fafc', border: configuracion.tematica_navidad ? '1.5px solid #fca5a5' : '1px solid #e2e8f0', borderRadius: '12px', padding: '0.85rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', transition: 'all 0.2s' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                              <span style={{ fontSize: '1.5rem' }}>🎄</span>
+                              <div>
+                                <div style={{ fontSize: '0.88rem', fontWeight: 600, color: configuracion.tematica_navidad ? '#991b1b' : '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
+                                  Temática Navideña en el Catálogo Digital
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: '#64748b', fontFamily: "'Poppins', sans-serif" }}>
+                                  Efecto de copos de nieve cayendo, gorrito festivo en el logo y ambientación de temporada.
+                                </div>
+                              </div>
+                            </div>
+                            <label style={{ display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
+                              <input 
+                                type="checkbox" 
+                                checked={configuracion.tematica_navidad ?? false} 
+                                onChange={e => {
+                                  const val = e.target.checked;
+                                  setConfiguracion({ ...configuracion, tematica_navidad: val });
+                                  try {
+                                    const tenant = configuracion.tenant_id || getTenantId();
+                                    localStorage.setItem('config_extra_global_tematica_navidad', String(val));
+                                    localStorage.setItem(`config_extra_tenant_${tenant}`, JSON.stringify({
+                                      ...(JSON.parse(localStorage.getItem(`config_extra_tenant_${tenant}`) || '{}')),
+                                      tematica_navidad: val
+                                    }));
+                                    if (configuracion.id) {
+                                      localStorage.setItem(`config_extra_${configuracion.id}`, JSON.stringify({
+                                        ...(JSON.parse(localStorage.getItem(`config_extra_${configuracion.id}`) || '{}')),
+                                        tematica_navidad: val
+                                      }));
+                                    }
+                                  } catch (err) {}
+                                }} 
+                                style={{ width: '1.3rem', height: '1.3rem', cursor: 'pointer', accentColor: '#dc2626' }}
+                              />
+                            </label>
                           </div>
                         </div>
                       </div>
@@ -12152,6 +12202,32 @@ export default function Admin() {
                               style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer', accentColor: configuracion.color_primario || '#6366f1' }}
                             />
                             🎮 Activar Centro de Minijuegos & Premios en el Catálogo Digital
+                          </label>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', margin: 0 }}>
+                            <input 
+                              type="checkbox" 
+                              checked={configuracion.tematica_navidad ?? false} 
+                              onChange={e => {
+                                const val = e.target.checked;
+                                setConfiguracion({ ...configuracion, tematica_navidad: val });
+                                try {
+                                  const tenant = configuracion.tenant_id || getTenantId();
+                                  localStorage.setItem('config_extra_global_tematica_navidad', String(val));
+                                  localStorage.setItem(`config_extra_tenant_${tenant}`, JSON.stringify({
+                                    ...(JSON.parse(localStorage.getItem(`config_extra_tenant_${tenant}`) || '{}')),
+                                    tematica_navidad: val
+                                  }));
+                                  if (configuracion.id) {
+                                    localStorage.setItem(`config_extra_${configuracion.id}`, JSON.stringify({
+                                      ...(JSON.parse(localStorage.getItem(`config_extra_${configuracion.id}`) || '{}')),
+                                      tematica_navidad: val
+                                    }));
+                                  }
+                                } catch (err) {}
+                              }} 
+                              style={{ width: '1.2rem', height: '1.2rem', cursor: 'pointer', accentColor: '#dc2626' }}
+                            />
+                            🎄 Activar Temática Navideña en el Catálogo Digital (Efecto de copos de nieve, ambientación y detalles festivos)
                           </label>
                         </div>
                       </div>

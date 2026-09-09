@@ -80,6 +80,7 @@ export interface Configuracion {
   preguntar_tipo_cliente?: boolean;
   descuento_mayor_carrito_activo?: boolean;
   activar_minijuegos?: boolean;
+  tematica_navidad?: boolean;
   admin_nombre?: string;
   admin_foto_url?: string;
   admin_pin?: string;

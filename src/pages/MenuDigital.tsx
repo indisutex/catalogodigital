@@ -60,6 +60,81 @@ const toTitleCase = (str?: string): string => {
     .join(' ');
 };
 
+const SnowfallEffect = () => {
+  const snowflakes = useMemo(() => {
+    return Array.from({ length: 30 }).map((_, i) => ({
+      id: i,
+      left: `${((i * 3.4) % 100).toFixed(1)}%`,
+      size: `${Math.floor(4 + (i % 5) * 2)}px`,
+      duration: `${(6 + (i % 6) * 1.6).toFixed(1)}s`,
+      delay: `${((i % 7) * 0.8).toFixed(1)}s`,
+      opacity: (0.45 + (i % 4) * 0.15).toFixed(2),
+      blur: i % 4 === 0 ? '1px' : '0px'
+    }));
+  }, []);
+
+  return (
+    <div 
+      className="snowfall-container" 
+      aria-hidden="true"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        pointerEvents: 'none',
+        zIndex: 9999,
+        overflow: 'hidden'
+      }}
+    >
+      <style>{`
+        @keyframes snowfallAnim {
+          0% {
+            transform: translateY(-20px) translateX(0);
+            opacity: 0;
+          }
+          10% {
+            opacity: 0.9;
+          }
+          90% {
+            opacity: 0.9;
+          }
+          100% {
+            transform: translateY(105vh) translateX(30px);
+            opacity: 0.2;
+          }
+        }
+        .snow-particle {
+          position: absolute;
+          top: -20px;
+          background: #ffffff;
+          border-radius: 50%;
+          box-shadow: 0 0 5px rgba(255, 255, 255, 0.85);
+          animation-name: snowfallAnim;
+          animation-iteration-count: infinite;
+          animation-timing-function: linear;
+        }
+      `}</style>
+      {snowflakes.map(flake => (
+        <span
+          key={flake.id}
+          className="snow-particle"
+          style={{
+            left: flake.left,
+            width: flake.size,
+            height: flake.size,
+            opacity: flake.opacity,
+            filter: flake.blur !== '0px' ? `blur(${flake.blur})` : 'none',
+            animationDuration: flake.duration,
+            animationDelay: flake.delay
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
 export default function MenuDigital() {
   const [productos, setProductos] = useState<Producto[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -450,10 +525,14 @@ export default function MenuDigital() {
           try {
             const globalMinijuegos = localStorage.getItem('config_extra_global_activar_minijuegos');
             if (globalMinijuegos !== null) extraConfig.activar_minijuegos = globalMinijuegos === 'true';
+            const globalNavidad = localStorage.getItem('config_extra_global_tematica_navidad');
+            if (globalNavidad !== null) extraConfig.tematica_navidad = globalNavidad === 'true';
+
             const tenantExtra = localStorage.getItem(`config_extra_tenant_${targetTenant}`);
             if (tenantExtra) {
               const parsed = JSON.parse(tenantExtra);
               if (parsed.activar_minijuegos !== undefined) extraConfig.activar_minijuegos = parsed.activar_minijuegos;
+              if (parsed.tematica_navidad !== undefined) extraConfig.tematica_navidad = parsed.tematica_navidad;
             }
           } catch (e) {}
           setConfiguracion({ ...bestConfig, ...extraConfig, metodos_pago: cleanMetodos });
@@ -1713,6 +1792,7 @@ export default function MenuDigital() {
 
   return (
     <div className="menu-app-container">
+      {Boolean(configuracion?.tematica_navidad) && <SnowfallEffect />}
       <div className={`menu-app-header ${isMediaVideo(mayoristaBranding?.video || configuracion?.video_hero_url) ? 'has-video' : ''}`} style={{ position: 'relative', overflow: 'visible' }}>
         <div className="hero-media-wrap" style={{ position: 'relative', overflow: 'visible', height: 'clamp(240px, 60vw, 360px)', width: '100%' }}>
           {/* ── CLIPPED VIDEO / IMAGE BACKGROUND ── */}
@@ -1866,7 +1946,24 @@ export default function MenuDigital() {
           </div>
 
           {/* ── CENTRAL OVERLAPPING LOGO (HERBARIA STYLE - ANCHORED DIRECTLY TO HERO MEDIA BOTTOM) ── */}
-          <div className="hero-center-logo">
+          <div className="hero-center-logo" style={{ position: 'relative' }}>
+            {Boolean(configuracion?.tematica_navidad) && (
+              <span 
+                style={{ 
+                  position: 'absolute', 
+                  top: '-15px', 
+                  right: '-10px', 
+                  fontSize: '1.65rem', 
+                  zIndex: 12, 
+                  pointerEvents: 'none', 
+                  filter: 'drop-shadow(0 2px 5px rgba(0,0,0,0.35))',
+                  transform: 'rotate(18deg)'
+                }} 
+                title="¡Feliz Navidad!"
+              >
+                🎅
+              </span>
+            )}
             {(() => {
               const logoSrc = mayoristaBranding?.logo || configuracion?.logo_url || DEFAULT_LOGOS[getTenantId()];
               if (logoSrc && !logoError) {
