@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
-import { Download, Copy, Check, QrCode, Sparkles, ExternalLink, Image as ImageIcon, Palette, Printer } from 'lucide-react';
+import { Download, Copy, Check, QrCode, Sparkles, ExternalLink, Image as ImageIcon, Palette, Printer, Upload, Loader2 } from 'lucide-react';
 import type { Configuracion } from '../types';
 import { getTenantId } from '../lib/supabase';
 
@@ -27,8 +27,10 @@ export const QRCodeGeneratorModule: React.FC<QRCodeGeneratorModuleProps> = ({
   const [customLogoUrl, setCustomLogoUrl] = useState<string>(configuracion?.logo_url || '');
   const [copied, setCopied] = useState<boolean>(false);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [isDownloading, setIsDownloading] = useState<boolean>(false);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // Lista de negocios para selección rápida
   const knownStores = [
@@ -55,84 +57,160 @@ export const QRCodeGeneratorModule: React.FC<QRCodeGeneratorModuleProps> = ({
     }
   };
 
-  // Función para dibujar el QR en el canvas con el logo en el centro
+  // Cargar imagen de forma asíncrona con soporte de CORS y fallback
+  const loadImage = (url: string): Promise<HTMLImageElement> => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      if (!url.startsWith('data:')) {
+        img.crossOrigin = 'anonymous';
+      }
+      img.onload = () => resolve(img);
+      img.onerror = () => {
+        if (!url.startsWith('data:')) {
+          const fallback = new Image();
+          fallback.onload = () => resolve(fallback);
+          fallback.onerror = (e) => reject(e);
+          fallback.src = url;
+        } else {
+          reject(new Error('No se pudo cargar la imagen del logo'));
+        }
+      };
+      img.src = url;
+    });
+  };
+
+  // Función unificada para dibujar el QR + Logo en cualquier canvas con resolución nativa
+  const drawQRToCanvas = async (canvas: HTMLCanvasElement, size: number) => {
+    canvas.width = size;
+    canvas.height = size;
+
+    // 1. Generar código QR con corrección de error 'H' (30% de redundancia para soportar logo central sin perder legibilidad)
+    await QRCode.toCanvas(canvas, targetUrl.trim(), {
+      width: size,
+      margin: 2,
+      errorCorrectionLevel: 'H',
+      color: {
+        dark: qrColor || '#000000',
+        light: qrBgColor || '#ffffff'
+      }
+    });
+
+    // 2. Si se incluye logo, dibujarlo en el centro con la máxima calidad y nitidez
+    const logoToUse = customLogoUrl || configuracion?.logo_url;
+    if (includeLogo && logoToUse) {
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        try {
+          const img = await loadImage(logoToUse);
+
+          const logoBoxSize = Math.round(size * 0.26); // 26% del tamaño del QR
+          const center = size / 2;
+          const radius = logoBoxSize / 2;
+          const padding = Math.max(3, Math.round(size * 0.012)); // Margen blanco protector
+          const borderWidth = Math.max(2, Math.round(size * 0.007)); // Aro temático
+
+          // A) Sombra suave elegante sobre el fondo exterior (aislada en su propio bloque)
+          ctx.save();
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.16)';
+          ctx.shadowBlur = Math.round(size * 0.022);
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = Math.round(size * 0.005);
+          ctx.beginPath();
+          ctx.arc(center, center, radius + padding, 0, Math.PI * 2);
+          ctx.fillStyle = '#ffffff';
+          ctx.fill();
+          ctx.restore(); // Restaura para que ninguna sombra manche el logo
+
+          // B) Círculo blanco base y aro del color primario
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(center, center, radius + padding, 0, Math.PI * 2);
+          ctx.fillStyle = '#ffffff';
+          ctx.fill();
+          ctx.lineWidth = borderWidth;
+          ctx.strokeStyle = qrColor || '#6366f1';
+          ctx.stroke();
+          ctx.restore();
+
+          // C) Dibujo del logo con suavizado de imagen bicúbico en alta resolución
+          ctx.save();
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
+
+          // Recorte circular del logo
+          ctx.beginPath();
+          ctx.arc(center, center, radius, 0, Math.PI * 2);
+          ctx.clip();
+
+          // Fondo blanco dentro del recorte por si la imagen tiene partes transparentes
+          ctx.fillStyle = '#ffffff';
+          ctx.fill();
+
+          // Calcular proporciones exactas para que el logo nunca se estire ni se pixele
+          const naturalW = img.naturalWidth || img.width || 1;
+          const naturalH = img.naturalHeight || img.height || 1;
+          const aspect = naturalW / naturalH;
+
+          let drawW = radius * 2;
+          let drawH = radius * 2;
+          let drawX = center - radius;
+          let drawY = center - radius;
+
+          if (aspect > 1) {
+            drawH = drawW / aspect;
+            drawY = center - drawH / 2;
+          } else if (aspect < 1) {
+            drawW = drawH * aspect;
+            drawX = center - drawW / 2;
+          }
+
+          ctx.drawImage(img, drawX, drawY, drawW, drawH);
+          ctx.restore();
+        } catch (err) {
+          console.warn('No se pudo cargar la imagen del logo en el QR:', err);
+        }
+      }
+    }
+  };
+
+  // Renderizar la vista previa en el canvas (1200px nativos para Retina / pantallas 4K)
   const renderQRCode = async () => {
     if (!canvasRef.current || !targetUrl.trim()) return;
     setIsGenerating(true);
 
     try {
-      const canvas = canvasRef.current;
-      
-      // 1. Generar código QR con nivel de corrección H (30% de redundancia para soportar logo central)
-      await QRCode.toCanvas(canvas, targetUrl.trim(), {
-        width: 480,
-        margin: 2,
-        errorCorrectionLevel: 'H',
-        color: {
-          dark: qrColor || '#000000',
-          light: qrBgColor || '#ffffff'
-        }
-      });
-
-      // 2. Si tiene logo, dibujarlo en el centro con un marco circular blanco nítido
-      const logoToUse = customLogoUrl || configuracion?.logo_url;
-      if (includeLogo && logoToUse) {
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-
-          img.onload = () => {
-            const size = canvas.width;
-            const logoBoxSize = size * 0.25; // 25% del tamaño del QR
-            const center = size / 2;
-            const radius = logoBoxSize / 2;
-
-            ctx.save();
-
-            // Fondo blanco circular para que el logo no interfiera con los módulos QR
-            ctx.beginPath();
-            ctx.arc(center, center, radius + 5, 0, Math.PI * 2);
-            ctx.fillStyle = '#ffffff';
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
-            ctx.shadowBlur = 8;
-            ctx.fill();
-
-            // Borde con el color temático del negocio
-            ctx.lineWidth = 3;
-            ctx.strokeStyle = qrColor || '#6366f1';
-            ctx.stroke();
-
-            // Recorte circular para el logo
-            ctx.beginPath();
-            ctx.arc(center, center, radius, 0, Math.PI * 2);
-            ctx.clip();
-
-            // Dibujar imagen centrada
-            ctx.drawImage(img, center - radius, center - radius, logoBoxSize, logoBoxSize);
-            ctx.restore();
-            setIsGenerating(false);
-          };
-
-          img.onerror = () => {
-            console.warn('No se pudo cargar la imagen del logo en el QR.');
-            setIsGenerating(false);
-          };
-
-          img.src = logoToUse;
-        }
-      } else {
-        setIsGenerating(false);
-      }
+      await drawQRToCanvas(canvasRef.current, 1200);
     } catch (err) {
       console.error('Error generando QR:', err);
+    } finally {
       setIsGenerating(false);
     }
   };
 
   useEffect(() => {
-    renderQRCode();
+    let isMounted = true;
+    const timer = setTimeout(() => {
+      if (isMounted) renderQRCode();
+    }, 120);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
   }, [targetUrl, qrColor, qrBgColor, includeLogo, customLogoUrl]);
+
+  // Manejar carga local de archivo de logo
+  const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setCustomLogoUrl(event.target.result as string);
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Copiar URL al portapapeles
   const handleCopyLink = () => {
@@ -142,30 +220,32 @@ export const QRCodeGeneratorModule: React.FC<QRCodeGeneratorModuleProps> = ({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // Descargar imagen PNG en alta resolución (1024x1024 px)
-  const handleDownloadPNG = () => {
-    if (!canvasRef.current) return;
-    const canvas = canvasRef.current;
-    
-    // Crear canvas temporal en alta definición (1024px)
-    const exportCanvas = document.createElement('canvas');
-    exportCanvas.width = 1024;
-    exportCanvas.height = 1024;
-    const expCtx = exportCanvas.getContext('2d');
-    if (!expCtx) return;
+  // Descargar imagen PNG en Ultra Alta Resolución (2048x2048 px o 1024x1024 px)
+  const handleDownloadPNG = async (resolution: number = 2048) => {
+    if (!targetUrl.trim()) return;
+    setIsDownloading(true);
 
-    // Dibujar el QR escalado nítidamente
-    expCtx.imageSmoothingEnabled = false;
-    expCtx.drawImage(canvas, 0, 0, 1024, 1024);
+    try {
+      const exportCanvas = document.createElement('canvas');
+      await drawQRToCanvas(exportCanvas, resolution);
 
-    const link = document.createElement('a');
-    const safeName = (configuracion?.nombre_negocio || selectedTenant || 'catalogo').toLowerCase().replace(/[^a-z0-9]/g, '_');
-    link.download = `QR_${safeName}.png`;
-    link.href = exportCanvas.toDataURL('image/png');
-    link.click();
+      const link = document.createElement('a');
+      const safeName = (configuracion?.nombre_negocio || selectedTenant || 'catalogo')
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '_');
+      
+      const tag = resolution >= 2048 ? 'UltraHD' : 'HD';
+      link.download = `QR_${safeName}_${tag}.png`;
+      link.href = exportCanvas.toDataURL('image/png');
+      link.click();
+    } catch (err) {
+      console.error('Error descargando QR en alta resolución:', err);
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
-  // Imprimir tarjeta de mostrador con el QR
+  // Imprimir tarjeta de mostrador con el QR en alta definición
   const handlePrintCard = () => {
     if (!canvasRef.current) return;
     const qrDataUrl = canvasRef.current.toDataURL('image/png');
@@ -450,15 +530,55 @@ export const QRCodeGeneratorModule: React.FC<QRCodeGeneratorModuleProps> = ({
             </label>
 
             {includeLogo && (
-              <div style={{ marginTop: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                <label style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 500 }}>
-                  URL de la imagen del logo:
-                </label>
+              <div style={{ marginTop: '0.85rem', display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <label style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 500 }}>
+                    Imagen del logo central:
+                  </label>
+                  <label
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      padding: '0.35rem 0.65rem',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      background: '#ffffff',
+                      color: '#0f172a',
+                      fontSize: '0.74rem',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      fontFamily: "'Poppins', sans-serif"
+                    }}
+                  >
+                    <Upload size={13} /> Subir archivo desde mi equipo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      ref={fileInputRef}
+                      onChange={handleLogoFileUpload}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                </div>
+
                 <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                   {customLogoUrl ? (
-                    <img src={customLogoUrl} alt="Logo" style={{ width: '36px', height: '36px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #cbd5e1' }} />
+                    <img
+                      src={customLogoUrl}
+                      alt="Logo"
+                      style={{
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '8px',
+                        objectFit: 'contain',
+                        background: '#ffffff',
+                        border: '1px solid #cbd5e1',
+                        padding: '2px'
+                      }}
+                    />
                   ) : (
-                    <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: '38px', height: '38px', borderRadius: '8px', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <ImageIcon size={16} color="#94a3b8" />
                     </div>
                   )}
@@ -466,10 +586,32 @@ export const QRCodeGeneratorModule: React.FC<QRCodeGeneratorModuleProps> = ({
                     type="url"
                     value={customLogoUrl}
                     onChange={(e) => setCustomLogoUrl(e.target.value)}
-                    placeholder="https://.../logo.png"
-                    style={{ flex: 1, padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.8rem' }}
+                    placeholder="URL de imagen del logo (https://.../logo.png)"
+                    style={{ flex: 1, padding: '0.55rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.8rem', fontFamily: "'Poppins', sans-serif" }}
                   />
+                  {customLogoUrl && customLogoUrl !== configuracion?.logo_url && (
+                    <button
+                      type="button"
+                      onClick={() => setCustomLogoUrl(configuracion?.logo_url || '')}
+                      style={{
+                        padding: '0.45rem 0.65rem',
+                        borderRadius: '8px',
+                        border: '1px solid #e2e8f0',
+                        background: '#f8fafc',
+                        fontSize: '0.72rem',
+                        fontWeight: 500,
+                        color: '#64748b',
+                        cursor: 'pointer'
+                      }}
+                      title="Restablecer al logo predeterminado del catálogo"
+                    >
+                      Restablecer
+                    </button>
+                  )}
                 </div>
+                <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic' }}>
+                  ✨ El logo se procesa en Ultra Alta Resolución (2048px) y suavizado bicúbico para evitar pixelación al imprimir.
+                </span>
               </div>
             )}
           </div>
@@ -518,14 +660,18 @@ export const QRCodeGeneratorModule: React.FC<QRCodeGeneratorModuleProps> = ({
                 boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                width: '100%',
+                maxWidth: '260px'
               }}
             >
               <canvas
                 ref={canvasRef}
                 style={{
-                  width: '240px',
-                  height: '240px',
+                  width: '100%',
+                  maxWidth: '240px',
+                  height: 'auto',
+                  aspectRatio: '1/1',
                   borderRadius: '12px',
                   display: 'block',
                   opacity: isGenerating ? 0.6 : 1,
@@ -544,9 +690,11 @@ export const QRCodeGeneratorModule: React.FC<QRCodeGeneratorModuleProps> = ({
 
           {/* Botones de Descarga e Impresión */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', width: '100%', maxWidth: '340px' }}>
+            {/* Botón Principal: Ultra HD 2048px (Calidad Imprenta / 300 DPI) */}
             <button
               type="button"
-              onClick={handleDownloadPNG}
+              onClick={() => handleDownloadPNG(2048)}
+              disabled={isDownloading}
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -561,15 +709,52 @@ export const QRCodeGeneratorModule: React.FC<QRCodeGeneratorModuleProps> = ({
                 fontSize: '0.86rem',
                 fontWeight: 600,
                 fontFamily: "'Poppins', sans-serif",
-                cursor: 'pointer',
+                cursor: isDownloading ? 'not-allowed' : 'pointer',
                 boxShadow: '0 4px 14px rgba(0,0,0,0.15)',
+                opacity: isDownloading ? 0.75 : 1,
                 transition: 'all 0.15s ease'
               }}
             >
-              <Download size={16} /> Descargar Imagen PNG (Alta Resolución)
+              {isDownloading ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" /> Generando archivo Ultra HD...
+                </>
+              ) : (
+                <>
+                  <Download size={16} /> Descargar PNG Ultra HD (2048 px)
+                </>
+              )}
+            </button>
+            <span style={{ fontSize: '0.72rem', color: '#64748b', textAlign: 'center', marginTop: '-0.2rem' }}>
+              💎 <strong>Recomendado:</strong> Calidad 300 DPI para pendones, empaques y bolsas.
+            </span>
+
+            {/* Botón Secundario: HD 1024px (WhatsApp y Redes) */}
+            <button
+              type="button"
+              onClick={() => handleDownloadPNG(1024)}
+              disabled={isDownloading}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.4rem',
+                width: '100%',
+                padding: '0.6rem 0.85rem',
+                borderRadius: '10px',
+                border: '1.5px solid #cbd5e1',
+                background: '#ffffff',
+                color: '#334155',
+                fontSize: '0.8rem',
+                fontWeight: 500,
+                fontFamily: "'Poppins', sans-serif",
+                cursor: isDownloading ? 'not-allowed' : 'pointer'
+              }}
+            >
+              <Download size={14} /> Descargar HD Ligero (1024 px - Redes / Chat)
             </button>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem', marginTop: '0.2rem' }}>
               <button
                 type="button"
                 onClick={handlePrintCard}
