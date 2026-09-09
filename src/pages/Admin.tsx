@@ -1145,6 +1145,7 @@ export default function Admin() {
 
     const mp = getMetodoPago(ped);
     const isContra = mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra'));
+    const isExitoso = ped.estado === 'completado' || ped.estado === 'entregado_pagado' || ped.estado === 'entregado';
     
     const firstProd = parsedProds[0] || null;
     const firstProdImg = firstProd ? (
@@ -1318,7 +1319,7 @@ export default function Admin() {
                     +{parsedProds.length - 1} más
                   </span>
                 )}
-                {ped.estado !== 'cancelado' && ped.estado !== 'completado' && (
+                {ped.estado !== 'cancelado' && !isExitoso && (
                   <button
                     type="button"
                     onClick={(e) => {
@@ -1468,7 +1469,7 @@ export default function Admin() {
                 </g>
 
                 {/* ── 2. PENDIENTE DE PAGO (RELOJITO RENDERIZADO EN FRENTE DE LA CAJA) ── */}
-                {(!isLead && !isContra && ped.estado !== 'completado' && !ped.pantallazo_url) && (
+                {(!isLead && !isContra && !isExitoso && !ped.pantallazo_url) && (
                   <g transform="translate(4, 30)">
                     <style>{`
                       @keyframes spinClockHand {
@@ -1501,7 +1502,7 @@ export default function Admin() {
                 )}
 
                 {/* ── 2.5 COMPROBANTE RECIBIDO (RECIBITO AZUL ANIMADO EN FRENTE DE LA CAJA 3D) ── */}
-                {(ped.pantallazo_url && ped.estado !== 'completado') && (
+                {(ped.pantallazo_url && !isExitoso) && (
                   <g transform="translate(4, 30)">
                     <style>{`
                       @keyframes blueGlowPulse {
@@ -1526,7 +1527,7 @@ export default function Admin() {
                 )}
 
                 {/* ── 3. VENTAS EXITOSAS (BILLETES Y CHULITO VERDE EN FRENTE DE LA CAJA) ── */}
-                {ped.estado === 'completado' && (
+                {isExitoso && (
                   <>
                     {/* Bill 1 (Back Bill) */}
                     <g transform="translate(4, 44) rotate(-20)">
@@ -1686,7 +1687,7 @@ export default function Admin() {
               <span>{ped.estado === 'cancelado' ? '🎯 Incentivar Venta' : '💬 Recuperar Venta'}</span>
               <ChevronRight size={14} color="#ffffff" />
             </button>
-          ) : ped.estado === 'completado' ? (
+          ) : isExitoso ? (
             <button 
               type="button" 
               className="pedido-card-btn"
@@ -15824,7 +15825,7 @@ export default function Admin() {
                                           <span style={{ background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', padding: '0.35rem 0.75rem', borderRadius: '8px', fontSize: '0.76rem', fontWeight: 500, display: 'inline-block', lineHeight: '1.2', fontFamily: "'Poppins', sans-serif" }}>
                                             🛒 Abandonado
                                           </span>
-                                        ) : ped.estado === 'completado' ? (
+                                        ) : (ped.estado === 'completado' || ped.estado === 'entregado_pagado' || ped.estado === 'entregado') ? (
                                           <span style={{ background: '#dcfce7', color: '#15803d', border: '1px solid #86efac', padding: '0.35rem 0.75rem', borderRadius: '8px', fontSize: '0.76rem', fontWeight: 500, display: 'inline-block', lineHeight: '1.2', fontFamily: "'Poppins', sans-serif" }}>
                                             ✓ Pago Verificado
                                           </span>
@@ -15838,7 +15839,7 @@ export default function Admin() {
                                           </span>
                                         )}
                                       </td>
-                                      <td style={{ padding: '0.85rem 0.8rem', fontWeight: 600, color: ped.estado === 'completado' ? '#15803d' : '#059669', verticalAlign: 'middle', fontSize: '0.9rem', fontFamily: "'Poppins', sans-serif", whiteSpace: 'nowrap' }}>
+                                      <td style={{ padding: '0.85rem 0.8rem', fontWeight: 600, color: (ped.estado === 'completado' || ped.estado === 'entregado_pagado' || ped.estado === 'entregado') ? '#15803d' : '#059669', verticalAlign: 'middle', fontSize: '0.9rem', fontFamily: "'Poppins', sans-serif", whiteSpace: 'nowrap' }}>
                                         ${ped.total.toLocaleString()}
                                       </td>
                                       <td style={{ padding: '0.8rem 0.6rem', textAlign: 'center', verticalAlign: 'middle' }}>
@@ -15851,7 +15852,7 @@ export default function Admin() {
                                             <Eye size={12} /> Ver Detalle
                                           </button>
                                           
-                                          {ped.estado === 'completado' ? (
+                                          {(ped.estado === 'completado' || ped.estado === 'entregado_pagado' || ped.estado === 'entregado') ? (
                                             <button
                                               disabled
                                               style={{ padding: '0.42rem 0.75rem', fontSize: '0.78rem', borderRadius: '8px', background: '#dcfce7', color: '#16a34a', border: '1px solid #86efac', cursor: 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', fontWeight: 600, width: '100%', fontFamily: "'Poppins', sans-serif" }}
@@ -16084,18 +16085,23 @@ export default function Admin() {
                           <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                             📦 Detalle del Pedido #{selectedPedido.id.slice(0, 8)}
                           </h3>
-                          <span style={{
-                            fontSize: '0.72rem',
-                            padding: '0.2rem 0.6rem',
-                            borderRadius: '20px',
-                            fontWeight: 600,
-                            textTransform: 'uppercase',
-                            background: isContra ? '#ffedd5' : selectedPedido.estado === 'completado' ? '#dcfce7' : selectedPedido.estado === 'cancelado' ? '#fee2e2' : '#f1f5f9',
-                            color: isContra ? '#c2410c' : selectedPedido.estado === 'completado' ? '#166534' : selectedPedido.estado === 'cancelado' ? '#991b1b' : '#475569',
-                            border: '1px solid currentColor'
-                          }}>
-                            {isContra ? '🚚 Contra Entrega' : selectedPedido.estado === 'completado' ? '✅ Pago Verificado' : selectedPedido.estado === 'cancelado' ? '🚫 Cancelado' : '💳 Transferencia'}
-                          </span>
+                          {(() => {
+                            const isOrderExitoso = selectedPedido.estado === 'completado' || selectedPedido.estado === 'entregado_pagado' || selectedPedido.estado === 'entregado' || contraStatus === 'entregado_pagado';
+                            return (
+                              <span style={{
+                                fontSize: '0.72rem',
+                                padding: '0.2rem 0.6rem',
+                                borderRadius: '20px',
+                                fontWeight: 600,
+                                textTransform: 'uppercase',
+                                background: isOrderExitoso ? '#dcfce7' : isContra ? '#ffedd5' : selectedPedido.estado === 'cancelado' ? '#fee2e2' : '#f1f5f9',
+                                color: isOrderExitoso ? '#166534' : isContra ? '#c2410c' : selectedPedido.estado === 'cancelado' ? '#991b1b' : '#475569',
+                                border: '1px solid currentColor'
+                              }}>
+                                {isOrderExitoso ? (isContra ? '✅ Entregado y Recaudado' : '✅ Pago Verificado') : isContra ? '🚚 Contra Entrega' : selectedPedido.estado === 'cancelado' ? '🚫 Cancelado' : '💳 Transferencia'}
+                              </span>
+                            );
+                          })()}
                         </div>
                         <button
                           type="button"
