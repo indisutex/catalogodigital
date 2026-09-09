@@ -16669,17 +16669,17 @@ export default function Admin() {
                             COLUMNA 2: 🛍️ PRODUCTOS SOLICITADOS
                         ════════════════════════════════════════════════════════ */}
                         <div className="modal-col-card">
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem', flexWrap: 'wrap', gap: '0.45rem' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
-                              <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem', gap: '0.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0 }}>
+                              <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap' }}>
                                 <Package size={16} color="var(--primary-color, #0ea5e9)" /> Productos ({prodsList.length})
                               </h4>
                               {isWholesaleOrder ? (
-                                <span style={{ background: '#f3e8ff', color: '#7e22ce', border: '1px solid #d8b4fe', padding: '0.12rem 0.5rem', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 500 }}>
+                                <span style={{ background: '#f3e8ff', color: '#7e22ce', border: '1px solid #d8b4fe', padding: '0.1rem 0.45rem', borderRadius: '12px', fontSize: '0.68rem', fontWeight: 500, whiteSpace: 'nowrap' }}>
                                   Mayorista ({totalUnitsInOrder} uds)
                                 </span>
                               ) : (
-                                <span style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '0.12rem 0.5rem', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 500 }}>
+                                <span style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '0.1rem 0.45rem', borderRadius: '12px', fontSize: '0.68rem', fontWeight: 500, whiteSpace: 'nowrap' }}>
                                   Al Detal ({totalUnitsInOrder} uds)
                                 </span>
                               )}
@@ -16702,16 +16702,17 @@ export default function Admin() {
                                   color: '#ffffff',
                                   border: 'none',
                                   borderRadius: '8px',
-                                  padding: '0.35rem 0.65rem',
-                                  fontSize: '0.75rem',
+                                  padding: '0.3rem 0.65rem',
+                                  fontSize: '0.74rem',
                                   fontWeight: 500,
                                   cursor: 'pointer',
                                   display: 'inline-flex',
                                   alignItems: 'center',
-                                  gap: '0.3rem',
+                                  gap: '0.25rem',
                                   fontFamily: "'Poppins', sans-serif",
                                   boxShadow: '0 2px 6px rgba(14, 165, 233, 0.25)',
-                                  transition: 'all 0.15s ease'
+                                  whiteSpace: 'nowrap',
+                                  flexShrink: 0
                                 }}
                               >
                                 <Plus size={13} />
@@ -17791,7 +17792,7 @@ export default function Admin() {
             setShowAddProductOrderModal(false);
             setSelectedProductToAdd(null);
           }}
-          style={{ zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', background: 'rgba(15, 23, 42, 0.65)', backdropFilter: 'blur(4px)' }}
+          style={{ zIndex: 25000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', background: 'rgba(15, 23, 42, 0.7)', backdropFilter: 'blur(5px)' }}
         >
           <div 
             className="modal-content" 
