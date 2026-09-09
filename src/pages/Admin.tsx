@@ -5428,6 +5428,139 @@ export default function Admin() {
     return newOrder;
   };
 
+  const getCurrentTargetValue = (ped: any): string => {
+    if (!ped) return '';
+    if (ped.estado === 'cancelado') return 'cancelado';
+    if (ped.estado === 'completado' || ped.estado === 'entregado_pagado' || ped.estado === 'entregado') return 'completado';
+    if (ped.isLead || ped.estado === 'abandonado') return 'abandonado';
+    
+    const mp = getMetodoPago(ped);
+    const isContra = mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra'));
+    if (isContra) {
+      const cStatus = getContraStatus(ped);
+      if (cStatus === 'confirmado') return 'contra_confirmado';
+      if (cStatus === 'mensaje_enviado') return 'contra_mensaje_enviado';
+      if (cStatus === 'despachado') return 'contra_despachado';
+      return 'contra_pendiente';
+    }
+    
+    if (ped.pantallazo_url) return 'comprobante';
+    return 'pendiente';
+  };
+
+  const handleMoverTarjetaAEstado = async (ped: any, nuevoDestino: string) => {
+    if (!ped || !nuevoDestino) return;
+    const id = ped.id;
+    const existingPedido = pedidos.find(p => p.id === id);
+    const existingLead = leads.find(l => l.id === id);
+    const isLead = !existingPedido && (Boolean(ped.isLead) || Boolean(existingLead));
+
+    try {
+      if (nuevoDestino === 'cancelado') {
+        if (isLead) {
+          setLeads(prev => prev.map(l => l.id === id ? { ...l, estado: 'cancelado', retargeting_estado: 'cancelado' } : l));
+          setSelectedPedido((prev: any) => prev ? { ...prev, estado: 'cancelado', retargeting_estado: 'cancelado' } : null);
+          const { error } = await supabase.from('leads').update({ estado: 'cancelado', retargeting_estado: 'cancelado' }).eq('id', id);
+          if (error) await supabase.from('leads').update({ retargeting_estado: 'cancelado' }).eq('id', id);
+        } else {
+          setPedidos(prev => prev.map(p => p.id === id ? { ...p, estado: 'cancelado' } : p));
+          setSelectedPedido((prev: any) => prev ? { ...prev, estado: 'cancelado' } : null);
+          await supabase.from('pedidos').update({ estado: 'cancelado' }).eq('id', id);
+        }
+        showToast('Tarjeta movida a Cancelados 🚫', 'success');
+      } else if (nuevoDestino === 'abandonado') {
+        if (isLead) {
+          setLeads(prev => prev.map(l => l.id === id ? { ...l, estado: 'abandonado', retargeting_estado: null } : l));
+          setSelectedPedido((prev: any) => prev ? { ...prev, estado: 'abandonado', retargeting_estado: null } : null);
+          await supabase.from('leads').update({ estado: 'abandonado', retargeting_estado: null }).eq('id', id);
+        } else {
+          setPedidos(prev => prev.map(p => p.id === id ? { ...p, estado: 'abandonado' } : p));
+          setSelectedPedido((prev: any) => prev ? { ...prev, estado: 'abandonado' } : null);
+          await supabase.from('pedidos').update({ estado: 'abandonado' }).eq('id', id);
+        }
+        showToast('Tarjeta movida a Interesados 🛒', 'success');
+      } else if (nuevoDestino === 'contra_pendiente' || nuevoDestino === 'contra_entrega') {
+        if (isLead) {
+          const newOrder = await convertLeadToPedido(id, { metodo_pago: 'Contra Entrega', estado: 'contra_entrega', pantallazo_url: null });
+          if (newOrder) setSelectedPedido(newOrder);
+        } else {
+          setPedidos(prev => prev.map(p => p.id === id ? { ...p, metodo_pago: 'Contra Entrega', estado: 'contra_entrega' } : p));
+          setSelectedPedido((prev: any) => prev ? { ...prev, metodo_pago: 'Contra Entrega', estado: 'contra_entrega' } : null);
+          await supabase.from('pedidos').update({ metodo_pago: 'Contra Entrega', estado: 'contra_entrega' }).eq('id', id);
+        }
+        showToast('Tarjeta movida a Contra Entrega 🚚', 'success');
+      } else if (nuevoDestino === 'contra_mensaje_enviado') {
+        if (isLead) {
+          const newOrder = await convertLeadToPedido(id, { metodo_pago: 'Contra Entrega', estado: 'mensaje_enviado', pantallazo_url: null });
+          if (newOrder) setSelectedPedido(newOrder);
+        } else {
+          setPedidos(prev => prev.map(p => p.id === id ? { ...p, metodo_pago: 'Contra Entrega', estado: 'mensaje_enviado' } : p));
+          setSelectedPedido((prev: any) => prev ? { ...prev, metodo_pago: 'Contra Entrega', estado: 'mensaje_enviado' } : null);
+          await supabase.from('pedidos').update({ metodo_pago: 'Contra Entrega', estado: 'mensaje_enviado' }).eq('id', id);
+        }
+        showToast('Tarjeta movida a Esperando Respuesta ⏱️', 'success');
+      } else if (nuevoDestino === 'contra_confirmado') {
+        if (isLead) {
+          const newOrder = await convertLeadToPedido(id, { metodo_pago: 'Contra Entrega', estado: 'confirmado', pantallazo_url: null });
+          if (newOrder) setSelectedPedido(newOrder);
+        } else {
+          setPedidos(prev => prev.map(p => p.id === id ? { ...p, metodo_pago: 'Contra Entrega', estado: 'confirmado' } : p));
+          setSelectedPedido((prev: any) => prev ? { ...prev, metodo_pago: 'Contra Entrega', estado: 'confirmado' } : null);
+          await supabase.from('pedidos').update({ metodo_pago: 'Contra Entrega', estado: 'confirmado' }).eq('id', id);
+        }
+        showToast('Tarjeta marcada como Confirmada ✓', 'success');
+      } else if (nuevoDestino === 'contra_despachado') {
+        if (isLead) {
+          const newOrder = await convertLeadToPedido(id, { metodo_pago: 'Contra Entrega', estado: 'despachado', pantallazo_url: null });
+          if (newOrder) setSelectedPedido(newOrder);
+        } else {
+          setPedidos(prev => prev.map(p => p.id === id ? { ...p, metodo_pago: 'Contra Entrega', estado: 'despachado' } : p));
+          setSelectedPedido((prev: any) => prev ? { ...prev, metodo_pago: 'Contra Entrega', estado: 'despachado' } : null);
+          await supabase.from('pedidos').update({ metodo_pago: 'Contra Entrega', estado: 'despachado' }).eq('id', id);
+        }
+        showToast('Tarjeta movida a Despachado 📦', 'success');
+      } else if (nuevoDestino === 'pendiente') {
+        if (isLead) {
+          const newOrder = await convertLeadToPedido(id, { metodo_pago: 'Pago Anticipado', estado: 'pendiente', pantallazo_url: null });
+          if (newOrder) setSelectedPedido(newOrder);
+        } else {
+          setPedidos(prev => prev.map(p => p.id === id ? { ...p, metodo_pago: 'Pago Anticipado', estado: 'pendiente', pantallazo_url: null } : p));
+          setSelectedPedido((prev: any) => prev ? { ...prev, metodo_pago: 'Pago Anticipado', estado: 'pendiente', pantallazo_url: null } : null);
+          await supabase.from('pedidos').update({ metodo_pago: 'Pago Anticipado', estado: 'pendiente', pantallazo_url: null }).eq('id', id);
+        }
+        showToast('Tarjeta movida a Pendiente de Pago ⏳', 'success');
+      } else if (nuevoDestino === 'comprobante') {
+        const defaultReceipt = 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=300&q=80';
+        const receiptUrl = ped.pantallazo_url || defaultReceipt;
+        if (isLead) {
+          const newOrder = await convertLeadToPedido(id, { metodo_pago: 'Pago Anticipado', estado: 'pendiente', pantallazo_url: receiptUrl });
+          if (newOrder) setSelectedPedido(newOrder);
+        } else {
+          setPedidos(prev => prev.map(p => p.id === id ? { ...p, metodo_pago: 'Pago Anticipado', estado: 'pendiente', pantallazo_url: receiptUrl } : p));
+          setSelectedPedido((prev: any) => prev ? { ...prev, metodo_pago: 'Pago Anticipado', estado: 'pendiente', pantallazo_url: receiptUrl } : null);
+          await supabase.from('pedidos').update({ metodo_pago: 'Pago Anticipado', estado: 'pendiente', pantallazo_url: receiptUrl }).eq('id', id);
+        }
+        showToast('Tarjeta movida a Comprobante Recibido 📸', 'success');
+      } else if (nuevoDestino === 'completado') {
+        if (isLead) {
+          const newOrder = await convertLeadToPedido(id, { estado: 'completado', metodo_pago: ped.metodo_pago || 'Pago Anticipado' });
+          if (newOrder) {
+            setSelectedPedido(newOrder);
+            handleAprobarPago(newOrder);
+          }
+        } else {
+          setSelectedPedido((prev: any) => prev ? { ...prev, estado: 'completado' } : null);
+          handleAprobarPago(ped);
+        }
+        showToast('¡Venta Aprobada y Movida a Exitosas ✅!', 'success');
+      }
+      cargarDatos();
+    } catch (err: any) {
+      console.error('Error al mover tarjeta de estado:', err);
+      showToast('Error al mover tarjeta: ' + (err.message || ''), 'error');
+    }
+  };
+
   const handleDropKanban = async (e: React.DragEvent, targetCol: string) => {
     e.preventDefault();
     e.stopPropagation();
@@ -17529,6 +17662,68 @@ export default function Admin() {
                               )}
                             </>
                           )}
+
+                          {/* ── SELECTOR UNIVERSAL: MOVER TARJETA A: "ESTADO" ── */}
+                          <div style={{
+                            marginTop: '0.65rem',
+                            background: '#f8fafc',
+                            border: '1.5px solid #e2e8f0',
+                            borderRadius: '12px',
+                            padding: '0.65rem 0.85rem',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.45rem',
+                            fontFamily: "'Poppins', sans-serif"
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <label style={{ margin: 0, fontSize: '0.78rem', fontWeight: 600, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                <span>🔄</span> Mover tarjeta a:
+                              </label>
+                              <span style={{ fontSize: '0.66rem', color: '#64748b', background: '#ffffff', border: '1px solid #e2e8f0', padding: '0.1rem 0.45rem', borderRadius: '6px', fontWeight: 500 }}>
+                                Cambio manual
+                              </span>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                              <select
+                                value={getCurrentTargetValue(selectedPedido)}
+                                onChange={(e) => {
+                                  if (e.target.value) {
+                                    handleMoverTarjetaAEstado(selectedPedido, e.target.value);
+                                  }
+                                }}
+                                style={{
+                                  flex: 1,
+                                  height: '38px',
+                                  padding: '0 0.65rem',
+                                  borderRadius: '8px',
+                                  border: '1.5px solid #cbd5e1',
+                                  fontSize: '0.8rem',
+                                  fontWeight: 500,
+                                  color: '#0f172a',
+                                  background: '#ffffff',
+                                  cursor: 'pointer',
+                                  fontFamily: "'Poppins', sans-serif",
+                                  outline: 'none'
+                                }}
+                              >
+                                <option value="" disabled>Seleccionar estado destino...</option>
+                                <optgroup label="Columnas Principales">
+                                  <option value="abandonado">🛒 Interesados (Abandonado)</option>
+                                  <option value="contra_pendiente">🚚 Contra Entrega: Por Confirmar</option>
+                                  <option value="pendiente">⏳ Pendiente de Pago (Transferencia)</option>
+                                  <option value="comprobante">📸 Comprobante Recibido (Por Verificar)</option>
+                                  <option value="completado">✅ Venta Exitosa (Pagado / Completado)</option>
+                                  <option value="cancelado">🚫 Cancelado</option>
+                                </optgroup>
+                                <optgroup label="Sub-estados Contra Entrega">
+                                  <option value="contra_mensaje_enviado">⏱️ Contra Entrega: Esperando Respuesta</option>
+                                  <option value="contra_confirmado">✓ Contra Entrega: Confirmado por Cliente</option>
+                                  <option value="contra_despachado">📦 Contra Entrega: Despachado con Guía</option>
+                                </optgroup>
+                              </select>
+                            </div>
+                          </div>
 
                           {/* ── TIMELINE DE AUDITORÍA (COMPACTO) ── */}
                           <div style={{ marginTop: '0.65rem', borderTop: '1px solid #f1f5f9', paddingTop: '0.65rem' }}>
