@@ -1115,6 +1115,16 @@ export default function Admin() {
     };
   };
 
+  const getContraStatus = (ped: any): 'pendiente' | 'mensaje_enviado' | 'confirmado' | 'despachado' | 'entregado_pagado' | 'cancelado' => {
+    if (!ped) return 'pendiente';
+    if (ped.estado === 'cancelado') return 'cancelado';
+    if (ped.estado === 'entregado_pagado' || ped.estado === 'completado') return 'entregado_pagado';
+    if (ped.estado === 'despachado') return 'despachado';
+    if (ped.estado === 'confirmado') return 'confirmado';
+    if (ped.estado === 'mensaje_enviado') return 'mensaje_enviado';
+    return 'pendiente';
+  };
+
   const renderLeadOrOrderCard = (ped: any, forceIsLead?: boolean) => {
     const isLead = forceIsLead !== undefined 
       ? forceIsLead 
@@ -1146,6 +1156,7 @@ export default function Admin() {
     const mp = getMetodoPago(ped);
     const isContra = mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra'));
     const isExitoso = ped.estado === 'completado' || ped.estado === 'entregado_pagado' || ped.estado === 'entregado';
+    const contraSubStatus = isContra ? getContraStatus(ped) : null;
     
     const firstProd = parsedProds[0] || null;
     const firstProdImg = firstProd ? (
@@ -1196,9 +1207,95 @@ export default function Admin() {
               {nombreCliente.charAt(0).toUpperCase()}
             </div>
             <div style={{ minWidth: 0, flex: 1 }}>
-              <h4 className="pedido-card-name" style={{ margin: 0, fontSize: '0.86rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Poppins', sans-serif" }} title={nombreCliente}>
-                {nombreCliente}
-              </h4>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexWrap: 'wrap' }}>
+                <h4 className="pedido-card-name" style={{ margin: 0, fontSize: '0.86rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Poppins', sans-serif" }} title={nombreCliente}>
+                  {nombreCliente}
+                </h4>
+                {isContra && !isExitoso && ped.estado !== 'cancelado' && (() => {
+                  if (contraSubStatus === 'confirmado') {
+                    return (
+                      <span style={{
+                        background: '#ecfdf5',
+                        color: '#15803d',
+                        border: '1px solid #86efac',
+                        borderRadius: '6px',
+                        padding: '1px 6px',
+                        fontSize: '0.64rem',
+                        fontWeight: 600,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.2rem',
+                        fontFamily: "'Poppins', sans-serif",
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0
+                      }}>
+                        ✓ Confirmado
+                      </span>
+                    );
+                  }
+                  if (contraSubStatus === 'mensaje_enviado') {
+                    return (
+                      <span style={{
+                        background: '#fffbeb',
+                        color: '#b45309',
+                        border: '1px solid #fde68a',
+                        borderRadius: '6px',
+                        padding: '1px 6px',
+                        fontSize: '0.64rem',
+                        fontWeight: 500,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.2rem',
+                        fontFamily: "'Poppins', sans-serif",
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0
+                      }}>
+                        ⏱️ Esperando Resp.
+                      </span>
+                    );
+                  }
+                  if (contraSubStatus === 'despachado') {
+                    return (
+                      <span style={{
+                        background: '#eff6ff',
+                        color: '#1d4ed8',
+                        border: '1px solid #bfdbfe',
+                        borderRadius: '6px',
+                        padding: '1px 6px',
+                        fontSize: '0.64rem',
+                        fontWeight: 500,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.2rem',
+                        fontFamily: "'Poppins', sans-serif",
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0
+                      }}>
+                        🚚 Despachado
+                      </span>
+                    );
+                  }
+                  return (
+                    <span style={{
+                      background: '#fff7ed',
+                      color: '#c2410c',
+                      border: '1px solid #fed7aa',
+                      borderRadius: '6px',
+                      padding: '1px 6px',
+                      fontSize: '0.64rem',
+                      fontWeight: 500,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.2rem',
+                      fontFamily: "'Poppins', sans-serif",
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0
+                    }}>
+                      ⚡ Por Confirmar
+                    </span>
+                  );
+                })()}
+              </div>
               <p className="pedido-card-phone" style={{ margin: '0.1rem 0 0 0', fontSize: '0.73rem', color: '#64748b', fontWeight: 400, display: 'flex', alignItems: 'center', gap: '0.25rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Poppins', sans-serif" }}>
                 <span>📞 {telefonoCliente || 'Sin número'}</span>
                 {(() => {
@@ -1526,6 +1623,26 @@ export default function Admin() {
                   </g>
                 )}
 
+                {/* ── CONTRA ENTREGA CONFIRMADO (CHULITO VERDE EN LA CAJA) ── */}
+                {(isContra && contraSubStatus === 'confirmado' && !isExitoso) && (
+                  <g transform="translate(4, 30)">
+                    <circle cx="14" cy="14" r="14" fill="#ffffff" stroke="#10b981" strokeWidth="2.5" />
+                    <circle cx="14" cy="14" r="11.5" fill="#ecfdf5" />
+                    <path d="M 8.5 14 L 12.5 18 L 19.5 10" stroke="#15803d" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" />
+                  </g>
+                )}
+
+                {/* ── CONTRA ENTREGA MENSAJE ENVIADO (RELOJITO EN LA CAJA) ── */}
+                {(isContra && contraSubStatus === 'mensaje_enviado' && !isExitoso) && (
+                  <g transform="translate(4, 30)">
+                    <circle cx="14" cy="14" r="14" fill="#ffffff" stroke="#f59e0b" strokeWidth="2.5" />
+                    <circle cx="14" cy="14" r="11.5" fill="#fffbeb" />
+                    <circle cx="14" cy="14" r="1.8" fill="#92400e" />
+                    <line x1="14" y1="14" x2="14" y2="8.5" stroke="#d97706" strokeWidth="2" strokeLinecap="round" />
+                    <line x1="14" y1="14" x2="19.5" y2="14" stroke="#ea580c" strokeWidth="1.8" strokeLinecap="round" />
+                  </g>
+                )}
+
                 {/* ── 3. VENTAS EXITOSAS (BILLETES Y CHULITO VERDE EN FRENTE DE LA CAJA) ── */}
                 {isExitoso && (
                   <>
@@ -1715,35 +1832,55 @@ export default function Admin() {
               <span>🧾 Ver Factura / Recibo</span>
               <ChevronRight size={14} color="#ffffff" />
             </button>
-          ) : isContra ? (
-            <button 
-              type="button" 
-              className="pedido-card-btn"
-              onClick={() => setSelectedPedido(ped)}
-              style={{
-                width: '100%',
-                height: '36px',
-                padding: '0 0.75rem',
-                borderRadius: '10px',
-                border: 'none',
-                background: 'linear-gradient(135deg, #ff5722, #ea580c)',
-                color: '#ffffff',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.35rem',
-                boxShadow: '0 3px 10px rgba(234, 88, 12, 0.25)',
-                whiteSpace: 'nowrap',
-                fontFamily: "'Poppins', sans-serif"
-              }}
-            >
-              <span>🚚 Despachar pedido</span>
-              <ChevronRight size={14} color="#ffffff" />
-            </button>
-          ) : ped.pantallazo_url ? (
+          ) : isContra ? (() => {
+            let btnText = '🚚 Despachar pedido';
+            let btnGrad = 'linear-gradient(135deg, #ff5722, #ea580c)';
+            let btnShadow = '0 3px 10px rgba(234, 88, 12, 0.25)';
+
+            if (contraSubStatus === 'confirmado') {
+              btnText = '📦 Despachar Pedido Confirmado';
+              btnGrad = 'linear-gradient(135deg, #059669, #10b981)';
+              btnShadow = '0 3px 10px rgba(16, 185, 129, 0.25)';
+            } else if (contraSubStatus === 'mensaje_enviado') {
+              btnText = '💬 Ver Chat / Respuestas';
+              btnGrad = 'linear-gradient(135deg, #0284c7, #0ea5e9)';
+              btnShadow = '0 3px 10px rgba(14, 165, 233, 0.25)';
+            } else if (contraSubStatus === 'despachado') {
+              btnText = '🚚 Ver Guía de Envío';
+              btnGrad = 'linear-gradient(135deg, #475569, #334155)';
+              btnShadow = '0 3px 10px rgba(51, 65, 85, 0.25)';
+            }
+
+            return (
+              <button 
+                type="button" 
+                className="pedido-card-btn"
+                onClick={() => setSelectedPedido(ped)}
+                style={{
+                  width: '100%',
+                  height: '36px',
+                  padding: '0 0.75rem',
+                  borderRadius: '10px',
+                  border: 'none',
+                  background: btnGrad,
+                  color: '#ffffff',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.35rem',
+                  boxShadow: btnShadow,
+                  whiteSpace: 'nowrap',
+                  fontFamily: "'Poppins', sans-serif"
+                }}
+              >
+                <span>{btnText}</span>
+                <ChevronRight size={14} color="#ffffff" />
+              </button>
+            );
+          })() : ped.pantallazo_url ? (
             <button 
               type="button" 
               className="pedido-card-btn"
@@ -3700,16 +3837,6 @@ export default function Admin() {
       return may ? `Mayorista ${may.nombre}` : 'Mayorista';
     }
     return configuracion?.admin_nombre || 'Administrador';
-  };
-
-  const getContraStatus = (ped: any): 'pendiente' | 'mensaje_enviado' | 'confirmado' | 'despachado' | 'entregado_pagado' | 'cancelado' => {
-    if (!ped) return 'pendiente';
-    if (ped.estado === 'cancelado') return 'cancelado';
-    if (ped.estado === 'entregado_pagado' || ped.estado === 'completado') return 'entregado_pagado';
-    if (ped.estado === 'despachado') return 'despachado';
-    if (ped.estado === 'confirmado') return 'confirmado';
-    if (ped.estado === 'mensaje_enviado') return 'mensaje_enviado';
-    return 'pendiente';
   };
 
   const getOrderAuditLogs = (ped: any): EstadoAuditLog[] => {
@@ -15534,7 +15661,20 @@ export default function Admin() {
                                           </div>
                                           <span style={{ margin: 0, fontSize: '0.86rem', fontWeight: 600, color: '#9a3412', fontFamily: "'Poppins', sans-serif" }}>Contra Entrega</span>
                                         </div>
-                                        <span style={{ background: '#ea580c', color: '#ffffff', minWidth: '24px', height: '22px', borderRadius: '11px', padding: '0 0.55rem', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(234, 88, 12, 0.25)', fontFamily: "'Poppins', sans-serif" }}>{contraEntregaFiltrados.length}</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                          {(() => {
+                                            const confCount = contraEntregaFiltrados.filter(p => getContraStatus(p) === 'confirmado').length;
+                                            if (confCount > 0) {
+                                              return (
+                                                <span style={{ background: '#ecfdf5', color: '#166534', border: '1px solid #86efac', minWidth: '22px', height: '22px', borderRadius: '11px', padding: '0 0.45rem', fontSize: '0.72rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '0.2rem', fontFamily: "'Poppins', sans-serif" }} title={`${confCount} pedidos confirmados listos para despachar`}>
+                                                  ✓ {confCount}
+                                                </span>
+                                              );
+                                            }
+                                            return null;
+                                          })()}
+                                          <span style={{ background: '#ea580c', color: '#ffffff', minWidth: '24px', height: '22px', borderRadius: '11px', padding: '0 0.55rem', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(234, 88, 12, 0.25)', fontFamily: "'Poppins', sans-serif" }}>{contraEntregaFiltrados.length}</span>
+                                        </div>
                                       </div>
                                       <div 
                                         className="kanban-cards-list" 
