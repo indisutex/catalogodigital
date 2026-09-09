@@ -7055,14 +7055,14 @@ export default function Admin() {
                     <div 
                       className="search-box-container"
                       onClick={() => { if (window.innerWidth <= 992) setShowMobileSearch(true); }}
-                      style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', minWidth: '160px', flex: '0 1 240px', maxWidth: '280px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', transition: 'all 0.2s', cursor: 'text' }}>
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', minWidth: '130px', flex: '1 1 200px', maxWidth: '260px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', transition: 'all 0.2s', cursor: 'text' }}>
                       <Search size={15} style={{ color: 'var(--primary-color, #00a6f9)', flexShrink: 0 }} />
                       <input 
                         type="text"
                         placeholder="Buscar cliente, tel, ciudad..."
                         value={orderSearchQuery}
                         onChange={e => setOrderSearchQuery(e.target.value)}
-                        style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.82rem', width: '100%', color: '#0f172a', fontWeight: 600 }}
+                        style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.82rem', width: '100%', color: '#0f172a', fontWeight: 400, fontFamily: "'Poppins', sans-serif" }}
                       />
                       {orderSearchQuery && (
                         <button onClick={() => setOrderSearchQuery('')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', padding: 0 }}>
@@ -7075,9 +7075,9 @@ export default function Admin() {
                       type="button"
                       className="btn-primary hover-lift"
                       onClick={() => setShowOrderFilters(!showOrderFilters)}
-                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0 0.95rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', background: showOrderFilters ? '#64748b' : 'var(--primary-color, #00a6f9)', color: '#ffffff', border: 'none', boxShadow: '0 2px 6px rgba(var(--primary-rgb, 99, 102, 241), 0.3)' }}
+                      style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0 0.85rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', background: showOrderFilters ? '#64748b' : 'var(--primary-color, #00a6f9)', color: '#ffffff', border: 'none', boxShadow: '0 2px 6px rgba(var(--primary-rgb, 99, 102, 241), 0.3)', flexShrink: 0, fontFamily: "'Poppins', sans-serif" }}
                     >
-                      {showOrderFilters ? <X size={14} /> : <Filter size={14} />} <span className="btn-text-desktop">{showOrderFilters ? 'Ocultar Filtros' : 'Filtros Avanzados'}</span>
+                      {showOrderFilters ? <X size={14} /> : <Filter size={14} />} <span className="btn-text-desktop">Filtros<span className="btn-text-desktop-full"> Avanzados</span></span>
                     </button>
                   </div>
                 ) : activeTab === 'productos' ? (
@@ -7086,14 +7086,14 @@ export default function Admin() {
                     <div 
                       className="search-box-container"
                       onClick={() => { if (window.innerWidth <= 992) setShowMobileSearch(true); }}
-                      style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', minWidth: '190px', flex: '0 1 240px', maxWidth: '280px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', transition: 'all 0.2s', cursor: 'text' }}>
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', minWidth: '130px', flex: '1 1 200px', maxWidth: '240px', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', transition: 'all 0.2s', cursor: 'text' }}>
                       <Search size={15} style={{ color: 'var(--primary-color, #00a6f9)', flexShrink: 0 }} />
                       <input 
                         type="text"
                         placeholder="Buscar producto o ref..."
                         value={searchQuery}
                         onChange={e => setSearchQuery(e.target.value)}
-                        style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.82rem', width: '100%', color: '#0f172a', fontWeight: 600 }}
+                        style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '0.82rem', width: '100%', color: '#0f172a', fontWeight: 400, fontFamily: "'Poppins', sans-serif" }}
                       />
                       {searchQuery && (
                         <button onClick={() => setSearchQuery('')} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', display: 'flex', padding: 0 }}>
@@ -7103,12 +7103,12 @@ export default function Admin() {
                     </div>
 
                     {/* Ordenar por Productos */}
-                    <div className="desktop-sort-select" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', height: '38px', padding: '0 0.65rem 0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', background: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                    <div className="desktop-sort-select" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', height: '38px', padding: '0 0.65rem 0 0.75rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', background: '#ffffff', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', flexShrink: 0 }}>
                       <ArrowUpDown size={15} style={{ color: 'var(--primary-color, #00a6f9)', flexShrink: 0 }} />
                       <select
                         value={productSort}
                         onChange={e => setProductSort(e.target.value)}
-                        style={{ height: '100%', border: 'none', background: 'transparent', outline: 'none', fontSize: '0.8rem', color: '#0f172a', fontWeight: 600, cursor: 'pointer' }}
+                        style={{ height: '100%', border: 'none', background: 'transparent', outline: 'none', fontSize: '0.8rem', color: '#0f172a', fontWeight: 500, cursor: 'pointer', fontFamily: "'Poppins', sans-serif" }}
                       >
                         <option value="recientes">Más recientes</option>
                         <option value="alfabetico">A-Z</option>
@@ -7272,7 +7272,7 @@ export default function Admin() {
                       <button
                         type="button"
                         className="btn-primary hover-lift"
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0 0.85rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0 0.85rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0, fontFamily: "'Poppins', sans-serif" }}
                         onClick={() => { setBulkForms([{ ...emptyProduct }]); setIsAddingProduct(true); }}
                       >
                         <Plus size={14} /> <span className="btn-text-desktop">Nuevo Producto</span>
@@ -7284,7 +7284,7 @@ export default function Admin() {
                     <div 
                       className="search-box-container"
                       onClick={() => { if (window.innerWidth <= 992) setShowMobileSearch(true); }}
-                      style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', flex: '0 1 260px', maxWidth: '340px', minWidth: '180px', transition: 'border-color 0.2s', cursor: 'text' }}
+                      style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', background: '#f8fafc', border: '1.5px solid #cbd5e1', borderRadius: '10px', padding: '0 0.75rem', height: '38px', flex: '1 1 200px', maxWidth: '280px', minWidth: '130px', transition: 'border-color 0.2s', cursor: 'text' }}
                       onFocus={e => (e.currentTarget.style.borderColor = 'var(--primary-color, #00a6f9)')}
                       onBlur={e => (e.currentTarget.style.borderColor = '#cbd5e1')}
                     >
@@ -7307,7 +7307,7 @@ export default function Admin() {
                           else if (activeTab === 'asesores') setAsesorSearchQuery(e.target.value);
                           else setMayoristaBuscador(e.target.value);
                         }}
-                        style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '0.83rem', width: '100%', color: '#0f172a', fontWeight: 500, fontFamily: "'Outfit', sans-serif" }}
+                        style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: '0.83rem', width: '100%', color: '#0f172a', fontWeight: 400, fontFamily: "'Poppins', sans-serif" }}
                       />
                       {(
                         (activeTab === 'clientes' && clienteSearchQuery) ||
@@ -7329,7 +7329,7 @@ export default function Admin() {
                         type="button"
                         className="btn-primary hover-lift"
                         onClick={() => setShowCrearAsesorForm(!showCrearAsesorForm)}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0 0.85rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', background: showCrearAsesorForm ? '#64748b' : 'var(--primary-color, #00a6f9)', color: '#ffffff', border: 'none', boxShadow: '0 2px 6px rgba(var(--primary-rgb, 99, 102, 241), 0.3)' }}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0 0.85rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', background: showCrearAsesorForm ? '#64748b' : 'var(--primary-color, #00a6f9)', color: '#ffffff', border: 'none', boxShadow: '0 2px 6px rgba(var(--primary-rgb, 99, 102, 241), 0.3)', flexShrink: 0, fontFamily: "'Poppins', sans-serif" }}
                       >
                         {showCrearAsesorForm ? <X size={14} /> : <Plus size={14} />} <span className="btn-text-desktop">{showCrearAsesorForm ? 'Ocultar' : 'Nuevo Asesor'}</span>
                       </button>
@@ -7340,7 +7340,7 @@ export default function Admin() {
                         type="button"
                         className="btn-primary hover-lift"
                         onClick={() => setShowCrearMayoristaForm(!showCrearMayoristaForm)}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0 0.85rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', background: showCrearMayoristaForm ? '#64748b' : 'var(--primary-color, #00a6f9)', color: '#ffffff', border: 'none', boxShadow: '0 2px 6px rgba(var(--primary-rgb, 99, 102, 241), 0.3)' }}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0 0.85rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', background: showCrearMayoristaForm ? '#64748b' : 'var(--primary-color, #00a6f9)', color: '#ffffff', border: 'none', boxShadow: '0 2px 6px rgba(var(--primary-rgb, 99, 102, 241), 0.3)', flexShrink: 0, fontFamily: "'Poppins', sans-serif" }}
                       >
                         {showCrearMayoristaForm ? <X size={14} /> : <Plus size={14} />} <span className="btn-text-desktop">{showCrearMayoristaForm ? 'Ocultar' : 'Nuevo Mayorista'}</span>
                       </button>
@@ -7351,7 +7351,7 @@ export default function Admin() {
                         type="button"
                         className="btn-primary hover-lift"
                         onClick={() => setShowCrearMaterialForm(!showCrearMaterialForm)}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0 0.85rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', background: showCrearMaterialForm ? '#64748b' : 'var(--primary-color, #00a6f9)', color: '#ffffff', border: 'none', boxShadow: '0 2px 6px rgba(var(--primary-rgb, 99, 102, 241), 0.3)' }}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0 0.85rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', background: showCrearMaterialForm ? '#64748b' : 'var(--primary-color, #00a6f9)', color: '#ffffff', border: 'none', boxShadow: '0 2px 6px rgba(var(--primary-rgb, 99, 102, 241), 0.3)', flexShrink: 0, fontFamily: "'Poppins', sans-serif" }}
                       >
                         {showCrearMaterialForm ? <X size={14} /> : <Plus size={14} />} <span className="btn-text-desktop">{showCrearMaterialForm ? 'Ocultar' : 'Nuevo Recurso'}</span>
                       </button>
@@ -7733,10 +7733,10 @@ export default function Admin() {
               </div>
             )}
           </div>
-          <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: '0.65rem' }}>
+          <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: '0.5rem', flexShrink: 0 }}>
             {/* Switcher Vista Lista / Kanban en Pedidos (Oculto en móvil) */}
             {activeTab === 'pedidos' && (
-              <div className="desktop-only-table" style={{ display: 'flex', gap: '0.2rem', background: '#f1f5f9', padding: '0.2rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', height: '38px', alignItems: 'center' }}>
+              <div className="desktop-only-table" style={{ display: 'flex', gap: '0.2rem', background: '#f1f5f9', padding: '0.2rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', height: '38px', alignItems: 'center', flexShrink: 0, boxSizing: 'border-box' }}>
                 <button
                   type="button"
                   onClick={() => setPedidosViewMode('lista')}
@@ -7745,13 +7745,14 @@ export default function Admin() {
                     height: '30px',
                     background: pedidosViewMode === 'lista' ? '#ffffff' : 'transparent',
                     color: pedidosViewMode === 'lista' ? 'var(--primary-color, #00a6f9)' : '#64748b',
-                    padding: '0 0.75rem',
+                    padding: '0 0.65rem',
                     borderRadius: '8px',
                     fontSize: '0.78rem',
-                    fontWeight: 600,
+                    fontWeight: 500,
                     cursor: 'pointer',
                     boxShadow: pedidosViewMode === 'lista' ? '0 2px 6px rgba(var(--primary-rgb, 99, 102, 241), 0.2)' : 'none',
-                    transition: 'all 0.2s'
+                    transition: 'all 0.2s',
+                    fontFamily: "'Poppins', sans-serif"
                   }}
                 >
                   📋 Lista
@@ -7764,13 +7765,14 @@ export default function Admin() {
                     height: '30px',
                     background: pedidosViewMode === 'kanban' ? '#ffffff' : 'transparent',
                     color: pedidosViewMode === 'kanban' ? 'var(--primary-color, #00a6f9)' : '#64748b',
-                    padding: '0 0.75rem',
+                    padding: '0 0.65rem',
                     borderRadius: '8px',
                     fontSize: '0.78rem',
-                    fontWeight: 600,
+                    fontWeight: 500,
                     cursor: 'pointer',
                     boxShadow: pedidosViewMode === 'kanban' ? '0 2px 6px rgba(var(--primary-rgb, 99, 102, 241), 0.2)' : 'none',
-                    transition: 'all 0.2s'
+                    transition: 'all 0.2s',
+                    fontFamily: "'Poppins', sans-serif"
                   }}
                 >
                   📊 Kanban
@@ -8001,9 +8003,10 @@ export default function Admin() {
               type="button"
               className="btn-secondary btn-home-header" 
               onClick={handleLogout}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0.55rem 1rem', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 600, border: '1px solid #cbd5e1', cursor: 'pointer', background: 'white', color: '#475569', transition: 'all 0.2s' }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', padding: '0 0.85rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 500, border: '1.5px solid #cbd5e1', cursor: 'pointer', background: 'white', color: '#475569', transition: 'all 0.2s', flexShrink: 0, fontFamily: "'Poppins', sans-serif" }}
               onMouseEnter={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#94a3b8'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'white'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+              title="Ir al Inicio"
             >
               <Home size={15} /> <span className="btn-home-text">Ir al Inicio</span>
             </button>
@@ -14973,7 +14976,7 @@ export default function Admin() {
                                 boxShadow: orderFilterStatus === 'contra_entrega' ? '0 3px 10px rgba(234, 88, 12, 0.25)' : 'none'
                               }}
                             >
-                              <span>Pago Contra Entrega</span>
+                              <span>Contra Entrega</span>
                               <span style={{ background: orderFilterStatus === 'contra_entrega' ? 'rgba(255,255,255,0.25)' : '#ffedd5', color: orderFilterStatus === 'contra_entrega' ? '#ffffff' : '#ea580c', padding: '0.05rem 0.45rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 500 }}>{contraEntregaCount}</span>
                             </button>
 
@@ -15274,7 +15277,7 @@ export default function Admin() {
                                           <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#ffedd5', border: '1px solid #fdba74', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                                             <Truck size={15} color="#ea580c" />
                                           </div>
-                                          <span style={{ margin: 0, fontSize: '0.86rem', fontWeight: 600, color: '#9a3412', fontFamily: "'Poppins', sans-serif" }}>Pago Contra Entrega</span>
+                                          <span style={{ margin: 0, fontSize: '0.86rem', fontWeight: 600, color: '#9a3412', fontFamily: "'Poppins', sans-serif" }}>Contra Entrega</span>
                                         </div>
                                         <span style={{ background: '#ea580c', color: '#ffffff', minWidth: '24px', height: '22px', borderRadius: '11px', padding: '0 0.55rem', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(234, 88, 12, 0.25)', fontFamily: "'Poppins', sans-serif" }}>{contraEntregaFiltrados.length}</span>
                                       </div>
@@ -15837,7 +15840,7 @@ export default function Admin() {
                             color: isContra ? '#c2410c' : selectedPedido.estado === 'completado' ? '#166534' : selectedPedido.estado === 'cancelado' ? '#991b1b' : '#475569',
                             border: '1px solid currentColor'
                           }}>
-                            {isContra ? '🚚 Pago Contra Entrega' : selectedPedido.estado === 'completado' ? '✅ Pago Verificado' : selectedPedido.estado === 'cancelado' ? '🚫 Cancelado' : '💳 Pago Transferencia'}
+                            {isContra ? '🚚 Contra Entrega' : selectedPedido.estado === 'completado' ? '✅ Pago Verificado' : selectedPedido.estado === 'cancelado' ? '🚫 Cancelado' : '💳 Transferencia'}
                           </span>
                         </div>
                         <button
@@ -15860,9 +15863,9 @@ export default function Admin() {
                           const rawMp = getMetodoPago(selectedPedido) || (selectedPedido as any).modalidad_pago || (selectedPedido as any).metodo_pago || '';
                           const cleanMp = String(rawMp).replace(/[\[\]"']/g, '').trim();
                           const displayMetodoPago = cleanMp.toLowerCase().includes('contra')
-                            ? '🚚 Pago Contra Entrega'
+                            ? '🚚 Contra Entrega'
                             : cleanMp.toLowerCase().includes('transf')
-                            ? '💳 Transferencia Bancaria'
+                            ? '💳 Transferencia'
                             : cleanMp || 'Por definir';
 
                           const rawEnvio = (selectedPedido as any).metodo_envio || (Array.isArray(selectedPedido.productos) && selectedPedido.productos[0]?._metodo_envio) || '';
@@ -16035,7 +16038,7 @@ export default function Admin() {
                                   </div>
                                   <div style={{ background: isContra ? '#fff7ed' : '#f0fdf4', border: isContra ? '1px solid #fed7aa' : '1px solid #bbf7d0', padding: '0.5rem 0.65rem', borderRadius: '10px' }}>
                                     <h5 style={{ margin: '0 0 0.15rem 0', color: isContra ? '#9a3412' : '#166534', fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.3px', fontWeight: 500 }}>Método de Pago</h5>
-                                    <p style={{ margin: 0, fontWeight: 600, color: isContra ? '#c2410c' : '#15803d', fontSize: '0.8rem', lineHeight: 1.25 }}>
+                                    <p style={{ margin: 0, fontWeight: 500, color: isContra ? '#c2410c' : '#15803d', fontSize: '0.82rem', lineHeight: 1.25, whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>
                                       {displayMetodoPago}
                                     </p>
                                   </div>
@@ -16129,20 +16132,6 @@ export default function Admin() {
                             <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                               <Truck size={16} color="var(--primary-color, #0ea5e9)" /> Logística y Acciones
                             </h4>
-                            {(selectedPedido.estado === 'completado' || contraStatus === 'confirmado' || contraStatus === 'despachado' || contraStatus === 'entregado_pagado' || contraStatus === 'cancelado' || selectedPedido.estado === 'cancelado') && (
-                              <span style={{
-                                fontSize: '0.68rem',
-                                padding: '0.15rem 0.55rem',
-                                borderRadius: '8px',
-                                fontWeight: 600,
-                                textTransform: 'uppercase',
-                                background: contraStatus === 'entregado_pagado' || selectedPedido.estado === 'completado' ? '#dcfce7' : contraStatus === 'cancelado' || selectedPedido.estado === 'cancelado' ? '#fee2e2' : contraStatus === 'despachado' ? '#e0f2fe' : '#f3e8ff',
-                                color: contraStatus === 'entregado_pagado' || selectedPedido.estado === 'completado' ? '#166534' : contraStatus === 'cancelado' || selectedPedido.estado === 'cancelado' ? '#991b1b' : contraStatus === 'despachado' ? '#0369a1' : '#7e22ce',
-                                border: '1px solid currentColor'
-                              }}>
-                                {isContra ? contraStatus.replace(/_/g, ' ') : selectedPedido.estado}
-                              </span>
-                            )}
                           </div>
 
                           {/* Total del Pedido */}
@@ -16208,27 +16197,183 @@ export default function Admin() {
                               {/* Comprobante de Pago (Transferencias) */}
                               {!isContra && (
                                 selectedPedido.pantallazo_url ? (
-                                  <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '0.65rem 0.8rem', background: '#f8fafc' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                                      <h5 style={{ margin: 0, fontSize: '0.8rem', color: '#0f172a', fontWeight: 600 }}>💳 Comprobante Recibido</h5>
-                                      <span style={{ fontSize: '0.7rem', color: '#16a34a', fontWeight: 500 }}>✓ Verificado</span>
+                                  <div style={{
+                                    background: '#f8fafc',
+                                    border: '1px solid #e2e8f0',
+                                    borderRadius: '12px',
+                                    padding: '0.75rem 0.85rem',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '0.5rem'
+                                  }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                        <CreditCard size={15} color="var(--primary-color, #0ea5e9)" />
+                                        <h5 style={{ margin: 0, fontSize: '0.82rem', color: '#0f172a', fontWeight: 600, fontFamily: "'Poppins', sans-serif" }}>
+                                          Comprobante Adjunto
+                                        </h5>
+                                      </div>
+                                      <span style={{
+                                        fontSize: '0.7rem',
+                                        padding: '0.15rem 0.5rem',
+                                        borderRadius: '6px',
+                                        fontWeight: 500,
+                                        fontFamily: "'Poppins', sans-serif",
+                                        background: selectedPedido.estado === 'completado' ? '#dcfce7' : '#eff6ff',
+                                        color: selectedPedido.estado === 'completado' ? '#166534' : '#1d4ed8',
+                                        border: selectedPedido.estado === 'completado' ? '1px solid #86efac' : '1px solid #bfdbfe'
+                                      }}>
+                                        {selectedPedido.estado === 'completado' ? '✓ Pago Verificado' : '🔍 Por verificar'}
+                                      </span>
                                     </div>
-                                    <div onClick={() => setPagoModalUrl(selectedPedido.pantallazo_url || null)} style={{ cursor: 'pointer', textAlign: 'center' }}>
+
+                                    <div
+                                      onClick={() => setPagoModalUrl(selectedPedido.pantallazo_url || null)}
+                                      style={{
+                                        position: 'relative',
+                                        cursor: 'pointer',
+                                        textAlign: 'center',
+                                        borderRadius: '10px',
+                                        overflow: 'hidden',
+                                        border: '1px solid #cbd5e1',
+                                        background: '#ffffff',
+                                        padding: '0.35rem',
+                                        transition: 'all 0.2s ease'
+                                      }}
+                                      title="Clic para ver comprobante en pantalla completa"
+                                    >
                                       <img
                                         src={selectedPedido.pantallazo_url}
                                         alt="Comprobante"
-                                        style={{ width: '100%', maxHeight: '120px', objectFit: 'contain', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#ffffff' }}
+                                        style={{ width: '100%', maxHeight: '130px', objectFit: 'contain', borderRadius: '6px', display: 'block' }}
                                       />
+                                    </div>
+
+                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', paddingTop: '0.1rem' }}>
+                                      <button
+                                        type="button"
+                                        onClick={() => setPagoModalUrl(selectedPedido.pantallazo_url || null)}
+                                        style={{
+                                          flex: 1,
+                                          padding: '0.38rem 0.6rem',
+                                          background: '#ffffff',
+                                          color: '#334155',
+                                          border: '1px solid #cbd5e1',
+                                          borderRadius: '7px',
+                                          cursor: 'pointer',
+                                          fontSize: '0.74rem',
+                                          fontWeight: 500,
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          gap: '0.3rem',
+                                          fontFamily: "'Poppins', sans-serif"
+                                        }}
+                                      >
+                                        <Eye size={13} /> <span>Ampliar</span>
+                                      </button>
+
+                                      <label
+                                        style={{
+                                          flex: 1,
+                                          padding: '0.38rem 0.6rem',
+                                          background: '#ffffff',
+                                          color: '#64748b',
+                                          border: '1px solid #cbd5e1',
+                                          borderRadius: '7px',
+                                          cursor: 'pointer',
+                                          fontSize: '0.74rem',
+                                          fontWeight: 500,
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          gap: '0.3rem',
+                                          fontFamily: "'Poppins', sans-serif"
+                                        }}
+                                      >
+                                        <Upload size={12} /> <span>Cambiar</span>
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          hidden
+                                          onChange={async (e) => {
+                                            if (e.target.files && e.target.files[0]) {
+                                              const file = e.target.files[0];
+                                              try {
+                                                showToast('Actualizando comprobante...', 'success');
+                                                const fileExt = file.name.split('.').pop();
+                                                const fileName = `comprobante_${selectedPedido.id}_${Date.now()}.${fileExt}`;
+                                                const { error: upErr } = await supabase.storage.from('archivos').upload(fileName, file);
+                                                if (upErr) throw upErr;
+                                                const { data: urlData } = supabase.storage.from('archivos').getPublicUrl(fileName);
+                                                const newUrl = urlData.publicUrl;
+                                                await supabase.from('pedidos').update({ pantallazo_url: newUrl }).eq('id', selectedPedido.id);
+                                                setSelectedPedido({ ...selectedPedido, pantallazo_url: newUrl });
+                                                setPedidos(prev => prev.map(p => p.id === selectedPedido.id ? { ...p, pantallazo_url: newUrl } : p));
+                                                showToast('¡Comprobante actualizado con éxito! ✓', 'success');
+                                              } catch (err) {
+                                                showToast('Error al actualizar el comprobante', 'error');
+                                              }
+                                            }
+                                          }}
+                                        />
+                                      </label>
                                     </div>
                                   </div>
                                 ) : (
-                                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '0.65rem 0.85rem', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-                                    <div>
-                                      <p style={{ color: '#475569', fontWeight: 600, fontSize: '0.8rem', margin: 0 }}>⏳ Pendiente comprobante</p>
-                                      <p style={{ fontSize: '0.72rem', color: '#64748b', margin: '0.1rem 0 0 0' }}>Puedes adjuntarlo si te lo enviaron</p>
+                                  <div style={{
+                                    background: '#fffbeb',
+                                    border: '1px solid #fef3c7',
+                                    padding: '0.65rem 0.85rem',
+                                    borderRadius: '12px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    gap: '0.65rem'
+                                  }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                                      <div style={{
+                                        width: '32px',
+                                        height: '32px',
+                                        borderRadius: '8px',
+                                        background: '#fef3c7',
+                                        border: '1px solid #fde68a',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: '#d97706',
+                                        flexShrink: 0
+                                      }}>
+                                        <Clock size={16} />
+                                      </div>
+                                      <div>
+                                        <p style={{ color: '#92400e', fontWeight: 500, fontSize: '0.8rem', margin: 0, fontFamily: "'Poppins', sans-serif" }}>
+                                          Pendiente comprobante
+                                        </p>
+                                        <p style={{ fontSize: '0.7rem', color: '#b45309', margin: '0.05rem 0 0 0', fontFamily: "'Poppins', sans-serif" }}>
+                                          Puedes adjuntarlo si te lo enviaron
+                                        </p>
+                                      </div>
                                     </div>
-                                    <label style={{ padding: '0.45rem 0.75rem', background: 'var(--primary-color, #0ea5e9)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '0.76rem', fontWeight: 600, whiteSpace: 'nowrap', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
-                                      📷 Subir
+                                    <label style={{
+                                      padding: '0.45rem 0.75rem',
+                                      background: '#ffffff',
+                                      color: '#b45309',
+                                      border: '1px solid #fde68a',
+                                      borderRadius: '8px',
+                                      cursor: 'pointer',
+                                      fontSize: '0.76rem',
+                                      fontWeight: 500,
+                                      whiteSpace: 'nowrap',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '0.35rem',
+                                      fontFamily: "'Poppins', sans-serif",
+                                      boxShadow: '0 1px 3px rgba(180, 83, 9, 0.08)',
+                                      transition: 'all 0.15s ease'
+                                    }}>
+                                      <Upload size={13} />
+                                      <span>Subir</span>
                                       <input
                                         type="file"
                                         accept="image/*"
@@ -16634,62 +16779,139 @@ export default function Admin() {
                                   {selectedPedido.estado !== 'completado' && (
                                     <button
                                       type="button"
-                                      style={{ width: '100%', padding: '0.7rem 0.9rem', background: '#10b981', color: 'white', border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: 600, fontSize: '0.88rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', fontFamily: "'Poppins', sans-serif", boxShadow: '0 4px 12px rgba(16, 185, 129, 0.2)' }}
+                                      style={{
+                                        width: '100%',
+                                        padding: '0.7rem 1rem',
+                                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                        color: '#ffffff',
+                                        border: 'none',
+                                        borderRadius: '12px',
+                                        cursor: 'pointer',
+                                        fontWeight: 600,
+                                        fontSize: '0.86rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '0.45rem',
+                                        fontFamily: "'Poppins', sans-serif",
+                                        boxShadow: '0 4px 14px rgba(16, 185, 129, 0.28)',
+                                        transition: 'all 0.15s ease'
+                                      }}
                                       onClick={() => handleAprobarPago(selectedPedido)}
                                     >
-                                      <Check size={16} /> ✓ Aprobar y completar pago
+                                      <CheckCircle size={16} /> <span>Aprobar y Confirmar Pago</span>
                                     </button>
                                   )}
 
                                   <div style={{ display: 'flex', gap: '0.45rem' }}>
                                     <button
                                       type="button"
-                                      style={{ flex: 1, padding: '0.6rem 0.75rem', background: '#25D366', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontFamily: "'Poppins', sans-serif" }}
+                                      style={{
+                                        flex: 1,
+                                        padding: '0.65rem 0.75rem',
+                                        background: '#25D366',
+                                        color: '#ffffff',
+                                        border: 'none',
+                                        borderRadius: '10px',
+                                        cursor: 'pointer',
+                                        fontWeight: 500,
+                                        fontSize: '0.8rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '0.4rem',
+                                        fontFamily: "'Poppins', sans-serif",
+                                        boxShadow: '0 2px 8px rgba(37, 211, 102, 0.22)',
+                                        transition: 'all 0.15s ease'
+                                      }}
                                       onClick={() => {
-                                        const uploadLink = `${window.location.origin}/pago/${selectedPedido.id.slice(0, 8)}`;
-                                        let metodosStr = '';
-                                        if (configuracion?.metodos_pago) {
-                                          try {
-                                            const parsed = JSON.parse(configuracion.metodos_pago);
-                                            if (Array.isArray(parsed) && parsed.length > 0) {
-                                              metodosStr = `💳 *Métodos de pago:*\n` + parsed.map((m: any) => `- ${m.banco} ${m.tipo ? `(${m.tipo})` : ''}: ${m.numero}`).join('\n') + `\n\n`;
-                                            } else {
+                                        let msg = '';
+                                        if (selectedPedido.pantallazo_url) {
+                                          msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋 Te escribimos de *${configuracion?.nombre_negocio || 'nuestra tienda'}* respecto a tu pedido #${selectedPedido.id.slice(0, 8)}. ¡Estamos validando tu pago!`;
+                                        } else {
+                                          const uploadLink = `${window.location.origin}/pago/${selectedPedido.id.slice(0, 8)}`;
+                                          let metodosStr = '';
+                                          if (configuracion?.metodos_pago) {
+                                            try {
+                                              const parsed = JSON.parse(configuracion.metodos_pago);
+                                              if (Array.isArray(parsed) && parsed.length > 0) {
+                                                metodosStr = `💳 *Métodos de pago:*\n` + parsed.map((m: any) => `- ${m.banco} ${m.tipo ? `(${m.tipo})` : ''}: ${m.numero}`).join('\n') + `\n\n`;
+                                              } else {
+                                                metodosStr = `💳 *Métodos de pago:*\n${configuracion.metodos_pago}\n\n`;
+                                              }
+                                            } catch {
                                               metodosStr = `💳 *Métodos de pago:*\n${configuracion.metodos_pago}\n\n`;
                                             }
-                                          } catch {
-                                            metodosStr = `💳 *Métodos de pago:*\n${configuracion.metodos_pago}\n\n`;
                                           }
+                                          const metodosInfo = metodosStr || `💳 *Datos del banco:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\n`;
+                                          msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: ${selectedPedido.total.toLocaleString()} COP*\n\n${metodosInfo}Para poder completar tu pedido, haz la captura de pantalla de tu pago o de transacción y envíala por este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
                                         }
-                                        const metodosInfo = metodosStr || `💳 *Datos del banco:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\n`;
-                                        const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: ${selectedPedido.total.toLocaleString()} COP*\n\n${metodosInfo}Para poder completar tu pedido, haz la captura de pantalla de tu pago o de transacción y envíala por este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
                                         window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
                                       }}
                                     >
-                                      💬 Cobrar WA
+                                      <MessageSquare size={14} /> <span>{selectedPedido.pantallazo_url ? 'Escribir por WhatsApp' : 'Cobrar por WhatsApp'}</span>
                                     </button>
+
                                     <button
                                       type="button"
-                                      style={{ flex: 1, padding: '0.6rem 0.75rem', background: 'var(--primary-color, #0ea5e9)', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', fontFamily: "'Poppins', sans-serif" }}
+                                      style={{
+                                        flex: 1,
+                                        padding: '0.65rem 0.75rem',
+                                        background: '#f8fafc',
+                                        color: '#334155',
+                                        border: '1.5px solid #cbd5e1',
+                                        borderRadius: '10px',
+                                        cursor: 'pointer',
+                                        fontWeight: 500,
+                                        fontSize: '0.8rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '0.4rem',
+                                        fontFamily: "'Poppins', sans-serif",
+                                        transition: 'all 0.15s ease'
+                                      }}
+                                      onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.borderColor = '#94a3b8'; }}
+                                      onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
                                       onClick={() => {
                                         const guiaLink = `${window.location.origin}/guia/${selectedPedido.id.slice(0, 8)}`;
                                         const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋 Tu pedido ha sido *VERIFICADO y DESPACHADO* 🚚\n\nPedido: ${prodsList.map((p: any) => `${p.cantidad}x ${p.nombre}`).join(', ')}\nTotal: ${selectedPedido.total.toLocaleString()} COP\n\n📸 *Ver detalles y evidencia del envío aquí:* ${guiaLink}\n\n¡Tu paquete está en camino. Gracias por tu compra! 🚀`;
                                         window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
                                       }}
                                     >
-                                      🚚 Despachar
+                                      <Truck size={15} color="var(--primary-color, #0ea5e9)" /> <span>Despachar</span>
                                     </button>
                                   </div>
 
                                   {selectedPedido.estado !== 'cancelado' && (
                                     <button
                                       type="button"
-                                      style={{ width: '100%', padding: '0.55rem', background: '#fef2f2', color: '#dc2626', border: '1px solid #fca5a5', borderRadius: '10px', cursor: 'pointer', fontWeight: 600, fontSize: '0.8rem', marginTop: '0.25rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.35rem', fontFamily: "'Poppins', sans-serif" }}
+                                      style={{
+                                        width: '100%',
+                                        padding: '0.55rem',
+                                        background: '#fff1f2',
+                                        color: '#e11d48',
+                                        border: '1px solid #fecdd3',
+                                        borderRadius: '10px',
+                                        cursor: 'pointer',
+                                        fontWeight: 500,
+                                        fontSize: '0.78rem',
+                                        marginTop: '0.15rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '0.35rem',
+                                        fontFamily: "'Poppins', sans-serif",
+                                        transition: 'all 0.15s ease'
+                                      }}
+                                      onMouseEnter={e => { e.currentTarget.style.background = '#ffe4e6'; e.currentTarget.style.borderColor = '#fda4af'; }}
+                                      onMouseLeave={e => { e.currentTarget.style.background = '#fff1f2'; e.currentTarget.style.borderColor = '#fecdd3'; }}
                                       onClick={() => {
                                         handleCancelarPedido(selectedPedido.id);
                                         setSelectedPedido(prev => prev ? { ...prev, estado: 'cancelado' } : null);
                                       }}
                                     >
-                                      <Trash2 size={14} /> Cancelar Pedido
+                                      <XCircle size={14} /> <span>Cancelar Pedido</span>
                                     </button>
                                   )}
                                 </div>
