@@ -5,7 +5,7 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista, PQRS } from '../types';
 import './Admin.css';
-import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, ChevronRight, Wrench, ArrowUpDown, Filter, MapPin, XCircle, Truck, Clock, FileCheck, CheckCircle, Landmark, BookOpen, LifeBuoy, ShoppingCart, ClipboardList, Star, Ban, ExternalLink, Flame, RotateCcw } from 'lucide-react';
+import { X, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, ChevronRight, Wrench, ArrowUpDown, Filter, MapPin, XCircle, Truck, Clock, FileCheck, CheckCircle, Landmark, BookOpen, LifeBuoy, ShoppingCart, ClipboardList, Star, Ban, ExternalLink, Flame, RotateCcw, Sparkles } from 'lucide-react';
 
 import * as XLSX from 'xlsx';
 import { ERPContabilidadService } from '../lib/erpContabilidadService';
@@ -5082,12 +5082,12 @@ export default function Admin() {
       } else if (targetCol === 'abandonado') {
         if (isLead) {
           setLeads(prev => prev.map(l => l.id === id ? { ...l, estado: 'abandonado', retargeting_estado: null } : l));
-          showToast('Lead movido a No Interesados 🔴', 'success');
+          showToast('Lead movido a Interesados ✨', 'success');
           const { error } = await supabase.from('leads').update({ estado: 'abandonado', retargeting_estado: null }).eq('id', id);
           if (error) console.error(error);
         } else {
           setPedidos(prev => prev.map(p => p.id === id ? { ...p, estado: 'abandonado' } : p));
-          showToast('Pedido movido a No Interesados 🔴', 'success');
+          showToast('Pedido movido a Interesados ✨', 'success');
           const { error } = await supabase.from('pedidos').update({ estado: 'abandonado' }).eq('id', id);
           if (error) console.error(error);
         }
@@ -15052,9 +15052,9 @@ export default function Admin() {
                               style={{
                                 padding: '0.35rem 0.75rem',
                                 borderRadius: '20px',
-                                border: orderFilterStatus === 'abandonados' ? 'none' : '1px solid #fecaca',
-                                background: orderFilterStatus === 'abandonados' ? '#dc2626' : '#fef2f2',
-                                color: orderFilterStatus === 'abandonados' ? '#ffffff' : '#b91c1c',
+                                border: orderFilterStatus === 'abandonados' ? 'none' : '1px solid #e9d5ff',
+                                background: orderFilterStatus === 'abandonados' ? '#7c3aed' : '#faf5ff',
+                                color: orderFilterStatus === 'abandonados' ? '#ffffff' : '#6b21a8',
                                 fontWeight: 600,
                                 fontSize: '0.78rem',
                                 cursor: 'pointer',
@@ -15062,11 +15062,11 @@ export default function Admin() {
                                 alignItems: 'center',
                                 gap: '0.35rem',
                                 fontFamily: "'Poppins', sans-serif",
-                                boxShadow: orderFilterStatus === 'abandonados' ? '0 3px 10px rgba(220, 38, 38, 0.25)' : 'none'
+                                boxShadow: orderFilterStatus === 'abandonados' ? '0 3px 10px rgba(124, 58, 237, 0.25)' : 'none'
                               }}
                             >
-                              <span>Abandonados</span>
-                              <span style={{ background: orderFilterStatus === 'abandonados' ? 'rgba(255,255,255,0.25)' : '#fee2e2', color: orderFilterStatus === 'abandonados' ? '#ffffff' : '#b91c1c', padding: '0.05rem 0.45rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 500 }}>{leadsCount}</span>
+                              <span>Interesados</span>
+                              <span style={{ background: orderFilterStatus === 'abandonados' ? 'rgba(255,255,255,0.25)' : '#f3e8ff', color: orderFilterStatus === 'abandonados' ? '#ffffff' : '#7c3aed', padding: '0.05rem 0.45rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: 500 }}>{leadsCount}</span>
                             </button>
                           </div>
                         );
@@ -15228,19 +15228,19 @@ export default function Admin() {
                                         display: 'flex',
                                         justifyContent: 'space-between',
                                         alignItems: 'center',
-                                        background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
-                                        border: '1px solid #e2e8f0',
+                                        background: 'linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%)',
+                                        border: '1px solid #e9d5ff',
                                         borderRadius: '12px',
                                         padding: '0.65rem 0.85rem',
-                                        boxShadow: '0 2px 6px rgba(100, 116, 139, 0.06)'
+                                        boxShadow: '0 2px 6px rgba(124, 58, 237, 0.08)'
                                       }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-                                          <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#ffffff', border: '1px solid #cbd5e1', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                            <XCircle size={15} color="#64748b" />
+                                          <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#f3e8ff', border: '1px solid #d8b4fe', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            <Sparkles size={15} color="#7c3aed" />
                                           </div>
-                                          <span style={{ margin: 0, fontSize: '0.86rem', fontWeight: 600, color: '#475569', fontFamily: "'Poppins', sans-serif" }}>Interesados</span>
+                                          <span style={{ margin: 0, fontSize: '0.86rem', fontWeight: 600, color: '#6b21a8', fontFamily: "'Poppins', sans-serif" }}>Interesados</span>
                                         </div>
-                                        <span style={{ background: '#64748b', color: '#ffffff', minWidth: '24px', height: '22px', borderRadius: '11px', padding: '0 0.55rem', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(100, 116, 139, 0.2)', fontFamily: "'Poppins', sans-serif" }}>{leadsFiltrados.length}</span>
+                                        <span style={{ background: '#7c3aed', color: '#ffffff', minWidth: '24px', height: '22px', borderRadius: '11px', padding: '0 0.55rem', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(124, 58, 237, 0.25)', fontFamily: "'Poppins', sans-serif" }}>{leadsFiltrados.length}</span>
                                       </div>
                                       <div 
                                         className="kanban-cards-list" 
@@ -15248,7 +15248,7 @@ export default function Admin() {
                                       >
                                         {leadsFiltrados.map(lead => renderLeadOrOrderCard(lead, (lead as any).isLead !== undefined ? (lead as any).isLead : true))}
                                         {leadsFiltrados.length === 0 && (
-                                          <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay clientes interesados pendientes.</p>
+                                          <p className="empty-column-msg" style={{ textAlign: 'center', color: '#7c3aed', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay clientes interesados pendientes.</p>
                                         )}
                                       </div>
                                     </div>
@@ -16093,18 +16093,20 @@ export default function Admin() {
                             <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                               <Truck size={16} color="var(--primary-color, #0ea5e9)" /> Logística y Acciones
                             </h4>
-                            <span style={{
-                              fontSize: '0.68rem',
-                              padding: '0.15rem 0.55rem',
-                              borderRadius: '8px',
-                              fontWeight: 600,
-                              textTransform: 'uppercase',
-                              background: contraStatus === 'entregado_pagado' || selectedPedido.estado === 'completado' ? '#dcfce7' : contraStatus === 'cancelado' || selectedPedido.estado === 'cancelado' ? '#fee2e2' : contraStatus === 'despachado' ? '#e0f2fe' : contraStatus === 'confirmado' ? '#f3e8ff' : '#ffedd5',
-                              color: contraStatus === 'entregado_pagado' || selectedPedido.estado === 'completado' ? '#166534' : contraStatus === 'cancelado' || selectedPedido.estado === 'cancelado' ? '#991b1b' : contraStatus === 'despachado' ? '#0369a1' : contraStatus === 'confirmado' ? '#7e22ce' : '#c2410c',
-                              border: '1px solid currentColor'
-                            }}>
-                              {isContra ? contraStatus.replace(/_/g, ' ') : selectedPedido.estado}
-                            </span>
+                            {(selectedPedido.estado === 'completado' || contraStatus === 'confirmado' || contraStatus === 'despachado' || contraStatus === 'entregado_pagado' || contraStatus === 'cancelado' || selectedPedido.estado === 'cancelado') && (
+                              <span style={{
+                                fontSize: '0.68rem',
+                                padding: '0.15rem 0.55rem',
+                                borderRadius: '8px',
+                                fontWeight: 600,
+                                textTransform: 'uppercase',
+                                background: contraStatus === 'entregado_pagado' || selectedPedido.estado === 'completado' ? '#dcfce7' : contraStatus === 'cancelado' || selectedPedido.estado === 'cancelado' ? '#fee2e2' : contraStatus === 'despachado' ? '#e0f2fe' : '#f3e8ff',
+                                color: contraStatus === 'entregado_pagado' || selectedPedido.estado === 'completado' ? '#166534' : contraStatus === 'cancelado' || selectedPedido.estado === 'cancelado' ? '#991b1b' : contraStatus === 'despachado' ? '#0369a1' : '#7e22ce',
+                                border: '1px solid currentColor'
+                              }}>
+                                {isContra ? contraStatus.replace(/_/g, ' ') : selectedPedido.estado}
+                              </span>
+                            )}
                           </div>
 
                           {/* Total del Pedido */}
@@ -16403,13 +16405,27 @@ export default function Admin() {
                                     const timeStr = lastMsgLog ? new Date(lastMsgLog.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
                                     return (
                                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
-                                        <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '12px', padding: '0.65rem 0.8rem' }}>
-                                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#b45309', fontWeight: 600, fontSize: '0.82rem' }}>
-                                            <Clock size={15} /> Esperando respuesta del cliente
+                                        <div style={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'space-between',
+                                          background: '#fffbeb',
+                                          border: '1px solid #fef08a',
+                                          borderRadius: '8px',
+                                          padding: '0.35rem 0.65rem',
+                                          fontSize: '0.74rem',
+                                          color: '#92400e',
+                                          fontFamily: "'Poppins', sans-serif"
+                                        }}>
+                                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                            <Clock size={13} color="#d97706" />
+                                            <span style={{ fontWeight: 500 }}>Esperando respuesta del cliente</span>
                                           </div>
-                                          <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.72rem', color: '#78350f' }}>
-                                            {timeStr ? `Enviado a las ${timeStr}. ` : ''}Confirma manualmente cuando el cliente responda.
-                                          </p>
+                                          {timeStr && (
+                                            <span style={{ fontSize: '0.68rem', color: '#b45309', fontWeight: 500 }}>
+                                              {timeStr}
+                                            </span>
+                                          )}
                                         </div>
 
                                         <button
