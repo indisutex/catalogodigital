@@ -1004,6 +1004,58 @@ export default function Admin() {
   const [campanaFilter, setCampanaFilter] = useState<string>('todas');
   const [showRegistrarMaterialModal, setShowRegistrarMaterialModal] = useState(false);
 
+  // ── ESTADOS Y MANEJADORES DE DRAG & DROP ESTILO TRELLO ──
+  const [draggingCardId, setDraggingCardId] = useState<string | null>(null);
+  const [isDragActive, setIsDragActive] = useState<boolean>(false);
+  const [dragOverCol, setDragOverCol] = useState<string | null>(null);
+
+  const handleCardDragStart = (e: React.DragEvent<HTMLDivElement>, ped: any, isLead: boolean) => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', JSON.stringify({ id: ped.id, isLead: Boolean(isLead) }));
+    setDraggingCardId(ped.id);
+
+    try {
+      const target = e.currentTarget as HTMLElement;
+      const rect = target.getBoundingClientRect();
+      const ghost = target.cloneNode(true) as HTMLElement;
+      ghost.style.width = `${rect.width}px`;
+      ghost.style.position = 'fixed';
+      ghost.style.top = '-9999px';
+      ghost.style.left = '-9999px';
+      ghost.style.transform = 'rotate(3deg) scale(1.03)';
+      ghost.style.boxShadow = '0 22px 40px rgba(15, 23, 42, 0.28), 0 8px 16px rgba(0, 0, 0, 0.12)';
+      ghost.style.borderRadius = '16px';
+      ghost.style.background = '#ffffff';
+      ghost.style.border = '1.5px solid #cbd5e1';
+      ghost.style.pointerEvents = 'none';
+      ghost.style.zIndex = '99999';
+      ghost.id = 'trello-drag-ghost';
+      document.body.appendChild(ghost);
+
+      const offsetX = Math.min(rect.width / 2, Math.max(20, e.clientX - rect.left));
+      const offsetY = Math.min(60, Math.max(20, e.clientY - rect.top));
+      e.dataTransfer.setDragImage(ghost, offsetX, offsetY);
+
+      setTimeout(() => {
+        setIsDragActive(true);
+        const el = document.getElementById('trello-drag-ghost');
+        if (el) el.remove();
+      }, 0);
+    } catch (err) {
+      setTimeout(() => {
+        setIsDragActive(true);
+      }, 0);
+    }
+  };
+
+  const handleCardDragEnd = () => {
+    setDraggingCardId(null);
+    setIsDragActive(false);
+    setDragOverCol(null);
+    const el = document.getElementById('trello-drag-ghost');
+    if (el) el.remove();
+  };
+
   const uniqueCampanas = useMemo(() => {
     const campanas = materiales.map(m => m.campana).filter(Boolean);
     return Array.from(new Set(campanas));
@@ -1167,23 +1219,25 @@ export default function Admin() {
 
     const totalUnits = parsedProds.reduce((acc: number, p: any) => acc + (p.cantidad || 1), 0);
 
+    const isThisCardBeingDragged = isDragActive && draggingCardId === ped.id;
+
     return (
       <div 
         key={ped.id} 
-        className="pedido-card-item"
+        className={`pedido-card-item ${isThisCardBeingDragged ? 'is-trello-placeholder' : ''}`}
         draggable={true}
-        onDragStart={(e) => {
-          e.dataTransfer.effectAllowed = 'move';
-          e.dataTransfer.setData('text/plain', JSON.stringify({ id: ped.id, isLead: Boolean(isLead) }));
-        }}
+        onDragStart={(e) => handleCardDragStart(e, ped, Boolean(isLead))}
+        onDragEnd={handleCardDragEnd}
         style={{
-          background: '#ffffff',
+          background: isThisCardBeingDragged ? '#f1f5f9' : '#ffffff',
           borderRadius: '16px',
-          border: '1px solid #e2e8f0',
-          boxShadow: '0 3px 14px rgba(15, 23, 42, 0.04)',
+          border: isThisCardBeingDragged ? '2px dashed #94a3b8' : '1px solid #e2e8f0',
+          boxShadow: isThisCardBeingDragged ? 'none' : '0 3px 14px rgba(15, 23, 42, 0.04)',
           padding: '0.75rem 0.8rem',
           margin: '0 0 0.65rem 0',
-          cursor: 'grab'
+          cursor: isThisCardBeingDragged ? 'grabbing' : 'grab',
+          opacity: isThisCardBeingDragged ? 0.35 : 1,
+          transform: isThisCardBeingDragged ? 'scale(0.98)' : undefined
         }}
       >
         {/* ── HEADER BLOCK (Compact & Clean without redundant status pills) ── */}
@@ -15681,13 +15735,39 @@ export default function Admin() {
                                   }}>
                                     {/* Columna 0: Cancelados */}
                                     <div
-                                      className="kanban-column"
+                                      className={`kanban-column ${dragOverCol === 'cancelado' ? 'is-drag-target' : ''}`}
                                       onDragOver={(e) => {
                                         e.preventDefault();
                                         e.dataTransfer.dropEffect = 'move';
+                                        if (dragOverCol !== 'cancelado') setDragOverCol('cancelado');
                                       }}
-                                      onDrop={(e) => handleDropKanban(e, 'cancelado')}
-                                      style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', background: '#f8fafc', borderRadius: '18px', border: '1px solid #e2e8f0', padding: '1rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', minHeight: '380px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
+                                      onDragEnter={(e) => {
+                                        e.preventDefault();
+                                        setDragOverCol('cancelado');
+                                      }}
+                                      onDragLeave={(e) => {
+                                        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                                          setDragOverCol(null);
+                                        }
+                                      }}
+                                      onDrop={(e) => {
+                                        setDragOverCol(null);
+                                        handleDropKanban(e, 'cancelado');
+                                      }}
+                                      style={{
+                                        width: '100%',
+                                        minWidth: 0,
+                                        boxSizing: 'border-box',
+                                        background: dragOverCol === 'cancelado' ? '#fef2f2' : '#f8fafc',
+                                        borderRadius: '18px',
+                                        border: dragOverCol === 'cancelado' ? '2px dashed #dc2626' : '1px solid #e2e8f0',
+                                        padding: '1rem 0.85rem',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '0.85rem',
+                                        minHeight: '380px',
+                                        boxShadow: dragOverCol === 'cancelado' ? '0 10px 25px rgba(220, 38, 38, 0.12)' : '0 4px 16px rgba(15,23,42,0.02)'
+                                      }}
                                     >
                                       <div style={{
                                         display: 'flex',
@@ -15804,6 +15884,12 @@ export default function Admin() {
                                         className="kanban-cards-list" 
                                         style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '480px', overflowY: 'auto' }}
                                       >
+                                        {dragOverCol === 'cancelado' && (
+                                          <div className="trello-drop-slot" style={{ background: '#fee2e2', border: '2px dashed #dc2626', color: '#991b1b' }}>
+                                            <span>📥</span>
+                                            <span>Soltar para mover a Cancelados</span>
+                                          </div>
+                                        )}
                                         {canceladosFiltrados.map(ped => renderLeadOrOrderCard(ped, ped.isLead))}
                                         {canceladosFiltrados.length === 0 && (
                                           <p className="empty-column-msg" style={{ textAlign: 'center', color: '#991b1b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay pedidos cancelados.</p>
@@ -15813,10 +15899,39 @@ export default function Admin() {
 
                                     {/* Columna 1: Interesados */}
                                     <div
-                                      className="kanban-column"
-                                      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-                                      onDrop={(e) => handleDropKanban(e, 'abandonado')}
-                                      style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', background: '#f8fafc', borderRadius: '18px', border: '1px solid #e2e8f0', padding: '1rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', minHeight: '380px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
+                                      className={`kanban-column ${dragOverCol === 'abandonado' ? 'is-drag-target' : ''}`}
+                                      onDragOver={(e) => {
+                                        e.preventDefault();
+                                        e.dataTransfer.dropEffect = 'move';
+                                        if (dragOverCol !== 'abandonado') setDragOverCol('abandonado');
+                                      }}
+                                      onDragEnter={(e) => {
+                                        e.preventDefault();
+                                        setDragOverCol('abandonado');
+                                      }}
+                                      onDragLeave={(e) => {
+                                        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                                          setDragOverCol(null);
+                                        }
+                                      }}
+                                      onDrop={(e) => {
+                                        setDragOverCol(null);
+                                        handleDropKanban(e, 'abandonado');
+                                      }}
+                                      style={{
+                                        width: '100%',
+                                        minWidth: 0,
+                                        boxSizing: 'border-box',
+                                        background: dragOverCol === 'abandonado' ? '#faf5ff' : '#f8fafc',
+                                        borderRadius: '18px',
+                                        border: dragOverCol === 'abandonado' ? '2px dashed #7c3aed' : '1px solid #e2e8f0',
+                                        padding: '1rem 0.85rem',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '0.85rem',
+                                        minHeight: '380px',
+                                        boxShadow: dragOverCol === 'abandonado' ? '0 10px 25px rgba(124, 58, 237, 0.12)' : '0 4px 16px rgba(15,23,42,0.02)'
+                                      }}
                                     >
                                       <div style={{
                                         display: 'flex',
@@ -15840,6 +15955,12 @@ export default function Admin() {
                                         className="kanban-cards-list" 
                                         style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '480px', overflowY: 'auto' }}
                                       >
+                                        {dragOverCol === 'abandonado' && (
+                                          <div className="trello-drop-slot" style={{ background: '#f3e8ff', border: '2px dashed #7c3aed', color: '#6b21a8' }}>
+                                            <span>✨</span>
+                                            <span>Soltar para mover a Interesados</span>
+                                          </div>
+                                        )}
                                         {leadsFiltrados.map(lead => renderLeadOrOrderCard(lead, (lead as any).isLead !== undefined ? (lead as any).isLead : true))}
                                         {leadsFiltrados.length === 0 && (
                                           <p className="empty-column-msg" style={{ textAlign: 'center', color: '#7c3aed', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay clientes interesados pendientes.</p>
@@ -15849,10 +15970,39 @@ export default function Admin() {
 
                                     {/* Columna 2: Contra Entregas (Auto-detectado) */}
                                     <div
-                                      className="kanban-column"
-                                      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-                                      onDrop={(e) => handleDropKanban(e, 'contra_entrega')}
-                                      style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', background: '#f8fafc', borderRadius: '18px', border: '1px solid #e2e8f0', padding: '1rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', minHeight: '380px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
+                                      className={`kanban-column ${dragOverCol === 'contra_entrega' ? 'is-drag-target' : ''}`}
+                                      onDragOver={(e) => {
+                                        e.preventDefault();
+                                        e.dataTransfer.dropEffect = 'move';
+                                        if (dragOverCol !== 'contra_entrega') setDragOverCol('contra_entrega');
+                                      }}
+                                      onDragEnter={(e) => {
+                                        e.preventDefault();
+                                        setDragOverCol('contra_entrega');
+                                      }}
+                                      onDragLeave={(e) => {
+                                        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                                          setDragOverCol(null);
+                                        }
+                                      }}
+                                      onDrop={(e) => {
+                                        setDragOverCol(null);
+                                        handleDropKanban(e, 'contra_entrega');
+                                      }}
+                                      style={{
+                                        width: '100%',
+                                        minWidth: 0,
+                                        boxSizing: 'border-box',
+                                        background: dragOverCol === 'contra_entrega' ? '#fff7ed' : '#f8fafc',
+                                        borderRadius: '18px',
+                                        border: dragOverCol === 'contra_entrega' ? '2px dashed #ea580c' : '1px solid #e2e8f0',
+                                        padding: '1rem 0.85rem',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '0.85rem',
+                                        minHeight: '380px',
+                                        boxShadow: dragOverCol === 'contra_entrega' ? '0 10px 25px rgba(234, 88, 12, 0.12)' : '0 4px 16px rgba(15,23,42,0.02)'
+                                      }}
                                     >
                                       <div style={{
                                         display: 'flex',
@@ -15889,6 +16039,12 @@ export default function Admin() {
                                         className="kanban-cards-list" 
                                         style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '480px', overflowY: 'auto' }}
                                       >
+                                        {dragOverCol === 'contra_entrega' && (
+                                          <div className="trello-drop-slot" style={{ background: '#ffedd5', border: '2px dashed #ea580c', color: '#9a3412' }}>
+                                            <span>🚚</span>
+                                            <span>Soltar para Contra Entrega</span>
+                                          </div>
+                                        )}
                                         {contraEntregaFiltrados.map(ped => renderLeadOrOrderCard(ped))}
                                         {contraEntregaFiltrados.length === 0 && (
                                           <p className="empty-column-msg" style={{ textAlign: 'center', color: '#9a3412', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay pedidos contra entrega pendientes.</p>
@@ -15943,10 +16099,39 @@ export default function Admin() {
                                   }}>
                                     {/* Columna 3: Pendientes (Esperando Pago) */}
                                     <div
-                                      className="kanban-column"
-                                      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-                                      onDrop={(e) => handleDropKanban(e, 'pendiente')}
-                                      style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', background: '#f8fafc', borderRadius: '18px', border: '1px solid #e2e8f0', padding: '1rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', minHeight: '380px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
+                                      className={`kanban-column ${dragOverCol === 'pendiente' ? 'is-drag-target' : ''}`}
+                                      onDragOver={(e) => {
+                                        e.preventDefault();
+                                        e.dataTransfer.dropEffect = 'move';
+                                        if (dragOverCol !== 'pendiente') setDragOverCol('pendiente');
+                                      }}
+                                      onDragEnter={(e) => {
+                                        e.preventDefault();
+                                        setDragOverCol('pendiente');
+                                      }}
+                                      onDragLeave={(e) => {
+                                        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                                          setDragOverCol(null);
+                                        }
+                                      }}
+                                      onDrop={(e) => {
+                                        setDragOverCol(null);
+                                        handleDropKanban(e, 'pendiente');
+                                      }}
+                                      style={{
+                                        width: '100%',
+                                        minWidth: 0,
+                                        boxSizing: 'border-box',
+                                        background: dragOverCol === 'pendiente' ? '#fefce8' : '#f8fafc',
+                                        borderRadius: '18px',
+                                        border: dragOverCol === 'pendiente' ? '2px dashed #ca8a04' : '1px solid #e2e8f0',
+                                        padding: '1rem 0.85rem',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '0.85rem',
+                                        minHeight: '380px',
+                                        boxShadow: dragOverCol === 'pendiente' ? '0 10px 25px rgba(202, 138, 4, 0.12)' : '0 4px 16px rgba(15,23,42,0.02)'
+                                      }}
                                     >
                                       <div style={{
                                         display: 'flex',
@@ -15970,6 +16155,12 @@ export default function Admin() {
                                         className="kanban-cards-list" 
                                         style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '480px', overflowY: 'auto' }}
                                       >
+                                        {dragOverCol === 'pendiente' && (
+                                          <div className="trello-drop-slot" style={{ background: '#fef9c3', border: '2px dashed #ca8a04', color: '#854d0e' }}>
+                                            <span>⏳</span>
+                                            <span>Soltar para Pendientes por Pago</span>
+                                          </div>
+                                        )}
                                         {pendientePagoFiltrados.map(ped => renderLeadOrOrderCard(ped))}
                                         {pendientePagoFiltrados.length === 0 && (
                                           <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay pedidos pendientes.</p>
@@ -15979,10 +16170,39 @@ export default function Admin() {
 
                                     {/* Columna 4: Comprobante Recibido (Comprobar Pagos) */}
                                     <div
-                                      className="kanban-column"
-                                      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-                                      onDrop={(e) => handleDropKanban(e, 'comprobante')}
-                                      style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', background: '#f8fafc', borderRadius: '18px', border: '1px solid #e2e8f0', padding: '1rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', minHeight: '380px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
+                                      className={`kanban-column ${dragOverCol === 'comprobante' ? 'is-drag-target' : ''}`}
+                                      onDragOver={(e) => {
+                                        e.preventDefault();
+                                        e.dataTransfer.dropEffect = 'move';
+                                        if (dragOverCol !== 'comprobante') setDragOverCol('comprobante');
+                                      }}
+                                      onDragEnter={(e) => {
+                                        e.preventDefault();
+                                        setDragOverCol('comprobante');
+                                      }}
+                                      onDragLeave={(e) => {
+                                        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                                          setDragOverCol(null);
+                                        }
+                                      }}
+                                      onDrop={(e) => {
+                                        setDragOverCol(null);
+                                        handleDropKanban(e, 'comprobante');
+                                      }}
+                                      style={{
+                                        width: '100%',
+                                        minWidth: 0,
+                                        boxSizing: 'border-box',
+                                        background: dragOverCol === 'comprobante' ? '#eff6ff' : '#f8fafc',
+                                        borderRadius: '18px',
+                                        border: dragOverCol === 'comprobante' ? '2px dashed #2563eb' : '1px solid #e2e8f0',
+                                        padding: '1rem 0.85rem',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '0.85rem',
+                                        minHeight: '380px',
+                                        boxShadow: dragOverCol === 'comprobante' ? '0 10px 25px rgba(37, 99, 235, 0.12)' : '0 4px 16px rgba(15,23,42,0.02)'
+                                      }}
                                     >
                                       <div style={{
                                         display: 'flex',
@@ -16006,6 +16226,12 @@ export default function Admin() {
                                         className="kanban-cards-list" 
                                         style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '480px', overflowY: 'auto' }}
                                       >
+                                        {dragOverCol === 'comprobante' && (
+                                          <div className="trello-drop-slot" style={{ background: '#dbeafe', border: '2px dashed #2563eb', color: '#1e40af' }}>
+                                            <span>🧾</span>
+                                            <span>Soltar para Comprobante Recibido</span>
+                                          </div>
+                                        )}
                                         {comprobarPagosFiltrados.map(ped => renderLeadOrOrderCard(ped))}
                                         {comprobarPagosFiltrados.length === 0 && (
                                           <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay comprobantes por revisar.</p>
@@ -16015,10 +16241,39 @@ export default function Admin() {
 
                                     {/* Columna 5: Clientes (Venta Exitosa) */}
                                     <div
-                                      className="kanban-column"
-                                      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
-                                      onDrop={(e) => handleDropKanban(e, 'completado')}
-                                      style={{ width: '100%', minWidth: 0, boxSizing: 'border-box', background: '#f8fafc', borderRadius: '18px', border: '1px solid #e2e8f0', padding: '1rem 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', minHeight: '380px', boxShadow: '0 4px 16px rgba(15,23,42,0.02)' }}
+                                      className={`kanban-column ${dragOverCol === 'completado' ? 'is-drag-target' : ''}`}
+                                      onDragOver={(e) => {
+                                        e.preventDefault();
+                                        e.dataTransfer.dropEffect = 'move';
+                                        if (dragOverCol !== 'completado') setDragOverCol('completado');
+                                      }}
+                                      onDragEnter={(e) => {
+                                        e.preventDefault();
+                                        setDragOverCol('completado');
+                                      }}
+                                      onDragLeave={(e) => {
+                                        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                                          setDragOverCol(null);
+                                        }
+                                      }}
+                                      onDrop={(e) => {
+                                        setDragOverCol(null);
+                                        handleDropKanban(e, 'completado');
+                                      }}
+                                      style={{
+                                        width: '100%',
+                                        minWidth: 0,
+                                        boxSizing: 'border-box',
+                                        background: dragOverCol === 'completado' ? '#f0fdf4' : '#f8fafc',
+                                        borderRadius: '18px',
+                                        border: dragOverCol === 'completado' ? '2px dashed #16a34a' : '1px solid #e2e8f0',
+                                        padding: '1rem 0.85rem',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        gap: '0.85rem',
+                                        minHeight: '380px',
+                                        boxShadow: dragOverCol === 'completado' ? '0 10px 25px rgba(22, 163, 74, 0.12)' : '0 4px 16px rgba(15,23,42,0.02)'
+                                      }}
                                     >
                                       <div style={{
                                         display: 'flex',
@@ -16042,6 +16297,12 @@ export default function Admin() {
                                         className="kanban-cards-list" 
                                         style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '480px', overflowY: 'auto' }}
                                       >
+                                        {dragOverCol === 'completado' && (
+                                          <div className="trello-drop-slot" style={{ background: '#dcfce7', border: '2px dashed #16a34a', color: '#166534' }}>
+                                            <span>🎉</span>
+                                            <span>Soltar para Venta Exitosa</span>
+                                          </div>
+                                        )}
                                         {clientesFiltrados.map(ped => renderLeadOrOrderCard(ped))}
                                         {clientesFiltrados.length === 0 && (
                                           <p className="empty-column-msg" style={{ textAlign: 'center', color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic', margin: '2rem 0', fontFamily: "'Poppins', sans-serif" }}>No hay ventas exitosas aún.</p>

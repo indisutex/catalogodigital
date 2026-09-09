@@ -3724,7 +3724,63 @@ button:active { transform: scale(0.95); }
 /* ── FLUID & RESPONSIVE DYNAMIC TYPOGRAPHY FOR ORDER CARDS ── */
 .pedido-card-item {
   font-family: 'Poppins', sans-serif;
-  transition: all 0.2s ease;
+  transition: transform 0.18s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.18s ease, opacity 0.18s ease, border-color 0.18s ease;
+  user-select: none;
+}
+
+.pedido-card-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08) !important;
+}
+
+.pedido-card-item:active {
+  cursor: grabbing !important;
+}
+
+.pedido-card-item.is-trello-placeholder {
+  opacity: 0.35 !important;
+  background: #f1f5f9 !important;
+  border: 2px dashed #94a3b8 !important;
+  box-shadow: none !important;
+  transform: scale(0.98) !important;
+  filter: grayscale(0.6) blur(0.2px);
+  pointer-events: none;
+}
+
+.kanban-column {
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+  position: relative;
+}
+
+.kanban-column.is-drag-target {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.09) !important;
+}
+
+.trello-drop-slot {
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-family: 'Poppins', sans-serif;
+  animation: trelloDropPulse 1.6s ease-in-out infinite;
+  margin: 0.4rem 0;
+  pointer-events: none;
+}
+
+@keyframes trelloDropPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.88;
+  }
+  50% {
+    transform: scale(1.015);
+    opacity: 1;
+  }
 }
 
 .pedido-card-name {
