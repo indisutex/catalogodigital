@@ -1160,7 +1160,7 @@ export default function MenuDigital() {
     barrio: '',
     ciudad: ''
   });
-  const [modalidadPago, setModalidadPago] = useState<'transferencia' | 'contra_entrega' | 'whatsapp'>('transferencia');
+  const [modalidadPago, setModalidadPago] = useState<'transferencia' | 'contra_entrega' | 'whatsapp'>('contra_entrega');
   const [leadId, setLeadId] = useState<string | null>(null);
 
   const leadIdRef = useRef<string | null>(null);
@@ -1610,7 +1610,10 @@ export default function MenuDigital() {
         try {
           const parsed = JSON.parse(configuracion.metodos_pago);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            metodosInfo = `\n\n💳 *DATOS PARA TRANSFERENCIA:*\n` + parsed.map((m: any) => `• *${m.banco}* ${m.tipo ? `(${m.tipo})` : ''}: \`${m.numero}\``).join('\n');
+            const validMetodos = parsed.filter((m: any) => (m.banco && m.banco.trim()) || (m.numero && m.numero.trim()));
+            if (validMetodos.length > 0) {
+              metodosInfo = `\n\n💳 *DATOS PARA TRANSFERENCIA:*\n` + validMetodos.map((m: any) => `• *${m.banco}* ${m.tipo ? `(${m.tipo})` : ''}: \`${m.numero}\``).join('\n');
+            }
           } else if (typeof configuracion.metodos_pago === 'string' && configuracion.metodos_pago.trim()) {
             metodosInfo = `\n\n💳 *DATOS PARA TRANSFERENCIA:*\n${configuracion.metodos_pago}`;
           }
@@ -1620,11 +1623,10 @@ export default function MenuDigital() {
           }
         }
       }
-      if (!metodosInfo) {
-        metodosInfo = `\n\n💳 *DATOS PARA TRANSFERENCIA:*\n• *Bancolombia Ahorros:* \`456-789456-01\`\n• *Nequi / Daviplata:* \`318 563 7317\``;
+      if (metodosInfo) {
+        mensaje += metodosInfo;
+        mensaje += `\n\n_Por favor envía el comprobante de pago por este chat para procesar y despachar tu pedido._`;
       }
-      mensaje += metodosInfo;
-      mensaje += `\n\n_Por favor envía el comprobante de pago por este chat para procesar y despachar tu pedido._`;
     } else {
       mensaje += `\n\n*TOTAL PRODUCTOS:* $${total.toLocaleString('es-CO')}`;
       mensaje += `\n*ENVÍO:* PAGO CONTRA ENTREGA\n\nCancela al momento de recibir tu pedido el valor de las prendas + el costo del envío. ¡Fácil, seguro y sin pagos anticipados!`;
@@ -1729,26 +1731,6 @@ export default function MenuDigital() {
     }
 
     if (modalidadPago === 'transferencia') {
-      let metodosStr = '';
-      if (configuracion?.metodos_pago) {
-        try {
-          const parsed = JSON.parse(configuracion.metodos_pago);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            metodosStr = `\n*Metodos de pago:*\n` + parsed.map((m: any) => `  - ${m.banco} ${m.tipo ? `(${m.tipo})` : ''}: ${m.numero}`).join('\n') + `\n`;
-          } else if (typeof configuracion.metodos_pago === 'string' && configuracion.metodos_pago.trim() !== '') {
-            metodosStr = `\n*Metodos de pago:*\n${configuracion.metodos_pago}\n`;
-          }
-        } catch {
-          if (typeof configuracion.metodos_pago === 'string' && configuracion.metodos_pago.trim() !== '') {
-            metodosStr = `\n*Metodos de pago:*\n${configuracion.metodos_pago}\n`;
-          }
-        }
-      }
-
-      if (metodosStr) {
-        mensaje += metodosStr;
-      }
-
       const finalTargetId = orderId || (leadIdRef.current || leadId);
       if (finalTargetId) {
         const shortOrderId = finalTargetId.slice(0, 8);
@@ -3174,7 +3156,18 @@ export default function MenuDigital() {
                                 Transferencia Bancaria
                               </div>
                               <div style={{ fontSize: '0.74rem', color: '#64748b', fontFamily: "'Poppins', sans-serif" }}>
-                                Bancolombia · Nequi · Daviplata
+                                {(() => {
+                                  if (configuracion?.metodos_pago) {
+                                    try {
+                                      const parsed = JSON.parse(configuracion.metodos_pago);
+                                      if (Array.isArray(parsed) && parsed.length > 0) {
+                                        const bancos = parsed.map((m: any) => m.banco?.trim()).filter(Boolean);
+                                        if (bancos.length > 0) return bancos.join(' · ');
+                                      }
+                                    } catch {}
+                                  }
+                                  return 'Bancolombia · Nequi · Daviplata';
+                                })()}
                               </div>
                             </div>
                           </label>
@@ -4414,7 +4407,9 @@ export default function MenuDigital() {
 
               {orderSummaryData.modalidadPago === 'transferencia' && (
                 <div style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.45, fontFamily: "'Poppins', sans-serif" }}>
-                  📲 Los datos para la transferencia bancaria han sido adjuntados en tu mensaje de WhatsApp. Por favor envía tu comprobante de pago por el chat para despachar tu pedido.
+                  📲 {configuracion?.metodos_pago?.trim() && configuracion.metodos_pago !== '[]'
+                    ? 'Los datos para la transferencia bancaria han sido adjuntados en tu mensaje de WhatsApp. Por favor envía tu comprobante de pago por el chat para despachar tu pedido.'
+                    : 'Coordina el pago por transferencia directamente por el chat de WhatsApp.'}
                 </div>
               )}
 
