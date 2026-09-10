@@ -5,6 +5,46 @@
     <link rel="icon" type="image/png" href="/indisutex-logo.png" />
     <link rel="apple-touch-icon" href="/indisutex-logo.png" />
     <link rel="manifest" href="/manifest.json" />
+    <script>
+      (function() {
+        try {
+          var p = window.location.pathname.replace(/^\/+/g, '').split('/')[0];
+          var sys = ['admin', 'superadmin', 'pago', 'guia', 'menu', 'dist', 'assets', 'api'];
+          var m = document.querySelector('link[rel="manifest"]');
+          var fav = document.querySelector('link[rel="icon"]');
+          var apple = document.querySelector('link[rel="apple-touch-icon"]');
+          var logos = {
+            'sublimados_majestic': 'https://dowbsbxvxjzjjhyqmyfr.supabase.co/storage/v1/object/public/archivos/logo_1788193731295.webp',
+            'lucerito': 'https://dowbsbxvxjzjjhyqmyfr.supabase.co/storage/v1/object/public/archivos/logo_1788197445120.webp',
+            'saramantha': 'https://dowbsbxvxjzjjhyqmyfr.supabase.co/storage/v1/object/public/archivos/logo_1788197423178.webp',
+            'lovely': 'https://dowbsbxvxjzjjhyqmyfr.supabase.co/storage/v1/object/public/archivos/logo_1788197761050.webp'
+          };
+          var names = {
+            'sublimados_majestic': 'Sublimados Majestic',
+            'lucerito': 'Pijamas Lucerito',
+            'saramantha': 'Saramantha',
+            'lovely': 'Lovely'
+          };
+          var colors = {
+            'sublimados_majestic': '#f50081',
+            'lucerito': '#cd8dff',
+            'saramantha': '#ff0fdf',
+            'lovely': '#d561ff'
+          };
+          if (p && sys.indexOf(p.toLowerCase()) === -1) {
+            var slug = p.toLowerCase();
+            var icon = logos[slug] || '';
+            var name = names[slug] || '';
+            var color = colors[slug] || '';
+            if (m) {
+              m.href = '/manifest.json?tenant=' + encodeURIComponent(p) + (name ? '&name=' + encodeURIComponent(name) : '') + (color ? '&color=' + encodeURIComponent(color) : '') + (icon ? '&icon=' + encodeURIComponent(icon) : '');
+            }
+            if (icon && fav) fav.href = icon;
+            if (icon && apple) apple.href = icon;
+          }
+        } catch(e) {}
+      })();
+    </script>
     <meta name="theme-color" content="#6366f1" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />

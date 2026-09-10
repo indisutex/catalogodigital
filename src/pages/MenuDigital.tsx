@@ -12,11 +12,15 @@ import { PWAInstallPrompt } from '../components/PWAInstallPrompt';
 import { DEPARTAMENTOS_COLOMBIA, TODAS_LAS_CIUDADES_COLOMBIA } from '../data/colombiaData';
 import { validateWhatsAppPhone } from '../components/WhatsAppPhoneVerifier';
 import AddressVerifier, { validateAddressFormat } from '../components/AddressVerifier';
+import { ChristmasHeroLights } from '../components/ChristmasHeroLights';
+import { ChristmasLogoWreath } from '../components/ChristmasLogoWreath';
 import './MenuDigital.css';
 
 const DEFAULT_LOGOS: Record<string, string> = {
-  'saramantha': 'https://dowbsbxvxjzjjhyqmyfr.supabase.co/storage/v1/object/public/archivos/logo_1782527997229.jpg',
-  'lucerito': 'https://dowbsbxvxjzjjhyqmyfr.supabase.co/storage/v1/object/public/archivos/logo_1785611120589.webp',
+  'sublimados_majestic': 'https://dowbsbxvxjzjjhyqmyfr.supabase.co/storage/v1/object/public/archivos/logo_1788193731295.webp',
+  'lucerito': 'https://dowbsbxvxjzjjhyqmyfr.supabase.co/storage/v1/object/public/archivos/logo_1788197445120.webp',
+  'saramantha': 'https://dowbsbxvxjzjjhyqmyfr.supabase.co/storage/v1/object/public/archivos/logo_1788197423178.webp',
+  'lovely': 'https://dowbsbxvxjzjjhyqmyfr.supabase.co/storage/v1/object/public/archivos/logo_1788197761050.webp'
 };
 
 // Ejecutar sincrónicamente para evitar parpadeo de color
@@ -1795,6 +1799,7 @@ export default function MenuDigital() {
       {Boolean(configuracion?.tematica_navidad) && <SnowfallEffect />}
       <div className={`menu-app-header ${isMediaVideo(mayoristaBranding?.video || configuracion?.video_hero_url) ? 'has-video' : ''}`} style={{ position: 'relative', overflow: 'visible' }}>
         <div className="hero-media-wrap" style={{ position: 'relative', overflow: 'visible', height: 'clamp(240px, 60vw, 360px)', width: '100%' }}>
+          {Boolean(configuracion?.tematica_navidad ?? true) && <ChristmasHeroLights />}
           {/* ── CLIPPED VIDEO / IMAGE BACKGROUND ── */}
           <div className="hero-video-clipper" style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
             {/* ── TICKER STRIP (TOP EDGE OF HERO) ── */}
@@ -1947,23 +1952,7 @@ export default function MenuDigital() {
 
           {/* ── CENTRAL OVERLAPPING LOGO (HERBARIA STYLE - ANCHORED DIRECTLY TO HERO MEDIA BOTTOM) ── */}
           <div className="hero-center-logo" style={{ position: 'relative' }}>
-            {Boolean(configuracion?.tematica_navidad) && (
-              <span 
-                style={{ 
-                  position: 'absolute', 
-                  top: '-15px', 
-                  right: '-10px', 
-                  fontSize: '1.65rem', 
-                  zIndex: 12, 
-                  pointerEvents: 'none', 
-                  filter: 'drop-shadow(0 2px 5px rgba(0,0,0,0.35))',
-                  transform: 'rotate(18deg)'
-                }} 
-                title="¡Feliz Navidad!"
-              >
-                🎅
-              </span>
-            )}
+            {Boolean(configuracion?.tematica_navidad ?? true) && <ChristmasLogoWreath />}
             {(() => {
               const logoSrc = mayoristaBranding?.logo || configuracion?.logo_url || DEFAULT_LOGOS[getTenantId()];
               if (logoSrc && !logoError) {

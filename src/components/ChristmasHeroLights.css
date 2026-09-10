@@ -1,0 +1,120 @@
+/* Christmas Hero Lights - Luces Navideñas Optimizadas para 60FPS */
+
+.christmas-hero-lights-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 12;
+  overflow: hidden;
+  user-select: none;
+  contain: strict;
+  transform: translateZ(0);
+}
+
+/* Cable de guirnalda limpio y festivo */
+.xmas-wire {
+  fill: none;
+  stroke: #164e2d;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.85;
+}
+
+/* Casquillo / base del bombillo */
+.xmas-socket {
+  fill: #064e3b;
+}
+
+/* Bombillos con aceleración de GPU pura (cero repintados de filtros pesados) */
+.xmas-bulb {
+  will-change: opacity, transform;
+  transform-origin: 0 2px;
+}
+
+/* 4 grupos de titileo suave escalonados para efecto natural */
+.xmas-twinkle-0 {
+  animation: xmasTwinkleA 2.2s ease-in-out infinite alternate;
+}
+
+.xmas-twinkle-1 {
+  animation: xmasTwinkleB 1.9s ease-in-out infinite alternate 0.35s;
+}
+
+.xmas-twinkle-2 {
+  animation: xmasTwinkleA 2.6s ease-in-out infinite alternate 0.7s;
+}
+
+.xmas-twinkle-3 {
+  animation: xmasTwinkleB 2.1s ease-in-out infinite alternate 1.15s;
+}
+
+@keyframes xmasTwinkleA {
+  0% {
+    opacity: 0.5;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes xmasTwinkleB {
+  0% {
+    opacity: 0.45;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 0.98;
+    transform: scale(1.03);
+  }
+}
+
+/* Guirnalda superior que enmarca el borde alto del hero */
+.xmas-top-garland {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 42px;
+  overflow: visible;
+}
+
+/* Guirnaldas laterales confinadas exclusivamente a la mitad superior (lejos de la barra rosada) */
+.xmas-left-garland {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 28px;
+  height: 50%;
+  max-height: 150px;
+  overflow: visible;
+}
+
+.xmas-right-garland {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 28px;
+  height: 50%;
+  max-height: 150px;
+  overflow: visible;
+}
+
+/* Adaptabilidad móvil: aún más esbelta para no interferir con botones */
+@media (max-width: 600px) {
+  .xmas-top-garland {
+    height: 34px;
+  }
+
+  .xmas-left-garland,
+  .xmas-right-garland {
+    width: 22px;
+    height: 45%;
+    max-height: 125px;
+  }
+}

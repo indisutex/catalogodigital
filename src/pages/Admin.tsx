@@ -5,12 +5,13 @@ import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
 import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista, PQRS } from '../types';
 import './Admin.css';
-import { X, FileText, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Minus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, ChevronRight, Wrench, ArrowUpDown, Filter, MapPin, XCircle, Truck, Clock, FileCheck, CheckCircle, Landmark, BookOpen, LifeBuoy, ShoppingCart, ClipboardList, Star, Ban, ExternalLink, Flame, RotateCcw, Sparkles } from 'lucide-react';
+import { X, FileText, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Minus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, ChevronRight, Wrench, ArrowUpDown, Filter, MapPin, XCircle, Truck, Clock, FileCheck, CheckCircle, Landmark, BookOpen, LifeBuoy, ShoppingCart, ClipboardList, Star, Ban, ExternalLink, Flame, RotateCcw, Sparkles, QrCode } from 'lucide-react';
 
 import * as XLSX from 'xlsx';
 import { ERPContabilidadService } from '../lib/erpContabilidadService';
 import { ERPMainModule, type ERPTab } from '../components/erp/ERPMainModule';
 import WhatsAppPhoneVerifier, { validateWhatsAppPhone } from '../components/WhatsAppPhoneVerifier';
+import { QRCodeGeneratorModule } from '../components/QRCodeGeneratorModule';
 
 const SECRET_PIN = '0000';
 
@@ -1056,6 +1057,24 @@ export default function Admin() {
     if (el) el.remove();
   };
 
+  useEffect(() => {
+    const handleGlobalDragEnd = () => {
+      setDraggingCardId(null);
+      setIsDragActive(false);
+      setDragOverCol(null);
+      const el = document.getElementById('trello-drag-ghost');
+      if (el) el.remove();
+    };
+    window.addEventListener('dragend', handleGlobalDragEnd);
+    window.addEventListener('drop', handleGlobalDragEnd);
+    window.addEventListener('mouseup', handleGlobalDragEnd);
+    return () => {
+      window.removeEventListener('dragend', handleGlobalDragEnd);
+      window.removeEventListener('drop', handleGlobalDragEnd);
+      window.removeEventListener('mouseup', handleGlobalDragEnd);
+    };
+  }, []);
+
   const uniqueCampanas = useMemo(() => {
     const campanas = materiales.map(m => m.campana).filter(Boolean);
     return Array.from(new Set(campanas));
@@ -1229,15 +1248,16 @@ export default function Admin() {
         onDragStart={(e) => handleCardDragStart(e, ped, Boolean(isLead))}
         onDragEnd={handleCardDragEnd}
         style={{
-          background: isThisCardBeingDragged ? '#f1f5f9' : '#ffffff',
+          background: '#ffffff',
           borderRadius: '16px',
-          border: isThisCardBeingDragged ? '2px dashed #94a3b8' : '1px solid #e2e8f0',
+          border: isThisCardBeingDragged ? '1.5px dashed #cbd5e1' : '1px solid #e2e8f0',
           boxShadow: isThisCardBeingDragged ? 'none' : '0 3px 14px rgba(15, 23, 42, 0.04)',
           padding: '0.75rem 0.8rem',
           margin: '0 0 0.65rem 0',
           cursor: isThisCardBeingDragged ? 'grabbing' : 'grab',
-          opacity: isThisCardBeingDragged ? 0.35 : 1,
-          transform: isThisCardBeingDragged ? 'scale(0.98)' : undefined
+          opacity: isThisCardBeingDragged ? 0.55 : 1,
+          transform: isThisCardBeingDragged ? 'scale(0.99)' : undefined,
+          transition: 'border 0.2s ease, opacity 0.15s ease'
         }}
       >
         {/* ── HEADER BLOCK (Compact & Clean without redundant status pills) ── */}
@@ -1470,7 +1490,7 @@ export default function Admin() {
                     +{parsedProds.length - 1} más
                   </span>
                 )}
-                {ped.estado !== 'cancelado' && !isExitoso && (
+                {Boolean(isLead) && ped.estado !== 'cancelado' && !isExitoso && (
                   <button
                     type="button"
                     onClick={(e) => {
@@ -2610,7 +2630,7 @@ export default function Admin() {
   const [orderSearchQuery, setOrderSearchQuery] = useState<string>('');
   const [orderFilterDate, setOrderFilterDate] = useState<string>('');
   const [orderSortBy, setOrderSortBy] = useState<string>('date_desc');
-  const [configSubTab, setConfigSubTab] = useState<'negocio' | 'bancos' | 'apariencia' | 'pos' | 'desarrollador' | 'sistema'>('negocio');
+  const [configSubTab, setConfigSubTab] = useState<'negocio' | 'bancos' | 'apariencia' | 'pos' | 'qr' | 'desarrollador' | 'sistema'>('negocio');
   const [showCatalogOtherOptions, setShowCatalogOtherOptions] = useState(false);
 
   // Filtros para Ventas POS
@@ -5568,6 +5588,11 @@ export default function Admin() {
   const handleDropKanban = async (e: React.DragEvent, targetCol: string) => {
     e.preventDefault();
     e.stopPropagation();
+    setDraggingCardId(null);
+    setIsDragActive(false);
+    setDragOverCol(null);
+    const ghostEl = document.getElementById('trello-drag-ghost');
+    if (ghostEl) ghostEl.remove();
     let droppedId: string | null = null;
     try {
       const dataStr = e.dataTransfer.getData('text/plain');
@@ -5675,6 +5700,9 @@ export default function Admin() {
       console.error('Error al arrastrar pedido:', err);
       showToast('Error al mover tarjeta: ' + (err.message || ''), 'error');
     } finally {
+      setDraggingCardId(null);
+      setIsDragActive(false);
+      setDragOverCol(null);
       if (droppedId) {
         setTimeout(() => {
           activeDroppingIdsRef.current.delete(droppedId!);
@@ -8155,6 +8183,7 @@ export default function Admin() {
                   { key: 'bancos', label: 'Bancos & Pagos', Icon: CreditCard },
                   { key: 'apariencia', label: 'Diseño & Catálogo', Icon: Palette },
                   { key: 'pos', label: 'POS & Impresión', Icon: Printer },
+                  { key: 'qr', label: 'Código QR', Icon: QrCode },
                   { key: 'desarrollador', label: 'Desarrollador & APIs', Icon: Code2 },
                   { key: 'sistema', label: 'Reglas & Purga', Icon: Settings }
                 ].map(sub => {
@@ -8221,6 +8250,7 @@ export default function Admin() {
                       <option value="bancos">💳 Bancos & Pagos</option>
                       <option value="apariencia">🎨 Diseño & Catálogo</option>
                       <option value="pos">🖨️ POS & Impresión</option>
+                      <option value="qr">📱 Código QR</option>
                       <option value="desarrollador">💻 Desarrollador & APIs</option>
                       <option value="sistema">⚙️ Reglas & Purga</option>
                     </select>
@@ -11981,6 +12011,14 @@ export default function Admin() {
                         </div>
                       </div>
                     </>
+                  )}
+
+                  {/* ── SUB-TAB: CÓDIGO QR ── */}
+                  {configSubTab === 'qr' && (
+                    <QRCodeGeneratorModule
+                      configuracion={configuracion}
+                      mayoristas={mayoristas}
+                    />
                   )}
 
                   {/* ── SUB-TAB 5: DESARROLLADOR & APIS ── */}
@@ -16636,6 +16674,7 @@ export default function Admin() {
                   const isContra = mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra')) || selectedPedido.estado === 'contra_entrega' || selectedPedido.estado === 'mensaje_enviado' || selectedPedido.estado === 'confirmado' || selectedPedido.estado === 'despachado';
                   const contraStatus = getContraStatus(selectedPedido);
                   const auditLogs = getOrderAuditLogs(selectedPedido);
+                  const isLeadOrder = Boolean((selectedPedido as any).isLead || selectedPedido.estado === 'abandonado' || (selectedPedido as any).retargeting_estado || (!selectedPedido.estado && !selectedPedido.atendido && !selectedPedido.numero_guia));
 
                   return (
                     <div style={{ fontFamily: "'Poppins', sans-serif" }}>
@@ -16700,7 +16739,7 @@ export default function Admin() {
                           };
 
                           return (
-                            <div className="modal-col-card">
+                            <div className="modal-col-card modal-col-cliente">
                               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem' }}>
                                 <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                                   <User size={16} color="var(--primary-color, #0ea5e9)" /> Datos del Cliente
@@ -16849,16 +16888,16 @@ export default function Admin() {
                                 </div>
 
                                 {/* Método de Envío y Método de Pago (Sin corchetes y ordenado) */}
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
-                                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '0.5rem 0.65rem', borderRadius: '10px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '0.55rem' }}>
+                                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '0.5rem 0.65rem', borderRadius: '10px', minWidth: 0 }}>
                                     <h5 style={{ margin: '0 0 0.15rem 0', color: '#64748b', fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.3px', fontWeight: 500 }}>Método de Envío</h5>
-                                    <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.8rem', lineHeight: 1.25 }}>
+                                    <p style={{ margin: 0, fontWeight: 500, color: '#0f172a', fontSize: '0.78rem', lineHeight: 1.3, overflowWrap: 'break-word' }}>
                                       {displayMetodoEnvio}
                                     </p>
                                   </div>
-                                  <div style={{ background: isContra ? '#fff7ed' : '#f0fdf4', border: isContra ? '1px solid #fed7aa' : '1px solid #bbf7d0', padding: '0.5rem 0.65rem', borderRadius: '10px' }}>
+                                  <div style={{ background: isContra ? '#fff7ed' : '#f0fdf4', border: isContra ? '1px solid #fed7aa' : '1px solid #bbf7d0', padding: '0.5rem 0.65rem', borderRadius: '10px', minWidth: 0 }}>
                                     <h5 style={{ margin: '0 0 0.15rem 0', color: isContra ? '#9a3412' : '#166534', fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.3px', fontWeight: 500 }}>Método de Pago</h5>
-                                    <p style={{ margin: 0, fontWeight: 500, color: isContra ? '#c2410c' : '#15803d', fontSize: '0.82rem', lineHeight: 1.25, whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>
+                                    <p style={{ margin: 0, fontWeight: 500, color: isContra ? '#c2410c' : '#15803d', fontSize: '0.8rem', lineHeight: 1.3, overflowWrap: 'break-word', fontFamily: "'Poppins', sans-serif" }}>
                                       {displayMetodoPago}
                                     </p>
                                   </div>
@@ -16879,9 +16918,9 @@ export default function Admin() {
                         {/* ════════════════════════════════════════════════════════
                             COLUMNA 2: 🛍️ PRODUCTOS SOLICITADOS
                         ════════════════════════════════════════════════════════ */}
-                        <div className="modal-col-card">
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem', gap: '0.5rem' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0 }}>
+                        <div className="modal-col-card modal-col-productos">
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0, flexWrap: 'wrap' }}>
                               <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.35rem', whiteSpace: 'nowrap' }}>
                                 <Package size={16} color="var(--primary-color, #0ea5e9)" /> Productos ({prodsList.length})
                               </h4>
@@ -16896,7 +16935,7 @@ export default function Admin() {
                               )}
                             </div>
 
-                            {selectedPedido.estado !== 'cancelado' && (
+                            {Boolean(isLeadOrder) && selectedPedido.estado !== 'cancelado' && (
                               <button
                                 type="button"
                                 onClick={() => {
@@ -16938,35 +16977,37 @@ export default function Admin() {
                                 <p style={{ margin: '0 0 0.75rem 0', color: '#64748b', fontSize: '0.82rem', fontStyle: 'italic' }}>
                                   No hay productos registrados en este pedido / interesado.
                                 </p>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setShowAddProductOrderModal(true);
-                                    setSelectedProductToAdd(null);
-                                    setSelectedSizeToAdd('');
-                                    setSelectedPrintToAdd('');
-                                    setQuantityToAdd(1);
-                                    setCustomPriceToAdd(0);
-                                    setSearchProductOrderQuery('');
-                                  }}
-                                  style={{
-                                    background: 'var(--primary-color, #0ea5e9)',
-                                    color: '#ffffff',
-                                    border: 'none',
-                                    borderRadius: '8px',
-                                    padding: '0.4rem 0.8rem',
-                                    fontSize: '0.78rem',
-                                    fontWeight: 500,
-                                    cursor: 'pointer',
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: '0.35rem',
-                                    fontFamily: "'Poppins', sans-serif"
-                                  }}
-                                >
-                                  <Plus size={13} />
-                                  <span>Agregar el primer producto</span>
-                                </button>
+                                {Boolean(isLeadOrder) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setShowAddProductOrderModal(true);
+                                      setSelectedProductToAdd(null);
+                                      setSelectedSizeToAdd('');
+                                      setSelectedPrintToAdd('');
+                                      setQuantityToAdd(1);
+                                      setCustomPriceToAdd(0);
+                                      setSearchProductOrderQuery('');
+                                    }}
+                                    style={{
+                                      background: 'var(--primary-color, #0ea5e9)',
+                                      color: '#ffffff',
+                                      border: 'none',
+                                      borderRadius: '8px',
+                                      padding: '0.4rem 0.8rem',
+                                      fontSize: '0.78rem',
+                                      fontWeight: 500,
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '0.35rem',
+                                      fontFamily: "'Poppins', sans-serif"
+                                    }}
+                                  >
+                                    <Plus size={13} />
+                                    <span>Agregar el primer producto</span>
+                                  </button>
+                                )}
                               </div>
                             ) : (
                               prodsList.map((prod: any, idx: number) => {
@@ -16984,33 +17025,47 @@ export default function Admin() {
                                   (productos.find((p: any) => p.id === prod.id || (p.referencia && p.referencia === prod.referencia))?.imagen_url);
 
                                 return (
-                                  <div key={idx} style={{ display: 'flex', alignItems: 'center', background: '#f8fafc', padding: '0.55rem 0.75rem', borderRadius: '12px', border: '1px solid #e2e8f0', gap: '0.55rem' }}>
+                                  <div key={idx} style={{ display: 'flex', alignItems: 'center', background: '#f8fafc', padding: '0.45rem 0.65rem', borderRadius: '12px', border: '1px solid #e2e8f0', gap: '0.45rem', width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
                                     {/* Miniatura */}
                                     {prodImg ? (
-                                      <img src={prodImg} alt="" style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #e2e8f0', background: '#ffffff', flexShrink: 0 }} />
+                                      <img src={prodImg} alt="" style={{ width: '38px', height: '38px', borderRadius: '8px', objectFit: 'cover', border: '1px solid #e2e8f0', background: '#ffffff', flexShrink: 0 }} />
                                     ) : (
-                                      <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', flexShrink: 0 }}>
+                                      <div style={{ width: '38px', height: '38px', borderRadius: '8px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', flexShrink: 0 }}>
                                         🛍️
                                       </div>
                                     )}
 
                                     {/* Info Producto */}
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                      <h5 style={{ margin: 0, color: '#0f172a', fontSize: '0.84rem', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={prod.nombre}>
+                                    <div style={{ flex: '1 1 0%', minWidth: 0, overflow: 'hidden' }}>
+                                      <h5
+                                        style={{
+                                          margin: 0,
+                                          color: '#0f172a',
+                                          fontSize: '0.82rem',
+                                          fontWeight: 500,
+                                          lineHeight: 1.25,
+                                          display: '-webkit-box',
+                                          WebkitLineClamp: 2,
+                                          WebkitBoxOrient: 'vertical',
+                                          overflow: 'hidden',
+                                          wordBreak: 'break-word'
+                                        }}
+                                        title={prod.nombre}
+                                      >
                                         {prod.nombre}
                                       </h5>
-                                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.15rem', flexWrap: 'wrap' }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginTop: '0.15rem', flexWrap: 'wrap' }}>
                                         {prod.talla && (
-                                          <span style={{ background: '#f3e8ff', color: '#7e22ce', fontSize: '0.66rem', fontWeight: 500, padding: '1px 5px', borderRadius: '4px' }}>
+                                          <span style={{ background: '#f3e8ff', color: '#7e22ce', fontSize: '0.64rem', fontWeight: 500, padding: '1px 5px', borderRadius: '4px' }}>
                                             {prod.talla}
                                           </span>
                                         )}
                                         {prod.estampado && (
-                                          <span style={{ background: '#e0f2fe', color: '#0369a1', fontSize: '0.66rem', fontWeight: 500, padding: '1px 5px', borderRadius: '4px' }}>
+                                          <span style={{ background: '#e0f2fe', color: '#0369a1', fontSize: '0.64rem', fontWeight: 500, padding: '1px 5px', borderRadius: '4px' }}>
                                             {prod.estampado}
                                           </span>
                                         )}
-                                        <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                                        <span style={{ fontSize: '0.7rem', color: '#64748b' }}>
                                           ${unitPrice.toLocaleString('es-CO')} c/u
                                         </span>
                                       </div>
@@ -17018,38 +17073,38 @@ export default function Admin() {
 
                                     {/* Stepper Cantidad */}
                                     {selectedPedido.estado !== 'cancelado' && (
-                                      <div style={{ display: 'flex', alignItems: 'center', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '2px', flexShrink: 0 }}>
+                                      <div style={{ display: 'flex', alignItems: 'center', background: '#ffffff', border: '1px solid #cbd5e1', borderRadius: '7px', padding: '1px', flexShrink: 0 }}>
                                         <button
                                           type="button"
                                           disabled={savingOrderProducts}
                                           onClick={() => handleUpdateOrderProductQuantity(idx, -1)}
-                                          style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px 5px', color: '#64748b', display: 'flex', alignItems: 'center', borderRadius: '4px' }}
+                                          style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '1px 4px', color: '#64748b', display: 'flex', alignItems: 'center', borderRadius: '3px' }}
                                           title={cant === 1 ? 'Eliminar del pedido' : 'Disminuir cantidad'}
                                         >
-                                          <Minus size={11} />
+                                          <Minus size={10} />
                                         </button>
-                                        <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#0f172a', minWidth: '18px', textAlign: 'center', fontFamily: "'Poppins', sans-serif" }}>
+                                        <span style={{ fontSize: '0.78rem', fontWeight: 600, color: '#0f172a', minWidth: '16px', textAlign: 'center', fontFamily: "'Poppins', sans-serif" }}>
                                           {cant}
                                         </span>
                                         <button
                                           type="button"
                                           disabled={savingOrderProducts}
                                           onClick={() => handleUpdateOrderProductQuantity(idx, 1)}
-                                          style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '2px 5px', color: '#64748b', display: 'flex', alignItems: 'center', borderRadius: '4px' }}
+                                          style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '1px 4px', color: '#64748b', display: 'flex', alignItems: 'center', borderRadius: '3px' }}
                                           title="Aumentar cantidad"
                                         >
-                                          <Plus size={11} />
+                                          <Plus size={10} />
                                         </button>
                                       </div>
                                     )}
 
                                     {/* Total Línea */}
-                                    <div style={{ textAlign: 'right', flexShrink: 0, minWidth: '60px' }}>
-                                      <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.86rem', display: 'block' }}>
+                                    <div style={{ textAlign: 'right', flexShrink: 0, minWidth: '55px' }}>
+                                      <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.82rem', display: 'block', whiteSpace: 'nowrap' }}>
                                         ${lineTotal.toLocaleString('es-CO')}
                                       </span>
                                       {isWholesaleOrder && (
-                                        <span style={{ fontSize: '0.62rem', color: '#166534', background: '#dcfce7', padding: '0.05rem 0.3rem', borderRadius: '4px', fontWeight: 500, display: 'inline-block' }}>
+                                        <span style={{ fontSize: '0.6rem', color: '#166534', background: '#dcfce7', padding: '0.05rem 0.25rem', borderRadius: '4px', fontWeight: 500, display: 'inline-block', whiteSpace: 'nowrap' }}>
                                           P. Mayor
                                         </span>
                                       )}
@@ -17061,10 +17116,10 @@ export default function Admin() {
                                         type="button"
                                         disabled={savingOrderProducts}
                                         onClick={() => handleRemoveOrderProduct(idx)}
-                                        style={{ border: 'none', background: '#fee2e2', color: '#dc2626', borderRadius: '7px', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'background 0.15s ease' }}
+                                        style={{ border: 'none', background: '#fee2e2', color: '#dc2626', borderRadius: '6px', width: '26px', height: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0, transition: 'background 0.15s ease' }}
                                         title="Eliminar producto"
                                       >
-                                        <Trash2 size={13} />
+                                        <Trash2 size={12} />
                                       </button>
                                     )}
                                   </div>
@@ -17083,7 +17138,7 @@ export default function Admin() {
                         {/* ════════════════════════════════════════════════════════
                             COLUMNA 3: 🚚 LOGÍSTICA, COBRO Y ACCIONES
                         ════════════════════════════════════════════════════════ */}
-                        <div className="modal-col-card">
+                        <div className="modal-col-card modal-col-logistica">
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.65rem' }}>
                             <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
                               <Truck size={16} color="var(--primary-color, #0ea5e9)" /> Logística y Acciones
@@ -17091,9 +17146,9 @@ export default function Admin() {
                           </div>
 
                           {/* Total del Pedido */}
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '0.75rem 0.95rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                            <span style={{ fontSize: '0.88rem', fontWeight: 500, color: '#334155' }}>Total a Cobrar:</span>
-                            <span style={{ fontSize: '1.25rem', fontWeight: 600, color: isContra ? '#ea580c' : 'var(--primary-color, #0ea5e9)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#f8fafc', padding: '0.75rem 0.95rem', borderRadius: '12px', border: '1px solid #e2e8f0', minWidth: 0, gap: '0.5rem' }}>
+                            <span style={{ fontSize: '0.88rem', fontWeight: 500, color: '#334155', flexShrink: 0, whiteSpace: 'nowrap' }}>Total a Cobrar:</span>
+                            <span style={{ fontSize: '1.2rem', fontWeight: 600, color: isContra ? '#ea580c' : 'var(--primary-color, #0ea5e9)', textAlign: 'right', whiteSpace: 'nowrap', minWidth: 0 }}>
                               ${selectedPedido.total.toLocaleString()}
                             </span>
                           </div>
@@ -17759,26 +17814,29 @@ export default function Admin() {
                                     </button>
                                   )}
 
-                                  <div style={{ display: 'flex', gap: '0.45rem' }}>
+                                  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.35fr) minmax(0, 1fr)', gap: '0.45rem', width: '100%', boxSizing: 'border-box' }}>
                                     <button
                                       type="button"
                                       style={{
-                                        flex: 1,
-                                        padding: '0.65rem 0.75rem',
+                                        width: '100%',
+                                        minWidth: 0,
+                                        padding: '0.65rem 0.5rem',
                                         background: '#25D366',
                                         color: '#ffffff',
                                         border: 'none',
                                         borderRadius: '10px',
                                         cursor: 'pointer',
                                         fontWeight: 500,
-                                        fontSize: '0.8rem',
+                                        fontSize: '0.78rem',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        gap: '0.4rem',
+                                        gap: '0.35rem',
                                         fontFamily: "'Poppins', sans-serif",
                                         boxShadow: '0 2px 8px rgba(37, 211, 102, 0.22)',
-                                        transition: 'all 0.15s ease'
+                                        transition: 'all 0.15s ease',
+                                        boxSizing: 'border-box',
+                                        whiteSpace: 'nowrap'
                                       }}
                                       onClick={() => {
                                         let msg = '';
@@ -17805,27 +17863,31 @@ export default function Admin() {
                                         window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
                                       }}
                                     >
-                                      <MessageSquare size={15} color="#16a34a" /> <span>{selectedPedido.pantallazo_url ? 'Escribir por WhatsApp' : 'Cobrar por WhatsApp'}</span>
+                                      <MessageSquare size={14} color="#16a34a" style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedPedido.pantallazo_url ? 'WhatsApp' : 'Cobrar WhatsApp'}</span>
+
                                     </button>
 
                                     <button
                                       type="button"
                                       style={{
-                                        flex: 1,
-                                        padding: '0.65rem 0.75rem',
+                                        width: '100%',
+                                        minWidth: 0,
+                                        padding: '0.65rem 0.5rem',
                                         background: '#f8fafc',
                                         color: '#334155',
                                         border: '1.5px solid #cbd5e1',
                                         borderRadius: '10px',
                                         cursor: 'pointer',
                                         fontWeight: 500,
-                                        fontSize: '0.8rem',
+                                        fontSize: '0.78rem',
                                         display: 'flex',
                                         alignItems: 'center',
                                         justifyContent: 'center',
-                                        gap: '0.4rem',
+                                        gap: '0.35rem',
                                         fontFamily: "'Poppins', sans-serif",
-                                        transition: 'all 0.15s ease'
+                                        transition: 'all 0.15s ease',
+                                        boxSizing: 'border-box',
+                                        whiteSpace: 'nowrap'
                                       }}
                                       onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.borderColor = '#94a3b8'; }}
                                       onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
@@ -17835,7 +17897,8 @@ export default function Admin() {
                                         window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
                                       }}
                                     >
-                                      <Truck size={15} color="#0ea5e9" /> <span>Despachar</span>
+                                      <Truck size={15} color="var(--primary-color, #0ea5e9)" style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Despachar</span>
+
                                     </button>
                                   </div>
 

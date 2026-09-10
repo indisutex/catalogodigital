@@ -1,0 +1,126 @@
+/* Christmas Logo Wreath - Guirnalda festiva con luces alumbrando radiantemente */
+
+.christmas-logo-wreath {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) translateZ(0);
+  width: 110px;
+  height: 110px;
+  pointer-events: none;
+  z-index: 10;
+  overflow: visible;
+  user-select: none;
+}
+
+.wreath-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  display: block;
+}
+
+/* Cables de pino de la corona */
+.wreath-wire-main {
+  fill: none;
+  stroke: #14532d;
+  stroke-width: 2.4;
+  stroke-linecap: round;
+}
+
+.wreath-wire-accent {
+  fill: none;
+  stroke: #166534;
+  stroke-width: 1.3;
+  stroke-dasharray: 5 3;
+  opacity: 0.9;
+}
+
+/* Halos de resplandor ambiental por color */
+.wreath-halo-gold { fill: #ffb703; opacity: 0.55; }
+.wreath-halo-intense-gold { fill: #fff176; opacity: 0.75; }
+
+.wreath-halo-red { fill: #ff1744; opacity: 0.55; }
+.wreath-halo-intense-red { fill: #ff8a80; opacity: 0.75; }
+
+.wreath-halo-green { fill: #00e676; opacity: 0.55; }
+.wreath-halo-intense-green { fill: #b9f6ca; opacity: 0.75; }
+
+.wreath-halo-blue { fill: #00d4ff; opacity: 0.55; }
+.wreath-halo-intense-blue { fill: #80d8ff; opacity: 0.75; }
+
+.wreath-halo-pink { fill: #ff1493; opacity: 0.55; }
+.wreath-halo-intense-pink { fill: #ff80ab; opacity: 0.75; }
+
+.wreath-halo-white { fill: #ffe082; opacity: 0.6; }
+.wreath-halo-intense-white { fill: #fff9c4; opacity: 0.8; }
+
+/* Resplandor brillante y vivo que hace que las luces alumbren de verdad */
+.wreath-bulb-gold {
+  filter: drop-shadow(0 0 4px #ffb703) drop-shadow(0 0 9px rgba(255, 183, 3, 0.8));
+}
+
+.wreath-bulb-red {
+  filter: drop-shadow(0 0 4px #ff1744) drop-shadow(0 0 9px rgba(255, 23, 68, 0.8));
+}
+
+.wreath-bulb-green {
+  filter: drop-shadow(0 0 4px #00e676) drop-shadow(0 0 9px rgba(0, 230, 118, 0.8));
+}
+
+.wreath-bulb-blue {
+  filter: drop-shadow(0 0 4px #00d4ff) drop-shadow(0 0 9px rgba(0, 212, 255, 0.8));
+}
+
+.wreath-bulb-pink {
+  filter: drop-shadow(0 0 4px #ff1493) drop-shadow(0 0 9px rgba(255, 20, 147, 0.8));
+}
+
+.wreath-bulb-white {
+  filter: drop-shadow(0 0 4px #fff176) drop-shadow(0 0 9px rgba(255, 241, 118, 0.85));
+}
+
+/* Aceleración pura por GPU para animación fluida a 60 FPS */
+.wreath-bulb {
+  will-change: opacity, transform;
+  transform-origin: 0 1px;
+}
+
+/* 4 secuencias de titileo con intensidad alta (siempre alumbran, nunca quedan apagadas) */
+.wreath-twinkle-0 {
+  animation: wreathTwinkleA 1.9s ease-in-out infinite alternate;
+}
+
+.wreath-twinkle-1 {
+  animation: wreathTwinkleB 1.7s ease-in-out infinite alternate 0.35s;
+}
+
+.wreath-twinkle-2 {
+  animation: wreathTwinkleA 2.2s ease-in-out infinite alternate 0.7s;
+}
+
+.wreath-twinkle-3 {
+  animation: wreathTwinkleB 1.9s ease-in-out infinite alternate 1.1s;
+}
+
+@keyframes wreathTwinkleA {
+  0% {
+    opacity: 0.76;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+
+@keyframes wreathTwinkleB {
+  0% {
+    opacity: 0.72;
+    transform: scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.07);
+  }
+}
