@@ -1818,7 +1818,6 @@ export default function Admin() {
           {(isLead || ped.estado === 'cancelado') ? (
             <button 
               type="button" 
-              className="pedido-card-btn"
               onClick={() => {
                 const cleanPhone = (telefonoCliente || '').replace(/\D/g, '');
                 if (!cleanPhone) { showToast('Teléfono inválido para WhatsApp', 'error'); return; }
