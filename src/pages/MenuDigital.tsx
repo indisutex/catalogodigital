@@ -690,9 +690,15 @@ export default function MenuDigital() {
         v.defaultMuted = true;
         v.playsInline = true;
         v.volume = 0;
+        v.controls = false;
         v.setAttribute('muted', 'muted');
         v.setAttribute('playsinline', 'true');
         v.setAttribute('webkit-playsinline', 'true');
+        v.setAttribute('x5-playsinline', 'true');
+        v.setAttribute('x5-video-player-type', 'h5-page');
+        v.setAttribute('x5-video-player-fullscreen', 'false');
+        v.setAttribute('disablePictureInPicture', 'true');
+        v.setAttribute('disableRemotePlayback', 'true');
         v.setAttribute('autoplay', 'true');
         const playPromise = v.play();
         if (playPromise !== undefined) {
@@ -707,27 +713,22 @@ export default function MenuDigital() {
 
     playHeroVideo();
 
-    // Eventos de respaldo para activar la reproducción en móviles/Safari si el navegador la pausó por políticas de autoplay
-    const handleUserInteraction = () => {
-      if (heroVideoRef.current && heroVideoRef.current.paused) {
+    // Reanudar suavemente solo si el usuario vuelve a la app/pestaña (pageshow/visibilitychange)
+    // NUNCA atar v.play() a touchstart o scroll, ya que WebViews como TikTok/Instagram interceptan
+    // la llamada durante gestos de toque y abren el reproductor en pantalla completa/modal,
+    // bloqueando el scroll del usuario en bucle.
+    const handleVisibility = () => {
+      if (!document.hidden && heroVideoRef.current && heroVideoRef.current.paused) {
         playHeroVideo();
       }
     };
 
-    window.addEventListener('touchstart', handleUserInteraction, { passive: true });
-    window.addEventListener('pointerdown', handleUserInteraction, { passive: true });
-    window.addEventListener('click', handleUserInteraction, { passive: true });
-    window.addEventListener('scroll', handleUserInteraction, { passive: true });
-    document.addEventListener('visibilitychange', handleUserInteraction);
-    window.addEventListener('pageshow', handleUserInteraction);
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('pageshow', handleVisibility);
 
     return () => {
-      window.removeEventListener('touchstart', handleUserInteraction);
-      window.removeEventListener('pointerdown', handleUserInteraction);
-      window.removeEventListener('click', handleUserInteraction);
-      window.removeEventListener('scroll', handleUserInteraction);
-      document.removeEventListener('visibilitychange', handleUserInteraction);
-      window.removeEventListener('pageshow', handleUserInteraction);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('pageshow', handleVisibility);
     };
   }, [heroVideoUrl]);
   
@@ -1783,9 +1784,9 @@ export default function MenuDigital() {
         <div className="hero-media-wrap" style={{ position: 'relative', overflow: 'visible', height: 'clamp(240px, 60vw, 360px)', width: '100%' }}>
           {Boolean(configuracion?.tematica_navidad ?? true) && <ChristmasHeroLights />}
           {/* ── CLIPPED VIDEO / IMAGE BACKGROUND ── */}
-          <div className="hero-video-clipper" style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
+          <div className="hero-video-clipper" style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', touchAction: 'pan-y' }}>
             {/* ── TICKER STRIP (TOP EDGE OF HERO) ── */}
-            <div className="hero-ticker-wrap">
+            <div className="hero-ticker-wrap" style={{ pointerEvents: 'none', touchAction: 'pan-y' }}>
               <div className="hero-ticker-track">
                 {(mayoristaBranding ? [
                   `✨ ${mayoristaBranding.nombre} · Tienda Oficial`,
@@ -1832,9 +1833,23 @@ export default function MenuDigital() {
                   loop 
                   muted 
                   playsInline 
+                  controls={false}
+                  disablePictureInPicture
+                  // @ts-ignore
+                  disableRemotePlayback="true"
+                  // @ts-ignore
+                  webkit-playsinline="true"
+                  // @ts-ignore
+                  x5-playsinline="true"
+                  // @ts-ignore
+                  x5-video-player-type="h5-page"
+                  // @ts-ignore
+                  x5-video-player-fullscreen="false"
+                  aria-hidden="true"
+                  tabIndex={-1}
                   preload="auto"
                   className="hero-background-video"
-                  style={{ height: '100%', width: '100%', objectFit: 'cover', opacity: 1, filter: 'none' }}
+                  style={{ height: '100%', width: '100%', objectFit: 'cover', opacity: 1, filter: 'none', pointerEvents: 'none', userSelect: 'none', touchAction: 'pan-y' }}
                   ref={(el) => {
                     (heroVideoRef as any).current = el;
                     if (el) {
@@ -1842,9 +1857,15 @@ export default function MenuDigital() {
                       el.defaultMuted = true;
                       el.playsInline = true;
                       el.volume = 0;
+                      el.controls = false;
                       el.setAttribute('muted', 'muted');
                       el.setAttribute('playsinline', 'true');
                       el.setAttribute('webkit-playsinline', 'true');
+                      el.setAttribute('x5-playsinline', 'true');
+                      el.setAttribute('x5-video-player-type', 'h5-page');
+                      el.setAttribute('x5-video-player-fullscreen', 'false');
+                      el.setAttribute('disablePictureInPicture', 'true');
+                      el.setAttribute('disableRemotePlayback', 'true');
                       el.setAttribute('autoplay', 'true');
                       const promise = el.play();
                       if (promise !== undefined) {
@@ -1862,9 +1883,15 @@ export default function MenuDigital() {
                     v.defaultMuted = true; 
                     v.playsInline = true; 
                     v.volume = 0;
+                    v.controls = false;
                     v.setAttribute('muted', 'muted');
                     v.setAttribute('playsinline', 'true');
                     v.setAttribute('webkit-playsinline', 'true');
+                    v.setAttribute('x5-playsinline', 'true');
+                    v.setAttribute('x5-video-player-type', 'h5-page');
+                    v.setAttribute('x5-video-player-fullscreen', 'false');
+                    v.setAttribute('disablePictureInPicture', 'true');
+                    v.setAttribute('disableRemotePlayback', 'true');
                     v.play().catch(() => {}); 
                   }}
                   onLoadedData={el => {
@@ -1873,9 +1900,15 @@ export default function MenuDigital() {
                     v.defaultMuted = true;
                     v.playsInline = true;
                     v.volume = 0;
+                    v.controls = false;
                     v.setAttribute('muted', 'muted');
                     v.setAttribute('playsinline', 'true');
                     v.setAttribute('webkit-playsinline', 'true');
+                    v.setAttribute('x5-playsinline', 'true');
+                    v.setAttribute('x5-video-player-type', 'h5-page');
+                    v.setAttribute('x5-video-player-fullscreen', 'false');
+                    v.setAttribute('disablePictureInPicture', 'true');
+                    v.setAttribute('disableRemotePlayback', 'true');
                     v.play().catch(() => {});
                   }}
                 />
@@ -1884,7 +1917,7 @@ export default function MenuDigital() {
                   src={getOptimizedImageUrl(mayoristaBranding?.video || configuracion?.video_hero_url, 1000, 80)}
                   className="hero-background-video"
                   alt="Hero"
-                  style={{ height: '100%', width: '100%', objectFit: 'cover', opacity: 1, filter: 'none' }}
+                  style={{ height: '100%', width: '100%', objectFit: 'cover', opacity: 1, filter: 'none', pointerEvents: 'none', userSelect: 'none', touchAction: 'pan-y' }}
                   loading="eager"
                   fetchPriority="high"
                   decoding="async"
@@ -2473,8 +2506,14 @@ export default function MenuDigital() {
                       loop 
                       muted 
                       playsInline 
+                      controls={false}
+                      disablePictureInPicture
+                      // @ts-ignore
+                      disableRemotePlayback="true"
+                      // @ts-ignore
+                      webkit-playsinline="true"
                       preload="metadata"
-                      style={cardImageStyle}
+                      style={{ ...cardImageStyle, pointerEvents: 'none', touchAction: 'pan-y' }}
                       ref={el => { if (el && el.paused) el.play().catch(() => {}); }}
                     />
                   ) : producto.imagen_url ? (

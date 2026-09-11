@@ -1339,6 +1339,11 @@
 }
 
 /* ── HERO VIDEO / IMAGE BACKGROUND ── */
+.hero-video-clipper {
+  pointer-events: none !important;
+  touch-action: pan-y !important;
+}
+
 .hero-background-video {
   position: absolute;
   top: 0;
@@ -1348,7 +1353,10 @@
   object-fit: cover;
   z-index: 1;
   opacity: 1 !important;
-  pointer-events: none;
+  pointer-events: none !important;
+  touch-action: pan-y !important;
+  user-select: none !important;
+  -webkit-user-select: none !important;
   filter: none !important;
 }
 
@@ -1367,6 +1375,8 @@
   border-top: 1px solid rgba(255, 255, 255, 0.35);
   border-bottom: none;
   box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+  touch-action: pan-y;
 }
 
 .hero-ticker-track {
@@ -1408,6 +1418,8 @@
   object-position: 50% 30%;
   display: block;
   opacity: 1;
+  pointer-events: none !important;
+  touch-action: pan-y !important;
 }
 
 .hero-content-overlay {
