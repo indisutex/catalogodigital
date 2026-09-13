@@ -31,12 +31,16 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({
       return;
     }
 
-    // 2. Detect iOS Safari
+    // 2. Do not prompt inside social media In-App Browsers (TikTok, Instagram, Facebook)
     const ua = window.navigator.userAgent;
+    const isInAppBrowser = /musical_ly|ByteLocale|ByteFullConfig|TikTok|trill|BytedanceWebview|Instagram|FB_IAB|FB4A|FBIOS/i.test(ua);
+    if (isInAppBrowser) return;
+
+    // 3. Detect iOS Safari
     const isIOSDevice = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
     setIsIOS(isIOSDevice);
 
-    // 3. Check if user dismissed recently
+    // 4. Check if user dismissed recently
     const dismissKey = `pwa_dismiss_${tenantSlug || 'default'}`;
     const dismissed = sessionStorage.getItem(dismissKey);
     if (dismissed) return;
