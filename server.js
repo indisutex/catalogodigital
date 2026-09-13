@@ -117,3 +117,7 @@ app.use((req, res) => {
 app.listen(PORT, () => {
   console.log(`Servidor de Node corriendo en el puerto ${PORT}`);
 });
+
+export default app;
+export { app };
+
