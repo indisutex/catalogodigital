@@ -845,52 +845,36 @@
 
 /* Floating Cart Button (Cápsula Flotante Elegante y Práctica) */
 .floating-cart-btn {
-  position: fixed;
-  bottom: max(1.25rem, calc(0.85rem + env(safe-area-inset-bottom)));
-  left: 50%;
-  transform: translateX(-50%);
-  width: calc(100% - 2rem);
-  max-width: 390px;
+  width: auto;
+  max-width: 320px;
   background: var(--primary, #f36b8e);
   color: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 9999px;
-  padding: 0.65rem 0.85rem 0.65rem 1rem;
+  padding: 0.42rem 0.75rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.85rem;
-  box-shadow: 0 10px 25px -4px rgba(0, 0, 0, 0.2), 0 4px 12px rgba(0, 0, 0, 0.1);
+  gap: 0.55rem;
+  box-shadow: 0 8px 22px -3px rgba(0, 0, 0, 0.22), 0 3px 8px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   z-index: 90;
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s ease, filter 0.2s ease;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, filter 0.2s ease;
   white-space: nowrap;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  animation: floatCartSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   user-select: none;
   font-family: 'Poppins', sans-serif;
 }
 
-@keyframes floatCartSlideUp {
-  from {
-    opacity: 0;
-    transform: translate(-50%, 18px) scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, 0) scale(1);
-  }
-}
-
 .floating-cart-btn:hover {
-  transform: translateX(-50%) translateY(-2px);
+  transform: translateY(-2px);
   filter: brightness(1.05);
-  box-shadow: 0 14px 28px -4px rgba(0, 0, 0, 0.25), 0 6px 14px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 12px 24px -3px rgba(0, 0, 0, 0.28), 0 5px 12px rgba(0, 0, 0, 0.12);
 }
 
 .floating-cart-btn:active {
-  transform: translateX(-50%) translateY(0) scale(0.97);
+  transform: translateY(0) scale(0.97);
   filter: brightness(0.96);
 }
 

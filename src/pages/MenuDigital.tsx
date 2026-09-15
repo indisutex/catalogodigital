@@ -2601,28 +2601,44 @@ export default function MenuDigital() {
       {/* PQRS Modal */}
       {isPqrsOpen && <PqrsModal onClose={() => setIsPqrsOpen(false)} configuracion={configuracion} />}
 
-      {/* Floating Cart Button (Cápsula Flotante con Guía) */}
+      {/* Floating Cart Button (Cápsula Flotante Centrada, Compacta y Elegante) */}
       {totalItems > 0 && !isCartOpen && (
-        <div style={{ position: 'fixed', bottom: '1.25rem', right: '1.25rem', zIndex: 999, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.35rem', pointerEvents: 'none' }}>
+        <div 
+          style={{ 
+            position: 'fixed', 
+            bottom: 'max(0.9rem, calc(0.6rem + env(safe-area-inset-bottom)))', 
+            left: '50%', 
+            transform: 'translateX(-50%)', 
+            zIndex: 999, 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            gap: '0.25rem', 
+            pointerEvents: 'none',
+            width: 'max-content',
+            maxWidth: '92vw'
+          }}
+        >
           <div 
             style={{
               background: '#0f172a',
               color: '#ffffff',
-              padding: '0.35rem 0.75rem',
-              borderRadius: '20px',
-              fontSize: '0.72rem',
+              padding: '0.2rem 0.55rem',
+              borderRadius: '16px',
+              fontSize: '0.66rem',
               fontWeight: 500,
-              boxShadow: '0 4px 14px rgba(0,0,0,0.18)',
+              boxShadow: '0 3px 10px rgba(0,0,0,0.18)',
               display: 'flex',
               alignItems: 'center',
-              gap: '0.35rem',
+              gap: '0.25rem',
               fontFamily: "'Poppins', sans-serif",
               pointerEvents: 'auto',
-              animation: 'bounceHelper 2.5s infinite ease-in-out'
+              animation: 'bounceHelper 2.5s infinite ease-in-out',
+              letterSpacing: '0.2px'
             }}
           >
-            <span>Toca aquí para pagar cuando termines</span>
-            <span style={{ fontSize: '0.85rem' }}>👇</span>
+            <span>Toca para pagar</span>
+            <span style={{ fontSize: '0.74rem' }}>👇</span>
           </div>
 
           <button 
@@ -2630,24 +2646,24 @@ export default function MenuDigital() {
             onClick={() => setIsCartOpen(true)}
             style={{ 
               background: mayoristaBranding?.color || configuracion?.color_primario || 'var(--primary, #f36b8e)',
-              boxShadow: `0 10px 25px -4px ${(mayoristaBranding?.color || configuracion?.color_primario || '#f36b8e')}45, 0 4px 12px rgba(0,0,0,0.12)`,
+              boxShadow: `0 6px 18px -3px ${(mayoristaBranding?.color || configuracion?.color_primario || '#f36b8e')}45, 0 3px 8px rgba(0,0,0,0.12)`,
               position: 'relative',
               pointerEvents: 'auto',
-              bottom: 0,
-              right: 0
+              padding: '0.38rem 0.7rem',
+              gap: '0.55rem'
             }}
             aria-label={`Ver carrito: ${totalItems} producto${totalItems > 1 ? 's' : ''}, total $${total.toLocaleString('es-CO')}`}
           >
-            <div className="cart-icon-wrapper">
-              <div className="cart-icon-pill">
-                <ShoppingBag size={17} strokeWidth={2.3} />
-                <span className="cart-badge" style={{ color: mayoristaBranding?.color || configuracion?.color_primario || '#0f172a' }}>{totalItems}</span>
+            <div className="cart-icon-wrapper" style={{ gap: '0.4rem' }}>
+              <div className="cart-icon-pill" style={{ width: '26px', height: '26px' }}>
+                <ShoppingBag size={14} strokeWidth={2.3} />
+                <span className="cart-badge" style={{ color: mayoristaBranding?.color || configuracion?.color_primario || '#0f172a', minWidth: '15px', height: '15px', fontSize: '0.62rem', top: '-3px', right: '-4px' }}>{totalItems}</span>
               </div>
-              <span className="cart-btn-label">Pagar / Ver Carrito</span>
+              <span className="cart-btn-label" style={{ fontSize: '0.82rem', fontWeight: 600 }}>Pagar Pedido</span>
             </div>
-            <div className="cart-total-chip">
-              <span className="cart-total-float">${total.toLocaleString('es-CO')}</span>
-              <ChevronRight size={17} strokeWidth={2.4} className="cart-chevron-icon" />
+            <div className="cart-total-chip" style={{ padding: '0.2rem 0.5rem', gap: '0.25rem' }}>
+              <span className="cart-total-float" style={{ fontSize: '0.82rem' }}>${total.toLocaleString('es-CO')}</span>
+              <ChevronRight size={14} strokeWidth={2.4} className="cart-chevron-icon" />
             </div>
           </button>
         </div>
