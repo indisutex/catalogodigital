@@ -881,10 +881,10 @@ export default function MenuDigital() {
   const openDetail = (producto: Producto) => {
     setDetailProduct(producto);
     setCarouselIdx(0);
-    // Auto-preseleccionar la primera talla para que siempre esté activa y no bloquee al cliente
+    // No preseleccionar talla: el usuario debe elegir manualmente
     const rawT = producto.tallas?.split(',').map(t => t.trim()).filter(Boolean) || [];
     if (rawT.length > 0) {
-      setSelectedTalla(rawT[0]);
+      setSelectedTalla('');
     } else {
       setSelectedTalla('Única');
     }
