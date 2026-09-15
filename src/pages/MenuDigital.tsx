@@ -4443,7 +4443,7 @@ export default function MenuDigital() {
                       width: '100%',
                       boxSizing: 'border-box'
                     }}>
-                      {/* PASO 1: ESTAMPADO / COLOR CON FOTOS Y BOTONES VISUALES */}
+                      {/* PASO 1: ESTAMPADO / COLOR (SOLO DROPDOWN) */}
                       {hasEstampados && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -4466,137 +4466,47 @@ export default function MenuDigital() {
                               </span>
                             </div>
                             <span style={{ fontSize: '0.74rem', color: brandColor, fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
-                              {selectedEstampado ? `✓ ${toTitleCase(selectedEstampado)}` : 'Toca uno 👇'}
+                              {selectedEstampado ? `✓ ${toTitleCase(selectedEstampado)}` : 'Toca para elegir 👇'}
                             </span>
                           </div>
 
-                          {/* Carrusel de estampados visuales con miniaturas de foto */}
-                          <div style={{
-                            display: 'flex',
-                            gap: '0.45rem',
-                            overflowX: 'auto',
-                            padding: '0.2rem 0.1rem',
-                            scrollbarWidth: 'none',
-                            WebkitOverflowScrolling: 'touch'
-                          }}>
-                            {estampados.map((est, eIdx) => {
-                              const isSelected = selectedEstampado.trim().toUpperCase() === est.trim().toUpperCase();
-                              // Buscar imagen correspondiente a este estampado
-                              const matchingImgIdx = allImages.findIndex(img => {
-                                const eName = (img.estampado || img.ref || '').trim().toUpperCase();
-                                return eName === est || (eName && est && (eName.includes(est) || est.includes(eName)));
+                          <select
+                            value={selectedEstampado}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSelectedEstampado(val);
+                              const valClean = val.trim().toUpperCase();
+                              const imgIdx = allImages.findIndex(img => {
+                                const est = (img.estampado || img.ref || '').trim().toUpperCase();
+                                return est === valClean || (est && valClean && (est.includes(valClean) || valClean.includes(est)));
                               });
-                              const matchingImg = matchingImgIdx !== -1 ? allImages[matchingImgIdx] : (allImages[eIdx] || null);
-
-                              return (
-                                <button
-                                  key={est}
-                                  type="button"
-                                  onClick={() => {
-                                    setSelectedEstampado(est);
-                                    if (matchingImgIdx !== -1) {
-                                      setCarouselIdx(matchingImgIdx);
-                                    }
-                                  }}
-                                  style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.4rem',
-                                    padding: '0.35rem 0.65rem 0.35rem 0.35rem',
-                                    borderRadius: '12px',
-                                    border: isSelected ? `2px solid ${brandColor}` : '1.5px solid #cbd5e1',
-                                    background: isSelected ? '#ffffff' : '#ffffff',
-                                    boxShadow: isSelected ? `0 2px 8px ${brandColor}35` : '0 1px 3px rgba(0,0,0,0.04)',
-                                    cursor: 'pointer',
-                                    flexShrink: 0,
-                                    transition: 'all 0.15s ease',
-                                    fontFamily: "'Poppins', sans-serif"
-                                  }}
-                                >
-                                  {matchingImg?.url ? (
-                                    <img
-                                      src={getOptimizedImageUrl(matchingImg.url, 80, 80)}
-                                      alt={est}
-                                      style={{
-                                        width: '34px',
-                                        height: '34px',
-                                        objectFit: 'cover',
-                                        borderRadius: '8px',
-                                        border: isSelected ? `1.5px solid ${brandColor}` : '1px solid #e2e8f0'
-                                      }}
-                                    />
-                                  ) : (
-                                    <span style={{
-                                      width: '30px',
-                                      height: '30px',
-                                      borderRadius: '8px',
-                                      background: '#f1f5f9',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      fontSize: '0.85rem'
-                                    }}>🎨</span>
-                                  )}
-                                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left' }}>
-                                    <span style={{
-                                      fontSize: '0.8rem',
-                                      fontWeight: isSelected ? 600 : 500,
-                                      color: isSelected ? brandColor : '#1e293b',
-                                      whiteSpace: 'nowrap'
-                                    }}>
-                                      {toTitleCase(est)}
-                                    </span>
-                                    {isSelected && (
-                                      <span style={{ fontSize: '0.66rem', color: '#16a34a', fontWeight: 500, lineHeight: 1 }}>
-                                        ✓ Elegido
-                                      </span>
-                                    )}
-                                  </div>
-                                </button>
-                              );
-                            })}
-                          </div>
-
-                          {/* Selector alternativo en lista desplegable (Dropdown) */}
-                          <div style={{ marginTop: '0.15rem' }}>
-                            <select
-                              value={selectedEstampado}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setSelectedEstampado(val);
-                                const valClean = val.trim().toUpperCase();
-                                const imgIdx = allImages.findIndex(img => {
-                                  const est = (img.estampado || img.ref || '').trim().toUpperCase();
-                                  return est === valClean || (est && valClean && (est.includes(valClean) || valClean.includes(est)));
-                                });
-                                if (imgIdx !== -1) {
-                                  setCarouselIdx(imgIdx);
-                                }
-                              }}
-                              style={{
-                                width: '100%',
-                                padding: '0.52rem 0.85rem',
-                                borderRadius: '12px',
-                                border: `1.5px solid ${selectedEstampado ? brandColor : '#cbd5e1'}`,
-                                background: '#ffffff',
-                                color: '#0f172a',
-                                fontWeight: 500,
-                                fontSize: '0.82rem',
-                                cursor: 'pointer',
-                                outline: 'none',
-                                boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-                                textOverflow: 'ellipsis',
-                                fontFamily: "'Poppins', sans-serif"
-                              }}
-                            >
-                              <option value="" disabled>O selecciona de la lista desplegable...</option>
-                              {estampados.map(est => (
-                                <option key={est} value={est}>
-                                  🎨 {toTitleCase(est)} {selectedEstampado.trim().toUpperCase() === est.trim().toUpperCase() ? '✓' : ''}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
+                              if (imgIdx !== -1) {
+                                setCarouselIdx(imgIdx);
+                              }
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '0.65rem 0.85rem',
+                              borderRadius: '12px',
+                              border: `1.5px solid ${selectedEstampado ? brandColor : '#cbd5e1'}`,
+                              background: '#ffffff',
+                              color: '#0f172a',
+                              fontWeight: 500,
+                              fontSize: '0.86rem',
+                              cursor: 'pointer',
+                              outline: 'none',
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+                              textOverflow: 'ellipsis',
+                              fontFamily: "'Poppins', sans-serif"
+                            }}
+                          >
+                            <option value="" disabled>Selecciona un estampado o color...</option>
+                            {estampados.map(est => (
+                              <option key={est} value={est}>
+                                🎨 {toTitleCase(est)}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                       )}
 
