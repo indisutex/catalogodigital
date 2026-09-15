@@ -881,7 +881,13 @@ export default function MenuDigital() {
   const openDetail = (producto: Producto) => {
     setDetailProduct(producto);
     setCarouselIdx(0);
-    setSelectedTalla('');
+    // Auto-preseleccionar la primera talla para que siempre esté activa y no bloquee al cliente
+    const rawT = producto.tallas?.split(',').map(t => t.trim()).filter(Boolean) || [];
+    if (rawT.length > 0) {
+      setSelectedTalla(rawT[0]);
+    } else {
+      setSelectedTalla('Única');
+    }
     const rawAllImages = (producto.imagenes_extra || []).map(u => decodeExtraImage(u)).filter(i => i.url);
     const firstImg = rawAllImages.length > 0 ? rawAllImages[0] : (producto.imagen_url ? { url: producto.imagen_url, ref: producto.referencia || '', estampado: '' } : null);
     const initialEst = (firstImg?.estampado || firstImg?.ref)?.trim() || producto.estampados?.split(',')[0]?.trim() || '';
@@ -4423,64 +4429,91 @@ export default function MenuDigital() {
                   if (!hasEstampados && !hasTallas) return null;
 
                   return (
-                    <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'flex-start', width: '100%', marginTop: '1.15rem', marginBottom: '1.15rem' }}>
-                      {/* COLUMNA 1: ESTAMPADO / TEMÁTICA */}
-                      {hasEstampados && (
-                        <div className="detail-tallas" style={{ flex: 1, minWidth: 0 }}>
-                          <p className="detail-section-label" style={{ marginBottom: '0.55rem', fontWeight: 600 }}>Estampado / Temática</p>
-                          <select
-                            value={selectedEstampado}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              setSelectedEstampado(val);
-                              const valClean = val.trim().toUpperCase();
-                              const imgIdx = allImages.findIndex(img => {
-                                const est = (img.estampado || img.ref || '').trim().toUpperCase();
-                                return est === valClean || (est && valClean && (est.includes(valClean) || valClean.includes(est)));
-                              });
-                              if (imgIdx !== -1) {
-                                setCarouselIdx(imgIdx);
-                              }
-                            }}
-                            style={{
-                              width: '100%',
-                              padding: '0.55rem 0.65rem',
-                              borderRadius: '12px',
-                              border: '1.5px solid var(--primary, #f36b8e)',
-                              background: '#ffffff',
-                              color: '#0f172a',
-                              fontWeight: 600,
-                              fontSize: '0.84rem',
-                              cursor: 'pointer',
-                              outline: 'none',
-                              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                              textOverflow: 'ellipsis'
-                            }}
-                          >
-                            {estampados.map(est => (
-                              <option key={est} value={est}>
-                                🎨 {toTitleCase(est)}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
+                    <div style={{ marginTop: '0.85rem', marginBottom: '0.85rem', width: '100%' }}>
+                      {/* Banner guía explicativo con flecha */}
+                      <div style={{
+                        background: '#f0fdf4',
+                        border: '1.5px dashed #86efac',
+                        borderRadius: '12px',
+                        padding: '0.45rem 0.75rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.45rem',
+                        fontSize: '0.78rem',
+                        color: '#15803d',
+                        marginBottom: '0.75rem',
+                        fontFamily: "'Poppins', sans-serif"
+                      }}>
+                        <span style={{ fontSize: '1rem' }}>👇</span>
+                        <span><strong>Aquí personalizas tu prenda:</strong> escoge el estampado y selecciona la talla</span>
+                      </div>
 
-                      {/* COLUMNA 2: TALLA */}
-                      {hasTallas && (
-                        <div className="detail-tallas" style={{ flex: hasEstampados ? '0 0 auto' : 1, minWidth: 0 }}>
-                          <p className="detail-section-label" style={{ marginBottom: '0.55rem', fontWeight: 600 }}>Talla</p>
-                          <div className="tallas-grid" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
-                            {tallas.map(t => (
-                              <button
-                                key={t}
-                                className={`talla-chip${selectedTalla === t ? ' active' : ''}`}
-                                onClick={() => setSelectedTalla(t)}
-                              >{t}</button>
-                            ))}
+                      <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'flex-start', width: '100%' }}>
+                        {/* COLUMNA 1: ESTAMPADO / TEMÁTICA */}
+                        {hasEstampados && (
+                          <div className="detail-tallas" style={{ flex: 1, minWidth: 0 }}>
+                            <p className="detail-section-label" style={{ marginBottom: '0.4rem', fontWeight: 600, fontSize: '0.82rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.3rem', fontFamily: "'Poppins', sans-serif" }}>
+                              <span>🎨 Aquí escoges el estampado</span>
+                            </p>
+                            <select
+                              value={selectedEstampado}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setSelectedEstampado(val);
+                                const valClean = val.trim().toUpperCase();
+                                const imgIdx = allImages.findIndex(img => {
+                                  const est = (img.estampado || img.ref || '').trim().toUpperCase();
+                                  return est === valClean || (est && valClean && (est.includes(valClean) || valClean.includes(est)));
+                                });
+                                if (imgIdx !== -1) {
+                                  setCarouselIdx(imgIdx);
+                                }
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '0.55rem 0.65rem',
+                                borderRadius: '12px',
+                                border: '1.5px solid var(--primary, #f36b8e)',
+                                background: '#ffffff',
+                                color: '#0f172a',
+                                fontWeight: 600,
+                                fontSize: '0.84rem',
+                                cursor: 'pointer',
+                                outline: 'none',
+                                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                                textOverflow: 'ellipsis',
+                                fontFamily: "'Poppins', sans-serif"
+                              }}
+                            >
+                              {estampados.map(est => (
+                                <option key={est} value={est}>
+                                  🎨 {toTitleCase(est)}
+                                </option>
+                              ))}
+                            </select>
                           </div>
-                        </div>
-                      )}
+                        )}
+
+                        {/* COLUMNA 2: TALLA */}
+                        {hasTallas && (
+                          <div className="detail-tallas" style={{ flex: hasEstampados ? '0 0 auto' : 1, minWidth: 0 }}>
+                            <p className="detail-section-label" style={{ marginBottom: '0.4rem', fontWeight: 600, fontSize: '0.82rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.3rem', fontFamily: "'Poppins', sans-serif" }}>
+                              <span>📏 Aquí seleccionas la talla</span>
+                            </p>
+                            <div className="tallas-grid" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
+                              {tallas.map(t => (
+                                <button
+                                  key={t}
+                                  type="button"
+                                  className={`talla-chip${selectedTalla === t ? ' active' : ''}`}
+                                  onClick={() => setSelectedTalla(t)}
+                                  style={{ fontFamily: "'Poppins', sans-serif" }}
+                                >{t}</button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   );
                 })()}
