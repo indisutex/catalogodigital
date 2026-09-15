@@ -2922,30 +2922,7 @@ export default function MenuDigital() {
                               />
                             </div>
                           </div>
-
-                          {/* Fila 2: Correo (Opcional) */}
-                          <div className="form-group" style={{ margin: 0, gridColumn: '1 / -1' }}>
-                            <label style={{ fontSize: '0.82rem', fontWeight: 500, color: '#334155', marginBottom: '0.3rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: "'Poppins', sans-serif" }}>
-                              <span>Correo electrónico <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: '0.75rem' }}>(opcional)</span></span>
-                            </label>
-                            <input 
-                              type="email" 
-                              value={formData.email}
-                              onChange={e => setFormData({...formData, email: e.target.value})}
-                              placeholder="tu@correo.com (opcional)"
-                              style={{ width: '100%', boxSizing: 'border-box', padding: '0.72rem 0.85rem', borderRadius: '12px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.88rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif", fontWeight: 400 }}
-                            />
-                          </div>
                         </div>
-
-                        <label style={{ display: 'flex', alignItems: 'flex-start', gap: '0.55rem', fontSize: '0.78rem', color: '#64748b', cursor: 'pointer', marginTop: '0.1rem', lineHeight: 1.35, fontFamily: "'Poppins', sans-serif" }}>
-                          <input 
-                            type="checkbox" 
-                            defaultChecked 
-                            style={{ accentColor: brandColor, width: '16px', height: '16px', borderRadius: '4px', cursor: 'pointer', flexShrink: 0, marginTop: '2px' }} 
-                          />
-                          <span>Acepto recibir novedades y promociones de {toTitleCase(configuracion?.nombre_negocio || 'la tienda')}</span>
-                        </label>
                       </div>
 
                       {/* ── 2. MÉTODO DE ENTREGA Y DIRECCIÓN (2 Columnas x 2 Filas) ── */}
