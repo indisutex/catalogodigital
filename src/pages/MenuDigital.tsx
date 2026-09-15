@@ -4429,91 +4429,192 @@ export default function MenuDigital() {
                   if (!hasEstampados && !hasTallas) return null;
 
                   return (
-                    <div style={{ marginTop: '0.85rem', marginBottom: '0.85rem', width: '100%' }}>
-                      {/* Banner guía explicativo con flecha */}
-                      <div style={{
-                        background: '#f0fdf4',
-                        border: '1.5px dashed #86efac',
-                        borderRadius: '12px',
-                        padding: '0.45rem 0.75rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.45rem',
-                        fontSize: '0.78rem',
-                        color: '#15803d',
-                        marginBottom: '0.75rem',
-                        fontFamily: "'Poppins', sans-serif"
-                      }}>
-                        <span style={{ fontSize: '1rem' }}>👇</span>
-                        <span><strong>Aquí personalizas tu prenda:</strong> escoge el estampado y selecciona la talla</span>
-                      </div>
-
-                      <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'flex-start', width: '100%' }}>
-                        {/* COLUMNA 1: ESTAMPADO / TEMÁTICA */}
-                        {hasEstampados && (
-                          <div className="detail-tallas" style={{ flex: 1, minWidth: 0 }}>
-                            <p className="detail-section-label" style={{ marginBottom: '0.4rem', fontWeight: 600, fontSize: '0.82rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.3rem', fontFamily: "'Poppins', sans-serif" }}>
-                              <span>🎨 Aquí escoges el estampado</span>
-                            </p>
-                            <select
-                              value={selectedEstampado}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setSelectedEstampado(val);
-                                const valClean = val.trim().toUpperCase();
-                                const imgIdx = allImages.findIndex(img => {
-                                  const est = (img.estampado || img.ref || '').trim().toUpperCase();
-                                  return est === valClean || (est && valClean && (est.includes(valClean) || valClean.includes(est)));
-                                });
-                                if (imgIdx !== -1) {
-                                  setCarouselIdx(imgIdx);
-                                }
-                              }}
-                              style={{
-                                width: '100%',
-                                padding: '0.55rem 0.65rem',
-                                borderRadius: '12px',
-                                border: '1.5px solid var(--primary, #f36b8e)',
-                                background: '#ffffff',
-                                color: '#0f172a',
+                    <div style={{
+                      background: '#f8fafc',
+                      borderRadius: '16px',
+                      border: '1.5px solid #e2e8f0',
+                      padding: '0.9rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.85rem',
+                      marginTop: '0.85rem',
+                      marginBottom: '0.85rem',
+                      width: '100%',
+                      boxSizing: 'border-box'
+                    }}>
+                      {/* PASO 1: ESTAMPADO */}
+                      {hasEstampados && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                              <span style={{
+                                background: brandColor,
+                                color: '#ffffff',
+                                width: '22px',
+                                height: '22px',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.74rem',
                                 fontWeight: 600,
-                                fontSize: '0.84rem',
-                                cursor: 'pointer',
-                                outline: 'none',
-                                boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                                textOverflow: 'ellipsis',
-                                fontFamily: "'Poppins', sans-serif"
-                              }}
-                            >
-                              {estampados.map(est => (
-                                <option key={est} value={est}>
-                                  🎨 {toTitleCase(est)}
-                                </option>
-                              ))}
-                            </select>
+                                flexShrink: 0
+                              }}>1</span>
+                              <span style={{ fontSize: '0.86rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
+                                Paso 1: Escoge tu estampado o color
+                              </span>
+                            </div>
+                            <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 400 }}>
+                              {estampados.length} disponibles 👇
+                            </span>
                           </div>
-                        )}
 
-                        {/* COLUMNA 2: TALLA */}
-                        {hasTallas && (
-                          <div className="detail-tallas" style={{ flex: hasEstampados ? '0 0 auto' : 1, minWidth: 0 }}>
-                            <p className="detail-section-label" style={{ marginBottom: '0.4rem', fontWeight: 600, fontSize: '0.82rem', color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.3rem', fontFamily: "'Poppins', sans-serif" }}>
-                              <span>📏 Aquí seleccionas la talla</span>
-                            </p>
-                            <div className="tallas-grid" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.35rem' }}>
-                              {tallas.map(t => (
+                          <select
+                            value={selectedEstampado}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              setSelectedEstampado(val);
+                              const valClean = val.trim().toUpperCase();
+                              const imgIdx = allImages.findIndex(img => {
+                                const est = (img.estampado || img.ref || '').trim().toUpperCase();
+                                return est === valClean || (est && valClean && (est.includes(valClean) || valClean.includes(est)));
+                              });
+                              if (imgIdx !== -1) {
+                                setCarouselIdx(imgIdx);
+                              }
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '0.65rem 0.85rem',
+                              borderRadius: '12px',
+                              border: `1.5px solid ${brandColor}`,
+                              background: '#ffffff',
+                              color: '#0f172a',
+                              fontWeight: 600,
+                              fontSize: '0.86rem',
+                              cursor: 'pointer',
+                              outline: 'none',
+                              boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+                              textOverflow: 'ellipsis',
+                              fontFamily: "'Poppins', sans-serif"
+                            }}
+                          >
+                            {estampados.map(est => (
+                              <option key={est} value={est}>
+                                🎨 {toTitleCase(est)}
+                              </option>
+                            ))}
+                          </select>
+
+                          {/* Miniaturas visuales de estampados para verlos con foto */}
+                          {allImages.length > 1 && (
+                            <div style={{ display: 'flex', gap: '0.4rem', overflowX: 'auto', padding: '0.2rem 0', scrollbarWidth: 'none' }}>
+                              {allImages.map((img, idx) => {
+                                const estName = (img.estampado || img.ref || '').trim();
+                                const isActive = idx === carouselIdx || (estName && selectedEstampado.toLowerCase() === estName.toLowerCase());
+                                return (
+                                  <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => {
+                                      setCarouselIdx(idx);
+                                      if (estName) setSelectedEstampado(estName.toUpperCase());
+                                    }}
+                                    style={{
+                                      border: isActive ? `2px solid ${brandColor}` : '1.5px solid #e2e8f0',
+                                      borderRadius: '10px',
+                                      padding: '2px',
+                                      background: '#ffffff',
+                                      cursor: 'pointer',
+                                      flexShrink: 0,
+                                      boxShadow: isActive ? `0 2px 8px ${brandColor}40` : 'none',
+                                      transition: 'all 0.15s ease'
+                                    }}
+                                    title={estName || `Opción ${idx + 1}`}
+                                  >
+                                    <img
+                                      src={getOptimizedImageUrl(img.url, 80, 80)}
+                                      alt={estName || 'Estampado'}
+                                      style={{ width: '38px', height: '38px', objectFit: 'cover', borderRadius: '8px' }}
+                                    />
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* PASO 2: TALLA */}
+                      {hasTallas && (
+                        <div style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.45rem',
+                          borderTop: hasEstampados ? '1px solid #e2e8f0' : 'none',
+                          paddingTop: hasEstampados ? '0.75rem' : '0'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                              <span style={{
+                                background: hasEstampados ? brandColor : '#0f172a',
+                                color: '#ffffff',
+                                width: '22px',
+                                height: '22px',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '0.74rem',
+                                fontWeight: 600,
+                                flexShrink: 0
+                              }}>{hasEstampados ? '2' : '1'}</span>
+                              <span style={{ fontSize: '0.86rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
+                                Paso {hasEstampados ? '2' : '1'}: Selecciona tu talla
+                              </span>
+                            </div>
+                            <span style={{ fontSize: '0.74rem', color: brandColor, fontWeight: 600, fontFamily: "'Poppins', sans-serif" }}>
+                              {selectedTalla ? `✓ Talla ${selectedTalla}` : 'Toca tu talla 👇'}
+                            </span>
+                          </div>
+
+                          <div className="tallas-grid" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.45rem' }}>
+                            {tallas.map(t => {
+                              const isSelected = selectedTalla === t;
+                              return (
                                 <button
                                   key={t}
                                   type="button"
-                                  className={`talla-chip${selectedTalla === t ? ' active' : ''}`}
+                                  className={`talla-chip${isSelected ? ' active' : ''}`}
                                   onClick={() => setSelectedTalla(t)}
-                                  style={{ fontFamily: "'Poppins', sans-serif" }}
-                                >{t}</button>
-                              ))}
-                            </div>
+                                  style={{
+                                    flex: tallas.length <= 4 ? '1 1 0' : '0 0 auto',
+                                    minWidth: '50px',
+                                    padding: '0.5rem 0.85rem',
+                                    borderRadius: '12px',
+                                    border: isSelected ? `2px solid ${brandColor}` : '1.5px solid #cbd5e1',
+                                    background: isSelected ? brandColor : '#ffffff',
+                                    color: isSelected ? '#ffffff' : '#1e293b',
+                                    fontWeight: 600,
+                                    fontSize: '0.86rem',
+                                    cursor: 'pointer',
+                                    fontFamily: "'Poppins', sans-serif",
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '0.3rem',
+                                    boxShadow: isSelected ? `0 3px 10px ${brandColor}40` : 'none',
+                                    transition: 'all 0.15s ease'
+                                  }}
+                                >
+                                  {isSelected && <span style={{ fontSize: '0.85rem' }}>✓</span>}
+                                  <span>{t}</span>
+                                </button>
+                              );
+                            })}
                           </div>
-                        )}
-                      </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })()}
