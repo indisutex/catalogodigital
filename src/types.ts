@@ -118,6 +118,8 @@ export interface Pedido {
   evidencia_url?: string | null;
   metodo_pago?: string | null;
   envio_metodo?: string;
+  isLead?: boolean;
+  retargeting_estado?: string;
 }
 
 export interface Asesor {
