@@ -200,6 +200,15 @@ export default function MenuDigital() {
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isPqrsOpen, setIsPqrsOpen] = useState(false);
   const [isCheckoutMode, setIsCheckoutMode] = useState(false);
+  const [addedProductDecision, setAddedProductDecision] = useState<{
+    nombre: string;
+    precio: number;
+    imagen?: string;
+    talla?: string;
+    estampado?: string;
+    cantidad: number;
+  } | null>(null);
+  const [showContinueShoppingToast, setShowContinueShoppingToast] = useState(false);
   const [metodoRecepcion, setMetodoRecepcion] = useState<'domicilio' | 'tienda'>('domicilio');
   const [selectedDepartamento, setSelectedDepartamento] = useState<string>('');
   const [isCityFocused, setIsCityFocused] = useState<boolean>(false);
@@ -1059,7 +1068,17 @@ export default function MenuDigital() {
         addToCart(productToAdd, tVal, selectedEstampado, q);
       });
 
+      const firstEntry = selectedEntries[0];
+      const prodImg = detailProduct.imagen_url || (detailProduct.imagenes_extra && detailProduct.imagenes_extra.length > 0 ? decodeExtraImage(detailProduct.imagenes_extra[0]).url : '');
+      const totalUnitsSelected = selectedEntries.reduce((sum, [_, q]) => sum + q, 0);
       setDetailProduct(null);
+      setAddedProductDecision({
+        nombre: detailProduct.nombre,
+        precio: totalUnitsSelected * getActiveUnitPrice(detailProduct, firstEntry?.[0] || 'dama_unica', 'Única', buyerType),
+        imagen: prodImg,
+        talla: `${totalUnitsSelected} prendas familia`,
+        cantidad: totalUnitsSelected
+      });
       return;
     }
 
@@ -1083,7 +1102,16 @@ export default function MenuDigital() {
     };
 
     addToCart(productToAdd, selectedTalla, selectedEstampado, selectedCantidad);
+    const prodImg = detailProduct.imagen_url || (detailProduct.imagenes_extra && detailProduct.imagenes_extra.length > 0 ? decodeExtraImage(detailProduct.imagenes_extra[0]).url : '');
     setDetailProduct(null);
+    setAddedProductDecision({
+      nombre: productToAdd.nombre,
+      precio: unitPrice * selectedCantidad,
+      imagen: prodImg,
+      talla: selectedTalla,
+      estampado: selectedEstampado,
+      cantidad: selectedCantidad
+    });
   };
 
 
@@ -1541,8 +1569,8 @@ export default function MenuDigital() {
       alert(phoneVal.message || 'Por favor verifica tu número celular. Debe tener 10 dígitos y pertenecer a un operador en Colombia (iniciando por 3, ej: 300 123 4567).');
       return;
     }
-    if (!formData.email.trim() || !formData.email.includes('@')) {
-      alert('Por favor ingresa un correo electrónico válido.');
+    if (formData.email.trim() && !formData.email.includes('@')) {
+      alert('Por favor ingresa un correo electrónico válido o déjalo en blanco.');
       return;
     }
     if (metodoRecepcion === 'domicilio') {
@@ -1579,8 +1607,8 @@ export default function MenuDigital() {
     if (formData.cedula) {
       mensaje += `*Cédula:* ${formData.cedula}\n`;
     }
-    if (formData.email) {
-      mensaje += `*Correo:* ${formData.email}\n`;
+    if (formData.email?.trim()) {
+      mensaje += `*Correo:* ${formData.email.trim()}\n`;
     }
     const metodoPagoLabel = modalidadPago === 'transferencia' 
       ? '[ Transferencia Bancaria ]' 
@@ -1592,9 +1620,6 @@ export default function MenuDigital() {
       mensaje += `*DESCUENTO AL POR MAYOR APLICADO* (Llevas 6 o mas productos)\n`;
     }
     mensaje += `*Teléfono:* ${formData.telefono}\n`;
-    if (formData.email) {
-      mensaje += `*Correo:* ${formData.email}\n`;
-    }
     const dirTexto = formData.barrio ? `${formData.direccion} (Barrio ${formData.barrio})` : formData.direccion;
     mensaje += `*Dirección:* ${dirTexto}, ${formData.ciudad}\n\n`;
     
@@ -2496,6 +2521,16 @@ export default function MenuDigital() {
                         addToCart(producto, 'Única', 'Estándar', 1);
                         setAddedProductId(producto.id);
                         setTimeout(() => setAddedProductId(null), 1500);
+                        const prodImg = producto.imagen_url || (producto.imagenes_extra && producto.imagenes_extra.length > 0 ? decodeExtraImage(producto.imagenes_extra[0]).url : '');
+                        const pPrice = getEffectivePrice(producto, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
+                        setAddedProductDecision({
+                          nombre: producto.nombre,
+                          precio: pPrice,
+                          imagen: prodImg,
+                          talla: 'Única',
+                          estampado: 'Estándar',
+                          cantidad: 1
+                        });
                       }
                     }}
                     aria-label="Añadir al carrito"
@@ -2566,29 +2601,56 @@ export default function MenuDigital() {
       {/* PQRS Modal */}
       {isPqrsOpen && <PqrsModal onClose={() => setIsPqrsOpen(false)} configuracion={configuracion} />}
 
-      {/* Floating Cart Button (Cápsula Flotante Elegante y Práctica) */}
+      {/* Floating Cart Button (Cápsula Flotante con Guía) */}
       {totalItems > 0 && !isCartOpen && (
-        <button 
-          className="floating-cart-btn" 
-          onClick={() => setIsCartOpen(true)}
-          style={{ 
-            background: mayoristaBranding?.color || configuracion?.color_primario || 'var(--primary, #f36b8e)',
-            boxShadow: `0 10px 25px -4px ${(mayoristaBranding?.color || configuracion?.color_primario || '#f36b8e')}45, 0 4px 12px rgba(0,0,0,0.12)`
-          }}
-          aria-label={`Ver carrito: ${totalItems} producto${totalItems > 1 ? 's' : ''}, total $${total.toLocaleString('es-CO')}`}
-        >
-          <div className="cart-icon-wrapper">
-            <div className="cart-icon-pill">
-              <ShoppingBag size={17} strokeWidth={2.3} />
-              <span className="cart-badge" style={{ color: mayoristaBranding?.color || configuracion?.color_primario || '#0f172a' }}>{totalItems}</span>
+        <div style={{ position: 'fixed', bottom: '1.25rem', right: '1.25rem', zIndex: 999, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.35rem', pointerEvents: 'none' }}>
+          <div 
+            style={{
+              background: '#0f172a',
+              color: '#ffffff',
+              padding: '0.35rem 0.75rem',
+              borderRadius: '20px',
+              fontSize: '0.72rem',
+              fontWeight: 500,
+              boxShadow: '0 4px 14px rgba(0,0,0,0.18)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem',
+              fontFamily: "'Poppins', sans-serif",
+              pointerEvents: 'auto',
+              animation: 'bounceHelper 2.5s infinite ease-in-out'
+            }}
+          >
+            <span>Toca aquí para pagar cuando termines</span>
+            <span style={{ fontSize: '0.85rem' }}>👇</span>
+          </div>
+
+          <button 
+            className="floating-cart-btn" 
+            onClick={() => setIsCartOpen(true)}
+            style={{ 
+              background: mayoristaBranding?.color || configuracion?.color_primario || 'var(--primary, #f36b8e)',
+              boxShadow: `0 10px 25px -4px ${(mayoristaBranding?.color || configuracion?.color_primario || '#f36b8e')}45, 0 4px 12px rgba(0,0,0,0.12)`,
+              position: 'relative',
+              pointerEvents: 'auto',
+              bottom: 0,
+              right: 0
+            }}
+            aria-label={`Ver carrito: ${totalItems} producto${totalItems > 1 ? 's' : ''}, total $${total.toLocaleString('es-CO')}`}
+          >
+            <div className="cart-icon-wrapper">
+              <div className="cart-icon-pill">
+                <ShoppingBag size={17} strokeWidth={2.3} />
+                <span className="cart-badge" style={{ color: mayoristaBranding?.color || configuracion?.color_primario || '#0f172a' }}>{totalItems}</span>
+              </div>
+              <span className="cart-btn-label">Pagar / Ver Carrito</span>
             </div>
-            <span className="cart-btn-label">Ver Carrito</span>
-          </div>
-          <div className="cart-total-chip">
-            <span className="cart-total-float">${total.toLocaleString('es-CO')}</span>
-            <ChevronRight size={17} strokeWidth={2.4} className="cart-chevron-icon" />
-          </div>
-        </button>
+            <div className="cart-total-chip">
+              <span className="cart-total-float">${total.toLocaleString('es-CO')}</span>
+              <ChevronRight size={17} strokeWidth={2.4} className="cart-chevron-icon" />
+            </div>
+          </button>
+        </div>
       )}
 
       {/* Cart Modal */}
@@ -2720,17 +2782,72 @@ export default function MenuDigital() {
 
                   return (
                     <>
+                      {/* ── BANNER GUÍA CON FLECHITA (ULTRA INTUITIVO) ── */}
+                      <div style={{
+                        background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
+                        border: '1.5px dashed #10b981',
+                        borderRadius: '16px',
+                        padding: '0.9rem 1rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.55rem',
+                        boxShadow: '0 3px 10px rgba(16, 185, 129, 0.08)',
+                        fontFamily: "'Poppins', sans-serif"
+                      }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                          <div style={{
+                            width: '34px',
+                            height: '34px',
+                            borderRadius: '50%',
+                            background: '#10b981',
+                            color: '#ffffff',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '1.15rem',
+                            flexShrink: 0,
+                            boxShadow: '0 2px 6px rgba(16, 185, 129, 0.35)',
+                            animation: 'bounceHelper 2.5s infinite ease-in-out'
+                          }}>
+                            👇
+                          </div>
+                          <div>
+                            <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#065f46', fontFamily: "'Poppins', sans-serif" }}>
+                              Aquí completas tu pedido en 3 simples pasos:
+                            </h4>
+                            <p style={{ margin: '0.1rem 0 0 0', fontSize: '0.76rem', color: '#047857', fontWeight: 400 }}>
+                              Pon tu nombre, tu dirección, cómo pagar y termina tu compra:
+                            </p>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.45rem', marginTop: '0.2rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#ffffff', padding: '0.5rem 0.65rem', borderRadius: '10px', border: '1px solid #d1fae5' }}>
+                            <span style={{ background: '#10b981', color: '#fff', width: '19px', height: '19px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 600, flexShrink: 0 }}>1</span>
+                            <span style={{ fontSize: '0.76rem', color: '#065f46', fontWeight: 500 }}>Tu Nombre y WhatsApp</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#ffffff', padding: '0.5rem 0.65rem', borderRadius: '10px', border: '1px solid #d1fae5' }}>
+                            <span style={{ background: '#10b981', color: '#fff', width: '19px', height: '19px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 600, flexShrink: 0 }}>2</span>
+                            <span style={{ fontSize: '0.76rem', color: '#065f46', fontWeight: 500 }}>Tu Dirección de entrega</span>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', background: '#ffffff', padding: '0.5rem 0.65rem', borderRadius: '10px', border: '1px solid #d1fae5' }}>
+                            <span style={{ background: '#10b981', color: '#fff', width: '19px', height: '19px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', fontWeight: 600, flexShrink: 0 }}>3</span>
+                            <span style={{ fontSize: '0.76rem', color: '#065f46', fontWeight: 500 }}>Forma de pago</span>
+                          </div>
+                        </div>
+                      </div>
+
                       {/* ── 1. DATOS PERSONALES Y DE CONTACTO (2 Columnas x 2 Filas) ── */}
                       <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #f1f5f9', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                            <span style={{ fontSize: '1.1rem' }}>👤</span>
-                            <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ background: '#0f172a', color: '#ffffff', width: '22px', height: '22px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.74rem', fontWeight: 600, flexShrink: 0 }}>1</span>
+                            <h4 style={{ margin: 0, fontSize: '0.96rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
                               Tus datos de contacto
                             </h4>
                           </div>
                           <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
-                            Paso único
+                            Paso 1 de 3
                           </span>
                         </div>
 
@@ -2784,18 +2901,16 @@ export default function MenuDigital() {
                             </div>
                           </div>
 
-                          {/* Fila 2 - Col 1: Correo */}
-                          {/* Fila 2: Correo */}
+                          {/* Fila 2: Correo (Opcional) */}
                           <div className="form-group" style={{ margin: 0, gridColumn: '1 / -1' }}>
-                            <label style={{ fontSize: '0.82rem', fontWeight: 500, color: '#334155', marginBottom: '0.3rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
-                              Correo electrónico *
+                            <label style={{ fontSize: '0.82rem', fontWeight: 500, color: '#334155', marginBottom: '0.3rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: "'Poppins', sans-serif" }}>
+                              <span>Correo electrónico <span style={{ color: '#94a3b8', fontWeight: 400, fontSize: '0.75rem' }}>(opcional)</span></span>
                             </label>
                             <input 
                               type="email" 
-                              required 
                               value={formData.email}
                               onChange={e => setFormData({...formData, email: e.target.value})}
-                              placeholder="tu@correo.com"
+                              placeholder="tu@correo.com (opcional)"
                               style={{ width: '100%', boxSizing: 'border-box', padding: '0.72rem 0.85rem', borderRadius: '12px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.88rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif", fontWeight: 400 }}
                             />
                           </div>
@@ -2813,11 +2928,16 @@ export default function MenuDigital() {
 
                       {/* ── 2. MÉTODO DE ENTREGA Y DIRECCIÓN (2 Columnas x 2 Filas) ── */}
                       <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #f1f5f9', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem' }}>
-                          <span style={{ fontSize: '1.1rem' }}>🚚</span>
-                          <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
-                            Método de entrega
-                          </h4>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ background: '#0f172a', color: '#ffffff', width: '22px', height: '22px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.74rem', fontWeight: 600, flexShrink: 0 }}>2</span>
+                            <h4 style={{ margin: 0, fontSize: '0.96rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
+                              Dirección de entrega (¿A dónde te lo enviamos?)
+                            </h4>
+                          </div>
+                          <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
+                            Paso 2 de 3
+                          </span>
                         </div>
 
                         {/* Selector Entrega (2 Columnas) */}
@@ -3054,11 +3174,16 @@ export default function MenuDigital() {
 
                       {/* ── 3. FORMA DE PAGO ── */}
                       <div style={{ background: '#ffffff', borderRadius: '16px', border: '1px solid #f1f5f9', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.85rem', boxShadow: '0 2px 8px rgba(15,23,42,0.03)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem' }}>
-                          <span style={{ fontSize: '1.1rem' }}>💳</span>
-                          <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
-                            Forma de pago
-                          </h4>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.5rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ background: '#0f172a', color: '#ffffff', width: '22px', height: '22px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.74rem', fontWeight: 600, flexShrink: 0 }}>3</span>
+                            <h4 style={{ margin: 0, fontSize: '0.96rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
+                              Forma de pago (¿Cómo prefieres pagar?)
+                            </h4>
+                          </div>
+                          <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
+                            Paso 3 de 3
+                          </span>
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
@@ -3249,26 +3374,26 @@ export default function MenuDigital() {
                         type="submit" 
                         style={{
                           width: '100%',
-                          padding: '0.92rem 1.25rem',
-                          borderRadius: '14px',
+                          padding: '0.95rem 1.25rem',
+                          borderRadius: '16px',
                           border: 'none',
                           background: brandColor,
                           color: '#ffffff',
-                          fontSize: '1rem',
+                          fontSize: '1.02rem',
                           fontWeight: 600,
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
-                          gap: '0.5rem',
+                          gap: '0.55rem',
                           boxShadow: `0 4px 16px ${brandColor}40`,
                           fontFamily: "'Poppins', sans-serif",
                           marginTop: '0.25rem',
                           transition: 'transform 0.15s ease'
                         }}
                       >
-                        <Check size={20} />
-                        <span>Confirmar Pedido — ${total.toLocaleString('es-CO')}</span>
+                        <Check size={20} strokeWidth={2.4} />
+                        <span>Terminar Compra y Enviar Pedido — ${total.toLocaleString('es-CO')}</span>
                       </button>
                     </>
                   );
@@ -3572,6 +3697,235 @@ export default function MenuDigital() {
               </>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ── MODAL DECISIÓN AL AGREGAR AL CARRITO (Ultra simple e intuitivo) ── */}
+      {addedProductDecision && (
+        <div 
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 10000,
+            background: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(5px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem'
+          }}
+          onClick={() => setAddedProductDecision(null)}
+        >
+          <div 
+            style={{
+              background: '#ffffff',
+              borderRadius: '24px',
+              maxWidth: '420px',
+              width: '100%',
+              padding: '1.4rem',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.25)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem',
+              position: 'relative',
+              animation: 'scaleUpModal 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
+              fontFamily: "'Poppins', sans-serif"
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Botón Cerrar */}
+            <button
+              onClick={() => setAddedProductDecision(null)}
+              style={{
+                position: 'absolute',
+                top: '1rem',
+                right: '1rem',
+                background: '#f1f5f9',
+                border: 'none',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: '#64748b'
+              }}
+              title="Cerrar"
+            >
+              <X size={18} />
+            </button>
+
+            {/* Cabecera con ícono de éxito */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+              <div style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '50%',
+                background: '#dcfce7',
+                color: '#16a34a',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <Check size={22} strokeWidth={2.6} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
+                  ¡Prenda agregada al carrito!
+                </h3>
+                <span style={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 400 }}>
+                  Ya está lista en tu pedido
+                </span>
+              </div>
+            </div>
+
+            {/* Tarjeta de resumen de la prenda recién añadida */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.85rem',
+              background: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '16px',
+              padding: '0.75rem 0.85rem'
+            }}>
+              {addedProductDecision.imagen ? (
+                <img 
+                  src={getOptimizedImageUrl(addedProductDecision.imagen, 120, 80)} 
+                  alt={addedProductDecision.nombre} 
+                  style={{ width: '56px', height: '56px', objectFit: 'cover', borderRadius: '12px', border: '1px solid #e2e8f0' }} 
+                />
+              ) : (
+                <div style={{ width: '56px', height: '56px', borderRadius: '12px', background: '#e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Package size={22} color="#94a3b8" />
+                </div>
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <h4 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Poppins', sans-serif" }}>
+                  {toTitleCase(addedProductDecision.nombre)}
+                </h4>
+                <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.2rem', fontSize: '0.74rem', color: '#64748b', fontWeight: 400 }}>
+                  {addedProductDecision.talla && <span>Talla: <strong>{addedProductDecision.talla}</strong></span>}
+                  {addedProductDecision.cantidad > 1 && <span>• Cant: <strong>{addedProductDecision.cantidad}</strong></span>}
+                </div>
+                <div style={{ fontSize: '0.92rem', fontWeight: 600, color: configuracion?.color_primario || 'var(--primary, #f36b8e)', marginTop: '0.2rem' }}>
+                  ${addedProductDecision.precio.toLocaleString('es-CO')}
+                </div>
+              </div>
+            </div>
+
+            {/* Pregunta clara y humana */}
+            <div style={{ textAlign: 'center', padding: '0.2rem 0' }}>
+              <div style={{ fontSize: '0.98rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
+                ¿Qué deseas hacer ahora?
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 400, marginTop: '0.15rem' }}>
+                Llevas {totalItems} prenda{totalItems > 1 ? 's' : ''} en total (${total.toLocaleString('es-CO')})
+              </div>
+            </div>
+
+            {/* Botones de acción directos */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+              {/* Botón 1: Pagar Ahora (Ir a facturación) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setAddedProductDecision(null);
+                  if (buyerType === 'mayorista' && totalUnits < 6) {
+                    setIsCheckoutMode(false);
+                    setIsCartOpen(true);
+                  } else {
+                    setIsCheckoutMode(true);
+                    setIsCartOpen(true);
+                  }
+                }}
+                style={{
+                  width: '100%',
+                  padding: '0.92rem 1.1rem',
+                  borderRadius: '16px',
+                  border: 'none',
+                  background: configuracion?.color_primario || 'var(--primary, #f36b8e)',
+                  color: '#ffffff',
+                  fontWeight: 600,
+                  fontSize: '0.95rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  boxShadow: `0 4px 14px ${(configuracion?.color_primario || '#f36b8e')}40`,
+                  fontFamily: "'Poppins', sans-serif"
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                  <CreditCard size={20} />
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ lineHeight: 1.2 }}>Pagar ahora</div>
+                    <div style={{ fontSize: '0.72rem', opacity: 0.92, fontWeight: 400 }}>Ir directo a datos de entrega</div>
+                  </div>
+                </div>
+                <ChevronRight size={18} strokeWidth={2.4} />
+              </button>
+
+              {/* Botón 2: Seguir Comprando */}
+              <button
+                type="button"
+                onClick={() => {
+                  setAddedProductDecision(null);
+                  setShowContinueShoppingToast(true);
+                  setTimeout(() => setShowContinueShoppingToast(false), 3500);
+                }}
+                style={{
+                  width: '100%',
+                  padding: '0.82rem 1.1rem',
+                  borderRadius: '16px',
+                  border: '1.5px solid #e2e8f0',
+                  background: '#f8fafc',
+                  color: '#1e293b',
+                  fontWeight: 500,
+                  fontSize: '0.88rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  fontFamily: "'Poppins', sans-serif"
+                }}
+              >
+                <ShoppingBag size={18} color="#0284c7" />
+                <span>Seguir comprando (Añadir más prendas)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── AVISO FLOTANTE: SEGUIR COMPRANDO ── */}
+      {showContinueShoppingToast && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: '1.25rem',
+            left: '50%',
+            zIndex: 10001,
+            background: '#0f172a',
+            color: '#ffffff',
+            padding: '0.7rem 1.25rem',
+            borderRadius: '50px',
+            boxShadow: '0 10px 25px rgba(0,0,0,0.25)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.65rem',
+            fontSize: '0.84rem',
+            fontWeight: 500,
+            fontFamily: "'Poppins', sans-serif",
+            animation: 'fadeInDownToast 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+            maxWidth: '90vw'
+          }}
+        >
+          <span style={{ fontSize: '1.1rem' }}>🛍️</span>
+          <span>¡Listo! Sigue explorando. Tu carrito está guardado.</span>
         </div>
       )}
 
