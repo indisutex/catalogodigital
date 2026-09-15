@@ -16339,14 +16339,8 @@ export default function Admin() {
                                           )}
                                         </div>
                                       </td>
-                                      <td style={{ padding: '0.85rem 0.8rem', color: '#334155', verticalAlign: 'middle', fontSize: '0.82rem', fontFamily: "'Poppins', sans-serif", whiteSpace: 'nowrap' }}>
-                                        {loc.cedula}
-                                      </td>
                                       <td style={{ padding: '0.85rem 0.8rem', color: ped.estado === 'completado' ? '#166534' : '#475569', verticalAlign: 'middle', fontSize: '0.82rem', fontFamily: "'Poppins', sans-serif", whiteSpace: 'nowrap' }}>
                                         {ped.cliente_telefono || '—'}
-                                      </td>
-                                      <td style={{ padding: '0.85rem 0.8rem', color: '#334155', verticalAlign: 'middle', fontSize: '0.82rem', fontFamily: "'Poppins', sans-serif", maxWidth: '170px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={loc.email}>
-                                        {loc.email}
                                       </td>
                                       <td style={{ padding: '0.85rem 0.8rem', color: ped.estado === 'completado' ? '#166534' : '#475569', verticalAlign: 'middle', fontSize: '0.82rem', fontFamily: "'Poppins', sans-serif", minWidth: '160px' }}>
                                         {loc.direccion}
