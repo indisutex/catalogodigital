@@ -950,6 +950,7 @@ export default function Admin() {
   const [showMobileSearch, setShowMobileSearch] = useState(false);
   const [clienteSearchQuery, setClienteSearchQuery] = useState('');
   const [asesores, setAsesores] = useState<Asesor[]>([]);
+  const [allGlobalAsesores, setAllGlobalAsesores] = useState<Asesor[]>([]);
   const [mayoristas, setMayoristas] = useState<Mayorista[]>([]);
   const [materiales, setMateriales] = useState<any[]>([]);
   const [materialFilter, setMaterialFilter] = useState<string>('todos');
@@ -2667,6 +2668,12 @@ export default function Admin() {
     });
     if (matchMayorista) return matchMayorista.nombre;
 
+    const matchGlobal = allGlobalAsesores.find(a => {
+      const phones = (a.telefono || '').split(',').map(p => p.replace(/\D/g, '')).filter(Boolean);
+      return phones.some(p => cleanInput.split(',').map(cp => cp.replace(/\D/g, '')).includes(p));
+    });
+    if (matchGlobal) return matchGlobal.nombre;
+
     return numSinIndicativo;
   };
 
@@ -2687,6 +2694,12 @@ export default function Admin() {
       return phones.some(p => cleanInput.split(',').map(cp => cp.replace(/\D/g, '')).includes(p));
     });
     if (matchMayorista) return { nombre: matchMayorista.nombre, foto_url: matchMayorista.foto_url || '', role: 'Mayorista' };
+
+    const matchGlobal = allGlobalAsesores.find(a => {
+      const phones = (a.telefono || '').split(',').map(p => p.replace(/\D/g, '')).filter(Boolean);
+      return phones.some(p => cleanInput.split(',').map(cp => cp.replace(/\D/g, '')).includes(p));
+    });
+    if (matchGlobal) return { nombre: matchGlobal.nombre, foto_url: matchGlobal.foto_url || '', role: 'Asesor' };
 
     const cleanPhone = cleanInput.split(',')[0].replace(/\D/g, '');
     const numSinIndicativo = cleanPhone.startsWith('57') ? cleanPhone.substring(2) : cleanPhone;
@@ -2941,7 +2954,11 @@ export default function Admin() {
       const phones = (m.telefono || '').split(',').map(p => p.replace(/\D/g, '')).filter(Boolean);
       return phones.some(p => cleanInput.split(',').map(cp => cp.replace(/\D/g, '')).includes(p));
     });
-    const match = matchAsesor || matchMayorista;
+    const matchGlobal = !matchAsesor && !matchMayorista ? allGlobalAsesores.find(a => {
+      const phones = (a.telefono || '').split(',').map(p => p.replace(/\D/g, '')).filter(Boolean);
+      return phones.some(p => cleanInput.split(',').map(cp => cp.replace(/\D/g, '')).includes(p));
+    }) : null;
+    const match = matchAsesor || matchMayorista || matchGlobal;
 
     const lineaDisplay = cleanInput.split(',').map(p => p.trim()).filter(Boolean)[0] || cleanInput;
     return (
@@ -2973,7 +2990,12 @@ export default function Admin() {
               <span style={{ fontSize: '0.65rem', background: '#f3e8ff', color: '#6b21a8', padding: '1px 5px', borderRadius: '4px', fontWeight: 600, display: 'inline-block' }}>Asesor</span>
             )}
             {matchMayorista && (
-              <span style={{ fontSize: '0.65rem', background: '#fef3c7', color: '#b45309', padding: '1px 5px', borderRadius: '4px', fontWeight: 600, display: 'inline-block' }}>Mayorista</span>
+              <span style={{ fontSize: '0.65rem', background: '#fef3c7', color: '#b45309', padding: '1px 5px', borderRadius: '4px', fontWeight: 500, display: 'inline-block' }}>Mayorista</span>
+            )}
+            {matchGlobal && !matchAsesor && !matchMayorista && (
+              <span style={{ fontSize: '0.65rem', background: '#fee2e2', color: '#b91c1c', padding: '1px 5px', borderRadius: '4px', fontWeight: 500, display: 'inline-block' }}>
+                Tienda: {matchGlobal.tenant_id}
+              </span>
             )}
           </div>
         </span>
@@ -3148,7 +3170,7 @@ export default function Admin() {
       const tenantOrFilter = `tenant_id.eq.${tenant},tenant_id.eq.${normT},tenant_id.eq.${tenant.replace(/_/g, '-')},tenant_id.eq.${tenant.replace(/-/g, '_')}`;
 
       // Fetch other data in parallel
-      const [catRes, subcatRes, confRes, pedRes, leadRes, cliRes, aseRes, matRes, mayRes, pqrsRes] = await Promise.all([
+      const [catRes, subcatRes, confRes, pedRes, leadRes, cliRes, aseRes, matRes, mayRes, pqrsRes, allAseRes] = await Promise.all([
         supabase.from('categorias').select('*').or(tenantOrFilter).order('orden', { ascending: true }),
         supabase.from('subcategorias').select('*').or(tenantOrFilter).order('orden', { ascending: true }),
         supabase.from('configuracion').select('*').or(tenantOrFilter),
@@ -3158,7 +3180,8 @@ export default function Admin() {
         supabase.from('asesores').select('*').or(tenantOrFilter).order('created_at', { ascending: false }),
         supabase.from('material_apoyo').select('*').or(tenantOrFilter).order('created_at', { ascending: false }),
         supabase.from('mayoristas').select('*').or(tenantOrFilter).order('created_at', { ascending: false }),
-        supabase.from('pqrs').select('*').or(tenantOrFilter).order('created_at', { ascending: false })
+        supabase.from('pqrs').select('*').or(tenantOrFilter).order('created_at', { ascending: false }),
+        supabase.from('asesores').select('*').order('created_at', { ascending: false })
       ]);
 
       if (catRes.data) {
@@ -3215,6 +3238,7 @@ export default function Admin() {
       }
       if (cliRes.data) setClientes(cliRes.data);
       if (aseRes && aseRes.data) setAsesores(aseRes.data);
+      if (allAseRes && allAseRes.data) setAllGlobalAsesores(allAseRes.data);
       if (matRes && matRes.data) setMateriales(matRes.data);
       if (mayRes && mayRes.data) setMayoristas(mayRes.data);
       const remotePqrs: PQRS[] = (pqrsRes && pqrsRes.data) ? pqrsRes.data : [];
@@ -16873,7 +16897,41 @@ export default function Admin() {
 
                                 {/* Línea / Asesor */}
                                 <div>
-                                  <h5 style={{ margin: '0 0 0.2rem 0', color: '#64748b', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Línea / Asesor Asignado</h5>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                    <h5 style={{ margin: 0, color: '#64748b', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.4px', fontWeight: 500 }}>Línea / Asesor Asignado</h5>
+                                    {role === 'admin' && (
+                                      <select
+                                        style={{ fontSize: '0.72rem', padding: '2px 6px', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#475569', cursor: 'pointer', fontFamily: "'Poppins', sans-serif", fontWeight: 500 }}
+                                        value={selectedPedido.linea_whatsapp || ''}
+                                        onChange={async (e) => {
+                                          const newPhone = e.target.value;
+                                          if (!newPhone) return;
+                                          const pedId = selectedPedido.id;
+                                          try {
+                                            const table = selectedPedido.isLead ? 'leads' : 'pedidos';
+                                            await supabase.from(table).update({ linea_whatsapp: newPhone }).eq('id', pedId);
+                                            setSelectedPedido((prev: any) => prev ? { ...prev, linea_whatsapp: newPhone } : null);
+                                            if (selectedPedido.isLead) {
+                                              setLeads(prev => prev.map(l => l.id === pedId ? { ...l, linea_whatsapp: newPhone } : l));
+                                            } else {
+                                              setPedidos(prev => prev.map(p => p.id === pedId ? { ...p, linea_whatsapp: newPhone } : p));
+                                            }
+                                          } catch (err) {
+                                            console.error('Error reasignando asesor:', err);
+                                          }
+                                        }}
+                                      >
+                                        <option value={selectedPedido.linea_whatsapp || ''}>Reasignar asesor...</option>
+                                        {configuracion?.whatsapp && (
+                                          <option value={configuracion.whatsapp}>Tienda Oficial ({configuracion.whatsapp})</option>
+                                        )}
+                                        {asesores.map(a => {
+                                          const p = (a.telefono || '').split(',')[0].trim();
+                                          return <option key={a.id} value={p}>{a.nombre} ({p})</option>;
+                                        })}
+                                      </select>
+                                    )}
+                                  </div>
                                   <div style={{ display: 'flex', alignItems: 'center', marginTop: '0.15rem' }}>
                                     {renderAsesorBadge(selectedPedido.linea_whatsapp, selectedPedido.origen)}
                                   </div>

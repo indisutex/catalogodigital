@@ -362,7 +362,7 @@ export default function MenuDigital() {
 
           if (matchingPhones.length > 0) {
             const storeTenant = normalizeTenantId(rawPathSlug || params.get('tienda') || localStorage.getItem('tenant_id') || 'sublimados_majestic');
-            matchMayorista = matchingPhones.find(m => m.tenant_id === storeTenant) || matchingPhones[0];
+            matchMayorista = matchingPhones.find(m => m.tenant_id === storeTenant || normalizeTenantId(m.tenant_id) === storeTenant) || null;
           }
         }
 
@@ -421,58 +421,46 @@ export default function MenuDigital() {
           setEffectiveTenant(storeTenant);
 
           let matchAsesor: any = null;
+          const normStoreTenant = normalizeTenantId(storeTenant);
+          const tenantFilter = `tenant_id.eq.${storeTenant},tenant_id.eq.${normStoreTenant},tenant_id.eq.${storeTenant.replace(/_/g, '-')},tenant_id.eq.${storeTenant.replace(/-/g, '_')}`;
+
+          // Cargar ÚNICAMENTE los asesores que pertenecen a ESTA tienda
+          const { data: tenantAsesores } = await supabase
+            .from('asesores')
+            .select('id, nombre, telefono, foto_url, tenant_id')
+            .or(tenantFilter);
+
+          const storeAsesoresList = tenantAsesores || [];
+
           if (phoneToQuery) {
-            const { data: allAsesores } = await supabase
-              .from('asesores')
-              .select('id, nombre, telefono, foto_url, tenant_id')
-              .like('telefono', `%${normQuery}%`);
+            // Verificar si el teléfono solicitado pertenece a un asesor de ESTA tienda
+            matchAsesor = storeAsesoresList.find(a => {
+              if (!a.telefono) return false;
+              const phoneList = a.telefono.split(',').map((p: string) => {
+                const clean = p.replace(/\D/g, '');
+                return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
+              }).filter(Boolean);
+              return phoneList.some((p: string) => p === normQuery || p.includes(normQuery) || normQuery.includes(p));
+            }) || null;
 
-            matchAsesor = allAsesores?.[0] || null;
-
+            // Si el teléfono NO pertenece a esta tienda, se descarta (evita cruce con asesores de otras marcas)
             if (!matchAsesor) {
-              const { data: allFallback } = await supabase
-                .from('asesores')
-                .select('id, nombre, telefono, foto_url, tenant_id');
-
-              matchAsesor = allFallback?.find(a => {
-                if (!a.telefono) return false;
-                const phoneList = a.telefono.split(',').map((p: string) => {
-                  const clean = p.replace(/\D/g, '');
-                  return clean.length === 12 && clean.startsWith('57') ? clean.substring(2) : clean;
-                }).filter(Boolean);
-                return phoneList.some((p: string) => p === normQuery || p.includes(normQuery) || normQuery.includes(p));
-              }) || null;
+              phoneToQuery = '';
+              sessionStorage.removeItem(`ws_override_${storeTenant}`);
+              sessionStorage.removeItem(`ws_explicit_${storeTenant}`);
+              setOverrideWhatsApp(null);
             }
           }
 
-          if (!matchAsesor) {
-            const { data: tenantAsesores } = await supabase
-              .from('asesores')
-              .select('id, nombre, telefono, foto_url, tenant_id')
-              .eq('tenant_id', storeTenant);
-
-            if (tenantAsesores && tenantAsesores.length > 0) {
-              tenantAsesores.sort((a, b) => (a.id || '').localeCompare(b.id || ''));
-              const storageKey = `last_asesor_idx_${storeTenant}`;
-              let lastIdx = parseInt(localStorage.getItem(storageKey) || '-1', 10);
-              if (isNaN(lastIdx) || lastIdx < 0 || lastIdx >= tenantAsesores.length) lastIdx = -1;
-              const nextIdx = (lastIdx + 1) % tenantAsesores.length;
-              localStorage.setItem(storageKey, nextIdx.toString());
-              matchAsesor = tenantAsesores[nextIdx];
-            } else {
-              const { data: globalAsesores } = await supabase
-                .from('asesores')
-                .select('id, nombre, telefono, foto_url, tenant_id');
-              if (globalAsesores && globalAsesores.length > 0) {
-                globalAsesores.sort((a, b) => (a.id || '').localeCompare(b.id || ''));
-                const storageKey = `last_asesor_idx_global`;
-                let lastIdx = parseInt(localStorage.getItem(storageKey) || '-1', 10);
-                if (isNaN(lastIdx) || lastIdx < 0 || lastIdx >= globalAsesores.length) lastIdx = -1;
-                const nextIdx = (lastIdx + 1) % globalAsesores.length;
-                localStorage.setItem(storageKey, nextIdx.toString());
-                matchAsesor = globalAsesores[nextIdx];
-              }
-            }
+          if (!matchAsesor && storeAsesoresList.length > 0) {
+            // Rotar equitativamente y de manera estricta entre asesores de ESTA MISMA tienda
+            storeAsesoresList.sort((a, b) => (a.id || '').localeCompare(b.id || ''));
+            const storageKey = `last_asesor_idx_${storeTenant}`;
+            let lastIdx = parseInt(localStorage.getItem(storageKey) || '-1', 10);
+            if (isNaN(lastIdx) || lastIdx < 0 || lastIdx >= storeAsesoresList.length) lastIdx = -1;
+            const nextIdx = (lastIdx + 1) % storeAsesoresList.length;
+            localStorage.setItem(storageKey, nextIdx.toString());
+            matchAsesor = storeAsesoresList[nextIdx];
           }
 
           if (matchAsesor) {
@@ -491,6 +479,12 @@ export default function MenuDigital() {
               setOverrideWhatsApp(cleanAssignedPhone);
               sessionStorage.setItem(`ws_override_${storeTenant}`, cleanAssignedPhone);
             }
+          } else {
+            // Si la tienda no tiene asesores registrados, NUNCA tomar asesores de otras tiendas.
+            // Se usa la línea de WhatsApp oficial configurada para la tienda.
+            setActiveAsesor(null);
+            setOverrideWhatsApp(null);
+            sessionStorage.removeItem(`ws_override_${storeTenant}`);
           }
         }
 
