@@ -16307,9 +16307,7 @@ export default function Admin() {
                                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b', fontWeight: 600, fontSize: '0.82rem', fontFamily: "'Poppins', sans-serif" }}>
                                   <th style={{ padding: '0.85rem 0.8rem', whiteSpace: 'nowrap' }}>Fecha</th>
                                   <th style={{ padding: '0.85rem 0.8rem', whiteSpace: 'nowrap' }}>Cliente</th>
-                                  <th style={{ padding: '0.85rem 0.8rem', whiteSpace: 'nowrap' }}>Identificación</th>
                                   <th style={{ padding: '0.85rem 0.8rem', whiteSpace: 'nowrap' }}>Teléfono</th>
-                                  <th style={{ padding: '0.85rem 0.8rem', whiteSpace: 'nowrap' }}>Correo</th>
                                   <th style={{ padding: '0.85rem 0.8rem', whiteSpace: 'nowrap' }}>Dirección</th>
                                   <th style={{ padding: '0.85rem 0.8rem', whiteSpace: 'nowrap' }}>Ciudad</th>
                                   <th style={{ padding: '0.85rem 0.8rem', whiteSpace: 'nowrap' }}>Departamento</th>
@@ -16843,30 +16841,6 @@ export default function Admin() {
                                       >
                                         ✕
                                       </button>
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* Correo Electrónico & Cédula (Formato limpio sin cortes raros) */}
-                                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', padding: '0.55rem 0.75rem', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                                  {loc.email ? (
-                                    <div>
-                                      <h5 style={{ margin: '0 0 0.1rem 0', color: '#64748b', fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.3px', fontWeight: 500 }}>Correo Electrónico</h5>
-                                      <p style={{ margin: 0, fontWeight: 400, color: '#0f172a', fontSize: '0.82rem', wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
-                                        ✉️ {loc.email}
-                                      </p>
-                                    </div>
-                                  ) : (
-                                    <div>
-                                      <h5 style={{ margin: '0 0 0.1rem 0', color: '#64748b', fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.3px', fontWeight: 500 }}>Correo Electrónico</h5>
-                                      <p style={{ margin: 0, fontWeight: 400, color: '#94a3b8', fontSize: '0.78rem', fontStyle: 'italic' }}>Sin correo registrado</p>
-                                    </div>
-                                  )}
-
-                                  {loc.cedula && loc.cedula.trim() && loc.cedula !== 'No registrada' && (
-                                    <div style={{ borderTop: '1px dashed #e2e8f0', paddingTop: '0.3rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                      <span style={{ color: '#64748b', fontSize: '0.68rem', textTransform: 'uppercase', fontWeight: 500 }}>Cédula / ID:</span>
-                                      <span style={{ fontWeight: 500, color: '#0f172a', fontSize: '0.82rem' }}>{loc.cedula}</span>
                                     </div>
                                   )}
                                 </div>
