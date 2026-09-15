@@ -4443,55 +4443,6 @@ export default function MenuDigital() {
                       width: '100%',
                       boxSizing: 'border-box'
                     }}>
-                      {/* Indicador superior de progreso guiado */}
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        background: '#ffffff',
-                        padding: '0.5rem 0.75rem',
-                        borderRadius: '12px',
-                        border: '1px solid #e2e8f0'
-                      }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                          <span style={{ fontSize: '0.95rem' }}>✨</span>
-                          <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
-                            Personaliza tu prenda
-                          </span>
-                        </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                          {hasEstampados && (
-                            <span style={{
-                              fontSize: '0.7rem',
-                              padding: '0.2rem 0.5rem',
-                              borderRadius: '20px',
-                              background: selectedEstampado ? '#dcfce7' : '#f1f5f9',
-                              color: selectedEstampado ? '#15803d' : '#64748b',
-                              fontWeight: 500,
-                              fontFamily: "'Poppins', sans-serif"
-                            }}>
-                              {selectedEstampado ? '1. Estampado ✓' : '1. Estampado'}
-                            </span>
-                          )}
-                          {hasEstampados && hasTallas && (
-                            <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>➔</span>
-                          )}
-                          {hasTallas && (
-                            <span style={{
-                              fontSize: '0.7rem',
-                              padding: '0.2rem 0.5rem',
-                              borderRadius: '20px',
-                              background: selectedTalla ? '#dcfce7' : '#f1f5f9',
-                              color: selectedTalla ? '#15803d' : '#64748b',
-                              fontWeight: 500,
-                              fontFamily: "'Poppins', sans-serif"
-                            }}>
-                              {selectedTalla ? '2. Talla ✓' : '2. Talla'}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
                       {/* PASO 1: ESTAMPADO / COLOR CON FOTOS Y BOTONES VISUALES */}
                       {hasEstampados && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
@@ -4604,6 +4555,47 @@ export default function MenuDigital() {
                                 </button>
                               );
                             })}
+                          </div>
+
+                          {/* Selector alternativo en lista desplegable (Dropdown) */}
+                          <div style={{ marginTop: '0.15rem' }}>
+                            <select
+                              value={selectedEstampado}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setSelectedEstampado(val);
+                                const valClean = val.trim().toUpperCase();
+                                const imgIdx = allImages.findIndex(img => {
+                                  const est = (img.estampado || img.ref || '').trim().toUpperCase();
+                                  return est === valClean || (est && valClean && (est.includes(valClean) || valClean.includes(est)));
+                                });
+                                if (imgIdx !== -1) {
+                                  setCarouselIdx(imgIdx);
+                                }
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '0.52rem 0.85rem',
+                                borderRadius: '12px',
+                                border: `1.5px solid ${selectedEstampado ? brandColor : '#cbd5e1'}`,
+                                background: '#ffffff',
+                                color: '#0f172a',
+                                fontWeight: 500,
+                                fontSize: '0.82rem',
+                                cursor: 'pointer',
+                                outline: 'none',
+                                boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                                textOverflow: 'ellipsis',
+                                fontFamily: "'Poppins', sans-serif"
+                              }}
+                            >
+                              <option value="" disabled>O selecciona de la lista desplegable...</option>
+                              {estampados.map(est => (
+                                <option key={est} value={est}>
+                                  🎨 {toTitleCase(est)} {selectedEstampado.trim().toUpperCase() === est.trim().toUpperCase() ? '✓' : ''}
+                                </option>
+                              ))}
+                            </select>
                           </div>
                         </div>
                       )}
