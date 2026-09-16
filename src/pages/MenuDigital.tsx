@@ -979,8 +979,15 @@ export default function MenuDigital() {
       const getOptionPrice = (optKey: string) => {
         const optObj = preciosDetallados[optKey];
         if (optObj) {
-          if (currentBuyerMode === 'mayorista' && optObj.mayor > 0) return Number(optObj.mayor);
-          if (currentBuyerMode === '50_unidades' && optObj.p50 > 0) return Number(optObj.p50);
+          if (currentBuyerMode === '50_unidades') {
+            if (optObj.p50 > 0) return Number(optObj.p50);
+            if (optObj.mayor > 0) return Number(optObj.mayor);
+            if (optObj.detal > 0) return Number(optObj.detal);
+          }
+          if (currentBuyerMode === 'mayorista') {
+            if (optObj.mayor > 0) return Number(optObj.mayor);
+            if (optObj.detal > 0) return Number(optObj.detal);
+          }
           if (optObj.detal > 0) return Number(optObj.detal);
         }
         if (preciosMap[optKey] > 0) return Number(preciosMap[optKey]);
@@ -1023,6 +1030,15 @@ export default function MenuDigital() {
       if (currentBuyerMode === 'mayorista' && minMayor > 0) return minMayor;
       if (minDetal > 0) return minDetal;
     }
+
+    const currentBuyerMode = bType || buyerType;
+    if (currentBuyerMode === '50_unidades') {
+      if (prod.precio_50_unidades && Number(prod.precio_50_unidades) > 0) return Number(prod.precio_50_unidades);
+      if (prod.precio_por_mayor && Number(prod.precio_por_mayor) > 0) return Number(prod.precio_por_mayor);
+    }
+    if (currentBuyerMode === 'mayorista' && prod.precio_por_mayor && Number(prod.precio_por_mayor) > 0) {
+      return Number(prod.precio_por_mayor);
+    }
     return prod.precio;
   };
 
@@ -1058,10 +1074,17 @@ export default function MenuDigital() {
           memberVal = 'nino';
         }
 
-        const unitPrice = getActiveUnitPrice(detailProduct, memberVal, tVal, buyerType);
+        const famKey = (key === 'dama_unica' ? 'Dama Única' : key === 'dama_plus' ? 'Dama Plus' : key === 'caballero_unica' ? 'Caballero Única' : key === 'unisex_2xl' ? '2XL Unisex' : key);
+        const priceDetal = getActiveUnitPrice(detailProduct, memberVal, tVal, 'detal');
+        const priceMayor = getActiveUnitPrice(detailProduct, memberVal, tVal, 'mayorista');
+        const price50 = getActiveUnitPrice(detailProduct, memberVal, tVal, '50_unidades');
+
         const productToAdd = {
           ...detailProduct,
-          precio: unitPrice,
+          precio: priceDetal > 0 ? priceDetal : detailProduct.precio,
+          precio_por_mayor: priceMayor > 0 ? priceMayor : (detailProduct.precio_por_mayor || null),
+          precio_50_unidades: price50 > 0 ? price50 : (detailProduct.precio_50_unidades || null),
+          familia_opcion_key: famKey,
           nombre: `${detailProduct.nombre} (${label})`
         };
 
@@ -1087,17 +1110,24 @@ export default function MenuDigital() {
       return;
     }
 
-    const unitPrice = getActiveUnitPrice(detailProduct, selectedMiembroFamilia, selectedTalla, buyerType);
+    const priceDetal = getActiveUnitPrice(detailProduct, selectedMiembroFamilia, selectedTalla, 'detal');
+    const priceMayor = getActiveUnitPrice(detailProduct, selectedMiembroFamilia, selectedTalla, 'mayorista');
+    const price50 = getActiveUnitPrice(detailProduct, selectedMiembroFamilia, selectedTalla, '50_unidades');
+
     let miembroLabel = '';
-    if (selectedMiembroFamilia === 'dama_unica') miembroLabel = 'Dama Única';
-    else if (selectedMiembroFamilia === 'dama_plus') miembroLabel = 'Dama Plus';
-    else if (selectedMiembroFamilia === 'caballero_unica') miembroLabel = 'Caballero Única';
-    else if (selectedMiembroFamilia === 'unisex_2xl') miembroLabel = '2XL Unisex';
-    else if (selectedMiembroFamilia === 'nino') miembroLabel = 'Niños';
+    let famKey = '';
+    if (selectedMiembroFamilia === 'dama_unica') { miembroLabel = 'Dama Única'; famKey = 'Dama Única'; }
+    else if (selectedMiembroFamilia === 'dama_plus') { miembroLabel = 'Dama Plus'; famKey = 'Dama Plus'; }
+    else if (selectedMiembroFamilia === 'caballero_unica') { miembroLabel = 'Caballero Única'; famKey = 'Caballero Única'; }
+    else if (selectedMiembroFamilia === 'unisex_2xl') { miembroLabel = '2XL Unisex'; famKey = '2XL Unisex'; }
+    else if (selectedMiembroFamilia === 'nino') { miembroLabel = 'Niños'; famKey = selectedTalla || '2/4'; }
 
     const productToAdd = {
       ...detailProduct,
-      precio: unitPrice,
+      precio: priceDetal > 0 ? priceDetal : detailProduct.precio,
+      precio_por_mayor: priceMayor > 0 ? priceMayor : (detailProduct.precio_por_mayor || null),
+      precio_50_unidades: price50 > 0 ? price50 : (detailProduct.precio_50_unidades || null),
+      familia_opcion_key: famKey || undefined,
       nombre: miembroLabel ? `${detailProduct.nombre} (${miembroLabel})` : detailProduct.nombre
     };
 
@@ -1106,7 +1136,7 @@ export default function MenuDigital() {
     setDetailProduct(null);
     setAddedProductDecision({
       nombre: productToAdd.nombre,
-      precio: unitPrice * selectedCantidad,
+      precio: (priceDetal > 0 ? priceDetal : detailProduct.precio) * selectedCantidad,
       imagen: prodImg,
       talla: selectedTalla,
       estampado: selectedEstampado,
@@ -1122,6 +1152,14 @@ export default function MenuDigital() {
     ajustesProductos, setAjustesProductos, descuentoPromocional, setDescuentoPromocional,
     setIsBulkDiscountEnabled, totalUnits, isBulkDiscountApplied, effectiveCartBuyerType 
   } = useCart();
+
+  const totalSavings = isBulkDiscountApplied
+    ? items.reduce((sum, item) => {
+        const priceDetal = getEffectivePrice(item, 'detal', markupPorcentaje, ajustesProductos, descuentoPromocional);
+        const priceEffective = getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
+        return sum + Math.max(0, (priceDetal - priceEffective) * item.cantidad);
+      }, 0)
+    : 0;
 
   useEffect(() => {
     setDescuentoPromocional(configuracion?.descuento_promocional || 0);
@@ -3282,7 +3320,7 @@ export default function MenuDigital() {
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginBottom: '0.85rem' }}>
                           {items.map(item => {
-                            const itemUnitPrice = getEffectivePrice(item, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
+                            const itemUnitPrice = getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
                             const itemTotal = itemUnitPrice * item.cantidad;
                             const thumbUrl = item.imagen_url || (item.imagenes_extra && item.imagenes_extra.length > 0 ? decodeExtraImage(item.imagenes_extra[0]).url : '');
 
@@ -3342,8 +3380,14 @@ export default function MenuDigital() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', borderTop: '1px dashed #cbd5e1', paddingTop: '0.65rem', fontSize: '0.82rem', fontFamily: "'Poppins', sans-serif" }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
                             <span>Subtotal</span>
-                            <span style={{ fontWeight: 600, color: '#0f172a' }}>${total.toLocaleString('es-CO')}</span>
+                            <span style={{ fontWeight: 600, color: '#0f172a' }}>${(totalSavings > 0 ? total + totalSavings : total).toLocaleString('es-CO')}</span>
                           </div>
+                          {totalSavings > 0 && (
+                            <div style={{ display: 'flex', justifyContent: 'space-between', color: '#059669' }}>
+                              <span style={{ fontWeight: 500 }}>🎉 Descuento al por mayor</span>
+                              <span style={{ fontWeight: 600 }}>-${totalSavings.toLocaleString('es-CO')}</span>
+                            </div>
+                          )}
                           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
                             <span>Envío</span>
                             <span style={{ fontWeight: 500, color: metodoRecepcion === 'tienda' ? '#16a34a' : '#0f172a' }}>
@@ -3404,8 +3448,9 @@ export default function MenuDigital() {
                       const brandColor = configuracion?.color_primario || 'var(--primary, #f36b8e)';
                       const itemUnitPrice = getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
                       const itemTotalPrice = itemUnitPrice * item.cantidad;
-                      const isItemDiscounted = isBulkDiscountApplied && getEffectivePrice(item, 'detal', markupPorcentaje, ajustesProductos, descuentoPromocional) > getEffectivePrice(item, 'mayorista', markupPorcentaje, ajustesProductos, descuentoPromocional);
-                      const regularTotalPrice = getEffectivePrice(item, 'detal', markupPorcentaje, ajustesProductos, descuentoPromocional) * item.cantidad;
+                      const regularUnitPrice = getEffectivePrice(item, 'detal', markupPorcentaje, ajustesProductos, descuentoPromocional);
+                      const isItemDiscounted = isBulkDiscountApplied && regularUnitPrice > itemUnitPrice;
+                      const regularTotalPrice = regularUnitPrice * item.cantidad;
 
                       return (
                         <div 
@@ -3606,8 +3651,31 @@ export default function MenuDigital() {
                   {/* SUBTOTAL ROW */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.45rem', fontSize: '0.92rem' }}>
                     <span style={{ color: '#64748b', fontWeight: 400 }}>Subtotal</span>
-                    <strong style={{ color: '#0f172a', fontWeight: 600, fontSize: '0.96rem' }}>${total.toLocaleString('es-CO')}</strong>
+                    <strong style={{ color: '#0f172a', fontWeight: 600, fontSize: '0.96rem' }}>${(totalSavings > 0 ? total + totalSavings : total).toLocaleString('es-CO')}</strong>
                   </div>
+
+                  {totalSavings > 0 && (
+                    <div style={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between', 
+                      alignItems: 'center', 
+                      marginBottom: '0.5rem', 
+                      background: '#ecfdf5', 
+                      border: '1px solid #a7f3d0', 
+                      borderRadius: '10px', 
+                      padding: '0.35rem 0.65rem',
+                      color: '#047857',
+                      fontSize: '0.84rem',
+                      fontFamily: "'Poppins', sans-serif"
+                    }}>
+                      <span style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <span>🎉</span> Descuento al por mayor
+                      </span>
+                      <strong style={{ fontWeight: 600, color: '#059669' }}>
+                        -${totalSavings.toLocaleString('es-CO')}
+                      </strong>
+                    </div>
+                  )}
 
                   {/* ENVÍO ROW */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.92rem' }}>

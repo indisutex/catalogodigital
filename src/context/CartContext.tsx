@@ -210,7 +210,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try {
       const tenantId = getTenantId() || 'saramantha';
       const saved = localStorage.getItem(`indisutex_cart_${tenantId}`);
-      return saved ? JSON.parse(saved) : [];
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      if (!Array.isArray(parsed)) return [];
+      return parsed.map((item: CartItem) => {
+        if (item.es_producto_familiar && item.precios_familia) {
+          const famPrices = getFamilyOptionPrices(item, item.talla, item.nombre, item.familia_opcion_key);
+          if (famPrices) {
+            return {
+              ...item,
+              precio: famPrices.detal > 0 ? famPrices.detal : item.precio,
+              precio_por_mayor: famPrices.mayor && famPrices.mayor > 0 ? famPrices.mayor : item.precio_por_mayor,
+              precio_50_unidades: famPrices.p50 && famPrices.p50 > 0 ? famPrices.p50 : item.precio_50_unidades,
+            };
+          }
+        }
+        return item;
+      });
     } catch {
       return [];
     }
@@ -339,18 +355,31 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const addToCart = (producto: Producto, talla?: string, estampado?: string, cantidad: number = 1) => {
     const newTotalUnits = totalUnits + cantidad;
+    let itemToAdd: CartItem = { ...producto, cantidad, talla, estampado };
+    if (producto.es_producto_familiar && producto.precios_familia) {
+      const famPrices = getFamilyOptionPrices(producto, talla, producto.nombre, (producto as any).familia_opcion_key);
+      if (famPrices) {
+        itemToAdd = {
+          ...itemToAdd,
+          precio: famPrices.detal > 0 ? famPrices.detal : producto.precio,
+          precio_por_mayor: famPrices.mayor && famPrices.mayor > 0 ? famPrices.mayor : producto.precio_por_mayor,
+          precio_50_unidades: famPrices.p50 && famPrices.p50 > 0 ? famPrices.p50 : producto.precio_50_unidades,
+        };
+      }
+    }
+
     setItems(prevItems => {
       const existingItem = prevItems.find(
-        item => item.id === producto.id && item.nombre === producto.nombre && item.talla === talla && item.estampado === estampado
+        item => item.id === itemToAdd.id && item.nombre === itemToAdd.nombre && item.talla === talla && item.estampado === estampado
       );
       if (existingItem) {
         return prevItems.map(item =>
-          (item.id === producto.id && item.nombre === producto.nombre && item.talla === talla && item.estampado === estampado)
-            ? { ...item, cantidad: item.cantidad + cantidad }
+          (item.id === itemToAdd.id && item.nombre === itemToAdd.nombre && item.talla === talla && item.estampado === estampado)
+            ? { ...item, ...itemToAdd, cantidad: item.cantidad + cantidad }
             : item
         );
       }
-      return [...prevItems, { ...producto, cantidad, talla, estampado }];
+      return [...prevItems, itemToAdd];
     });
     triggerNotification(newTotalUnits);
   };
@@ -381,8 +410,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const clearCart = () => setItems([]);
   const dismissOfferNotification = () => setOfferNotification(null);
 
-  const isBulkDiscountApplied = isBulkDiscountEnabled && (buyerType === 'detal' || buyerType === null) && totalUnits >= 6;
-  const effectiveCartBuyerType: BuyerType = isBulkDiscountApplied ? 'mayorista' : buyerType;
+  const isBulkDiscountApplied = isBulkDiscountEnabled && (
+    ((buyerType === 'detal' || buyerType === null) && totalUnits >= 6) ||
+    (totalUnits >= 50)
+  );
+
+  let effectiveCartBuyerType: BuyerType = buyerType;
+  if (isBulkDiscountEnabled) {
+    if (totalUnits >= 50) {
+      effectiveCartBuyerType = '50_unidades';
+    } else if (totalUnits >= 6 && (buyerType === 'detal' || buyerType === null)) {
+      effectiveCartBuyerType = 'mayorista';
+    }
+  }
 
   const total = items.reduce(
     (sum, item) => sum + (getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * item.cantidad),

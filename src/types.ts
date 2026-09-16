@@ -16,8 +16,9 @@ export interface Producto {
   sku?: string;
   stock?: number;
   costo?: number;
-  precio_por_mayor?: number;
-  precio_50_unidades?: number;
+  precio_por_mayor?: number | null;
+  precio_50_unidades?: number | null;
+  familia_opcion_key?: string;
   estampados?: string;
   created_at: string;
   oculto?: boolean;
