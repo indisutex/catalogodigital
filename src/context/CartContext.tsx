@@ -9,17 +9,115 @@ export interface CartItem extends Producto {
   estampado?: string; // Estampado seleccionado
   precio_detal?: number;
   precio_aplicado_mayor?: boolean;
+  familia_opcion_key?: string;
 }
 
 export type BuyerType = 'detal' | 'mayorista' | '50_unidades' | null;
 
+/**
+ * Resuelve precios detallados (detal, mayor, p50) de una opción o talla de un producto familiar
+ */
+export const getFamilyOptionPrices = (
+  prod: any,
+  talla?: string,
+  nombre?: string,
+  opcionKey?: string
+): { detal: number; mayor?: number; p50?: number } | null => {
+  if (!prod || !prod.es_producto_familiar || !prod.precios_familia) return null;
+  const fam = prod.precios_familia as any;
+  const preciosDetallados = fam.precios_detallados || {};
+  const preciosMap = fam.precios_tallas || {};
+
+  let optObj: any = null;
+
+  // 1. Coincidencia directa por opcionKey
+  if (opcionKey && preciosDetallados[opcionKey]) {
+    optObj = preciosDetallados[opcionKey];
+  }
+
+  // 2. Coincidencia directa por talla (ej. "2/4", "6/8", "10/12", etc.)
+  if (!optObj && talla && preciosDetallados[talla]) {
+    optObj = preciosDetallados[talla];
+  }
+
+  // 3. Búsqueda en preciosDetallados usando nombre y talla
+  if (!optObj) {
+    const searchTarget = `${talla || ''} ${nombre || ''}`.toLowerCase();
+    const sortedKeys = Object.keys(preciosDetallados).sort((a, b) => b.length - a.length);
+    for (const key of sortedKeys) {
+      const cleanKey = key.toLowerCase().trim();
+      if (cleanKey && (searchTarget.includes(cleanKey) || (talla && talla.toLowerCase().trim() === cleanKey))) {
+        optObj = preciosDetallados[key];
+        break;
+      }
+    }
+  }
+
+  // 4. Búsqueda por palabras clave estándar de miembros de familia
+  if (!optObj) {
+    const nameLower = (nombre || '').toLowerCase();
+    if (nameLower.includes('dama única') || nameLower.includes('dama unica')) {
+      optObj = preciosDetallados['Dama Única'] || (fam.dama_unica || fam.mujer ? { detal: fam.dama_unica || fam.mujer } : null);
+    } else if (nameLower.includes('dama plus')) {
+      optObj = preciosDetallados['Dama Plus'] || (fam.dama_plus ? { detal: fam.dama_plus } : null);
+    } else if (nameLower.includes('caballero') || nameLower.includes('hombre')) {
+      optObj = preciosDetallados['Caballero Única'] || (fam.caballero_unica || fam.hombre ? { detal: fam.caballero_unica || fam.hombre } : null);
+    } else if (nameLower.includes('2xl') || nameLower.includes('unisex')) {
+      optObj = preciosDetallados['2XL Unisex'] || (fam.unisex_2xl ? { detal: fam.unisex_2xl } : null);
+    } else if (nameLower.includes('niño') || nameLower.includes('nino')) {
+      optObj = preciosDetallados['2/4'] || (fam.nino ? { detal: fam.nino } : null);
+    }
+  }
+
+  if (optObj) {
+    const detal = Number(optObj.detal) || 0;
+    const mayor = Number(optObj.mayor) || 0;
+    const p50 = Number(optObj.p50) || (mayor > 0 ? mayor : detal);
+    return { detal, mayor, p50 };
+  }
+
+  // 5. Respaldo en mapa de tallas simples
+  if (talla && preciosMap[talla] > 0) {
+    const p = Number(preciosMap[talla]);
+    return { detal: p, mayor: p, p50: p };
+  }
+
+  return null;
+};
+
 export const getEffectivePrice = (producto: Producto, buyerType: BuyerType, markup: number = 0, ajustesProductos?: any, descuentoPromo: number = 0, ignoreDiscounts: boolean = false): number => {
   if (!producto) return 0;
   let price = Number(producto.precio) || 0;
-  if (buyerType === 'mayorista' && producto.precio_por_mayor) {
-    price = Number(producto.precio_por_mayor) || price;
-  } else if (buyerType === '50_unidades' && producto.precio_50_unidades) {
-    price = Number(producto.precio_50_unidades) || price;
+
+  // Si es producto familiar, buscar precios específicos de la opción si aplica
+  const famPrices = getFamilyOptionPrices(
+    producto,
+    (producto as any).talla,
+    (producto as any).nombre,
+    (producto as any).familia_opcion_key
+  );
+
+  if (buyerType === 'mayorista') {
+    if (famPrices && famPrices.mayor && famPrices.mayor > 0) {
+      price = famPrices.mayor;
+    } else if (producto.precio_por_mayor && Number(producto.precio_por_mayor) > 0) {
+      price = Number(producto.precio_por_mayor);
+    }
+  } else if (buyerType === '50_unidades') {
+    if (famPrices && famPrices.p50 && famPrices.p50 > 0) {
+      price = famPrices.p50;
+    } else if (producto.precio_50_unidades && Number(producto.precio_50_unidades) > 0) {
+      price = Number(producto.precio_50_unidades);
+    } else if (famPrices && famPrices.mayor && famPrices.mayor > 0) {
+      price = famPrices.mayor;
+    } else if (producto.precio_por_mayor && Number(producto.precio_por_mayor) > 0) {
+      price = Number(producto.precio_por_mayor);
+    }
+  } else {
+    // Modo detal o sin buyerType específico
+    if (famPrices && famPrices.detal && famPrices.detal > 0) {
+      price = famPrices.detal;
+    }
   }
 
   let finalPrice = price;
