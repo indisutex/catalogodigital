@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { Producto } from '../types';
 import { getTenantId } from '../lib/supabase';
+import { getVariantImageUrl } from '../lib/mediaUtils';
 
 export interface CartItem extends Producto {
   cantidad: number;
@@ -214,18 +215,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const parsed = JSON.parse(saved);
       if (!Array.isArray(parsed)) return [];
       return parsed.map((item: CartItem) => {
-        if (item.es_producto_familiar && item.precios_familia) {
-          const famPrices = getFamilyOptionPrices(item, item.talla, item.nombre, item.familia_opcion_key);
+        let fixedItem = item;
+        if (item.estampado && item.imagenes_extra && item.imagenes_extra.length > 0) {
+          const vImg = getVariantImageUrl(item);
+          if (vImg) {
+            fixedItem = { ...fixedItem, imagen_url: vImg };
+          }
+        }
+        if (fixedItem.es_producto_familiar && fixedItem.precios_familia) {
+          const famPrices = getFamilyOptionPrices(fixedItem, fixedItem.talla, fixedItem.nombre, fixedItem.familia_opcion_key);
           if (famPrices) {
             return {
-              ...item,
-              precio: famPrices.detal > 0 ? famPrices.detal : item.precio,
-              precio_por_mayor: famPrices.mayor && famPrices.mayor > 0 ? famPrices.mayor : item.precio_por_mayor,
-              precio_50_unidades: famPrices.p50 && famPrices.p50 > 0 ? famPrices.p50 : item.precio_50_unidades,
+              ...fixedItem,
+              precio: famPrices.detal > 0 ? famPrices.detal : fixedItem.precio,
+              precio_por_mayor: famPrices.mayor && famPrices.mayor > 0 ? famPrices.mayor : fixedItem.precio_por_mayor,
+              precio_50_unidades: famPrices.p50 && famPrices.p50 > 0 ? famPrices.p50 : fixedItem.precio_50_unidades,
             };
           }
         }
-        return item;
+        return fixedItem;
       });
     } catch {
       return [];
@@ -356,6 +364,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const addToCart = (producto: Producto, talla?: string, estampado?: string, cantidad: number = 1) => {
     const newTotalUnits = totalUnits + cantidad;
     let itemToAdd: CartItem = { ...producto, cantidad, talla, estampado };
+    const variantImg = getVariantImageUrl(itemToAdd);
+    if (variantImg) {
+      itemToAdd.imagen_url = variantImg;
+    }
     if (producto.es_producto_familiar && producto.precios_familia) {
       const famPrices = getFamilyOptionPrices(producto, talla, producto.nombre, (producto as any).familia_opcion_key);
       if (famPrices) {

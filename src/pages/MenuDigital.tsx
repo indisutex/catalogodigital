@@ -44,7 +44,7 @@ try {
   console.error('Error setting initial CSS theme:', e);
 }
 
-import { decodeExtraImage, isMediaVideo } from '../lib/mediaUtils';
+import { decodeExtraImage, isMediaVideo, getVariantImageUrl } from '../lib/mediaUtils';
 
 const normalizeSlug = (str?: string) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
 
@@ -1079,26 +1079,29 @@ export default function MenuDigital() {
         const priceMayor = getActiveUnitPrice(detailProduct, memberVal, tVal, 'mayorista');
         const price50 = getActiveUnitPrice(detailProduct, memberVal, tVal, '50_unidades');
 
+        const resolvedImg = getVariantImageUrl({ ...detailProduct, estampado: selectedEstampado }, productos) || detailProduct.imagen_url || (detailProduct.imagenes_extra && detailProduct.imagenes_extra.length > 0 ? decodeExtraImage(detailProduct.imagenes_extra[0]).url : '');
+
         const productToAdd = {
           ...detailProduct,
           precio: priceDetal > 0 ? priceDetal : detailProduct.precio,
           precio_por_mayor: priceMayor > 0 ? priceMayor : (detailProduct.precio_por_mayor || null),
           precio_50_unidades: price50 > 0 ? price50 : (detailProduct.precio_50_unidades || null),
           familia_opcion_key: famKey,
-          nombre: `${detailProduct.nombre} (${label})`
+          nombre: `${detailProduct.nombre} (${label})`,
+          imagen_url: resolvedImg
         };
 
         addToCart(productToAdd, tVal, selectedEstampado, q);
       });
 
       const firstEntry = selectedEntries[0];
-      const prodImg = detailProduct.imagen_url || (detailProduct.imagenes_extra && detailProduct.imagenes_extra.length > 0 ? decodeExtraImage(detailProduct.imagenes_extra[0]).url : '');
+      const resolvedFamilyImg = getVariantImageUrl({ ...detailProduct, estampado: selectedEstampado }, productos) || detailProduct.imagen_url || (detailProduct.imagenes_extra && detailProduct.imagenes_extra.length > 0 ? decodeExtraImage(detailProduct.imagenes_extra[0]).url : '');
       const totalUnitsSelected = selectedEntries.reduce((sum, [_, q]) => sum + q, 0);
       setDetailProduct(null);
       setAddedProductDecision({
         nombre: detailProduct.nombre,
         precio: totalUnitsSelected * getActiveUnitPrice(detailProduct, firstEntry?.[0] || 'dama_unica', 'Única', buyerType),
-        imagen: prodImg,
+        imagen: resolvedFamilyImg,
         talla: `${totalUnitsSelected} prendas familia`,
         cantidad: totalUnitsSelected
       });
@@ -1122,22 +1125,24 @@ export default function MenuDigital() {
     else if (selectedMiembroFamilia === 'unisex_2xl') { miembroLabel = '2XL Unisex'; famKey = '2XL Unisex'; }
     else if (selectedMiembroFamilia === 'nino') { miembroLabel = 'Niños'; famKey = selectedTalla || '2/4'; }
 
+    const resolvedStandardImg = getVariantImageUrl({ ...detailProduct, estampado: selectedEstampado }, productos) || detailProduct.imagen_url || (detailProduct.imagenes_extra && detailProduct.imagenes_extra.length > 0 ? decodeExtraImage(detailProduct.imagenes_extra[0]).url : '');
+
     const productToAdd = {
       ...detailProduct,
       precio: priceDetal > 0 ? priceDetal : detailProduct.precio,
       precio_por_mayor: priceMayor > 0 ? priceMayor : (detailProduct.precio_por_mayor || null),
       precio_50_unidades: price50 > 0 ? price50 : (detailProduct.precio_50_unidades || null),
       familia_opcion_key: famKey || undefined,
-      nombre: miembroLabel ? `${detailProduct.nombre} (${miembroLabel})` : detailProduct.nombre
+      nombre: miembroLabel ? `${detailProduct.nombre} (${miembroLabel})` : detailProduct.nombre,
+      imagen_url: resolvedStandardImg
     };
 
     addToCart(productToAdd, selectedTalla, selectedEstampado, selectedCantidad);
-    const prodImg = detailProduct.imagen_url || (detailProduct.imagenes_extra && detailProduct.imagenes_extra.length > 0 ? decodeExtraImage(detailProduct.imagenes_extra[0]).url : '');
     setDetailProduct(null);
     setAddedProductDecision({
       nombre: productToAdd.nombre,
       precio: (priceDetal > 0 ? priceDetal : detailProduct.precio) * selectedCantidad,
-      imagen: prodImg,
+      imagen: resolvedStandardImg,
       talla: selectedTalla,
       estampado: selectedEstampado,
       cantidad: selectedCantidad
@@ -1276,8 +1281,10 @@ export default function MenuDigital() {
       const productosProcesados = items.map(item => {
         const effectivePrice = getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
         const isWholesale = effectiveCartBuyerType === 'mayorista' || isBulkDiscountApplied || buyerType === 'mayorista';
+        const itemImg = getVariantImageUrl(item, productos) || item.imagen_url;
         return {
           ...item,
+          imagen_url: itemImg,
           precio_detal: item.precio_detal || item.precio,
           precio: effectivePrice,
           precio_aplicado_mayor: isWholesale,
@@ -1720,8 +1727,10 @@ export default function MenuDigital() {
       const productosProcesados = items.map(item => {
         const effectivePrice = getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
         const isWholesale = effectiveCartBuyerType === 'mayorista' || isBulkDiscountApplied || buyerType === 'mayorista';
+        const itemImg = getVariantImageUrl(item, productos) || item.imagen_url;
         return {
           ...item,
+          imagen_url: itemImg,
           precio_detal: item.precio_detal || item.precio,
           precio: effectivePrice,
           precio_aplicado_mayor: isWholesale,
@@ -3322,7 +3331,7 @@ export default function MenuDigital() {
                           {items.map(item => {
                             const itemUnitPrice = getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
                             const itemTotal = itemUnitPrice * item.cantidad;
-                            const thumbUrl = item.imagen_url || (item.imagenes_extra && item.imagenes_extra.length > 0 ? decodeExtraImage(item.imagenes_extra[0]).url : '');
+                            const thumbUrl = getVariantImageUrl(item, productos) || item.imagen_url || (item.imagenes_extra && item.imagenes_extra.length > 0 ? decodeExtraImage(item.imagenes_extra[0]).url : '');
 
                             return (
                               <div key={`${item.id}-${item.talla}-${item.estampado}`} style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
@@ -3470,15 +3479,18 @@ export default function MenuDigital() {
                           }}
                         >
                           {/* FOTO CUADRADA CON BORDES REDONDEADOS */}
-                          <div className="cart-item-img" style={{ width: '72px', height: '72px', borderRadius: '14px', overflow: 'hidden', flexShrink: 0 }}>
-                            {item.imagen_url ? (
-                              <img src={getOptimizedImageUrl(item.imagen_url, 150, 75)} alt={item.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" decoding="async" />
-                            ) : (item.imagenes_extra && item.imagenes_extra.length > 0 && decodeExtraImage(item.imagenes_extra[0]).url) ? (
-                              <img src={getOptimizedImageUrl(decodeExtraImage(item.imagenes_extra[0]).url, 150, 75)} alt={item.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" decoding="async" />
-                            ) : (
-                              <div className="img-placeholder-small" style={{ width: '100%', height: '100%', background: '#f1f5f9' }}></div>
-                            )}
-                          </div>
+                          {(() => {
+                            const cartItemImg = getVariantImageUrl(item, productos) || item.imagen_url || (item.imagenes_extra && item.imagenes_extra.length > 0 ? decodeExtraImage(item.imagenes_extra[0]).url : '');
+                            return (
+                              <div className="cart-item-img" style={{ width: '72px', height: '72px', borderRadius: '14px', overflow: 'hidden', flexShrink: 0 }}>
+                                {cartItemImg ? (
+                                  <img src={getOptimizedImageUrl(cartItemImg, 150, 75)} alt={item.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} loading="lazy" decoding="async" />
+                                ) : (
+                                  <div className="img-placeholder-small" style={{ width: '100%', height: '100%', background: '#f1f5f9' }}></div>
+                                )}
+                              </div>
+                            );
+                          })()}
 
                           {/* DETALLES Y CONTROLES */}
                           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>

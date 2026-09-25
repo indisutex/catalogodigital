@@ -62,7 +62,7 @@ const getGoogleDriveThumbnailUrl = (url: string) => {
   return '';
 };
 
-import { deduplicateTallas, encodeExtraImage, decodeExtraImage, isMediaVideo, buildUnifiedImages } from '../lib/mediaUtils';
+import { deduplicateTallas, encodeExtraImage, decodeExtraImage, isMediaVideo, buildUnifiedImages, getVariantImageUrl } from '../lib/mediaUtils';
 import ZonificacionModule from '../components/ZonificacionModule';
 
 type FamilyDetailedPrices = Record<string, { detal?: string; mayor?: string; p50?: string; deshabilitado?: boolean }>;
@@ -1232,6 +1232,7 @@ export default function Admin() {
     
     const firstProd = parsedProds[0] || null;
     const firstProdImg = firstProd ? (
+      getVariantImageUrl(firstProd, productos) ||
       firstProd.imagen_url || firstProd.imagen || firstProd.image_url || 
       (Array.isArray(firstProd.imagenes_extra) && firstProd.imagenes_extra[0] ? (typeof firstProd.imagenes_extra[0] === 'string' ? firstProd.imagenes_extra[0] : firstProd.imagenes_extra[0].url) : null) ||
       (productos.find((p: any) => p.id === firstProd.id || (p.referencia && p.referencia === firstProd.referencia))?.imagen_url)
@@ -2858,7 +2859,7 @@ export default function Admin() {
       cantidad: Number(quantityToAdd) || 1,
       talla: selectedSizeToAdd || null,
       estampado: selectedPrintToAdd || null,
-      imagen_url: selectedProductToAdd.imagen_url || null,
+      imagen_url: getVariantImageUrl({ ...selectedProductToAdd, estampado: selectedPrintToAdd }, productos) || selectedProductToAdd.imagen_url || null,
       referencia: selectedProductToAdd.referencia || null,
       precio_aplicado_mayor: willBeWholesale
     };
@@ -17047,7 +17048,7 @@ export default function Admin() {
                                   }
                                 }
                                 const lineTotal = unitPrice * cant;
-                                const prodImg = prod.imagen_url || prod.imagen || prod.image_url ||
+                                const prodImg = getVariantImageUrl(prod, productos) || prod.imagen_url || prod.imagen || prod.image_url ||
                                   (productos.find((p: any) => p.id === prod.id || (p.referencia && p.referencia === prod.referencia))?.imagen_url);
 
                                 return (
@@ -19559,7 +19560,7 @@ export default function Admin() {
           <div style={{ maxHeight: '260px', overflowY: 'auto', padding: '0.45rem' }}>
             {hoveredOrderTooltip.productos.map((prod: any, idx: number) => {
               const matchedProd = productos.find(p => p.id === prod.producto_id || p.id === prod.id || p.nombre === prod.nombre);
-              const imgUrl = prod.imagen || prod.imagen_url || prod.foto || matchedProd?.imagen_url || (matchedProd?.imagenes_extra && matchedProd.imagenes_extra[0]) || (matchedProd as any)?.imagenes?.[0]?.url || '';
+              const imgUrl = getVariantImageUrl(prod, productos) || prod.imagen || prod.imagen_url || prod.foto || matchedProd?.imagen_url || (matchedProd?.imagenes_extra && matchedProd.imagenes_extra[0]) || (matchedProd as any)?.imagenes?.[0]?.url || '';
 
               return (
                 <div key={idx} style={{

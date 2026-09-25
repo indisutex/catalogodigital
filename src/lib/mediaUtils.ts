@@ -47,10 +47,153 @@ export const decodeExtraImage = (str: string): { url: string; ref: string; estam
   } else if (str.includes('|REF:')) {
     const parts = str.split('|REF:');
     url = parts[0];
+    ref = parts[1] || '';
     estampado = parts[1] || '';
   }
 
   return { url: url || '', ref: ref || '', estampado: estampado || '' };
+};
+
+/**
+ * Normaliza cadenas para comparaciones flexibles (sin tildes, minúsculas, sin espacios extras)
+ */
+export const normalizeMediaStr = (str?: string | null): string => {
+  if (!str) return '';
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim();
+};
+
+/**
+ * Resuelve la imagen correcta para un producto o ítem de pedido/carrito según su estampado o referencia.
+ * Si el ítem tiene un estampado (ej. "SONNY", "MINNIE", "OSO", "VAQUITA"), busca la foto correspondiente
+ * en las imagenes_extra del ítem o en el producto del catálogo, evitando que se muestre la foto por defecto.
+ */
+export const getVariantImageUrl = (
+  item: any,
+  catalogProducts?: Producto[]
+): string => {
+  if (!item) return '';
+
+  const rawEstampado = (item.estampado || '').trim();
+  const rawRef = (item.referencia || '').trim();
+  const targetEst = normalizeMediaStr(rawEstampado);
+  const targetRef = normalizeMediaStr(rawRef);
+
+  // Helper para buscar coincidencia en una lista de imagenes_extra
+  const findInExtraImages = (extraImages: any[] | undefined | null): string | null => {
+    if (!extraImages || !Array.isArray(extraImages) || extraImages.length === 0) return null;
+    let fallbackPartialMatch: string | null = null;
+
+    for (const raw of extraImages) {
+      if (!raw) continue;
+      const decoded = typeof raw === 'string'
+        ? decodeExtraImage(raw)
+        : {
+            url: raw.url || raw.imagen_url || '',
+            ref: raw.ref || raw.referencia || '',
+            estampado: raw.estampado || ''
+          };
+
+      if (!decoded.url) continue;
+      const est = normalizeMediaStr(decoded.estampado);
+      const ref = normalizeMediaStr(decoded.ref);
+
+      // 1. Coincidencia exacta por estampado
+      if (targetEst && (est === targetEst || ref === targetEst)) {
+        return decoded.url;
+      }
+      // 2. Coincidencia exacta por referencia
+      if (targetRef && (ref === targetRef || est === targetRef)) {
+        return decoded.url;
+      }
+      // 3. Coincidencia parcial (ej. "Minnie" dentro de "Minnie Rosa")
+      if (targetEst && est && (est.includes(targetEst) || targetEst.includes(est)) && !fallbackPartialMatch) {
+        fallbackPartialMatch = decoded.url;
+      }
+      if (targetRef && ref && (ref.includes(targetRef) || targetRef.includes(ref)) && !fallbackPartialMatch) {
+        fallbackPartialMatch = decoded.url;
+      }
+    }
+
+    return fallbackPartialMatch;
+  };
+
+  // 1. Si el ítem tiene un estampado o referencia específicos, buscar la foto exacta
+  if (targetEst || targetRef) {
+    // a. Buscar en las fotos extra que ya vengan dentro del propio ítem
+    const directMatch = findInExtraImages(item.imagenes_extra);
+    if (directMatch) return directMatch;
+
+    // b. Buscar en el catálogo de productos
+    if (catalogProducts && Array.isArray(catalogProducts)) {
+      const parentProd = catalogProducts.find((p: any) =>
+        (item.id && p.id === item.id) ||
+        (item.producto_id && p.id === item.producto_id) ||
+        (item.referencia && p.referencia && p.referencia === item.referencia) ||
+        (item.nombre && p.nombre && (
+          normalizeMediaStr(p.nombre) === normalizeMediaStr(item.nombre) ||
+          normalizeMediaStr(item.nombre).startsWith(normalizeMediaStr(p.nombre)) ||
+          normalizeMediaStr(p.nombre).startsWith(normalizeMediaStr(item.nombre))
+        ))
+      );
+
+      if (parentProd) {
+        const parentMatch = findInExtraImages(parentProd.imagenes_extra);
+        if (parentMatch) return parentMatch;
+      }
+    }
+  }
+
+  // 2. Si no hay estampado o no hubo match en fotos extra, usar la imagen directa del ítem
+  if (item.imagen_url && typeof item.imagen_url === 'string' && item.imagen_url.trim()) {
+    return item.imagen_url.trim();
+  }
+  if (item.imagen && typeof item.imagen === 'string' && item.imagen.trim()) {
+    return item.imagen.trim();
+  }
+  if (item.image_url && typeof item.image_url === 'string' && item.image_url.trim()) {
+    return item.image_url.trim();
+  }
+  if (item.foto && typeof item.foto === 'string' && item.foto.trim()) {
+    return item.foto.trim();
+  }
+
+  // 3. Fallback a la imagen principal del producto en catálogo
+  if (catalogProducts && Array.isArray(catalogProducts)) {
+    const parentProd = catalogProducts.find((p: any) =>
+      (item.id && p.id === item.id) ||
+      (item.producto_id && p.id === item.producto_id) ||
+      (item.referencia && p.referencia && p.referencia === item.referencia) ||
+      (item.nombre && p.nombre && (
+        normalizeMediaStr(p.nombre) === normalizeMediaStr(item.nombre) ||
+        normalizeMediaStr(item.nombre).startsWith(normalizeMediaStr(p.nombre)) ||
+        normalizeMediaStr(p.nombre).startsWith(normalizeMediaStr(item.nombre))
+      ))
+    );
+
+    if (parentProd) {
+      if (parentProd.imagen_url) return parentProd.imagen_url;
+      if (parentProd.imagenes_extra && parentProd.imagenes_extra.length > 0) {
+        const decoded = typeof parentProd.imagenes_extra[0] === 'string'
+          ? decodeExtraImage(parentProd.imagenes_extra[0])
+          : parentProd.imagenes_extra[0];
+        if (decoded?.url) return decoded.url;
+      }
+    }
+  }
+
+  // 4. Fallback a primera imagen extra del propio ítem
+  if (item.imagenes_extra && Array.isArray(item.imagenes_extra) && item.imagenes_extra.length > 0) {
+    const decoded = typeof item.imagenes_extra[0] === 'string'
+      ? decodeExtraImage(item.imagenes_extra[0])
+      : item.imagenes_extra[0];
+    if (decoded?.url) return decoded.url;
+  }
+
+  return '';
 };
 
 export const isMediaVideo = (url?: string): boolean => {
