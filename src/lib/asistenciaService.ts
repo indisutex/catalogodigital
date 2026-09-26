@@ -421,6 +421,103 @@ export const asistenciaService = {
   },
 
   /**
+   * Elimina un registro de asistencia permanentemente (Función exclusiva de Administrador)
+   */
+  async eliminarRegistro(registroId: string, tenantId: string): Promise<boolean> {
+    try {
+      const { error } = await supabase
+        .from('control_asistencia')
+        .delete()
+        .eq('id', registroId)
+        .eq('tenant_id', tenantId);
+
+      if (error) {
+        console.warn('Error al eliminar de tabla control_asistencia:', error);
+      }
+    } catch (e) {
+      console.warn('Error de conexión al eliminar registro:', e);
+    }
+
+    try {
+      const fallbacks = await getFallbackRecords(tenantId);
+      const updated = fallbacks.filter(f => f.id !== registroId);
+      await saveFallbackRecords(tenantId, updated);
+    } catch (e) {
+      console.warn('Error al eliminar de cache/fallback:', e);
+    }
+
+    return true;
+  },
+
+  /**
+   * Actualiza los datos de un registro de asistencia (hora_entrada, hora_salida, observaciones, estado)
+   */
+  async actualizarRegistro(
+    registroId: string,
+    tenantId: string,
+    cambios: {
+      hora_entrada?: string;
+      hora_salida?: string | null;
+      observaciones?: string;
+      estado?: 'activo' | 'finalizado' | 'sin_salida';
+    }
+  ): Promise<RegistroAsistencia> {
+    let duracionMin: number | null = null;
+    if (cambios.hora_entrada && cambios.hora_salida) {
+      const eMs = new Date(cambios.hora_entrada).getTime();
+      const sMs = new Date(cambios.hora_salida).getTime();
+      duracionMin = Math.max(0, Math.round((sMs - eMs) / (1000 * 60)));
+    } else if (cambios.estado === 'activo' || !cambios.hora_salida) {
+      duracionMin = null;
+    }
+
+    const payload: any = {
+      ...cambios,
+      updated_at: new Date().toISOString()
+    };
+    if (duracionMin !== null) {
+      payload.duracion_minutos = duracionMin;
+    } else if (cambios.estado === 'activo') {
+      payload.duracion_minutos = null;
+      payload.hora_salida = null;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('control_asistencia')
+        .update(payload)
+        .eq('id', registroId)
+        .eq('tenant_id', tenantId)
+        .select()
+        .single();
+
+      if (!error && data) {
+        const fallbacks = await getFallbackRecords(tenantId);
+        await saveFallbackRecords(tenantId, fallbacks.map(f => f.id === registroId ? (data as RegistroAsistencia) : f));
+        return data as RegistroAsistencia;
+      }
+    } catch {}
+
+    const fallbacks = await getFallbackRecords(tenantId);
+    let updatedObj: RegistroAsistencia | null = null;
+    const newFallbacks: RegistroAsistencia[] = fallbacks.map(item => {
+      if (item.id === registroId) {
+        const up: RegistroAsistencia = { ...item, ...payload };
+        updatedObj = up;
+        return up;
+      }
+      return item;
+    });
+
+    if (updatedObj) {
+      await saveFallbackRecords(tenantId, newFallbacks);
+      return updatedObj;
+    }
+
+    throw new Error('No se encontró el registro para actualizar');
+  },
+
+  /**
    * Formateo de fecha y hora
    */
   formatearHora12(isoString?: string | null): string {

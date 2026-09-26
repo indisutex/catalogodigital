@@ -7629,10 +7629,8 @@ export default function Admin() {
                     {activeTab === 'mayoristas' && <Building2 size={16} />}
                     {activeTab === 'productos' && <Package size={16} />}
                     {activeTab === 'material_apoyo' && <Link size={16} />}
-                    {activeTab === 'asistencia' && <Clock size={16} />}
                   </div>
                   <span style={{ fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap' }}>
-                    {activeTab === 'asistencia' && 'Control de Asistencia'}
                     {activeTab === 'clientes' && 'Clientes'}
                     {activeTab === 'asesores' && 'Asesores'}
                     {activeTab === 'pedidos' && 'Pedidos'}
@@ -8316,6 +8314,7 @@ export default function Admin() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <div className="topbar-left-info">
                   <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '10px', background: '#ffffff', border: '1px solid #e2e8f0', color: 'var(--primary-color, #0ea5e9)', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                    {activeTab === 'asistencia' && <Clock size={16} />}
                     {activeTab === 'dashboard' && <LayoutDashboard size={16} />}
                     {activeTab === 'categorias' && <Tag size={16} />}
                     {activeTab === 'pos' && <Calculator size={16} />}
@@ -8324,8 +8323,20 @@ export default function Admin() {
                     {activeTab === 'zonificacion' && <MapPin size={16} />}
                     {activeTab === 'pqrs' && <MessageSquare size={16} />}
                     {activeTab === 'productos' && <Package size={16} />}
+                    {activeTab === 'contabilidad' && <FileCheck size={16} />}
+                    {activeTab === 'siigo' && <RefreshCw size={16} />}
+                    {activeTab === 'clientes' && <Users size={16} />}
+                    {activeTab === 'asesores' && <User size={16} />}
+                    {activeTab === 'pedidos' && <ShoppingBag size={16} />}
+                    {activeTab === 'mayoristas' && <Building2 size={16} />}
+                    {![
+                      'asistencia', 'dashboard', 'categorias', 'pos', 'ventas_pos',
+                      'material_apoyo', 'zonificacion', 'pqrs', 'productos', 'contabilidad',
+                      'siigo', 'clientes', 'asesores', 'pedidos', 'mayoristas'
+                    ].includes(activeTab) && <LayoutDashboard size={16} />}
                   </div>
                   <span style={{ fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>
+                    {activeTab === 'asistencia' && 'Control de Asistencia'}
                     {activeTab === 'dashboard' && 'Dashboard General'}
                     {activeTab === 'categorias' && 'Categorías y Subcategorías'}
                     {activeTab === 'pos' && 'Caja POS (Punto de Venta)'}
@@ -8333,10 +8344,20 @@ export default function Admin() {
                     {activeTab === 'material_apoyo' && 'Material de Apoyo & Google Drive'}
                     {activeTab === 'zonificacion' && 'Zonificación & Cobertura de Envíos'}
                     {activeTab === 'pqrs' && 'Centro de Soporte & PQRS'}
-                    {activeTab === 'productos' && 'Agregar Nuevo Producto'}
+                    {activeTab === 'productos' && (isAddingProduct ? 'Agregar Nuevo Producto' : 'Catálogo')}
+                    {activeTab === 'contabilidad' && 'Contabilidad & Finanzas'}
+                    {activeTab === 'siigo' && 'Integración Siigo'}
+                    {activeTab === 'clientes' && 'Clientes'}
+                    {activeTab === 'asesores' && 'Asesores'}
+                    {activeTab === 'pedidos' && 'Pedidos'}
+                    {activeTab === 'mayoristas' && 'Mayoristas'}
+                    {![
+                      'asistencia', 'dashboard', 'categorias', 'pos', 'ventas_pos',
+                      'material_apoyo', 'zonificacion', 'pqrs', 'productos', 'contabilidad',
+                      'siigo', 'clientes', 'asesores', 'pedidos', 'mayoristas'
+                    ].includes(activeTab) && activeTab.replace(/_/g, ' ')}
                   </span>
                 </div>
-                <div className="topbar-divider" />
               </div>
             )}
           </div>

@@ -10,7 +10,9 @@ import {
   CheckCircle2, 
   FileSpreadsheet,
   Check,
-  X
+  X,
+  Pencil,
+  Trash2
 } from 'lucide-react';
 import type { Asesor, RegistroAsistencia } from '../../types';
 import { asistenciaService, type AsistenciaFilters } from '../../lib/asistenciaService';
@@ -43,6 +45,18 @@ export const ControlAsistenciaAdmin: React.FC<ControlAsistenciaAdminProps> = ({
   const [adminManualSalidaHora, setAdminManualSalidaHora] = useState<string>('');
   const [adminManualObservacion, setAdminManualObservacion] = useState<string>('');
   const [closingJornada, setClosingJornada] = useState(false);
+
+  // Modal para eliminar registro de asistencia (Solo Admin)
+  const [registroToDelete, setRegistroToDelete] = useState<RegistroAsistencia | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // Modal para editar registro de asistencia (Solo Admin)
+  const [registroToEdit, setRegistroToEdit] = useState<RegistroAsistencia | null>(null);
+  const [editHoraEntrada, setEditHoraEntrada] = useState<string>('');
+  const [editHoraSalida, setEditHoraSalida] = useState<string>('');
+  const [editObservaciones, setEditObservaciones] = useState<string>('');
+  const [editEstado, setEditEstado] = useState<'activo' | 'finalizado' | 'sin_salida'>('finalizado');
+  const [savingEdit, setSavingEdit] = useState(false);
 
   // Calcular fechas según preset
   const handlePresetChange = (preset: 'hoy' | 'ayer' | 'semana' | 'mes' | 'personalizado') => {
@@ -175,6 +189,52 @@ export const ControlAsistenciaAdmin: React.FC<ControlAsistenciaAdminProps> = ({
       alert('Error al cerrar la jornada manualmente');
     } finally {
       setClosingJornada(false);
+    }
+  };
+
+  // Eliminar registro de asistencia (Solo Administrador)
+  const handleEliminarRegistro = async () => {
+    if (!registroToDelete) return;
+    try {
+      setDeleting(true);
+      await asistenciaService.eliminarRegistro(registroToDelete.id, tenantId);
+      setRegistroToDelete(null);
+      await cargarAsistencia();
+    } catch (err) {
+      console.error('Error al eliminar registro:', err);
+      alert('No se pudo eliminar el registro de asistencia');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // Abrir modal de edición
+  const abrirModalEdicion = (r: RegistroAsistencia) => {
+    setRegistroToEdit(r);
+    setEditHoraEntrada(r.hora_entrada ? r.hora_entrada.substring(0, 16) : '');
+    setEditHoraSalida(r.hora_salida ? r.hora_salida.substring(0, 16) : '');
+    setEditObservaciones(r.observaciones || '');
+    setEditEstado(r.estado);
+  };
+
+  // Guardar edición
+  const handleGuardarEdicion = async () => {
+    if (!registroToEdit) return;
+    try {
+      setSavingEdit(true);
+      await asistenciaService.actualizarRegistro(registroToEdit.id, tenantId, {
+        hora_entrada: editHoraEntrada ? new Date(editHoraEntrada).toISOString() : registroToEdit.hora_entrada,
+        hora_salida: editHoraSalida ? new Date(editHoraSalida).toISOString() : null,
+        observaciones: editObservaciones,
+        estado: editEstado
+      });
+      setRegistroToEdit(null);
+      await cargarAsistencia();
+    } catch (err) {
+      console.error('Error al actualizar registro:', err);
+      alert('Error al guardar los cambios del registro');
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -892,29 +952,76 @@ export const ControlAsistenciaAdmin: React.FC<ControlAsistenciaAdminProps> = ({
 
                       {/* Acciones */}
                       <td style={{ padding: '0.75rem 1rem', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                        {isActivo && (
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', justifyContent: 'flex-end' }}>
+                          {isActivo && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedRegistroToClose(r);
+                                setAdminManualSalidaHora(new Date().toISOString().substring(0, 16));
+                              }}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.3rem',
+                                background: '#f0fdf4',
+                                border: '1px solid #bbf7d0',
+                                color: '#15803d',
+                                padding: '0.35rem 0.65rem',
+                                borderRadius: '8px',
+                                fontSize: '0.72rem',
+                                fontWeight: 500,
+                                cursor: 'pointer',
+                                fontFamily: "'Poppins', sans-serif"
+                              }}
+                              title="Finalizar turno manualmente"
+                            >
+                              <Check size={12} /> Finalizar
+                            </button>
+                          )}
+
                           <button
                             type="button"
-                            onClick={() => {
-                              setSelectedRegistroToClose(r);
-                              setAdminManualSalidaHora(new Date().toISOString().substring(0, 16));
-                            }}
+                            onClick={() => abrirModalEdicion(r)}
                             style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: '30px',
+                              height: '30px',
                               background: '#f8fafc',
                               border: '1px solid #cbd5e1',
-                              color: '#0f172a',
-                              padding: '0.35rem 0.65rem',
+                              color: '#475569',
                               borderRadius: '8px',
-                              fontSize: '0.72rem',
-                              fontWeight: 500,
                               cursor: 'pointer',
-                              fontFamily: "'Poppins', sans-serif"
+                              transition: 'all 0.15s ease'
                             }}
-                            title="Finalizar turno manualmente como administrador"
+                            title="Editar registro de asistencia"
                           >
-                            Finalizar turno
+                            <Pencil size={13} />
                           </button>
-                        )}
+
+                          <button
+                            type="button"
+                            onClick={() => setRegistroToDelete(r)}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: '30px',
+                              height: '30px',
+                              background: '#fef2f2',
+                              border: '1px solid #fecaca',
+                              color: '#dc2626',
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease'
+                            }}
+                            title="Eliminar asistencia (Solo Administrador)"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -1093,6 +1200,311 @@ export const ControlAsistenciaAdmin: React.FC<ControlAsistenciaAdminProps> = ({
               >
                 <Check size={16} />
                 <span>{closingJornada ? 'Guardando...' : 'Confirmar Cierre'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL ELIMINAR ASISTENCIA (SOLO ADMIN) ── */}
+      {registroToDelete && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.6)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '1rem'
+          }}
+          onClick={() => { if (!deleting) setRegistroToDelete(null); }}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '20px',
+              padding: '1.75rem',
+              maxWidth: '440px',
+              width: '100%',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+              border: '1px solid #fecaca'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+              <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#fee2e2', color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Trash2 size={22} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 600, color: '#0f172a' }}>
+                  ¿Eliminar asistencia?
+                </h3>
+                <span style={{ fontSize: '0.74rem', color: '#64748b' }}>
+                  Acción exclusiva de Administrador
+                </span>
+              </div>
+            </div>
+
+            <p style={{ fontSize: '0.82rem', color: '#475569', lineHeight: 1.5, margin: '0 0 1.25rem 0' }}>
+              ¿Estás seguro de que deseas eliminar permanentemente este registro de asistencia? Esta acción no se puede deshacer.
+            </p>
+
+            <div style={{ background: '#f8fafc', padding: '0.85rem 1rem', borderRadius: '12px', border: '1px solid #e2e8f0', marginBottom: '1.5rem', fontSize: '0.8rem', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#64748b' }}>Asesor:</span>
+                <strong style={{ color: '#0f172a', fontWeight: 600 }}>{registroToDelete.asesor_nombre}</strong>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#64748b' }}>Fecha:</span>
+                <span style={{ color: '#0f172a', fontWeight: 500 }}>{registroToDelete.fecha}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: '#64748b' }}>Hora entrada:</span>
+                <span style={{ color: '#065f46', fontWeight: 600 }}>{asistenciaService.formatearHora12(registroToDelete.hora_entrada)}</span>
+              </div>
+              {registroToDelete.hora_salida && (
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#64748b' }}>Hora salida:</span>
+                  <span style={{ color: '#991b1b', fontWeight: 600 }}>{asistenciaService.formatearHora12(registroToDelete.hora_salida)}</span>
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => setRegistroToDelete(null)}
+                style={{
+                  flex: 1,
+                  padding: '0.75rem',
+                  background: '#f1f5f9',
+                  color: '#475569',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontWeight: 500,
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  fontFamily: "'Poppins', sans-serif"
+                }}
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={handleEliminarRegistro}
+                style={{
+                  flex: 1.3,
+                  padding: '0.75rem',
+                  background: '#dc2626',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  cursor: deleting ? 'not-allowed' : 'pointer',
+                  fontFamily: "'Poppins', sans-serif",
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.35rem',
+                  boxShadow: '0 4px 12px rgba(220, 38, 38, 0.25)'
+                }}
+              >
+                <Trash2 size={15} />
+                <span>{deleting ? 'Eliminando...' : 'Sí, eliminar'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL EDITAR ASISTENCIA (SOLO ADMIN) ── */}
+      {registroToEdit && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.6)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '1rem'
+          }}
+          onClick={() => { if (!savingEdit) setRegistroToEdit(null); }}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '20px',
+              padding: '1.75rem',
+              maxWidth: '480px',
+              width: '100%',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+              border: '1px solid #e2e8f0'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: '#e0f2fe', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Pencil size={18} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 600, color: '#0f172a' }}>
+                    Editar Asistencia
+                  </h3>
+                  <span style={{ fontSize: '0.74rem', color: '#64748b' }}>
+                    {registroToEdit.asesor_nombre} ({registroToEdit.fecha})
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setRegistroToEdit(null)}
+                style={{ background: '#f1f5f9', border: 'none', borderRadius: '50%', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748b', cursor: 'pointer' }}
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 500, color: '#334155', marginBottom: '0.35rem' }}>
+                  Fecha y Hora de Entrada:
+                </label>
+                <input
+                  type="datetime-local"
+                  value={editHoraEntrada}
+                  onChange={e => setEditHoraEntrada(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 0.85rem',
+                    borderRadius: '10px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.82rem',
+                    fontFamily: "'Poppins', sans-serif",
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 500, color: '#334155', marginBottom: '0.35rem' }}>
+                  Fecha y Hora de Salida (Opcional):
+                </label>
+                <input
+                  type="datetime-local"
+                  value={editHoraSalida}
+                  onChange={e => setEditHoraSalida(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 0.85rem',
+                    borderRadius: '10px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.82rem',
+                    fontFamily: "'Poppins', sans-serif",
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 500, color: '#334155', marginBottom: '0.35rem' }}>
+                  Estado de la Jornada:
+                </label>
+                <select
+                  value={editEstado}
+                  onChange={e => setEditEstado(e.target.value as any)}
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 0.85rem',
+                    borderRadius: '10px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.82rem',
+                    fontFamily: "'Poppins', sans-serif",
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <option value="activo">🟢 Activo (En jornada)</option>
+                  <option value="finalizado">✓ Finalizado</option>
+                  <option value="sin_salida">⚠️ Sin salida</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 500, color: '#334155', marginBottom: '0.35rem' }}>
+                  Observaciones:
+                </label>
+                <input
+                  type="text"
+                  placeholder="Notas u observaciones"
+                  value={editObservaciones}
+                  onChange={e => setEditObservaciones(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 0.85rem',
+                    borderRadius: '10px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.82rem',
+                    fontFamily: "'Poppins', sans-serif",
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.65rem' }}>
+              <button
+                type="button"
+                disabled={savingEdit}
+                onClick={() => setRegistroToEdit(null)}
+                style={{
+                  flex: 1,
+                  padding: '0.75rem',
+                  background: '#f1f5f9',
+                  color: '#475569',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontWeight: 500,
+                  fontSize: '0.85rem',
+                  cursor: 'pointer',
+                  fontFamily: "'Poppins', sans-serif"
+                }}
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                disabled={savingEdit}
+                onClick={handleGuardarEdicion}
+                style={{
+                  flex: 1.3,
+                  padding: '0.75rem',
+                  background: '#0ea5e9',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  cursor: savingEdit ? 'not-allowed' : 'pointer',
+                  fontFamily: "'Poppins', sans-serif",
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.35rem'
+                }}
+              >
+                <Check size={16} />
+                <span>{savingEdit ? 'Guardando...' : 'Guardar Cambios'}</span>
               </button>
             </div>
           </div>
