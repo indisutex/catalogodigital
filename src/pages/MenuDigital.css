@@ -1593,21 +1593,40 @@
   padding: 0.42rem 0.85rem;
   border-radius: 20px;
   border: 1px solid rgba(255, 255, 255, 0.7);
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
   color: #0f172a;
-  font-size: 0.82rem;
+  font-family: 'Poppins', sans-serif;
+  font-size: 0.8rem;
   font-weight: 500;
   cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
   transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
 }
 
 .detail-share-btn:hover {
-  transform: scale(1.05);
+  transform: scale(1.04);
   background: #ffffff;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+
+.detail-share-btn:active {
+  transform: scale(0.96);
+}
+
+.detail-share-btn .spin {
+  animation: spin 1s linear infinite;
+}
+
+@media (max-width: 480px) {
+  .detail-share-btn {
+    padding: 0.38rem 0.7rem;
+    font-size: 0.76rem;
+    gap: 0.35rem;
+  }
 }
 
 /* ── Carousel: capped so bottom info is always visible ── */

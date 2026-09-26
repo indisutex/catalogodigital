@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useMemo } from 'react';
 import { supabase, getTenantId, normalizeTenantId, findClosestTenant } from '../lib/supabase';
 import { updatePWAManifestAndIcons } from '../lib/pwa';
 import type { Producto, Categoria, Subcategoria, Configuracion } from '../types';
-import { Loader2, Search, Plus, ShoppingBag, X, ShoppingCart, Volume2, VolumeX, Package, HelpCircle, RefreshCw, Menu, Check, Filter, LayoutGrid, Users, Sparkles, Shirt, Baby, Moon, Layers, Tag, Heart, Gift, ChevronDown, ChevronLeft, Share2, Trash2, CreditCard, MessageCircle, ArrowLeft, ChevronRight } from 'lucide-react';
+import { Loader2, Search, Plus, ShoppingBag, X, ShoppingCart, Volume2, VolumeX, Package, HelpCircle, RefreshCw, Menu, Check, Filter, LayoutGrid, Users, Sparkles, Shirt, Baby, Moon, Layers, Tag, Heart, Gift, ChevronDown, ChevronLeft, Download, Trash2, CreditCard, MessageCircle, ArrowLeft, ChevronRight } from 'lucide-react';
 import { useCart, getEffectivePrice } from '../context/CartContext';
 import PqrsModal from '../components/PqrsModal';
 import { getOptimizedImageUrl } from '../lib/imageOptimizer';
@@ -745,6 +745,8 @@ export default function MenuDigital() {
   const [selectedCantidad, setSelectedCantidad] = useState(1);
   const [selectedMiembroFamilia, setSelectedMiembroFamilia] = useState<string>('');
   const [famOptionQuantities, setFamOptionQuantities] = useState<Record<string, number>>({});
+  const [isDownloadingImage, setIsDownloadingImage] = useState(false);
+  const [downloadSuccess, setDownloadSuccess] = useState(false);
 
   // Swipe & Touch Refs for Product Detail Carousel
   const touchStartX = useRef<number | null>(null);
@@ -840,6 +842,116 @@ export default function MenuDigital() {
       }
       return nextIdx;
     });
+  };
+
+  const handleDownloadDetailImage = async (
+    imgUrl?: string, 
+    productName?: string, 
+    ref?: string, 
+    estampado?: string
+  ) => {
+    if (!imgUrl || isDownloadingImage) return;
+
+    try {
+      setIsDownloadingImage(true);
+
+      // Limpiar parámetros de redimensionamiento para descargar la imagen 100% original en máxima calidad
+      let cleanUrl = imgUrl;
+      if (cleanUrl.includes('/storage/v1/render/image/public/')) {
+        cleanUrl = cleanUrl.replace('/storage/v1/render/image/public/', '/storage/v1/object/public/');
+        try {
+          const u = new URL(cleanUrl);
+          u.search = '';
+          cleanUrl = u.toString();
+        } catch (e) {}
+      }
+
+      const response = await fetch(cleanUrl, { mode: 'cors' });
+      if (!response.ok) throw new Error('Error al descargar la imagen');
+      const blob = await response.blob();
+
+      // Determinar la extensión correcta
+      let ext = 'jpg';
+      if (blob.type.includes('png')) ext = 'png';
+      else if (blob.type.includes('webp')) ext = 'webp';
+      else if (blob.type.includes('jpeg') || blob.type.includes('jpg')) ext = 'jpg';
+      else if (blob.type.includes('mp4')) ext = 'mp4';
+      else {
+        const match = cleanUrl.match(/\.(jpg|jpeg|png|webp|mp4)($|\?)/i);
+        if (match) ext = match[1].toLowerCase() === 'jpeg' ? 'jpg' : match[1].toLowerCase();
+      }
+
+      // Nombre de archivo descriptivo y limpio para cuando lo guarden en el celular
+      const cleanProd = (productName || 'producto')
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+      const cleanRef = ref
+        ? `-${ref.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`
+        : '';
+      const cleanEst = estampado
+        ? `-${estampado.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")}`
+        : '';
+      const fileName = `${cleanProd}${cleanRef}${cleanEst}.${ext}`;
+
+      const file = new File([blob], fileName, { type: blob.type || `image/${ext}` });
+
+      // En dispositivos iOS (iPhone / iPad), navigator.share permite guardar directamente en Fotos (Galería)
+      // y compartir directamente a WhatsApp, Instagram, etc. con 1 solo toque.
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+      if (isIOS && navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: productName || 'Producto',
+          });
+          setDownloadSuccess(true);
+          setTimeout(() => setDownloadSuccess(false), 2500);
+          setIsDownloadingImage(false);
+          return;
+        } catch (shareErr: any) {
+          if (shareErr.name === 'AbortError') {
+            setIsDownloadingImage(false);
+            return;
+          }
+        }
+      }
+
+      // Descarga directa para Android, PC y navegadores estándar:
+      // En Android esto descarga el archivo e indexa de inmediato en la Galería del teléfono.
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => window.URL.revokeObjectURL(blobUrl), 2000);
+
+      setDownloadSuccess(true);
+      setTimeout(() => setDownloadSuccess(false), 2500);
+    } catch (err) {
+      console.error('Error al descargar la imagen:', err);
+      // Fallback seguro si fetch/cors es bloqueado por alguna URL externa
+      try {
+        const fallbackLink = document.createElement('a');
+        fallbackLink.href = imgUrl;
+        fallbackLink.target = '_blank';
+        fallbackLink.rel = 'noopener noreferrer';
+        fallbackLink.download = `${(productName || 'producto').toLowerCase().replace(/[^a-z0-9]/g, '-')}.jpg`;
+        document.body.appendChild(fallbackLink);
+        fallbackLink.click();
+        document.body.removeChild(fallbackLink);
+      } catch (e) {
+        window.open(imgUrl, '_blank');
+      }
+    } finally {
+      setIsDownloadingImage(false);
+    }
   };
 
   // Prevenir scroll del body cuando algún modal está abierto
@@ -4228,31 +4340,47 @@ export default function MenuDigital() {
                       </div>
                     )}
 
-                    {/* Share button (bottom-left INSIDE image frame) */}
+                    {/* Botón Descargar Imagen (abajo a la izquierda dentro del marco de la foto) */}
                     <button 
+                      type="button"
                       className="detail-share-btn" 
-                      onClick={() => {
-                        const shareUrl = window.location.href;
-                        const shareData = {
-                          title: detailProduct.nombre,
-                          text: `Mira este producto en el catálogo digital: ${detailProduct.nombre}`,
-                          url: shareUrl,
-                        };
-                        if (navigator.share) {
-                          navigator.share(shareData).catch(() => {});
-                        } else {
-                          navigator.clipboard.writeText(shareUrl);
-                          alert('¡Enlace del producto copiado al portapapeles!');
-                        }
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const currentImgUrl = allImages[safeIdx]?.url || detailProduct.imagen_url || detailProduct.video_url;
+                        handleDownloadDetailImage(
+                          currentImgUrl, 
+                          detailProduct.nombre, 
+                          detailProduct.referencia || detailProduct.sku, 
+                          currentImgRef
+                        );
                       }}
-                      title="Compartir producto"
+                      disabled={isDownloadingImage}
+                      title="Descargar imagen completa para guardar en galería o compartir"
+                      style={{
+                        cursor: isDownloadingImage ? 'wait' : 'pointer',
+                        opacity: isDownloadingImage ? 0.8 : 1
+                      }}
                     >
-                      <Share2 size={16} color="#0f172a" />
-                      <span>Compartir</span>
+                      {isDownloadingImage ? (
+                        <>
+                          <Loader2 size={16} className="spin" color="#0f172a" />
+                          <span>Descargando...</span>
+                        </>
+                      ) : downloadSuccess ? (
+                        <>
+                          <Check size={16} color="#16a34a" />
+                          <span style={{ color: '#16a34a' }}>¡Descargada!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Download size={16} color="#0f172a" />
+                          <span>Descargar imagen</span>
+                        </>
+                      )}
                     </button>
 
                     {/* ── LABELS REFERENCIA Y ESTAMPADO (ABAJO DERECHO - EFECTO GLASS) ── */}
-                    <div style={{ position: 'absolute', bottom: '0.65rem', right: '0.65rem', left: 'auto', display: 'flex', flexDirection: 'column', gap: '0.4rem', zIndex: 10, alignItems: 'flex-end', pointerEvents: 'none', maxWidth: '60%' }}>
+                    <div style={{ position: 'absolute', bottom: '0.65rem', right: '0.65rem', left: 'auto', display: 'flex', flexDirection: 'column', gap: '0.4rem', zIndex: 10, alignItems: 'flex-end', pointerEvents: 'none', maxWidth: '52%' }}>
                       <div style={{ fontSize: '0.72rem', padding: '0.28rem 0.65rem', background: 'rgba(255, 255, 255, 0.88)', color: '#0f172a', fontWeight: 500, borderRadius: '8px', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', border: '1px solid rgba(255, 255, 255, 0.7)', boxShadow: '0 2px 8px rgba(0,0,0,0.12)', maxWidth: '100%', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.3, textAlign: 'right', fontFamily: "'Poppins', sans-serif" }}>
                         Ref: {toTitleCase(detailProduct.nombre)} {(detailProduct.referencia || detailProduct.sku) ? `(${detailProduct.referencia || detailProduct.sku})` : ''}
                       </div>
