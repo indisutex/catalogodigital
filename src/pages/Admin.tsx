@@ -1,9 +1,13 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase, getTenantId, setTenantId, normalizeTenantId } from '../lib/supabase';
 import { updatePWAManifestAndIcons } from '../lib/pwa';
 import { compressImage } from '../lib/imageCompression';
 import { SiigoService } from '../lib/siigoService';
-import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista, PQRS } from '../types';
+import type { Producto, Categoria, Subcategoria, Configuracion, Pedido, Asesor, Mayorista, PQRS, RegistroAsistencia } from '../types';
+import { AsesorCheckInScreen } from '../components/asistencia/AsesorCheckInScreen';
+import { AsesorShiftBar } from '../components/asistencia/AsesorShiftBar';
+import { ControlAsistenciaAdmin } from '../components/asistencia/ControlAsistenciaAdmin';
+import { asistenciaService } from '../lib/asistenciaService';
 import './Admin.css';
 import { X, FileText, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Minus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, ChevronRight, Wrench, ArrowUpDown, Filter, MapPin, XCircle, Truck, Clock, FileCheck, CheckCircle, Landmark, BookOpen, LifeBuoy, ShoppingCart, ClipboardList, Star, Ban, ExternalLink, Flame, RotateCcw, Sparkles, QrCode } from 'lucide-react';
 
@@ -168,7 +172,7 @@ const emptyProduct: ProductFormData = {
   precios_detallados_fam: defaultFamDetailedPrices
 };
 
-type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'ventas_pos' | 'clientes' | 'asesores' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor' | 'material_apoyo' | 'material_asesor' | 'productos_asesor' | 'productos_mayorista' | 'ranking_mayorista' | 'pqrs' | 'contabilidad' | 'erp' | 'zonificacion';
+type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'ventas_pos' | 'clientes' | 'asesores' | 'asistencia' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor' | 'material_apoyo' | 'material_asesor' | 'productos_asesor' | 'productos_mayorista' | 'ranking_mayorista' | 'pqrs' | 'contabilidad' | 'erp' | 'zonificacion';
 
 type Toast = { message: string; type: 'success' | 'error' } | null;
 
@@ -771,6 +775,10 @@ function SidebarContent({
               <span className="nav-icon"><Users size={14} /></span> Asesores
               {activeTab === 'asesores' && <span className="active-dot"></span>}
             </button>
+            <button className={`nav-item ${activeTab === 'asistencia' ? 'active' : ''}`} onClick={() => handleSelectTab('asistencia')}>
+              <span className="nav-icon"><Clock size={14} /></span> Control de Asistencia
+              {activeTab === 'asistencia' && <span className="active-dot"></span>}
+            </button>
             <button className={`nav-item ${activeTab === 'mayoristas' ? 'active' : ''}`} onClick={() => handleSelectTab('mayoristas')}>
               <span className="nav-icon"><Users size={14} /></span> Mayoristas
               {activeTab === 'mayoristas' && <span className="active-dot"></span>}
@@ -877,6 +885,12 @@ export default function Admin() {
   const [role, setRole] = useState<'admin' | 'asesor' | 'mayorista'>(() => {
     return (localStorage.getItem(`admin_role_${getTenantId()}`) as 'admin' | 'asesor' | 'mayorista') || 'admin';
   });
+  const [jornadaActivaAsesor, setJornadaActivaAsesor] = useState<RegistroAsistencia | null>(null);
+  const [checkingAsistencia, setCheckingAsistencia] = useState<boolean>(() => {
+    const savedRole = localStorage.getItem(`admin_role_${getTenantId()}`);
+    return savedRole === 'asesor';
+  });
+  const [isLogoutAttemptModalOpen, setIsLogoutAttemptModalOpen] = useState(false);
   const [loggedAsesorPhone, setLoggedAsesorPhone] = useState<string | null>(() => {
     return localStorage.getItem(`admin_asesor_phone_${getTenantId()}`);
   });
@@ -891,7 +905,7 @@ export default function Admin() {
     const defaultTab = (userRole === 'asesor') ? 'pedidos' : (userRole === 'mayorista' ? 'resumen_asesor' : 'productos');
     const saved = localStorage.getItem('admin_active_tab') as string;
     if (saved === 'perfil_admin' || saved === 'perfil_admin_tab') return 'dashboard';
-    const allowedTabs: string[] = ['dashboard', 'productos', 'categorias', 'pedidos', 'clientes', 'asesores', 'mayoristas', 'pos', 'ventas_pos', 'siigo', 'config', 'perfil_asesor', 'resumen_asesor', 'notificaciones_asesor', 'material_apoyo', 'material_asesor', 'productos_asesor', 'productos_mayorista', 'ranking_mayorista', 'contabilidad', 'erp'];
+    const allowedTabs: string[] = ['dashboard', 'productos', 'categorias', 'pedidos', 'clientes', 'asesores', 'asistencia', 'mayoristas', 'pos', 'ventas_pos', 'siigo', 'config', 'perfil_asesor', 'resumen_asesor', 'notificaciones_asesor', 'material_apoyo', 'material_asesor', 'productos_asesor', 'productos_mayorista', 'ranking_mayorista', 'contabilidad', 'erp'];
     
     if (urlTab && allowedTabs.includes(urlTab)) return urlTab;
     
@@ -1102,6 +1116,34 @@ export default function Admin() {
     }
     return null;
   }, [role, mayoristas]);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function verifyAsistencia() {
+      if (isAuthenticated && role === 'asesor') {
+        const storedAsesorId = localStorage.getItem(`admin_asesor_id_${getTenantId()}`) || localStorage.getItem('admin_asesor_id');
+        const effectiveAsesor = currentAsesor || (storedAsesorId ? asesores.find(a => a.id === storedAsesorId) : null);
+        if (effectiveAsesor) {
+          try {
+            const shift = await asistenciaService.obtenerJornadaActivaAsesor(getTenantId(), effectiveAsesor.id);
+            if (isMounted) {
+              setJornadaActivaAsesor(shift);
+              setCheckingAsistencia(false);
+            }
+          } catch (e) {
+            console.error('Error verificando jornada:', e);
+            if (isMounted) setCheckingAsistencia(false);
+          }
+        } else if (asesores.length > 0) {
+          if (isMounted) setCheckingAsistencia(false);
+        }
+      } else {
+        if (isMounted) setCheckingAsistencia(false);
+      }
+    }
+    verifyAsistencia();
+    return () => { isMounted = false; };
+  }, [isAuthenticated, role, currentAsesor, asesores]);
 
 
 
@@ -1403,23 +1445,8 @@ export default function Admin() {
               <span style={{ fontSize: '0.68rem', fontWeight: 500, color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Poppins', sans-serif" }}>{adv.nombre}</span>
             </div>
 
-            {/* Time / Purge label */}
+            {/* Time label */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-              {ped.estado === 'cancelado' && (() => {
-                const RETENTION_MS = 3 * 24 * 60 * 60 * 1000;
-                const now = Date.now();
-                const created = new Date(ped.created_at || now).getTime();
-                const rem = (created + RETENTION_MS) - now;
-                if (rem <= 0) return null;
-                const d = Math.floor(rem / (1000 * 60 * 60 * 24));
-                const h = Math.floor((rem % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                const badgeTxt = d > 0 ? `⏳ ${d}d ${h}h` : `⏳ ${Math.max(1, h)}h`;
-                return (
-                  <span style={{ fontSize: '0.62rem', color: '#991b1b', background: '#fee2e2', padding: '0.04rem 0.3rem', borderRadius: '4px', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
-                    {badgeTxt}
-                  </span>
-                );
-              })()}
               <span className="pedido-card-time" style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 400 }}>
                 🕒 {timeLabel}
               </span>
@@ -2465,7 +2492,7 @@ export default function Admin() {
       changed = true;
     }
 
-    if (editingProduct) {
+  if (editingProduct) {
       if (params.get('editProduct') !== editingProduct.id.toString()) {
         params.set('editProduct', editingProduct.id.toString());
         changed = true;
@@ -2606,7 +2633,11 @@ export default function Admin() {
     setActiveTab(tab);
   }
 
-  function handleLogout() {
+  function handleLogout(forceWithoutCheckOut?: boolean | React.MouseEvent) {
+    if (role === 'asesor' && jornadaActivaAsesor && forceWithoutCheckOut !== true) {
+      setIsLogoutAttemptModalOpen(true);
+      return;
+    }
     const t = getTenantId();
     localStorage.removeItem(`admin_auth_${t}`);
     localStorage.removeItem(`admin_role_${t}`);
@@ -2621,6 +2652,8 @@ export default function Admin() {
     setConfiguracion(null);
     setPin('');
     setActiveTab('productos');
+    setJornadaActivaAsesor(null);
+    setIsLogoutAttemptModalOpen(false);
   }
 
   const [pagoModalUrl, setPagoModalUrl] = useState<string | null>(null);
@@ -3096,54 +3129,16 @@ export default function Admin() {
     }
   };
 
-  const isPurgingExpiredRef = useRef(false);
   const activeDroppingIdsRef = useRef<Set<string>>(new Set());
-
-  const purgarCanceladosExpirados = useCallback(async () => {
-    if (isPurgingExpiredRef.current) return;
-    try {
-      isPurgingExpiredRef.current = true;
-      const RETENTION_MS = 3 * 24 * 60 * 60 * 1000;
-      const now = Date.now();
-      const cutoffDate = new Date(now - RETENTION_MS).toISOString();
-      const tenant = getTenantId();
-      const normT = normalizeTenantId(tenant);
-      const tenantFilter = `tenant_id.eq.${tenant},tenant_id.eq.${normT},tenant_id.eq.${tenant.replace(/_/g, '-')},tenant_id.eq.${tenant.replace(/-/g, '_')}`;
-
-      const [pedExpRes, leadExpRes] = await Promise.all([
-        supabase.from('pedidos').select('id').or(tenantFilter).eq('estado', 'cancelado').lte('created_at', cutoffDate),
-        supabase.from('leads').select('id').or(tenantFilter).eq('estado', 'cancelado').lte('created_at', cutoffDate)
-      ]);
-
-      const expiredPedIds = (pedExpRes.data || []).map((p: any) => p.id);
-      const expiredLeadIds = (leadExpRes.data || []).map((l: any) => l.id);
-
-      if (expiredPedIds.length > 0) {
-        await supabase.from('pedidos').delete().in('id', expiredPedIds);
-        setPedidos(prev => prev.filter(p => !expiredPedIds.includes(p.id)));
-      }
-
-      if (expiredLeadIds.length > 0) {
-        await supabase.from('leads').delete().in('id', expiredLeadIds);
-        setLeads(prev => prev.filter(l => !expiredLeadIds.includes(l.id)));
-      }
-    } catch (err) {
-      console.warn('[Auto-Purge] Error purgando cancelados expirados:', err);
-    } finally {
-      isPurgingExpiredRef.current = false;
-    }
-  }, []);
 
   useEffect(() => {
     if (!isAuthenticated) return;
     
     cargarDatos();
-    purgarCanceladosExpirados();
     
     // Auto-refresh data cada 8 segundos como respaldo
     const interval = setInterval(() => {
       cargarDatos();
-      purgarCanceladosExpirados();
     }, 8000);
 
     // Suscripción Realtime a Supabase para capturar cambios instantáneos de carritos abandonados y pedidos
@@ -3161,7 +3156,7 @@ export default function Admin() {
       clearInterval(interval);
       supabase.removeChannel(channel);
     };
-  }, [isAuthenticated, selectedCompany, purgarCanceladosExpirados]);
+  }, [isAuthenticated, selectedCompany]);
 
   async function cargarDatos() {
     try {
@@ -3212,30 +3207,10 @@ export default function Admin() {
       }
       if (subcatRes.data) setSubcategoriasData(subcatRes.data);
       if (pedRes.data) {
-        const RETENTION_MS = 3 * 24 * 60 * 60 * 1000;
-        const now = Date.now();
-        const activePeds = pedRes.data.filter(p => {
-          if (p.estado !== 'cancelado') return true;
-          return (now - new Date(p.created_at || now).getTime()) < RETENTION_MS;
-        });
-        const expiredPedIds = pedRes.data.filter(p => p.estado === 'cancelado' && (now - new Date(p.created_at || now).getTime()) >= RETENTION_MS).map(p => p.id);
-        if (expiredPedIds.length > 0) {
-          supabase.from('pedidos').delete().in('id', expiredPedIds).then(() => {});
-        }
-        setPedidos(activePeds);
+        setPedidos(pedRes.data);
       }
       if (leadRes.data) {
-        const RETENTION_MS = 3 * 24 * 60 * 60 * 1000;
-        const now = Date.now();
-        const activeLeads = leadRes.data.filter(l => {
-          if (l.estado !== 'cancelado') return true;
-          return (now - new Date(l.created_at || now).getTime()) < RETENTION_MS;
-        });
-        const expiredLeadIds = leadRes.data.filter(l => l.estado === 'cancelado' && (now - new Date(l.created_at || now).getTime()) >= RETENTION_MS).map(l => l.id);
-        if (expiredLeadIds.length > 0) {
-          supabase.from('leads').delete().in('id', expiredLeadIds).then(() => {});
-        }
-        setLeads(activeLeads);
+        setLeads(leadRes.data);
       }
       if (cliRes.data) setClientes(cliRes.data);
       if (aseRes && aseRes.data) setAsesores(aseRes.data);
@@ -3413,6 +3388,15 @@ export default function Admin() {
         setLoggedAsesorPhone(advisorMatch.telefono);
         setIsAuthenticated(true);
         setActiveTab('pedidos');
+        setCheckingAsistencia(true);
+        try {
+          const shift = await asistenciaService.obtenerJornadaActivaAsesor(tenant, advisorMatch.id);
+          setJornadaActivaAsesor(shift);
+        } catch {
+          setJornadaActivaAsesor(null);
+        } finally {
+          setCheckingAsistencia(false);
+        }
         showToast(`Sesión iniciada como asesor: ${advisorMatch.nombre} ✓`, 'success');
       } else {
         // Buscar en tabla mayoristas (independiente)
@@ -5147,7 +5131,15 @@ export default function Admin() {
         return !!leadPhone && filterPhones.includes(leadPhone);
       });
     }
-    return temp;
+    return temp.map(l => ({
+      ...l,
+      isLead: (l as any).isLead !== undefined ? (l as any).isLead : true,
+      cliente_nombre: (l as any).cliente_nombre || l.nombre || 'Cliente Interesado',
+      cliente_telefono: (l as any).cliente_telefono || l.telefono || '',
+      nombre: l.nombre || (l as any).cliente_nombre || 'Cliente Interesado',
+      telefono: l.telefono || (l as any).cliente_telefono || '',
+      total: Number(l.total || (l as any).valor_estimado || 0)
+    }));
   }, [leads, pedidos, orderSearchQuery, orderFilterDate, role, loggedAsesorPhone, orderFilterAsesor]);
 
   const getMetodoPago = (p: Pedido) => {
@@ -5158,12 +5150,8 @@ export default function Admin() {
   };
 
   const canceladosFiltrados = useMemo(() => {
-    const RETENTION_MS = 3 * 24 * 60 * 60 * 1000;
-    const now = Date.now();
-    
     const canceledOrders = allFilteredPedidos
       .filter(p => p.estado === 'cancelado')
-      .filter(p => (now - new Date(p.created_at || now).getTime()) < RETENTION_MS)
       .map(p => ({ ...p, isLead: false }));
     
     const normalizePhone = (phone?: string | null) => {
@@ -5173,8 +5161,7 @@ export default function Admin() {
     };
 
     let tempLeads = leads
-      .filter(l => l.estado === 'cancelado')
-      .filter(l => (now - new Date(l.created_at || now).getTime()) < RETENTION_MS);
+      .filter(l => l.estado === 'cancelado');
 
     if ((role === 'asesor' || role === 'mayorista') && loggedAsesorPhone) {
       tempLeads = tempLeads.filter(l => {
@@ -6795,6 +6782,46 @@ export default function Admin() {
     );
   }
 
+  // ── CONTROL DE ASISTENCIA OBLIGATORIO PARA ASESORES ──
+  if (role === 'asesor') {
+    if (checkingAsistencia) {
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#f8fafc', fontFamily: "'Poppins', sans-serif" }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ width: '42px', height: '42px', border: '3px solid #cbd5e1', borderTopColor: '#10b981', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 1rem' }} />
+            <span style={{ fontSize: '0.85rem', color: '#64748b', fontWeight: 500 }}>Verificando control de horario...</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (!jornadaActivaAsesor) {
+      const storedAsesorId = localStorage.getItem(`admin_asesor_id_${getTenantId()}`) || localStorage.getItem('admin_asesor_id');
+      const activeAsesorObj = currentAsesor || (storedAsesorId ? asesores.find(a => a.id === storedAsesorId) : null) || {
+        id: storedAsesorId || 'asesor_current',
+        nombre: 'Asesor Comercial',
+        telefono: loggedAsesorPhone || '',
+        pin: '',
+        tenant_id: getTenantId(),
+        created_at: new Date().toISOString()
+      };
+
+      return (
+        <AsesorCheckInScreen
+          asesor={activeAsesorObj}
+          tenantId={getTenantId()}
+          tenantName={configuracion?.nombre_negocio || selectedCompany || 'Indisutex'}
+          tenantLogo={configuracion?.logo_url}
+          onCheckInSuccess={(reg) => {
+            setJornadaActivaAsesor(reg);
+            showToast('¡Jornada iniciada! Bienvenido/a al panel ✓', 'success');
+          }}
+          onLogout={() => handleLogout(true)}
+        />
+      );
+    }
+  }
+
   // ── EDIT PRODUCT MODAL ──
   // Sync editExtraImages when editingProduct changes
   // (handled via setEditingProduct call site – pre-populate below at click)
@@ -7602,8 +7629,10 @@ export default function Admin() {
                     {activeTab === 'mayoristas' && <Building2 size={16} />}
                     {activeTab === 'productos' && <Package size={16} />}
                     {activeTab === 'material_apoyo' && <Link size={16} />}
+                    {activeTab === 'asistencia' && <Clock size={16} />}
                   </div>
                   <span style={{ fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap' }}>
+                    {activeTab === 'asistencia' && 'Control de Asistencia'}
                     {activeTab === 'clientes' && 'Clientes'}
                     {activeTab === 'asesores' && 'Asesores'}
                     {activeTab === 'pedidos' && 'Pedidos'}
@@ -8394,6 +8423,19 @@ export default function Admin() {
                   <X size={14} /> Volver a la Lista
                 </button>
               )
+            )}
+            {role === 'asesor' && jornadaActivaAsesor && (
+              <AsesorShiftBar
+                jornadaActiva={jornadaActivaAsesor}
+                tenantId={getTenantId()}
+                onCheckOutSuccess={() => {
+                  setJornadaActivaAsesor(null);
+                  showToast('Jornada finalizada correctamente. ¡Buen descanso! ✓', 'success');
+                }}
+                isLogoutAttemptModalOpen={isLogoutAttemptModalOpen}
+                onCancelLogoutAttempt={() => setIsLogoutAttemptModalOpen(false)}
+                onConfirmLogoutWithoutCheckOut={() => handleLogout(true)}
+              />
             )}
             {isAuthenticated && (
               <div style={{ position: 'relative' }}>
@@ -13296,7 +13338,15 @@ export default function Admin() {
             </div>
           )}
 
-          {/* ── MAYORISTAS TAB ── */}
+          {/* ── CONTROL DE ASISTENCIA TAB ── */}
+          {activeTab === 'asistencia' && (
+            <ControlAsistenciaAdmin
+              tenantId={getTenantId()}
+              tenantName={configuracion?.nombre_negocio || selectedCompany || 'Indisutex'}
+              asesores={asesores}
+            />
+          )}
+
           {/* ── MAYORISTAS TAB ── */}
           {activeTab === 'mayoristas' && (() => {
             // filteredMayoristas proviene del useMemo superior
@@ -15801,99 +15851,64 @@ export default function Admin() {
                                         <span style={{ background: '#dc2626', color: '#ffffff', minWidth: '24px', height: '22px', borderRadius: '11px', padding: '0 0.55rem', fontSize: '0.75rem', fontWeight: 600, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(220, 38, 38, 0.25)', fontFamily: "'Poppins', sans-serif" }}>{canceladosFiltrados.length}</span>
                                       </div>
 
-                                      {/* ⏱️ Aviso de Purga Automática & Acciones de Cancelados */}
-                                      {(() => {
-                                        const RETENTION_MS = 3 * 24 * 60 * 60 * 1000;
-                                        const now = Date.now();
-                                        let shortestRemaining = Infinity;
-                                        
-                                        for (const item of canceladosFiltrados) {
-                                          const created = new Date(item.created_at || now).getTime();
-                                          const expiry = created + RETENTION_MS;
-                                          const rem = expiry - now;
-                                          if (rem > 0 && rem < shortestRemaining) {
-                                            shortestRemaining = rem;
-                                          }
-                                        }
-
-                                        let timerText = '3 días';
-                                        if (canceladosFiltrados.length > 0 && shortestRemaining !== Infinity) {
-                                          const d = Math.floor(shortestRemaining / (1000 * 60 * 60 * 24));
-                                          const h = Math.floor((shortestRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                                          const m = Math.floor((shortestRemaining % (1000 * 60 * 60)) / (1000 * 60));
-                                          if (d > 0) {
-                                            timerText = `${d} día${d !== 1 ? 's' : ''} y ${h} h`;
-                                          } else if (h > 0) {
-                                            timerText = `${h} hora${h !== 1 ? 's' : ''} y ${m} min`;
-                                          } else {
-                                            timerText = `${Math.max(1, m)} min`;
-                                          }
-                                        }
-
-                                        return (
-                                          <div style={{
-                                            background: '#ffffff',
-                                            border: '1px solid #fecaca',
-                                            borderRadius: '12px',
-                                            padding: '0.6rem 0.75rem',
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            gap: '0.4rem',
-                                            boxShadow: '0 1px 4px rgba(220, 38, 38, 0.05)',
-                                            fontFamily: "'Poppins', sans-serif"
-                                          }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.35rem', color: '#991b1b', fontSize: '0.73rem', fontWeight: 500 }}>
-                                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                                                <Clock size={13} style={{ color: '#dc2626', flexShrink: 0 }} />
-                                                {canceladosFiltrados.length > 0 ? (
-                                                  <span>Próxima purga en: <strong style={{ fontWeight: 600, color: '#dc2626' }}>{timerText}</strong></span>
-                                                ) : (
-                                                  <span>Autoborrado tras <strong style={{ fontWeight: 600, color: '#dc2626' }}>3 días</strong></span>
-                                                )}
-                                              </div>
-                                              {canceladosFiltrados.length > 0 && (
-                                                <button
-                                                  type="button"
-                                                  onClick={handleVaciarCancelados}
-                                                  title="Vaciar todas las tarjetas canceladas definitivamente"
-                                                  style={{
-                                                    background: '#fef2f2',
-                                                    border: '1px solid #fca5a5',
-                                                    borderRadius: '6px',
-                                                    padding: '0.15rem 0.45rem',
-                                                    color: '#dc2626',
-                                                    fontSize: '0.68rem',
-                                                    fontWeight: 500,
-                                                    cursor: 'pointer',
-                                                    display: 'inline-flex',
-                                                    alignItems: 'center',
-                                                    gap: '0.2rem',
-                                                    fontFamily: "'Poppins', sans-serif"
-                                                  }}
-                                                >
-                                                  <Trash2 size={11} />
-                                                  <span>Vaciar</span>
-                                                </button>
-                                              )}
-                                            </div>
-                                            <div style={{
-                                              display: 'flex',
-                                              alignItems: 'center',
-                                              gap: '0.3rem',
-                                              background: '#fff1f2',
-                                              padding: '0.2rem 0.45rem',
-                                              borderRadius: '6px',
-                                              fontSize: '0.71rem',
-                                              color: '#b91c1c',
-                                              fontWeight: 500
-                                            }}>
-                                              <span>🎯</span>
-                                              <span>¡Logra incentivar esta venta o elimínala!</span>
-                                            </div>
-                                          </div>
-                                        );
-                                      })()}
-                                      <div 
+                                      {/* 📋 Registro Permanente de Cancelados */}
+                                       <div style={{
+                                         background: '#ffffff',
+                                         border: '1px solid #fecaca',
+                                         borderRadius: '12px',
+                                         padding: '0.6rem 0.75rem',
+                                         display: 'flex',
+                                         flexDirection: 'column',
+                                         gap: '0.4rem',
+                                         boxShadow: '0 1px 4px rgba(220, 38, 38, 0.05)',
+                                         fontFamily: "'Poppins', sans-serif"
+                                       }}>
+                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.35rem', color: '#991b1b', fontSize: '0.73rem', fontWeight: 500 }}>
+                                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                             <ClipboardList size={13} style={{ color: '#dc2626', flexShrink: 0 }} />
+                                             <span>Registro permanente ({canceladosFiltrados.length})</span>
+                                           </div>
+                                           {canceladosFiltrados.length > 0 && (
+                                             <button
+                                               type="button"
+                                               onClick={handleVaciarCancelados}
+                                               title="Vaciar todas las tarjetas canceladas definitivamente"
+                                               style={{
+                                                 background: '#fef2f2',
+                                                 border: '1px solid #fca5a5',
+                                                 borderRadius: '6px',
+                                                 padding: '0.15rem 0.45rem',
+                                                 color: '#dc2626',
+                                                 fontSize: '0.68rem',
+                                                 fontWeight: 500,
+                                                 cursor: 'pointer',
+                                                 display: 'inline-flex',
+                                                 alignItems: 'center',
+                                                 gap: '0.2rem',
+                                                 fontFamily: "'Poppins', sans-serif"
+                                               }}
+                                             >
+                                               <Trash2 size={11} />
+                                               <span>Vaciar</span>
+                                             </button>
+                                           )}
+                                         </div>
+                                         <div style={{
+                                           display: 'flex',
+                                           alignItems: 'center',
+                                           gap: '0.3rem',
+                                           background: '#fff1f2',
+                                           padding: '0.2rem 0.45rem',
+                                           borderRadius: '6px',
+                                           fontSize: '0.71rem',
+                                           color: '#b91c1c',
+                                           fontWeight: 500
+                                         }}>
+                                           <span>🎯</span>
+                                           <span>¡Logra incentivar esta venta o elimínala manualmente!</span>
+                                         </div>
+                                       </div>
+                                       <div 
                                         className="kanban-cards-list" 
                                         style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '480px', overflowY: 'auto' }}
                                       >
@@ -16650,10 +16665,11 @@ export default function Admin() {
                       gap: '0.5rem'
                     }}
                     onClick={() => {
-                      const name = selectedPedido.cliente_nombre;
+                      const name = selectedPedido.cliente_nombre || (selectedPedido as any).nombre || 'Cliente';
+                      const phone = (selectedPedido.cliente_telefono || (selectedPedido as any).telefono || '').trim();
                       const business = configuracion?.nombre_negocio || 'Indisutex';
                       const msg = `¡Felicidades ${name}! 🎉 Has hecho una compra exitosa con *${business}*.\n\nTu número de guía de envío es: *${numeroGuia || 'Pendiente'}*\n\n¡Muchas gracias por confiar en nosotros! 😊`;
-                      window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
+                      window.open(formatWhatsAppLink(phone, msg), '_blank');
                     }}
                   >
                     💬 Enviar WhatsApp de Éxito y Guía
@@ -16692,6 +16708,9 @@ export default function Admin() {
                   const contraStatus = getContraStatus(selectedPedido);
                   const auditLogs = getOrderAuditLogs(selectedPedido);
                   const isLeadOrder = Boolean((selectedPedido as any).isLead || selectedPedido.estado === 'abandonado' || (selectedPedido as any).retargeting_estado || (!selectedPedido.estado && !selectedPedido.atendido && !selectedPedido.numero_guia));
+                  const modalClienteTelefono = (selectedPedido.cliente_telefono || (selectedPedido as any).telefono || '').trim();
+                  const modalClienteNombre = (selectedPedido.cliente_nombre || (selectedPedido as any).nombre || 'Cliente').trim();
+                  const modalTotal = Number(selectedPedido.total || (selectedPedido as any).valor_estimado || 0);
 
                   return (
                     <div style={{ fontFamily: "'Poppins', sans-serif" }}>
@@ -17602,8 +17621,8 @@ export default function Admin() {
                                       className="btn-action-outline" style={{ width: '100%', padding: '0.7rem 0.9rem', fontSize: '0.85rem' }}
                                       onClick={async () => {
                                         const prodsStr = prodsList.map((p: any) => `${p.cantidad}x ${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ');
-                                        const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋 Confirmamos tu pedido de *${prodsStr}* por valor de *$${selectedPedido.total.toLocaleString()} COP* en modalidad *Pago Contra Entrega*. 🚚\n\nDirección registrada: *${selectedPedido.direccion}, ${selectedPedido.ciudad}*\n\n¿Nos confirmas si todos los datos están correctos para programar tu envío hoy mismo? 😊`;
-                                        window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
+                                        const msg = `¡Hola ${modalClienteNombre}! 👋 Confirmamos tu pedido de *${prodsStr}* por valor de *${modalTotal.toLocaleString()} COP* en modalidad *Pago Contra Entrega*. 🚚\n\nDirección registrada: *${selectedPedido.direccion}, ${selectedPedido.ciudad}*\n\n¿Nos confirmas si todos los datos están correctos para programar tu envío hoy mismo? 😊`;
+                                        window.open(formatWhatsAppLink(modalClienteTelefono, msg), '_blank');
                                         const nowIso = new Date().toISOString();
                                         await saveOrderAuditLog(selectedPedido.id, {
                                           estado: 'mensaje_enviado',
@@ -17670,8 +17689,8 @@ export default function Admin() {
                                             className="btn-action-outline btn-sm" style={{ flex: 1 }}
                                             onClick={async () => {
                                               const prodsStr = prodsList.map((p: any) => `${p.cantidad}x ${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ');
-                                              const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋 Te reenviamos la confirmación de tu pedido de *${prodsStr}* por valor de *$${selectedPedido.total.toLocaleString()} COP* (Pago Contra Entrega). 🚚\n\nDirección registrada: *${selectedPedido.direccion}, ${selectedPedido.ciudad}*\n\n¿Nos confirmas si todo está correcto para programar tu envío hoy mismo? 😊`;
-                                              window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
+                                              const msg = `¡Hola ${modalClienteNombre}! 👋 Te reenviamos la confirmación de tu pedido de *${prodsStr}* por valor de *${modalTotal.toLocaleString()} COP* (Pago Contra Entrega). 🚚\n\nDirección registrada: *${selectedPedido.direccion}, ${selectedPedido.ciudad}*\n\n¿Nos confirmas si todo está correcto para programar tu envío hoy mismo? 😊`;
+                                              window.open(formatWhatsAppLink(modalClienteTelefono, msg), '_blank');
                                               const nowIso = new Date().toISOString();
                                               await saveOrderAuditLog(selectedPedido.id, {
                                                 estado: 'mensaje_enviado',
@@ -17688,7 +17707,7 @@ export default function Admin() {
                                             type="button"
                                             className="btn-action-outline btn-sm" style={{ flex: 1 }}
                                             onClick={() => {
-                                              const clean = (selectedPedido.cliente_telefono || '').replace(/\D/g, '');
+                                              const clean = modalClienteTelefono.replace(/\D/g, '');
                                               const target = clean.length === 10 ? '57' + clean : clean;
                                               window.open(`https://wa.me/${target}`, '_blank');
                                             }}
@@ -17733,8 +17752,8 @@ export default function Admin() {
                                               return;
                                             }
                                             const guiaLink = `${window.location.origin}/guia/${selectedPedido.id.slice(0, 8)}`;
-                                            const msg = `¡Hola ${selectedPedido.cliente_nombre}! 🚚 Tu pedido en modalidad *Pago Contra Entrega* ha sido *DESPACHADO y va en camino*.\n\n${numeroGuia ? `Número de guía: *${numeroGuia}*\n` : ''}Total a pagar al recibir: *$${selectedPedido.total.toLocaleString()} COP*\nDirección: ${selectedPedido.direccion}, ${selectedPedido.ciudad}\n\n📸 *Ver detalles y evidencia del envío aquí:* ${guiaLink}\n\nPor favor ten listo el dinero en efectivo para la entrega. ¡Gracias por tu compra! 📦`;
-                                            window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
+                                            const msg = `¡Hola ${modalClienteNombre}! 🚚 Tu pedido en modalidad *Pago Contra Entrega* ha sido *DESPACHADO y va en camino*.\n\n${numeroGuia ? `Número de guía: *${numeroGuia}*\n` : ''}Total a pagar al recibir: *${modalTotal.toLocaleString()} COP*\nDirección: ${selectedPedido.direccion}, ${selectedPedido.ciudad}\n\n📸 *Ver detalles y evidencia del envío aquí:* ${guiaLink}\n\nPor favor ten listo el dinero en efectivo para la entrega. ¡Gracias por tu compra! 📦`;
+                                            window.open(formatWhatsAppLink(modalClienteTelefono, msg), '_blank');
                                             const nowIso = new Date().toISOString();
                                             await saveOrderAuditLog(selectedPedido.id, {
                                               estado: 'despachado',
@@ -17866,9 +17885,33 @@ export default function Admin() {
                                         whiteSpace: 'nowrap'
                                       }}
                                       onClick={() => {
+                                        const cleanPhone = modalClienteTelefono.replace(/\D/g, '');
+                                        if (!cleanPhone || cleanPhone.length < 7) {
+                                          showToast('⚠️ Este cliente no tiene un número de WhatsApp registrado o es inválido', 'error');
+                                          return;
+                                        }
+
                                         let msg = '';
                                         if (selectedPedido.pantallazo_url) {
-                                          msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋 Te escribimos de *${configuracion?.nombre_negocio || 'nuestra tienda'}* respecto a tu pedido #${selectedPedido.id.slice(0, 8)}. ¡Estamos validando tu pago!`;
+                                          msg = `¡Hola ${modalClienteNombre}! 👋 Te escribimos de *${configuracion?.nombre_negocio || 'nuestra tienda'}* respecto a tu pedido #${selectedPedido.id.slice(0, 8)}. ¡Estamos validando tu pago!`;
+                                        } else if (isLeadOrder) {
+                                          const prodsStr = prodsList.map((p: any) => `${p.cantidad || 1}x ${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ');
+                                          const uploadLink = `${window.location.origin}/pago/${selectedPedido.id.slice(0, 8)}`;
+                                          let metodosStr = '';
+                                          if (configuracion?.metodos_pago) {
+                                            try {
+                                              const parsed = JSON.parse(configuracion.metodos_pago);
+                                              if (Array.isArray(parsed) && parsed.length > 0) {
+                                                metodosStr = `💳 *Métodos de pago disponibles:*\n` + parsed.map((m: any) => `- ${m.banco} ${m.tipo ? `(${m.tipo})` : ''}: ${m.numero}`).join('\n') + `\n\n`;
+                                              } else {
+                                                metodosStr = `💳 *Métodos de pago disponibles:*\n${configuracion.metodos_pago}\n\n`;
+                                              }
+                                            } catch {
+                                              metodosStr = `💳 *Métodos de pago disponibles:*\n${configuracion.metodos_pago}\n\n`;
+                                            }
+                                          }
+                                          const metodosInfo = metodosStr || `💳 *Datos de pago:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\n`;
+                                          msg = `¡Hola ${modalClienteNombre}! 👋\nTe escribimos de *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\nVimos que estás interesado en:\n${prodsStr ? `🛍️ *${prodsStr}*\n` : ''}💰 *Total: $${modalTotal.toLocaleString()} COP*\n\n${metodosInfo}¿Deseas completar tu pedido? Si ya realizaste el pago o quieres adjuntar tu comprobante, puedes subirlo aquí:\n${uploadLink}\n\n¡Quedamos atentos para colaborarte con gusto! 😊✨`;
                                         } else {
                                           const uploadLink = `${window.location.origin}/pago/${selectedPedido.id.slice(0, 8)}`;
                                           let metodosStr = '';
@@ -17885,9 +17928,9 @@ export default function Admin() {
                                             }
                                           }
                                           const metodosInfo = metodosStr || `💳 *Datos del banco:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\n`;
-                                          msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: ${selectedPedido.total.toLocaleString()} COP*\n\n${metodosInfo}Para poder completar tu pedido, haz la captura de pantalla de tu pago o de transacción y envíala por este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
+                                          msg = `¡Hola ${modalClienteNombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: $${modalTotal.toLocaleString()} COP*\n\n${metodosInfo}Para poder completar tu pedido, haz la captura de pantalla de tu pago o de transacción y envíala por este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
                                         }
-                                        window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
+                                        window.open(formatWhatsAppLink(modalClienteTelefono, msg), '_blank');
                                       }}
                                     >
                                       <MessageSquare size={14} color="#16a34a" style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedPedido.pantallazo_url ? 'WhatsApp' : 'Cobrar WhatsApp'}</span>
@@ -17919,9 +17962,14 @@ export default function Admin() {
                                       onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.borderColor = '#94a3b8'; }}
                                       onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
                                       onClick={() => {
+                                        const cleanPhone = modalClienteTelefono.replace(/\D/g, '');
+                                        if (!cleanPhone || cleanPhone.length < 7) {
+                                          showToast('⚠️ Este cliente no tiene un número de WhatsApp registrado o es inválido', 'error');
+                                          return;
+                                        }
                                         const guiaLink = `${window.location.origin}/guia/${selectedPedido.id.slice(0, 8)}`;
-                                        const msg = `¡Hola ${selectedPedido.cliente_nombre}! 👋 Tu pedido ha sido *VERIFICADO y DESPACHADO* 🚚\n\nPedido: ${prodsList.map((p: any) => `${p.cantidad}x ${p.nombre}`).join(', ')}\nTotal: ${selectedPedido.total.toLocaleString()} COP\n\n📸 *Ver detalles y evidencia del envío aquí:* ${guiaLink}\n\n¡Tu paquete está en camino. Gracias por tu compra! 🚀`;
-                                        window.open(formatWhatsAppLink(selectedPedido.cliente_telefono || '', msg), '_blank');
+                                        const msg = `¡Hola ${modalClienteNombre}! 👋 Tu pedido ha sido *VERIFICADO y DESPACHADO* 🚚\n\nPedido: ${prodsList.map((p: any) => `${p.cantidad}x ${p.nombre}`).join(', ')}\nTotal: $${modalTotal.toLocaleString()} COP\n\n📸 *Ver detalles y evidencia del envío aquí:* ${guiaLink}\n\n¡Tu paquete está en camino. Gracias por tu compra! 🚀`;
+                                        window.open(formatWhatsAppLink(modalClienteTelefono, msg), '_blank');
                                       }}
                                     >
                                       <Truck size={15} color="var(--primary-color, #0ea5e9)" style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Despachar</span>

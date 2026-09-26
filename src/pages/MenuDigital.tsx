@@ -4087,23 +4087,49 @@ export default function MenuDigital() {
                         webkit-playsinline="true"
                         preload="metadata" 
                         className="detail-carousel-img" 
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'contain'
+                        }}
                       />
                     ) : allImages.length > 0 ? (
-                      <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
+                      <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {/* Fondo ambiental desenfocado que armoniza los laterales sin recortar la foto */}
+                        <img 
+                          src={getOptimizedImageUrl(allImages[safeIdx].url, 200, 30)} 
+                          alt="" 
+                          aria-hidden="true" 
+                          tabIndex={-1}
+                          style={{ 
+                            position: 'absolute',
+                            inset: '-10%',
+                            width: '120%', 
+                            height: '120%', 
+                            objectFit: 'cover', 
+                            filter: 'blur(22px) brightness(0.96)', 
+                            opacity: 0.35,
+                            pointerEvents: 'none',
+                            userSelect: 'none'
+                          }} 
+                        />
+                        {/* Imagen principal completa (object-fit: contain) sin ningún recorte */}
                         <img 
                           key={safeIdx}
-                          src={getOptimizedImageUrl(allImages[safeIdx].url, 800, 80)} 
+                          src={getOptimizedImageUrl(allImages[safeIdx].url, 900, 85)} 
                           alt={`${detailProduct.nombre} ${allImages[safeIdx].estampado || allImages[safeIdx].ref || safeIdx}`} 
                           className="detail-carousel-img" 
                           loading="eager" 
                           decoding="async" 
                           draggable={false}
                           style={{ 
+                            position: 'relative',
                             width: '100%', 
                             height: '100%', 
-                            objectFit: 'cover', 
+                            objectFit: 'contain', 
                             userSelect: 'none', 
                             pointerEvents: 'none',
+                            zIndex: 2,
                             animation: 'fadeIn 0.2s ease'
                           }} 
                         />
@@ -4231,7 +4257,7 @@ export default function MenuDigital() {
                         Ref: {toTitleCase(detailProduct.nombre)} {(detailProduct.referencia || detailProduct.sku) ? `(${detailProduct.referencia || detailProduct.sku})` : ''}
                       </div>
                       {currentImgRef && (
-                        <div style={{ fontSize: '0.74rem', padding: '0.3rem 0.7rem', background: 'rgba(255, 255, 255, 0.88)', color: '#0f172a', fontWeight: 600, borderRadius: '8px', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', border: '1px solid rgba(255, 255, 255, 0.7)', boxShadow: '0 2px 8px rgba(0,0,0,0.12)', maxWidth: '100%', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.3, textAlign: 'right', fontFamily: "'Poppins', sans-serif" }}>
+                        <div style={{ fontSize: '0.74rem', padding: '0.3rem 0.7rem', background: 'rgba(255, 255, 255, 0.88)', color: '#0f172a', fontWeight: 500, borderRadius: '8px', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', border: '1px solid rgba(255, 255, 255, 0.7)', boxShadow: '0 2px 8px rgba(0,0,0,0.12)', maxWidth: '100%', whiteSpace: 'normal', wordBreak: 'break-word', lineHeight: 1.3, textAlign: 'right', fontFamily: "'Poppins', sans-serif" }}>
                           Estampado: {toTitleCase(currentImgRef)}
                         </div>
                       )}

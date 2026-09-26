@@ -163,3 +163,22 @@ export interface PQRS {
   evidencia_url?: string;
   estado: string;
 }
+
+export interface RegistroAsistencia {
+  id: string;
+  tenant_id: string;
+  asesor_id: string;
+  asesor_nombre: string;
+  asesor_telefono: string;
+  fecha: string; // Formato YYYY-MM-DD
+  hora_entrada: string; // ISO 8601 UTC
+  hora_salida?: string | null; // ISO 8601 UTC
+  duracion_minutos?: number | null;
+  estado: 'activo' | 'finalizado' | 'sin_salida';
+  ip_registro?: string | null;
+  dispositivo?: string | null;
+  observaciones?: string | null;
+  created_at: string;
+  updated_at?: string;
+}
+
