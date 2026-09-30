@@ -121,6 +121,8 @@ export interface Pedido {
   envio_metodo?: string;
   isLead?: boolean;
   retargeting_estado?: string;
+  fecha_envio_mensaje?: string | null;
+  audit_logs?: any[];
 }
 
 export interface Asesor {

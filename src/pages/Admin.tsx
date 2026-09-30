@@ -1229,14 +1229,242 @@ export default function Admin() {
     };
   };
 
+  interface EstadoAuditLog {
+    estado: string;
+    usuario: string;
+    fecha: string;
+    accion: string;
+  }
+
+  const getCurrentUserName = () => {
+    if (role === 'asesor') {
+      const adv = asesores.find(a => a.telefono === loggedAsesorPhone);
+      return adv ? `Asesor ${adv.nombre}` : 'Asesor';
+    }
+    if (role === 'mayorista') {
+      const may = mayoristas.find(m => m.telefono === loggedAsesorPhone);
+      return may ? `Mayorista ${may.nombre}` : 'Mayorista';
+    }
+    return configuracion?.admin_nombre || 'Administrador';
+  };
+
+  const getOrderAuditLogs = (ped: any): EstadoAuditLog[] => {
+    if (!ped) return [];
+    try {
+      const local = localStorage.getItem(`indisutex_audit_${ped.id}`);
+      if (local) {
+        const parsed = JSON.parse(local);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+      if (Array.isArray(ped.historial) && ped.historial.length > 0) return ped.historial;
+    } catch (e) {
+      console.error('Error parsing audit logs:', e);
+    }
+    return [];
+  };
+
+  const saveOrderAuditLog = async (pedId: string, newLog: EstadoAuditLog, nextStatus: string, additionalUpdates: Record<string, any> = {}) => {
+    let currentLogs: EstadoAuditLog[] = [];
+    try {
+      const local = localStorage.getItem(`indisutex_audit_${pedId}`);
+      if (local) currentLogs = JSON.parse(local);
+    } catch {}
+
+    const updatedLogs = [...currentLogs, newLog];
+    localStorage.setItem(`indisutex_audit_${pedId}`, JSON.stringify(updatedLogs));
+
+    const payload: any = {
+      estado: nextStatus,
+      ...additionalUpdates
+    };
+
+    const isLeadTarget = leads.some(l => l.id === pedId) && !pedidos.some(p => p.id === pedId);
+
+    if (isLeadTarget) {
+      try {
+        const leadPayload: any = {
+          retargeting_estado: nextStatus === 'mensaje_enviado' ? 'contactado' : nextStatus,
+          ...additionalUpdates
+        };
+        const { error } = await supabase.from('leads').update(leadPayload).eq('id', pedId);
+        if (error) console.error('Error updating lead audit in DB:', error);
+      } catch (e) {
+        console.error('Error updating lead audit:', e);
+      }
+
+      setLeads(prev => prev.map(l => l.id === pedId ? { ...l, retargeting_estado: nextStatus === 'mensaje_enviado' ? 'contactado' : nextStatus, ...additionalUpdates, historial: updatedLogs } : l));
+      setSelectedPedido((prev: any) => prev && prev.id === pedId ? { ...prev, retargeting_estado: nextStatus === 'mensaje_enviado' ? 'contactado' : nextStatus, ...additionalUpdates, historial: updatedLogs } : prev);
+    } else {
+      try {
+        const { error } = await supabase.from('pedidos').update({
+          ...payload,
+          historial: updatedLogs
+        }).eq('id', pedId);
+
+        if (error) {
+          await supabase.from('pedidos').update(payload).eq('id', pedId);
+        }
+      } catch (e) {
+        await supabase.from('pedidos').update(payload).eq('id', pedId);
+      }
+
+      setPedidos(prev => prev.map(p => p.id === pedId ? { ...p, ...payload, historial: updatedLogs } : p));
+      setSelectedPedido((prev: any) => prev && prev.id === pedId ? { ...prev, ...payload, historial: updatedLogs } : prev);
+    }
+
+    return updatedLogs;
+  };
+
   const getContraStatus = (ped: any): 'pendiente' | 'mensaje_enviado' | 'confirmado' | 'despachado' | 'entregado_pagado' | 'cancelado' => {
     if (!ped) return 'pendiente';
     if (ped.estado === 'cancelado') return 'cancelado';
     if (ped.estado === 'entregado_pagado' || ped.estado === 'completado') return 'entregado_pagado';
-    if (ped.estado === 'despachado') return 'despachado';
-    if (ped.estado === 'confirmado') return 'confirmado';
-    if (ped.estado === 'mensaje_enviado') return 'mensaje_enviado';
+    if (ped.estado === 'despachado' || ped.estado === 'contra_despachado') return 'despachado';
+    if (ped.estado === 'confirmado' || ped.estado === 'contra_confirmado') return 'confirmado';
+    if (ped.estado === 'mensaje_enviado' || ped.estado === 'contra_mensaje_enviado') return 'mensaje_enviado';
+
+    // Inspeccionar historial de auditoría
+    const logs = getOrderAuditLogs(ped);
+    if (logs && logs.length > 0) {
+      const last = logs[logs.length - 1];
+      if (last.estado === 'confirmado' || last.estado === 'contra_confirmado') return 'confirmado';
+      if (last.estado === 'despachado' || last.estado === 'contra_despachado') return 'despachado';
+      if (last.estado === 'mensaje_enviado' || last.estado === 'contra_mensaje_enviado') return 'mensaje_enviado';
+      if (last.estado === 'entregado_pagado' || last.estado === 'completado') return 'entregado_pagado';
+      if (last.estado === 'cancelado') return 'cancelado';
+    }
+
+    if (ped.fecha_envio_mensaje) return 'mensaje_enviado';
+
     return 'pendiente';
+  };
+
+  const getCardSubStatus = (ped: any): {
+    badgeText: string;
+    badgeBg: string;
+    badgeColor: string;
+    badgeBorder: string;
+    statusKey: 'pendiente' | 'mensaje_enviado' | 'confirmado' | 'despachado' | 'comprobante' | 'exitoso' | 'cancelado';
+  } | null => {
+    if (!ped) return null;
+    const isExitoso = ped.estado === 'completado' || ped.estado === 'entregado_pagado' || ped.estado === 'entregado';
+    if (isExitoso) return null;
+    if (ped.estado === 'cancelado') return null;
+
+    const mp = getMetodoPago(ped);
+    const isContra = mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra')) || ped.estado === 'contra_entrega' || ped.estado === 'contra_confirmado' || ped.estado === 'contra_mensaje_enviado' || ped.estado === 'contra_despachado';
+    const isLead = Boolean(ped.isLead || ped.retargeting_estado || (!ped.estado && !ped.atendido && !ped.numero_guia)) || ped.estado === 'abandonado';
+
+    const logs = getOrderAuditLogs(ped);
+    const lastLog = logs.length > 0 ? logs[logs.length - 1] : null;
+
+    if (isContra) {
+      const cStatus = getContraStatus(ped);
+      if (cStatus === 'confirmado') {
+        return {
+          badgeText: '✓ Confirmado',
+          badgeBg: '#ecfdf5',
+          badgeColor: '#15803d',
+          badgeBorder: '#86efac',
+          statusKey: 'confirmado'
+        };
+      }
+      if (cStatus === 'mensaje_enviado') {
+        return {
+          badgeText: '⏱️ Esperando Resp.',
+          badgeBg: '#fffbeb',
+          badgeColor: '#b45309',
+          badgeBorder: '#fde68a',
+          statusKey: 'mensaje_enviado'
+        };
+      }
+      if (cStatus === 'despachado') {
+        return {
+          badgeText: '🚚 Despachado',
+          badgeBg: '#eff6ff',
+          badgeColor: '#1d4ed8',
+          badgeBorder: '#bfdbfe',
+          statusKey: 'despachado'
+        };
+      }
+      return {
+        badgeText: '⚡ Por Confirmar',
+        badgeBg: '#fff7ed',
+        badgeColor: '#c2410c',
+        badgeBorder: '#fed7aa',
+        statusKey: 'pendiente'
+      };
+    }
+
+    if (isLead) {
+      const isConfirmed = ped.estado === 'confirmado' || ped.retargeting_estado === 'recuperado' || lastLog?.estado === 'confirmado';
+      if (isConfirmed) {
+        return {
+          badgeText: '✓ Confirmado',
+          badgeBg: '#ecfdf5',
+          badgeColor: '#15803d',
+          badgeBorder: '#86efac',
+          statusKey: 'confirmado'
+        };
+      }
+      const isContacted = ped.retargeting_estado === 'contactado' || ped.estado === 'mensaje_enviado' || Boolean(ped.fecha_envio_mensaje) || lastLog?.estado === 'mensaje_enviado';
+      if (isContacted) {
+        return {
+          badgeText: '⏱️ Esperando Resp.',
+          badgeBg: '#fffbeb',
+          badgeColor: '#b45309',
+          badgeBorder: '#fde68a',
+          statusKey: 'mensaje_enviado'
+        };
+      }
+      return {
+        badgeText: '⚡ Sin Contactar',
+        badgeBg: '#faf5ff',
+        badgeColor: '#7e22ce',
+        badgeBorder: '#e9d5ff',
+        statusKey: 'pendiente'
+      };
+    }
+
+    if (ped.pantallazo_url) {
+      return {
+        badgeText: '📸 Comprobante',
+        badgeBg: '#eff6ff',
+        badgeColor: '#1d4ed8',
+        badgeBorder: '#bfdbfe',
+        statusKey: 'comprobante'
+      };
+    }
+
+    const isConfirmed = ped.estado === 'confirmado' || lastLog?.estado === 'confirmado';
+    if (isConfirmed) {
+      return {
+        badgeText: '✓ Pago Confirmado',
+        badgeBg: '#ecfdf5',
+        badgeColor: '#15803d',
+        badgeBorder: '#86efac',
+        statusKey: 'confirmado'
+      };
+    }
+
+    const isReminded = ped.estado === 'mensaje_enviado' || Boolean(ped.fecha_envio_mensaje) || lastLog?.estado === 'mensaje_enviado';
+    if (isReminded) {
+      return {
+        badgeText: '⏱️ Esperando Resp.',
+        badgeBg: '#fffbeb',
+        badgeColor: '#b45309',
+        badgeBorder: '#fde68a',
+        statusKey: 'mensaje_enviado'
+      };
+    }
+
+    return {
+      badgeText: '⚡ Por Cobrar',
+      badgeBg: '#fff7ed',
+      badgeColor: '#c2410c',
+      badgeBorder: '#fed7aa',
+      statusKey: 'pendiente'
+    };
   };
 
   const renderLeadOrOrderCard = (ped: any, forceIsLead?: boolean) => {
@@ -1268,7 +1496,7 @@ export default function Admin() {
     const parsedProds = getParsedProducts(ped.productos);
 
     const mp = getMetodoPago(ped);
-    const isContra = mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra'));
+    const isContra = mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra')) || ped.estado === 'contra_entrega' || ped.estado === 'contra_confirmado' || ped.estado === 'contra_mensaje_enviado' || ped.estado === 'contra_despachado';
     const isExitoso = ped.estado === 'completado' || ped.estado === 'entregado_pagado' || ped.estado === 'entregado';
     const contraSubStatus = isContra ? getContraStatus(ped) : null;
     
@@ -1329,75 +1557,14 @@ export default function Admin() {
                 <h4 className="pedido-card-name" style={{ margin: 0, fontSize: '0.86rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Poppins', sans-serif" }} title={nombreCliente}>
                   {nombreCliente}
                 </h4>
-                {isContra && !isExitoso && ped.estado !== 'cancelado' && (() => {
-                  if (contraSubStatus === 'confirmado') {
-                    return (
-                      <span style={{
-                        background: '#ecfdf5',
-                        color: '#15803d',
-                        border: '1px solid #86efac',
-                        borderRadius: '6px',
-                        padding: '1px 6px',
-                        fontSize: '0.64rem',
-                        fontWeight: 600,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.2rem',
-                        fontFamily: "'Poppins', sans-serif",
-                        whiteSpace: 'nowrap',
-                        flexShrink: 0
-                      }}>
-                        ✓ Confirmado
-                      </span>
-                    );
-                  }
-                  if (contraSubStatus === 'mensaje_enviado') {
-                    return (
-                      <span style={{
-                        background: '#fffbeb',
-                        color: '#b45309',
-                        border: '1px solid #fde68a',
-                        borderRadius: '6px',
-                        padding: '1px 6px',
-                        fontSize: '0.64rem',
-                        fontWeight: 500,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.2rem',
-                        fontFamily: "'Poppins', sans-serif",
-                        whiteSpace: 'nowrap',
-                        flexShrink: 0
-                      }}>
-                        ⏱️ Esperando Resp.
-                      </span>
-                    );
-                  }
-                  if (contraSubStatus === 'despachado') {
-                    return (
-                      <span style={{
-                        background: '#eff6ff',
-                        color: '#1d4ed8',
-                        border: '1px solid #bfdbfe',
-                        borderRadius: '6px',
-                        padding: '1px 6px',
-                        fontSize: '0.64rem',
-                        fontWeight: 500,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.2rem',
-                        fontFamily: "'Poppins', sans-serif",
-                        whiteSpace: 'nowrap',
-                        flexShrink: 0
-                      }}>
-                        🚚 Despachado
-                      </span>
-                    );
-                  }
+                {(() => {
+                  const subStatusInfo = getCardSubStatus(ped);
+                  if (!subStatusInfo) return null;
                   return (
                     <span style={{
-                      background: '#fff7ed',
-                      color: '#c2410c',
-                      border: '1px solid #fed7aa',
+                      background: subStatusInfo.badgeBg,
+                      color: subStatusInfo.badgeColor,
+                      border: `1px solid ${subStatusInfo.badgeBorder}`,
                       borderRadius: '6px',
                       padding: '1px 6px',
                       fontSize: '0.64rem',
@@ -1409,7 +1576,7 @@ export default function Admin() {
                       whiteSpace: 'nowrap',
                       flexShrink: 0
                     }}>
-                      ⚡ Por Confirmar
+                      {subStatusInfo.badgeText}
                     </span>
                   );
                 })()}
@@ -1864,44 +2031,67 @@ export default function Admin() {
           </div>
 
           {/* Fila 2: Botón de acción principal (100% ANCHO - NUNCA SE DESBORDA) */}
-          {(isLead || ped.estado === 'cancelado') ? (
-            <button 
-              type="button" 
-              onClick={() => {
-                const cleanPhone = (telefonoCliente || '').replace(/\D/g, '');
-                if (!cleanPhone) { showToast('Teléfono inválido para WhatsApp', 'error'); return; }
-                if (cleanPhone.length < 10) {
-                  showToast(`⚠️ Teléfono incompleto (${cleanPhone.length}/10 dígitos). Abre 'Ver detalles' y usa ✏️ Editar para corregirlo antes de contactar.`, 'error');
-                  return;
-                }
-                const prodNames = Array.isArray(ped.productos) && ped.productos.length > 0
-                  ? ped.productos.map((p: any) => `${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ')
-                  : '';
-                const text = ped.estado === 'cancelado'
-                  ? `¡Hola ${nombreCliente || ''}! 👋 Vimos que tu pedido de ${prodNames ? `*${prodNames}*` : 'nuestro catálogo'} quedó cancelado. ¿Te gustaría reactivarlo o podemos ayudarte con alguna duda o forma de pago? ¡Logremos recuperar tu compra con gusto! 😊🛍️`
-                  : `¡Hola ${nombreCliente || ''}! 👋 Vimos que estás interesado en: ${prodNames ? `*${prodNames}*` : 'nuestros productos'}. ¿Tienes alguna duda o te ayudamos a completar tu pedido? Escríbenos y con gusto te colaboramos. 😊`;
-                window.open(formatWhatsAppLink(telefonoCliente, text), '_blank');
-                if (isLead) handleUpdateLeadStatus(ped.id, 'contactado');
-              }}
-              className="btn-action-outline pedido-card-btn"
-              style={{
-                width: '100%',
-                height: '36px',
-                padding: '0 0.75rem',
-                justifyContent: 'space-between'
-              }}
-            >
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
-                {ped.estado === 'cancelado' ? (
-                  <Sparkles size={14} color="#ef4444" />
-                ) : (
-                  <MessageSquare size={14} color="#16a34a" />
-                )}
-                <span>{ped.estado === 'cancelado' ? 'Incentivar Venta' : 'Recuperar Venta'}</span>
-              </div>
-              <ChevronRight size={13} color="#94a3b8" />
-            </button>
-          ) : isExitoso ? (
+          {(isLead || ped.estado === 'cancelado') ? (() => {
+            const isContactado = ped.retargeting_estado === 'contactado' || ped.estado === 'mensaje_enviado' || Boolean(ped.fecha_envio_mensaje) || getOrderAuditLogs(ped).some(l => l.estado === 'mensaje_enviado' || l.estado === 'contactado');
+            return (
+              <button 
+                type="button" 
+                onClick={() => {
+                  const cleanPhone = (telefonoCliente || '').replace(/\D/g, '');
+                  if (!cleanPhone) { showToast('Teléfono inválido para WhatsApp', 'error'); return; }
+                  if (cleanPhone.length < 10) {
+                    showToast(`⚠️ Teléfono incompleto (${cleanPhone.length}/10 dígitos). Abre 'Ver detalles' y usa ✏️ Editar para corregirlo antes de contactar.`, 'error');
+                    return;
+                  }
+                  const targetPhone = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
+
+                  if (isContactado && ped.estado !== 'cancelado') {
+                    window.open(`https://wa.me/${targetPhone}`, '_blank');
+                    return;
+                  }
+
+                  const prodNames = Array.isArray(ped.productos) && ped.productos.length > 0
+                    ? ped.productos.map((p: any) => `${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ')
+                    : '';
+                  const text = ped.estado === 'cancelado'
+                    ? `¡Hola ${nombreCliente || ''}! 👋 Vimos que tu pedido de ${prodNames ? `*${prodNames}*` : 'nuestro catálogo'} quedó cancelado. ¿Te gustaría reactivarlo o podemos ayudarte con alguna duda o forma de pago? ¡Logremos recuperar tu compra con gusto! 😊🛍️`
+                    : `¡Hola ${nombreCliente || ''}! 👋 Vimos que estás interesado en: ${prodNames ? `*${prodNames}*` : 'nuestros productos'}. ¿Tienes alguna duda o te ayudamos a completar tu pedido? Escríbenos y con gusto te colaboramos. 😊`;
+                  window.open(formatWhatsAppLink(telefonoCliente, text), '_blank');
+                  const nowIso = new Date().toISOString();
+                  saveOrderAuditLog(ped.id, {
+                    estado: 'mensaje_enviado',
+                    usuario: getCurrentUserName(),
+                    fecha: nowIso,
+                    accion: ped.estado === 'cancelado' ? 'Mensaje para reactivar compra cancelada enviado por WhatsApp' : 'Mensaje de recuperación enviado por WhatsApp'
+                  }, 'mensaje_enviado', { fecha_envio_mensaje: nowIso });
+                  if (isLead) handleUpdateLeadStatus(ped.id, 'contactado');
+                  showToast('Mensaje enviado. Tarjeta actualizada ⏱️', 'success');
+                }}
+                className="btn-action-outline pedido-card-btn"
+                style={{
+                  width: '100%',
+                  height: '36px',
+                  padding: '0 0.75rem',
+                  justifyContent: 'space-between',
+                  fontFamily: "'Poppins', sans-serif"
+                }}
+              >
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
+                  {ped.estado === 'cancelado' ? (
+                    <Sparkles size={14} color="#ef4444" />
+                  ) : isContactado ? (
+                    <MessageSquare size={14} color="#0ea5e9" />
+                  ) : (
+                    <MessageSquare size={14} color="#16a34a" />
+                  )}
+                  <span style={{ fontWeight: 500 }}>
+                    {ped.estado === 'cancelado' ? 'Incentivar Venta' : isContactado ? 'Ver Chat / Respuestas' : 'Recuperar Venta'}
+                  </span>
+                </div>
+                <ChevronRight size={13} color="#94a3b8" />
+              </button>
+            );
+          })() : isExitoso ? (
             <button 
               type="button" 
               className="btn-action-outline pedido-card-btn"
@@ -1910,18 +2100,19 @@ export default function Admin() {
                 width: '100%',
                 height: '36px',
                 padding: '0 0.75rem',
-                justifyContent: 'space-between'
+                justifyContent: 'space-between',
+                fontFamily: "'Poppins', sans-serif"
               }}
             >
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
                 <FileText size={14} color="#16a34a" />
-                <span>Ver Factura / Recibo</span>
+                <span style={{ fontWeight: 500 }}>Ver Factura / Recibo</span>
               </div>
               <ChevronRight size={13} color="#94a3b8" />
             </button>
           ) : isContra ? (() => {
-            let btnText = 'Despachar pedido';
-            let btnIcon = <Truck size={14} color="#ea580c" />;
+            let btnText = 'Confirmar Pedido';
+            let btnIcon = <MessageSquare size={14} color="#16a34a" />;
 
             if (contraSubStatus === 'confirmado') {
               btnText = 'Despachar Pedido Confirmado';
@@ -1943,12 +2134,13 @@ export default function Admin() {
                   width: '100%',
                   height: '36px',
                   padding: '0 0.75rem',
-                  justifyContent: 'space-between'
+                  justifyContent: 'space-between',
+                  fontFamily: "'Poppins', sans-serif"
                 }}
               >
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
                   {btnIcon}
-                  <span>{btnText}</span>
+                  <span style={{ fontWeight: 500 }}>{btnText}</span>
                 </div>
                 <ChevronRight size={13} color="#94a3b8" />
               </button>
@@ -1962,45 +2154,64 @@ export default function Admin() {
                 width: '100%',
                 height: '36px',
                 padding: '0 0.75rem',
-                justifyContent: 'space-between'
+                justifyContent: 'space-between',
+                fontFamily: "'Poppins', sans-serif"
               }}
             >
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
                 <FileCheck size={14} color="#2563eb" />
-                <span>Verificar Comprobante</span>
+                <span style={{ fontWeight: 500 }}>Verificar Comprobante</span>
               </div>
               <ChevronRight size={13} color="#94a3b8" />
             </button>
-          ) : (
-            <button 
-              type="button" 
-              className="btn-action-outline pedido-card-btn"
-              onClick={() => {
-                const cleanPhone = (telefonoCliente || '').replace(/\D/g, '');
-                if (!cleanPhone) { showToast('Teléfono inválido para WhatsApp', 'error'); return; }
-                const prodNames = Array.isArray(ped.productos) && ped.productos.length > 0
-                  ? ped.productos.map((p: any) => p.nombre).join(', ')
-                  : '';
-                const uploadLink = `${window.location.origin}/pago/${ped.id.slice(0, 8)}`;
-                const metodosInfo = getFormattedMetodosPago();
-                const text = `¡Hola ${nombreCliente || ''}! 👋 Esperamos que estés muy bien. Recordamos que tu pedido de ${prodNames ? `*${prodNames}*` : 'nuestro catálogo'} por valor de *${ped.total.toLocaleString()}* está pendiente de pago.${metodosInfo}\nPor favor, sube tu comprobante de pago en el siguiente enlace para completar tu pedido:\n${uploadLink} 😊`;
-                const targetPhone = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
-                window.open(formatWhatsAppLink(targetPhone, text), '_blank');
-              }}
-              style={{
-                width: '100%',
-                height: '36px',
-                padding: '0 0.75rem',
-                justifyContent: 'space-between'
-              }}
-            >
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
-                <MessageSquare size={14} color="#16a34a" />
-                <span>Recordar pago</span>
-              </div>
-              <ChevronRight size={13} color="#94a3b8" />
-            </button>
-          )}
+          ) : (() => {
+            const isReminded = ped.estado === 'mensaje_enviado' || Boolean(ped.fecha_envio_mensaje) || getOrderAuditLogs(ped).some(l => l.estado === 'mensaje_enviado');
+            return (
+              <button 
+                type="button" 
+                className="btn-action-outline pedido-card-btn"
+                onClick={() => {
+                  const cleanPhone = (telefonoCliente || '').replace(/\D/g, '');
+                  if (!cleanPhone) { showToast('Teléfono inválido para WhatsApp', 'error'); return; }
+                  const targetPhone = cleanPhone.length === 10 ? '57' + cleanPhone : cleanPhone;
+
+                  if (isReminded) {
+                    window.open(`https://wa.me/${targetPhone}`, '_blank');
+                    return;
+                  }
+
+                  const prodNames = Array.isArray(ped.productos) && ped.productos.length > 0
+                    ? ped.productos.map((p: any) => p.nombre).join(', ')
+                    : '';
+                  const uploadLink = `${window.location.origin}/pago/${ped.id.slice(0, 8)}`;
+                  const metodosInfo = getFormattedMetodosPago();
+                  const text = `¡Hola ${nombreCliente || ''}! 👋 Esperamos que estés muy bien. Recordamos que tu pedido de ${prodNames ? `*${prodNames}*` : 'nuestro catálogo'} por valor de *${ped.total.toLocaleString()}* está pendiente de pago.${metodosInfo}\nPor favor, sube tu comprobante de pago en el siguiente enlace para completar tu pedido:\n${uploadLink} 😊`;
+                  window.open(formatWhatsAppLink(targetPhone, text), '_blank');
+                  const nowIso = new Date().toISOString();
+                  saveOrderAuditLog(ped.id, {
+                    estado: 'mensaje_enviado',
+                    usuario: getCurrentUserName(),
+                    fecha: nowIso,
+                    accion: 'Recordatorio de pago enviado al cliente por WhatsApp'
+                  }, 'mensaje_enviado', { fecha_envio_mensaje: nowIso });
+                  showToast('Recordatorio enviado. Tarjeta actualizada ⏱️', 'success');
+                }}
+                style={{
+                  width: '100%',
+                  height: '36px',
+                  padding: '0 0.75rem',
+                  justifyContent: 'space-between',
+                  fontFamily: "'Poppins', sans-serif"
+                }}
+              >
+                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <MessageSquare size={14} color={isReminded ? "#0ea5e9" : "#16a34a"} />
+                  <span style={{ fontWeight: 500 }}>{isReminded ? 'Ver Chat / Respuestas' : 'Recordar pago'}</span>
+                </div>
+                <ChevronRight size={13} color="#94a3b8" />
+              </button>
+            );
+          })()}
         </div>
       </div>
     );
@@ -3856,75 +4067,6 @@ export default function Admin() {
     }
   };
 
-  // ── AUDITORÍA Y ESTADOS DE CONTRA ENTREGA ──
-  interface EstadoAuditLog {
-    estado: string;
-    usuario: string;
-    fecha: string;
-    accion: string;
-  }
-
-  const getCurrentUserName = () => {
-    if (role === 'asesor') {
-      const adv = asesores.find(a => a.telefono === loggedAsesorPhone);
-      return adv ? `Asesor ${adv.nombre}` : 'Asesor';
-    }
-    if (role === 'mayorista') {
-      const may = mayoristas.find(m => m.telefono === loggedAsesorPhone);
-      return may ? `Mayorista ${may.nombre}` : 'Mayorista';
-    }
-    return configuracion?.admin_nombre || 'Administrador';
-  };
-
-  const getOrderAuditLogs = (ped: any): EstadoAuditLog[] => {
-    if (!ped) return [];
-    try {
-      const local = localStorage.getItem(`indisutex_audit_${ped.id}`);
-      if (local) {
-        const parsed = JSON.parse(local);
-        if (Array.isArray(parsed)) return parsed;
-      }
-      if (Array.isArray(ped.historial)) return ped.historial;
-    } catch (e) {
-      console.error('Error parsing audit logs:', e);
-    }
-    return [];
-  };
-
-  const saveOrderAuditLog = async (pedId: string, newLog: EstadoAuditLog, nextStatus: string, additionalUpdates: Record<string, any> = {}) => {
-    let currentLogs: EstadoAuditLog[] = [];
-    try {
-      const local = localStorage.getItem(`indisutex_audit_${pedId}`);
-      if (local) currentLogs = JSON.parse(local);
-    } catch {}
-
-    const updatedLogs = [...currentLogs, newLog];
-    localStorage.setItem(`indisutex_audit_${pedId}`, JSON.stringify(updatedLogs));
-
-    const payload: any = {
-      estado: nextStatus,
-      ...additionalUpdates
-    };
-
-    try {
-      const { error } = await supabase.from('pedidos').update({
-        ...payload,
-        historial: updatedLogs
-      }).eq('id', pedId);
-
-      if (error && error.message?.includes('column')) {
-        await supabase.from('pedidos').update(payload).eq('id', pedId);
-      }
-    } catch (e) {
-      await supabase.from('pedidos').update(payload).eq('id', pedId);
-    }
-
-    setPedidos(prev => prev.map(p => p.id === pedId ? { ...p, ...payload, historial: updatedLogs } : p));
-    setSelectedPedido(prev => prev && prev.id === pedId ? { ...prev, ...payload, historial: updatedLogs } : prev);
-
-    return updatedLogs;
-  };
-
   const handleAprobarPago = async (ped: Pedido) => {
     setLoading(true);
     try {
@@ -5471,7 +5613,7 @@ export default function Admin() {
     if (ped.isLead || ped.estado === 'abandonado') return 'abandonado';
     
     const mp = getMetodoPago(ped);
-    const isContra = mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra'));
+    const isContra = mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra')) || ped.estado === 'contra_entrega' || ped.estado === 'contra_confirmado' || ped.estado === 'contra_mensaje_enviado' || ped.estado === 'contra_despachado';
     if (isContra) {
       const cStatus = getContraStatus(ped);
       if (cStatus === 'confirmado') return 'contra_confirmado';
@@ -5490,6 +5632,7 @@ export default function Admin() {
     const existingPedido = pedidos.find(p => p.id === id);
     const existingLead = leads.find(l => l.id === id);
     const isLead = !existingPedido && (Boolean(ped.isLead) || Boolean(existingLead));
+    const nowIso = new Date().toISOString();
 
     try {
       if (nuevoDestino === 'cancelado') {
@@ -5503,6 +5646,12 @@ export default function Admin() {
           setSelectedPedido((prev: any) => prev ? { ...prev, estado: 'cancelado' } : null);
           await supabase.from('pedidos').update({ estado: 'cancelado' }).eq('id', id);
         }
+        await saveOrderAuditLog(id, {
+          estado: 'cancelado',
+          usuario: getCurrentUserName(),
+          fecha: nowIso,
+          accion: 'Tarjeta movida a Cancelados (Cambio manual)'
+        }, 'cancelado');
         showToast('Tarjeta movida a Cancelados 🚫', 'success');
       } else if (nuevoDestino === 'abandonado') {
         if (isLead) {
@@ -5514,80 +5663,154 @@ export default function Admin() {
           setSelectedPedido((prev: any) => prev ? { ...prev, estado: 'abandonado' } : null);
           await supabase.from('pedidos').update({ estado: 'abandonado' }).eq('id', id);
         }
+        await saveOrderAuditLog(id, {
+          estado: 'abandonado',
+          usuario: getCurrentUserName(),
+          fecha: nowIso,
+          accion: 'Tarjeta movida a Interesados (Abandonado)'
+        }, 'abandonado');
         showToast('Tarjeta movida a Interesados 🛒', 'success');
       } else if (nuevoDestino === 'contra_pendiente' || nuevoDestino === 'contra_entrega') {
+        let activeId = id;
         if (isLead) {
           const newOrder = await convertLeadToPedido(id, { metodo_pago: 'Contra Entrega', estado: 'contra_entrega', pantallazo_url: null });
-          if (newOrder) setSelectedPedido(newOrder);
+          if (newOrder) {
+            setSelectedPedido(newOrder);
+            activeId = newOrder.id;
+          }
         } else {
           setPedidos(prev => prev.map(p => p.id === id ? { ...p, metodo_pago: 'Contra Entrega', estado: 'contra_entrega' } : p));
           setSelectedPedido((prev: any) => prev ? { ...prev, metodo_pago: 'Contra Entrega', estado: 'contra_entrega' } : null);
           await supabase.from('pedidos').update({ metodo_pago: 'Contra Entrega', estado: 'contra_entrega' }).eq('id', id);
         }
+        await saveOrderAuditLog(activeId, {
+          estado: 'contra_entrega',
+          usuario: getCurrentUserName(),
+          fecha: nowIso,
+          accion: 'Tarjeta movida a Contra Entrega: Por Confirmar'
+        }, 'contra_entrega', { metodo_pago: 'Contra Entrega' });
         showToast('Tarjeta movida a Contra Entrega 🚚', 'success');
       } else if (nuevoDestino === 'contra_mensaje_enviado') {
+        let activeId = id;
         if (isLead) {
           const newOrder = await convertLeadToPedido(id, { metodo_pago: 'Contra Entrega', estado: 'mensaje_enviado', pantallazo_url: null });
-          if (newOrder) setSelectedPedido(newOrder);
+          if (newOrder) {
+            setSelectedPedido(newOrder);
+            activeId = newOrder.id;
+          }
         } else {
           setPedidos(prev => prev.map(p => p.id === id ? { ...p, metodo_pago: 'Contra Entrega', estado: 'mensaje_enviado' } : p));
           setSelectedPedido((prev: any) => prev ? { ...prev, metodo_pago: 'Contra Entrega', estado: 'mensaje_enviado' } : null);
           await supabase.from('pedidos').update({ metodo_pago: 'Contra Entrega', estado: 'mensaje_enviado' }).eq('id', id);
         }
+        await saveOrderAuditLog(activeId, {
+          estado: 'mensaje_enviado',
+          usuario: getCurrentUserName(),
+          fecha: nowIso,
+          accion: 'Tarjeta movida a Contra Entrega: Esperando Respuesta'
+        }, 'mensaje_enviado', { metodo_pago: 'Contra Entrega', fecha_envio_mensaje: nowIso });
         showToast('Tarjeta movida a Esperando Respuesta ⏱️', 'success');
       } else if (nuevoDestino === 'contra_confirmado') {
+        let activeId = id;
         if (isLead) {
           const newOrder = await convertLeadToPedido(id, { metodo_pago: 'Contra Entrega', estado: 'confirmado', pantallazo_url: null });
-          if (newOrder) setSelectedPedido(newOrder);
+          if (newOrder) {
+            setSelectedPedido(newOrder);
+            activeId = newOrder.id;
+          }
         } else {
           setPedidos(prev => prev.map(p => p.id === id ? { ...p, metodo_pago: 'Contra Entrega', estado: 'confirmado' } : p));
           setSelectedPedido((prev: any) => prev ? { ...prev, metodo_pago: 'Contra Entrega', estado: 'confirmado' } : null);
           await supabase.from('pedidos').update({ metodo_pago: 'Contra Entrega', estado: 'confirmado' }).eq('id', id);
         }
+        await saveOrderAuditLog(activeId, {
+          estado: 'confirmado',
+          usuario: getCurrentUserName(),
+          fecha: nowIso,
+          accion: 'Tarjeta marcada como Confirmada por Cliente ✓'
+        }, 'confirmado', { metodo_pago: 'Contra Entrega' });
         showToast('Tarjeta marcada como Confirmada ✓', 'success');
       } else if (nuevoDestino === 'contra_despachado') {
+        let activeId = id;
         if (isLead) {
           const newOrder = await convertLeadToPedido(id, { metodo_pago: 'Contra Entrega', estado: 'despachado', pantallazo_url: null });
-          if (newOrder) setSelectedPedido(newOrder);
+          if (newOrder) {
+            setSelectedPedido(newOrder);
+            activeId = newOrder.id;
+          }
         } else {
           setPedidos(prev => prev.map(p => p.id === id ? { ...p, metodo_pago: 'Contra Entrega', estado: 'despachado' } : p));
           setSelectedPedido((prev: any) => prev ? { ...prev, metodo_pago: 'Contra Entrega', estado: 'despachado' } : null);
           await supabase.from('pedidos').update({ metodo_pago: 'Contra Entrega', estado: 'despachado' }).eq('id', id);
         }
+        await saveOrderAuditLog(activeId, {
+          estado: 'despachado',
+          usuario: getCurrentUserName(),
+          fecha: nowIso,
+          accion: 'Tarjeta movida a Contra Entrega: Despachado con Guía'
+        }, 'despachado', { metodo_pago: 'Contra Entrega' });
         showToast('Tarjeta movida a Despachado 📦', 'success');
       } else if (nuevoDestino === 'pendiente') {
+        let activeId = id;
         if (isLead) {
           const newOrder = await convertLeadToPedido(id, { metodo_pago: 'Pago Anticipado', estado: 'pendiente', pantallazo_url: null });
-          if (newOrder) setSelectedPedido(newOrder);
+          if (newOrder) {
+            setSelectedPedido(newOrder);
+            activeId = newOrder.id;
+          }
         } else {
           setPedidos(prev => prev.map(p => p.id === id ? { ...p, metodo_pago: 'Pago Anticipado', estado: 'pendiente', pantallazo_url: null } : p));
           setSelectedPedido((prev: any) => prev ? { ...prev, metodo_pago: 'Pago Anticipado', estado: 'pendiente', pantallazo_url: null } : null);
           await supabase.from('pedidos').update({ metodo_pago: 'Pago Anticipado', estado: 'pendiente', pantallazo_url: null }).eq('id', id);
         }
+        await saveOrderAuditLog(activeId, {
+          estado: 'pendiente',
+          usuario: getCurrentUserName(),
+          fecha: nowIso,
+          accion: 'Tarjeta movida a Pendiente de Pago (Transferencia)'
+        }, 'pendiente', { metodo_pago: 'Pago Anticipado' });
         showToast('Tarjeta movida a Pendiente de Pago ⏳', 'success');
       } else if (nuevoDestino === 'comprobante') {
         const defaultReceipt = 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=300&q=80';
         const receiptUrl = ped.pantallazo_url || defaultReceipt;
+        let activeId = id;
         if (isLead) {
           const newOrder = await convertLeadToPedido(id, { metodo_pago: 'Pago Anticipado', estado: 'pendiente', pantallazo_url: receiptUrl });
-          if (newOrder) setSelectedPedido(newOrder);
+          if (newOrder) {
+            setSelectedPedido(newOrder);
+            activeId = newOrder.id;
+          }
         } else {
           setPedidos(prev => prev.map(p => p.id === id ? { ...p, metodo_pago: 'Pago Anticipado', estado: 'pendiente', pantallazo_url: receiptUrl } : p));
           setSelectedPedido((prev: any) => prev ? { ...prev, metodo_pago: 'Pago Anticipado', estado: 'pendiente', pantallazo_url: receiptUrl } : null);
           await supabase.from('pedidos').update({ metodo_pago: 'Pago Anticipado', estado: 'pendiente', pantallazo_url: receiptUrl }).eq('id', id);
         }
+        await saveOrderAuditLog(activeId, {
+          estado: 'pendiente',
+          usuario: getCurrentUserName(),
+          fecha: nowIso,
+          accion: 'Tarjeta movida a Comprobante Recibido (Por Verificar)'
+        }, 'pendiente', { metodo_pago: 'Pago Anticipado', pantallazo_url: receiptUrl });
         showToast('Tarjeta movida a Comprobante Recibido 📸', 'success');
       } else if (nuevoDestino === 'completado') {
+        let activeId = id;
         if (isLead) {
           const newOrder = await convertLeadToPedido(id, { estado: 'completado', metodo_pago: ped.metodo_pago || 'Pago Anticipado' });
           if (newOrder) {
             setSelectedPedido(newOrder);
+            activeId = newOrder.id;
             handleAprobarPago(newOrder);
           }
         } else {
           setSelectedPedido((prev: any) => prev ? { ...prev, estado: 'completado' } : null);
           handleAprobarPago(ped);
         }
+        await saveOrderAuditLog(activeId, {
+          estado: 'completado',
+          usuario: getCurrentUserName(),
+          fecha: nowIso,
+          accion: 'Venta Aprobada y Movida a Exitosas'
+        }, 'completado');
         showToast('¡Venta Aprobada y Movida a Exitosas ✅!', 'success');
       }
       cargarDatos();
@@ -17637,25 +17860,53 @@ export default function Admin() {
                                 <div style={{ display: 'flex', gap: '0.55rem', flexDirection: 'column' }}>
                                   {/* Estado 1: pendiente */}
                                   {contraStatus === 'pendiente' && (
-                                    <button
-                                      type="button"
-                                      className="btn-action-outline" style={{ width: '100%', padding: '0.7rem 0.9rem', fontSize: '0.85rem' }}
-                                      onClick={async () => {
-                                        const prodsStr = prodsList.map((p: any) => `${p.cantidad}x ${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ');
-                                        const msg = `¡Hola ${modalClienteNombre}! 👋 Confirmamos tu pedido de *${prodsStr}* por valor de *${modalTotal.toLocaleString()} COP* en modalidad *Pago Contra Entrega*. 🚚\n\nDirección registrada: *${selectedPedido.direccion}, ${selectedPedido.ciudad}*\n\n¿Nos confirmas si todos los datos están correctos para programar tu envío hoy mismo? 😊`;
-                                        window.open(formatWhatsAppLink(modalClienteTelefono, msg), '_blank');
-                                        const nowIso = new Date().toISOString();
-                                        await saveOrderAuditLog(selectedPedido.id, {
-                                          estado: 'mensaje_enviado',
-                                          usuario: getCurrentUserName(),
-                                          fecha: nowIso,
-                                          accion: 'Mensaje de confirmación enviado al cliente por WhatsApp'
-                                        }, 'mensaje_enviado', { fecha_envio_mensaje: nowIso });
-                                        showToast('Mensaje enviado. Esperando confirmación del cliente', 'success');
-                                      }}
-                                    >
-                                      <MessageSquare size={16} color="#16a34a" /> <span>Enviar Confirmación al Cliente</span>
-                                    </button>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+                                      <button
+                                        type="button"
+                                        className="btn-action-outline" style={{ width: '100%', padding: '0.7rem 0.9rem', fontSize: '0.85rem' }}
+                                        onClick={async () => {
+                                          const prodsStr = prodsList.map((p: any) => `${p.cantidad}x ${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ');
+                                          const msg = `¡Hola ${modalClienteNombre}! 👋 Confirmamos tu pedido de *${prodsStr}* por valor de *${modalTotal.toLocaleString()} COP* en modalidad *Pago Contra Entrega*. 🚚\n\nDirección registrada: *${selectedPedido.direccion}, ${selectedPedido.ciudad}*\n\n¿Nos confirmas si todos los datos están correctos para programar tu envío hoy mismo? 😊`;
+                                          window.open(formatWhatsAppLink(modalClienteTelefono, msg), '_blank');
+                                          const nowIso = new Date().toISOString();
+                                          await saveOrderAuditLog(selectedPedido.id, {
+                                            estado: 'mensaje_enviado',
+                                            usuario: getCurrentUserName(),
+                                            fecha: nowIso,
+                                            accion: 'Mensaje de confirmación enviado al cliente por WhatsApp'
+                                          }, 'mensaje_enviado', { fecha_envio_mensaje: nowIso });
+                                          showToast('Mensaje enviado. Esperando confirmación del cliente', 'success');
+                                        }}
+                                      >
+                                        <MessageSquare size={16} color="#16a34a" /> <span>Enviar Confirmación al Cliente</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        className="btn-action-outline"
+                                        style={{
+                                          width: '100%',
+                                          padding: '0.65rem 0.9rem',
+                                          fontSize: '0.84rem',
+                                          borderColor: '#86efac',
+                                          color: '#15803d',
+                                          background: '#f0fdf4',
+                                          fontFamily: "'Poppins', sans-serif",
+                                          fontWeight: 500
+                                        }}
+                                        onClick={async () => {
+                                          const nowIso = new Date().toISOString();
+                                          await saveOrderAuditLog(selectedPedido.id, {
+                                            estado: 'confirmado',
+                                            usuario: getCurrentUserName(),
+                                            fecha: nowIso,
+                                            accion: 'Cliente confirmó el pedido (verificado directamente)'
+                                          }, 'confirmado');
+                                          showToast('¡Pedido marcado como confirmado! ✓', 'success');
+                                        }}
+                                      >
+                                        <Check size={16} color="#16a34a" /> <span>Marcar como Confirmado (Ya verificado)</span>
+                                      </button>
+                                    </div>
                                   )}
 
                                   {/* Estado 2: mensaje_enviado */}
@@ -17852,182 +18103,409 @@ export default function Admin() {
                                   )}
                                 </div>
                               ) : (
-                                /* Flujo Normal para Transferencias */
+                                /* Flujo para Transferencias y Carritos Abandonados (Interesados) */
                                 <div style={{ display: 'flex', gap: '0.55rem', flexDirection: 'column' }}>
-                                  {selectedPedido.estado !== 'completado' && (
-                                    <button
-                                      type="button"
-                                      style={{
-                                        width: '100%',
-                                        padding: '0.7rem 1rem',
-                                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                                        color: '#ffffff',
-                                        border: 'none',
-                                        borderRadius: '12px',
-                                        cursor: 'pointer',
-                                        fontWeight: 600,
-                                        fontSize: '0.86rem',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '0.45rem',
-                                        fontFamily: "'Poppins', sans-serif",
-                                        boxShadow: '0 4px 14px rgba(16, 185, 129, 0.28)',
-                                        transition: 'all 0.15s ease'
-                                      }}
-                                      onClick={() => handleAprobarPago(selectedPedido)}
-                                    >
-                                      <CheckCircle size={16} color="#10b981" /> <span>Aprobar y Confirmar Pago</span>
-                                    </button>
-                                  )}
+                                  {isLeadOrder ? (() => {
+                                    const isLeadContacted = (selectedPedido as any).retargeting_estado === 'contactado' || selectedPedido.estado === 'mensaje_enviado' || Boolean(selectedPedido.fecha_envio_mensaje) || auditLogs.some(l => l.estado === 'mensaje_enviado' || l.estado === 'contactado');
+                                    const lastMsgLog = [...auditLogs].reverse().find(l => l.estado === 'mensaje_enviado' || l.estado === 'contactado');
+                                    const timeStr = lastMsgLog ? new Date(lastMsgLog.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
-                                  <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.35fr) minmax(0, 1fr)', gap: '0.45rem', width: '100%', boxSizing: 'border-box' }}>
-                                    <button
-                                      type="button"
-                                      style={{
-                                        width: '100%',
-                                        minWidth: 0,
-                                        padding: '0.65rem 0.5rem',
-                                        background: '#25D366',
-                                        color: '#ffffff',
-                                        border: 'none',
-                                        borderRadius: '10px',
-                                        cursor: 'pointer',
-                                        fontWeight: 500,
-                                        fontSize: '0.78rem',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '0.35rem',
-                                        fontFamily: "'Poppins', sans-serif",
-                                        boxShadow: '0 2px 8px rgba(37, 211, 102, 0.22)',
-                                        transition: 'all 0.15s ease',
-                                        boxSizing: 'border-box',
-                                        whiteSpace: 'nowrap'
-                                      }}
-                                      onClick={() => {
-                                        const cleanPhone = modalClienteTelefono.replace(/\D/g, '');
-                                        if (!cleanPhone || cleanPhone.length < 7) {
-                                          showToast('⚠️ Este cliente no tiene un número de WhatsApp registrado o es inválido', 'error');
-                                          return;
-                                        }
+                                    return (
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+                                        {isLeadContacted && (
+                                          <div style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'space-between',
+                                            background: '#fffbeb',
+                                            border: '1px solid #fef08a',
+                                            borderRadius: '8px',
+                                            padding: '0.35rem 0.65rem',
+                                            fontSize: '0.74rem',
+                                            color: '#92400e',
+                                            fontFamily: "'Poppins', sans-serif"
+                                          }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                              <Clock size={13} color="#d97706" />
+                                              <span style={{ fontWeight: 500 }}>Esperando respuesta del interesado</span>
+                                            </div>
+                                            {timeStr && (
+                                              <span style={{ fontSize: '0.68rem', color: '#b45309', fontWeight: 500 }}>
+                                                {timeStr}
+                                              </span>
+                                            )}
+                                          </div>
+                                        )}
 
-                                        let msg = '';
-                                        if (selectedPedido.pantallazo_url) {
-                                          msg = `¡Hola ${modalClienteNombre}! 👋 Te escribimos de *${configuracion?.nombre_negocio || 'nuestra tienda'}* respecto a tu pedido #${selectedPedido.id.slice(0, 8)}. ¡Estamos validando tu pago!`;
-                                        } else if (isLeadOrder) {
-                                          const prodsStr = prodsList.map((p: any) => `${p.cantidad || 1}x ${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ');
-                                          const uploadLink = `${window.location.origin}/pago/${selectedPedido.id.slice(0, 8)}`;
-                                          let metodosStr = '';
-                                          if (configuracion?.metodos_pago) {
-                                            try {
-                                              const parsed = JSON.parse(configuracion.metodos_pago);
-                                              if (Array.isArray(parsed) && parsed.length > 0) {
-                                                metodosStr = `💳 *Métodos de pago disponibles:*\n` + parsed.map((m: any) => `- ${m.banco} ${m.tipo ? `(${m.tipo})` : ''}: ${m.numero}`).join('\n') + `\n\n`;
-                                              } else {
-                                                metodosStr = `💳 *Métodos de pago disponibles:*\n${configuracion.metodos_pago}\n\n`;
+                                        <button
+                                          type="button"
+                                          style={{
+                                            width: '100%',
+                                            padding: '0.7rem 1rem',
+                                            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                            color: '#ffffff',
+                                            border: 'none',
+                                            borderRadius: '12px',
+                                            cursor: 'pointer',
+                                            fontWeight: 600,
+                                            fontSize: '0.86rem',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '0.45rem',
+                                            fontFamily: "'Poppins', sans-serif",
+                                            boxShadow: '0 4px 14px rgba(16, 185, 129, 0.28)'
+                                          }}
+                                          onClick={async () => {
+                                            const newOrder = await convertLeadToPedido(selectedPedido.id, {
+                                              metodo_pago: selectedPedido.metodo_pago && selectedPedido.metodo_pago !== 'Por definir' ? selectedPedido.metodo_pago : 'Contra Entrega',
+                                              estado: 'confirmado',
+                                              pantallazo_url: null
+                                            });
+                                            const nowIso = new Date().toISOString();
+                                            await saveOrderAuditLog(newOrder.id, {
+                                              estado: 'confirmado',
+                                              usuario: getCurrentUserName(),
+                                              fecha: nowIso,
+                                              accion: 'Interesado confirmó su pedido (convertido a pedido confirmado)'
+                                            }, 'confirmado');
+                                            setSelectedPedido(newOrder);
+                                            showToast('¡Interesado convertido a Pedido Confirmado ✓!', 'success');
+                                          }}
+                                        >
+                                          <Check size={16} color="#ffffff" /> <span>Confirmar y Convertir en Pedido ✓</span>
+                                        </button>
+
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.35fr) minmax(0, 1fr)', gap: '0.45rem', width: '100%', boxSizing: 'border-box' }}>
+                                          <button
+                                            type="button"
+                                            style={{
+                                              width: '100%',
+                                              minWidth: 0,
+                                              padding: '0.65rem 0.5rem',
+                                              background: '#25D366',
+                                              color: '#ffffff',
+                                              border: 'none',
+                                              borderRadius: '10px',
+                                              cursor: 'pointer',
+                                              fontWeight: 500,
+                                              fontSize: '0.78rem',
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              justifyContent: 'center',
+                                              gap: '0.35rem',
+                                              fontFamily: "'Poppins', sans-serif",
+                                              boxShadow: '0 2px 8px rgba(37, 211, 102, 0.22)',
+                                              boxSizing: 'border-box',
+                                              whiteSpace: 'nowrap'
+                                            }}
+                                            onClick={async () => {
+                                              const cleanPhone = modalClienteTelefono.replace(/\D/g, '');
+                                              if (!cleanPhone || cleanPhone.length < 7) {
+                                                showToast('⚠️ Este cliente no tiene un número de WhatsApp registrado o es inválido', 'error');
+                                                return;
                                               }
-                                            } catch {
-                                              metodosStr = `💳 *Métodos de pago disponibles:*\n${configuracion.metodos_pago}\n\n`;
-                                            }
-                                          }
-                                          const metodosInfo = metodosStr || `💳 *Datos de pago:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\n`;
-                                          msg = `¡Hola ${modalClienteNombre}! 👋\nTe escribimos de *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\nVimos que estás interesado en:\n${prodsStr ? `🛍️ *${prodsStr}*\n` : ''}💰 *Total: $${modalTotal.toLocaleString()} COP*\n\n${metodosInfo}¿Deseas completar tu pedido? Si ya realizaste el pago o quieres adjuntar tu comprobante, puedes subirlo aquí:\n${uploadLink}\n\n¡Quedamos atentos para colaborarte con gusto! 😊✨`;
-                                        } else {
-                                          const uploadLink = `${window.location.origin}/pago/${selectedPedido.id.slice(0, 8)}`;
-                                          let metodosStr = '';
-                                          if (configuracion?.metodos_pago) {
-                                            try {
-                                              const parsed = JSON.parse(configuracion.metodos_pago);
-                                              if (Array.isArray(parsed) && parsed.length > 0) {
-                                                metodosStr = `💳 *Métodos de pago:*\n` + parsed.map((m: any) => `- ${m.banco} ${m.tipo ? `(${m.tipo})` : ''}: ${m.numero}`).join('\n') + `\n\n`;
-                                              } else {
-                                                metodosStr = `💳 *Métodos de pago:*\n${configuracion.metodos_pago}\n\n`;
+                                              const prodsStr = prodsList.map((p: any) => `${p.cantidad || 1}x ${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ');
+                                              const uploadLink = `${window.location.origin}/pago/${selectedPedido.id.slice(0, 8)}`;
+                                              let metodosStr = '';
+                                              if (configuracion?.metodos_pago) {
+                                                try {
+                                                  const parsed = JSON.parse(configuracion.metodos_pago);
+                                                  if (Array.isArray(parsed) && parsed.length > 0) {
+                                                    metodosStr = `💳 *Métodos de pago disponibles:*\n` + parsed.map((m: any) => `- ${m.banco} ${m.tipo ? `(${m.tipo})` : ''}: ${m.numero}`).join('\n') + `\n\n`;
+                                                  } else {
+                                                    metodosStr = `💳 *Métodos de pago disponibles:*\n${configuracion.metodos_pago}\n\n`;
+                                                  }
+                                                } catch {
+                                                  metodosStr = `💳 *Métodos de pago disponibles:*\n${configuracion.metodos_pago}\n\n`;
+                                                }
                                               }
-                                            } catch {
-                                              metodosStr = `💳 *Métodos de pago:*\n${configuracion.metodos_pago}\n\n`;
-                                            }
-                                          }
-                                          const metodosInfo = metodosStr || `💳 *Datos del banco:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\n`;
-                                          msg = `¡Hola ${modalClienteNombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: $${modalTotal.toLocaleString()} COP*\n\n${metodosInfo}Para poder completar tu pedido, haz la captura de pantalla de tu pago o de transacción y envíala por este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
-                                        }
-                                        window.open(formatWhatsAppLink(modalClienteTelefono, msg), '_blank');
-                                      }}
-                                    >
-                                      <MessageSquare size={14} color="#16a34a" style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedPedido.pantallazo_url ? 'WhatsApp' : 'Cobrar WhatsApp'}</span>
+                                              const metodosInfo = metodosStr || `💳 *Datos de pago:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\n`;
+                                              const msg = `¡Hola ${modalClienteNombre}! 👋\nTe escribimos de *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\nVimos que estás interesado en:\n${prodsStr ? `🛍️ *${prodsStr}*\n` : ''}💰 *Total: $${modalTotal.toLocaleString()} COP*\n\n${metodosInfo}¿Deseas completar tu pedido? Si ya realizaste el pago o quieres adjuntar tu comprobante, puedes subirlo aquí:\n${uploadLink}\n\n¡Quedamos atentos para colaborarte con gusto! 😊✨`;
+                                              window.open(formatWhatsAppLink(modalClienteTelefono, msg), '_blank');
+                                              const nowIso = new Date().toISOString();
+                                              await saveOrderAuditLog(selectedPedido.id, {
+                                                estado: 'mensaje_enviado',
+                                                usuario: getCurrentUserName(),
+                                                fecha: nowIso,
+                                                accion: isLeadContacted ? 'Reenvío de mensaje de recuperación por WhatsApp' : 'Mensaje de recuperación enviado por WhatsApp'
+                                              }, 'mensaje_enviado', { fecha_envio_mensaje: nowIso });
+                                              if ((selectedPedido as any).isLead) handleUpdateLeadStatus(selectedPedido.id, 'contactado');
+                                              showToast('Mensaje enviado. Esperando respuesta ✓', 'success');
+                                            }}
+                                          >
+                                            <MessageSquare size={14} color="#ffffff" style={{ flexShrink: 0 }} />
+                                            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                              {isLeadContacted ? 'Reenviar WhatsApp' : 'Recuperar WhatsApp'}
+                                            </span>
+                                          </button>
 
-                                    </button>
+                                          <button
+                                            type="button"
+                                            style={{
+                                              width: '100%',
+                                              minWidth: 0,
+                                              padding: '0.65rem 0.5rem',
+                                              background: '#f8fafc',
+                                              color: '#334155',
+                                              border: '1.5px solid #cbd5e1',
+                                              borderRadius: '10px',
+                                              cursor: 'pointer',
+                                              fontWeight: 500,
+                                              fontSize: '0.78rem',
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              justifyContent: 'center',
+                                              gap: '0.35rem',
+                                              fontFamily: "'Poppins', sans-serif",
+                                              boxSizing: 'border-box',
+                                              whiteSpace: 'nowrap'
+                                            }}
+                                            onClick={() => {
+                                              const clean = modalClienteTelefono.replace(/\D/g, '');
+                                              const target = clean.length === 10 ? '57' + clean : clean;
+                                              window.open(`https://wa.me/${target}`, '_blank');
+                                            }}
+                                            title="Abrir chat para leer respuestas"
+                                          >
+                                            <MessageSquare size={13} color="#16a34a" /> <span>Ver Chat</span>
+                                          </button>
+                                        </div>
 
-                                    <button
-                                      type="button"
-                                      style={{
-                                        width: '100%',
-                                        minWidth: 0,
-                                        padding: '0.65rem 0.5rem',
-                                        background: '#f8fafc',
-                                        color: '#334155',
-                                        border: '1.5px solid #cbd5e1',
-                                        borderRadius: '10px',
-                                        cursor: 'pointer',
-                                        fontWeight: 500,
-                                        fontSize: '0.78rem',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '0.35rem',
-                                        fontFamily: "'Poppins', sans-serif",
-                                        transition: 'all 0.15s ease',
-                                        boxSizing: 'border-box',
-                                        whiteSpace: 'nowrap'
-                                      }}
-                                      onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.borderColor = '#94a3b8'; }}
-                                      onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
-                                      onClick={() => {
-                                        const cleanPhone = modalClienteTelefono.replace(/\D/g, '');
-                                        if (!cleanPhone || cleanPhone.length < 7) {
-                                          showToast('⚠️ Este cliente no tiene un número de WhatsApp registrado o es inválido', 'error');
-                                          return;
-                                        }
-                                        const guiaLink = `${window.location.origin}/guia/${selectedPedido.id.slice(0, 8)}`;
-                                        const msg = `¡Hola ${modalClienteNombre}! 👋 Tu pedido ha sido *VERIFICADO y DESPACHADO* 🚚\n\nPedido: ${prodsList.map((p: any) => `${p.cantidad}x ${p.nombre}`).join(', ')}\nTotal: $${modalTotal.toLocaleString()} COP\n\n📸 *Ver detalles y evidencia del envío aquí:* ${guiaLink}\n\n¡Tu paquete está en camino. Gracias por tu compra! 🚀`;
-                                        window.open(formatWhatsAppLink(modalClienteTelefono, msg), '_blank');
-                                      }}
-                                    >
-                                      <Truck size={15} color="var(--primary-color, #0ea5e9)" style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Despachar</span>
+                                        {selectedPedido.estado !== 'cancelado' && (
+                                          <button
+                                            type="button"
+                                            style={{
+                                              width: '100%',
+                                              padding: '0.55rem',
+                                              background: '#fff1f2',
+                                              color: '#e11d48',
+                                              border: '1px solid #fecdd3',
+                                              borderRadius: '10px',
+                                              cursor: 'pointer',
+                                              fontWeight: 500,
+                                              fontSize: '0.78rem',
+                                              marginTop: '0.15rem',
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              justifyContent: 'center',
+                                              gap: '0.35rem',
+                                              fontFamily: "'Poppins', sans-serif"
+                                            }}
+                                            onClick={async () => {
+                                              handleCancelarPedido(selectedPedido.id, Boolean((selectedPedido as any).isLead));
+                                              setSelectedPedido(prev => prev ? { ...prev, estado: 'cancelado' } : null);
+                                            }}
+                                          >
+                                            <XCircle size={14} color="#ef4444" /> <span>Cancelar Tarjeta</span>
+                                          </button>
+                                        )}
+                                      </div>
+                                    );
+                                  })() : (
+                                    /* Pedido normal de transferencia */
+                                    <>
+                                      {selectedPedido.estado !== 'completado' && (
+                                        <button
+                                          type="button"
+                                          style={{
+                                            width: '100%',
+                                            padding: '0.7rem 1rem',
+                                            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                            color: '#ffffff',
+                                            border: 'none',
+                                            borderRadius: '12px',
+                                            cursor: 'pointer',
+                                            fontWeight: 600,
+                                            fontSize: '0.86rem',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '0.45rem',
+                                            fontFamily: "'Poppins', sans-serif",
+                                            boxShadow: '0 4px 14px rgba(16, 185, 129, 0.28)',
+                                            transition: 'all 0.15s ease'
+                                          }}
+                                          onClick={() => handleAprobarPago(selectedPedido)}
+                                        >
+                                          <CheckCircle size={16} color="#ffffff" /> <span>Aprobar y Confirmar Pago</span>
+                                        </button>
+                                      )}
 
-                                    </button>
-                                  </div>
+                                      {(() => {
+                                        const isReminded = selectedPedido.estado === 'mensaje_enviado' || Boolean(selectedPedido.fecha_envio_mensaje) || auditLogs.some(l => l.estado === 'mensaje_enviado');
+                                        const lastMsgLog = [...auditLogs].reverse().find(l => l.estado === 'mensaje_enviado');
+                                        const timeStr = lastMsgLog ? new Date(lastMsgLog.fecha).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
 
-                                  {selectedPedido.estado !== 'cancelado' && (
-                                    <button
-                                      type="button"
-                                      style={{
-                                        width: '100%',
-                                        padding: '0.55rem',
-                                        background: '#fff1f2',
-                                        color: '#e11d48',
-                                        border: '1px solid #fecdd3',
-                                        borderRadius: '10px',
-                                        cursor: 'pointer',
-                                        fontWeight: 500,
-                                        fontSize: '0.78rem',
-                                        marginTop: '0.15rem',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '0.35rem',
-                                        fontFamily: "'Poppins', sans-serif",
-                                        transition: 'all 0.15s ease'
-                                      }}
-                                      onMouseEnter={e => { e.currentTarget.style.background = '#ffe4e6'; e.currentTarget.style.borderColor = '#fda4af'; }}
-                                      onMouseLeave={e => { e.currentTarget.style.background = '#fff1f2'; e.currentTarget.style.borderColor = '#fecdd3'; }}
-                                      onClick={() => {
-                                        handleCancelarPedido(selectedPedido.id);
-                                        setSelectedPedido(prev => prev ? { ...prev, estado: 'cancelado' } : null);
-                                      }}
-                                    >
-                                      <XCircle size={14} color="#ef4444" /> <span>Cancelar Pedido</span>
-                                    </button>
+                                        return (
+                                          <>
+                                            {isReminded && (
+                                              <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'space-between',
+                                                background: '#fffbeb',
+                                                border: '1px solid #fef08a',
+                                                borderRadius: '8px',
+                                                padding: '0.35rem 0.65rem',
+                                                fontSize: '0.74rem',
+                                                color: '#92400e',
+                                                fontFamily: "'Poppins', sans-serif"
+                                              }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                                                  <Clock size={13} color="#d97706" />
+                                                  <span style={{ fontWeight: 500 }}>Esperando comprobante de pago del cliente</span>
+                                                </div>
+                                                {timeStr && (
+                                                  <span style={{ fontSize: '0.68rem', color: '#b45309', fontWeight: 500 }}>
+                                                    {timeStr}
+                                                  </span>
+                                                )}
+                                              </div>
+                                            )}
+
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.35fr) minmax(0, 1fr)', gap: '0.45rem', width: '100%', boxSizing: 'border-box' }}>
+                                              <button
+                                                type="button"
+                                                style={{
+                                                  width: '100%',
+                                                  minWidth: 0,
+                                                  padding: '0.65rem 0.5rem',
+                                                  background: '#25D366',
+                                                  color: '#ffffff',
+                                                  border: 'none',
+                                                  borderRadius: '10px',
+                                                  cursor: 'pointer',
+                                                  fontWeight: 500,
+                                                  fontSize: '0.78rem',
+                                                  display: 'flex',
+                                                  alignItems: 'center',
+                                                  justifyContent: 'center',
+                                                  gap: '0.35rem',
+                                                  fontFamily: "'Poppins', sans-serif",
+                                                  boxShadow: '0 2px 8px rgba(37, 211, 102, 0.22)',
+                                                  boxSizing: 'border-box',
+                                                  whiteSpace: 'nowrap'
+                                                }}
+                                                onClick={async () => {
+                                                  const cleanPhone = modalClienteTelefono.replace(/\D/g, '');
+                                                  if (!cleanPhone || cleanPhone.length < 7) {
+                                                    showToast('⚠️ Este cliente no tiene un número de WhatsApp registrado o es inválido', 'error');
+                                                    return;
+                                                  }
+
+                                                  let msg = '';
+                                                  if (selectedPedido.pantallazo_url) {
+                                                    msg = `¡Hola ${modalClienteNombre}! 👋 Te escribimos de *${configuracion?.nombre_negocio || 'nuestra tienda'}* respecto a tu pedido #${selectedPedido.id.slice(0, 8)}. ¡Estamos validando tu pago!`;
+                                                  } else {
+                                                    const uploadLink = `${window.location.origin}/pago/${selectedPedido.id.slice(0, 8)}`;
+                                                    let metodosStr = '';
+                                                    if (configuracion?.metodos_pago) {
+                                                      try {
+                                                        const parsed = JSON.parse(configuracion.metodos_pago);
+                                                        if (Array.isArray(parsed) && parsed.length > 0) {
+                                                          metodosStr = `💳 *Métodos de pago:*\n` + parsed.map((m: any) => `- ${m.banco} ${m.tipo ? `(${m.tipo})` : ''}: ${m.numero}`).join('\n') + `\n\n`;
+                                                        } else {
+                                                          metodosStr = `💳 *Métodos de pago:*\n${configuracion.metodos_pago}\n\n`;
+                                                        }
+                                                      } catch {
+                                                        metodosStr = `💳 *Métodos de pago:*\n${configuracion.metodos_pago}\n\n`;
+                                                      }
+                                                    }
+                                                    const metodosInfo = metodosStr || `💳 *Datos del banco:*\nNúmero: ${configuracion?.whatsapp || ''}\nTitular: ${configuracion?.nombre_negocio || ''}\n\n`;
+                                                    msg = `¡Hola ${modalClienteNombre}! 👋\nGracias por tu pedido en *${configuracion?.nombre_negocio || 'nuestra tienda'}*.\n\n*Total a pagar: $${modalTotal.toLocaleString()} COP*\n\n${metodosInfo}Para poder completar tu pedido, haz la captura de pantalla de tu pago o de transacción y envíala por este enlace:\n${uploadLink}\n\n¡Tu pedido será despachado en cuanto verifiquemos el pago! 🚀`;
+                                                  }
+                                                  window.open(formatWhatsAppLink(modalClienteTelefono, msg), '_blank');
+                                                  const nowIso = new Date().toISOString();
+                                                  await saveOrderAuditLog(selectedPedido.id, {
+                                                    estado: 'mensaje_enviado',
+                                                    usuario: getCurrentUserName(),
+                                                    fecha: nowIso,
+                                                    accion: isReminded ? 'Reenvío de recordatorio de pago por WhatsApp' : 'Recordatorio de pago enviado por WhatsApp'
+                                                  }, 'mensaje_enviado', { fecha_envio_mensaje: nowIso });
+                                                  showToast('Mensaje enviado. Esperando comprobante de pago', 'success');
+                                                }}
+                                              >
+                                                <MessageSquare size={14} color="#ffffff" style={{ flexShrink: 0 }} />
+                                                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                  {selectedPedido.pantallazo_url ? 'WhatsApp' : isReminded ? 'Reenviar Cobro' : 'Cobrar WhatsApp'}
+                                                </span>
+                                              </button>
+
+                                              <button
+                                                type="button"
+                                                style={{
+                                                  width: '100%',
+                                                  minWidth: 0,
+                                                  padding: '0.65rem 0.5rem',
+                                                  background: '#f8fafc',
+                                                  color: '#334155',
+                                                  border: '1.5px solid #cbd5e1',
+                                                  borderRadius: '10px',
+                                                  cursor: 'pointer',
+                                                  fontWeight: 500,
+                                                  fontSize: '0.78rem',
+                                                  display: 'flex',
+                                                  alignItems: 'center',
+                                                  justifyContent: 'center',
+                                                  gap: '0.35rem',
+                                                  fontFamily: "'Poppins', sans-serif",
+                                                  transition: 'all 0.15s ease',
+                                                  boxSizing: 'border-box',
+                                                  whiteSpace: 'nowrap'
+                                                }}
+                                                onMouseEnter={e => { e.currentTarget.style.background = '#f1f5f9'; e.currentTarget.style.borderColor = '#94a3b8'; }}
+                                                onMouseLeave={e => { e.currentTarget.style.background = '#f8fafc'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+                                                onClick={() => {
+                                                  const cleanPhone = modalClienteTelefono.replace(/\D/g, '');
+                                                  if (!cleanPhone || cleanPhone.length < 7) {
+                                                    showToast('⚠️ Este cliente no tiene un número de WhatsApp registrado o es inválido', 'error');
+                                                    return;
+                                                  }
+                                                  const guiaLink = `${window.location.origin}/guia/${selectedPedido.id.slice(0, 8)}`;
+                                                  const msg = `¡Hola ${modalClienteNombre}! 👋 Tu pedido ha sido *VERIFICADO y DESPACHADO* 🚚\n\nPedido: ${prodsList.map((p: any) => `${p.cantidad}x ${p.nombre}`).join(', ')}\nTotal: $${modalTotal.toLocaleString()} COP\n\n📸 *Ver detalles y evidencia del envío aquí:* ${guiaLink}\n\n¡Tu paquete está en camino. Gracias por tu compra! 🚀`;
+                                                  window.open(formatWhatsAppLink(modalClienteTelefono, msg), '_blank');
+                                                }}
+                                              >
+                                                <Truck size={15} color="var(--primary-color, #0ea5e9)" style={{ flexShrink: 0 }} /> <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Despachar</span>
+                                              </button>
+                                            </div>
+
+                                            {selectedPedido.estado !== 'cancelado' && (
+                                              <button
+                                                type="button"
+                                                style={{
+                                                  width: '100%',
+                                                  padding: '0.55rem',
+                                                  background: '#fff1f2',
+                                                  color: '#e11d48',
+                                                  border: '1px solid #fecdd3',
+                                                  borderRadius: '10px',
+                                                  cursor: 'pointer',
+                                                  fontWeight: 500,
+                                                  fontSize: '0.78rem',
+                                                  marginTop: '0.15rem',
+                                                  display: 'flex',
+                                                  alignItems: 'center',
+                                                  justifyContent: 'center',
+                                                  gap: '0.35rem',
+                                                  fontFamily: "'Poppins', sans-serif",
+                                                  transition: 'all 0.15s ease'
+                                                }}
+                                                onMouseEnter={e => { e.currentTarget.style.background = '#ffe4e6'; e.currentTarget.style.borderColor = '#fda4af'; }}
+                                                onMouseLeave={e => { e.currentTarget.style.background = '#fff1f2'; e.currentTarget.style.borderColor = '#fecdd3'; }}
+                                                onClick={() => {
+                                                  handleCancelarPedido(selectedPedido.id);
+                                                  setSelectedPedido(prev => prev ? { ...prev, estado: 'cancelado' } : null);
+                                                }}
+                                              >
+                                                <XCircle size={14} color="#ef4444" /> <span>Cancelar Pedido</span>
+                                              </button>
+                                            )}
+                                          </>
+                                        );
+                                      })()}
+                                    </>
                                   )}
                                 </div>
                               )}
