@@ -230,6 +230,7 @@ export default function MenuDigital() {
   const [isRecommendedAnimating, setIsRecommendedAnimating] = useState(false);
   const [logoError, setLogoError] = useState(false);
   const [activeAsesor, setActiveAsesor] = useState<{ id?: string; nombre: string; foto_url?: string; telefono?: string; isMayorista?: boolean } | null>(null);
+  const [tiendaAsesores, setTiendaAsesores] = useState<any[]>([]);
   const [typoModal, setTypoModal] = useState<{ rawSlug: string; targetName: string; canonicalSlug: string } | null>(null);
   const [countdown, setCountdown] = useState(5);
   const heroVideoRef = useRef<HTMLVideoElement>(null);
@@ -431,6 +432,27 @@ export default function MenuDigital() {
             .or(tenantFilter);
 
           const storeAsesoresList = tenantAsesores || [];
+          setTiendaAsesores(storeAsesoresList);
+
+          // Consultar asesores que tienen turno ACTIVO actualmente en control_asistencia
+          let activeShiftAsesorIds: string[] = [];
+          try {
+            const { data: activeShifts } = await supabase
+              .from('control_asistencia')
+              .select('asesor_id')
+              .eq('tenant_id', storeTenant)
+              .eq('estado', 'activo')
+              .is('hora_salida', null);
+            if (activeShifts && activeShifts.length > 0) {
+              activeShiftAsesorIds = activeShifts.map((s: any) => s.asesor_id).filter(Boolean);
+            }
+          } catch (shiftErr) {
+            console.warn('Error verificando turnos activos de asesores:', shiftErr);
+          }
+
+          // Priorizar asesores que tienen turno activo hoy. Si nadie ha iniciado turno, usar la lista completa
+          const activeOnShiftAsesores = storeAsesoresList.filter(a => activeShiftAsesorIds.includes(a.id));
+          const rotationPool = activeOnShiftAsesores.length > 0 ? activeOnShiftAsesores : storeAsesoresList;
 
           if (phoneToQuery) {
             // Verificar si el teléfono solicitado pertenece a un asesor de ESTA tienda
@@ -452,15 +474,31 @@ export default function MenuDigital() {
             }
           }
 
-          if (!matchAsesor && storeAsesoresList.length > 0) {
-            // Rotar equitativamente y de manera estricta entre asesores de ESTA MISMA tienda
-            storeAsesoresList.sort((a, b) => (a.id || '').localeCompare(b.id || ''));
+          // Si el cliente no trae un teléfono explícito en la URL, verificar si este dispositivo ya tenía un asesor asignado previamente
+          if (!matchAsesor && !phoneToQuery) {
+            const deviceAssignedPhone = localStorage.getItem(`assigned_asesor_${storeTenant}`);
+            if (deviceAssignedPhone) {
+              const foundInStore = storeAsesoresList.find(a => {
+                const phones = (a.telefono || '').split(',').map((p: string) => p.replace(/\D/g, '')).filter(Boolean);
+                return phones.includes(deviceAssignedPhone) || phones.some(p => p.endsWith(deviceAssignedPhone) || deviceAssignedPhone.endsWith(p));
+              });
+              // Mantener al mismo asesor si está en turno activo (o si no hay nadie en turno activo)
+              if (foundInStore && (activeShiftAsesorIds.length === 0 || activeShiftAsesorIds.includes(foundInStore.id))) {
+                matchAsesor = foundInStore;
+                phoneToQuery = deviceAssignedPhone;
+              }
+            }
+          }
+
+          if (!matchAsesor && rotationPool.length > 0) {
+            // Rotar equitativamente y de manera estricta entre asesores activos de ESTA MISMA tienda
+            rotationPool.sort((a, b) => (a.id || '').localeCompare(b.id || ''));
             const storageKey = `last_asesor_idx_${storeTenant}`;
             let lastIdx = parseInt(localStorage.getItem(storageKey) || '-1', 10);
-            if (isNaN(lastIdx) || lastIdx < 0 || lastIdx >= storeAsesoresList.length) lastIdx = -1;
-            const nextIdx = (lastIdx + 1) % storeAsesoresList.length;
+            if (isNaN(lastIdx) || lastIdx < 0 || lastIdx >= rotationPool.length) lastIdx = -1;
+            const nextIdx = (lastIdx + 1) % rotationPool.length;
             localStorage.setItem(storageKey, nextIdx.toString());
-            matchAsesor = storeAsesoresList[nextIdx];
+            matchAsesor = rotationPool[nextIdx];
           }
 
           if (matchAsesor) {
@@ -478,6 +516,7 @@ export default function MenuDigital() {
             if (cleanAssignedPhone) {
               setOverrideWhatsApp(cleanAssignedPhone);
               sessionStorage.setItem(`ws_override_${storeTenant}`, cleanAssignedPhone);
+              localStorage.setItem(`assigned_asesor_${storeTenant}`, cleanAssignedPhone);
             }
           } else {
             // Si la tienda no tiene asesores registrados, NUNCA tomar asesores de otras tiendas.
@@ -1359,6 +1398,10 @@ export default function MenuDigital() {
     if (cleanOverride && cleanOverride !== cleanCustomer && cleanOverride.length >= 7) {
       return cleanOverride;
     }
+    const cleanActiveAsesor = (activeAsesor?.telefono || '').split(',')[0].replace(/\D/g, '');
+    if (cleanActiveAsesor && cleanActiveAsesor !== cleanCustomer && cleanActiveAsesor.length >= 7) {
+      return cleanActiveAsesor;
+    }
     return (configuracion?.whatsapp || '573185637317').replace(/\D/g, '');
   };
 
@@ -1555,7 +1598,7 @@ export default function MenuDigital() {
         // 2. Si no está en clientes_exitosos, buscar en el último pedido realizado
         const { data: ultimoPedido } = await supabase
           .from('pedidos')
-          .select('cliente_nombre, cliente_cedula, cliente_email, direccion, ciudad')
+          .select('cliente_nombre, cliente_cedula, cliente_email, direccion, ciudad, linea_whatsapp')
           .eq('cliente_telefono', cleanPhone)
           .eq('tenant_id', tenant)
           .order('created_at', { ascending: false })
@@ -1571,6 +1614,73 @@ export default function MenuDigital() {
             direccion: prev.direccion.trim() ? prev.direccion : (ultimoPedido.direccion || prev.direccion),
             ciudad: prev.ciudad.trim() ? prev.ciudad : (ultimoPedido.ciudad || prev.ciudad)
           }));
+        }
+
+        // 3. Fidelización / Retención de Asesor: Si el cliente ya fue atendido por un asesor en pedidos o leads previos,
+        // mantenerlo con su asesor asignado para evitar que el round-robin lo mueva a otra asesora
+        const isExplicitLink = sessionStorage.getItem(`ws_explicit_${tenant}`) === 'true';
+        if (!isExplicitLink) {
+          let prevAsesorPhone = ultimoPedido?.linea_whatsapp || null;
+          if (!prevAsesorPhone) {
+            const { data: ultimoLead } = await supabase
+              .from('leads')
+              .select('linea_whatsapp')
+              .eq('telefono', cleanPhone)
+              .eq('tenant_id', tenant)
+              .not('linea_whatsapp', 'is', null)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            if (ultimoLead?.linea_whatsapp) {
+              prevAsesorPhone = ultimoLead.linea_whatsapp;
+            }
+          }
+
+          if (prevAsesorPhone) {
+            const cleanPrev = prevAsesorPhone.replace(/\D/g, '');
+            const normPrev = cleanPrev.length >= 10 ? cleanPrev.slice(-10) : cleanPrev;
+            if (normPrev) {
+              let matchedAdvisor = (tiendaAsesores || []).find((a: any) => {
+                if (!a.telefono) return false;
+                return a.telefono.split(',').some((p: string) => {
+                  const cp = p.replace(/\D/g, '');
+                  const np = cp.length >= 10 ? cp.slice(-10) : cp;
+                  return np === normPrev;
+                });
+              });
+
+              if (!matchedAdvisor) {
+                const { data: dbAsesores } = await supabase
+                  .from('asesores')
+                  .select('id, nombre, telefono, foto_url')
+                  .eq('tenant_id', tenant);
+                if (dbAsesores) {
+                  matchedAdvisor = dbAsesores.find((a: any) => {
+                    if (!a.telefono) return false;
+                    return a.telefono.split(',').some((p: string) => {
+                      const cp = p.replace(/\D/g, '');
+                      const np = cp.length >= 10 ? cp.slice(-10) : cp;
+                      return np === normPrev;
+                    });
+                  });
+                }
+              }
+
+              if (matchedAdvisor) {
+                const primerTel = matchedAdvisor.telefono.split(',')[0].replace(/\D/g, '');
+                setOverrideWhatsApp(primerTel);
+                sessionStorage.setItem(`ws_override_${tenant}`, primerTel);
+                localStorage.setItem(`assigned_asesor_${tenant}`, primerTel);
+                setActiveAsesor({
+                  id: matchedAdvisor.id,
+                  nombre: matchedAdvisor.nombre || 'Asesor Comercial',
+                  foto_url: matchedAdvisor.foto_url || '',
+                  telefono: primerTel,
+                  isMayorista: false
+                });
+              }
+            }
+          }
         }
       } catch (e) {
         console.warn('Error autocompletando datos por teléfono:', e);
