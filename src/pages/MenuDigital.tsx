@@ -480,7 +480,7 @@ export default function MenuDigital() {
             if (deviceAssignedPhone) {
               const foundInStore = storeAsesoresList.find(a => {
                 const phones = (a.telefono || '').split(',').map((p: string) => p.replace(/\D/g, '')).filter(Boolean);
-                return phones.includes(deviceAssignedPhone) || phones.some(p => p.endsWith(deviceAssignedPhone) || deviceAssignedPhone.endsWith(p));
+                return phones.includes(deviceAssignedPhone) || phones.some((p: string) => p.endsWith(deviceAssignedPhone) || deviceAssignedPhone.endsWith(p));
               });
               // Mantener al mismo asesor si está en turno activo (o si no hay nadie en turno activo)
               if (foundInStore && (activeShiftAsesorIds.length === 0 || activeShiftAsesorIds.includes(foundInStore.id))) {
