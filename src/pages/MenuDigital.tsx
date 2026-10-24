@@ -2933,32 +2933,33 @@ export default function MenuDigital() {
                       const minMayor = Math.min(damaMayor, caballeroMayor, ninoMayor);
 
                       return (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem', marginTop: '0.12rem', fontFamily: "'Poppins', sans-serif" }}>
-                          {/* Fila 1: Precio Mayorista Mínimo + Badge */}
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.18rem', width: '100%', minWidth: 0 }}>
-                            <strong style={{ fontSize: '0.80rem', fontWeight: 600, color: '#166534', lineHeight: 1.15, whiteSpace: 'nowrap', flexShrink: 1 }}>
-                              Desde ${minMayor.toLocaleString('es-CO')}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.18rem', marginTop: '0.12rem', fontFamily: "'Poppins', sans-serif" }}>
+                          {/* Fila 1: Precio desde */}
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.2rem' }}>
+                            <span style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 400 }}>Desde</span>
+                            <strong style={{ fontSize: '0.88rem', fontWeight: 600, color: '#166534', lineHeight: 1.15 }}>
+                              ${minMayor.toLocaleString('es-CO')}
                             </strong>
-                            <span style={{ 
-                              fontSize: '0.54rem', 
-                              fontWeight: 600, 
-                              color: '#15803d', 
-                              background: '#dcfce7', 
-                              padding: '0.05rem 0.2rem', 
-                              borderRadius: '4px', 
-                              border: '1px solid #bbf7d0', 
-                              whiteSpace: 'nowrap', 
-                              flexShrink: 0,
-                              letterSpacing: '-0.2px' 
-                            }}>
-                              Mayor +6
-                            </span>
                           </div>
 
-                          {/* Fila 2: Ver opciones */}
-                          <div style={{ fontSize: '0.68rem', color: '#0284c7', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.15rem' }}>
-                            <span>Ver opciones</span>
-                            <span style={{ fontSize: '0.62rem' }}>➔</span>
+                          {/* Fila 2: Seleccionar opciones */}
+                          <div style={{ 
+                            fontSize: '0.64rem', 
+                            fontWeight: 500, 
+                            color: '#0284c7', 
+                            background: '#f0f9ff', 
+                            padding: '0.14rem 0.25rem', 
+                            borderRadius: '5px', 
+                            border: '1px solid #bae6fd',
+                            textAlign: 'center',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.18rem',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            <span>Seleccionar opciones</span>
+                            <span style={{ fontSize: '0.58rem' }}>➔</span>
                           </div>
                         </div>
                       );
@@ -2968,16 +2969,16 @@ export default function MenuDigital() {
                       return (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem', marginTop: '0.12rem', fontFamily: "'Poppins', sans-serif" }}>
                           {/* Fila 1: Precio Mayorista Destacado + Badge */}
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.18rem', width: '100%', minWidth: 0 }}>
-                            <strong style={{ fontSize: '0.88rem', fontWeight: 600, color: '#166534', lineHeight: 1.15, whiteSpace: 'nowrap', flexShrink: 1 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.15rem', width: '100%', minWidth: 0 }}>
+                            <strong style={{ fontSize: '0.84rem', fontWeight: 600, color: '#166534', lineHeight: 1.15, whiteSpace: 'nowrap', flexShrink: 1 }}>
                               ${priceMayor.toLocaleString('es-CO')}
                             </strong>
                             <span style={{ 
-                              fontSize: '0.54rem', 
+                              fontSize: '0.52rem', 
                               fontWeight: 600, 
                               color: '#15803d', 
                               background: '#dcfce7', 
-                              padding: '0.05rem 0.2rem', 
+                              padding: '0.04rem 0.18rem', 
                               borderRadius: '4px', 
                               border: '1px solid #bbf7d0', 
                               whiteSpace: 'nowrap', 
@@ -2989,7 +2990,7 @@ export default function MenuDigital() {
                           </div>
 
                           {/* Fila 2: Precio Detal Compacto (Nunca se corta) */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.68rem', lineHeight: 1.2 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.66rem', lineHeight: 1.2 }}>
                             <span style={{ color: '#64748b', fontWeight: 400 }}>Detal:</span>
                             <span style={{ fontWeight: 500, color: '#64748b', textDecoration: ((producto.descuento !== undefined && producto.descuento > 0) || descuentoPromocional > 0) ? 'line-through' : 'none' }}>
                               ${priceDetal.toLocaleString('es-CO')}
