@@ -2944,22 +2944,16 @@ export default function MenuDigital() {
 
                           {/* Fila 2: Seleccionar opciones */}
                           <div style={{ 
-                            fontSize: '0.64rem', 
+                            fontSize: '0.70rem', 
                             fontWeight: 500, 
                             color: '#0284c7', 
-                            background: '#f0f9ff', 
-                            padding: '0.14rem 0.25rem', 
-                            borderRadius: '5px', 
-                            border: '1px solid #bae6fd',
-                            textAlign: 'center',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '0.18rem',
+                            gap: '0.2rem',
                             whiteSpace: 'nowrap'
                           }}>
                             <span>Seleccionar opciones</span>
-                            <span style={{ fontSize: '0.58rem' }}>➔</span>
+                            <span style={{ fontSize: '0.65rem' }}>➔</span>
                           </div>
                         </div>
                       );
@@ -4765,31 +4759,21 @@ export default function MenuDigital() {
                         }
 
                         // Cuando no hay unidades seleccionadas aún (al abrir el modal)
-                        const damaDetal = famBreakdown?.dama.detal || 36000;
                         const damaMayor = famBreakdown?.dama.mayor || 26000;
-                        const caballeroDetal = famBreakdown?.caballero.detal || 41000;
                         const caballeroMayor = famBreakdown?.caballero.mayor || 31000;
-                        const ninoDetal = famBreakdown?.nino.detal || 32000;
                         const ninoMayor = famBreakdown?.nino.mayor || 22000;
 
                         const minMayor = Math.min(damaMayor, caballeroMayor, ninoMayor);
-                        const minDetal = Math.min(damaDetal, caballeroDetal, ninoDetal);
 
                         return (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', textAlign: 'right', alignItems: 'flex-end', fontFamily: "'Poppins', sans-serif" }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'flex-end', whiteSpace: 'nowrap' }}>
                               <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#15803d', background: '#dcfce7', padding: '0.12rem 0.4rem', borderRadius: '5px', border: '1px solid #bbf7d0' }}>
-                                Por mayor +6:
+                                Por mayor:
                               </span>
                               <strong style={{ fontSize: '1.24rem', fontWeight: 600, color: '#166534' }}>
                                 Desde ${minMayor.toLocaleString('es-CO')}
                               </strong>
-                            </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', justifyContent: 'flex-end', whiteSpace: 'nowrap' }}>
-                              <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 400 }}>Detal: Desde</span>
-                              <span style={{ fontSize: '0.88rem', fontWeight: 500, color: '#64748b' }}>
-                                ${minDetal.toLocaleString('es-CO')}
-                              </span>
                             </div>
                           </div>
                         );
@@ -4841,8 +4825,8 @@ export default function MenuDigital() {
 
                 {/* ── PRODUCTO FAMILIAR OPTION SELECTOR WITH QUANTITIES ── */}
                 {isFamiliarProduct(detailProduct) && detailProduct.precios_familia ? (
-                  <div className="detail-tallas" style={{ width: '100%', background: '#f0f9ff', padding: '0.85rem', borderRadius: '14px', border: '1.5px solid #bae6fd', marginBottom: '0.85rem' }}>
-                    <p className="detail-section-label" style={{ color: '#0369a1', fontWeight: 600, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.88rem', fontFamily: "'Poppins', sans-serif" }}>
+                  <div className="detail-tallas" style={{ width: '100%', background: 'rgb(248, 250, 252)', padding: '0.85rem', borderRadius: '16px', border: '1.5px solid #e2e8f0', marginBottom: '0.85rem', boxSizing: 'border-box' }}>
+                    <p className="detail-section-label" style={{ color: '#0f172a', fontWeight: 600, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.88rem', fontFamily: "'Poppins', sans-serif" }}>
                       👨‍👩‍👧‍👦 Selecciona la Cantidad para cada Opción y Talla:
                     </p>
 
