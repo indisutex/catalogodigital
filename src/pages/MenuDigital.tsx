@@ -2942,9 +2942,9 @@ export default function MenuDigital() {
                             </strong>
                           </div>
 
-                          {/* Fila 2: Seleccionar opciones */}
+                          {/* Fila 2: Ver opciones */}
                           <div style={{ 
-                            fontSize: '0.70rem', 
+                            fontSize: '0.72rem', 
                             fontWeight: 500, 
                             color: '#0284c7', 
                             display: 'flex',
@@ -2952,7 +2952,7 @@ export default function MenuDigital() {
                             gap: '0.2rem',
                             whiteSpace: 'nowrap'
                           }}>
-                            <span>Seleccionar opciones</span>
+                            <span>Ver opciones</span>
                             <span style={{ fontSize: '0.65rem' }}>➔</span>
                           </div>
                         </div>
