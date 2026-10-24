@@ -4764,40 +4764,25 @@ export default function MenuDigital() {
                         const ninoDetal = famBreakdown?.nino.detal || 32000;
                         const ninoMayor = famBreakdown?.nino.mayor || 22000;
 
+                        const minMayor = Math.min(damaMayor, caballeroMayor, ninoMayor);
+                        const minDetal = Math.min(damaDetal, caballeroDetal, ninoDetal);
+
                         return (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.24rem', textAlign: 'right', alignItems: 'flex-end', fontFamily: "'Poppins', sans-serif" }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', justifyContent: 'flex-end', marginBottom: '0.05rem' }}>
-                              <span style={{ fontSize: '0.68rem', fontWeight: 600, color: '#15803d', background: '#dcfce7', padding: '0.12rem 0.45rem', borderRadius: '5px', border: '1px solid #bbf7d0' }}>
-                                Precios Mayoristas (+6):
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', textAlign: 'right', alignItems: 'flex-end', fontFamily: "'Poppins', sans-serif" }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'flex-end', whiteSpace: 'nowrap' }}>
+                              <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#15803d', background: '#dcfce7', padding: '0.12rem 0.4rem', borderRadius: '5px', border: '1px solid #bbf7d0' }}>
+                                Por mayor +6:
+                              </span>
+                              <strong style={{ fontSize: '1.24rem', fontWeight: 600, color: '#166534' }}>
+                                Desde ${minMayor.toLocaleString('es-CO')}
+                              </strong>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', justifyContent: 'flex-end', whiteSpace: 'nowrap' }}>
+                              <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 400 }}>Detal: Desde</span>
+                              <span style={{ fontSize: '0.88rem', fontWeight: 500, color: '#64748b' }}>
+                                ${minDetal.toLocaleString('es-CO')}
                               </span>
                             </div>
-                            {/* Dama */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'flex-end', whiteSpace: 'nowrap' }}>
-                              <span style={{ fontSize: '0.74rem', color: '#475569', fontWeight: 500 }}>👩 Dama:</span>
-                              <strong style={{ fontSize: '1.02rem', fontWeight: 600, color: '#166534' }}>
-                                ${damaMayor.toLocaleString('es-CO')}
-                              </strong>
-                              <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>(Detal ${damaDetal.toLocaleString('es-CO')})</span>
-                            </div>
-                            {/* Caballero */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'flex-end', whiteSpace: 'nowrap' }}>
-                              <span style={{ fontSize: '0.74rem', color: '#475569', fontWeight: 500 }}>👨 Caballero:</span>
-                              <strong style={{ fontSize: '1.02rem', fontWeight: 600, color: '#166534' }}>
-                                ${caballeroMayor.toLocaleString('es-CO')}
-                              </strong>
-                              <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>(Detal ${caballeroDetal.toLocaleString('es-CO')})</span>
-                            </div>
-                            {/* Infantil */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'flex-end', whiteSpace: 'nowrap' }}>
-                              <span style={{ fontSize: '0.74rem', color: '#475569', fontWeight: 500 }}>👶 Niños:</span>
-                              <strong style={{ fontSize: '1.02rem', fontWeight: 600, color: '#166534' }}>
-                                ${ninoMayor.toLocaleString('es-CO')}
-                              </strong>
-                              <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>(Detal ${ninoDetal.toLocaleString('es-CO')})</span>
-                            </div>
-                            <span style={{ fontSize: '0.64rem', color: '#0369a1', fontWeight: 500 }}>
-                              Combina 6 prendas en el carrito para tarifa mayorista
-                            </span>
                           </div>
                         );
                       }
@@ -4856,105 +4841,29 @@ export default function MenuDigital() {
                     {(() => {
                       const totalFamUnits = Object.values(famOptionQuantities).reduce((sum, q) => sum + (q > 0 ? q : 0), 0);
                       const isBulkEligible = (totalUnits + totalFamUnits >= 6) || buyerType === 'mayorista';
-                      const famBreakdown = getFamilyPriceBreakdown(detailProduct);
 
                       return (
                         <>
-                          {/* Banner informativo de precios al por mayor */}
+                          {/* Banner informativo compacto */}
                           <div style={{ 
                             display: 'flex', 
                             alignItems: 'center', 
                             gap: '0.45rem', 
-                            padding: '0.55rem 0.75rem', 
-                            background: isBulkEligible ? '#dcfce7' : '#ffffff', 
-                            borderRadius: '10px', 
-                            border: isBulkEligible ? '1.5px solid #86efac' : '1px solid #cbd5e1',
+                            padding: '0.45rem 0.65rem', 
+                            background: isBulkEligible ? '#dcfce7' : '#f0fdf4', 
+                            borderRadius: '8px', 
+                            border: isBulkEligible ? '1.5px solid #86efac' : '1px solid #bbf7d0',
                             marginBottom: '0.75rem',
-                            fontSize: '0.78rem',
-                            color: isBulkEligible ? '#15803d' : '#334155',
+                            fontSize: '0.76rem',
+                            color: '#166534',
                             fontFamily: "'Poppins', sans-serif"
                           }}>
-                            <span style={{ fontSize: '1.05rem' }}>{isBulkEligible ? '🎉' : '💡'}</span>
-                            <div style={{ display: 'flex', flexDirection: 'column' }}>
-                              <span style={{ fontWeight: isBulkEligible ? 600 : 500 }}>
-                                {isBulkEligible 
-                                  ? `¡Precio al por mayor activado! (${totalFamUnits} prendas seleccionadas)`
-                                  : `Precios al por mayor automáticos llevando 6 o más prendas`}
-                              </span>
-                              {!isBulkEligible && (
-                                <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 400 }}>
-                                  {totalFamUnits > 0 
-                                    ? `Llevas ${totalFamUnits} prendas (te faltan ${Math.max(1, 6 - (totalUnits + totalFamUnits))} para activar precio mayor). Puedes combinar adultos e infantil.`
-                                    : 'Puedes combinar cualquier opción de adulto e infantil para alcanzar las 6 prendas.'}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Guía Rápida de Precios Detal vs Mayor */}
-                          <div style={{
-                            background: '#ffffff',
-                            borderRadius: '10px',
-                            border: '1px solid #e2e8f0',
-                            padding: '0.65rem 0.75rem',
-                            marginBottom: '0.85rem',
-                            boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
-                          }}>
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.45rem', borderBottom: '1px dashed #e2e8f0', paddingBottom: '0.35rem' }}>
-                              <span style={{ fontSize: '0.74rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.35rem', fontFamily: "'Poppins', sans-serif" }}>
-                                🏷️ Guía de Precios: Detal vs Mayor (+6 prendas)
-                              </span>
-                              <span style={{ fontSize: '0.66rem', fontWeight: 500, color: '#15803d', background: '#dcfce7', padding: '0.12rem 0.4rem', borderRadius: '4px', border: '1px solid #bbf7d0', fontFamily: "'Poppins', sans-serif" }}>
-                                {isBulkEligible ? '✓ Mayor activo' : 'Aplica desde 6 uds'}
-                              </span>
-                            </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))', gap: '0.4rem', fontSize: '0.72rem', fontFamily: "'Poppins', sans-serif" }}>
-                              {famBreakdown?.dama && !isFamOptionDisabled(detailProduct, 'Dama Única') && (
-                                <div style={{ background: '#f8fafc', padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                                  <div style={{ fontWeight: 600, color: '#334155' }}>👩 Dama Única</div>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.15rem' }}>
-                                    <span style={{ color: '#64748b' }}>Detal: <strong style={{ fontWeight: 600, color: '#334155' }}>${famBreakdown.dama.detal.toLocaleString('es-CO')}</strong></span>
-                                    <span style={{ color: '#15803d', fontWeight: 600 }}>Mayor: ${famBreakdown.dama.mayor.toLocaleString('es-CO')}</span>
-                                  </div>
-                                </div>
-                              )}
-                              {famBreakdown?.caballero && !isFamOptionDisabled(detailProduct, 'Caballero Única') && (
-                                <div style={{ background: '#f8fafc', padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                                  <div style={{ fontWeight: 600, color: '#334155' }}>👨 Caballero Única</div>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.15rem' }}>
-                                    <span style={{ color: '#64748b' }}>Detal: <strong style={{ fontWeight: 600, color: '#334155' }}>${famBreakdown.caballero.detal.toLocaleString('es-CO')}</strong></span>
-                                    <span style={{ color: '#15803d', fontWeight: 600 }}>Mayor: ${famBreakdown.caballero.mayor.toLocaleString('es-CO')}</span>
-                                  </div>
-                                </div>
-                              )}
-                              {famBreakdown?.damaPlus && !isFamOptionDisabled(detailProduct, 'Dama Plus') && (
-                                <div style={{ background: '#f8fafc', padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                                  <div style={{ fontWeight: 600, color: '#334155' }}>👩 Dama Plus</div>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.15rem' }}>
-                                    <span style={{ color: '#64748b' }}>Detal: <strong style={{ fontWeight: 600, color: '#334155' }}>${famBreakdown.damaPlus.detal.toLocaleString('es-CO')}</strong></span>
-                                    <span style={{ color: '#15803d', fontWeight: 600 }}>Mayor: ${famBreakdown.damaPlus.mayor.toLocaleString('es-CO')}</span>
-                                  </div>
-                                </div>
-                              )}
-                              {famBreakdown?.unisex2xl && !isFamOptionDisabled(detailProduct, '2XL Unisex') && (
-                                <div style={{ background: '#f8fafc', padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                                  <div style={{ fontWeight: 600, color: '#334155' }}>🧑 2XL Unisex</div>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.15rem' }}>
-                                    <span style={{ color: '#64748b' }}>Detal: <strong style={{ fontWeight: 600, color: '#334155' }}>${famBreakdown.unisex2xl.detal.toLocaleString('es-CO')}</strong></span>
-                                    <span style={{ color: '#15803d', fontWeight: 600 }}>Mayor: ${famBreakdown.unisex2xl.mayor.toLocaleString('es-CO')}</span>
-                                  </div>
-                                </div>
-                              )}
-                              {famBreakdown?.nino && !isFamOptionDisabled(detailProduct, '2/4') && (
-                                <div style={{ background: '#f8fafc', padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
-                                  <div style={{ fontWeight: 600, color: '#334155' }}>👶 Infantil (Niños)</div>
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.15rem' }}>
-                                    <span style={{ color: '#64748b' }}>Detal: <strong style={{ fontWeight: 600, color: '#334155' }}>${famBreakdown.nino.detal.toLocaleString('es-CO')}</strong></span>
-                                    <span style={{ color: '#15803d', fontWeight: 600 }}>Mayor: ${famBreakdown.nino.mayor.toLocaleString('es-CO')}</span>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
+                            <span style={{ fontSize: '1rem' }}>{isBulkEligible ? '🎉' : '🏷️'}</span>
+                            <span style={{ fontWeight: 500 }}>
+                              {isBulkEligible 
+                                ? `¡Precios por mayor aplicados! (${totalFamUnits} prendas)` 
+                                : 'Precios mayoristas a partir de 6 prendas (puedes combinar opciones)'}
+                            </span>
                           </div>
 
                           {/* ADULTOS / UNISEX */}
@@ -4977,14 +4886,10 @@ export default function MenuDigital() {
                                   {adultOpts.map(opt => {
                                     const optDetalRaw = getActiveUnitPrice(detailProduct, opt.key, 'Única', 'detal');
                                     const optMayorRaw = getActiveUnitPrice(detailProduct, opt.key, 'Única', 'mayorista');
-                                    const optDetal = getEffectivePrice({ ...detailProduct, precio: optDetalRaw }, 'detal', markupPorcentaje, ajustesProductos, descuentoPromocional);
-                                    let optMayor = getEffectivePrice({ ...detailProduct, precio: optMayorRaw }, 'mayorista', markupPorcentaje, ajustesProductos, descuentoPromocional);
+                                    const optDetal = getEffectivePrice({ ...detailProduct, precio: optDetalRaw, precio_detal: optDetalRaw, precio_por_mayor: optMayorRaw, familia_opcion_key: opt.adminKey, talla: opt.adminKey } as any, 'detal', markupPorcentaje, ajustesProductos, descuentoPromocional);
+                                    let optMayor = getEffectivePrice({ ...detailProduct, precio: optMayorRaw, precio_detal: optDetalRaw, precio_por_mayor: optMayorRaw, familia_opcion_key: opt.adminKey, talla: opt.adminKey } as any, 'mayorista', markupPorcentaje, ajustesProductos, descuentoPromocional);
                                     if (!optMayor || optMayor >= optDetal) {
-                                      if (opt.key === 'dama_unica') optMayor = 26000;
-                                      else if (opt.key === 'caballero_unica') optMayor = 31000;
-                                      else if (opt.key === 'dama_plus') optMayor = 31000;
-                                      else if (opt.key === 'unisex_2xl') optMayor = 34000;
-                                      else optMayor = Math.max(0, optDetal - 10000);
+                                      optMayor = (optMayorRaw > 0 && optMayorRaw < optDetal) ? optMayorRaw : Math.max(0, optDetal - 10000);
                                     }
                                     const qty = famOptionQuantities[opt.key] || 0;
                                     const hasMayor = optMayor > 0 && optMayor < optDetal;
@@ -5009,32 +4914,32 @@ export default function MenuDigital() {
                                         </div>
                                         
                                         {/* PRECIOS REALES TRANSPARENTES */}
-                                        <div style={{ margin: '0.25rem 0 0.35rem', display: 'flex', flexDirection: 'column', gap: '0.12rem' }}>
-                                          <div style={{ 
-                                            fontSize: '0.74rem', 
-                                            color: isBulkEligible ? '#94a3b8' : '#0284c7', 
-                                            fontWeight: 600, 
-                                            textDecoration: isBulkEligible ? 'line-through' : 'none', 
-                                            fontFamily: "'Poppins', sans-serif" 
-                                          }}>
-                                            <span style={{ fontSize: '0.62rem', fontWeight: 400, color: '#64748b' }}>Detal: </span>
-                                            ${optDetal.toLocaleString('es-CO')}
-                                          </div>
+                                        <div style={{ margin: '0.25rem 0 0.35rem', display: 'flex', flexDirection: 'column', gap: '0.14rem' }}>
                                           {hasMayor && (
                                             <div style={{ 
-                                              fontSize: '0.72rem', 
+                                              fontSize: '0.78rem', 
                                               fontWeight: 600, 
-                                              color: isBulkEligible ? '#15803d' : '#166534', 
-                                              background: isBulkEligible ? '#dcfce7' : '#f0fdf4',
-                                              padding: '0.12rem 0.35rem',
-                                              borderRadius: '5px',
-                                              border: isBulkEligible ? '1px solid #86efac' : '1px solid #bbf7d0',
+                                              color: '#15803d', 
+                                              background: '#dcfce7',
+                                              padding: '0.16rem 0.35rem',
+                                              borderRadius: '6px',
+                                              border: '1px solid #bbf7d0',
                                               fontFamily: "'Poppins', sans-serif" 
                                             }}>
-                                              <span style={{ fontSize: '0.60rem', fontWeight: 500 }}>Mayor (+6): </span>
+                                              <span style={{ fontSize: '0.62rem', fontWeight: 500 }}>Mayor (+6): </span>
                                               ${optMayor.toLocaleString('es-CO')}
                                             </div>
                                           )}
+                                          <div style={{ 
+                                            fontSize: '0.70rem', 
+                                            color: '#64748b', 
+                                            fontWeight: 500, 
+                                            textDecoration: isBulkEligible ? 'line-through' : 'none', 
+                                            fontFamily: "'Poppins', sans-serif" 
+                                          }}>
+                                            <span style={{ fontSize: '0.62rem', fontWeight: 400, color: '#94a3b8' }}>Detal: </span>
+                                            ${optDetal.toLocaleString('es-CO')}
+                                          </div>
                                         </div>
 
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', marginTop: 'auto' }}>
@@ -5077,10 +4982,10 @@ export default function MenuDigital() {
                                   {kidOpts.map(sz => {
                                     const optDetalRaw = getActiveUnitPrice(detailProduct, 'nino', sz, 'detal');
                                     const optMayorRaw = getActiveUnitPrice(detailProduct, 'nino', sz, 'mayorista');
-                                    const optDetal = getEffectivePrice({ ...detailProduct, precio: optDetalRaw }, 'detal', markupPorcentaje, ajustesProductos, descuentoPromocional);
-                                    let optMayor = getEffectivePrice({ ...detailProduct, precio: optMayorRaw }, 'mayorista', markupPorcentaje, ajustesProductos, descuentoPromocional);
+                                    const optDetal = getEffectivePrice({ ...detailProduct, precio: optDetalRaw, precio_detal: optDetalRaw, precio_por_mayor: optMayorRaw, familia_opcion_key: sz, talla: sz } as any, 'detal', markupPorcentaje, ajustesProductos, descuentoPromocional);
+                                    let optMayor = getEffectivePrice({ ...detailProduct, precio: optMayorRaw, precio_detal: optDetalRaw, precio_por_mayor: optMayorRaw, familia_opcion_key: sz, talla: sz } as any, 'mayorista', markupPorcentaje, ajustesProductos, descuentoPromocional);
                                     if (!optMayor || optMayor >= optDetal) {
-                                      optMayor = sz === '14/16' ? 22500 : (sz === '18' ? 26000 : 22000);
+                                      optMayor = (optMayorRaw > 0 && optMayorRaw < optDetal) ? optMayorRaw : (sz === '14/16' ? 22500 : (sz === '18' ? 26000 : 22000));
                                     }
                                     const qty = famOptionQuantities[sz] || 0;
                                     const hasMayor = optMayor > 0 && optMayor < optDetal;
@@ -5105,32 +5010,32 @@ export default function MenuDigital() {
                                         </div>
                                         
                                         {/* PRECIOS REALES TRANSPARENTES */}
-                                        <div style={{ margin: '0.25rem 0 0.35rem', display: 'flex', flexDirection: 'column', gap: '0.12rem' }}>
-                                          <div style={{ 
-                                            fontSize: '0.74rem', 
-                                            color: isBulkEligible ? '#94a3b8' : '#0284c7', 
-                                            fontWeight: 600, 
-                                            textDecoration: isBulkEligible ? 'line-through' : 'none', 
-                                            fontFamily: "'Poppins', sans-serif" 
-                                          }}>
-                                            <span style={{ fontSize: '0.62rem', fontWeight: 400, color: '#64748b' }}>Detal: </span>
-                                            ${optDetal.toLocaleString('es-CO')}
-                                          </div>
+                                        <div style={{ margin: '0.25rem 0 0.35rem', display: 'flex', flexDirection: 'column', gap: '0.14rem' }}>
                                           {hasMayor && (
                                             <div style={{ 
-                                              fontSize: '0.72rem', 
+                                              fontSize: '0.78rem', 
                                               fontWeight: 600, 
-                                              color: isBulkEligible ? '#15803d' : '#166534', 
-                                              background: isBulkEligible ? '#dcfce7' : '#f0fdf4',
-                                              padding: '0.12rem 0.35rem',
-                                              borderRadius: '5px',
-                                              border: isBulkEligible ? '1px solid #86efac' : '1px solid #bbf7d0',
+                                              color: '#15803d', 
+                                              background: '#dcfce7',
+                                              padding: '0.16rem 0.35rem',
+                                              borderRadius: '6px',
+                                              border: '1px solid #bbf7d0',
                                               fontFamily: "'Poppins', sans-serif" 
                                             }}>
-                                              <span style={{ fontSize: '0.60rem', fontWeight: 500 }}>Mayor (+6): </span>
+                                              <span style={{ fontSize: '0.62rem', fontWeight: 500 }}>Mayor (+6): </span>
                                               ${optMayor.toLocaleString('es-CO')}
                                             </div>
                                           )}
+                                          <div style={{ 
+                                            fontSize: '0.70rem', 
+                                            color: '#64748b', 
+                                            fontWeight: 500, 
+                                            textDecoration: isBulkEligible ? 'line-through' : 'none', 
+                                            fontFamily: "'Poppins', sans-serif" 
+                                          }}>
+                                            <span style={{ fontSize: '0.62rem', fontWeight: 400, color: '#94a3b8' }}>Detal: </span>
+                                            ${optDetal.toLocaleString('es-CO')}
+                                          </div>
                                         </div>
 
                                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem', marginTop: 'auto' }}>
