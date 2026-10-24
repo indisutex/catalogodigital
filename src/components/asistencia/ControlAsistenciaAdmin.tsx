@@ -15,7 +15,7 @@ import {
   Trash2
 } from 'lucide-react';
 import type { Asesor, RegistroAsistencia } from '../../types';
-import { asistenciaService, type AsistenciaFilters } from '../../lib/asistenciaService';
+import { asistenciaService, type AsistenciaFilters, type ConfiguracionHorarioAsistencia } from '../../lib/asistenciaService';
 
 interface ControlAsistenciaAdminProps {
   tenantId: string;
@@ -57,6 +57,14 @@ export const ControlAsistenciaAdmin: React.FC<ControlAsistenciaAdminProps> = ({
   const [editObservaciones, setEditObservaciones] = useState<string>('');
   const [editEstado, setEditEstado] = useState<'activo' | 'finalizado' | 'sin_salida'>('finalizado');
   const [savingEdit, setSavingEdit] = useState(false);
+
+  // Modal de configuración de horarios y alertas
+  const [showConfigModal, setShowConfigModal] = useState(false);
+  const [configHorario, setConfigHorario] = useState<ConfiguracionHorarioAsistencia>(() => 
+    asistenciaService.getConfiguracionHorario(tenantId)
+  );
+  const [savingConfig, setSavingConfig] = useState(false);
+  const [configFeedback, setConfigFeedback] = useState<string | null>(null);
 
   // Calcular fechas según preset
   const handlePresetChange = (preset: 'hoy' | 'ayer' | 'semana' | 'mes' | 'personalizado') => {
@@ -304,6 +312,32 @@ export const ControlAsistenciaAdmin: React.FC<ControlAsistenciaAdminProps> = ({
           >
             <RefreshCw size={14} className={refreshing ? 'spin' : ''} />
             <span>Actualizar</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setConfigHorario(asistenciaService.getConfiguracionHorario(tenantId));
+              setConfigFeedback(null);
+              setShowConfigModal(true);
+            }}
+            style={{
+              padding: '0.55rem 0.95rem',
+              background: '#f0f9ff',
+              border: '1.5px solid #bae6fd',
+              borderRadius: '10px',
+              fontSize: '0.8rem',
+              color: '#0369a1',
+              cursor: 'pointer',
+              fontWeight: 500,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              fontFamily: "'Poppins', sans-serif"
+            }}
+          >
+            <Clock size={14} style={{ color: '#0284c7' }} />
+            <span>⚙️ Horarios y Alertas</span>
           </button>
 
           <button
@@ -1505,6 +1539,274 @@ export const ControlAsistenciaAdmin: React.FC<ControlAsistenciaAdminProps> = ({
               >
                 <Check size={16} />
                 <span>{savingEdit ? 'Guardando...' : 'Guardar Cambios'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL DE ADMINISTRADOR: CONFIGURACIÓN DE HORARIOS Y ALERTA DE SALIDA ── */}
+      {showConfigModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.55)',
+            backdropFilter: 'blur(3px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 99999,
+            padding: '1rem',
+            fontFamily: "'Poppins', sans-serif"
+          }}
+          onClick={() => !savingConfig && setShowConfigModal(false)}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '20px',
+              maxWidth: '480px',
+              width: '100%',
+              padding: '1.75rem',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              border: '1px solid #f1f5f9'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+              <div
+                style={{
+                  width: '44px',
+                  height: '44px',
+                  borderRadius: '50%',
+                  background: '#f0f9ff',
+                  color: '#0284c7',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}
+              >
+                <Clock size={22} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600, color: '#0f172a' }}>
+                  Horarios y Notificación de Salida
+                </h3>
+                <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.78rem', color: '#64748b', fontWeight: 400 }}>
+                  Avisar automáticamente a los asesores cuando se acerque su hora de salida.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowConfigModal(false)}
+                style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#94a3b8' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {configFeedback && (
+              <div
+                style={{
+                  background: '#dcfce7',
+                  border: '1px solid #86efac',
+                  color: '#15803d',
+                  borderRadius: '10px',
+                  padding: '0.65rem 0.85rem',
+                  fontSize: '0.8rem',
+                  fontWeight: 500,
+                  marginBottom: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem'
+                }}
+              >
+                <Check size={16} />
+                <span>{configFeedback}</span>
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1.5rem' }}>
+              {/* Switch activar notificaciones */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '0.75rem 0.95rem',
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '12px'
+                }}
+              >
+                <div>
+                  <span style={{ fontSize: '0.84rem', fontWeight: 600, color: '#0f172a', display: 'block' }}>
+                    Activar Notificaciones de Salida
+                  </span>
+                  <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                    Avisa en pantalla, campana y navegador al asesor.
+                  </span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={configHorario.activarNotificacionSalida}
+                  onChange={e => setConfigHorario(prev => ({ ...prev, activarNotificacionSalida: e.target.checked }))}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#0284c7' }}
+                />
+              </div>
+
+              {/* Duración de turno en horas */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: '#334155', marginBottom: '0.35rem' }}>
+                  ⏱️ Duración habitual de turno (horas):
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max="24"
+                  step="0.5"
+                  value={configHorario.duracionTurnoHoras}
+                  onChange={e => setConfigHorario(prev => ({ ...prev, duracionTurnoHoras: parseFloat(e.target.value) || 8 }))}
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 0.85rem',
+                    borderRadius: '10px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.84rem',
+                    fontFamily: "'Poppins', sans-serif",
+                    boxSizing: 'border-box'
+                  }}
+                />
+                <span style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.2rem', display: 'block' }}>
+                  Jornada estándar: 8 horas laborales.
+                </span>
+              </div>
+
+              {/* Hora fija comercial de salida */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: '#334155', marginBottom: '0.35rem' }}>
+                  🏪 Hora estimada de salida / cierre diario de tienda:
+                </label>
+                <input
+                  type="time"
+                  value={configHorario.horaSalidaTienda || '18:00'}
+                  onChange={e => setConfigHorario(prev => ({ ...prev, horaSalidaTienda: e.target.value }))}
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 0.85rem',
+                    borderRadius: '10px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.84rem',
+                    fontFamily: "'Poppins', sans-serif",
+                    boxSizing: 'border-box'
+                  }}
+                />
+                <span style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.2rem', display: 'block' }}>
+                  Ejemplo: 18:00 (6:00 PM) o 19:00 (7:00 PM).
+                </span>
+              </div>
+
+              {/* Minutos de anticipación */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 500, color: '#334155', marginBottom: '0.35rem' }}>
+                  🔔 Anticipación del recordatorio:
+                </label>
+                <select
+                  value={configHorario.minutosAnticipacion}
+                  onChange={e => setConfigHorario(prev => ({ ...prev, minutosAnticipacion: parseInt(e.target.value, 10) || 30 }))}
+                  style={{
+                    width: '100%',
+                    padding: '0.65rem 0.85rem',
+                    borderRadius: '10px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.84rem',
+                    fontFamily: "'Poppins', sans-serif",
+                    boxSizing: 'border-box',
+                    background: '#ffffff'
+                  }}
+                >
+                  <option value="15">15 minutos antes</option>
+                  <option value="30">30 minutos antes (Recomendado)</option>
+                  <option value="45">45 minutos antes</option>
+                  <option value="60">60 minutos (1 hora) antes</option>
+                </select>
+              </div>
+
+              {/* Mensaje de vista previa */}
+              <div
+                style={{
+                  background: '#fffbeb',
+                  border: '1px solid #fde68a',
+                  borderRadius: '12px',
+                  padding: '0.75rem',
+                  fontSize: '0.76rem',
+                  color: '#92400e',
+                  lineHeight: 1.4
+                }}
+              >
+                <span>💡 <strong>Mensaje que verá el asesor:</strong></span>
+                <div style={{ marginTop: '0.2rem', fontStyle: 'italic', fontWeight: 500 }}>
+                  "⏰ Se acerca tu hora de salida, por favor cierra turno."
+                </div>
+              </div>
+            </div>
+
+            {/* Botones de acción */}
+            <div style={{ display: 'flex', gap: '0.65rem' }}>
+              <button
+                type="button"
+                onClick={() => setShowConfigModal(false)}
+                style={{
+                  flex: 1,
+                  padding: '0.75rem',
+                  background: '#f1f5f9',
+                  color: '#475569',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontWeight: 500,
+                  fontSize: '0.84rem',
+                  cursor: 'pointer',
+                  fontFamily: "'Poppins', sans-serif"
+                }}
+              >
+                Cerrar
+              </button>
+
+              <button
+                type="button"
+                disabled={savingConfig}
+                onClick={() => {
+                  setSavingConfig(true);
+                  asistenciaService.guardarConfiguracionHorario(tenantId, configHorario);
+                  setConfigFeedback('¡Configuración guardada exitosamente! ✓');
+                  setSavingConfig(false);
+                  setTimeout(() => {
+                    setShowConfigModal(false);
+                    setConfigFeedback(null);
+                  }, 1200);
+                }}
+                style={{
+                  flex: 1.3,
+                  padding: '0.75rem',
+                  background: '#0284c7',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontWeight: 600,
+                  fontSize: '0.85rem',
+                  cursor: savingConfig ? 'not-allowed' : 'pointer',
+                  fontFamily: "'Poppins', sans-serif",
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.35rem',
+                  boxShadow: '0 4px 12px rgba(2, 132, 199, 0.25)'
+                }}
+              >
+                <Check size={16} />
+                <span>{savingConfig ? 'Guardando...' : 'Guardar Horarios'}</span>
               </button>
             </div>
           </div>

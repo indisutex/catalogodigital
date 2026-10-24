@@ -902,6 +902,7 @@ export default function Admin() {
     return savedRole === 'asesor';
   });
   const [isLogoutAttemptModalOpen, setIsLogoutAttemptModalOpen] = useState(false);
+  const [forceOpenAsesorCheckOutModal, setForceOpenAsesorCheckOutModal] = useState(false);
   const [loggedAsesorPhone, setLoggedAsesorPhone] = useState<string | null>(() => {
     return localStorage.getItem(`admin_asesor_phone_${getTenantId()}`);
   });
@@ -1013,6 +1014,12 @@ export default function Admin() {
 
   const handleAtenderNotificacion = (notif: any) => {
     handleDismissAlert(notif.id);
+    if (notif.actionTab === 'cerrar_turno') {
+      setForceOpenAsesorCheckOutModal(true);
+      setShowNotificationsPopover(false);
+      if (viewingAdvisorAlerts) setViewingAdvisorAlerts(null);
+      return;
+    }
     if (notif.pedidoId) {
       const p = pedidos.find(item => item.id === notif.pedidoId);
       if (p) setSelectedPedido(p);
@@ -2410,6 +2417,24 @@ export default function Admin() {
       }
     }
 
+    // 5. Notificación de control de asistencia: Se acerca tu hora de salida / Cerrar turno
+    if (!isMayorista && jornadaActivaAsesor && jornadaActivaAsesor.estado === 'activo') {
+      const salidaStatus = asistenciaService.verificarAproximacionSalida(jornadaActivaAsesor);
+      if (salidaStatus.isApproaching || salidaStatus.isCompleted) {
+        list.push({
+          id: `asistencia-salida-${jornadaActivaAsesor.id}-${salidaStatus.isCompleted ? 'fin' : 'cerca'}`,
+          type: salidaStatus.isCompleted ? 'danger' : 'warning',
+          title: salidaStatus.isCompleted ? '🛑 Fin de turno alcanzado' : '⏰ Se acerca tu hora de salida',
+          message: salidaStatus.isCompleted
+            ? `Has cumplido ${salidaStatus.duracionTexto} de jornada. Se acerca tu hora de salida, por favor cierra turno.`
+            : `Llevas ${salidaStatus.duracionTexto} de jornada. Se acerca tu hora de salida, por favor cierra turno.`,
+          actionTab: 'cerrar_turno',
+          actionLabel: 'Cerrar Turno',
+          time: new Date().toISOString()
+        });
+      }
+    }
+
     return list.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
   };
   const [nuevoAsesorNombre, setNuevoAsesorNombre] = useState('');
@@ -2900,6 +2925,37 @@ export default function Admin() {
     setToast({ message, type });
     setTimeout(() => setToast(null), 4500);
   }
+
+  // Notificación proactiva a asesores cuando se acerca su hora de salida
+  useEffect(() => {
+    if (role !== 'asesor' || !jornadaActivaAsesor || jornadaActivaAsesor.estado !== 'activo') return;
+
+    const checkAndNotifyExit = () => {
+      const status = asistenciaService.verificarAproximacionSalida(jornadaActivaAsesor);
+      if (status.isApproaching || status.isCompleted) {
+        const key = `notif_salida_enviada_${jornadaActivaAsesor.id}_${status.isCompleted ? 'fin' : 'cerca'}`;
+        const alreadyNotified = sessionStorage.getItem(key);
+        if (!alreadyNotified) {
+          sessionStorage.setItem(key, 'true');
+          showToast(
+            status.isCompleted 
+              ? `🛑 Has cumplido tu jornada. Se acerca tu hora de salida, por favor cierra turno.`
+              : `⏰ Se acerca tu hora de salida, por favor cierra turno.`,
+            status.isCompleted ? 'error' : 'success'
+          );
+          asistenciaService.enviarNotificacionNavegador(
+            status.isCompleted ? '🛑 Fin de Turno - Control Asistencia' : '⏰ Control de Asistencia',
+            status.mensaje || 'Se acerca tu hora de salida, por favor cierra turno.',
+            `salida_${jornadaActivaAsesor.id}`
+          );
+        }
+      }
+    };
+
+    checkAndNotifyExit();
+    const interval = setInterval(checkAndNotifyExit, 25000);
+    return () => clearInterval(interval);
+  }, [role, jornadaActivaAsesor]);
 
   // Cambiar de pestaña cerrando cualquier formulario abierto
   function handleTabChange(tab: TabType) {
@@ -6176,7 +6232,7 @@ export default function Admin() {
       rawList = getAdminNotifications();
     }
     return rawList.filter(n => !dismissedAlertIds.includes(n.id));
-  }, [role, currentAsesor, currentMayorista, leads, pedidos, productos, listaPqrs, dismissedAlertIds]);
+  }, [role, currentAsesor, currentMayorista, leads, pedidos, productos, listaPqrs, dismissedAlertIds, jornadaActivaAsesor]);
 
   const activeNotificationsCount = activeNotifications.length;
 
@@ -8818,6 +8874,8 @@ export default function Admin() {
                 isLogoutAttemptModalOpen={isLogoutAttemptModalOpen}
                 onCancelLogoutAttempt={() => setIsLogoutAttemptModalOpen(false)}
                 onConfirmLogoutWithoutCheckOut={() => handleLogout(true)}
+                forceOpenCheckOutModal={forceOpenAsesorCheckOutModal}
+                onCloseForceCheckOutModal={() => setForceOpenAsesorCheckOutModal(false)}
               />
             )}
             {isAuthenticated && (

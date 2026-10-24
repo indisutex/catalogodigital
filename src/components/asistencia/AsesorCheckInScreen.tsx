@@ -66,6 +66,8 @@ export const AsesorCheckInScreen: React.FC<AsesorCheckInScreenProps> = ({
         asesorTelefono: asesor.telefono,
         observaciones: observacion.trim() || undefined
       });
+      // Solicitar permiso de notificaciones para avisarle cuando se acerque su hora de salida
+      asistenciaService.solicitarPermisoNotificacionesNavegador();
       setCheckedInRegistro(reg);
     } catch (err: any) {
       console.error('Error al registrar entrada:', err);
