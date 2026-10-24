@@ -2933,36 +2933,32 @@ export default function MenuDigital() {
                       const minMayor = Math.min(damaMayor, caballeroMayor, ninoMayor);
 
                       return (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.12rem', marginTop: '0.18rem', fontFamily: "'Poppins', sans-serif" }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem', marginTop: '0.12rem', fontFamily: "'Poppins', sans-serif" }}>
                           {/* Fila 1: Precio Mayorista Mínimo + Badge */}
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.3rem', width: '100%' }}>
-                            <strong style={{ fontSize: '1.18rem', fontWeight: 600, color: '#166534', lineHeight: 1.15 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.18rem', width: '100%', minWidth: 0 }}>
+                            <strong style={{ fontSize: '0.80rem', fontWeight: 600, color: '#166534', lineHeight: 1.15, whiteSpace: 'nowrap', flexShrink: 1 }}>
                               Desde ${minMayor.toLocaleString('es-CO')}
                             </strong>
-                            <span style={{ fontSize: '0.62rem', fontWeight: 600, color: '#15803d', background: '#dcfce7', padding: '0.08rem 0.35rem', borderRadius: '4px', border: '1px solid #bbf7d0', whiteSpace: 'nowrap' }}>
+                            <span style={{ 
+                              fontSize: '0.54rem', 
+                              fontWeight: 600, 
+                              color: '#15803d', 
+                              background: '#dcfce7', 
+                              padding: '0.05rem 0.2rem', 
+                              borderRadius: '4px', 
+                              border: '1px solid #bbf7d0', 
+                              whiteSpace: 'nowrap', 
+                              flexShrink: 0,
+                              letterSpacing: '-0.2px' 
+                            }}>
                               Mayor +6
                             </span>
                           </div>
 
-                          {/* Fila 2: Tarifas Mayoristas Familiares en Barra Compacta */}
-                          <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            background: '#f8fafc',
-                            padding: '0.22rem 0.4rem',
-                            borderRadius: '6px',
-                            border: '1px solid #e2e8f0',
-                            fontSize: '0.68rem',
-                            color: '#334155',
-                            fontWeight: 500,
-                            whiteSpace: 'nowrap'
-                          }}>
-                            <span>👩 ${damaMayor.toLocaleString('es-CO')}</span>
-                            <span style={{ color: '#cbd5e1' }}>•</span>
-                            <span>👨 ${caballeroMayor.toLocaleString('es-CO')}</span>
-                            <span style={{ color: '#cbd5e1' }}>•</span>
-                            <span>👶 ${ninoMayor.toLocaleString('es-CO')}</span>
+                          {/* Fila 2: Ver opciones */}
+                          <div style={{ fontSize: '0.68rem', color: '#0284c7', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '0.15rem' }}>
+                            <span>Ver opciones</span>
+                            <span style={{ fontSize: '0.62rem' }}>➔</span>
                           </div>
                         </div>
                       );
@@ -2970,19 +2966,30 @@ export default function MenuDigital() {
 
                     if (hasWholesalePrice) {
                       return (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.12rem', marginTop: '0.18rem', fontFamily: "'Poppins', sans-serif" }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem', marginTop: '0.12rem', fontFamily: "'Poppins', sans-serif" }}>
                           {/* Fila 1: Precio Mayorista Destacado + Badge */}
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.3rem', width: '100%' }}>
-                            <strong style={{ fontSize: '1.18rem', fontWeight: 600, color: '#166534', lineHeight: 1.15 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.18rem', width: '100%', minWidth: 0 }}>
+                            <strong style={{ fontSize: '0.88rem', fontWeight: 600, color: '#166534', lineHeight: 1.15, whiteSpace: 'nowrap', flexShrink: 1 }}>
                               ${priceMayor.toLocaleString('es-CO')}
                             </strong>
-                            <span style={{ fontSize: '0.62rem', fontWeight: 600, color: '#15803d', background: '#dcfce7', padding: '0.08rem 0.35rem', borderRadius: '4px', border: '1px solid #bbf7d0', whiteSpace: 'nowrap' }}>
+                            <span style={{ 
+                              fontSize: '0.54rem', 
+                              fontWeight: 600, 
+                              color: '#15803d', 
+                              background: '#dcfce7', 
+                              padding: '0.05rem 0.2rem', 
+                              borderRadius: '4px', 
+                              border: '1px solid #bbf7d0', 
+                              whiteSpace: 'nowrap', 
+                              flexShrink: 0,
+                              letterSpacing: '-0.2px' 
+                            }}>
                               Mayor +6
                             </span>
                           </div>
 
                           {/* Fila 2: Precio Detal Compacto (Nunca se corta) */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.74rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.68rem', lineHeight: 1.2 }}>
                             <span style={{ color: '#64748b', fontWeight: 400 }}>Detal:</span>
                             <span style={{ fontWeight: 500, color: '#64748b', textDecoration: ((producto.descuento !== undefined && producto.descuento > 0) || descuentoPromocional > 0) ? 'line-through' : 'none' }}>
                               ${priceDetal.toLocaleString('es-CO')}
