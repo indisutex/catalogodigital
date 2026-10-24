@@ -1052,8 +1052,17 @@ export default function MenuDigital() {
     setSelectedMiembroFamilia('');
   };
 
+  const isFamiliarProduct = (prod?: Producto | null): boolean => {
+    if (!prod) return false;
+    return Boolean(
+      prod.es_producto_familiar || 
+      prod.categoria === 'familiar' || 
+      (prod.precios_familia && typeof prod.precios_familia === 'object' && Object.keys(prod.precios_familia).length > 0)
+    );
+  };
+
   const isFamOptionDisabled = (prod: Producto, adminKey: string): boolean => {
-    if (!prod.es_producto_familiar || !prod.precios_familia) return false;
+    if (!isFamiliarProduct(prod) || !prod.precios_familia) return false;
     const fam = prod.precios_familia as any;
     const disabledList: string[] = fam.opciones_deshabilitadas || [];
     if (disabledList.includes(adminKey)) return true;
@@ -1063,7 +1072,7 @@ export default function MenuDigital() {
   };
 
   const getFamilyPriceBreakdown = (prod: Producto) => {
-    if (!prod.es_producto_familiar || !prod.precios_familia) return null;
+    if (!isFamiliarProduct(prod) || !prod.precios_familia) return null;
     const fam = prod.precios_familia as any || {};
     const preciosDetallados = fam.precios_detallados || {};
     const preciosMap = fam.precios_tallas || {};
@@ -1088,8 +1097,8 @@ export default function MenuDigital() {
   };
 
   const getFamilyPriceRange = (prod: Producto) => {
-    if (!prod.es_producto_familiar || !prod.precios_familia) {
-      return { minDetal: prod.precio || 0, minMayor: prod.precio_por_mayor || 0 };
+    if (!isFamiliarProduct(prod) || !prod.precios_familia) {
+      return { minDetal: prod.precio > 1000 ? prod.precio : 0, minMayor: (prod.precio_por_mayor && prod.precio_por_mayor > 1000) ? prod.precio_por_mayor : 0 };
     }
     const fam = prod.precios_familia as any || {};
     const preciosDetallados = fam.precios_detallados || {};
@@ -1124,12 +1133,12 @@ export default function MenuDigital() {
         else if (['2/4', '6/8', '10/12', '14/16', '18'].includes(key) && fam.nino) d = Number(fam.nino);
       }
 
-      if (d > 5) detalPrices.push(d);
-      if (m > 5) mayorPrices.push(m);
+      if (d > 1000) detalPrices.push(d);
+      if (m > 1000) mayorPrices.push(m);
     });
 
-    const minDetalRaw = detalPrices.length > 0 ? Math.min(...detalPrices) : (prod.precio > 5 ? prod.precio : 0);
-    const minMayorRaw = mayorPrices.length > 0 ? Math.min(...mayorPrices) : 0;
+    const minDetalRaw = detalPrices.length > 0 ? Math.min(...detalPrices) : (prod.precio > 1000 ? prod.precio : 36000);
+    const minMayorRaw = mayorPrices.length > 0 ? Math.min(...mayorPrices) : 22000;
 
     const minDetal = minDetalRaw > 0 ? getEffectivePrice({ ...prod, precio: minDetalRaw }, 'detal', markupPorcentaje, ajustesProductos, descuentoPromocional) : 0;
     const minMayor = minMayorRaw > 0 ? getEffectivePrice({ ...prod, precio: minMayorRaw }, 'mayorista', markupPorcentaje, ajustesProductos, descuentoPromocional) : 0;
@@ -1138,7 +1147,7 @@ export default function MenuDigital() {
   };
 
   const getActiveUnitPrice = (prod: Producto, miembro?: string, talla?: string, bType?: string | null) => {
-    if (prod.es_producto_familiar && prod.precios_familia) {
+    if (isFamiliarProduct(prod) && prod.precios_familia) {
       const fam = prod.precios_familia as any;
       const preciosDetallados = fam.precios_detallados || {};
       const preciosMap = fam.precios_tallas || {};
@@ -1151,15 +1160,17 @@ export default function MenuDigital() {
           if (currentBuyerMode === '50_unidades') {
             if (optObj.p50 > 0) return Number(optObj.p50);
             if (optObj.mayor > 0) return Number(optObj.mayor);
-            if (optObj.detal > 0) return Number(optObj.detal);
           }
           if (currentBuyerMode === 'mayorista') {
             if (optObj.mayor > 0) return Number(optObj.mayor);
-            if (optObj.detal > 0) return Number(optObj.detal);
           }
-          if (optObj.detal > 0) return Number(optObj.detal);
+          if (optObj.detal > 0 && currentBuyerMode !== 'mayorista' && currentBuyerMode !== '50_unidades') {
+            return Number(optObj.detal);
+          }
         }
-        if (preciosMap[optKey] > 0) return Number(preciosMap[optKey]);
+        if (currentBuyerMode !== 'mayorista' && currentBuyerMode !== '50_unidades') {
+          if (preciosMap[optKey] > 0) return Number(preciosMap[optKey]);
+        }
         return 0;
       };
 
@@ -1171,22 +1182,30 @@ export default function MenuDigital() {
       if (miembro === 'dama_unica') {
         const p = getOptionPrice('Dama Única');
         if (p > 0) return p;
+        if (currentBuyerMode === 'mayorista') return 26000;
         if (fam.dama_unica) return Number(fam.dama_unica);
+        if (preciosDetallados['Dama Única']?.detal > 0) return Number(preciosDetallados['Dama Única'].detal);
       }
       if (miembro === 'dama_plus') {
         const p = getOptionPrice('Dama Plus');
         if (p > 0) return p;
+        if (currentBuyerMode === 'mayorista') return 31000;
         if (fam.dama_plus) return Number(fam.dama_plus);
+        if (preciosDetallados['Dama Plus']?.detal > 0) return Number(preciosDetallados['Dama Plus'].detal);
       }
       if (miembro === 'caballero_unica') {
         const p = getOptionPrice('Caballero Única');
         if (p > 0) return p;
+        if (currentBuyerMode === 'mayorista') return 31000;
         if (fam.caballero_unica) return Number(fam.caballero_unica);
+        if (preciosDetallados['Caballero Única']?.detal > 0) return Number(preciosDetallados['Caballero Única'].detal);
       }
       if (miembro === 'unisex_2xl') {
         const p = getOptionPrice('2XL Unisex');
         if (p > 0) return p;
+        if (currentBuyerMode === 'mayorista') return 34000;
         if (fam.unisex_2xl) return Number(fam.unisex_2xl);
+        if (preciosDetallados['2XL Unisex']?.detal > 0) return Number(preciosDetallados['2XL Unisex'].detal);
       }
 
       if (miembro === 'nino') {
@@ -1196,6 +1215,12 @@ export default function MenuDigital() {
         }
         const p = getOptionPrice('2/4');
         if (p > 0) return p;
+        if (currentBuyerMode === 'mayorista') {
+          if (talla === '14/16') return 22500;
+          if (talla === '18') return 26000;
+          return 22000;
+        }
+        if (talla && preciosDetallados[talla]?.detal > 0) return Number(preciosDetallados[talla].detal);
         return Number(fam.nino || 32000);
       }
 
@@ -1225,7 +1250,7 @@ export default function MenuDigital() {
       return;
     }
 
-    if (detailProduct.es_producto_familiar) {
+    if (isFamiliarProduct(detailProduct)) {
       const selectedEntries = Object.entries(famOptionQuantities).filter(([_, q]) => q > 0);
       if (selectedEntries.length === 0) {
         alert('Por favor selecciona al menos una cantidad en las opciones o tallas');
@@ -1256,9 +1281,10 @@ export default function MenuDigital() {
 
         const productToAdd = {
           ...detailProduct,
-          precio: priceDetal > 0 ? priceDetal : detailProduct.precio,
-          precio_por_mayor: priceMayor > 0 ? priceMayor : (detailProduct.precio_por_mayor || null),
-          precio_50_unidades: price50 > 0 ? price50 : (detailProduct.precio_50_unidades || null),
+          es_producto_familiar: true,
+          precio: priceDetal > 1000 ? priceDetal : 36000,
+          precio_por_mayor: priceMayor > 1000 ? priceMayor : 26000,
+          precio_50_unidades: price50 > 1000 ? price50 : 25000,
           familia_opcion_key: famKey,
           nombre: `${detailProduct.nombre} (${label})`,
           imagen_url: resolvedImg
@@ -1981,13 +2007,21 @@ export default function MenuDigital() {
         : (metodoRecepcion === 'tienda' ? `Recoger en Tienda (${configuracion?.direccion || 'Sede Principal'})` : '');
 
       const productosProcesados = items.map(item => {
-        const effectivePrice = getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
+        let effectivePrice = getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
         const isWholesale = effectiveCartBuyerType === 'mayorista' || isBulkDiscountApplied || buyerType === 'mayorista';
+        const isFam = isFamiliarProduct(item);
+        if (effectivePrice < 1000) {
+          if (isFam) {
+            effectivePrice = isWholesale ? 26000 : 36000;
+          } else if (item.precio && item.precio > 1000) {
+            effectivePrice = item.precio;
+          }
+        }
         const itemImg = getVariantImageUrl(item, productos) || item.imagen_url;
         return {
           ...item,
           imagen_url: itemImg,
-          precio_detal: item.precio_detal || item.precio,
+          precio_detal: (item.precio_detal && item.precio_detal > 1000) ? item.precio_detal : (item.precio && item.precio > 1000 ? item.precio : (isFam ? 36000 : 32000)),
           precio: effectivePrice,
           precio_aplicado_mayor: isWholesale,
           _metodo_pago: metodoPagoStr,
@@ -2806,7 +2840,7 @@ export default function MenuDigital() {
                   ) : (
                     <div className="img-placeholder" style={cardImageStyle}></div>
                   )}
-                  {producto.es_producto_familiar && (
+                  {isFamiliarProduct(producto) && (
                     <div className="sku-badge" style={{ top: '0.5rem', background: '#0284c7' }}>👨‍👩‍👧‍👦 Opción Familiar</div>
                   )}
                   
@@ -2817,7 +2851,7 @@ export default function MenuDigital() {
                       e.stopPropagation(); 
                       const hasOptions = (producto.tallas && producto.tallas.length > 0) || 
                                         (producto.imagenes_extra && producto.imagenes_extra.some(u => Boolean(decodeExtraImage(u).estampado || decodeExtraImage(u).ref))) ||
-                                        producto.es_producto_familiar;
+                                        isFamiliarProduct(producto);
                       if (hasOptions) {
                         openDetail(producto);
                       } else {
@@ -2850,40 +2884,45 @@ export default function MenuDigital() {
                     const hasWholesalePrice = priceMayor > 0 && priceMayor < priceDetal;
                     const companyColor = mayoristaBranding?.color || configuracion?.color_primario || 'var(--primary, #f36b8e)';
 
-                    if (producto.es_producto_familiar) {
+                    if (isFamiliarProduct(producto)) {
                       const famBreakdown = getFamilyPriceBreakdown(producto);
                       const damaDetal = famBreakdown?.dama.detal || 36000;
                       const damaMayor = famBreakdown?.dama.mayor || 26000;
+                      const caballeroDetal = famBreakdown?.caballero.detal || 41000;
+                      const caballeroMayor = famBreakdown?.caballero.mayor || 31000;
                       const ninoDetal = famBreakdown?.nino.detal || 32000;
                       const ninoMayor = famBreakdown?.nino.mayor || 22000;
 
                       return (
-                        <div style={{ marginTop: '0.15rem', display: 'flex', flexDirection: 'column', gap: '0.2rem', fontFamily: "'Poppins', sans-serif" }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 500 }}>Dama:</span>
-                            <strong style={{ fontSize: '1.02rem', fontWeight: 600, color: companyColor }}>
-                              ${damaDetal.toLocaleString('es-CO')}
-                            </strong>
-                            {damaMayor > 0 && (
-                              <span style={{ fontSize: '0.66rem', fontWeight: 600, color: '#15803d', background: '#dcfce7', padding: '0.1rem 0.35rem', borderRadius: '4px', border: '1px solid #bbf7d0' }}>
-                                Mayor: ${damaMayor.toLocaleString('es-CO')}
-                              </span>
-                            )}
+                        <div style={{ marginTop: '0.2rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', fontFamily: "'Poppins', sans-serif" }}>
+                          {/* Precios reales por categoría */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', background: '#f8fafc', padding: '0.35rem 0.5rem', borderRadius: '7px', border: '1px solid #e2e8f0' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.73rem' }}>
+                              <span style={{ color: '#475569', fontWeight: 500 }}>👩 Dama:</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                <span style={{ color: '#94a3b8', fontSize: '0.68rem', textDecoration: 'line-through' }}>${damaDetal.toLocaleString('es-CO')}</span>
+                                <strong style={{ fontWeight: 600, color: '#15803d' }}>${damaMayor.toLocaleString('es-CO')}</strong>
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.73rem' }}>
+                              <span style={{ color: '#475569', fontWeight: 500 }}>👨 Caballero:</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                <span style={{ color: '#94a3b8', fontSize: '0.68rem', textDecoration: 'line-through' }}>${caballeroDetal.toLocaleString('es-CO')}</span>
+                                <strong style={{ fontWeight: 600, color: '#15803d' }}>${caballeroMayor.toLocaleString('es-CO')}</strong>
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.73rem' }}>
+                              <span style={{ color: '#475569', fontWeight: 500 }}>👶 Niños:</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                <span style={{ color: '#94a3b8', fontSize: '0.68rem', textDecoration: 'line-through' }}>${ninoDetal.toLocaleString('es-CO')}</span>
+                                <strong style={{ fontWeight: 600, color: '#15803d' }}>${ninoMayor.toLocaleString('es-CO')}</strong>
+                              </div>
+                            </div>
                           </div>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 500 }}>Infantil:</span>
-                            <strong style={{ fontSize: '0.98rem', fontWeight: 600, color: companyColor }}>
-                              ${ninoDetal.toLocaleString('es-CO')}
-                            </strong>
-                            {ninoMayor > 0 && (
-                              <span style={{ fontSize: '0.66rem', fontWeight: 600, color: '#15803d', background: '#dcfce7', padding: '0.1rem 0.35rem', borderRadius: '4px', border: '1px solid #bbf7d0' }}>
-                                Mayor: ${ninoMayor.toLocaleString('es-CO')}
-                              </span>
-                            )}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.68rem', color: '#0369a1', fontWeight: 500 }}>
+                            <span>👨‍👩‍👧‍👦 Mayor desde 6 prendas</span>
+                            <span style={{ color: '#15803d', fontWeight: 600 }}>Combínalas</span>
                           </div>
-                          <span style={{ fontSize: '0.7rem', color: '#0284c7', fontWeight: 500 }}>
-                            👨‍👩‍👧‍👦 Opción familiar (Adultos e Infantil)
-                          </span>
                         </div>
                       );
                     }
@@ -4300,7 +4339,7 @@ export default function MenuDigital() {
           allImages = [{ url: detailProduct.imagen_url, ref: '', estampado: '' }];
         }
         let rawTallas = detailProduct.tallas?.split(',').map(t => t.trim()).filter(Boolean) || [];
-        if (detailProduct.es_producto_familiar) {
+        if (isFamiliarProduct(detailProduct)) {
           if (selectedMiembroFamilia === 'nino') {
             const childSizes = ['4', '6', '8', '10', '12', '14', '16'];
             const customChildSizes = Object.keys((detailProduct.precios_familia as any)?.precios_tallas || {}).filter(k => k !== 'Dama' && k !== 'Caballero');
@@ -4618,7 +4657,7 @@ export default function MenuDigital() {
                       <span style={{ fontSize: '0.78rem', fontWeight: 400, color: '#64748b', marginTop: '0.18rem', fontFamily: "'Poppins', sans-serif" }}>
                         {toTitleCase(detailProduct.descripcion)}
                       </span>
-                    ) : detailProduct.es_producto_familiar ? (
+                    ) : isFamiliarProduct(detailProduct) ? (
                       <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#0284c7', marginTop: '0.2rem', display: 'inline-flex', alignItems: 'center', gap: '0.3rem', fontFamily: "'Poppins', sans-serif" }}>
                         👨‍👩‍👧‍👦 Colección Familiar (Adultos y Niños)
                       </span>
@@ -4634,7 +4673,7 @@ export default function MenuDigital() {
                   </div>
                   <div className="detail-price-wrap" style={{ textAlign: 'right', flexShrink: 0, minWidth: '130px' }}>
                     {(() => {
-                      if (detailProduct.es_producto_familiar) {
+                      if (isFamiliarProduct(detailProduct)) {
                         const famBreakdown = getFamilyPriceBreakdown(detailProduct);
                         const totalFamUnits = Object.values(famOptionQuantities).reduce((sum, q) => sum + (q > 0 ? q : 0), 0);
                         const isBulkEligible = (totalUnits + totalFamUnits >= 6) || buyerType === 'mayorista';
@@ -4678,6 +4717,8 @@ export default function MenuDigital() {
                         // Cuando no hay unidades seleccionadas aún (al abrir el modal)
                         const damaDetal = famBreakdown?.dama.detal || 36000;
                         const damaMayor = famBreakdown?.dama.mayor || 26000;
+                        const caballeroDetal = famBreakdown?.caballero.detal || 41000;
+                        const caballeroMayor = famBreakdown?.caballero.mayor || 31000;
                         const ninoDetal = famBreakdown?.nino.detal || 32000;
                         const ninoMayor = famBreakdown?.nino.mayor || 22000;
 
@@ -4685,27 +4726,27 @@ export default function MenuDigital() {
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.22rem', textAlign: 'right', alignItems: 'flex-end', fontFamily: "'Poppins', sans-serif" }}>
                             {/* Dama */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'flex-end', whiteSpace: 'nowrap' }}>
-                              <span style={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 500 }}>Dama:</span>
-                              <strong style={{ fontSize: '1.02rem', fontWeight: 600, color: configuracion?.color_primario || 'var(--primary, #f36b8e)' }}>
-                                ${damaDetal.toLocaleString('es-CO')}
+                              <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 500 }}>👩 Dama:</span>
+                              <span style={{ fontSize: '0.74rem', color: '#94a3b8', textDecoration: 'line-through' }}>${damaDetal.toLocaleString('es-CO')}</span>
+                              <strong style={{ fontSize: '0.98rem', fontWeight: 600, color: '#15803d' }}>
+                                ${damaMayor.toLocaleString('es-CO')}
                               </strong>
-                              {damaMayor > 0 && (
-                                <span style={{ fontSize: '0.65rem', fontWeight: 600, color: '#15803d', background: '#dcfce7', padding: '0.1rem 0.35rem', borderRadius: '4px', border: '1px solid #bbf7d0' }}>
-                                  Mayor: ${damaMayor.toLocaleString('es-CO')}
-                                </span>
-                              )}
+                            </div>
+                            {/* Caballero */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'flex-end', whiteSpace: 'nowrap' }}>
+                              <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 500 }}>👨 Caballero:</span>
+                              <span style={{ fontSize: '0.74rem', color: '#94a3b8', textDecoration: 'line-through' }}>${caballeroDetal.toLocaleString('es-CO')}</span>
+                              <strong style={{ fontSize: '0.98rem', fontWeight: 600, color: '#15803d' }}>
+                                ${caballeroMayor.toLocaleString('es-CO')}
+                              </strong>
                             </div>
                             {/* Infantil */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'flex-end', whiteSpace: 'nowrap' }}>
-                              <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 500 }}>Infantil:</span>
-                              <strong style={{ fontSize: '0.98rem', fontWeight: 600, color: configuracion?.color_primario || 'var(--primary, #f36b8e)' }}>
-                                ${ninoDetal.toLocaleString('es-CO')}
+                              <span style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 500 }}>👶 Niños:</span>
+                              <span style={{ fontSize: '0.74rem', color: '#94a3b8', textDecoration: 'line-through' }}>${ninoDetal.toLocaleString('es-CO')}</span>
+                              <strong style={{ fontSize: '0.98rem', fontWeight: 600, color: '#15803d' }}>
+                                ${ninoMayor.toLocaleString('es-CO')}
                               </strong>
-                              {ninoMayor > 0 && (
-                                <span style={{ fontSize: '0.65rem', fontWeight: 600, color: '#15803d', background: '#dcfce7', padding: '0.1rem 0.35rem', borderRadius: '4px', border: '1px solid #bbf7d0' }}>
-                                  Mayor: ${ninoMayor.toLocaleString('es-CO')}
-                                </span>
-                              )}
                             </div>
                             <span style={{ fontSize: '0.64rem', color: '#0369a1', fontWeight: 500 }}>
                               Mayorista desde 6 prendas
@@ -4759,7 +4800,7 @@ export default function MenuDigital() {
                 </div>
 
                 {/* ── PRODUCTO FAMILIAR OPTION SELECTOR WITH QUANTITIES ── */}
-                {detailProduct.es_producto_familiar && detailProduct.precios_familia ? (
+                {isFamiliarProduct(detailProduct) && detailProduct.precios_familia ? (
                   <div className="detail-tallas" style={{ width: '100%', background: '#f0f9ff', padding: '0.85rem', borderRadius: '14px', border: '1.5px solid #bae6fd', marginBottom: '0.85rem' }}>
                     <p className="detail-section-label" style={{ color: '#0369a1', fontWeight: 600, marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.88rem', fontFamily: "'Poppins', sans-serif" }}>
                       👨‍👩‍👧‍👦 Selecciona la Cantidad para cada Opción y Talla:
@@ -4768,6 +4809,7 @@ export default function MenuDigital() {
                     {(() => {
                       const totalFamUnits = Object.values(famOptionQuantities).reduce((sum, q) => sum + (q > 0 ? q : 0), 0);
                       const isBulkEligible = (totalUnits + totalFamUnits >= 6) || buyerType === 'mayorista';
+                      const famBreakdown = getFamilyPriceBreakdown(detailProduct);
 
                       return (
                         <>
@@ -4775,22 +4817,97 @@ export default function MenuDigital() {
                           <div style={{ 
                             display: 'flex', 
                             alignItems: 'center', 
-                            gap: '0.4rem', 
-                            padding: '0.45rem 0.65rem', 
+                            gap: '0.45rem', 
+                            padding: '0.55rem 0.75rem', 
                             background: isBulkEligible ? '#dcfce7' : '#ffffff', 
-                            borderRadius: '8px', 
-                            border: isBulkEligible ? '1px solid #86efac' : '1px solid #cbd5e1',
+                            borderRadius: '10px', 
+                            border: isBulkEligible ? '1.5px solid #86efac' : '1px solid #cbd5e1',
                             marginBottom: '0.75rem',
-                            fontSize: '0.75rem',
+                            fontSize: '0.78rem',
                             color: isBulkEligible ? '#15803d' : '#334155',
                             fontFamily: "'Poppins', sans-serif"
                           }}>
-                            <span>{isBulkEligible ? '🎉' : '💡'}</span>
-                            <span style={{ fontWeight: isBulkEligible ? 600 : 400 }}>
-                              {isBulkEligible 
-                                ? `¡Precio al por mayor activado! (${totalFamUnits} prendas seleccionadas)`
-                                : `Precios al por mayor automáticos llevando 6 o más prendas (${totalFamUnits > 0 ? `Llevas ${totalFamUnits}, faltan ${Math.max(1, 6 - (totalUnits + totalFamUnits))}` : 'puedes combinar adultos e infantil'})`}
-                            </span>
+                            <span style={{ fontSize: '1.05rem' }}>{isBulkEligible ? '🎉' : '💡'}</span>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                              <span style={{ fontWeight: isBulkEligible ? 600 : 500 }}>
+                                {isBulkEligible 
+                                  ? `¡Precio al por mayor activado! (${totalFamUnits} prendas seleccionadas)`
+                                  : `Precios al por mayor automáticos llevando 6 o más prendas`}
+                              </span>
+                              {!isBulkEligible && (
+                                <span style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 400 }}>
+                                  {totalFamUnits > 0 
+                                    ? `Llevas ${totalFamUnits} prendas (te faltan ${Math.max(1, 6 - (totalUnits + totalFamUnits))} para activar precio mayor). Puedes combinar adultos e infantil.`
+                                    : 'Puedes combinar cualquier opción de adulto e infantil para alcanzar las 6 prendas.'}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Guía Rápida de Precios Detal vs Mayor */}
+                          <div style={{
+                            background: '#ffffff',
+                            borderRadius: '10px',
+                            border: '1px solid #e2e8f0',
+                            padding: '0.65rem 0.75rem',
+                            marginBottom: '0.85rem',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.02)'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.45rem', borderBottom: '1px dashed #e2e8f0', paddingBottom: '0.35rem' }}>
+                              <span style={{ fontSize: '0.74rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.35rem', fontFamily: "'Poppins', sans-serif" }}>
+                                🏷️ Guía de Precios: Detal vs Mayor (+6 prendas)
+                              </span>
+                              <span style={{ fontSize: '0.66rem', fontWeight: 500, color: '#15803d', background: '#dcfce7', padding: '0.12rem 0.4rem', borderRadius: '4px', border: '1px solid #bbf7d0', fontFamily: "'Poppins', sans-serif" }}>
+                                {isBulkEligible ? '✓ Mayor activo' : 'Aplica desde 6 uds'}
+                              </span>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))', gap: '0.4rem', fontSize: '0.72rem', fontFamily: "'Poppins', sans-serif" }}>
+                              {famBreakdown?.dama && !isFamOptionDisabled(detailProduct, 'Dama Única') && (
+                                <div style={{ background: '#f8fafc', padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                                  <div style={{ fontWeight: 600, color: '#334155' }}>👩 Dama Única</div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.15rem' }}>
+                                    <span style={{ color: '#64748b' }}>Detal: <strong style={{ fontWeight: 600, color: '#334155' }}>${famBreakdown.dama.detal.toLocaleString('es-CO')}</strong></span>
+                                    <span style={{ color: '#15803d', fontWeight: 600 }}>Mayor: ${famBreakdown.dama.mayor.toLocaleString('es-CO')}</span>
+                                  </div>
+                                </div>
+                              )}
+                              {famBreakdown?.caballero && !isFamOptionDisabled(detailProduct, 'Caballero Única') && (
+                                <div style={{ background: '#f8fafc', padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                                  <div style={{ fontWeight: 600, color: '#334155' }}>👨 Caballero Única</div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.15rem' }}>
+                                    <span style={{ color: '#64748b' }}>Detal: <strong style={{ fontWeight: 600, color: '#334155' }}>${famBreakdown.caballero.detal.toLocaleString('es-CO')}</strong></span>
+                                    <span style={{ color: '#15803d', fontWeight: 600 }}>Mayor: ${famBreakdown.caballero.mayor.toLocaleString('es-CO')}</span>
+                                  </div>
+                                </div>
+                              )}
+                              {famBreakdown?.damaPlus && !isFamOptionDisabled(detailProduct, 'Dama Plus') && (
+                                <div style={{ background: '#f8fafc', padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                                  <div style={{ fontWeight: 600, color: '#334155' }}>👩 Dama Plus</div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.15rem' }}>
+                                    <span style={{ color: '#64748b' }}>Detal: <strong style={{ fontWeight: 600, color: '#334155' }}>${famBreakdown.damaPlus.detal.toLocaleString('es-CO')}</strong></span>
+                                    <span style={{ color: '#15803d', fontWeight: 600 }}>Mayor: ${famBreakdown.damaPlus.mayor.toLocaleString('es-CO')}</span>
+                                  </div>
+                                </div>
+                              )}
+                              {famBreakdown?.unisex2xl && !isFamOptionDisabled(detailProduct, '2XL Unisex') && (
+                                <div style={{ background: '#f8fafc', padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                                  <div style={{ fontWeight: 600, color: '#334155' }}>🧑 2XL Unisex</div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.15rem' }}>
+                                    <span style={{ color: '#64748b' }}>Detal: <strong style={{ fontWeight: 600, color: '#334155' }}>${famBreakdown.unisex2xl.detal.toLocaleString('es-CO')}</strong></span>
+                                    <span style={{ color: '#15803d', fontWeight: 600 }}>Mayor: ${famBreakdown.unisex2xl.mayor.toLocaleString('es-CO')}</span>
+                                  </div>
+                                </div>
+                              )}
+                              {famBreakdown?.nino && !isFamOptionDisabled(detailProduct, '2/4') && (
+                                <div style={{ background: '#f8fafc', padding: '0.35rem 0.5rem', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                                  <div style={{ fontWeight: 600, color: '#334155' }}>👶 Infantil (Niños)</div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.15rem' }}>
+                                    <span style={{ color: '#64748b' }}>Detal: <strong style={{ fontWeight: 600, color: '#334155' }}>${famBreakdown.nino.detal.toLocaleString('es-CO')}</strong></span>
+                                    <span style={{ color: '#15803d', fontWeight: 600 }}>Mayor: ${famBreakdown.nino.mayor.toLocaleString('es-CO')}</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
 
                           {/* ADULTOS / UNISEX */}
@@ -4814,7 +4931,14 @@ export default function MenuDigital() {
                                     const optDetalRaw = getActiveUnitPrice(detailProduct, opt.key, 'Única', 'detal');
                                     const optMayorRaw = getActiveUnitPrice(detailProduct, opt.key, 'Única', 'mayorista');
                                     const optDetal = getEffectivePrice({ ...detailProduct, precio: optDetalRaw }, 'detal', markupPorcentaje, ajustesProductos, descuentoPromocional);
-                                    const optMayor = getEffectivePrice({ ...detailProduct, precio: optMayorRaw }, 'mayorista', markupPorcentaje, ajustesProductos, descuentoPromocional);
+                                    let optMayor = getEffectivePrice({ ...detailProduct, precio: optMayorRaw }, 'mayorista', markupPorcentaje, ajustesProductos, descuentoPromocional);
+                                    if (!optMayor || optMayor >= optDetal) {
+                                      if (opt.key === 'dama_unica') optMayor = 26000;
+                                      else if (opt.key === 'caballero_unica') optMayor = 31000;
+                                      else if (opt.key === 'dama_plus') optMayor = 31000;
+                                      else if (opt.key === 'unisex_2xl') optMayor = 34000;
+                                      else optMayor = Math.max(0, optDetal - 10000);
+                                    }
                                     const qty = famOptionQuantities[opt.key] || 0;
                                     const hasMayor = optMayor > 0 && optMayor < optDetal;
 
@@ -4838,9 +4962,9 @@ export default function MenuDigital() {
                                         </div>
                                         
                                         {/* PRECIOS REALES TRANSPARENTES */}
-                                        <div style={{ margin: '0.25rem 0 0.35rem', display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
+                                        <div style={{ margin: '0.25rem 0 0.35rem', display: 'flex', flexDirection: 'column', gap: '0.12rem' }}>
                                           <div style={{ 
-                                            fontSize: '0.72rem', 
+                                            fontSize: '0.74rem', 
                                             color: isBulkEligible ? '#94a3b8' : '#0284c7', 
                                             fontWeight: 600, 
                                             textDecoration: isBulkEligible ? 'line-through' : 'none', 
@@ -4851,16 +4975,16 @@ export default function MenuDigital() {
                                           </div>
                                           {hasMayor && (
                                             <div style={{ 
-                                              fontSize: '0.69rem', 
+                                              fontSize: '0.72rem', 
                                               fontWeight: 600, 
                                               color: isBulkEligible ? '#15803d' : '#166534', 
                                               background: isBulkEligible ? '#dcfce7' : '#f0fdf4',
-                                              padding: '0.08rem 0.25rem',
-                                              borderRadius: '4px',
-                                              border: '1px solid #bbf7d0',
+                                              padding: '0.12rem 0.35rem',
+                                              borderRadius: '5px',
+                                              border: isBulkEligible ? '1px solid #86efac' : '1px solid #bbf7d0',
                                               fontFamily: "'Poppins', sans-serif" 
                                             }}>
-                                              <span style={{ fontSize: '0.59rem', fontWeight: 500 }}>Mayor: </span>
+                                              <span style={{ fontSize: '0.60rem', fontWeight: 500 }}>Mayor (+6): </span>
                                               ${optMayor.toLocaleString('es-CO')}
                                             </div>
                                           )}
@@ -4907,7 +5031,10 @@ export default function MenuDigital() {
                                     const optDetalRaw = getActiveUnitPrice(detailProduct, 'nino', sz, 'detal');
                                     const optMayorRaw = getActiveUnitPrice(detailProduct, 'nino', sz, 'mayorista');
                                     const optDetal = getEffectivePrice({ ...detailProduct, precio: optDetalRaw }, 'detal', markupPorcentaje, ajustesProductos, descuentoPromocional);
-                                    const optMayor = getEffectivePrice({ ...detailProduct, precio: optMayorRaw }, 'mayorista', markupPorcentaje, ajustesProductos, descuentoPromocional);
+                                    let optMayor = getEffectivePrice({ ...detailProduct, precio: optMayorRaw }, 'mayorista', markupPorcentaje, ajustesProductos, descuentoPromocional);
+                                    if (!optMayor || optMayor >= optDetal) {
+                                      optMayor = sz === '14/16' ? 22500 : (sz === '18' ? 26000 : 22000);
+                                    }
                                     const qty = famOptionQuantities[sz] || 0;
                                     const hasMayor = optMayor > 0 && optMayor < optDetal;
 
@@ -4931,9 +5058,9 @@ export default function MenuDigital() {
                                         </div>
                                         
                                         {/* PRECIOS REALES TRANSPARENTES */}
-                                        <div style={{ margin: '0.25rem 0 0.35rem', display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
+                                        <div style={{ margin: '0.25rem 0 0.35rem', display: 'flex', flexDirection: 'column', gap: '0.12rem' }}>
                                           <div style={{ 
-                                            fontSize: '0.72rem', 
+                                            fontSize: '0.74rem', 
                                             color: isBulkEligible ? '#94a3b8' : '#0284c7', 
                                             fontWeight: 600, 
                                             textDecoration: isBulkEligible ? 'line-through' : 'none', 
@@ -4944,16 +5071,16 @@ export default function MenuDigital() {
                                           </div>
                                           {hasMayor && (
                                             <div style={{ 
-                                              fontSize: '0.69rem', 
+                                              fontSize: '0.72rem', 
                                               fontWeight: 600, 
                                               color: isBulkEligible ? '#15803d' : '#166534', 
                                               background: isBulkEligible ? '#dcfce7' : '#f0fdf4',
-                                              padding: '0.08rem 0.25rem',
-                                              borderRadius: '4px',
-                                              border: '1px solid #bbf7d0',
+                                              padding: '0.12rem 0.35rem',
+                                              borderRadius: '5px',
+                                              border: isBulkEligible ? '1px solid #86efac' : '1px solid #bbf7d0',
                                               fontFamily: "'Poppins', sans-serif" 
                                             }}>
-                                              <span style={{ fontSize: '0.59rem', fontWeight: 500 }}>Mayor: </span>
+                                              <span style={{ fontSize: '0.60rem', fontWeight: 500 }}>Mayor (+6): </span>
                                               ${optMayor.toLocaleString('es-CO')}
                                             </div>
                                           )}
@@ -4995,7 +5122,7 @@ export default function MenuDigital() {
                   const imgEstampados = allImages.map(img => (img.estampado || img.ref)?.trim().toUpperCase()).filter(Boolean);
                   const estampados = imgEstampados.length > 0 ? Array.from(new Set(imgEstampados)) : legacyEstampados;
                   const hasEstampados = estampados.length > 0;
-                  const hasTallas = !detailProduct.es_producto_familiar && tallas.length > 0;
+                  const hasTallas = !isFamiliarProduct(detailProduct) && tallas.length > 0;
 
                   if (!hasEstampados && !hasTallas) return null;
 
@@ -5156,7 +5283,7 @@ export default function MenuDigital() {
 
                   {/* ── FILA EN 2 COLUMNAS: CANTIDAD + AÑADIR AL CARRITO ── */}
                   <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', width: '100%', marginTop: '1.1rem' }}>
-                    {!detailProduct.es_producto_familiar && (
+                    {!isFamiliarProduct(detailProduct) && (
                       <div className="detail-cantidad" style={{ flexShrink: 0, minWidth: '110px' }}>
                         <div className="cantidad-control" style={{ height: '44px', borderRadius: '12px' }}>
                           <button className="qty-btn" onClick={() => setSelectedCantidad(q => Math.max(1, q - 1))}>−</button>
@@ -5170,7 +5297,7 @@ export default function MenuDigital() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       {(() => {
                         const brandColor = configuracion?.color_primario || 'var(--primary, #f36b8e)';
-                        if (detailProduct.es_producto_familiar) {
+                        if (isFamiliarProduct(detailProduct)) {
                           const totalFamUnits = Object.values(famOptionQuantities).reduce((sum, q) => sum + (q > 0 ? q : 0), 0);
                           const isBulkEligible = (totalUnits + totalFamUnits >= 6) || buyerType === 'mayorista';
                           const famMode = isBulkEligible ? 'mayorista' : 'detal';

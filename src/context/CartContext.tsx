@@ -24,7 +24,9 @@ export const getFamilyOptionPrices = (
   nombre?: string,
   opcionKey?: string
 ): { detal: number; mayor?: number; p50?: number } | null => {
-  if (!prod || !prod.es_producto_familiar || !prod.precios_familia) return null;
+  if (!prod) return null;
+  const isFam = Boolean(prod.es_producto_familiar || prod.categoria === 'familiar' || prod.precios_familia);
+  if (!isFam || !prod.precios_familia) return null;
   const fam = prod.precios_familia as any;
   const preciosDetallados = fam.precios_detallados || {};
   const preciosMap = fam.precios_tallas || {};
@@ -58,29 +60,34 @@ export const getFamilyOptionPrices = (
   if (!optObj) {
     const nameLower = (nombre || '').toLowerCase();
     if (nameLower.includes('dama única') || nameLower.includes('dama unica')) {
-      optObj = preciosDetallados['Dama Única'] || (fam.dama_unica || fam.mujer ? { detal: fam.dama_unica || fam.mujer } : null);
+      optObj = preciosDetallados['Dama Única'] || (fam.dama_unica || fam.mujer ? { detal: fam.dama_unica || fam.mujer, mayor: 26000 } : null);
     } else if (nameLower.includes('dama plus')) {
-      optObj = preciosDetallados['Dama Plus'] || (fam.dama_plus ? { detal: fam.dama_plus } : null);
+      optObj = preciosDetallados['Dama Plus'] || (fam.dama_plus ? { detal: fam.dama_plus, mayor: 31000 } : null);
     } else if (nameLower.includes('caballero') || nameLower.includes('hombre')) {
-      optObj = preciosDetallados['Caballero Única'] || (fam.caballero_unica || fam.hombre ? { detal: fam.caballero_unica || fam.hombre } : null);
+      optObj = preciosDetallados['Caballero Única'] || (fam.caballero_unica || fam.hombre ? { detal: fam.caballero_unica || fam.hombre, mayor: 31000 } : null);
     } else if (nameLower.includes('2xl') || nameLower.includes('unisex')) {
-      optObj = preciosDetallados['2XL Unisex'] || (fam.unisex_2xl ? { detal: fam.unisex_2xl } : null);
+      optObj = preciosDetallados['2XL Unisex'] || (fam.unisex_2xl ? { detal: fam.unisex_2xl, mayor: 34000 } : null);
     } else if (nameLower.includes('niño') || nameLower.includes('nino')) {
-      optObj = preciosDetallados['2/4'] || (fam.nino ? { detal: fam.nino } : null);
+      optObj = preciosDetallados['2/4'] || (fam.nino ? { detal: fam.nino, mayor: 22000 } : null);
     }
   }
 
   if (optObj) {
-    const detal = Number(optObj.detal) || 0;
-    const mayor = Number(optObj.mayor) || 0;
-    const p50 = Number(optObj.p50) || (mayor > 0 ? mayor : detal);
+    const rawDetal = Number(optObj.detal) || 0;
+    const rawMayor = Number(optObj.mayor) || 0;
+    const rawP50 = Number(optObj.p50) || 0;
+
+    const detal = rawDetal > 1000 ? rawDetal : 36000;
+    const mayor = rawMayor > 1000 ? rawMayor : (detal > 10000 ? detal - 10000 : 26000);
+    const p50 = rawP50 > 1000 ? rawP50 : (mayor > 0 ? mayor : detal);
     return { detal, mayor, p50 };
   }
 
   // 5. Respaldo en mapa de tallas simples
-  if (talla && preciosMap[talla] > 0) {
+  if (talla && Number(preciosMap[talla]) > 1000) {
     const p = Number(preciosMap[talla]);
-    return { detal: p, mayor: p, p50: p };
+    const m = p > 10000 ? p - 10000 : p;
+    return { detal: p, mayor: m, p50: m };
   }
 
   return null;
@@ -89,6 +96,7 @@ export const getFamilyOptionPrices = (
 export const getEffectivePrice = (producto: Producto, buyerType: BuyerType, markup: number = 0, ajustesProductos?: any, descuentoPromo: number = 0, ignoreDiscounts: boolean = false): number => {
   if (!producto) return 0;
   let price = Number(producto.precio) || 0;
+  const isFam = Boolean(producto.es_producto_familiar || producto.categoria === 'familiar' || producto.precios_familia);
 
   // Si es producto familiar, buscar precios específicos de la opción si aplica
   const famPrices = getFamilyOptionPrices(
@@ -99,25 +107,31 @@ export const getEffectivePrice = (producto: Producto, buyerType: BuyerType, mark
   );
 
   if (buyerType === 'mayorista') {
-    if (famPrices && famPrices.mayor && famPrices.mayor > 0) {
+    if (famPrices && famPrices.mayor && famPrices.mayor > 1000) {
       price = famPrices.mayor;
-    } else if (producto.precio_por_mayor && Number(producto.precio_por_mayor) > 0) {
+    } else if (producto.precio_por_mayor && Number(producto.precio_por_mayor) > 1000) {
       price = Number(producto.precio_por_mayor);
+    } else if (isFam) {
+      price = 26000;
     }
   } else if (buyerType === '50_unidades') {
-    if (famPrices && famPrices.p50 && famPrices.p50 > 0) {
+    if (famPrices && famPrices.p50 && famPrices.p50 > 1000) {
       price = famPrices.p50;
-    } else if (producto.precio_50_unidades && Number(producto.precio_50_unidades) > 0) {
+    } else if (producto.precio_50_unidades && Number(producto.precio_50_unidades) > 1000) {
       price = Number(producto.precio_50_unidades);
-    } else if (famPrices && famPrices.mayor && famPrices.mayor > 0) {
+    } else if (famPrices && famPrices.mayor && famPrices.mayor > 1000) {
       price = famPrices.mayor;
-    } else if (producto.precio_por_mayor && Number(producto.precio_por_mayor) > 0) {
+    } else if (producto.precio_por_mayor && Number(producto.precio_por_mayor) > 1000) {
       price = Number(producto.precio_por_mayor);
+    } else if (isFam) {
+      price = 25000;
     }
   } else {
     // Modo detal o sin buyerType específico
-    if (famPrices && famPrices.detal && famPrices.detal > 0) {
+    if (famPrices && famPrices.detal && famPrices.detal > 1000) {
       price = famPrices.detal;
+    } else if (price < 1000 && isFam) {
+      price = 36000;
     }
   }
 
@@ -222,14 +236,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
             fixedItem = { ...fixedItem, imagen_url: vImg };
           }
         }
-        if (fixedItem.es_producto_familiar && fixedItem.precios_familia) {
+        const isFam = Boolean(fixedItem.es_producto_familiar || fixedItem.categoria === 'familiar' || fixedItem.precios_familia);
+        if (isFam && fixedItem.precios_familia) {
           const famPrices = getFamilyOptionPrices(fixedItem, fixedItem.talla, fixedItem.nombre, fixedItem.familia_opcion_key);
           if (famPrices) {
             return {
               ...fixedItem,
-              precio: famPrices.detal > 0 ? famPrices.detal : fixedItem.precio,
-              precio_por_mayor: famPrices.mayor && famPrices.mayor > 0 ? famPrices.mayor : fixedItem.precio_por_mayor,
-              precio_50_unidades: famPrices.p50 && famPrices.p50 > 0 ? famPrices.p50 : fixedItem.precio_50_unidades,
+              precio: famPrices.detal > 1000 ? famPrices.detal : (fixedItem.precio > 1000 ? fixedItem.precio : 36000),
+              precio_por_mayor: famPrices.mayor && famPrices.mayor > 1000 ? famPrices.mayor : 26000,
+              precio_50_unidades: famPrices.p50 && famPrices.p50 > 1000 ? famPrices.p50 : 25000,
             };
           }
         }
@@ -368,14 +383,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (variantImg) {
       itemToAdd.imagen_url = variantImg;
     }
-    if (producto.es_producto_familiar && producto.precios_familia) {
+    const isFam = Boolean(producto.es_producto_familiar || producto.categoria === 'familiar' || producto.precios_familia);
+    if (isFam && producto.precios_familia) {
       const famPrices = getFamilyOptionPrices(producto, talla, producto.nombre, (producto as any).familia_opcion_key);
       if (famPrices) {
         itemToAdd = {
           ...itemToAdd,
-          precio: famPrices.detal > 0 ? famPrices.detal : producto.precio,
-          precio_por_mayor: famPrices.mayor && famPrices.mayor > 0 ? famPrices.mayor : producto.precio_por_mayor,
-          precio_50_unidades: famPrices.p50 && famPrices.p50 > 0 ? famPrices.p50 : producto.precio_50_unidades,
+          precio: famPrices.detal > 1000 ? famPrices.detal : (producto.precio && Number(producto.precio) > 1000 ? Number(producto.precio) : 36000),
+          precio_por_mayor: famPrices.mayor && famPrices.mayor > 1000 ? famPrices.mayor : 26000,
+          precio_50_unidades: famPrices.p50 && famPrices.p50 > 1000 ? famPrices.p50 : 25000,
         };
       }
     }
