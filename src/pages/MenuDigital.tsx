@@ -4921,31 +4921,36 @@ export default function MenuDigital() {
                                           {opt.label}
                                         </div>
                                         
-                                        {/* PRECIOS REALES TRANSPARENTES */}
-                                        <div style={{ margin: '0.25rem 0 0.35rem', display: 'flex', flexDirection: 'column', gap: '0.14rem' }}>
+                                        {/* PRECIOS: AL POR MAYOR DESTACADO */}
+                                        <div style={{ margin: '0.25rem 0 0.35rem', display: 'flex', flexDirection: 'column', gap: '0.18rem' }}>
                                           {hasMayor && (
                                             <div style={{ 
-                                              fontSize: '0.78rem', 
-                                              fontWeight: 600, 
-                                              color: '#15803d', 
-                                              background: '#dcfce7',
-                                              padding: '0.16rem 0.35rem',
-                                              borderRadius: '6px',
-                                              border: '1px solid #bbf7d0',
-                                              fontFamily: "'Poppins', sans-serif" 
+                                              background: isBulkEligible ? '#dcfce7' : '#f0fdf4',
+                                              padding: '0.25rem 0.35rem',
+                                              borderRadius: '7px',
+                                              border: isBulkEligible ? '1.5px solid #86efac' : '1px solid #bbf7d0',
+                                              display: 'flex',
+                                              flexDirection: 'column',
+                                              alignItems: 'center',
+                                              gap: '0.04rem'
                                             }}>
-                                              <span style={{ fontSize: '0.62rem', fontWeight: 500 }}>Mayor (+6): </span>
-                                              ${optMayor.toLocaleString('es-CO')}
+                                              <span style={{ fontSize: '0.64rem', fontWeight: 500, color: '#15803d', fontFamily: "'Poppins', sans-serif" }}>
+                                                Al por mayor (+6)
+                                              </span>
+                                              <strong style={{ fontSize: '1.02rem', fontWeight: 600, color: '#166534', lineHeight: 1.15, fontFamily: "'Poppins', sans-serif" }}>
+                                                ${optMayor.toLocaleString('es-CO')}
+                                              </strong>
                                             </div>
                                           )}
                                           <div style={{ 
-                                            fontSize: '0.70rem', 
-                                            color: '#64748b', 
+                                            fontSize: '0.74rem', 
+                                            color: isBulkEligible ? '#94a3b8' : '#64748b', 
                                             fontWeight: 500, 
                                             textDecoration: isBulkEligible ? 'line-through' : 'none', 
-                                            fontFamily: "'Poppins', sans-serif" 
+                                            fontFamily: "'Poppins', sans-serif",
+                                            marginTop: '0.04rem'
                                           }}>
-                                            <span style={{ fontSize: '0.62rem', fontWeight: 400, color: '#94a3b8' }}>Detal: </span>
+                                            <span style={{ fontSize: '0.66rem', fontWeight: 400, color: '#94a3b8' }}>Detal: </span>
                                             ${optDetal.toLocaleString('es-CO')}
                                           </div>
                                         </div>
@@ -5017,31 +5022,36 @@ export default function MenuDigital() {
                                           Talla {sz}
                                         </div>
                                         
-                                        {/* PRECIOS REALES TRANSPARENTES */}
-                                        <div style={{ margin: '0.25rem 0 0.35rem', display: 'flex', flexDirection: 'column', gap: '0.14rem' }}>
+                                        {/* PRECIOS: AL POR MAYOR DESTACADO */}
+                                        <div style={{ margin: '0.25rem 0 0.35rem', display: 'flex', flexDirection: 'column', gap: '0.18rem' }}>
                                           {hasMayor && (
                                             <div style={{ 
-                                              fontSize: '0.78rem', 
-                                              fontWeight: 600, 
-                                              color: '#15803d', 
-                                              background: '#dcfce7',
-                                              padding: '0.16rem 0.35rem',
-                                              borderRadius: '6px',
-                                              border: '1px solid #bbf7d0',
-                                              fontFamily: "'Poppins', sans-serif" 
+                                              background: isBulkEligible ? '#dcfce7' : '#f0fdf4',
+                                              padding: '0.25rem 0.35rem',
+                                              borderRadius: '7px',
+                                              border: isBulkEligible ? '1.5px solid #86efac' : '1px solid #bbf7d0',
+                                              display: 'flex',
+                                              flexDirection: 'column',
+                                              alignItems: 'center',
+                                              gap: '0.04rem'
                                             }}>
-                                              <span style={{ fontSize: '0.62rem', fontWeight: 500 }}>Mayor (+6): </span>
-                                              ${optMayor.toLocaleString('es-CO')}
+                                              <span style={{ fontSize: '0.64rem', fontWeight: 500, color: '#15803d', fontFamily: "'Poppins', sans-serif" }}>
+                                                Al por mayor (+6)
+                                              </span>
+                                              <strong style={{ fontSize: '1.02rem', fontWeight: 600, color: '#166534', lineHeight: 1.15, fontFamily: "'Poppins', sans-serif" }}>
+                                                ${optMayor.toLocaleString('es-CO')}
+                                              </strong>
                                             </div>
                                           )}
                                           <div style={{ 
-                                            fontSize: '0.70rem', 
-                                            color: '#64748b', 
+                                            fontSize: '0.74rem', 
+                                            color: isBulkEligible ? '#94a3b8' : '#64748b', 
                                             fontWeight: 500, 
                                             textDecoration: isBulkEligible ? 'line-through' : 'none', 
-                                            fontFamily: "'Poppins', sans-serif" 
+                                            fontFamily: "'Poppins', sans-serif",
+                                            marginTop: '0.04rem'
                                           }}>
-                                            <span style={{ fontSize: '0.62rem', fontWeight: 400, color: '#94a3b8' }}>Detal: </span>
+                                            <span style={{ fontSize: '0.66rem', fontWeight: 400, color: '#94a3b8' }}>Detal: </span>
                                             ${optDetal.toLocaleString('es-CO')}
                                           </div>
                                         </div>
