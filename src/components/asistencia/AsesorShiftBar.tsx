@@ -11,6 +11,8 @@ interface AsesorShiftBarProps {
   isLogoutAttemptModalOpen?: boolean;
   onCancelLogoutAttempt?: () => void;
   onConfirmLogoutWithoutCheckOut?: () => void;
+  forceOpenCheckOutModal?: boolean;
+  onCloseForceCheckOutModal?: () => void;
 }
 
 export const AsesorShiftBar: React.FC<AsesorShiftBarProps> = ({
@@ -19,27 +21,43 @@ export const AsesorShiftBar: React.FC<AsesorShiftBarProps> = ({
   onCheckOutSuccess,
   isLogoutAttemptModalOpen = false,
   onCancelLogoutAttempt,
-  onConfirmLogoutWithoutCheckOut
+  onConfirmLogoutWithoutCheckOut,
+  forceOpenCheckOutModal = false,
+  onCloseForceCheckOutModal
 }) => {
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [observaciones, setObservaciones] = useState('');
   const [elapsedText, setElapsedText] = useState('');
+  const [alertaSalida, setAlertaSalida] = useState(() => 
+    asistenciaService.verificarAproximacionSalida(jornadaActiva)
+  );
 
-  // Actualizar el tiempo transcurrido en vivo
+  // Escuchar apertura forzada desde notificaciones
+  useEffect(() => {
+    if (forceOpenCheckOutModal) {
+      setShowModal(true);
+      if (onCloseForceCheckOutModal) onCloseForceCheckOutModal();
+    }
+  }, [forceOpenCheckOutModal, onCloseForceCheckOutModal]);
+
+  // Actualizar el tiempo transcurrido y verificar proximidad de salida en vivo
   useEffect(() => {
     const updateElapsed = () => {
       if (jornadaActiva?.hora_entrada) {
         setElapsedText(asistenciaService.calcularTiempoTranscurrido(jornadaActiva.hora_entrada));
+        setAlertaSalida(asistenciaService.verificarAproximacionSalida(jornadaActiva));
       }
     };
     updateElapsed();
-    const interval = setInterval(updateElapsed, 30000); // Cada 30 seg
+    const interval = setInterval(updateElapsed, 20000); // Cada 20 seg
     return () => clearInterval(interval);
   }, [jornadaActiva]);
 
   const horaEntradaStr = asistenciaService.formatearHora12(jornadaActiva?.hora_entrada);
   const horaActualStr = asistenciaService.formatearHora12(new Date().toISOString());
+
+  const isAlertActive = alertaSalida.isApproaching || alertaSalida.isCompleted;
 
   const handleConfirmarSalida = async (thenLogout: boolean = false) => {
     try {
@@ -64,18 +82,19 @@ export const AsesorShiftBar: React.FC<AsesorShiftBarProps> = ({
 
   return (
     <>
-      {/* ── BARRA O PILL ENCABEZADO: JORNADA ACTIVA ── */}
+      {/* ── BARRA O PILL ENCABEZADO: JORNADA ACTIVA CON ALERTA DE SALIDA ── */}
       <div
         style={{
           display: 'inline-flex',
           alignItems: 'center',
           gap: '0.65rem',
-          background: '#f0fdf4',
-          border: '1.5px solid #bbf7d0',
+          background: alertaSalida.isCompleted ? '#fef2f2' : isAlertActive ? '#fffbeb' : '#f0fdf4',
+          border: alertaSalida.isCompleted ? '1.5px solid #f87171' : isAlertActive ? '1.5px solid #f59e0b' : '1.5px solid #bbf7d0',
           borderRadius: '12px',
           padding: '0.35rem 0.65rem',
-          boxShadow: '0 2px 8px rgba(16, 185, 129, 0.08)',
-          fontFamily: "'Poppins', sans-serif"
+          boxShadow: isAlertActive ? '0 2px 10px rgba(245, 158, 11, 0.2)' : '0 2px 8px rgba(16, 185, 129, 0.08)',
+          fontFamily: "'Poppins', sans-serif",
+          transition: 'all 0.25s ease'
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -84,21 +103,44 @@ export const AsesorShiftBar: React.FC<AsesorShiftBarProps> = ({
               width: '9px',
               height: '9px',
               borderRadius: '50%',
-              background: '#10b981',
-              boxShadow: '0 0 0 3px rgba(16, 185, 129, 0.25)',
+              background: alertaSalida.isCompleted ? '#ef4444' : isAlertActive ? '#f59e0b' : '#10b981',
+              boxShadow: alertaSalida.isCompleted
+                ? '0 0 0 3px rgba(239, 68, 68, 0.3)'
+                : isAlertActive
+                ? '0 0 0 3px rgba(245, 158, 11, 0.3)'
+                : '0 0 0 3px rgba(16, 185, 129, 0.25)',
               display: 'inline-block'
             }}
           />
           <div style={{ lineHeight: 1.2 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-              <span style={{ fontSize: '0.74rem', fontWeight: 600, color: '#166534' }}>
-                Jornada activa
+              <span
+                style={{
+                  fontSize: '0.74rem',
+                  fontWeight: 600,
+                  color: alertaSalida.isCompleted ? '#b91c1c' : isAlertActive ? '#b45309' : '#166534'
+                }}
+              >
+                {isAlertActive ? '⏰ Se acerca tu hora de salida' : 'Jornada activa'}
               </span>
-              <span style={{ fontSize: '0.68rem', color: '#15803d', fontWeight: 500 }}>
-                • Entrada: {horaEntradaStr}
+              <span
+                style={{
+                  fontSize: '0.68rem',
+                  color: isAlertActive ? '#92400e' : '#15803d',
+                  fontWeight: 500
+                }}
+              >
+                • {isAlertActive ? 'Por favor cierra turno' : `Entrada: ${horaEntradaStr}`}
               </span>
             </div>
-            <span style={{ fontSize: '0.65rem', color: '#047857', fontWeight: 400, display: 'block' }}>
+            <span
+              style={{
+                fontSize: '0.65rem',
+                color: isAlertActive ? '#b45309' : '#047857',
+                fontWeight: 400,
+                display: 'block'
+              }}
+            >
               ⏱️ {elapsedText}
             </span>
           </div>
@@ -108,9 +150,9 @@ export const AsesorShiftBar: React.FC<AsesorShiftBarProps> = ({
           type="button"
           onClick={() => setShowModal(true)}
           style={{
-            background: '#ffffff',
-            border: '1px solid #86efac',
-            color: '#15803d',
+            background: alertaSalida.isCompleted ? '#ef4444' : isAlertActive ? '#f59e0b' : '#ffffff',
+            border: isAlertActive ? 'none' : '1px solid #86efac',
+            color: isAlertActive ? '#ffffff' : '#15803d',
             borderRadius: '8px',
             padding: '0.35rem 0.65rem',
             fontSize: '0.72rem',
@@ -118,19 +160,20 @@ export const AsesorShiftBar: React.FC<AsesorShiftBarProps> = ({
             cursor: 'pointer',
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '0.25rem',
+            gap: '0.3rem',
             transition: 'all 0.15s ease',
-            whiteSpace: 'nowrap'
+            whiteSpace: 'nowrap',
+            boxShadow: isAlertActive ? '0 2px 6px rgba(245, 158, 11, 0.35)' : 'none'
           }}
           onMouseEnter={e => {
-            e.currentTarget.style.background = '#dcfce7';
+            if (!isAlertActive) e.currentTarget.style.background = '#dcfce7';
           }}
           onMouseLeave={e => {
-            e.currentTarget.style.background = '#ffffff';
+            if (!isAlertActive) e.currentTarget.style.background = '#ffffff';
           }}
         >
           <LogOut size={13} />
-          <span>MARCAR SALIDA</span>
+          <span>{isAlertActive ? 'CERRAR TURNO' : 'MARCAR SALIDA'}</span>
         </button>
       </div>
 
@@ -188,6 +231,29 @@ export const AsesorShiftBar: React.FC<AsesorShiftBarProps> = ({
                 </p>
               </div>
             </div>
+
+            {isAlertActive && (
+              <div
+                style={{
+                  background: alertaSalida.isCompleted ? '#fef2f2' : '#fffbeb',
+                  border: alertaSalida.isCompleted ? '1px solid #fecaca' : '1px solid #fde68a',
+                  borderRadius: '12px',
+                  padding: '0.75rem',
+                  marginBottom: '1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  fontSize: '0.8rem',
+                  color: alertaSalida.isCompleted ? '#991b1b' : '#92400e',
+                  lineHeight: 1.35
+                }}
+              >
+                <span style={{ fontSize: '1.1rem' }}>⏰</span>
+                <span style={{ fontWeight: 500 }}>
+                  {alertaSalida.mensaje || 'Se acerca tu hora de salida, por favor cierra turno.'}
+                </span>
+              </div>
+            )}
 
             {/* Resumen de la Jornada */}
             <div

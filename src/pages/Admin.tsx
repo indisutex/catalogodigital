@@ -92,15 +92,15 @@ type ProductFormData = {
 };
 
 const defaultFamDetailedPrices: FamilyDetailedPrices = {
-  "Dama Única": { detal: "26000", mayor: "", p50: "", deshabilitado: false },
-  "Dama Plus": { detal: "30000", mayor: "", p50: "", deshabilitado: false },
-  "Caballero Única": { detal: "31000", mayor: "", p50: "", deshabilitado: false },
-  "2XL Unisex": { detal: "36000", mayor: "", p50: "", deshabilitado: false },
-  "2/4": { detal: "22000", mayor: "", p50: "", deshabilitado: false },
-  "6/8": { detal: "22000", mayor: "", p50: "", deshabilitado: false },
-  "10/12": { detal: "22000", mayor: "", p50: "", deshabilitado: false },
-  "14/16": { detal: "23000", mayor: "", p50: "", deshabilitado: false },
-  "18": { detal: "26000", mayor: "", p50: "", deshabilitado: false }
+  "Dama Única": { detal: "36000", mayor: "26000", p50: "25000", deshabilitado: false },
+  "Dama Plus": { detal: "41000", mayor: "31000", p50: "30000", deshabilitado: false },
+  "Caballero Única": { detal: "41000", mayor: "31000", p50: "30000", deshabilitado: false },
+  "2XL Unisex": { detal: "44000", mayor: "34000", p50: "33000", deshabilitado: false },
+  "2/4": { detal: "32000", mayor: "22000", p50: "21000", deshabilitado: false },
+  "6/8": { detal: "32000", mayor: "22000", p50: "21000", deshabilitado: false },
+  "10/12": { detal: "32000", mayor: "22000", p50: "21000", deshabilitado: false },
+  "14/16": { detal: "33000", mayor: "22500", p50: "21500", deshabilitado: false },
+  "18": { detal: "36000", mayor: "26000", p50: "25000", deshabilitado: false }
 };
 
 const getInitialFamDetailedPrices = (p: any): FamilyDetailedPrices => {
@@ -110,14 +110,25 @@ const getInitialFamDetailedPrices = (p: any): FamilyDetailedPrices => {
 
   const keys = ['Dama Única', 'Dama Plus', 'Caballero Única', '2XL Unisex', '2/4', '6/8', '10/12', '14/16', '18'];
   const defaults: Record<string, string> = {
+    'Dama Única': '36000',
+    'Dama Plus': '41000',
+    'Caballero Única': '41000',
+    '2XL Unisex': '44000',
+    '2/4': '32000',
+    '6/8': '32000',
+    '10/12': '32000',
+    '14/16': '33000',
+    '18': '36000'
+  };
+  const defaultMayor: Record<string, string> = {
     'Dama Única': '26000',
-    'Dama Plus': '30000',
+    'Dama Plus': '31000',
     'Caballero Única': '31000',
-    '2XL Unisex': '36000',
+    '2XL Unisex': '34000',
     '2/4': '22000',
     '6/8': '22000',
     '10/12': '22000',
-    '14/16': '23000',
+    '14/16': '22500',
     '18': '26000'
   };
 
@@ -128,21 +139,21 @@ const getInitialFamDetailedPrices = (p: any): FamilyDetailedPrices => {
     if (existingDet && existingDet[k]) {
       result[k] = {
         detal: existingDet[k].detal !== undefined ? String(existingDet[k].detal) : (defaults[k] || ''),
-        mayor: existingDet[k].mayor !== undefined ? String(existingDet[k].mayor) : '',
+        mayor: existingDet[k].mayor !== undefined ? String(existingDet[k].mayor) : (defaultMayor[k] || ''),
         p50: existingDet[k].p50 !== undefined ? String(existingDet[k].p50) : '',
         deshabilitado: isDeshabilitado
       };
     } else if (existingTallas[k]) {
       result[k] = {
         detal: String(existingTallas[k]),
-        mayor: '',
+        mayor: defaultMayor[k] || '',
         p50: '',
         deshabilitado: isDeshabilitado
       };
     } else {
       result[k] = {
         detal: defaults[k] || '',
-        mayor: '',
+        mayor: defaultMayor[k] || '',
         p50: '',
         deshabilitado: isDeshabilitado
       };
@@ -1278,12 +1289,13 @@ export default function Admin() {
       ...additionalUpdates
     };
 
-    const isLeadTarget = leads.some(l => l.id === pedId) && !pedidos.some(p => p.id === pedId);
+    const isLeadTarget = (leads.some(l => l.id === pedId) && !pedidos.some(p => p.id === pedId)) || Boolean((additionalUpdates as any)?.isLead) || Boolean(selectedPedido?.id === pedId && ((selectedPedido as any).isLead || selectedPedido.estado === 'abandonado'));
 
     if (isLeadTarget) {
+      const nextLeadStatus = nextStatus === 'mensaje_enviado' ? 'contactado' : nextStatus === 'confirmado' ? 'recuperado' : nextStatus;
       try {
         const leadPayload: any = {
-          retargeting_estado: nextStatus === 'mensaje_enviado' ? 'contactado' : nextStatus,
+          retargeting_estado: nextLeadStatus,
           ...additionalUpdates
         };
         const { error } = await supabase.from('leads').update(leadPayload).eq('id', pedId);
@@ -1292,8 +1304,8 @@ export default function Admin() {
         console.error('Error updating lead audit:', e);
       }
 
-      setLeads(prev => prev.map(l => l.id === pedId ? { ...l, retargeting_estado: nextStatus === 'mensaje_enviado' ? 'contactado' : nextStatus, ...additionalUpdates, historial: updatedLogs } : l));
-      setSelectedPedido((prev: any) => prev && prev.id === pedId ? { ...prev, retargeting_estado: nextStatus === 'mensaje_enviado' ? 'contactado' : nextStatus, ...additionalUpdates, historial: updatedLogs } : prev);
+      setLeads(prev => prev.map(l => l.id === pedId ? { ...l, retargeting_estado: nextLeadStatus, ...additionalUpdates, historial: updatedLogs } : l));
+      setSelectedPedido((prev: any) => prev && prev.id === pedId ? { ...prev, retargeting_estado: nextLeadStatus, ...additionalUpdates, historial: updatedLogs } : prev);
     } else {
       try {
         const { error } = await supabase.from('pedidos').update({
@@ -1351,13 +1363,45 @@ export default function Admin() {
     if (isExitoso) return null;
     if (ped.estado === 'cancelado') return null;
 
-    const mp = getMetodoPago(ped);
-    const isContra = mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra')) || ped.estado === 'contra_entrega' || ped.estado === 'contra_confirmado' || ped.estado === 'contra_mensaje_enviado' || ped.estado === 'contra_despachado';
+    const mp = (getMetodoPago(ped) || '').toLowerCase();
+    const isContra = mp.includes('contra') || ped.estado === 'contra_entrega' || ped.estado === 'contra_confirmado' || ped.estado === 'contra_mensaje_enviado' || ped.estado === 'contra_despachado';
     const isLead = Boolean(ped.isLead || ped.retargeting_estado || (!ped.estado && !ped.atendido && !ped.numero_guia)) || ped.estado === 'abandonado';
 
     const logs = getOrderAuditLogs(ped);
     const lastLog = logs.length > 0 ? logs[logs.length - 1] : null;
 
+    // 1. SI ES LEAD / INTERESADO: evaluar primero para que nunca muestre "Por Confirmar" de contra entrega por error
+    if (isLead) {
+      const isConfirmed = ped.estado === 'confirmado' || ped.retargeting_estado === 'recuperado' || lastLog?.estado === 'confirmado' || logs.some(l => l.estado === 'confirmado');
+      if (isConfirmed) {
+        return {
+          badgeText: '✓ Confirmado',
+          badgeBg: '#ecfdf5',
+          badgeColor: '#15803d',
+          badgeBorder: '#86efac',
+          statusKey: 'confirmado'
+        };
+      }
+      const isContacted = ped.retargeting_estado === 'contactado' || ped.estado === 'mensaje_enviado' || Boolean(ped.fecha_envio_mensaje) || lastLog?.estado === 'mensaje_enviado' || logs.some(l => l.estado === 'mensaje_enviado');
+      if (isContacted) {
+        return {
+          badgeText: '⏱️ Esperando Resp.',
+          badgeBg: '#fffbeb',
+          badgeColor: '#b45309',
+          badgeBorder: '#fde68a',
+          statusKey: 'mensaje_enviado'
+        };
+      }
+      return {
+        badgeText: '⚡ Sin Contactar',
+        badgeBg: '#faf5ff',
+        badgeColor: '#7e22ce',
+        badgeBorder: '#e9d5ff',
+        statusKey: 'pendiente'
+      };
+    }
+
+    // 2. CONTRA ENTREGA
     if (isContra) {
       const cStatus = getContraStatus(ped);
       if (cStatus === 'confirmado') {
@@ -1396,36 +1440,7 @@ export default function Admin() {
       };
     }
 
-    if (isLead) {
-      const isConfirmed = ped.estado === 'confirmado' || ped.retargeting_estado === 'recuperado' || lastLog?.estado === 'confirmado';
-      if (isConfirmed) {
-        return {
-          badgeText: '✓ Confirmado',
-          badgeBg: '#ecfdf5',
-          badgeColor: '#15803d',
-          badgeBorder: '#86efac',
-          statusKey: 'confirmado'
-        };
-      }
-      const isContacted = ped.retargeting_estado === 'contactado' || ped.estado === 'mensaje_enviado' || Boolean(ped.fecha_envio_mensaje) || lastLog?.estado === 'mensaje_enviado';
-      if (isContacted) {
-        return {
-          badgeText: '⏱️ Esperando Resp.',
-          badgeBg: '#fffbeb',
-          badgeColor: '#b45309',
-          badgeBorder: '#fde68a',
-          statusKey: 'mensaje_enviado'
-        };
-      }
-      return {
-        badgeText: '⚡ Sin Contactar',
-        badgeBg: '#faf5ff',
-        badgeColor: '#7e22ce',
-        badgeBorder: '#e9d5ff',
-        statusKey: 'pendiente'
-      };
-    }
-
+    // 3. TRANSFERENCIAS Y PAGO ANTICIPADO (ESPERANDO PAGO)
     if (ped.pantallazo_url) {
       return {
         badgeText: '📸 Comprobante',
@@ -1436,7 +1451,7 @@ export default function Admin() {
       };
     }
 
-    const isConfirmed = ped.estado === 'confirmado' || lastLog?.estado === 'confirmado';
+    const isConfirmed = ped.estado === 'confirmado' || lastLog?.estado === 'confirmado' || logs.some(l => l.estado === 'confirmado');
     if (isConfirmed) {
       return {
         badgeText: '✓ Pago Confirmado',
@@ -1447,7 +1462,7 @@ export default function Admin() {
       };
     }
 
-    const isReminded = ped.estado === 'mensaje_enviado' || Boolean(ped.fecha_envio_mensaje) || lastLog?.estado === 'mensaje_enviado';
+    const isReminded = ped.estado === 'mensaje_enviado' || Boolean(ped.fecha_envio_mensaje) || lastLog?.estado === 'mensaje_enviado' || logs.some(l => l.estado === 'mensaje_enviado');
     if (isReminded) {
       return {
         badgeText: '⏱️ Esperando Resp.',
@@ -1495,8 +1510,8 @@ export default function Admin() {
     }
     const parsedProds = getParsedProducts(ped.productos);
 
-    const mp = getMetodoPago(ped);
-    const isContra = mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra')) || ped.estado === 'contra_entrega' || ped.estado === 'contra_confirmado' || ped.estado === 'contra_mensaje_enviado' || ped.estado === 'contra_despachado';
+    const mp = (getMetodoPago(ped) || '').toLowerCase();
+    const isContra = mp.includes('contra') || ped.estado === 'contra_entrega' || ped.estado === 'contra_confirmado' || ped.estado === 'contra_mensaje_enviado' || ped.estado === 'contra_despachado';
     const isExitoso = ped.estado === 'completado' || ped.estado === 'entregado_pagado' || ped.estado === 'entregado';
     const contraSubStatus = isContra ? getContraStatus(ped) : null;
     
@@ -2032,7 +2047,36 @@ export default function Admin() {
 
           {/* Fila 2: Botón de acción principal (100% ANCHO - NUNCA SE DESBORDA) */}
           {(isLead || ped.estado === 'cancelado') ? (() => {
+            const isConfirmed = ped.estado === 'confirmado' || ped.retargeting_estado === 'recuperado' || getOrderAuditLogs(ped).some(l => l.estado === 'confirmado');
             const isContactado = ped.retargeting_estado === 'contactado' || ped.estado === 'mensaje_enviado' || Boolean(ped.fecha_envio_mensaje) || getOrderAuditLogs(ped).some(l => l.estado === 'mensaje_enviado' || l.estado === 'contactado');
+
+            if (isConfirmed && ped.estado !== 'cancelado') {
+              return (
+                <button 
+                  type="button" 
+                  onClick={() => setSelectedPedido(ped)}
+                  className="btn-action-outline pedido-card-btn"
+                  style={{
+                    width: '100%',
+                    height: '36px',
+                    padding: '0 0.75rem',
+                    justifyContent: 'space-between',
+                    borderColor: '#86efac',
+                    background: '#f0fdf4',
+                    fontFamily: "'Poppins', sans-serif"
+                  }}
+                >
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
+                    <CheckCircle size={14} color="#16a34a" />
+                    <span style={{ fontWeight: 500, color: '#15803d' }}>
+                      Convertir en Pedido
+                    </span>
+                  </div>
+                  <ChevronRight size={13} color="#16a34a" />
+                </button>
+              );
+            }
+
             return (
               <button 
                 type="button" 
@@ -2165,7 +2209,34 @@ export default function Admin() {
               <ChevronRight size={13} color="#94a3b8" />
             </button>
           ) : (() => {
+            const isConfirmed = ped.estado === 'confirmado' || getOrderAuditLogs(ped).some(l => l.estado === 'confirmado');
             const isReminded = ped.estado === 'mensaje_enviado' || Boolean(ped.fecha_envio_mensaje) || getOrderAuditLogs(ped).some(l => l.estado === 'mensaje_enviado');
+
+            if (isConfirmed) {
+              return (
+                <button 
+                  type="button" 
+                  className="btn-action-outline pedido-card-btn"
+                  onClick={() => setSelectedPedido(ped)}
+                  style={{
+                    width: '100%',
+                    height: '36px',
+                    padding: '0 0.75rem',
+                    justifyContent: 'space-between',
+                    borderColor: '#86efac',
+                    background: '#f0fdf4',
+                    fontFamily: "'Poppins', sans-serif"
+                  }}
+                >
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem' }}>
+                    <CheckCircle size={14} color="#16a34a" />
+                    <span style={{ fontWeight: 500, color: '#15803d' }}>Aprobar Pago / Despachar</span>
+                  </div>
+                  <ChevronRight size={13} color="#16a34a" />
+                </button>
+              );
+            }
+
             return (
               <button 
                 type="button" 
@@ -3767,19 +3838,19 @@ export default function Admin() {
         });
       }
 
-      const pDamaUnica = preciosDetalladosMap["Dama Única"]?.detal || 26000;
-      const pDamaPlus = preciosDetalladosMap["Dama Plus"]?.detal || 30000;
-      const pCaballeroUnica = preciosDetalladosMap["Caballero Única"]?.detal || 31000;
-      const p2xlUnisex = preciosDetalladosMap["2XL Unisex"]?.detal || 36000;
+      const pDamaUnica = preciosDetalladosMap["Dama Única"]?.detal || 36000;
+      const pDamaPlus = preciosDetalladosMap["Dama Plus"]?.detal || 41000;
+      const pCaballeroUnica = preciosDetalladosMap["Caballero Única"]?.detal || 41000;
+      const p2xlUnisex = preciosDetalladosMap["2XL Unisex"]?.detal || 44000;
 
-      const basePrice = parseFloat(f.precio) || (isFam ? (preciosTallasMap["2/4"] || 22000) : 0);
+      const basePrice = parseFloat(f.precio) || (isFam ? (preciosTallasMap["2/4"] || 32000) : 0);
 
       const preciosFam = isFam ? {
         dama_unica: pDamaUnica,
         dama_plus: pDamaPlus,
         caballero_unica: pCaballeroUnica,
         unisex_2xl: p2xlUnisex,
-        nino: preciosTallasMap["2/4"] || 22000,
+        nino: preciosTallasMap["2/4"] || 32000,
         hombre: pCaballeroUnica,
         mujer: pDamaUnica,
         opciones_deshabilitadas: opcionesDeshabilitadas,
@@ -4231,6 +4302,7 @@ export default function Admin() {
       if (error) throw error;
       
       setLeads(prev => prev.map(l => l.id === leadId ? { ...l, retargeting_estado: status, retargeted_by: userLabel } : l));
+      setSelectedPedido((prev: any) => prev && prev.id === leadId ? { ...prev, retargeting_estado: status, retargeted_by: userLabel } : prev);
       showToast(`Lead marcado como ${status} ✓`, 'success');
     } catch (err: any) {
       console.error(err);
@@ -4281,17 +4353,17 @@ export default function Admin() {
       });
     }
 
-    const pDamaUnica = preciosDetalladosMap["Dama Única"]?.detal || 26000;
-    const pDamaPlus = preciosDetalladosMap["Dama Plus"]?.detal || 30000;
-    const pCaballeroUnica = preciosDetalladosMap["Caballero Única"]?.detal || 31000;
-    const p2xlUnisex = preciosDetalladosMap["2XL Unisex"]?.detal || 36000;
+    const pDamaUnica = preciosDetalladosMap["Dama Única"]?.detal || 36000;
+    const pDamaPlus = preciosDetalladosMap["Dama Plus"]?.detal || 41000;
+    const pCaballeroUnica = preciosDetalladosMap["Caballero Única"]?.detal || 41000;
+    const p2xlUnisex = preciosDetalladosMap["2XL Unisex"]?.detal || 44000;
 
     const preciosFam = isFam ? {
       dama_unica: pDamaUnica,
       dama_plus: pDamaPlus,
       caballero_unica: pCaballeroUnica,
       unisex_2xl: p2xlUnisex,
-      nino: preciosTallasMap["2/4"] || 22000,
+      nino: preciosTallasMap["2/4"] || 32000,
       hombre: pCaballeroUnica,
       mujer: pDamaUnica,
       opciones_deshabilitadas: opcionesDeshabilitadas,
@@ -4650,20 +4722,20 @@ export default function Admin() {
         result = result.filter(p => p.estado === 'cancelado');
       } else if (orderFilterStatus === 'comprobante') {
         result = result.filter(p => {
-          const mp = getMetodo(p);
-          const isContra = mp === 'Contra Entrega' || (mp && mp.toLowerCase().includes('contra')) || p.estado === 'contra_entrega';
+          const mp = (getMetodo(p) || '').toLowerCase();
+          const isContra = mp.includes('contra') || p.estado === 'contra_entrega' || Boolean(p.estado && p.estado.startsWith('contra_'));
           return !!p.pantallazo_url && p.estado !== 'completado' && p.estado !== 'cancelado' && !isContra;
         });
       } else if (orderFilterStatus === 'esperando_pago') {
         result = result.filter(p => {
-          const mp = getMetodo(p);
-          const isContra = mp === 'Contra Entrega' || (mp && mp.toLowerCase().includes('contra')) || p.estado === 'contra_entrega';
+          const mp = (getMetodo(p) || '').toLowerCase();
+          const isContra = mp.includes('contra') || p.estado === 'contra_entrega' || Boolean(p.estado && p.estado.startsWith('contra_'));
           return !p.pantallazo_url && p.estado !== 'completado' && p.estado !== 'cancelado' && !isContra;
         });
       } else if (orderFilterStatus === 'contra_entrega') {
         result = result.filter(p => {
-          const mp = getMetodo(p);
-          const isContra = mp === 'Contra Entrega' || (mp && mp.toLowerCase().includes('contra')) || p.estado === 'contra_entrega';
+          const mp = (getMetodo(p) || '').toLowerCase();
+          const isContra = mp.includes('contra') || p.estado === 'contra_entrega' || Boolean(p.estado && p.estado.startsWith('contra_'));
           return isContra && p.estado !== 'completado' && p.estado !== 'cancelado';
         });
       } else if (orderFilterStatus === 'exitosas') {
@@ -5352,24 +5424,24 @@ export default function Admin() {
 
   const contraEntregaFiltrados = useMemo(() => {
     return allFilteredPedidos.filter(p => {
-      const mp = getMetodoPago(p);
-      const isContra = p.estado === 'contra_entrega' || p.estado === 'mensaje_enviado' || p.estado === 'confirmado' || p.estado === 'despachado' || mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra'));
+      const mp = (getMetodoPago(p) || '').toLowerCase();
+      const isContra = mp.includes('contra') || p.estado === 'contra_entrega' || p.estado === 'contra_confirmado' || p.estado === 'contra_mensaje_enviado' || p.estado === 'contra_despachado';
       return isContra && p.estado !== 'completado' && p.estado !== 'entregado_pagado' && p.estado !== 'cancelado' && p.estado !== 'abandonado';
     });
   }, [allFilteredPedidos]);
 
   const pendientePagoFiltrados = useMemo(() => {
     return allFilteredPedidos.filter(p => {
-      const mp = getMetodoPago(p);
-      const isContra = p.estado === 'contra_entrega' || p.estado === 'mensaje_enviado' || p.estado === 'confirmado' || p.estado === 'despachado' || mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra'));
+      const mp = (getMetodoPago(p) || '').toLowerCase();
+      const isContra = mp.includes('contra') || p.estado === 'contra_entrega' || p.estado === 'contra_confirmado' || p.estado === 'contra_mensaje_enviado' || p.estado === 'contra_despachado';
       return !p.pantallazo_url && p.estado !== 'completado' && p.estado !== 'entregado_pagado' && p.estado !== 'cancelado' && p.estado !== 'abandonado' && !isContra;
     });
   }, [allFilteredPedidos]);
 
   const comprobarPagosFiltrados = useMemo(() => {
     return allFilteredPedidos.filter(p => {
-      const mp = getMetodoPago(p);
-      const isContra = p.estado === 'contra_entrega' || p.estado === 'mensaje_enviado' || p.estado === 'confirmado' || p.estado === 'despachado' || mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra'));
+      const mp = (getMetodoPago(p) || '').toLowerCase();
+      const isContra = mp.includes('contra') || p.estado === 'contra_entrega' || p.estado === 'contra_confirmado' || p.estado === 'contra_mensaje_enviado' || p.estado === 'contra_despachado';
       return Boolean(p.pantallazo_url) && p.estado !== 'completado' && p.estado !== 'entregado_pagado' && p.estado !== 'cancelado' && p.estado !== 'abandonado' && !isContra;
     });
   }, [allFilteredPedidos]);
@@ -5610,10 +5682,16 @@ export default function Admin() {
     if (!ped) return '';
     if (ped.estado === 'cancelado') return 'cancelado';
     if (ped.estado === 'completado' || ped.estado === 'entregado_pagado' || ped.estado === 'entregado') return 'completado';
-    if (ped.isLead || ped.estado === 'abandonado') return 'abandonado';
     
-    const mp = getMetodoPago(ped);
-    const isContra = mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra')) || ped.estado === 'contra_entrega' || ped.estado === 'contra_confirmado' || ped.estado === 'contra_mensaje_enviado' || ped.estado === 'contra_despachado';
+    const isLead = Boolean(ped.isLead || ped.retargeting_estado || (!ped.estado && !ped.atendido && !ped.numero_guia)) || ped.estado === 'abandonado';
+    if (isLead) {
+      if (ped.estado === 'confirmado' || ped.retargeting_estado === 'recuperado') return 'lead_confirmado';
+      if (ped.retargeting_estado === 'contactado' || ped.estado === 'mensaje_enviado' || Boolean(ped.fecha_envio_mensaje)) return 'lead_mensaje_enviado';
+      return 'abandonado';
+    }
+
+    const mp = (getMetodoPago(ped) || '').toLowerCase();
+    const isContra = mp.includes('contra') || ped.estado === 'contra_entrega' || ped.estado === 'contra_confirmado' || ped.estado === 'contra_mensaje_enviado' || ped.estado === 'contra_despachado';
     if (isContra) {
       const cStatus = getContraStatus(ped);
       if (cStatus === 'confirmado') return 'contra_confirmado';
@@ -5623,6 +5701,8 @@ export default function Admin() {
     }
     
     if (ped.pantallazo_url) return 'comprobante';
+    if (ped.estado === 'confirmado') return 'pago_confirmado';
+    if (ped.estado === 'mensaje_enviado' || Boolean(ped.fecha_envio_mensaje)) return 'pago_mensaje_enviado';
     return 'pendiente';
   };
 
@@ -5670,6 +5750,43 @@ export default function Admin() {
           accion: 'Tarjeta movida a Interesados (Abandonado)'
         }, 'abandonado');
         showToast('Tarjeta movida a Interesados 🛒', 'success');
+      } else if (nuevoDestino === 'lead_mensaje_enviado') {
+        if (isLead) {
+          setLeads(prev => prev.map(l => l.id === id ? { ...l, retargeting_estado: 'contactado', fecha_envio_mensaje: nowIso } : l));
+          setSelectedPedido((prev: any) => prev ? { ...prev, retargeting_estado: 'contactado', fecha_envio_mensaje: nowIso } : null);
+          await supabase.from('leads').update({ retargeting_estado: 'contactado' }).eq('id', id);
+        } else {
+          setPedidos(prev => prev.map(p => p.id === id ? { ...p, estado: 'mensaje_enviado', fecha_envio_mensaje: nowIso } : p));
+          setSelectedPedido((prev: any) => prev ? { ...prev, estado: 'mensaje_enviado', fecha_envio_mensaje: nowIso } : null);
+          await supabase.from('pedidos').update({ estado: 'mensaje_enviado', fecha_envio_mensaje: nowIso }).eq('id', id);
+        }
+        await saveOrderAuditLog(id, {
+          estado: 'mensaje_enviado',
+          usuario: getCurrentUserName(),
+          fecha: nowIso,
+          accion: 'Tarjeta marcada como Esperando Respuesta (Contacto WhatsApp)'
+        }, 'mensaje_enviado', { fecha_envio_mensaje: nowIso });
+        showToast('Tarjeta movida a Esperando Respuesta ⏱️', 'success');
+      } else if (nuevoDestino === 'lead_confirmado') {
+        let activeId = id;
+        if (isLead) {
+          const newOrder = await convertLeadToPedido(id, { metodo_pago: ped.metodo_pago || 'Contra Entrega', estado: 'confirmado' });
+          if (newOrder) {
+            setSelectedPedido(newOrder);
+            activeId = newOrder.id;
+          }
+        } else {
+          setPedidos(prev => prev.map(p => p.id === id ? { ...p, estado: 'confirmado' } : p));
+          setSelectedPedido((prev: any) => prev ? { ...prev, estado: 'confirmado' } : null);
+          await supabase.from('pedidos').update({ estado: 'confirmado' }).eq('id', id);
+        }
+        await saveOrderAuditLog(activeId, {
+          estado: 'confirmado',
+          usuario: getCurrentUserName(),
+          fecha: nowIso,
+          accion: 'Interesado marcado como Confirmado ✓'
+        }, 'confirmado');
+        showToast('¡Interesado confirmado y convertido a pedido ✓!', 'success');
       } else if (nuevoDestino === 'contra_pendiente' || nuevoDestino === 'contra_entrega') {
         let activeId = id;
         if (isLead) {
@@ -5770,6 +5887,28 @@ export default function Admin() {
           accion: 'Tarjeta movida a Pendiente de Pago (Transferencia)'
         }, 'pendiente', { metodo_pago: 'Pago Anticipado' });
         showToast('Tarjeta movida a Pendiente de Pago ⏳', 'success');
+      } else if (nuevoDestino === 'pago_mensaje_enviado') {
+        setPedidos(prev => prev.map(p => p.id === id ? { ...p, estado: 'mensaje_enviado', fecha_envio_mensaje: nowIso } : p));
+        setSelectedPedido((prev: any) => prev ? { ...prev, estado: 'mensaje_enviado', fecha_envio_mensaje: nowIso } : null);
+        await supabase.from('pedidos').update({ estado: 'mensaje_enviado', fecha_envio_mensaje: nowIso }).eq('id', id);
+        await saveOrderAuditLog(id, {
+          estado: 'mensaje_enviado',
+          usuario: getCurrentUserName(),
+          fecha: nowIso,
+          accion: 'Tarjeta movida a Esperando Comprobante de Pago ⏱️'
+        }, 'mensaje_enviado', { fecha_envio_mensaje: nowIso });
+        showToast('Tarjeta movida a Esperando Comprobante ⏱️', 'success');
+      } else if (nuevoDestino === 'pago_confirmado') {
+        setPedidos(prev => prev.map(p => p.id === id ? { ...p, estado: 'confirmado' } : p));
+        setSelectedPedido((prev: any) => prev ? { ...prev, estado: 'confirmado' } : null);
+        await supabase.from('pedidos').update({ estado: 'confirmado' }).eq('id', id);
+        await saveOrderAuditLog(id, {
+          estado: 'confirmado',
+          usuario: getCurrentUserName(),
+          fecha: nowIso,
+          accion: 'Pago/Pedido marcado como Confirmado ✓'
+        }, 'confirmado');
+        showToast('Pago marcado como Confirmado ✓', 'success');
       } else if (nuevoDestino === 'comprobante') {
         const defaultReceipt = 'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=300&q=80';
         const receiptUrl = ped.pantallazo_url || defaultReceipt;
@@ -7204,10 +7343,10 @@ export default function Admin() {
                             </label>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0.85rem' }}>
                               {[
-                                { key: 'Dama Única', label: '👩 Dama Única', defaultDetal: '26000' },
-                                { key: 'Dama Plus', label: '👩 Dama Plus', defaultDetal: '30000' },
-                                { key: 'Caballero Única', label: '👨 Caballero Única', defaultDetal: '31000' },
-                                { key: '2XL Unisex', label: '🧑 2XL Unisex', defaultDetal: '36000' }
+                                { key: 'Dama Única', label: '👩 Dama Única', defaultDetal: '36000' },
+                                { key: 'Dama Plus', label: '👩 Dama Plus', defaultDetal: '41000' },
+                                { key: 'Caballero Única', label: '👨 Caballero Única', defaultDetal: '41000' },
+                                { key: '2XL Unisex', label: '🧑 2XL Unisex', defaultDetal: '44000' }
                               ].map(item => {
                                 const famForm = (editingProduct as any).precios_detallados_fam || getInitialFamDetailedPrices(editingProduct);
                                 const currentObj = famForm[item.key] || { detal: item.defaultDetal, mayor: '', p50: '', deshabilitado: false };
@@ -7296,11 +7435,11 @@ export default function Admin() {
                             </label>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.65rem' }}>
                               {[
-                                { key: '2/4', label: 'Talla 2/4', defaultDetal: '22000' },
-                                { key: '6/8', label: 'Talla 6/8', defaultDetal: '22000' },
-                                { key: '10/12', label: 'Talla 10/12', defaultDetal: '22000' },
-                                { key: '14/16', label: 'Talla 14/16', defaultDetal: '23000' },
-                                { key: '18', label: 'Talla 18', defaultDetal: '26000' }
+                                { key: '2/4', label: 'Talla 2/4', defaultDetal: '32000' },
+                                { key: '6/8', label: 'Talla 6/8', defaultDetal: '32000' },
+                                { key: '10/12', label: 'Talla 10/12', defaultDetal: '32000' },
+                                { key: '14/16', label: 'Talla 14/16', defaultDetal: '33000' },
+                                { key: '18', label: 'Talla 18', defaultDetal: '36000' }
                               ].map(item => {
                                 const famForm = (editingProduct as any).precios_detallados_fam || getInitialFamDetailedPrices(editingProduct);
                                 const currentObj = famForm[item.key] || { detal: item.defaultDetal, mayor: '', p50: '', deshabilitado: false };
@@ -9038,10 +9177,10 @@ export default function Admin() {
                                     </label>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '0.85rem' }}>
                                       {[
-                                        { key: 'Dama Única', label: '👩 Dama Única', defaultDetal: '26000' },
-                                        { key: 'Dama Plus', label: '👩 Dama Plus', defaultDetal: '30000' },
-                                        { key: 'Caballero Única', label: '👨 Caballero Única', defaultDetal: '31000' },
-                                        { key: '2XL Unisex', label: '🧑 2XL Unisex', defaultDetal: '36000' }
+                                        { key: 'Dama Única', label: '👩 Dama Única', defaultDetal: '36000' },
+                                        { key: 'Dama Plus', label: '👩 Dama Plus', defaultDetal: '41000' },
+                                        { key: 'Caballero Única', label: '👨 Caballero Única', defaultDetal: '41000' },
+                                        { key: '2XL Unisex', label: '🧑 2XL Unisex', defaultDetal: '44000' }
                                       ].map(item => {
                                         const currentObj = form.precios_detallados_fam?.[item.key] || { detal: item.defaultDetal, mayor: '', p50: '', deshabilitado: false };
                                         const isOff = !!currentObj.deshabilitado;
@@ -9129,11 +9268,11 @@ export default function Admin() {
                                     </label>
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '0.65rem' }}>
                                       {[
-                                        { key: '2/4', label: 'Talla 2/4', defaultDetal: '22000' },
-                                        { key: '6/8', label: 'Talla 6/8', defaultDetal: '22000' },
-                                        { key: '10/12', label: 'Talla 10/12', defaultDetal: '22000' },
-                                        { key: '14/16', label: 'Talla 14/16', defaultDetal: '23000' },
-                                        { key: '18', label: 'Talla 18', defaultDetal: '26000' }
+                                        { key: '2/4', label: 'Talla 2/4', defaultDetal: '32000' },
+                                        { key: '6/8', label: 'Talla 6/8', defaultDetal: '32000' },
+                                        { key: '10/12', label: 'Talla 10/12', defaultDetal: '32000' },
+                                        { key: '14/16', label: 'Talla 14/16', defaultDetal: '33000' },
+                                        { key: '18', label: 'Talla 18', defaultDetal: '36000' }
                                       ].map(item => {
                                         const currentObj = form.precios_detallados_fam?.[item.key] || { detal: item.defaultDetal, mayor: '', p50: '', deshabilitado: false };
                                         const isOff = !!currentObj.deshabilitado;
@@ -9531,11 +9670,11 @@ export default function Admin() {
                                       };
 
                                       const rows = [
-                                        { label: '👩 Dama Única', ...getOpt('Dama Única', fam.dama_unica || 26000) },
-                                        { label: '👩 Dama Plus', ...getOpt('Dama Plus', fam.dama_plus || 30000) },
-                                        { label: '👨 Caballero Única', ...getOpt('Caballero Única', fam.caballero_unica || 31000) },
-                                        { label: '🧑 2XL Unisex', ...getOpt('2XL Unisex', fam.unisex_2xl || 36000) },
-                                        { label: '👶 Niños (2/4 a 18)', ...getOpt('2/4', fam.nino || 22000) },
+                                        { label: '👩 Dama Única', ...getOpt('Dama Única', fam.dama_unica || 36000) },
+                                        { label: '👩 Dama Plus', ...getOpt('Dama Plus', fam.dama_plus || 41000) },
+                                        { label: '👨 Caballero Única', ...getOpt('Caballero Única', fam.caballero_unica || 41000) },
+                                        { label: '🧑 2XL Unisex', ...getOpt('2XL Unisex', fam.unisex_2xl || 44000) },
+                                        { label: '👶 Niños (2/4 a 18)', ...getOpt('2/4', fam.nino || 32000) },
                                       ];
 
                                       return (
@@ -16947,8 +17086,8 @@ export default function Admin() {
                   const prodsList = Array.isArray(selectedPedido.productos) ? selectedPedido.productos : [];
                   const totalUnitsInOrder = prodsList.reduce((sum: number, p: any) => sum + (Number(p.cantidad) || 1), 0);
                   const isWholesaleOrder = totalUnitsInOrder >= 6 || (selectedPedido as any).descuento_mayor_aplicado || prodsList.some((p: any) => p.precio_aplicado_mayor);
-                  const mp = getMetodoPago(selectedPedido);
-                  const isContra = mp === 'Contra Entrega' || (Boolean(mp) && mp.toLowerCase().includes('contra')) || selectedPedido.estado === 'contra_entrega' || selectedPedido.estado === 'mensaje_enviado' || selectedPedido.estado === 'confirmado' || selectedPedido.estado === 'despachado';
+                  const mp = (getMetodoPago(selectedPedido) || '').toLowerCase();
+                  const isContra = mp.includes('contra') || selectedPedido.estado === 'contra_entrega' || selectedPedido.estado === 'contra_confirmado' || selectedPedido.estado === 'contra_mensaje_enviado' || selectedPedido.estado === 'contra_despachado';
                   const contraStatus = getContraStatus(selectedPedido);
                   const auditLogs = getOrderAuditLogs(selectedPedido);
                   const isLeadOrder = Boolean((selectedPedido as any).isLead || selectedPedido.estado === 'abandonado' || (selectedPedido as any).retargeting_estado || (!selectedPedido.estado && !selectedPedido.atendido && !selectedPedido.numero_guia));
@@ -16973,11 +17112,11 @@ export default function Admin() {
                                 borderRadius: '20px',
                                 fontWeight: 600,
                                 textTransform: 'uppercase',
-                                background: isOrderExitoso ? '#dcfce7' : isContra ? '#ffedd5' : selectedPedido.estado === 'cancelado' ? '#fee2e2' : '#f1f5f9',
-                                color: isOrderExitoso ? '#166534' : isContra ? '#c2410c' : selectedPedido.estado === 'cancelado' ? '#991b1b' : '#475569',
+                                background: isOrderExitoso ? '#dcfce7' : isLeadOrder ? '#faf5ff' : isContra ? '#ffedd5' : selectedPedido.estado === 'cancelado' ? '#fee2e2' : '#f1f5f9',
+                                color: isOrderExitoso ? '#166534' : isLeadOrder ? '#7e22ce' : isContra ? '#c2410c' : selectedPedido.estado === 'cancelado' ? '#991b1b' : '#475569',
                                 border: '1px solid currentColor'
                               }}>
-                                {isOrderExitoso ? (isContra ? '✅ Entregado y Recaudado' : '✅ Pago Verificado') : isContra ? '🚚 Contra Entrega' : selectedPedido.estado === 'cancelado' ? '🚫 Cancelado' : '💳 Transferencia'}
+                                {isOrderExitoso ? (isContra ? '✅ Entregado y Recaudado' : '✅ Pago Verificado') : isLeadOrder ? '🛒 Interesado' : isContra ? '🚚 Contra Entrega' : selectedPedido.estado === 'cancelado' ? '🚫 Cancelado' : '💳 Transferencia'}
                               </span>
                             );
                           })()}
@@ -18137,44 +18276,64 @@ export default function Admin() {
                                           </div>
                                         )}
 
-                                        <button
-                                          type="button"
-                                          style={{
-                                            width: '100%',
-                                            padding: '0.7rem 1rem',
-                                            background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                                            color: '#ffffff',
-                                            border: 'none',
-                                            borderRadius: '12px',
-                                            cursor: 'pointer',
-                                            fontWeight: 600,
-                                            fontSize: '0.86rem',
+                                        {(selectedPedido as any).retargeting_estado === 'recuperado' || selectedPedido.estado === 'confirmado' ? (
+                                          <div style={{
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            gap: '0.45rem',
-                                            fontFamily: "'Poppins', sans-serif",
-                                            boxShadow: '0 4px 14px rgba(16, 185, 129, 0.28)'
-                                          }}
-                                          onClick={async () => {
-                                            const newOrder = await convertLeadToPedido(selectedPedido.id, {
-                                              metodo_pago: selectedPedido.metodo_pago && selectedPedido.metodo_pago !== 'Por definir' ? selectedPedido.metodo_pago : 'Contra Entrega',
-                                              estado: 'confirmado',
-                                              pantallazo_url: null
-                                            });
-                                            const nowIso = new Date().toISOString();
-                                            await saveOrderAuditLog(newOrder.id, {
-                                              estado: 'confirmado',
-                                              usuario: getCurrentUserName(),
-                                              fecha: nowIso,
-                                              accion: 'Interesado confirmó su pedido (convertido a pedido confirmado)'
-                                            }, 'confirmado');
-                                            setSelectedPedido(newOrder);
-                                            showToast('¡Interesado convertido a Pedido Confirmado ✓!', 'success');
-                                          }}
-                                        >
-                                          <Check size={16} color="#ffffff" /> <span>Confirmar y Convertir en Pedido ✓</span>
-                                        </button>
+                                            gap: '0.35rem',
+                                            background: '#ecfdf5',
+                                            border: '1px solid #86efac',
+                                            borderRadius: '10px',
+                                            padding: '0.55rem 0.75rem',
+                                            fontSize: '0.8rem',
+                                            color: '#15803d',
+                                            fontWeight: 500,
+                                            fontFamily: "'Poppins', sans-serif"
+                                          }}>
+                                            <Check size={15} color="#16a34a" />
+                                            <span>✓ Interesado Confirmado (Convertido a Pedido)</span>
+                                          </div>
+                                        ) : (
+                                          <button
+                                            type="button"
+                                            style={{
+                                              width: '100%',
+                                              padding: '0.7rem 1rem',
+                                              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                                              color: '#ffffff',
+                                              border: 'none',
+                                              borderRadius: '12px',
+                                              cursor: 'pointer',
+                                              fontWeight: 600,
+                                              fontSize: '0.86rem',
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              justifyContent: 'center',
+                                              gap: '0.45rem',
+                                              fontFamily: "'Poppins', sans-serif",
+                                              boxShadow: '0 4px 14px rgba(16, 185, 129, 0.28)'
+                                            }}
+                                            onClick={async () => {
+                                              const newOrder = await convertLeadToPedido(selectedPedido.id, {
+                                                metodo_pago: selectedPedido.metodo_pago && selectedPedido.metodo_pago !== 'Por definir' ? selectedPedido.metodo_pago : 'Contra Entrega',
+                                                estado: 'confirmado',
+                                                pantallazo_url: null
+                                              });
+                                              const nowIso = new Date().toISOString();
+                                              await saveOrderAuditLog(newOrder.id, {
+                                                estado: 'confirmado',
+                                                usuario: getCurrentUserName(),
+                                                fecha: nowIso,
+                                                accion: 'Interesado confirmó su pedido (convertido a pedido confirmado)'
+                                              }, 'confirmado');
+                                              setSelectedPedido(newOrder);
+                                              showToast('¡Interesado convertido a Pedido Confirmado ✓!', 'success');
+                                            }}
+                                          >
+                                            <Check size={16} color="#ffffff" /> <span>Confirmar y Convertir en Pedido ✓</span>
+                                          </button>
+                                        )}
 
                                         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.35fr) minmax(0, 1fr)', gap: '0.45rem', width: '100%', boxSizing: 'border-box' }}>
                                           <button
@@ -18305,6 +18464,64 @@ export default function Admin() {
                                   })() : (
                                     /* Pedido normal de transferencia */
                                     <>
+                                      {selectedPedido.estado === 'confirmado' ? (
+                                        <div style={{
+                                          display: 'flex',
+                                          alignItems: 'center',
+                                          justifyContent: 'center',
+                                          gap: '0.35rem',
+                                          background: '#ecfdf5',
+                                          border: '1px solid #86efac',
+                                          borderRadius: '8px',
+                                          padding: '0.45rem 0.65rem',
+                                          fontSize: '0.78rem',
+                                          color: '#15803d',
+                                          fontWeight: 500,
+                                          fontFamily: "'Poppins', sans-serif",
+                                          marginBottom: '0.35rem'
+                                        }}>
+                                          <Check size={15} color="#16a34a" />
+                                          <span>✓ Pedido / Pago Confirmado por Cliente</span>
+                                        </div>
+                                      ) : (selectedPedido.estado !== 'completado' && selectedPedido.estado !== 'cancelado') ? (
+                                        <button
+                                          type="button"
+                                          className="btn-action-outline"
+                                          style={{
+                                            width: '100%',
+                                            padding: '0.65rem 0.9rem',
+                                            fontSize: '0.84rem',
+                                            borderColor: '#86efac',
+                                            color: '#15803d',
+                                            background: '#f0fdf4',
+                                            fontFamily: "'Poppins', sans-serif",
+                                            fontWeight: 500,
+                                            borderRadius: '10px',
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '0.4rem',
+                                            marginBottom: '0.35rem'
+                                          }}
+                                          onClick={async () => {
+                                            const nowIso = new Date().toISOString();
+                                            setPedidos(prev => prev.map(p => p.id === selectedPedido.id ? { ...p, estado: 'confirmado' } : p));
+                                            setSelectedPedido((prev: any) => prev ? { ...prev, estado: 'confirmado' } : null);
+                                            await supabase.from('pedidos').update({ estado: 'confirmado' }).eq('id', selectedPedido.id);
+                                            await saveOrderAuditLog(selectedPedido.id, {
+                                              estado: 'confirmado',
+                                              usuario: getCurrentUserName(),
+                                              fecha: nowIso,
+                                              accion: 'Cliente confirmó el pedido / pago (verificado por asesor)'
+                                            }, 'confirmado');
+                                            showToast('¡Pedido marcado como confirmado! ✓', 'success');
+                                          }}
+                                        >
+                                          <Check size={16} color="#16a34a" /> <span>Marcar como Confirmado (Cliente Verificado)</span>
+                                        </button>
+                                      ) : null}
+
                                       {selectedPedido.estado !== 'completado' && (
                                         <button
                                           type="button"
@@ -18328,7 +18545,7 @@ export default function Admin() {
                                           }}
                                           onClick={() => handleAprobarPago(selectedPedido)}
                                         >
-                                          <CheckCircle size={16} color="#ffffff" /> <span>Aprobar y Confirmar Pago</span>
+                                          <CheckCircle size={16} color="#ffffff" /> <span>{selectedPedido.estado === 'confirmado' ? 'Aprobar Pago y Completar Venta' : 'Aprobar y Confirmar Pago'}</span>
                                         </button>
                                       )}
 
@@ -18565,10 +18782,18 @@ export default function Admin() {
                                   <option value="completado">✅ Venta Exitosa (Pagado / Completado)</option>
                                   <option value="cancelado">🚫 Cancelado</option>
                                 </optgroup>
+                                <optgroup label="Sub-estados Interesados">
+                                  <option value="lead_mensaje_enviado">⏱️ Interesado: Esperando Respuesta</option>
+                                  <option value="lead_confirmado">✓ Interesado: Confirmado (Convertir en Pedido)</option>
+                                </optgroup>
                                 <optgroup label="Sub-estados Contra Entrega">
                                   <option value="contra_mensaje_enviado">⏱️ Contra Entrega: Esperando Respuesta</option>
                                   <option value="contra_confirmado">✓ Contra Entrega: Confirmado por Cliente</option>
                                   <option value="contra_despachado">📦 Contra Entrega: Despachado con Guía</option>
+                                </optgroup>
+                                <optgroup label="Sub-estados Esperando Pago (Transferencia)">
+                                  <option value="pago_mensaje_enviado">⏱️ Transferencia: Cobro Enviado (Esperando Comprobante)</option>
+                                  <option value="pago_confirmado">✓ Transferencia: Pago Confirmado por Cliente</option>
                                 </optgroup>
                               </select>
                             </div>

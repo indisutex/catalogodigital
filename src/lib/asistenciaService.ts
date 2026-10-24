@@ -14,9 +14,24 @@ export interface AsistenciaFilters {
   busqueda?: string;
 }
 
+export interface ConfiguracionHorarioAsistencia {
+  duracionTurnoHoras: number; // Duración habitual del turno en horas (default: 8)
+  horaSalidaTienda: string; // Hora comercial estándar de salida (ej. "18:00")
+  minutosAnticipacion: number; // Minutos previos para avisar (default: 30)
+  activarNotificacionSalida: boolean; // Notificación activa (default: true)
+}
+
+export const DEFAULT_CONFIG_HORARIO: ConfiguracionHorarioAsistencia = {
+  duracionTurnoHoras: 8,
+  horaSalidaTienda: '18:00',
+  minutosAnticipacion: 30,
+  activarNotificacionSalida: true
+};
+
 // Auxiliar para almacenamiento en nube (Supabase Storage fallback)
 const getCloudStoragePath = (tenantId: string) => `${STORAGE_PREFIX}${tenantId}.json`;
 const getLocalStorageKey = (tenantId: string) => `asistencia_local_${tenantId}`;
+const getHorarioConfigKey = (tenantId: string) => `asistencia_config_horario_${tenantId}`;
 
 /**
  * Obtiene los registros almacenados en el fallback de nube (Storage) y local
@@ -617,5 +632,142 @@ export const asistenciaService = {
     const fileName = `Reporte_Asistencia_${cleanTenant}_${fechaHoy}.xlsx`;
 
     XLSX.writeFile(wb, fileName);
+  },
+
+  /**
+   * Obtiene la configuración de horarios y alertas de turno para el tenant
+   */
+  getConfiguracionHorario(tenantId: string): ConfiguracionHorarioAsistencia {
+    try {
+      const stored = localStorage.getItem(getHorarioConfigKey(tenantId));
+      if (stored) {
+        return { ...DEFAULT_CONFIG_HORARIO, ...JSON.parse(stored) };
+      }
+    } catch {}
+    return { ...DEFAULT_CONFIG_HORARIO };
+  },
+
+  /**
+   * Guarda la configuración de horarios y alertas de turno
+   */
+  guardarConfiguracionHorario(tenantId: string, config: Partial<ConfiguracionHorarioAsistencia>): ConfiguracionHorarioAsistencia {
+    const current = this.getConfiguracionHorario(tenantId);
+    const updated: ConfiguracionHorarioAsistencia = { ...current, ...config };
+    try {
+      localStorage.setItem(getHorarioConfigKey(tenantId), JSON.stringify(updated));
+    } catch {}
+    return updated;
+  },
+
+  /**
+   * Evalúa si una jornada activa está próxima a finalizar o ya ha culminado su horario
+   */
+  verificarAproximacionSalida(
+    jornada: RegistroAsistencia | null,
+    customConfig?: ConfiguracionHorarioAsistencia
+  ): {
+    isApproaching: boolean;
+    isCompleted: boolean;
+    minsWorked: number;
+    mensaje: string;
+    duracionTexto: string;
+    tiempoRestanteMinutos?: number;
+  } {
+    if (!jornada || jornada.estado !== 'activo' || !jornada.hora_entrada) {
+      return { isApproaching: false, isCompleted: false, minsWorked: 0, mensaje: '', duracionTexto: '' };
+    }
+
+    const config = customConfig || this.getConfiguracionHorario(jornada.tenant_id);
+    if (config.activarNotificacionSalida === false) {
+      return { isApproaching: false, isCompleted: false, minsWorked: 0, mensaje: '', duracionTexto: '' };
+    }
+
+    const entradaMs = new Date(jornada.hora_entrada).getTime();
+    const now = Date.now();
+    const minsWorked = Math.max(0, Math.floor((now - entradaMs) / 60000));
+    const duracionTexto = this.formatearDuracion(minsWorked);
+
+    const duracionMetaMins = Math.max(60, (config.duracionTurnoHoras || 8) * 60);
+    const anticipacionMins = Math.max(5, config.minutosAnticipacion || 30);
+    const umbralAproximacionMins = Math.max(0, duracionMetaMins - anticipacionMins);
+
+    // 1. Verificación por duración del turno
+    let isCompleted = minsWorked >= duracionMetaMins;
+    let isApproaching = minsWorked >= umbralAproximacionMins;
+    let tiempoRestanteMinutos = Math.max(0, duracionMetaMins - minsWorked);
+
+    // 2. Verificación por hora fija de salida comercial (ej. 18:00)
+    if (!isCompleted && config.horaSalidaTienda && minsWorked >= 60) {
+      try {
+        const [targetHour, targetMin] = config.horaSalidaTienda.split(':').map(Number);
+        if (!isNaN(targetHour) && !isNaN(targetMin)) {
+          const targetDate = new Date();
+          targetDate.setHours(targetHour, targetMin, 0, 0);
+
+          const diffToTargetMs = targetDate.getTime() - now;
+          const diffToTargetMins = Math.round(diffToTargetMs / 60000);
+
+          // Si estamos a minutos de la hora de salida comercial
+          if (diffToTargetMins <= anticipacionMins && diffToTargetMins >= 0) {
+            isApproaching = true;
+            tiempoRestanteMinutos = Math.min(tiempoRestanteMinutos, diffToTargetMins);
+          } else if (diffToTargetMins < 0 && Math.abs(diffToTargetMins) <= 300) {
+            // Ya se cumplió la hora de salida de la tienda
+            isCompleted = true;
+            isApproaching = true;
+            tiempoRestanteMinutos = 0;
+          }
+        }
+      } catch {}
+    }
+
+    let mensaje = '';
+    if (isCompleted) {
+      mensaje = `Has cumplido ${duracionTexto} de jornada. Se acerca tu hora de salida, por favor cierra turno.`;
+    } else if (isApproaching) {
+      mensaje = `Llevas ${duracionTexto} de jornada. Se acerca tu hora de salida, por favor cierra turno.`;
+    }
+
+    return {
+      isApproaching,
+      isCompleted,
+      minsWorked,
+      mensaje,
+      duracionTexto,
+      tiempoRestanteMinutos
+    };
+  },
+
+  /**
+   * Solicita permiso para notificaciones nativas del navegador
+   */
+  async solicitarPermisoNotificacionesNavegador(): Promise<boolean> {
+    if (typeof window === 'undefined' || !('Notification' in window)) return false;
+    try {
+      if (Notification.permission === 'granted') return true;
+      if (Notification.permission !== 'denied') {
+        const permission = await Notification.requestPermission();
+        return permission === 'granted';
+      }
+    } catch {}
+    return false;
+  },
+
+  /**
+   * Envía una notificación nativa al navegador (si los permisos están otorgados)
+   */
+  enviarNotificacionNavegador(titulo: string, cuerpo: string, tag: string = 'asistencia_turno'): boolean {
+    if (typeof window === 'undefined' || !('Notification' in window)) return false;
+    try {
+      if (Notification.permission === 'granted') {
+        new Notification(titulo, {
+          body: cuerpo,
+          icon: '/favicon.ico',
+          tag
+        });
+        return true;
+      }
+    } catch {}
+    return false;
   }
 };

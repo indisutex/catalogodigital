@@ -1536,19 +1536,22 @@
   z-index: 1100;
   background: rgba(0,0,0,0.65);
   backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: 0.75rem;
+  padding-bottom: max(1.25rem, calc(1.25rem + env(safe-area-inset-bottom, 0px)));
   animation: fadeIn 0.2s ease;
+  box-sizing: border-box;
 }
 
 .detail-modal {
   background: #fff;
-  border-radius: 24px;
+  border-radius: 20px;
   width: 100%;
   max-width: 460px;
-  max-height: 90dvh;
+  max-height: 88dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1566,20 +1569,60 @@
   position: absolute;
   top: 12px;
   right: 12px;
-  z-index: 10;
+  z-index: 30;
   width: 36px;
   height: 36px;
   border-radius: 50%;
   border: none;
-  background: rgba(255,255,255,0.9);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.18);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s;
+  color: #0f172a;
+  transition: all 0.15s ease;
 }
-.detail-close:hover { background: #f1f5f9; }
+.detail-close:hover {
+  background: #ffffff;
+  transform: scale(1.06);
+}
+.detail-close:active {
+  transform: scale(0.95);
+}
+
+.detail-download-top-btn {
+  position: absolute;
+  top: 12px;
+  right: 54px;
+  z-index: 30;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.18);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0f172a;
+  transition: all 0.15s ease;
+}
+.detail-download-top-btn:hover {
+  background: #ffffff;
+  transform: scale(1.06);
+}
+.detail-download-top-btn:active {
+  transform: scale(0.95);
+}
+.detail-download-top-btn .spin {
+  animation: spin 1s linear infinite;
+}
 
 .detail-share-btn {
   position: absolute;
@@ -1730,14 +1773,15 @@
 }
 .detail-thumb:hover { opacity: 1; }
 
-/* ── Info section: compact, no scroll ── */
+/* ── Info section: compact, smooth scroll ── */
 .detail-info {
-  padding: 12px 18px 16px;
+  padding: 12px 16px 20px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   overflow-y: auto;
   flex-grow: 1;
+  -webkit-overflow-scrolling: touch;
 }
 
 .detail-header-row {
@@ -1901,15 +1945,15 @@
 /* Mobile viewport settings */
 @media (max-width: 480px) {
   .detail-modal {
-    max-width: 95%;
-    max-height: 92dvh;
+    max-width: 96%;
+    max-height: 84dvh;
     border-radius: 20px;
   }
   .detail-carousel {
     aspect-ratio: auto;
-    height: 44dvh;
-    max-height: 380px;
-    min-height: 250px;
+    height: 33dvh;
+    max-height: 260px;
+    min-height: 190px;
   }
   .detail-carousel-img {
     width: 100% !important;
@@ -1974,31 +2018,12 @@
   .menu-app-container {
     padding-bottom: env(safe-area-inset-bottom);
   }
-  .detail-modal {
-    padding-bottom: calc(1.25rem + env(safe-area-inset-bottom));
-  }
 }
 
 /* ── Ticker / info bar responsive ── */
 @media (max-width: 480px) {
   .info-ticker-text {
     font-size: 0.72rem !important;
-  }
-  .detail-modal {
-    max-width: 95%;
-    max-height: 92dvh;
-    border-radius: 20px;
-  }
-  .detail-carousel {
-    aspect-ratio: auto;
-    height: 44dvh;
-    max-height: 380px;
-    min-height: 250px;
-  }
-  .detail-carousel-img {
-    width: 100% !important;
-    height: 100% !important;
-    object-fit: contain !important;
   }
   /* Cart / checkout */
   .cart-item {
