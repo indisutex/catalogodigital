@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useMemo } from 'react';
 import { supabase, getTenantId, normalizeTenantId, findClosestTenant } from '../lib/supabase';
 import { updatePWAManifestAndIcons } from '../lib/pwa';
 import type { Producto, Categoria, Subcategoria, Configuracion } from '../types';
-import { Loader2, Search, Plus, ShoppingBag, X, ShoppingCart, Volume2, VolumeX, Package, HelpCircle, RefreshCw, Menu, Check, Filter, LayoutGrid, Users, Sparkles, Shirt, Baby, Moon, Layers, Tag, Heart, Gift, ChevronDown, ChevronLeft, Download, Trash2, CreditCard, MessageCircle, ArrowLeft, ChevronRight } from 'lucide-react';
+import { Loader2, Search, Plus, ShoppingBag, X, ShoppingCart, Volume2, VolumeX, Package, HelpCircle, RefreshCw, Menu, Check, Filter, LayoutGrid, Users, Sparkles, Shirt, Baby, Moon, Layers, Tag, Heart, Gift, ChevronDown, ChevronLeft, Download, Trash2, CreditCard, MessageCircle, ArrowLeft, ChevronRight, Coins } from 'lucide-react';
 import { useCart, getEffectivePrice } from '../context/CartContext';
 import { useCurrency, COUNTRIES_DATABASE } from '../context/CurrencyContext';
 import PqrsModal from '../components/PqrsModal';
@@ -2334,8 +2334,8 @@ export default function MenuDigital() {
               className="hero-action-circle-btn"
               style={{
                 width: 'auto',
-                minWidth: '68px',
-                padding: '0 0.55rem',
+                height: '38px',
+                padding: '0 0.7rem 0 0.5rem',
                 borderRadius: '20px',
                 fontSize: '0.74rem',
                 fontWeight: 600,
@@ -2344,14 +2344,29 @@ export default function MenuDigital() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                gap: '0.25rem',
+                gap: '0.35rem',
                 background: 'rgba(255, 255, 255, 0.95)',
-                boxShadow: '0 2px 8px rgba(15,23,42,0.1)'
+                boxShadow: '0 3px 10px rgba(0, 0, 0, 0.1)',
+                border: '1px solid rgba(226, 232, 240, 0.9)',
+                cursor: 'pointer',
+                userSelect: 'none'
               }}
-              title={currency === 'COP' ? 'Dolarizar catálogo (USD)' : 'Cambiar a pesos colombianos (COP)'}
+              title={currency === 'COP' ? 'Clic para dolarizar el catálogo (USD)' : 'Clic para ver en pesos colombianos (COP)'}
               aria-label="Cambiar moneda"
             >
-              <span>{currency === 'COP' ? '🇨🇴 COP' : '🇺🇸 USD'}</span>
+              <div style={{
+                width: '22px',
+                height: '22px',
+                borderRadius: '50%',
+                background: currency === 'USD' ? '#dcfce7' : '#fef3c7',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0
+              }}>
+                <Coins size={13} strokeWidth={2.4} style={{ color: currency === 'USD' ? '#16a34a' : '#d97706' }} />
+              </div>
+              <span style={{ fontWeight: 600, letterSpacing: '0.02em', color: '#1e293b' }}>{currency}</span>
             </button>
             {/* 1. Lupa / Buscador */}
             <button
@@ -2702,12 +2717,12 @@ export default function MenuDigital() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '0.35rem',
+                    gap: '0.4rem',
                     fontFamily: "'Poppins', sans-serif"
                   }}
                 >
-                  <span>🇨🇴</span>
-                  <span>COP ($)</span>
+                  <Coins size={16} strokeWidth={2.2} style={{ color: currency === 'COP' ? 'var(--primary, #f36b8e)' : '#d97706' }} />
+                  <span>COP ($ COL)</span>
                 </button>
                 <button
                   type="button"
@@ -2724,18 +2739,18 @@ export default function MenuDigital() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    gap: '0.35rem',
+                    gap: '0.4rem',
                     fontFamily: "'Poppins', sans-serif"
                   }}
                 >
-                  <span>🇺🇸</span>
-                  <span>USD ($)</span>
+                  <Coins size={16} strokeWidth={2.2} style={{ color: currency === 'USD' ? 'var(--primary, #f36b8e)' : '#16a34a' }} />
+                  <span>USD ($ INT)</span>
                 </button>
               </div>
               <div style={{ marginTop: '0.45rem', fontSize: '0.72rem', color: '#64748b', textAlign: 'center', fontFamily: "'Poppins', sans-serif" }}>
                 {currency === 'USD' 
                   ? `Tasa estimada: 1 USD ≈ $${Math.round(exchangeRate).toLocaleString('es-CO')} COP` 
-                  : `País detectado: ${country.flag} ${country.name}`
+                  : `Ubicación detectada: ${country.name} (${country.code})`
                 }
               </div>
             </div>
