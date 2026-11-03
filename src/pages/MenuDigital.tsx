@@ -4,6 +4,7 @@ import { updatePWAManifestAndIcons } from '../lib/pwa';
 import type { Producto, Categoria, Subcategoria, Configuracion } from '../types';
 import { Loader2, Search, Plus, ShoppingBag, X, ShoppingCart, Volume2, VolumeX, Package, HelpCircle, RefreshCw, Menu, Check, Filter, LayoutGrid, Users, Sparkles, Shirt, Baby, Moon, Layers, Tag, Heart, Gift, ChevronDown, ChevronLeft, Download, Trash2, CreditCard, MessageCircle, ArrowLeft, ChevronRight } from 'lucide-react';
 import { useCart, getEffectivePrice } from '../context/CartContext';
+import { useCurrency, COUNTRIES_DATABASE } from '../context/CurrencyContext';
 import PqrsModal from '../components/PqrsModal';
 import { getOptimizedImageUrl } from '../lib/imageOptimizer';
 import { PromoWelcomeBanner as TemuWelcomeBanner } from '../components/NochePerfectaGameModal';
@@ -1373,6 +1374,18 @@ export default function MenuDigital() {
     setIsBulkDiscountEnabled, totalUnits, isBulkDiscountApplied, effectiveCartBuyerType 
   } = useCart();
 
+  const {
+    currency,
+    setCurrency,
+    country,
+    setCountry,
+    isInternational,
+    exchangeRate,
+    formatPrice,
+    showDetectedBanner,
+    dismissDetectedBanner
+  } = useCurrency();
+
   const totalSavings = isBulkDiscountApplied
     ? items.reduce((sum, item) => {
         const priceDetal = getEffectivePrice(item, 'detal', markupPorcentaje, ajustesProductos, descuentoPromocional);
@@ -1471,7 +1484,7 @@ export default function MenuDigital() {
 
   const saveOrUpdateLead = async (customFormData = formData) => {
     if (isOrderSubmittedRef.current) return;
-    const phoneVal = validateWhatsAppPhone(customFormData.telefono);
+    const phoneVal = validateWhatsAppPhone(customFormData.telefono, isInternational);
     const currentLeadId = leadIdRef.current || leadId;
     
     // NUNCA guardar o crear borrador/lead si el teléfono no es un celular colombiano válido de 10 dígitos (inicia por 3)
@@ -1757,7 +1770,7 @@ export default function MenuDigital() {
   // Disparar o actualizar lead en tiempo real tan pronto el cliente llena o modifica cualquier campo con celular válido
   useEffect(() => {
     if (isOrderSubmittedRef.current) return;
-    const phoneVal = validateWhatsAppPhone(formData.telefono);
+    const phoneVal = validateWhatsAppPhone(formData.telefono, isInternational);
     const currentLeadId = leadIdRef.current || leadId;
 
     // Solo se dispara si ya existe un leadId o si el teléfono ya es un celular de WhatsApp válido (10 dígitos)
@@ -1774,7 +1787,7 @@ export default function MenuDigital() {
   useEffect(() => {
     if (!configuracion) return;
     if (isOrderSubmittedRef.current) return;
-    const phoneVal = validateWhatsAppPhone(formData.telefono);
+    const phoneVal = validateWhatsAppPhone(formData.telefono, isInternational);
     if (!phoneVal.isValid || items.length === 0) return;
     if (leadIdRef.current || leadId) return; // ya existe el lead, no crear duplicado
     
@@ -1895,9 +1908,9 @@ export default function MenuDigital() {
       alert('Por favor ingresa tu número de teléfono / WhatsApp.');
       return;
     }
-    const phoneVal = validateWhatsAppPhone(formData.telefono);
+    const phoneVal = validateWhatsAppPhone(formData.telefono, isInternational);
     if (!phoneVal.isValid) {
-      alert(phoneVal.message || 'Por favor verifica tu número celular. Debe tener 10 dígitos y pertenecer a un operador en Colombia (iniciando por 3, ej: 300 123 4567).');
+      alert(phoneVal.message || (isInternational ? 'Por favor verifica tu número telefónico o WhatsApp.' : 'Por favor verifica tu número celular. Debe tener 10 dígitos y pertenecer a un operador en Colombia (iniciando por 3, ej: 300 123 4567).'));
       return;
     }
     if (formData.email.trim() && !formData.email.includes('@')) {
@@ -1905,15 +1918,15 @@ export default function MenuDigital() {
       return;
     }
     if (metodoRecepcion === 'domicilio') {
-      if (!selectedDepartamento.trim()) {
+      if (!isInternational && !selectedDepartamento.trim()) {
         alert('Por favor selecciona tu departamento de residencia.');
         return;
       }
       if (!formData.ciudad.trim()) {
-        alert('Por favor selecciona o ingresa tu ciudad o municipio.');
+        alert(isInternational ? 'Por favor ingresa tu ciudad o provincia.' : 'Por favor selecciona o ingresa tu ciudad o municipio.');
         return;
       }
-      if (!formData.barrio.trim()) {
+      if (!isInternational && !formData.barrio.trim()) {
         alert('Por favor ingresa el nombre de tu barrio.');
         return;
       }
@@ -1921,7 +1934,7 @@ export default function MenuDigital() {
         alert('Por favor ingresa tu dirección exacta de entrega (Calle, Carrera, número, apto).');
         return;
       }
-      const addrVal = validateAddressFormat(formData.direccion, formData.barrio, formData.ciudad, selectedDepartamento);
+      const addrVal = validateAddressFormat(formData.direccion, formData.barrio, formData.ciudad, selectedDepartamento, isInternational);
       if (!addrVal.isValidFormat) {
         alert(addrVal.message);
         return;
@@ -1941,27 +1954,37 @@ export default function MenuDigital() {
     if (formData.email?.trim()) {
       mensaje += `*Correo:* ${formData.email.trim()}\n`;
     }
-    const metodoPagoLabel = modalidadPago === 'transferencia' 
-      ? '[ Transferencia Bancaria ]' 
-      : '[ Pago Contra Entrega ]';
+    const metodoPagoLabel = isInternational
+      ? '[ Pago Internacional ]'
+      : (modalidadPago === 'transferencia' ? '[ Transferencia Bancaria ]' : '[ Pago Contra Entrega ]');
 
     mensaje += `*Tipo de compra:* ${buyerLabel}\n`;
     mensaje += `*Método de pago:* ${metodoPagoLabel}\n`;
     if (isBulkDiscountApplied) {
       mensaje += `*DESCUENTO AL POR MAYOR APLICADO* (Llevas 6 o mas productos)\n`;
     }
-    mensaje += `*Teléfono:* ${formData.telefono}\n`;
+    if (isInternational) {
+      mensaje += `*País de destino:* ${country.flag} ${country.name} (${country.dialCode})\n`;
+      mensaje += `*Moneda de liquidación:* Dólares (USD) 🌎\n`;
+    }
+    mensaje += `*Teléfono:* ${country.dialCode ? `${country.dialCode} ` : ''}${formData.telefono}\n`;
     const dirTexto = formData.barrio ? `${formData.direccion} (Barrio ${formData.barrio})` : formData.direccion;
     mensaje += `*Dirección:* ${dirTexto}, ${formData.ciudad}\n\n`;
     
     mensaje += `*PRODUCTOS:*\n`;
-    const mensajeProductos = items.map(item => 
-      `- ${item.cantidad}x ${item.nombre} ${item.talla ? `(Talla: ${item.talla}) ` : ''}${item.estampado ? `(Estampado: ${item.estampado}) ` : ''}- $${(getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * item.cantidad).toLocaleString('es-CO')}`
-    ).join('\n');
+    const mensajeProductos = items.map(item => {
+      const itemPrice = getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * item.cantidad;
+      return `- ${item.cantidad}x ${item.nombre} ${item.talla ? `(Talla: ${item.talla}) ` : ''}${item.estampado ? `(Estampado: ${item.estampado}) ` : ''}- ${formatPrice(itemPrice)}`;
+    }).join('\n');
     mensaje += mensajeProductos;
     
-    if (modalidadPago === 'transferencia') {
-      mensaje += `\n\n*TOTAL PRODUCTOS:* $${total.toLocaleString('es-CO')}`;
+    if (isInternational) {
+      mensaje += `\n\n*TOTAL PRODUCTOS:* ${formatPrice(total)} (~$${total.toLocaleString('es-CO')} COP)`;
+      mensaje += `\n*Tasa aplicada:* 1 USD ≈ $${Math.round(exchangeRate).toLocaleString('es-CO')} COP`;
+      mensaje += `\n*ENVÍO INTERNACIONAL:* Pendiente por cotizar según peso y país (${country.name}).`;
+      mensaje += `\n\n_Hola asesor, por favor indícame las opciones de pago internacional (Transferencia, Enlace de pago, etc.) y el valor del envío a mi país._`;
+    } else if (modalidadPago === 'transferencia') {
+      mensaje += `\n\n*TOTAL PRODUCTOS:* ${formatPrice(total)}`;
       mensaje += `\n*ENVÍO:* Pendiente por calcular.`;
       
       let metodosInfo = '';
@@ -1987,7 +2010,7 @@ export default function MenuDigital() {
         mensaje += `\n\n_Por favor envía el comprobante de pago por este chat para procesar y despachar tu pedido._`;
       }
     } else {
-      mensaje += `\n\n*TOTAL PRODUCTOS:* $${total.toLocaleString('es-CO')}`;
+      mensaje += `\n\n*TOTAL PRODUCTOS:* ${formatPrice(total)}`;
       mensaje += `\n*ENVÍO:* PAGO CONTRA ENTREGA\n\nCancela al momento de recibir tu pedido el valor de las prendas + el costo del envío. ¡Fácil, seguro y sin pagos anticipados!`;
     }
 
@@ -2002,9 +2025,11 @@ export default function MenuDigital() {
 
       const metodoPagoStr = metodoPagoLabel;
 
-      const ciudadFormateada = formData.ciudad 
-        ? (selectedDepartamento && !formData.ciudad.includes(selectedDepartamento) ? `${formData.ciudad}, ${selectedDepartamento}` : formData.ciudad)
-        : (selectedDepartamento || '');
+      const ciudadFormateada = isInternational
+        ? (formData.ciudad ? `${formData.ciudad}, ${country.name}` : country.name)
+        : (formData.ciudad 
+          ? (selectedDepartamento && !formData.ciudad.includes(selectedDepartamento) ? `${formData.ciudad}, ${selectedDepartamento}` : formData.ciudad)
+          : (selectedDepartamento || ''));
 
       const direccionFormateada = formData.direccion 
         ? formData.direccion 
@@ -2062,7 +2087,7 @@ export default function MenuDigital() {
         modalidad_pago: modalidadPago,
         metodo_recepcion: metodoRecepcion,
         tipo_compra: buyerLabel,
-        departamento: selectedDepartamento || '',
+        departamento: isInternational ? country.name : (selectedDepartamento || ''),
         estado: modalidadPago === 'contra_entrega' ? 'contra_entrega' : 'pendiente'
       };
 
@@ -2148,6 +2173,73 @@ export default function MenuDigital() {
   return (
     <div className="menu-app-container">
       {Boolean(configuracion?.tematica_navidad) && <SnowfallEffect />}
+      {/* ── BANNER DE DETECCIÓN AUTOMÁTICA DE UBICACIÓN INTERNACIONAL ── */}
+      {showDetectedBanner && (
+        <div style={{
+          position: 'fixed',
+          top: '14px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 99999,
+          width: 'calc(100% - 24px)',
+          maxWidth: '500px',
+          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+          color: '#ffffff',
+          borderRadius: '16px',
+          padding: '0.75rem 0.95rem',
+          boxShadow: '0 12px 28px -4px rgba(15, 23, 42, 0.4), 0 0 0 1px rgba(255,255,255,0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '0.65rem',
+          fontFamily: "'Poppins', sans-serif"
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', minWidth: 0 }}>
+            <span style={{ fontSize: '1.4rem', flexShrink: 0 }}>{country.flag}</span>
+            <div style={{ fontSize: '0.76rem', lineHeight: 1.35, color: '#f8fafc' }}>
+              <span>Detectamos tu visita desde <strong>{country.name}</strong>. Dolarizamos los precios automáticamente en <strong>USD</strong>.</span>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', flexShrink: 0 }}>
+            <button
+              onClick={() => {
+                setCurrency('COP');
+                dismissDetectedBanner();
+              }}
+              style={{
+                background: 'rgba(255, 255, 255, 0.16)',
+                border: 'none',
+                color: '#ffffff',
+                fontSize: '0.7rem',
+                fontWeight: 500,
+                padding: '0.32rem 0.6rem',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                fontFamily: "'Poppins', sans-serif"
+              }}
+            >
+              Ver en COP
+            </button>
+            <button
+              onClick={dismissDetectedBanner}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#94a3b8',
+                fontSize: '1rem',
+                cursor: 'pointer',
+                padding: '0 4px',
+                display: 'flex',
+                alignItems: 'center'
+              }}
+              aria-label="Cerrar aviso"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
       <div className={`menu-app-header ${isMediaVideo(mayoristaBranding?.video || configuracion?.video_hero_url) ? 'has-video' : ''}`} style={{ position: 'relative', overflow: 'visible' }}>
         <div className="hero-media-wrap" style={{ position: 'relative', overflow: 'visible', height: 'clamp(240px, 60vw, 360px)', width: '100%' }}>
           {Boolean(configuracion?.tematica_navidad ?? true) && <ChristmasHeroLights />}
@@ -2236,6 +2328,31 @@ export default function MenuDigital() {
 
           {/* ── TOP RIGHT ACTION BUTTONS (SEARCH | CART | BURGER) ── */}
           <div className="hero-top-right-actions">
+            {/* 0. Selector de Moneda (COP / USD) */}
+            <button
+              onClick={() => setCurrency(currency === 'COP' ? 'USD' : 'COP')}
+              className="hero-action-circle-btn"
+              style={{
+                width: 'auto',
+                minWidth: '68px',
+                padding: '0 0.55rem',
+                borderRadius: '20px',
+                fontSize: '0.74rem',
+                fontWeight: 600,
+                color: '#0f172a',
+                fontFamily: "'Poppins', sans-serif",
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.25rem',
+                background: 'rgba(255, 255, 255, 0.95)',
+                boxShadow: '0 2px 8px rgba(15,23,42,0.1)'
+              }}
+              title={currency === 'COP' ? 'Dolarizar catálogo (USD)' : 'Cambiar a pesos colombianos (COP)'}
+              aria-label="Cambiar moneda"
+            >
+              <span>{currency === 'COP' ? '🇨🇴 COP' : '🇺🇸 USD'}</span>
+            </button>
             {/* 1. Lupa / Buscador */}
             <button
               onClick={() => {
@@ -2563,6 +2680,63 @@ export default function MenuDigital() {
                     <span>{heroMuted ? 'Activar sonido video' : 'Silenciar video'}</span>
                   </button>
                 )}
+              </div>
+            </div>
+
+            {/* 6. MONEDA Y PAÍS Section */}
+            <div className="burger-section">
+              <h4 className="burger-section-title">MONEDA Y PAÍS</h4>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.45rem', marginTop: '0.4rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setCurrency('COP')}
+                  style={{
+                    padding: '0.6rem 0.5rem',
+                    borderRadius: '12px',
+                    border: `1.5px solid ${currency === 'COP' ? 'var(--primary, #f36b8e)' : '#e2e8f0'}`,
+                    background: currency === 'COP' ? 'rgba(var(--primary-rgb, 243, 107, 142), 0.08)' : '#fafafa',
+                    color: currency === 'COP' ? 'var(--primary, #f36b8e)' : '#334155',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.35rem',
+                    fontFamily: "'Poppins', sans-serif"
+                  }}
+                >
+                  <span>🇨🇴</span>
+                  <span>COP ($)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCurrency('USD')}
+                  style={{
+                    padding: '0.6rem 0.5rem',
+                    borderRadius: '12px',
+                    border: `1.5px solid ${currency === 'USD' ? 'var(--primary, #f36b8e)' : '#e2e8f0'}`,
+                    background: currency === 'USD' ? 'rgba(var(--primary-rgb, 243, 107, 142), 0.08)' : '#fafafa',
+                    color: currency === 'USD' ? 'var(--primary, #f36b8e)' : '#334155',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.35rem',
+                    fontFamily: "'Poppins', sans-serif"
+                  }}
+                >
+                  <span>🇺🇸</span>
+                  <span>USD ($)</span>
+                </button>
+              </div>
+              <div style={{ marginTop: '0.45rem', fontSize: '0.72rem', color: '#64748b', textAlign: 'center', fontFamily: "'Poppins', sans-serif" }}>
+                {currency === 'USD' 
+                  ? `Tasa estimada: 1 USD ≈ $${Math.round(exchangeRate).toLocaleString('es-CO')} COP` 
+                  : `País detectado: ${country.flag} ${country.name}`
+                }
               </div>
             </div>
 
@@ -2938,7 +3112,7 @@ export default function MenuDigital() {
                           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.2rem' }}>
                             <span style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 400 }}>Desde</span>
                             <strong style={{ fontSize: '0.88rem', fontWeight: 600, color: '#166534', lineHeight: 1.15 }}>
-                              ${minMayor.toLocaleString('es-CO')}
+                              {formatPrice(minMayor)}
                             </strong>
                           </div>
 
@@ -2965,7 +3139,7 @@ export default function MenuDigital() {
                           {/* Fila 1: Precio Mayorista Destacado + Badge */}
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.15rem', width: '100%', minWidth: 0 }}>
                             <strong style={{ fontSize: '0.84rem', fontWeight: 600, color: '#166534', lineHeight: 1.15, whiteSpace: 'nowrap', flexShrink: 1 }}>
-                              ${priceMayor.toLocaleString('es-CO')}
+                              {formatPrice(priceMayor)}
                             </strong>
                             <span style={{ 
                               fontSize: '0.52rem', 
@@ -2987,7 +3161,7 @@ export default function MenuDigital() {
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', fontSize: '0.66rem', lineHeight: 1.2 }}>
                             <span style={{ color: '#64748b', fontWeight: 400 }}>Detal:</span>
                             <span style={{ fontWeight: 500, color: '#64748b', textDecoration: ((producto.descuento !== undefined && producto.descuento > 0) || descuentoPromocional > 0) ? 'line-through' : 'none' }}>
-                              ${priceDetal.toLocaleString('es-CO')}
+                              {formatPrice(priceDetal)}
                             </span>
                           </div>
                         </div>
@@ -2997,7 +3171,7 @@ export default function MenuDigital() {
                     return (
                       <div style={{ marginTop: '0.1rem' }}>
                         <strong style={{ fontSize: '1.05rem', fontWeight: 600, color: companyColor, fontFamily: "'Poppins', sans-serif" }}>
-                          ${priceDetal.toLocaleString('es-CO')}
+                          {formatPrice(priceDetal)}
                         </strong>
                       </div>
                     );
@@ -3063,7 +3237,7 @@ export default function MenuDigital() {
               padding: '0.38rem 0.7rem',
               gap: '0.55rem'
             }}
-            aria-label={`Ver carrito: ${totalItems} producto${totalItems > 1 ? 's' : ''}, total $${total.toLocaleString('es-CO')}`}
+            aria-label={`Ver carrito: ${totalItems} producto${totalItems > 1 ? 's' : ''}, total ${formatPrice(total)}`}
           >
             <div className="cart-icon-wrapper" style={{ gap: '0.4rem' }}>
               <div className="cart-icon-pill" style={{ width: '26px', height: '26px' }}>
@@ -3073,7 +3247,7 @@ export default function MenuDigital() {
               <span className="cart-btn-label" style={{ fontSize: '0.82rem', fontWeight: 600 }}>Pagar Pedido</span>
             </div>
             <div className="cart-total-chip" style={{ padding: '0.2rem 0.5rem', gap: '0.25rem' }}>
-              <span className="cart-total-float" style={{ fontSize: '0.82rem' }}>${total.toLocaleString('es-CO')}</span>
+              <span className="cart-total-float" style={{ fontSize: '0.82rem' }}>{formatPrice(total)}</span>
               <ChevronRight size={14} strokeWidth={2.4} className="cart-chevron-icon" />
             </div>
           </button>
@@ -3201,7 +3375,7 @@ export default function MenuDigital() {
               <form className="checkout-form" onSubmit={handleEnviarPedido} style={{ padding: '1.15rem', display: 'flex', flexDirection: 'column', flex: 1, gap: '1.15rem', overflowY: 'auto' }}>
                 {(() => {
                   const brandColor = configuracion?.color_primario || 'var(--primary, #f36b8e)';
-                  const phoneVal = validateWhatsAppPhone(formData.telefono);
+                  const phoneVal = validateWhatsAppPhone(formData.telefono, isInternational);
                   let phoneInputBorder = '1.5px solid #e2e8f0';
                   if (phoneVal.status === 'valid') phoneInputBorder = '1.5px solid #22c55e';
                   else if (phoneVal.status === 'invalid_landline') phoneInputBorder = '1.5px solid #f59e0b';
@@ -3306,9 +3480,33 @@ export default function MenuDigital() {
                               )}
                             </label>
                             <div style={{ display: 'flex', gap: '0.4rem' }}>
-                              <div style={{ padding: '0.72rem 0.65rem', background: '#f1f5f9', border: '1.5px solid #e2e8f0', borderRadius: '12px', fontSize: '0.82rem', fontWeight: 500, color: '#334155', display: 'flex', alignItems: 'center', gap: '0.25rem', flexShrink: 0, fontFamily: "'Poppins', sans-serif" }}>
-                                <span>CO +57</span>
-                              </div>
+                              <select
+                                value={country.code}
+                                onChange={(e) => {
+                                  const c = COUNTRIES_DATABASE[e.target.value];
+                                  if (c) setCountry(c);
+                                }}
+                                style={{
+                                  padding: '0.72rem 0.55rem',
+                                  background: '#f1f5f9',
+                                  border: '1.5px solid #e2e8f0',
+                                  borderRadius: '12px',
+                                  fontSize: '0.82rem',
+                                  fontWeight: 500,
+                                  color: '#334155',
+                                  outline: 'none',
+                                  cursor: 'pointer',
+                                  flexShrink: 0,
+                                  fontFamily: "'Poppins', sans-serif"
+                                }}
+                                title="Código de país / WhatsApp"
+                              >
+                                {Object.values(COUNTRIES_DATABASE).map(c => (
+                                  <option key={c.code} value={c.code}>
+                                    {c.flag} {c.code} {c.dialCode}
+                                  </option>
+                                ))}
+                              </select>
                               <input 
                                 type="tel" 
                                 required 
@@ -3317,12 +3515,12 @@ export default function MenuDigital() {
                                   let clean = e.target.value.replace(/\D/g, '');
                                   if (clean.startsWith('57') && clean.length > 10) clean = clean.slice(2);
                                   if (clean.startsWith('0') && clean.length > 10) clean = clean.slice(1);
-                                  setFormData({...formData, telefono: clean.slice(0, 10)});
+                                  setFormData({...formData, telefono: clean.slice(0, isInternational ? 15 : 10)});
                                 }}
-                                maxLength={10}
+                                maxLength={isInternational ? 15 : 10}
                                 inputMode="numeric"
                                 pattern="[0-9]*"
-                                placeholder="300 123 4567"
+                                placeholder={isInternational ? 'Tu número de WhatsApp' : '300 123 4567'}
                                 style={{ flex: 1, minWidth: 0, boxSizing: 'border-box', padding: '0.72rem 0.85rem', borderRadius: '12px', border: phoneInputBorder, background: phoneVal.status === 'valid' ? '#f0fdf4' : '#fafafa', fontSize: '0.88rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}
                               />
                             </div>
@@ -3420,7 +3618,7 @@ export default function MenuDigital() {
                               {/* Fila 1 - Col 1: Departamento */}
                               <div className="form-group" style={{ margin: 0 }}>
                                 <label style={{ fontSize: '0.82rem', fontWeight: 500, color: '#334155', marginBottom: '0.3rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
-                                  Departamento *
+                                  {isInternational ? 'País de entrega *' : 'Departamento *'}
                                 </label>
                                 <select
                                   value={selectedDepartamento}
@@ -3430,8 +3628,14 @@ export default function MenuDigital() {
                                   }}
                                   style={{ width: '100%', boxSizing: 'border-box', padding: '0.72rem 0.85rem', borderRadius: '12px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.88rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}
                                 >
-                                  <option value="">Selecciona departamento</option>
-                                  {Object.keys(DEPARTAMENTOS_COLOMBIA).map(depto => (
+                                  {isInternational ? (
+                                    Object.values(COUNTRIES_DATABASE).map(c => (
+                                      <option key={c.code} value={c.name}>{c.flag} {c.name}</option>
+                                    ))
+                                  ) : (
+                                    <option value="">Selecciona departamento</option>
+                                  )}
+                                  {!isInternational && Object.keys(DEPARTAMENTOS_COLOMBIA).map(depto => (
                                     <option key={depto} value={depto}>{depto}</option>
                                   ))}
                                 </select>
@@ -3440,7 +3644,7 @@ export default function MenuDigital() {
                               {/* Fila 1 - Col 2: Ciudad / Municipio */}
                               <div className="form-group" style={{ margin: 0, position: 'relative' }}>
                                 <label style={{ fontSize: '0.82rem', fontWeight: 500, color: '#334155', marginBottom: '0.3rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
-                                  Ciudad / Municipio *
+                                  {isInternational ? 'Ciudad / Provincia *' : 'Ciudad / Municipio *'}
                                 </label>
                                 <div style={{ position: 'relative' }}>
                                   <input 
@@ -3453,13 +3657,13 @@ export default function MenuDigital() {
                                       setFormData({...formData, ciudad: e.target.value});
                                       setIsCityFocused(true);
                                     }}
-                                    placeholder="Ej. Cali, Bogotá, Medellín..."
+                                    placeholder={isInternational ? 'Ej. Tu ciudad / estado' : 'Ej. Cali, Bogotá, Medellín...'}
                                     style={{ width: '100%', boxSizing: 'border-box', padding: '0.72rem 2rem 0.72rem 0.85rem', borderRadius: '12px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.88rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}
                                   />
                                   <ChevronDown size={16} color="#64748b" style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
                                 </div>
 
-                                {isCityFocused && (
+                                {isCityFocused && !isInternational && (
                                   <div 
                                     style={{ 
                                       position: 'absolute', 
@@ -3528,14 +3732,14 @@ export default function MenuDigital() {
                               {/* Fila 2 - Col 1: Barrio */}
                               <div className="form-group" style={{ margin: 0 }}>
                                 <label style={{ fontSize: '0.82rem', fontWeight: 500, color: '#334155', marginBottom: '0.3rem', display: 'block', fontFamily: "'Poppins', sans-serif" }}>
-                                  Barrio *
+                                  {isInternational ? 'Código Postal / Sector (Opcional)' : 'Barrio *'}
                                 </label>
                                 <input 
                                   type="text" 
                                   required 
                                   value={formData.barrio}
                                   onChange={e => setFormData({...formData, barrio: e.target.value})}
-                                  placeholder="Ej. El Poblado, Chapinero..."
+                                  placeholder={isInternational ? 'Ej. 0801, Zona 1...' : 'Ej. El Poblado, Chapinero...'}
                                   style={{ width: '100%', boxSizing: 'border-box', padding: '0.72rem 0.85rem', borderRadius: '12px', border: '1.5px solid #e2e8f0', background: '#fafafa', fontSize: '0.88rem', outline: 'none', color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}
                                 />
                               </div>
@@ -3560,7 +3764,7 @@ export default function MenuDigital() {
                               direccion={formData.direccion}
                               barrio={formData.barrio}
                               ciudad={formData.ciudad}
-                              departamento={selectedDepartamento}
+                              departamento={isInternational ? country.name : selectedDepartamento}
                             />
                           </>
                         ) : (
@@ -3590,7 +3794,20 @@ export default function MenuDigital() {
                           </span>
                         </div>
 
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+                        {isInternational ? (
+                          <div style={{ padding: '0.85rem 1rem', borderRadius: '14px', background: '#f8fafc', border: '1.5px solid #e2e8f0', display: 'flex', gap: '0.65rem', alignItems: 'center' }}>
+                            <span style={{ fontSize: '1.5rem' }}>🌎</span>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: '0.88rem', fontWeight: 600, color: '#0f172a', fontFamily: "'Poppins', sans-serif" }}>
+                                Envío & Pago Internacional ({country.name})
+                              </div>
+                              <div style={{ fontSize: '0.74rem', color: '#64748b', fontFamily: "'Poppins', sans-serif", marginTop: '2px' }}>
+                                Precios dolarizados en USD. El asesor te suministrará por WhatsApp las opciones de pago internacional (Transferencia, Enlace de pago, etc.) y cotizará el envío a tu país.
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
                           {/* Opción 1: Contra Entrega */}
                           <label 
                             style={{ 
@@ -3681,6 +3898,7 @@ export default function MenuDigital() {
                             </div>
                           </label>
                         </div>
+                        )}
                       </div>
 
                       {/* ── 4. RESUMEN DEL PEDIDO ── */}
@@ -3724,7 +3942,7 @@ export default function MenuDigital() {
                                 </div>
 
                                 <span style={{ fontSize: '0.84rem', fontWeight: 600, color: '#0f172a', flexShrink: 0, fontFamily: "'Poppins', sans-serif" }}>
-                                  ${itemTotal.toLocaleString('es-CO')}
+                                  {formatPrice(itemTotal)}
                                 </span>
                               </div>
                             );
@@ -3753,12 +3971,12 @@ export default function MenuDigital() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', borderTop: '1px dashed #cbd5e1', paddingTop: '0.65rem', fontSize: '0.82rem', fontFamily: "'Poppins', sans-serif" }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
                             <span>Subtotal</span>
-                            <span style={{ fontWeight: 600, color: '#0f172a' }}>${(totalSavings > 0 ? total + totalSavings : total).toLocaleString('es-CO')}</span>
+                            <span style={{ fontWeight: 600, color: '#0f172a' }}>{formatPrice(totalSavings > 0 ? total + totalSavings : total)}</span>
                           </div>
                           {totalSavings > 0 && (
                             <div style={{ display: 'flex', justifyContent: 'space-between', color: '#059669' }}>
                               <span style={{ fontWeight: 500 }}>🎉 Descuento al por mayor</span>
-                              <span style={{ fontWeight: 600 }}>-${totalSavings.toLocaleString('es-CO')}</span>
+                              <span style={{ fontWeight: 600 }}>-{formatPrice(totalSavings)}</span>
                             </div>
                           )}
                           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
@@ -3770,7 +3988,7 @@ export default function MenuDigital() {
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', color: '#0f172a', fontWeight: 600, fontSize: '0.94rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.5rem', marginTop: '0.2rem' }}>
                             <span>Total</span>
                             <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem' }}>
-                              <span>${total.toLocaleString('es-CO')}</span>
+                              <span>{formatPrice(total)}</span>
                               {metodoRecepcion === 'domicilio' && (
                                 <span style={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 500 }}>+ envío</span>
                               )}
@@ -3803,7 +4021,7 @@ export default function MenuDigital() {
                         }}
                       >
                         <Check size={20} strokeWidth={2.4} />
-                        <span>Terminar Compra y Enviar Pedido — ${total.toLocaleString('es-CO')}</span>
+                        <span>Terminar Compra y Enviar Pedido — {formatPrice(total)}</span>
                       </button>
                     </>
                   );
@@ -3885,11 +4103,11 @@ export default function MenuDigital() {
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.2rem' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                                 <span style={{ fontSize: '1rem', fontWeight: 600, color: '#0f172a' }}>
-                                  $ {itemTotalPrice.toLocaleString('es-CO')}
+                                  {formatPrice(itemTotalPrice)}
                                 </span>
                                 {isItemDiscounted && (
                                   <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.78rem' }}>
-                                    ${regularTotalPrice.toLocaleString('es-CO')}
+                                    {formatPrice(regularTotalPrice)}
                                   </span>
                                 )}
                               </div>
@@ -3988,7 +4206,7 @@ export default function MenuDigital() {
                             {toTitleCase(p.nombre)}
                           </h5>
                           <p style={{ margin: '2px 0 0 0', color: '#0f172a', fontWeight: 600, fontSize: '0.86rem' }}>
-                            ${recPrice.toLocaleString('es-CO')}
+                            {formatPrice(recPrice)}
                           </p>
                         </div>
                         <button
@@ -4027,7 +4245,7 @@ export default function MenuDigital() {
                   {/* SUBTOTAL ROW */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.45rem', fontSize: '0.92rem' }}>
                     <span style={{ color: '#64748b', fontWeight: 400 }}>Subtotal</span>
-                    <strong style={{ color: '#0f172a', fontWeight: 600, fontSize: '0.96rem' }}>${(totalSavings > 0 ? total + totalSavings : total).toLocaleString('es-CO')}</strong>
+                    <strong style={{ color: '#0f172a', fontWeight: 600, fontSize: '0.96rem' }}>{formatPrice(totalSavings > 0 ? total + totalSavings : total)}</strong>
                   </div>
 
                   {totalSavings > 0 && (
@@ -4048,7 +4266,7 @@ export default function MenuDigital() {
                         <span>🎉</span> Descuento al por mayor
                       </span>
                       <strong style={{ fontWeight: 600, color: '#059669' }}>
-                        -${totalSavings.toLocaleString('es-CO')}
+                        -{formatPrice(totalSavings)}
                       </strong>
                     </div>
                   )}
@@ -4070,7 +4288,7 @@ export default function MenuDigital() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '0.85rem' }}>
                     <span style={{ fontSize: '1.02rem', fontWeight: 600, color: '#0f172a' }}>Total estimado</span>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem' }}>
-                      <strong style={{ fontSize: '1.25rem', fontWeight: 600, color: '#0f172a' }}>${total.toLocaleString('es-CO')}</strong>
+                      <strong style={{ fontSize: '1.25rem', fontWeight: 600, color: '#0f172a' }}>{formatPrice(total)}</strong>
                       <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 400 }}>+ envío</span>
                     </div>
                   </div>
@@ -4248,7 +4466,7 @@ export default function MenuDigital() {
                   {addedProductDecision.cantidad > 1 && <span>• Cant: <strong>{addedProductDecision.cantidad}</strong></span>}
                 </div>
                 <div style={{ fontSize: '0.92rem', fontWeight: 600, color: configuracion?.color_primario || 'var(--primary, #f36b8e)', marginTop: '0.2rem' }}>
-                  ${addedProductDecision.precio.toLocaleString('es-CO')}
+                  {formatPrice(addedProductDecision.precio)}
                 </div>
               </div>
             </div>
@@ -4259,7 +4477,7 @@ export default function MenuDigital() {
                 ¿Qué deseas hacer ahora?
               </div>
               <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 400, marginTop: '0.15rem' }}>
-                Llevas {totalItems} prenda{totalItems > 1 ? 's' : ''} en total (${total.toLocaleString('es-CO')})
+                Llevas {totalItems} prenda{totalItems > 1 ? 's' : ''} en total ({formatPrice(total)})
               </div>
             </div>
 
@@ -4743,7 +4961,7 @@ export default function MenuDigital() {
                                 Subtotal ({totalFamUnits} {totalFamUnits === 1 ? 'prenda' : 'prendas'}):
                               </div>
                               <strong style={{ fontSize: '1.22rem', fontWeight: 600, color: isBulkEligible ? '#166534' : (configuracion?.color_primario || 'var(--primary, #f36b8e)') }}>
-                                ${totalFamPrice.toLocaleString('es-CO')}
+                                {formatPrice(totalFamPrice)}
                               </strong>
                               {isBulkEligible ? (
                                 <span style={{ fontSize: '0.68rem', fontWeight: 600, color: '#15803d', background: '#dcfce7', padding: '0.12rem 0.45rem', borderRadius: '5px', border: '1px solid #bbf7d0' }}>
@@ -4772,7 +4990,7 @@ export default function MenuDigital() {
                                 Por mayor:
                               </span>
                               <strong style={{ fontSize: '1.24rem', fontWeight: 600, color: '#166534' }}>
-                                Desde ${minMayor.toLocaleString('es-CO')}
+                                Desde {formatPrice(minMayor)}
                               </strong>
                             </div>
                           </div>
@@ -4796,7 +5014,7 @@ export default function MenuDigital() {
                                 Por mayor +6:
                               </span>
                               <strong style={{ fontSize: '1.26rem', fontWeight: 600, color: '#166534' }}>
-                                ${priceMayor.toLocaleString('es-CO')}
+                                {formatPrice(priceMayor)}
                               </strong>
                             </div>
 
@@ -4804,7 +5022,7 @@ export default function MenuDigital() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'flex-end', whiteSpace: 'nowrap' }}>
                               <span style={{ fontSize: '0.76rem', color: '#64748b', fontWeight: 500 }}>Detal (1 a 5 uds):</span>
                               <span style={{ fontSize: '0.94rem', fontWeight: 500, color: '#64748b' }}>
-                                ${priceDetal.toLocaleString('es-CO')}
+                                {formatPrice(priceDetal)}
                               </span>
                             </div>
                           </div>
@@ -4815,7 +5033,7 @@ export default function MenuDigital() {
                         <div style={{ textAlign: 'right', whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>
                           <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 500 }}>Detal</div>
                           <span style={{ fontSize: '1.18rem', fontWeight: 600, color: configuracion?.color_primario || 'var(--primary, #f36b8e)' }}>
-                            ${priceDetal.toLocaleString('es-CO')}
+                            {formatPrice(priceDetal)}
                           </span>
                         </div>
                       );
@@ -4922,7 +5140,7 @@ export default function MenuDigital() {
                                                 Al por mayor (+6)
                                               </span>
                                               <strong style={{ fontSize: '1.02rem', fontWeight: 600, color: '#166534', lineHeight: 1.15, fontFamily: "'Poppins', sans-serif" }}>
-                                                ${optMayor.toLocaleString('es-CO')}
+                                                {formatPrice(optMayor)}
                                               </strong>
                                             </div>
                                           )}
@@ -4935,7 +5153,7 @@ export default function MenuDigital() {
                                             marginTop: '0.04rem'
                                           }}>
                                             <span style={{ fontSize: '0.66rem', fontWeight: 400, color: '#94a3b8' }}>Detal: </span>
-                                            ${optDetal.toLocaleString('es-CO')}
+                                            {formatPrice(optDetal)}
                                           </div>
                                         </div>
 
@@ -5023,7 +5241,7 @@ export default function MenuDigital() {
                                                 Al por mayor (+6)
                                               </span>
                                               <strong style={{ fontSize: '1.02rem', fontWeight: 600, color: '#166534', lineHeight: 1.15, fontFamily: "'Poppins', sans-serif" }}>
-                                                ${optMayor.toLocaleString('es-CO')}
+                                                {formatPrice(optMayor)}
                                               </strong>
                                             </div>
                                           )}
@@ -5036,7 +5254,7 @@ export default function MenuDigital() {
                                             marginTop: '0.04rem'
                                           }}>
                                             <span style={{ fontSize: '0.66rem', fontWeight: 400, color: '#94a3b8' }}>Detal: </span>
-                                            ${optDetal.toLocaleString('es-CO')}
+                                            {formatPrice(optDetal)}
                                           </div>
                                         </div>
 
@@ -5278,7 +5496,7 @@ export default function MenuDigital() {
                               <ShoppingCart size={18} />
                               <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                 {totalFamUnits > 0
-                                  ? `Añadir • $${totalFamPrice.toLocaleString('es-CO')} (${totalFamUnits} ${totalFamUnits === 1 ? 'prenda' : 'prendas'})`
+                                  ? `Añadir • ${formatPrice(totalFamPrice)} (${totalFamUnits} ${totalFamUnits === 1 ? 'prenda' : 'prendas'})`
                                   : 'Añadir al carrito'}
                               </span>
                             </button>
@@ -5291,7 +5509,7 @@ export default function MenuDigital() {
                             onClick={handleAddFromDetail}
                           >
                             <ShoppingCart size={18} />
-                            <span>Añadir • ${(getEffectivePrice({ ...detailProduct, precio: getActiveUnitPrice(detailProduct, selectedMiembroFamilia, selectedTalla, buyerType) }, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * selectedCantidad).toLocaleString('es-CO')}</span>
+                            <span>Añadir • {formatPrice(getEffectivePrice({ ...detailProduct, precio: getActiveUnitPrice(detailProduct, selectedMiembroFamilia, selectedTalla, buyerType) }, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * selectedCantidad)}</span>
                           </button>
                         );
                       })()}
@@ -5490,7 +5708,7 @@ export default function MenuDigital() {
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', color: '#64748b' }}>
                 <span>Subtotal</span>
-                <span style={{ fontWeight: 600, color: '#0f172a' }}>${orderSummaryData.subtotal.toLocaleString('es-CO')}</span>
+                <span style={{ fontWeight: 600, color: '#0f172a' }}>{formatPrice(orderSummaryData.subtotal)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0', color: '#64748b' }}>
                 <span>Envío</span>
@@ -5503,7 +5721,7 @@ export default function MenuDigital() {
 
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', fontWeight: 600, color: '#0f172a', fontSize: '0.92rem' }}>
                 <span>Total</span>
-                <span>${orderSummaryData.total.toLocaleString('es-CO')} + envío</span>
+                <span>{formatPrice(orderSummaryData.total)} + envío</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0' }}>
                 <span style={{ color: '#64748b' }}>Estado</span>

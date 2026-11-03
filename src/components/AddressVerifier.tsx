@@ -14,9 +14,38 @@ export function validateAddressFormat(
   direccion: string, 
   barrio: string, 
   ciudad: string, 
-  departamento: string
+  departamento: string,
+  isInternational: boolean = false
 ): { isValidFormat: boolean; missingFields: string[]; message: string } {
   const missingFields: string[] = [];
+
+  if (isInternational) {
+    if (!ciudad || !ciudad.trim()) missingFields.push('Ciudad / Región');
+    if (!direccion || !direccion.trim()) missingFields.push('Dirección de entrega');
+
+    if (missingFields.length > 0) {
+      return {
+        isValidFormat: false,
+        missingFields,
+        message: `Faltan campos obligatorios para el envío internacional: ${missingFields.join(', ')}.`
+      };
+    }
+
+    const cleanDir = direccion.trim();
+    if (cleanDir.length < 5) {
+      return {
+        isValidFormat: false,
+        missingFields: [],
+        message: 'La dirección es muy corta. Especifica calle, número o detalles de entrega.'
+      };
+    }
+
+    return {
+      isValidFormat: true,
+      missingFields: [],
+      message: '✓ Dirección de entrega internacional completa'
+    };
+  }
 
   if (!departamento || !departamento.trim()) missingFields.push('Departamento');
   if (!ciudad || !ciudad.trim()) missingFields.push('Ciudad / Municipio');

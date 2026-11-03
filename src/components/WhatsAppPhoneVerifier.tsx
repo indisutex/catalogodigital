@@ -13,9 +13,46 @@ export interface PhoneValidationResult {
  * Valida si un número telefónico ingresado corresponde a una línea celular válida de WhatsApp en Colombia.
  * Regla CRC Colombia: Celulares de 10 dígitos iniciando por prefijos móviles válidos (300-305, 310-324, 350-351).
  */
-export function validateWhatsAppPhone(rawPhone: string): PhoneValidationResult {
+export function validateWhatsAppPhone(rawPhone: string, isInternational: boolean = false): PhoneValidationResult {
   let clean = (rawPhone || '').replace(/\D/g, '');
   
+  if (isInternational) {
+    if (!clean) {
+      return {
+        status: 'empty',
+        cleanPhone: '',
+        formattedPhone: '',
+        message: 'Ingresa tu número celular o WhatsApp internacional.',
+        isValid: false
+      };
+    }
+    if (clean.length < 7) {
+      return {
+        status: 'typing',
+        cleanPhone: clean,
+        formattedPhone: clean,
+        message: `Ingresando número... (${clean.length} dígitos)`,
+        isValid: false
+      };
+    }
+    if (clean.length > 15) {
+      return {
+        status: 'invalid_length',
+        cleanPhone: clean,
+        formattedPhone: clean,
+        message: '⚠️ El número supera la longitud máxima internacional (15 dígitos).',
+        isValid: false
+      };
+    }
+    return {
+      status: 'valid',
+      cleanPhone: clean,
+      formattedPhone: clean,
+      message: '✓ Número internacional válido para WhatsApp',
+      isValid: true
+    };
+  }
+
   // Si empieza con 57 (código país Colombia) repetido o con más de 10 dígitos, remover prefijos
   while (clean.startsWith('57') && clean.length > 10) {
     clean = clean.slice(2);
