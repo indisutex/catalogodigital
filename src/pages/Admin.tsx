@@ -9744,30 +9744,141 @@ export default function Admin() {
                                         { label: '👶 Niños (2/4 a 18)', ...getOpt('2/4', fam.nino || 32000) },
                                       ];
 
-                                      return (
-                                        <div style={{ background: '#f0f9ff', padding: '0.45rem', borderRadius: '8px', border: '1px solid #bae6fd', fontSize: '0.71rem' }}>
-                                          <div style={{ fontWeight: 600, color: '#0369a1', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: "'Poppins', sans-serif" }}>
-                                            <span>👨‍👩‍👧‍👦 Precios Familiar</span>
-                                            <span style={{ fontSize: '0.62rem', background: '#e0f2fe', color: '#0369a1', padding: '0.1rem 0.35rem', borderRadius: '4px', fontWeight: 500 }}>Detal | Mayor | 50U</span>
-                                          </div>
-                                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                                            {rows.map((r, idx) => (
-                                              <div key={idx} style={{ background: r.isOff ? '#f1f5f9' : '#ffffff', padding: '0.25rem 0.4rem', borderRadius: '4px', border: r.isOff ? '1px dashed #cbd5e1' : '1px solid #e0f2fe', opacity: r.isOff ? 0.7 : 1 }}>
-                                                <div style={{ fontWeight: 600, color: r.isOff ? '#64748b' : '#0f172a', fontSize: '0.7rem', marginBottom: '0.1rem', display: 'flex', justifyContent: 'space-between', fontFamily: "'Poppins', sans-serif" }}>
-                                                  <span>{r.label}</span>
-                                                  {r.isOff && <span style={{ color: '#ef4444', fontSize: '0.64rem', fontWeight: 500 }}>Deshabilitada</span>}
-                                                </div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.66rem', color: '#475569', fontFamily: "'Poppins', sans-serif" }}>
-                                                  <span>Detal: <strong style={{ color: '#0f172a', fontWeight: 600 }}>${r.detal.toLocaleString()}</strong></span>
-                                                  <span>Mayor: <strong style={{ color: '#0284c7', fontWeight: 600 }}>{r.mayor > 0 ? `$${r.mayor.toLocaleString()}` : '-'}</strong></span>
-                                                  <span>50U: <strong style={{ color: '#7c3aed', fontWeight: 600 }}>{r.p50 > 0 ? `$${r.p50.toLocaleString()}` : '-'}</strong></span>
-                                                </div>
-                                              </div>
-                                            ))}
-                                          </div>
-                                        </div>
-                                      );
-                                    }
+                                      const activeRows = rows.filter(r => !r.isOff);
+                                       const targetRows = activeRows.length > 0 ? activeRows : rows;
+
+                                       const detalVals = targetRows.map(r => r.detal).filter(v => typeof v === 'number' && v > 0);
+                                       const mayorVals = targetRows.map(r => r.mayor).filter(v => typeof v === 'number' && v > 0);
+                                       const p50Vals = targetRows.map(r => r.p50).filter(v => typeof v === 'number' && v > 0);
+
+                                       const minD = detalVals.length > 0 ? Math.min(...detalVals) : 0;
+                                       const maxD = detalVals.length > 0 ? Math.max(...detalVals) : 0;
+                                       const minM = mayorVals.length > 0 ? Math.min(...mayorVals) : 0;
+                                       const maxM = mayorVals.length > 0 ? Math.max(...mayorVals) : 0;
+                                       const min50 = p50Vals.length > 0 ? Math.min(...p50Vals) : 0;
+                                       const max50 = p50Vals.length > 0 ? Math.max(...p50Vals) : 0;
+
+                                       const formatRange = (min: number, max: number) => {
+                                         if (min === 0 && max === 0) return '-';
+                                         if (min === max || max === 0) return `$${min.toLocaleString()}`;
+                                         return `$${min.toLocaleString()} - $${max.toLocaleString()}`;
+                                       };
+
+                                       return (
+                                         <div style={{ fontFamily: "'Poppins', sans-serif" }}>
+                                           {/* Cabecera compacta Familiar */}
+                                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.35rem', paddingBottom: '0.25rem', borderBottom: '1px solid #e2e8f0' }}>
+                                             <span style={{ fontSize: '0.68rem', fontWeight: 600, color: '#0369a1', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                               👨‍👩‍👧‍👦 Precios Familiar
+                                             </span>
+                                             <span style={{ fontSize: '0.6rem', background: '#e0f2fe', color: '#0369a1', padding: '0.08rem 0.35rem', borderRadius: '4px', fontWeight: 500 }}>
+                                               {activeRows.length} {activeRows.length === 1 ? 'talla' : 'tallas'}
+                                             </span>
+                                           </div>
+
+                                           {/* Fila Detal */}
+                                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
+                                             <small style={{ color: '#64748b', fontSize: '0.72rem', fontWeight: 500 }}>Detal:</small>
+                                             <strong style={{ color: '#0f172a', fontSize: '0.74rem', fontWeight: 600 }}>{formatRange(minD, maxD)}</strong>
+                                           </div>
+
+                                           {/* Fila Mayor */}
+                                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.2rem' }}>
+                                             <small style={{ color: '#64748b', fontSize: '0.72rem', fontWeight: 500 }}>Mayor:</small>
+                                             <strong style={{ color: '#0284c7', fontSize: '0.74rem', fontWeight: 600 }}>{formatRange(minM, maxM)}</strong>
+                                           </div>
+
+                                           {/* Fila 50 Unid */}
+                                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                                             <small style={{ color: '#64748b', fontSize: '0.72rem', fontWeight: 500 }}>50 Unid:</small>
+                                             <strong style={{ color: '#7c3aed', fontSize: '0.74rem', fontWeight: 600 }}>{formatRange(min50, max50)}</strong>
+                                           </div>
+
+                                           {/* Desglose responsivo desplegable sin desbordamiento */}
+                                           <details style={{ marginTop: '0.35rem', borderTop: '1px dashed #cbd5e1', paddingTop: '0.3rem' }}>
+                                             <summary style={{
+                                               cursor: 'pointer',
+                                               fontSize: '0.67rem',
+                                               fontWeight: 500,
+                                               color: '#0284c7',
+                                               display: 'flex',
+                                               alignItems: 'center',
+                                               justifyContent: 'space-between',
+                                               userSelect: 'none',
+                                               padding: '0.2rem 0.35rem',
+                                               background: '#f0f9ff',
+                                               borderRadius: '5px',
+                                               border: '1px solid #bae6fd',
+                                               listStyle: 'none'
+                                             }}>
+                                               <span>🔍 Ver por talla ({rows.length})</span>
+                                               <span style={{ fontSize: '0.65rem' }}>▾</span>
+                                             </summary>
+
+                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.35rem' }}>
+                                               {rows.map((r, idx) => (
+                                                 <div
+                                                   key={idx}
+                                                   style={{
+                                                     background: r.isOff ? '#f8fafc' : '#ffffff',
+                                                     padding: '0.25rem 0.3rem',
+                                                     borderRadius: '5px',
+                                                     border: r.isOff ? '1px dashed #cbd5e1' : '1px solid #bae6fd',
+                                                     opacity: r.isOff ? 0.65 : 1
+                                                   }}
+                                                 >
+                                                   <div style={{
+                                                     fontWeight: 600,
+                                                     color: r.isOff ? '#64748b' : '#0f172a',
+                                                     fontSize: '0.68rem',
+                                                     marginBottom: '0.2rem',
+                                                     display: 'flex',
+                                                     justifyContent: 'space-between',
+                                                     alignItems: 'center'
+                                                   }}>
+                                                     <span>{r.label}</span>
+                                                     {r.isOff && (
+                                                       <span style={{ color: '#ef4444', fontSize: '0.6rem', fontWeight: 500, background: '#fee2e2', padding: '0.05rem 0.25rem', borderRadius: '3px' }}>
+                                                         Off
+                                                       </span>
+                                                     )}
+                                                   </div>
+
+                                                   <div style={{
+                                                     display: 'grid',
+                                                     gridTemplateColumns: 'repeat(3, 1fr)',
+                                                     gap: '0.15rem',
+                                                     textAlign: 'center',
+                                                     background: '#f8fafc',
+                                                     padding: '0.2rem 0.1rem',
+                                                     borderRadius: '4px'
+                                                   }}>
+                                                     <div style={{ minWidth: 0 }}>
+                                                       <div style={{ fontSize: '0.58rem', color: '#64748b', fontWeight: 500, lineHeight: 1.1 }}>Detal</div>
+                                                       <div style={{ fontSize: '0.66rem', fontWeight: 600, color: '#0f172a', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                         ${r.detal.toLocaleString()}
+                                                       </div>
+                                                     </div>
+                                                     <div style={{ minWidth: 0, borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0' }}>
+                                                       <div style={{ fontSize: '0.58rem', color: '#0284c7', fontWeight: 500, lineHeight: 1.1 }}>Mayor</div>
+                                                       <div style={{ fontSize: '0.66rem', fontWeight: 600, color: '#0284c7', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                         {r.mayor > 0 ? `$${r.mayor.toLocaleString()}` : '-'}
+                                                       </div>
+                                                     </div>
+                                                     <div style={{ minWidth: 0 }}>
+                                                       <div style={{ fontSize: '0.58rem', color: '#7c3aed', fontWeight: 500, lineHeight: 1.1 }}>50U</div>
+                                                       <div style={{ fontSize: '0.66rem', fontWeight: 600, color: '#7c3aed', lineHeight: 1.2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                         {r.p50 > 0 ? `$${r.p50.toLocaleString()}` : '-'}
+                                                       </div>
+                                                     </div>
+                                                   </div>
+                                                 </div>
+                                               ))}
+                                             </div>
+                                           </details>
+                                         </div>
+                                       );
+                                     }
 
                                    const desc = (p.descuento !== undefined && p.descuento > 0) ? p.descuento : (configuracion?.descuento_promocional || 0);
                                    const precioDetal = p.precio;
