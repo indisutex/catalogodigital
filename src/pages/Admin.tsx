@@ -5819,7 +5819,7 @@ export default function Admin() {
         } else {
           setPedidos(prev => prev.map(p => p.id === id ? { ...p, estado: 'mensaje_enviado', fecha_envio_mensaje: nowIso } : p));
           setSelectedPedido((prev: any) => prev ? { ...prev, estado: 'mensaje_enviado', fecha_envio_mensaje: nowIso } : null);
-          await supabase.from('pedidos').update({ estado: 'mensaje_enviado', fecha_envio_mensaje: nowIso }).eq('id', id);
+          await supabase.from('pedidos').update({ estado: 'mensaje_enviado', fecha_envio_mensaje: nowIso, atendido: true }).eq('id', id);
         }
         await saveOrderAuditLog(id, {
           estado: 'mensaje_enviado',
@@ -5951,7 +5951,7 @@ export default function Admin() {
       } else if (nuevoDestino === 'pago_mensaje_enviado') {
         setPedidos(prev => prev.map(p => p.id === id ? { ...p, estado: 'mensaje_enviado', fecha_envio_mensaje: nowIso } : p));
         setSelectedPedido((prev: any) => prev ? { ...prev, estado: 'mensaje_enviado', fecha_envio_mensaje: nowIso } : null);
-        await supabase.from('pedidos').update({ estado: 'mensaje_enviado', fecha_envio_mensaje: nowIso }).eq('id', id);
+        await supabase.from('pedidos').update({ estado: 'mensaje_enviado', fecha_envio_mensaje: nowIso, atendido: true }).eq('id', id);
         await saveOrderAuditLog(id, {
           estado: 'mensaje_enviado',
           usuario: getCurrentUserName(),
@@ -13810,6 +13810,7 @@ export default function Admin() {
               onAtenderPedido={handleAtenderPedido}
               onUpdateLeadStatus={handleUpdateLeadStatus}
               onSelectPedido={(p) => setSelectedPedido(p)}
+              onReloadData={cargarDatos}
             />
           )}
 

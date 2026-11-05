@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import type { Pedido, Asesor, Configuracion } from '../types';
 import { 
   Clock, 
@@ -13,7 +13,8 @@ import {
   Users, 
   DollarSign,
   ArrowUpRight,
-  Sparkles
+  Sparkles,
+  RefreshCw
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -27,6 +28,7 @@ interface InformeAsesorasDiarioProps {
   onAtenderPedido?: (ped: Pedido) => void;
   onUpdateLeadStatus?: (leadId: string, status: string) => void;
   onSelectPedido?: (ped: Pedido) => void;
+  onReloadData?: () => void;
 }
 
 export interface ChatInteractionItem {
@@ -44,6 +46,7 @@ export interface ChatInteractionItem {
   colTimeFormatted: string;
   atendido: boolean;
   atendidoTimestamp?: string | null;
+  statusLabel: string;
   estado: string;
   total: number;
   productosResumen: string;
@@ -92,6 +95,142 @@ export function parseToColombiaTime(dateInput: string | Date | number): {
   };
 }
 
+// Evalúa con exactitud si un pedido o lead ya fue atendido por la asesora y cuándo ocurrió la atención
+export function evaluateChatAttendance(item: any, source: 'pedido' | 'lead'): {
+  isAttended: boolean;
+  attendedTimestamp: string | null;
+  statusLabel: string;
+} {
+  if (!item) return { isAttended: false, attendedTimestamp: null, statusLabel: 'Sin contactar' };
+
+  if (source === 'pedido') {
+    // 1. Pedido completado / entregado / pagado
+    const isCompleted = item.estado === 'completado' || item.estado === 'entregado_pagado' || item.estado === 'entregado';
+    if (isCompleted) {
+      return {
+        isAttended: true,
+        attendedTimestamp: item.fecha_envio_mensaje || item.created_at,
+        statusLabel: 'Venta Completada'
+      };
+    }
+
+    // 2. Si ya tiene fecha_envio_mensaje (se le envió confirmación o recordatorio por WhatsApp)
+    if (item.fecha_envio_mensaje) {
+      return {
+        isAttended: true,
+        attendedTimestamp: item.fecha_envio_mensaje,
+        statusLabel: 'Esperando Respuesta'
+      };
+    }
+
+    // 3. Si el estado es mensaje_enviado, contra_mensaje_enviado, confirmado, despachado
+    const attendedStatuses = [
+      'mensaje_enviado',
+      'contra_mensaje_enviado',
+      'confirmado',
+      'contra_confirmado',
+      'despachado',
+      'contra_despachado'
+    ];
+    if (attendedStatuses.includes(item.estado)) {
+      let logDate: string | null = null;
+      if (Array.isArray(item.historial)) {
+        const log = [...item.historial].reverse().find((h: any) => 
+          h.estado === 'mensaje_enviado' || 
+          h.estado === 'confirmado' || 
+          (h.accion && h.accion.toLowerCase().includes('mensaje'))
+        );
+        if (log?.fecha) logDate = log.fecha;
+      }
+      return {
+        isAttended: true,
+        attendedTimestamp: logDate || item.created_at,
+        statusLabel: item.estado.includes('confirmado') ? 'Confirmado' : item.estado.includes('despachado') ? 'Despachado' : 'Esperando Respuesta'
+      };
+    }
+
+    // 4. Si el pedido tiene flag atendido: true
+    if (item.atendido === true) {
+      return {
+        isAttended: true,
+        attendedTimestamp: item.created_at,
+        statusLabel: 'Atendido'
+      };
+    }
+
+    // 5. Si tiene comprobante de pago subido
+    if (item.pantallazo_url) {
+      return {
+        isAttended: true,
+        attendedTimestamp: item.created_at,
+        statusLabel: 'Comprobante Subido'
+      };
+    }
+
+    // 6. Si en historial hay alguna acción de mensaje o atención
+    if (Array.isArray(item.historial) && item.historial.length > 0) {
+      const log = item.historial.find((h: any) => 
+        h.estado === 'mensaje_enviado' || 
+        h.estado === 'contactado' || 
+        h.estado === 'confirmado' || 
+        (h.accion && (h.accion.toLowerCase().includes('mensaje') || h.accion.toLowerCase().includes('atendido')))
+      );
+      if (log) {
+        return {
+          isAttended: true,
+          attendedTimestamp: log.fecha || item.created_at,
+          statusLabel: 'Atendido'
+        };
+      }
+    }
+
+    return {
+      isAttended: false,
+      attendedTimestamp: null,
+      statusLabel: item.modalidad_pago === 'contra_entrega' ? 'Por Confirmar' : 'Por Cobrar'
+    };
+  } else {
+    // Es LEAD (Carrito Abandonado / Interesado)
+    if (item.estado === 'completado') {
+      return {
+        isAttended: true,
+        attendedTimestamp: item.created_at,
+        statusLabel: 'Convertido en Pedido'
+      };
+    }
+
+    if (item.retargeting_estado === 'contactado' || item.retargeting_estado === 'recuperado') {
+      return {
+        isAttended: true,
+        attendedTimestamp: item.created_at,
+        statusLabel: item.retargeting_estado === 'recuperado' ? 'Recuperado' : 'Esperando Respuesta'
+      };
+    }
+
+    if (item.fecha_envio_mensaje) {
+      return {
+        isAttended: true,
+        attendedTimestamp: item.fecha_envio_mensaje,
+        statusLabel: 'Esperando Respuesta'
+      };
+    }
+
+    if (item.atendido === true) {
+      return {
+        isAttended: true,
+        attendedTimestamp: item.created_at,
+        statusLabel: 'Contactado'
+      };
+    }
+
+    return {
+      isAttended: false,
+      attendedTimestamp: null,
+      statusLabel: 'Sin Contactar'
+    };
+  }
+}
+
 export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
   pedidos,
   leads,
@@ -101,7 +240,8 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
   currentAsesor,
   onAtenderPedido,
   onUpdateLeadStatus,
-  onSelectPedido
+  onSelectPedido,
+  onReloadData
 }) => {
   const primaryColor = configuracion?.color_primario || '#00a6f9';
 
@@ -122,6 +262,38 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
   const [cutoffHour, setCutoffHour] = useState<number>(16); // 16 = 4:00 PM (Ejemplo del usuario predeterminado)
   const [filterStatusTab, setFilterStatusTab] = useState<'sin_atender' | 'atendidos' | 'todos'>('sin_atender');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  // ── SUSCRIPCIÓN EN TIEMPO REAL (Supabase Realtime) ──
+  useEffect(() => {
+    const channel = supabase
+      .channel(`realtime_reporte_chats_${tenantId}_${Date.now()}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, () => {
+        onReloadData?.();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
+        onReloadData?.();
+      })
+      .subscribe();
+
+    // Auto-refresco en vivo cada 6 segundos para garantizar sincronización continua
+    const pollInterval = setInterval(() => {
+      onReloadData?.();
+    }, 6000);
+
+    return () => {
+      clearInterval(pollInterval);
+      supabase.removeChannel(channel);
+    };
+  }, [tenantId, onReloadData]);
+
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    if (onReloadData) {
+      await onReloadData();
+    }
+    setTimeout(() => setIsRefreshing(false), 500);
+  };
 
   // Teléfonos mapeados de cada asesor
   const asesoresPhoneMap = useMemo(() => {
@@ -162,21 +334,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
       }
 
       const colTime = parseToColombiaTime(p.created_at);
-
-      // Determinar si fue atendido
-      const isCompleted = p.estado === 'completado' || p.estado === 'entregado_pagado' || p.estado === 'entregado';
-      const isAtendido = Boolean(p.atendido || isCompleted);
-
-      // Extraer timestamp de atención si existe en historial
-      let atendidoTimestamp: string | null = null;
-      if (Array.isArray((p as any).historial)) {
-        const atLog = (p as any).historial.find((h: any) => 
-          h.accion?.toLowerCase().includes('atendido') || 
-          h.estado === 'mensaje_enviado' || 
-          h.estado === 'completado'
-        );
-        if (atLog?.fecha) atendidoTimestamp = atLog.fecha;
-      }
+      const evalAttendance = evaluateChatAttendance(p, 'pedido');
 
       // Resumen de productos
       let prodSummary = 'Pedido sin detalle';
@@ -201,8 +359,9 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
         colHour: colTime.hour,
         colMinute: colTime.minute,
         colTimeFormatted: colTime.timeFormatted,
-        atendido: isAtendido,
-        atendidoTimestamp,
+        atendido: evalAttendance.isAttended,
+        atendidoTimestamp: evalAttendance.attendedTimestamp,
+        statusLabel: evalAttendance.statusLabel,
         estado: p.estado || 'pendiente',
         total: p.total || 0,
         productosResumen: prodSummary,
@@ -238,8 +397,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
       }
 
       const colTime = parseToColombiaTime(l.created_at);
-      const isContacted = l.retargeting_estado === 'contactado' || l.retargeting_estado === 'recuperado' || l.estado === 'completado';
-      const isAtendido = Boolean(isContacted || l.atendido);
+      const evalAttendance = evaluateChatAttendance(l, 'lead');
 
       let prodSummary = 'Carrito / Interés';
       if (Array.isArray(l.productos) && l.productos.length > 0) {
@@ -262,8 +420,9 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
         colHour: colTime.hour,
         colMinute: colTime.minute,
         colTimeFormatted: colTime.timeFormatted,
-        atendido: isAtendido,
-        atendidoTimestamp: null,
+        atendido: evalAttendance.isAttended,
+        atendidoTimestamp: evalAttendance.attendedTimestamp,
+        statusLabel: evalAttendance.statusLabel,
         estado: l.retargeting_estado || l.estado || 'abandonado',
         total: l.total || 0,
         productosResumen: prodSummary,
@@ -364,21 +523,43 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
     return asesores.map(a => {
       const asesorItems = dayInteractions.filter(it => it.asesorId === a.id);
       const upToCutoff = asesorItems.filter(it => it.colHour < cutoffHour || (it.colHour === cutoffHour && it.colMinute === 0));
-      const sinAtender = upToCutoff.filter(it => !it.atendido);
-      const atendidos = upToCutoff.filter(it => it.atendido);
+      
+      const sinAtenderList: ChatInteractionItem[] = [];
+      const atendidosList: ChatInteractionItem[] = [];
+
+      upToCutoff.forEach(item => {
+        if (!item.atendido) {
+          sinAtenderList.push(item);
+        } else {
+          if (item.atendidoTimestamp) {
+            const colAtendido = parseToColombiaTime(item.atendidoTimestamp);
+            const wasAttendedBeforeCutoff = 
+              colAtendido.dateStr < selectedDate ||
+              (colAtendido.dateStr === selectedDate && (colAtendido.hour < cutoffHour || (colAtendido.hour === cutoffHour && colAtendido.minute === 0)));
+            if (wasAttendedBeforeCutoff) {
+              atendidosList.push(item);
+            } else {
+              sinAtenderList.push(item);
+            }
+          } else {
+            atendidosList.push(item);
+          }
+        }
+      });
+
       const total = upToCutoff.length;
-      const pctSinAtender = total > 0 ? Math.round((sinAtender.length / total) * 100) : 0;
+      const pctSinAtender = total > 0 ? Math.round((sinAtenderList.length / total) * 100) : 0;
 
       return {
         asesor: a,
         totalRecibidos: total,
-        atendidos: atendidos.length,
-        sinAtender: sinAtender.length,
+        atendidos: atendidosList.length,
+        sinAtender: sinAtenderList.length,
         pctSinAtender,
-        valorSinAtender: sinAtender.reduce((s, it) => s + (it.total || 0), 0)
+        valorSinAtender: sinAtenderList.reduce((s, it) => s + (it.total || 0), 0)
       };
     });
-  }, [asesores, dayInteractions, cutoffHour]);
+  }, [asesores, dayInteractions, cutoffHour, selectedDate]);
 
   // Desglose hora a hora de 8:00 AM a 20:00 (8:00 PM)
   const hourlyBreakdown = useMemo(() => {
@@ -391,9 +572,19 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
       // Chats que llegaron en esta franja específica de 1 hora
       const itemsInHour = dayAsesorInteractions.filter(it => it.colHour === h);
       
-      // Chats acumulados sin atender exactamente al finalizar esa hora
+      // Chats acumulados que llegaron hasta esa hora y aún no estaban atendidos a esa hora
       const upToThisHour = dayAsesorInteractions.filter(it => it.colHour <= h);
-      const sinAtenderAtThisHour = upToThisHour.filter(it => !it.atendido);
+      const sinAtenderAtThisHour = upToThisHour.filter(it => {
+        if (!it.atendido) return true;
+        if (it.atendidoTimestamp) {
+          const colAtendido = parseToColombiaTime(it.atendidoTimestamp);
+          const wasAttendedBeforeThisHour = 
+            colAtendido.dateStr < selectedDate ||
+            (colAtendido.dateStr === selectedDate && (colAtendido.hour < h || (colAtendido.hour === h && colAtendido.minute === 0)));
+          return !wasAttendedBeforeThisHour;
+        }
+        return false;
+      });
 
       return {
         hourNumber: h,
@@ -404,7 +595,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
         itemsInHour
       };
     });
-  }, [dayAsesorInteractions]);
+  }, [dayAsesorInteractions, selectedDate]);
 
   // Lista detallada a mostrar según la pestaña activa ('sin_atender' | 'atendidos' | 'todos')
   const detailedList = useMemo(() => {
@@ -431,21 +622,32 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
   // Función para marcar rápidamente como atendido
   const handleQuickMarkAtendido = async (item: ChatInteractionItem) => {
     try {
+      const nowIso = new Date().toISOString();
       if (item.source === 'pedido') {
         const { error } = await supabase
           .from('pedidos')
-          .update({ atendido: true })
+          .update({ 
+            atendido: true,
+            estado: 'mensaje_enviado',
+            fecha_envio_mensaje: nowIso
+          })
           .eq('id', item.raw.id);
-        if (!error && onAtenderPedido) {
-          onAtenderPedido(item.raw);
+        if (!error) {
+          if (onAtenderPedido) onAtenderPedido(item.raw);
+          if (onReloadData) onReloadData();
         }
       } else {
         const { error } = await supabase
           .from('leads')
-          .update({ retargeting_estado: 'contactado' })
+          .update({ 
+            retargeting_estado: 'contactado',
+            atendido: true,
+            fecha_envio_mensaje: nowIso
+          })
           .eq('id', item.raw.id);
-        if (!error && onUpdateLeadStatus) {
-          onUpdateLeadStatus(item.raw.id, 'contactado');
+        if (!error) {
+          if (onUpdateLeadStatus) onUpdateLeadStatus(item.raw.id, 'contactado');
+          if (onReloadData) onReloadData();
         }
       }
     } catch (err) {
@@ -470,7 +672,8 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
       'Teléfono',
       'Asesora Asignada',
       'Tipo',
-      'Estado a las ' + (cutoffHour % 12 || 12) + (cutoffHour >= 12 ? 'PM' : 'AM'),
+      'Estado al Corte de las ' + (cutoffHour % 12 || 12) + (cutoffHour >= 12 ? 'PM' : 'AM'),
+      'Estado Detallado',
       'Tiempo Espera a Corte (mins)',
       'Total COP',
       'Detalle'
@@ -478,7 +681,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
 
     const cutoffMinutes = cutoffHour * 60;
     const rows = interactionsUpToCutoff.map(it => {
-      const isSinAtender = !it.atendido;
+      const isSinAtender = sinAtenderAtCutoff.some(s => s.id === it.id);
       const waitMins = isSinAtender ? Math.max(0, cutoffMinutes - (it.colHour * 60 + it.colMinute)) : 0;
       return [
         `"${it.colDateStr}"`,
@@ -488,6 +691,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
         `"${it.asesorNombre.replace(/"/g, '""')}"`,
         `"${it.source === 'pedido' ? 'Pedido Web' : 'Carrito Abandonado'}"`,
         `"${isSinAtender ? 'Sin Atender' : 'Atendido'}"`,
+        `"${it.statusLabel}"`,
         waitMins,
         it.total,
         `"${it.productosResumen.replace(/"/g, '""')}"`
@@ -512,7 +716,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
     setSelectedDate(parseToColombiaTime(dateObj).dateStr);
   };
 
-  // Formato amigable de fecha (ej: "Miércoles, 3 de Noviembre de 2026")
+  // Formato amigable de fecha (ej: "Miércoles, 4 de Noviembre de 2026")
   const friendlyDateStr = useMemo(() => {
     if (!selectedDate) return '';
     const [y, m, d] = selectedDate.split('-').map(Number);
@@ -559,32 +763,74 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
               </h2>
             </div>
             <p style={{ margin: 0, fontSize: '0.82rem', color: '#64748b', fontWeight: 400 }}>
-              Audita con exactitud cuántos clientes y chats ingresaron y cuántos permanecían sin atender a cualquier hora del día.
+              Sincronizado en tiempo real con los estados del CRM y pedidos (Esperando Respuesta, Confirmados y Pendientes).
             </p>
           </div>
 
-          {/* Botón Exportar */}
-          <button
-            type="button"
-            onClick={handleExportCSV}
-            style={{
+          {/* Acciones del Header: En Vivo + Refrescar + Descargar CSV */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+            <span style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '0.45rem',
-              padding: '0.55rem 1rem',
-              borderRadius: '10px',
-              border: '1px solid #cbd5e1',
-              background: '#ffffff',
-              color: '#334155',
-              fontSize: '0.82rem',
+              gap: '0.35rem',
+              padding: '0.35rem 0.65rem',
+              borderRadius: '20px',
+              fontSize: '0.74rem',
               fontWeight: 500,
-              cursor: 'pointer',
-              fontFamily: "'Poppins', sans-serif"
-            }}
-          >
-            <Download size={15} />
-            <span>Descargar CSV</span>
-          </button>
+              background: '#ecfdf5',
+              color: '#059669',
+              border: '1px solid #a7f3d0'
+            }}>
+              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#10b981', display: 'inline-block', boxShadow: '0 0 6px #10b981' }} />
+              En Vivo (Tiempo Real)
+            </span>
+
+            <button
+              type="button"
+              onClick={handleManualRefresh}
+              disabled={isRefreshing}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+                padding: '0.5rem 0.85rem',
+                borderRadius: '10px',
+                border: '1px solid #cbd5e1',
+                background: '#ffffff',
+                color: '#334155',
+                fontSize: '0.78rem',
+                fontWeight: 500,
+                cursor: 'pointer',
+                fontFamily: "'Poppins', sans-serif"
+              }}
+              title="Sincronizar cambios de Supabase ahora"
+            >
+              <RefreshCw size={14} style={{ animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
+              <span>{isRefreshing ? 'Actualizando...' : 'Refrescar'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleExportCSV}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                padding: '0.5rem 0.85rem',
+                borderRadius: '10px',
+                border: '1px solid #cbd5e1',
+                background: '#ffffff',
+                color: '#334155',
+                fontSize: '0.78rem',
+                fontWeight: 500,
+                cursor: 'pointer',
+                fontFamily: "'Poppins', sans-serif"
+              }}
+            >
+              <Download size={14} />
+              <span>CSV</span>
+            </button>
+          </div>
         </div>
 
         {/* Barra de Filtros interactiva */}
@@ -1221,7 +1467,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
             </h4>
             <p style={{ margin: 0, fontSize: '0.82rem' }}>
               {filterStatusTab === 'sin_atender' 
-                ? 'Todos los clientes que escribieron hasta esta hora fueron atendidos correctamente.' 
+                ? 'Todos los clientes que escribieron hasta esta hora fueron atendidos oportunamente.' 
                 : 'Prueba cambiando la hora de corte o la fecha seleccionada.'}
             </p>
           </div>
@@ -1231,7 +1477,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
               const cutoffMinutes = cutoffHour * 60;
               const itemMinutes = item.colHour * 60 + item.colMinute;
               const waitMinutesAtCutoff = Math.max(0, cutoffMinutes - itemMinutes);
-              const isSinAtender = !item.atendido;
+              const isSinAtender = sinAtenderAtCutoff.some(s => s.id === item.id);
 
               return (
                 <div
@@ -1267,7 +1513,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                       {item.clienteNombre.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                         <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.88rem' }}>
                           {item.clienteNombre}
                         </span>
@@ -1280,6 +1526,17 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                           color: item.source === 'pedido' ? '#1d4ed8' : '#7e22ce'
                         }}>
                           {item.source === 'pedido' ? 'Pedido Web' : 'Carrito Abandonado'}
+                        </span>
+                        <span style={{
+                          fontSize: '0.68rem',
+                          fontWeight: 500,
+                          padding: '0.1rem 0.4rem',
+                          borderRadius: '4px',
+                          background: item.statusLabel.includes('Esperando') ? '#fffbeb' : item.statusLabel.includes('Confirmado') || item.statusLabel.includes('Venta') ? '#ecfdf5' : '#f1f5f9',
+                          color: item.statusLabel.includes('Esperando') ? '#b45309' : item.statusLabel.includes('Confirmado') || item.statusLabel.includes('Venta') ? '#15803d' : '#475569',
+                          border: item.statusLabel.includes('Esperando') ? '1px solid #fde68a' : '1px solid transparent'
+                        }}>
+                          {item.statusLabel}
                         </span>
                       </div>
                       <div style={{ fontSize: '0.76rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.15rem' }}>
@@ -1302,7 +1559,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                       </div>
                     ) : (
                       <div style={{ fontSize: '0.74rem', color: '#16a34a', fontWeight: 500, marginTop: '0.15rem' }}>
-                        ✓ Atendido oportunamente
+                        ✓ {item.atendidoTimestamp ? `Atendido (${parseToColombiaTime(item.atendidoTimestamp).timeFormatted})` : 'Atendido oportunamente'}
                       </div>
                     )}
                   </div>
@@ -1394,4 +1651,3 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
     </div>
   );
 };
-
