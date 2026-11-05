@@ -3557,19 +3557,19 @@ export default function Admin() {
     
     cargarDatos();
     
-    // Auto-refresh data cada 8 segundos como respaldo
+    // Auto-refresh data liviana cada 45 segundos como respaldo pasivo (solo pedidos y leads)
     const interval = setInterval(() => {
-      cargarDatos();
-    }, 8000);
+      cargarDatos(true);
+    }, 45000);
 
     // Suscripción Realtime a Supabase para capturar cambios instantáneos de carritos abandonados y pedidos
     const channel = supabase
       .channel('admin_realtime_leads_orders')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
-        cargarDatos();
+        cargarDatos(true);
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, () => {
-        cargarDatos();
+        cargarDatos(true);
       })
       .subscribe();
     
@@ -3579,12 +3579,23 @@ export default function Admin() {
     };
   }, [isAuthenticated, selectedCompany]);
 
-  async function cargarDatos() {
+  async function cargarDatos(soloDinamicos = false) {
     try {
       const tenant = getTenantId();
       const normT = normalizeTenantId(tenant);
 
       const tenantOrFilter = `tenant_id.eq.${tenant},tenant_id.eq.${normT},tenant_id.eq.${tenant.replace(/_/g, '-')},tenant_id.eq.${tenant.replace(/-/g, '_')}`;
+
+      // Si solo se refrescan datos dinámicos (leads y pedidos), evitamos descargar el catálogo entero de productos
+      if (soloDinamicos) {
+        const [pedRes, leadRes] = await Promise.all([
+          supabase.from('pedidos').select('*').or(tenantOrFilter).order('created_at', { ascending: false }),
+          supabase.from('leads').select('*').or(tenantOrFilter).order('created_at', { ascending: false })
+        ]);
+        if (pedRes.data) setPedidos(pedRes.data);
+        if (leadRes.data) setLeads(leadRes.data);
+        return;
+      }
 
       // Fetch other data in parallel
       const [catRes, subcatRes, confRes, pedRes, leadRes, cliRes, aseRes, matRes, mayRes, pqrsRes, allAseRes] = await Promise.all([

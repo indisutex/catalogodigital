@@ -294,9 +294,10 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
       })
       .subscribe();
 
+    // Polling de respaldo pasivo cada 60s (el push instantáneo ya lo hace Supabase Realtime)
     const pollInterval = setInterval(() => {
       onReloadData?.();
-    }, 6000);
+    }, 60000);
 
     return () => {
       clearInterval(pollInterval);

@@ -95,7 +95,8 @@ export default function ReporteEjecutivo() {
         })
         .subscribe();
 
-      const interval = setInterval(cargarDatos, 8000);
+      // Polling de respaldo pasivo cada 60s (el push instantáneo ya lo hace Supabase Realtime)
+      const interval = setInterval(cargarDatos, 60000);
 
       return () => {
         clearInterval(interval);
