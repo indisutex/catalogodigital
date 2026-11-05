@@ -9,7 +9,7 @@ import { AsesorShiftBar } from '../components/asistencia/AsesorShiftBar';
 import { ControlAsistenciaAdmin } from '../components/asistencia/ControlAsistenciaAdmin';
 import { asistenciaService } from '../lib/asistenciaService';
 import './Admin.css';
-import { X, FileText, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Minus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, ChevronRight, Wrench, ArrowUpDown, Filter, MapPin, XCircle, Truck, Clock, FileCheck, CheckCircle, Landmark, BookOpen, LifeBuoy, ShoppingCart, ClipboardList, Star, Ban, ExternalLink, Flame, RotateCcw, Sparkles, QrCode } from 'lucide-react';
+import { Lock, X, FileText, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Minus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, ChevronRight, Wrench, ArrowUpDown, Filter, MapPin, XCircle, Truck, Clock, FileCheck, CheckCircle, Landmark, BookOpen, LifeBuoy, ShoppingCart, ClipboardList, Star, Ban, ExternalLink, Flame, RotateCcw, Sparkles, QrCode } from 'lucide-react';
 
 import * as XLSX from 'xlsx';
 import { ERPContabilidadService } from '../lib/erpContabilidadService';
@@ -19,6 +19,7 @@ import { QRCodeGeneratorModule } from '../components/QRCodeGeneratorModule';
 import { InformeAsesorasDiario } from '../components/InformeAsesorasDiario';
 
 const SECRET_PIN = '0000';
+const INFORME_PIN = '1107';
 
 const formatWhatsAppLink = (phone: string, text?: string) => {
   if (!phone) return '#';
@@ -518,7 +519,7 @@ function MiNegocioSettings({
 
 // ── SIDEBAR COMPONENT ──
 function SidebarContent({
-  activeTab, setActiveTab, productos, configuracion, handleLogout, onClose, role, currentAsesor, activeNotificationsCount = 0
+  activeTab, setActiveTab, productos, configuracion, handleLogout, onClose, role, currentAsesor, activeNotificationsCount = 0, isInformeAsesorasUnlocked, onRequestInformeAsesoras
 }: {
   activeTab: TabType;
   setActiveTab: (t: TabType) => void;
@@ -530,6 +531,8 @@ function SidebarContent({
   currentAsesor?: any;
   activeNotificationsCount?: number;
   listaPqrs?: PQRS[];
+  isInformeAsesorasUnlocked?: boolean;
+  onRequestInformeAsesoras?: () => void;
 }) {
   const [isPosExpanded, setIsPosExpanded] = useState<boolean>(activeTab === 'pos' || activeTab === 'ventas_pos');
   const [isProductosExpanded, setIsProductosExpanded] = useState<boolean>(activeTab === 'productos' || activeTab === 'categorias');
@@ -777,8 +780,36 @@ function SidebarContent({
               <span className="nav-icon"><Users size={14} /></span> Asesores
               {activeTab === 'asesores' && <span className="active-dot"></span>}
             </button>
-            <button className={`nav-item ${activeTab === 'informe_asesoras' ? 'active' : ''}`} onClick={() => handleSelectTab('informe_asesoras')}>
-              <span className="nav-icon"><BarChart2 size={14} /></span> Informe Diario Asesoras
+            <button 
+              className={`nav-item ${activeTab === 'informe_asesoras' ? 'active' : ''}`} 
+              onClick={() => {
+                if (onRequestInformeAsesoras) {
+                  onRequestInformeAsesoras();
+                  if (onClose) onClose();
+                } else {
+                  handleSelectTab('informe_asesoras');
+                }
+              }}
+            >
+              <span className="nav-icon"><BarChart2 size={14} /></span> 
+              <span>Informe Diario Asesoras</span>
+              <span style={{
+                marginLeft: 'auto',
+                marginRight: '0.2rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.2rem',
+                fontSize: '0.62rem',
+                fontWeight: 500,
+                padding: '0.1rem 0.35rem',
+                borderRadius: '4px',
+                background: isInformeAsesorasUnlocked ? '#ecfdf5' : '#fdf2f8',
+                color: isInformeAsesorasUnlocked ? '#059669' : '#db2777',
+                border: `1px solid ${isInformeAsesorasUnlocked ? '#a7f3d0' : '#fbcfe8'}`
+              }}>
+                <Lock size={10} />
+                {isInformeAsesorasUnlocked ? 'PIN ✓' : 'PIN'}
+              </span>
               {activeTab === 'informe_asesoras' && <span className="active-dot"></span>}
             </button>
             <button className={`nav-item ${activeTab === 'asistencia' ? 'active' : ''}`} onClick={() => handleSelectTab('asistencia')}>
@@ -901,6 +932,12 @@ export default function Admin() {
   const [loggedAsesorPhone, setLoggedAsesorPhone] = useState<string | null>(() => {
     return localStorage.getItem(`admin_asesor_phone_${getTenantId()}`);
   });
+  const [isInformeAsesorasUnlocked, setIsInformeAsesorasUnlocked] = useState<boolean>(() => {
+    return sessionStorage.getItem('informe_asesoras_unlocked') === 'true';
+  });
+  const [showInformePinModal, setShowInformePinModal] = useState(false);
+  const [informePinInput, setInformePinInput] = useState('');
+  const [informePinError, setInformePinError] = useState('');
   const [failedThumbnails, setFailedThumbnails] = useState<Record<string, boolean>>({});
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
   const [pin, setPin] = useState('');
@@ -912,6 +949,10 @@ export default function Admin() {
     const defaultTab = (userRole === 'asesor') ? 'pedidos' : (userRole === 'mayorista' ? 'resumen_asesor' : 'productos');
     const saved = localStorage.getItem('admin_active_tab') as string;
     if (saved === 'perfil_admin' || saved === 'perfil_admin_tab') return 'dashboard';
+    const isUnlocked = sessionStorage.getItem('informe_asesoras_unlocked') === 'true';
+    if ((urlTab === 'informe_asesoras' || saved === 'informe_asesoras') && !isUnlocked) {
+      return defaultTab as TabType;
+    }
     const allowedTabs: string[] = ['dashboard', 'productos', 'categorias', 'pedidos', 'clientes', 'asesores', 'informe_asesoras', 'asistencia', 'mayoristas', 'pos', 'ventas_pos', 'siigo', 'config', 'perfil_asesor', 'resumen_asesor', 'notificaciones_asesor', 'material_apoyo', 'material_asesor', 'productos_asesor', 'productos_mayorista', 'ranking_mayorista', 'contabilidad', 'erp'];
     
     if (urlTab && allowedTabs.includes(urlTab)) return urlTab;
@@ -2952,8 +2993,55 @@ export default function Admin() {
     return () => clearInterval(interval);
   }, [role, jornadaActivaAsesor]);
 
+  const requestAccessInformeAsesoras = () => {
+    if (isInformeAsesorasUnlocked) {
+      handleTabChange('informe_asesoras');
+    } else {
+      setShowInformePinModal(true);
+      setInformePinInput('');
+      setInformePinError('');
+    }
+  };
+
+  const handleVerifyInformePin = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const expectedPin = (configuracion as any)?.pin_informe_asesoras || INFORME_PIN;
+    if (informePinInput.trim() === expectedPin || informePinInput.trim() === '1107') {
+      setIsInformeAsesorasUnlocked(true);
+      sessionStorage.setItem('informe_asesoras_unlocked', 'true');
+      setShowInformePinModal(false);
+      setInformePinError('');
+      setInformePinInput('');
+      showToast('PIN correcto. Acceso concedido al informe ✓', 'success');
+      setEditingProduct(null);
+      setIsAddingProduct(false);
+      setShowCrearAsesorForm(false);
+      setShowCrearMayoristaForm(false);
+      setShowCrearMaterialForm(false);
+      setShowOrderFilters(false);
+      setEditingCategory(null);
+      setSelectedPedido(null);
+      setPosLastInvoice(null);
+      setActiveTab('informe_asesoras');
+    } else {
+      setInformePinError('PIN incorrecto. Inténtalo de nuevo.');
+      setInformePinInput('');
+    }
+  };
+
+  const handleLockInformeAsesoras = () => {
+    setIsInformeAsesorasUnlocked(false);
+    sessionStorage.removeItem('informe_asesoras_unlocked');
+    showToast('Informe bloqueado con seguridad 🔒', 'success');
+    handleTabChange('dashboard');
+  };
+
   // Cambiar de pestaña cerrando cualquier formulario abierto
   function handleTabChange(tab: TabType) {
+    if (tab === 'informe_asesoras' && !isInformeAsesorasUnlocked) {
+      requestAccessInformeAsesoras();
+      return;
+    }
     setEditingProduct(null);
     setIsAddingProduct(false);
     setShowCrearAsesorForm(false);
@@ -7243,7 +7331,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={handleTabChange} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor} activeNotificationsCount={activeNotificationsCount} listaPqrs={listaPqrs} />
+          <SidebarContent activeTab={activeTab} setActiveTab={handleTabChange} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor} activeNotificationsCount={activeNotificationsCount} listaPqrs={listaPqrs} isInformeAsesorasUnlocked={isInformeAsesorasUnlocked} onRequestInformeAsesoras={requestAccessInformeAsesoras} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -7673,7 +7761,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={handleTabChange} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor} activeNotificationsCount={activeNotificationsCount} listaPqrs={listaPqrs} />
+          <SidebarContent activeTab={activeTab} setActiveTab={handleTabChange} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor} activeNotificationsCount={activeNotificationsCount} listaPqrs={listaPqrs} isInformeAsesorasUnlocked={isInformeAsesorasUnlocked} onRequestInformeAsesoras={requestAccessInformeAsesoras} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -7759,7 +7847,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={handleTabChange} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor} activeNotificationsCount={activeNotificationsCount} listaPqrs={listaPqrs} />
+          <SidebarContent activeTab={activeTab} setActiveTab={handleTabChange} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor} activeNotificationsCount={activeNotificationsCount} listaPqrs={listaPqrs} isInformeAsesorasUnlocked={isInformeAsesorasUnlocked} onRequestInformeAsesoras={requestAccessInformeAsesoras} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -7826,6 +7914,8 @@ export default function Admin() {
           currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor}
           activeNotificationsCount={activeNotificationsCount}
           listaPqrs={listaPqrs}
+          isInformeAsesorasUnlocked={isInformeAsesorasUnlocked}
+          onRequestInformeAsesoras={requestAccessInformeAsesoras}
         />
       </aside>
 
@@ -8351,15 +8441,17 @@ export default function Admin() {
                       </button>
                     )}
 
-                    {/* Botón Acceso Rápido: Informe Diario de Asesoras */}
+                    {/* Botón Acceso Rápido: Informe Diario de Asesoras con PIN */}
                     {activeTab === 'asesores' && (
                       <button
                         type="button"
                         className="btn-secondary hover-lift"
-                        onClick={() => setActiveTab('informe_asesoras')}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0 0.85rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', background: '#f8fafc', color: '#1e293b', border: '1px solid #cbd5e1', flexShrink: 0, fontFamily: "'Poppins', sans-serif" }}
+                        onClick={requestAccessInformeAsesoras}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0 0.85rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', background: isInformeAsesorasUnlocked ? '#ecfdf5' : '#fdf2f8', color: isInformeAsesorasUnlocked ? '#059669' : '#db2777', border: `1px solid ${isInformeAsesorasUnlocked ? '#a7f3d0' : '#fbcfe8'}`, flexShrink: 0, fontFamily: "'Poppins', sans-serif" }}
                       >
-                        <Clock size={14} color="var(--primary-color, #00a6f9)" /> <span className="btn-text-desktop">Informe Diario por Hora</span>
+                        <Clock size={14} color={isInformeAsesorasUnlocked ? '#059669' : '#db2777'} /> 
+                        <span className="btn-text-desktop">Informe Diario</span>
+                        <Lock size={12} color={isInformeAsesorasUnlocked ? '#059669' : '#db2777'} />
                       </button>
                     )}
 
@@ -8789,6 +8881,33 @@ export default function Admin() {
             )}
           </div>
           <div className="topbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginLeft: '0.5rem', flexShrink: 0 }}>
+            {activeTab === 'informe_asesoras' && isInformeAsesorasUnlocked && (
+              <button
+                type="button"
+                onClick={handleLockInformeAsesoras}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.35rem',
+                  padding: '0 0.75rem',
+                  height: '38px',
+                  borderRadius: '10px',
+                  fontSize: '0.8rem',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  background: '#fdf2f8',
+                  color: '#db2777',
+                  border: '1px solid #fbcfe8',
+                  flexShrink: 0,
+                  fontFamily: "'Poppins', sans-serif"
+                }}
+                title="Bloquear Informe Diario con PIN"
+              >
+                <Lock size={13} />
+                <span className="btn-text-desktop">Bloquear Informe</span>
+              </button>
+            )}
             {/* Switcher Vista Lista / Kanban en Pedidos (Oculto en móvil) */}
             {activeTab === 'pedidos' && (
               <div className="desktop-only-table" style={{ display: 'flex', gap: '0.2rem', background: '#f1f5f9', padding: '0.2rem', borderRadius: '10px', border: '1.5px solid #cbd5e1', height: '38px', alignItems: 'center', flexShrink: 0, boxSizing: 'border-box' }}>
@@ -13901,18 +14020,107 @@ export default function Admin() {
 
           {/* ── INFORME DIARIO DE ASESORAS Y AUDITORÍA DE CHATS ── */}
           {activeTab === 'informe_asesoras' && (
-            <InformeAsesorasDiario
-              pedidos={pedidos}
-              leads={leads}
-              asesores={asesores}
-              configuracion={configuracion}
-              tenantId={getTenantId()}
-              currentAsesor={currentAsesor}
-              onAtenderPedido={handleAtenderPedido}
-              onUpdateLeadStatus={handleUpdateLeadStatus}
-              onSelectPedido={(p) => setSelectedPedido(p)}
-              onReloadData={cargarDatos}
-            />
+            !isInformeAsesorasUnlocked ? (
+              <div style={{
+                maxWidth: '440px',
+                margin: '3.5rem auto',
+                padding: '2.25rem 2rem',
+                background: '#ffffff',
+                borderRadius: '24px',
+                boxShadow: '0 12px 30px rgba(0, 0, 0, 0.06)',
+                border: '1.5px solid #fbcfe8',
+                textAlign: 'center',
+                fontFamily: "'Poppins', sans-serif"
+              }}>
+                <div style={{
+                  width: '64px',
+                  height: '64px',
+                  borderRadius: '50%',
+                  background: '#fdf2f8',
+                  color: '#db2777',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 1.25rem auto',
+                  boxShadow: '0 4px 12px rgba(219, 39, 119, 0.15)'
+                }}>
+                  <Lock size={30} />
+                </div>
+
+                <h3 style={{ margin: '0 0 0.4rem 0', fontSize: '1.25rem', fontWeight: 600, color: '#0f172a' }}>
+                  Informe Diario Protegido
+                </h3>
+                <p style={{ margin: '0 0 1.5rem 0', fontSize: '0.84rem', color: '#64748b', lineHeight: 1.45 }}>
+                  Este informe contiene auditoría confidencial de chats, tiempos y ventas. Ingresa el PIN <strong>1107</strong> para acceder.
+                </p>
+
+                <form onSubmit={handleVerifyInformePin} style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                  <div>
+                    <input
+                      type="password"
+                      maxLength={6}
+                      autoFocus
+                      value={informePinInput}
+                      onChange={e => {
+                        setInformePinInput(e.target.value);
+                        setInformePinError('');
+                      }}
+                      placeholder="••••"
+                      style={{
+                        width: '100%',
+                        maxWidth: '200px',
+                        padding: '0.75rem 1rem',
+                        textAlign: 'center',
+                        fontSize: '1.6rem',
+                        letterSpacing: '0.6rem',
+                        fontWeight: 600,
+                        borderRadius: '12px',
+                        border: informePinError ? '2px solid #ef4444' : '2px solid #cbd5e1',
+                        outline: 'none',
+                        background: '#f8fafc',
+                        fontFamily: "'Poppins', sans-serif"
+                      }}
+                    />
+                    {informePinError && (
+                      <div style={{ color: '#ef4444', fontSize: '0.78rem', marginTop: '0.4rem', fontWeight: 500 }}>
+                        {informePinError}
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    type="submit"
+                    style={{
+                      padding: '0.75rem 1.5rem',
+                      borderRadius: '12px',
+                      border: 'none',
+                      background: '#db2777',
+                      color: '#ffffff',
+                      fontWeight: 600,
+                      fontSize: '0.92rem',
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 12px rgba(219, 39, 119, 0.3)',
+                      fontFamily: "'Poppins', sans-serif"
+                    }}
+                  >
+                    Desbloquear Informe
+                  </button>
+                </form>
+              </div>
+            ) : (
+              <InformeAsesorasDiario
+                pedidos={pedidos}
+                leads={leads}
+                asesores={asesores}
+                configuracion={configuracion}
+                tenantId={getTenantId()}
+                currentAsesor={currentAsesor}
+                onAtenderPedido={handleAtenderPedido}
+                onUpdateLeadStatus={handleUpdateLeadStatus}
+                onSelectPedido={(p) => setSelectedPedido(p)}
+                onReloadData={cargarDatos}
+              />
+            )
           )}
 
           {/* ── CONTROL DE ASISTENCIA TAB ── */}
@@ -20591,6 +20799,160 @@ export default function Admin() {
           }}>
             <span style={{ color: '#64748b', fontWeight: 400 }}>Total Pedido:</span>
             <strong style={{ color: '#10b981', fontWeight: 600 }}>${hoveredOrderTooltip.total?.toLocaleString() || 0}</strong>
+          </div>
+        </div>
+      )}
+      {/* ── MODAL PIN SEGURIDAD PARA INFORME DIARIO ── */}
+      {showInformePinModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 99999,
+            padding: '1rem',
+            fontFamily: "'Poppins', sans-serif"
+          }}
+          onClick={() => setShowInformePinModal(false)}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '24px',
+              padding: '2rem',
+              maxWidth: '380px',
+              width: '100%',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+              border: '1.5px solid #fbcfe8',
+              textAlign: 'center',
+              position: 'relative'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setShowInformePinModal(false)}
+              style={{
+                position: 'absolute',
+                top: '1rem',
+                right: '1rem',
+                background: '#f1f5f9',
+                border: 'none',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: '#64748b'
+              }}
+            >
+              <X size={16} />
+            </button>
+
+            <div style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              background: '#fdf2f8',
+              color: '#db2777',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto 1rem auto',
+              boxShadow: '0 4px 10px rgba(219, 39, 119, 0.15)'
+            }}>
+              <Lock size={26} />
+            </div>
+
+            <h3 style={{ margin: '0 0 0.35rem 0', fontSize: '1.2rem', fontWeight: 600, color: '#0f172a' }}>
+              Acceso con PIN de Seguridad
+            </h3>
+            <p style={{ margin: '0 0 1.25rem 0', fontSize: '0.82rem', color: '#64748b', lineHeight: 1.4 }}>
+              Ingresa el PIN de seguridad para acceder al <strong>Informe Diario de Asesoras</strong>.
+            </p>
+
+            <form onSubmit={handleVerifyInformePin}>
+              <input
+                type="password"
+                maxLength={6}
+                autoFocus
+                value={informePinInput}
+                onChange={e => {
+                  setInformePinInput(e.target.value);
+                  setInformePinError('');
+                }}
+                placeholder="••••"
+                style={{
+                  width: '180px',
+                  padding: '0.65rem 0.8rem',
+                  textAlign: 'center',
+                  fontSize: '1.6rem',
+                  letterSpacing: '0.5rem',
+                  fontWeight: 600,
+                  borderRadius: '12px',
+                  border: informePinError ? '2px solid #ef4444' : '2px solid #cbd5e1',
+                  outline: 'none',
+                  background: '#f8fafc',
+                  margin: '0 auto 0.75rem auto',
+                  display: 'block',
+                  fontFamily: "'Poppins', sans-serif"
+                }}
+              />
+
+              {informePinError && (
+                <div style={{ color: '#ef4444', fontSize: '0.78rem', marginBottom: '0.85rem', fontWeight: 500 }}>
+                  {informePinError}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowInformePinModal(false)}
+                  style={{
+                    flex: 1,
+                    padding: '0.65rem',
+                    borderRadius: '10px',
+                    border: '1px solid #cbd5e1',
+                    background: '#f8fafc',
+                    color: '#475569',
+                    fontWeight: 500,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer',
+                    fontFamily: "'Poppins', sans-serif"
+                  }}
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  style={{
+                    flex: 1,
+                    padding: '0.65rem',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: '#db2777',
+                    color: '#ffffff',
+                    fontWeight: 600,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer',
+                    fontFamily: "'Poppins', sans-serif",
+                    boxShadow: '0 2px 8px rgba(219, 39, 119, 0.3)'
+                  }}
+                >
+                  Entrar
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
