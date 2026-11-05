@@ -78,7 +78,7 @@ export const getFamilyOptionPrices = (
     const rawP50 = Number(optObj.p50) || 0;
 
     const detal = rawDetal > 1000 ? rawDetal : 36000;
-    const mayor = rawMayor > 1000 ? rawMayor : (detal > 10000 ? detal - 10000 : 26000);
+    const mayor = rawMayor > 1000 ? rawMayor : detal;
     const p50 = rawP50 > 1000 ? rawP50 : (mayor > 0 ? mayor : detal);
     return { detal, mayor, p50 };
   }
@@ -86,7 +86,7 @@ export const getFamilyOptionPrices = (
   // 5. Respaldo en mapa de tallas simples
   if (talla && Number(preciosMap[talla]) > 1000) {
     const p = Number(preciosMap[talla]);
-    const m = p > 10000 ? p - 10000 : p;
+    const m = p;
     return { detal: p, mayor: m, p50: m };
   }
 

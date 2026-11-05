@@ -1085,7 +1085,7 @@ export default function MenuDigital() {
         : (preciosMap[key] ? Number(preciosMap[key]) : fallbackDetal);
       let mayor = (optObj?.mayor !== undefined && optObj?.mayor !== null && Number(optObj.mayor) > 0)
         ? Number(optObj.mayor)
-        : fallbackMayor;
+        : (optObj?.detal ? Number(optObj.detal) : fallbackMayor);
       return {
         detal: getEffectivePrice({ ...prod, precio: detal, precio_detal: detal, precio_por_mayor: mayor, familia_opcion_key: key, talla: key } as any, 'detal', markupPorcentaje, ajustesProductos, descuentoPromocional),
         mayor: getEffectivePrice({ ...prod, precio: mayor, precio_detal: detal, precio_por_mayor: mayor, familia_opcion_key: key, talla: key } as any, 'mayorista', markupPorcentaje, ajustesProductos, descuentoPromocional)
@@ -1187,45 +1187,50 @@ export default function MenuDigital() {
       if (miembro === 'dama_unica') {
         const p = getOptionPrice('Dama Única');
         if (p > 0) return p;
-        if (currentBuyerMode === 'mayorista') return 26000;
-        if (fam.dama_unica) return Number(fam.dama_unica);
         if (preciosDetallados['Dama Única']?.detal > 0) return Number(preciosDetallados['Dama Única'].detal);
+        if (fam.dama_unica) return Number(fam.dama_unica);
+        if (currentBuyerMode === 'mayorista') return 26000;
+        return 36000;
       }
       if (miembro === 'dama_plus') {
         const p = getOptionPrice('Dama Plus');
         if (p > 0) return p;
-        if (currentBuyerMode === 'mayorista') return 31000;
-        if (fam.dama_plus) return Number(fam.dama_plus);
         if (preciosDetallados['Dama Plus']?.detal > 0) return Number(preciosDetallados['Dama Plus'].detal);
+        if (fam.dama_plus) return Number(fam.dama_plus);
+        if (currentBuyerMode === 'mayorista') return 31000;
+        return 41000;
       }
       if (miembro === 'caballero_unica') {
         const p = getOptionPrice('Caballero Única');
         if (p > 0) return p;
-        if (currentBuyerMode === 'mayorista') return 31000;
-        if (fam.caballero_unica) return Number(fam.caballero_unica);
         if (preciosDetallados['Caballero Única']?.detal > 0) return Number(preciosDetallados['Caballero Única'].detal);
+        if (fam.caballero_unica) return Number(fam.caballero_unica);
+        if (currentBuyerMode === 'mayorista') return 31000;
+        return 41000;
       }
       if (miembro === 'unisex_2xl') {
         const p = getOptionPrice('2XL Unisex');
         if (p > 0) return p;
-        if (currentBuyerMode === 'mayorista') return 34000;
-        if (fam.unisex_2xl) return Number(fam.unisex_2xl);
         if (preciosDetallados['2XL Unisex']?.detal > 0) return Number(preciosDetallados['2XL Unisex'].detal);
+        if (fam.unisex_2xl) return Number(fam.unisex_2xl);
+        if (currentBuyerMode === 'mayorista') return 34000;
+        return 44000;
       }
 
       if (miembro === 'nino') {
         if (talla && talla !== 'Única') {
           const p = getOptionPrice(talla);
           if (p > 0) return p;
+          if (preciosDetallados[talla]?.detal > 0) return Number(preciosDetallados[talla].detal);
         }
         const p = getOptionPrice('2/4');
         if (p > 0) return p;
+        if (preciosDetallados['2/4']?.detal > 0) return Number(preciosDetallados['2/4'].detal);
         if (currentBuyerMode === 'mayorista') {
           if (talla === '14/16') return 22500;
           if (talla === '18') return 26000;
           return 22000;
         }
-        if (talla && preciosDetallados[talla]?.detal > 0) return Number(preciosDetallados[talla].detal);
         return Number(fam.nino || 32000);
       }
 
@@ -5112,10 +5117,9 @@ export default function MenuDigital() {
                                     const optDetalRaw = getActiveUnitPrice(detailProduct, opt.key, 'Única', 'detal');
                                     const optMayorRaw = getActiveUnitPrice(detailProduct, opt.key, 'Única', 'mayorista');
                                     const optDetal = getEffectivePrice({ ...detailProduct, precio: optDetalRaw, precio_detal: optDetalRaw, precio_por_mayor: optMayorRaw, familia_opcion_key: opt.adminKey, talla: opt.adminKey } as any, 'detal', markupPorcentaje, ajustesProductos, descuentoPromocional);
-                                    let optMayor = getEffectivePrice({ ...detailProduct, precio: optMayorRaw, precio_detal: optDetalRaw, precio_por_mayor: optMayorRaw, familia_opcion_key: opt.adminKey, talla: opt.adminKey } as any, 'mayorista', markupPorcentaje, ajustesProductos, descuentoPromocional);
-                                    if (!optMayor || optMayor >= optDetal) {
-                                      optMayor = (optMayorRaw > 0 && optMayorRaw < optDetal) ? optMayorRaw : Math.max(0, optDetal - 10000);
-                                    }
+                                    let optMayor = (optMayorRaw > 0 && optMayorRaw < optDetalRaw)
+                                      ? getEffectivePrice({ ...detailProduct, precio: optMayorRaw, precio_detal: optDetalRaw, precio_por_mayor: optMayorRaw, familia_opcion_key: opt.adminKey, talla: opt.adminKey } as any, 'mayorista', markupPorcentaje, ajustesProductos, descuentoPromocional)
+                                      : 0;
                                     const qty = famOptionQuantities[opt.key] || 0;
                                     const hasMayor = optMayor > 0 && optMayor < optDetal;
 
@@ -5213,10 +5217,9 @@ export default function MenuDigital() {
                                     const optDetalRaw = getActiveUnitPrice(detailProduct, 'nino', sz, 'detal');
                                     const optMayorRaw = getActiveUnitPrice(detailProduct, 'nino', sz, 'mayorista');
                                     const optDetal = getEffectivePrice({ ...detailProduct, precio: optDetalRaw, precio_detal: optDetalRaw, precio_por_mayor: optMayorRaw, familia_opcion_key: sz, talla: sz } as any, 'detal', markupPorcentaje, ajustesProductos, descuentoPromocional);
-                                    let optMayor = getEffectivePrice({ ...detailProduct, precio: optMayorRaw, precio_detal: optDetalRaw, precio_por_mayor: optMayorRaw, familia_opcion_key: sz, talla: sz } as any, 'mayorista', markupPorcentaje, ajustesProductos, descuentoPromocional);
-                                    if (!optMayor || optMayor >= optDetal) {
-                                      optMayor = (optMayorRaw > 0 && optMayorRaw < optDetal) ? optMayorRaw : (sz === '14/16' ? 22500 : (sz === '18' ? 26000 : 22000));
-                                    }
+                                    let optMayor = (optMayorRaw > 0 && optMayorRaw < optDetalRaw)
+                                      ? getEffectivePrice({ ...detailProduct, precio: optMayorRaw, precio_detal: optDetalRaw, precio_por_mayor: optMayorRaw, familia_opcion_key: sz, talla: sz } as any, 'mayorista', markupPorcentaje, ajustesProductos, descuentoPromocional)
+                                      : 0;
                                     const qty = famOptionQuantities[sz] || 0;
                                     const hasMayor = optMayor > 0 && optMayor < optDetal;
 

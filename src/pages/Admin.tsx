@@ -121,17 +121,7 @@ const getInitialFamDetailedPrices = (p: any): FamilyDetailedPrices => {
     '14/16': '33000',
     '18': '36000'
   };
-  const defaultMayor: Record<string, string> = {
-    'Dama Única': '26000',
-    'Dama Plus': '31000',
-    'Caballero Única': '31000',
-    '2XL Unisex': '34000',
-    '2/4': '22000',
-    '6/8': '22000',
-    '10/12': '22000',
-    '14/16': '22500',
-    '18': '26000'
-  };
+
 
   const result: any = {};
 
@@ -140,21 +130,21 @@ const getInitialFamDetailedPrices = (p: any): FamilyDetailedPrices => {
     if (existingDet && existingDet[k]) {
       result[k] = {
         detal: existingDet[k].detal !== undefined ? String(existingDet[k].detal) : (defaults[k] || ''),
-        mayor: existingDet[k].mayor !== undefined ? String(existingDet[k].mayor) : (defaultMayor[k] || ''),
+        mayor: existingDet[k].mayor !== undefined ? String(existingDet[k].mayor) : '',
         p50: existingDet[k].p50 !== undefined ? String(existingDet[k].p50) : '',
         deshabilitado: isDeshabilitado
       };
     } else if (existingTallas[k]) {
       result[k] = {
         detal: String(existingTallas[k]),
-        mayor: defaultMayor[k] || '',
+        mayor: '',
         p50: '',
         deshabilitado: isDeshabilitado
       };
     } else {
       result[k] = {
         detal: defaults[k] || '',
-        mayor: defaultMayor[k] || '',
+        mayor: '',
         p50: '',
         deshabilitado: isDeshabilitado
       };
