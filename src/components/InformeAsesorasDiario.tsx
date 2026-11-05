@@ -786,10 +786,24 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
     return items;
   }, [pedidos, leads, tenantId, asesoresPhoneMap, asesores]);
 
-  // Filtrar interacciones por Fecha seleccionada
+  // Total acumulado sin atender en todo el histórico (disponible siempre para KPIs y badges)
+  const allHistorySinAtender = useMemo(() => {
+    return allInteractions.filter(it => !it.atendido);
+  }, [allInteractions]);
+
+  const allHistorySinAtenderCount = allHistorySinAtender.length;
+  const allHistorySinAtenderValor = useMemo(() => {
+    return allHistorySinAtender.reduce((acc, it) => acc + (it.total || 0), 0);
+  }, [allHistorySinAtender]);
+
+  // Si está seleccionado el modo Histórico completo
+  const isHistorico = selectedDate === 'historico';
+
+  // Filtrar interacciones por Fecha seleccionada o Todo el Histórico
   const dayInteractions = useMemo(() => {
+    if (isHistorico) return allInteractions;
     return allInteractions.filter(item => item.colDateStr === selectedDate);
-  }, [allInteractions, selectedDate]);
+  }, [allInteractions, selectedDate, isHistorico]);
 
   // Filtrar interacciones por Asesora seleccionada
   const dayAsesorInteractions = useMemo(() => {
@@ -799,12 +813,13 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
 
   // Interacciones que llegaron ANTES o HASTA la hora de corte seleccionada (ej: 16:00 = 4:00 PM)
   const interactionsUpToCutoff = useMemo(() => {
+    if (isHistorico && cutoffHour === 24) return dayAsesorInteractions;
     return dayAsesorInteractions.filter(item => {
       return item.colHour < cutoffHour || (item.colHour === cutoffHour && item.colMinute === 0);
     });
-  }, [dayAsesorInteractions, cutoffHour]);
+  }, [dayAsesorInteractions, cutoffHour, isHistorico]);
 
-  // Clasificar según estado de atención a la hora de corte
+  // Clasificar según estado de atención a la hora de corte o histórico
   const { atendidosAtCutoff, sinAtenderAtCutoff } = useMemo(() => {
     const atendidos: ChatInteractionItem[] = [];
     const sinAtender: ChatInteractionItem[] = [];
@@ -813,19 +828,23 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
       if (!item.atendido) {
         sinAtender.push(item);
       } else {
-        if (item.atendidoTimestamp) {
-          const colAtendido = parseToColombiaTime(item.atendidoTimestamp);
-          const wasAttendedBeforeCutoff = 
-            colAtendido.dateStr < selectedDate ||
-            (colAtendido.dateStr === selectedDate && (colAtendido.hour < cutoffHour || (colAtendido.hour === cutoffHour && colAtendido.minute === 0)));
-          
-          if (wasAttendedBeforeCutoff) {
-            atendidos.push(item);
-          } else {
-            sinAtender.push(item);
-          }
-        } else {
+        if (isHistorico) {
           atendidos.push(item);
+        } else {
+          if (item.atendidoTimestamp) {
+            const colAtendido = parseToColombiaTime(item.atendidoTimestamp);
+            const wasAttendedBeforeCutoff = 
+              colAtendido.dateStr < selectedDate ||
+              (colAtendido.dateStr === selectedDate && (colAtendido.hour < cutoffHour || (colAtendido.hour === cutoffHour && colAtendido.minute === 0)));
+            
+            if (wasAttendedBeforeCutoff) {
+              atendidos.push(item);
+            } else {
+              sinAtender.push(item);
+            }
+          } else {
+            atendidos.push(item);
+          }
         }
       }
     });
@@ -834,7 +853,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
       atendidosAtCutoff: atendidos,
       sinAtenderAtCutoff: sinAtender
     };
-  }, [interactionsUpToCutoff, cutoffHour, selectedDate]);
+  }, [interactionsUpToCutoff, cutoffHour, selectedDate, isHistorico]);
 
   const totalRecibidos = interactionsUpToCutoff.length;
   const totalAtendidos = atendidosAtCutoff.length;
@@ -864,11 +883,13 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
     return m > 0 ? `${h}h ${m}m` : `${h} horas`;
   };
 
-  // Comparativa por asesora para el día y la hora de corte seleccionados
+  // Comparativa por asesora para el día o histórico y la hora de corte seleccionados
   const comparativaAsesores = useMemo(() => {
     return asesores.map(a => {
       const asesorItems = dayInteractions.filter(it => it.asesorId === a.id);
-      const upToCutoff = asesorItems.filter(it => it.colHour < cutoffHour || (it.colHour === cutoffHour && it.colMinute === 0));
+      const upToCutoff = isHistorico && cutoffHour === 24
+        ? asesorItems
+        : asesorItems.filter(it => it.colHour < cutoffHour || (it.colHour === cutoffHour && it.colMinute === 0));
       
       const sinAtenderList: ChatInteractionItem[] = [];
       const atendidosList: ChatInteractionItem[] = [];
@@ -877,18 +898,22 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
         if (!item.atendido) {
           sinAtenderList.push(item);
         } else {
-          if (item.atendidoTimestamp) {
-            const colAtendido = parseToColombiaTime(item.atendidoTimestamp);
-            const wasAttendedBeforeCutoff = 
-              colAtendido.dateStr < selectedDate ||
-              (colAtendido.dateStr === selectedDate && (colAtendido.hour < cutoffHour || (colAtendido.hour === cutoffHour && colAtendido.minute === 0)));
-            if (wasAttendedBeforeCutoff) {
-              atendidosList.push(item);
-            } else {
-              sinAtenderList.push(item);
-            }
-          } else {
+          if (isHistorico) {
             atendidosList.push(item);
+          } else {
+            if (item.atendidoTimestamp) {
+              const colAtendido = parseToColombiaTime(item.atendidoTimestamp);
+              const wasAttendedBeforeCutoff = 
+                colAtendido.dateStr < selectedDate ||
+                (colAtendido.dateStr === selectedDate && (colAtendido.hour < cutoffHour || (colAtendido.hour === cutoffHour && colAtendido.minute === 0)));
+              if (wasAttendedBeforeCutoff) {
+                atendidosList.push(item);
+              } else {
+                sinAtenderList.push(item);
+              }
+            } else {
+              atendidosList.push(item);
+            }
           }
         }
       });
@@ -905,7 +930,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
         valorSinAtender: sinAtenderList.reduce((s, it) => s + (it.total || 0), 0)
       };
     });
-  }, [asesores, dayInteractions, cutoffHour, selectedDate]);
+  }, [asesores, dayInteractions, cutoffHour, selectedDate, isHistorico]);
 
   // Desglose hora a hora de 8:00 AM a 20:00 (8:00 PM)
   const hourlyBreakdown = useMemo(() => {
@@ -956,9 +981,12 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
     }
 
     return [...list].sort((a, b) => {
+      if (isHistorico) {
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      }
       return (a.colHour * 60 + a.colMinute) - (b.colHour * 60 + b.colMinute);
     });
-  }, [filterStatusTab, sinAtenderAtCutoff, atendidosAtCutoff, interactionsUpToCutoff, searchQuery]);
+  }, [filterStatusTab, sinAtenderAtCutoff, atendidosAtCutoff, interactionsUpToCutoff, searchQuery, isHistorico]);
 
   const handleQuickMarkAtendido = async (item: ChatInteractionItem) => {
     try {
@@ -1065,13 +1093,16 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
   };
 
   const handleStepDay = (days: number) => {
-    const [y, m, d] = selectedDate.split('-').map(Number);
-    const dateObj = new Date(y, m - 1, d);
+    let baseDate = selectedDate;
+    if (selectedDate === 'historico') baseDate = hoyColombiaStr;
+    const [y, m, d] = baseDate.split('-').map(Number);
+    const dateObj = new Date(y, m - 1, d, 12, 0, 0);
     dateObj.setDate(dateObj.getDate() + days);
     setSelectedDate(parseToColombiaTime(dateObj).dateStr);
   };
 
   const friendlyDateStr = useMemo(() => {
+    if (selectedDate === 'historico') return 'Todo el Histórico Acumulado';
     if (!selectedDate) return '';
     const [y, m, d] = selectedDate.split('-').map(Number);
     const dateObj = new Date(y, m - 1, d, 12, 0, 0);
@@ -1351,16 +1382,16 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                   <label style={{ fontSize: '0.72rem', fontWeight: 500, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     📅 Día del Informe
                   </label>
-                  <div style={{ display: 'flex', gap: '0.3rem' }}>
+                  <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
                     <button
                       type="button"
                       onClick={() => setSelectedDate(hoyColombiaStr)}
                       style={{
-                        padding: '0.15rem 0.45rem',
+                        padding: '0.15rem 0.5rem',
                         borderRadius: '4px',
                         border: 'none',
                         fontSize: '0.68rem',
-                        fontWeight: 500,
+                        fontWeight: selectedDate === hoyColombiaStr ? 600 : 500,
                         cursor: 'pointer',
                         background: selectedDate === hoyColombiaStr ? primaryColor : '#e2e8f0',
                         color: selectedDate === hoyColombiaStr ? '#ffffff' : '#475569'
@@ -1372,17 +1403,52 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                       type="button"
                       onClick={() => setSelectedDate(ayerColombiaStr)}
                       style={{
-                        padding: '0.15rem 0.45rem',
+                        padding: '0.15rem 0.5rem',
                         borderRadius: '4px',
                         border: 'none',
                         fontSize: '0.68rem',
-                        fontWeight: 500,
+                        fontWeight: selectedDate === ayerColombiaStr ? 600 : 500,
                         cursor: 'pointer',
                         background: selectedDate === ayerColombiaStr ? primaryColor : '#e2e8f0',
                         color: selectedDate === ayerColombiaStr ? '#ffffff' : '#475569'
                       }}
                     >
                       Ayer
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedDate('historico');
+                        setCutoffHour(24);
+                      }}
+                      style={{
+                        padding: '0.15rem 0.6rem',
+                        borderRadius: '4px',
+                        border: isHistorico ? '1px solid #7c3aed' : 'none',
+                        fontSize: '0.68rem',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        background: isHistorico ? '#7c3aed' : '#e2e8f0',
+                        color: isHistorico ? '#ffffff' : '#334155',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.25rem'
+                      }}
+                      title="Ver el acumulado de todos los chats de la historia y el total sin atender"
+                    >
+                      <span>♾️ Todo el Histórico</span>
+                      {allHistorySinAtenderCount > 0 && (
+                        <span style={{
+                          background: isHistorico ? '#ffffff' : '#dc2626',
+                          color: isHistorico ? '#7c3aed' : '#ffffff',
+                          borderRadius: '8px',
+                          padding: '0 0.35rem',
+                          fontSize: '0.62rem',
+                          fontWeight: 600
+                        }}>
+                          {allHistorySinAtenderCount}
+                        </span>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -1409,17 +1475,17 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                   </button>
                   <input
                     type="date"
-                    value={selectedDate}
+                    value={selectedDate === 'historico' ? hoyColombiaStr : selectedDate}
                     onChange={e => setSelectedDate(e.target.value)}
                     style={{
                       flex: 1,
                       padding: '0.5rem 0.6rem',
                       borderRadius: '8px',
-                      border: '1px solid #cbd5e1',
+                      border: isHistorico ? '1.5px solid #7c3aed' : '1px solid #cbd5e1',
                       background: '#ffffff',
                       fontSize: '0.84rem',
                       fontWeight: 500,
-                      color: '#1e293b',
+                      color: isHistorico ? '#7c3aed' : '#1e293b',
                       fontFamily: "'Poppins', sans-serif"
                     }}
                   />
@@ -1478,7 +1544,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                   <option value={18}>06:00 PM (Cierre turno tarde)</option>
                   <option value={19}>07:00 PM</option>
                   <option value={20}>08:00 PM</option>
-                  <option value={24}>23:59 (Todo el día completo)</option>
+                  <option value={24}>23:59 (Todo el día completo / Histórico)</option>
                 </select>
               </div>
             </div>
@@ -1488,14 +1554,19 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
               alignItems: 'center',
               gap: '0.5rem',
               fontSize: '0.82rem',
-              color: '#334155',
-              background: '#f1f5f9',
+              color: isHistorico ? '#6b21a8' : '#334155',
+              background: isHistorico ? '#faf5ff' : '#f1f5f9',
+              border: isHistorico ? '1px solid #e9d5ff' : '1px solid transparent',
               padding: '0.5rem 0.85rem',
               borderRadius: '8px'
             }}>
-              <Sparkles size={15} color={primaryColor} />
+              <Sparkles size={15} color={isHistorico ? '#7c3aed' : primaryColor} />
               <span>
-                Mostrando auditoría para <strong>{friendlyDateStr}</strong> a las <strong>{cutoffHour === 24 ? 'Cierre del día' : `${cutoffHour % 12 || 12}:00 ${cutoffHour >= 12 ? 'PM' : 'AM'}`}</strong>:
+                {isHistorico ? (
+                  <>Mostrando auditoría acumulada de <strong>TODO EL HISTÓRICO</strong> ({allInteractions.length} chats y leads recibidos en total):</>
+                ) : (
+                  <>Mostrando auditoría para <strong>{friendlyDateStr}</strong> a las <strong>{cutoffHour === 24 ? 'Cierre del día' : `${cutoffHour % 12 || 12}:00 ${cutoffHour >= 12 ? 'PM' : 'AM'}`}</strong>:</>
+                )}
               </span>
             </div>
           </div>
@@ -1512,7 +1583,9 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                 <MessageSquare size={16} color="#64748b" />
               </div>
               <div style={{ fontSize: '1.75rem', fontWeight: 600, color: '#0f172a', lineHeight: 1 }}>{totalRecibidos}</div>
-              <div style={{ fontSize: '0.73rem', color: '#64748b', marginTop: '0.4rem' }}>Hasta las {cutoffHour === 24 ? '23:59' : `${cutoffHour % 12 || 12}:00 ${cutoffHour >= 12 ? 'PM' : 'AM'}`}</div>
+              <div style={{ fontSize: '0.73rem', color: '#64748b', marginTop: '0.4rem' }}>
+                {isHistorico ? 'En todo el histórico' : `Hasta las ${cutoffHour === 24 ? '23:59' : `${cutoffHour % 12 || 12}:00 ${cutoffHour >= 12 ? 'PM' : 'AM'}`}`}
+              </div>
             </div>
 
             <div style={{ background: '#f0fdf4', borderRadius: '14px', padding: '1rem 1.15rem', border: '1px solid #bbf7d0' }}>
@@ -1521,16 +1594,39 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                 <CheckCircle2 size={16} color="#16a34a" />
               </div>
               <div style={{ fontSize: '1.75rem', fontWeight: 600, color: '#15803d', lineHeight: 1 }}>{totalAtendidos}</div>
-              <div style={{ fontSize: '0.73rem', color: '#166534', marginTop: '0.4rem' }}>{porcentajeAtendidos}% de efectividad a esa hora</div>
+              <div style={{ fontSize: '0.73rem', color: '#166534', marginTop: '0.4rem' }}>
+                {porcentajeAtendidos}% de efectividad {isHistorico ? 'histórica' : 'a esa hora'}
+              </div>
             </div>
 
             <div style={{ borderRadius: '14px', padding: '1rem 1.15rem', border: totalSinAtender > 0 ? '1.5px solid #fca5a5' : '1px solid #e2e8f0', background: totalSinAtender > 0 ? '#fef2f2' : '#ffffff' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-                <span style={{ fontSize: '0.72rem', fontWeight: 600, color: totalSinAtender > 0 ? '#991b1b' : '#64748b', textTransform: 'uppercase' }}>⚠️ Sin Atender a esa Hora</span>
+                <span style={{ fontSize: '0.72rem', fontWeight: 600, color: totalSinAtender > 0 ? '#991b1b' : '#64748b', textTransform: 'uppercase' }}>
+                  {isHistorico ? '⚠️ Sin Atender (Histórico)' : '⚠️ Sin Atender a esa Hora'}
+                </span>
                 <AlertTriangle size={16} color={totalSinAtender > 0 ? '#dc2626' : '#94a3b8'} />
               </div>
               <div style={{ fontSize: '1.75rem', fontWeight: 600, color: totalSinAtender > 0 ? '#b91c1c' : '#0f172a', lineHeight: 1 }}>{totalSinAtender}</div>
-              <div style={{ fontSize: '0.73rem', color: totalSinAtender > 0 ? '#991b1b' : '#64748b', marginTop: '0.4rem' }}>{totalSinAtender > 0 ? `${porcentajeSinAtender}% sin respuesta` : 'Todo al día ✓'}</div>
+              <div style={{ fontSize: '0.73rem', color: totalSinAtender > 0 ? '#991b1b' : '#64748b', marginTop: '0.4rem' }}>
+                {isHistorico 
+                  ? `${porcentajeSinAtender}% sin respuesta en el histórico` 
+                  : totalSinAtender > 0 ? `${porcentajeSinAtender}% sin respuesta` : 'Todo al día ✓'}
+              </div>
+              {!isHistorico && (
+                <div style={{ marginTop: '0.55rem', paddingTop: '0.45rem', borderTop: '1px dashed #cbd5e1', fontSize: '0.72rem', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span>Histórico acumulado:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedDate('historico');
+                      setCutoffHour(24);
+                    }}
+                    style={{ border: 'none', background: 'transparent', padding: 0, color: primaryColor, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', fontFamily: "'Poppins', sans-serif" }}
+                  >
+                    {allHistorySinAtenderCount} sin atender ➔
+                  </button>
+                </div>
+              )}
             </div>
 
             <div style={{ background: '#ffffff', borderRadius: '14px', padding: '1rem 1.15rem', border: '1px solid #e2e8f0' }}>
@@ -1538,8 +1634,12 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                 <span style={{ fontSize: '0.72rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase' }}>Demora Promedio</span>
                 <Clock size={16} color="#64748b" />
               </div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 600, color: '#0f172a', lineHeight: 1 }}>{totalSinAtender > 0 ? formatMinsToDuration(promedioEsperaMins) : '0 min'}</div>
-              <div style={{ fontSize: '0.73rem', color: '#64748b', marginTop: '0.4rem' }}>Tiempo de espera</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 600, color: '#0f172a', lineHeight: 1 }}>
+                {totalSinAtender > 0 && !isHistorico ? formatMinsToDuration(promedioEsperaMins) : totalSinAtender > 0 ? `${totalSinAtender} pend.` : '0 min'}
+              </div>
+              <div style={{ fontSize: '0.73rem', color: '#64748b', marginTop: '0.4rem' }}>
+                {isHistorico ? 'Pendientes por responder' : 'Tiempo de espera'}
+              </div>
             </div>
 
             <div style={{ background: '#ffffff', borderRadius: '14px', padding: '1rem 1.15rem', border: '1px solid #e2e8f0' }}>
@@ -1548,7 +1648,13 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                 <DollarSign size={16} color="#d97706" />
               </div>
               <div style={{ fontSize: '1.45rem', fontWeight: 600, color: '#b45309', lineHeight: 1 }}>${valorSinAtender.toLocaleString('es-CO')}</div>
-              <div style={{ fontSize: '0.73rem', color: '#64748b', marginTop: '0.4rem' }}>En pedidos sin atender</div>
+              <div style={{ fontSize: '0.73rem', color: '#64748b', marginTop: '0.4rem' }}>
+                {isHistorico 
+                  ? 'En todo el histórico' 
+                  : allHistorySinAtenderValor > 0 
+                    ? `Histórico: $${allHistorySinAtenderValor.toLocaleString('es-CO')}` 
+                    : 'En pedidos sin atender'}
+              </div>
             </div>
           </div>
 
@@ -1556,7 +1662,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
           {selectedAsesorId === 'todas' && (
             <div style={{ background: '#ffffff', borderRadius: '16px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
               <h3 style={{ margin: '0 0 0.85rem 0', fontSize: '0.98rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                <Users size={17} color={primaryColor} /> Comparativa de Asesoras al Corte de las {cutoffHour % 12 || 12}:00 {cutoffHour >= 12 ? 'PM' : 'AM'}
+                <Users size={17} color={primaryColor} /> {isHistorico ? 'Comparativa de Asesoras en Todo el Histórico' : `Comparativa de Asesoras al Corte de las ${cutoffHour % 12 || 12}:00 ${cutoffHour >= 12 ? 'PM' : 'AM'}`}
               </h3>
               <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.84rem' }}>
@@ -1625,42 +1731,44 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
             </div>
           )}
 
-          {/* Línea de Tiempo Hora a Hora */}
-          <div style={{ background: '#ffffff', borderRadius: '16px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', gap: '0.5rem' }}>
-              <h3 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                <Clock size={17} color={primaryColor} /> Evolución Hora a Hora del Día (8:00 AM - 8:00 PM)
-              </h3>
-              <span style={{ fontSize: '0.76rem', color: '#64748b' }}>Haz clic en cualquier hora para auditarla como corte</span>
+          {/* Línea de Tiempo Hora a Hora (Disponible para días específicos) */}
+          {!isHistorico && (
+            <div style={{ background: '#ffffff', borderRadius: '16px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', gap: '0.5rem' }}>
+                <h3 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <Clock size={17} color={primaryColor} /> Evolución Hora a Hora del Día (8:00 AM - 8:00 PM)
+                </h3>
+                <span style={{ fontSize: '0.76rem', color: '#64748b' }}>Haz clic en cualquier hora para auditarla como corte</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))', gap: '0.45rem', overflowX: 'auto', paddingBottom: '0.4rem' }}>
+                {hourlyBreakdown.map(hb => {
+                  const isCurrentCutoff = cutoffHour === hb.hourNumber;
+                  const hasSinAtender = hb.sinAtenderAcumulados > 0;
+                  return (
+                    <button
+                      key={hb.hourNumber}
+                      type="button"
+                      onClick={() => setCutoffHour(hb.hourNumber)}
+                      style={{
+                        padding: '0.65rem 0.4rem',
+                        borderRadius: '10px',
+                        border: isCurrentCutoff ? `2px solid ${primaryColor}` : '1px solid #e2e8f0',
+                        background: isCurrentCutoff ? 'rgba(0, 166, 249, 0.08)' : '#f8fafc',
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                        fontFamily: "'Poppins', sans-serif",
+                        position: 'relative'
+                      }}
+                    >
+                      <div style={{ fontSize: '0.72rem', fontWeight: 600, color: isCurrentCutoff ? primaryColor : '#475569', marginBottom: '0.25rem' }}>{hb.label}</div>
+                      <div style={{ fontSize: '1.05rem', fontWeight: 600, color: hasSinAtender ? '#dc2626' : '#16a34a', lineHeight: 1 }}>{hb.sinAtenderAcumulados}</div>
+                      <div style={{ fontSize: '0.64rem', color: '#64748b', marginTop: '0.2rem' }}>{hb.nuevos > 0 ? `+${hb.nuevos} nuevo` : '0 nuevo'}</div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))', gap: '0.45rem', overflowX: 'auto', paddingBottom: '0.4rem' }}>
-              {hourlyBreakdown.map(hb => {
-                const isCurrentCutoff = cutoffHour === hb.hourNumber;
-                const hasSinAtender = hb.sinAtenderAcumulados > 0;
-                return (
-                  <button
-                    key={hb.hourNumber}
-                    type="button"
-                    onClick={() => setCutoffHour(hb.hourNumber)}
-                    style={{
-                      padding: '0.65rem 0.4rem',
-                      borderRadius: '10px',
-                      border: isCurrentCutoff ? `2px solid ${primaryColor}` : '1px solid #e2e8f0',
-                      background: isCurrentCutoff ? 'rgba(0, 166, 249, 0.08)' : '#f8fafc',
-                      cursor: 'pointer',
-                      textAlign: 'center',
-                      fontFamily: "'Poppins', sans-serif",
-                      position: 'relative'
-                    }}
-                  >
-                    <div style={{ fontSize: '0.72rem', fontWeight: 600, color: isCurrentCutoff ? primaryColor : '#475569', marginBottom: '0.25rem' }}>{hb.label}</div>
-                    <div style={{ fontSize: '1.05rem', fontWeight: 600, color: hasSinAtender ? '#dc2626' : '#16a34a', lineHeight: 1 }}>{hb.sinAtenderAcumulados}</div>
-                    <div style={{ fontSize: '0.64rem', color: '#64748b', marginTop: '0.2rem' }}>{hb.nuevos > 0 ? `+${hb.nuevos} nuevo` : '0 nuevo'}</div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
+          )}
 
           {/* Lista detallada del Día */}
           <div style={{ background: '#ffffff', borderRadius: '16px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
@@ -1746,9 +1854,15 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
               <div style={{ padding: '2.5rem 1rem', textAlign: 'center', color: '#64748b' }}>
                 <div style={{ fontSize: '2.2rem', marginBottom: '0.4rem' }}>{filterStatusTab === 'sin_atender' ? '🎉' : '📭'}</div>
                 <h4 style={{ margin: '0 0 0.25rem 0', color: '#0f172a', fontWeight: 600 }}>
-                  {filterStatusTab === 'sin_atender' ? `¡No hay chats sin atender a las ${cutoffHour % 12 || 12}:00 ${cutoffHour >= 12 ? 'PM' : 'AM'}!` : 'No hay interacciones registradas en este filtro.'}
+                  {isHistorico 
+                    ? (filterStatusTab === 'sin_atender' ? '¡No hay chats sin atender en todo el histórico!' : 'No hay interacciones registradas en este filtro.')
+                    : (filterStatusTab === 'sin_atender' ? `¡No hay chats sin atender a las ${cutoffHour % 12 || 12}:00 ${cutoffHour >= 12 ? 'PM' : 'AM'}!` : 'No hay interacciones registradas en este filtro.')}
                 </h4>
-                <p style={{ margin: 0, fontSize: '0.82rem' }}>{filterStatusTab === 'sin_atender' ? 'Todos los clientes que escribieron hasta esta hora fueron atendidos oportunamente.' : 'Prueba cambiando la hora de corte o la fecha seleccionada.'}</p>
+                <p style={{ margin: 0, fontSize: '0.82rem' }}>
+                  {filterStatusTab === 'sin_atender' 
+                    ? (isHistorico ? 'Todas las interacciones de la historia fueron atendidas exitosamente.' : 'Todos los clientes que escribieron hasta esta hora fueron atendidos oportunamente.') 
+                    : 'Prueba cambiando la hora de corte o la fecha seleccionada.'}
+                </p>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
@@ -1811,6 +1925,12 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                             <span>📱 {item.clienteTelefono || 'Sin teléfono'}</span>
                             <span>•</span>
                             <span>Asesora: <strong>{item.asesorNombre}</strong></span>
+                            {isHistorico && (
+                              <>
+                                <span>•</span>
+                                <span style={{ fontWeight: 500, color: '#64748b' }}>📅 {item.colDateStr}</span>
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1818,11 +1938,14 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                       <div style={{ minWidth: '160px' }}>
                         <div style={{ fontSize: '0.78rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                           <Clock size={14} color="#64748b" />
-                          <span>Llegó: <strong>{item.colTimeFormatted}</strong></span>
+                          <span>Llegó: <strong>{isHistorico ? `${item.colDateStr} ${item.colTimeFormatted}` : item.colTimeFormatted}</strong></span>
                         </div>
                         {isSinAtender ? (
                           <div style={{ fontSize: '0.74rem', color: '#dc2626', fontWeight: 500, marginTop: '0.15rem' }}>
-                            ⚠️ Llevaba {formatMinsToDuration(waitMinutesAtCutoff)} sin atender a las {cutoffHour % 12 || 12}:00 {cutoffHour >= 12 ? 'PM' : 'AM'}
+                            {isHistorico 
+                              ? `⚠️ Sin atender desde el ${item.colDateStr}`
+                              : `⚠️ Llevaba ${formatMinsToDuration(waitMinutesAtCutoff)} sin atender a las ${cutoffHour % 12 || 12}:00 ${cutoffHour >= 12 ? 'PM' : 'AM'}`
+                            }
                           </div>
                         ) : (
                           <div style={{ fontSize: '0.74rem', color: '#16a34a', fontWeight: 500, marginTop: '0.15rem' }}>
