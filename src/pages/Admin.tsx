@@ -520,7 +520,7 @@ function MiNegocioSettings({
 
 // ── SIDEBAR COMPONENT ──
 function SidebarContent({
-  activeTab, setActiveTab, productos, configuracion, handleLogout, onClose, role, currentAsesor, activeNotificationsCount = 0, isInformeAsesorasUnlocked, onRequestInformeAsesoras
+  activeTab, setActiveTab, productos, configuracion, handleLogout, onClose, role, currentAsesor, activeNotificationsCount = 0, isInformeAsesorasUnlocked, onRequestInformeAsesoras, onOpenLineaBloqueadaModal
 }: {
   activeTab: TabType;
   setActiveTab: (t: TabType) => void;
@@ -534,6 +534,7 @@ function SidebarContent({
   listaPqrs?: PQRS[];
   isInformeAsesorasUnlocked?: boolean;
   onRequestInformeAsesoras?: () => void;
+  onOpenLineaBloqueadaModal?: () => void;
 }) {
   const [isPosExpanded, setIsPosExpanded] = useState<boolean>(activeTab === 'pos' || activeTab === 'ventas_pos');
   const [isProductosExpanded, setIsProductosExpanded] = useState<boolean>(activeTab === 'productos' || activeTab === 'categorias');
@@ -647,6 +648,29 @@ function SidebarContent({
             <button className={`nav-item ${activeTab === 'pedidos' ? 'active' : ''}`} onClick={() => handleSelectTab('pedidos')}>
               <span className="nav-icon"><ShoppingBag size={14} /></span> Pedidos
               {activeTab === 'pedidos' && <span className="active-dot"></span>}
+            </button>
+            <button
+              type="button"
+              className="nav-item"
+              onClick={() => {
+                onOpenLineaBloqueadaModal?.();
+                if (onClose) onClose();
+              }}
+              style={{
+                background: '#fff7ed',
+                color: '#c2410c',
+                border: '1px solid #fed7aa',
+                borderRadius: '10px',
+                margin: '0.25rem 0',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.45rem',
+                cursor: 'pointer',
+                fontFamily: "'Poppins', sans-serif"
+              }}
+            >
+              <span className="nav-icon"><PhoneForwarded size={14} color="#ea580c" /></span>
+              <span style={{ fontWeight: 500 }}>¿Línea bloqueada? Contactar</span>
             </button>
             <button
               className={`nav-item ${activeTab === 'notificaciones_asesor' ? 'active' : ''}`}
@@ -7344,7 +7368,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={handleTabChange} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor} activeNotificationsCount={activeNotificationsCount} listaPqrs={listaPqrs} isInformeAsesorasUnlocked={isInformeAsesorasUnlocked} onRequestInformeAsesoras={requestAccessInformeAsesoras} />
+          <SidebarContent activeTab={activeTab} setActiveTab={handleTabChange} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor} activeNotificationsCount={activeNotificationsCount} listaPqrs={listaPqrs} isInformeAsesorasUnlocked={isInformeAsesorasUnlocked} onRequestInformeAsesoras={requestAccessInformeAsesoras} onOpenLineaBloqueadaModal={() => setShowLineaBloqueadaModal(true)} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -7774,7 +7798,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={handleTabChange} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor} activeNotificationsCount={activeNotificationsCount} listaPqrs={listaPqrs} isInformeAsesorasUnlocked={isInformeAsesorasUnlocked} onRequestInformeAsesoras={requestAccessInformeAsesoras} />
+          <SidebarContent activeTab={activeTab} setActiveTab={handleTabChange} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor} activeNotificationsCount={activeNotificationsCount} listaPqrs={listaPqrs} isInformeAsesorasUnlocked={isInformeAsesorasUnlocked} onRequestInformeAsesoras={requestAccessInformeAsesoras} onOpenLineaBloqueadaModal={() => setShowLineaBloqueadaModal(true)} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -7860,7 +7884,7 @@ export default function Admin() {
     return (
       <div className="admin-app">
         <aside className="admin-sidebar">
-          <SidebarContent activeTab={activeTab} setActiveTab={handleTabChange} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor} activeNotificationsCount={activeNotificationsCount} listaPqrs={listaPqrs} isInformeAsesorasUnlocked={isInformeAsesorasUnlocked} onRequestInformeAsesoras={requestAccessInformeAsesoras} />
+          <SidebarContent activeTab={activeTab} setActiveTab={handleTabChange} productos={productos} configuracion={configuracion} handleLogout={handleLogout} role={role} currentAsesor={role === 'mayorista' ? currentMayorista : currentAsesor} activeNotificationsCount={activeNotificationsCount} listaPqrs={listaPqrs} isInformeAsesorasUnlocked={isInformeAsesorasUnlocked} onRequestInformeAsesoras={requestAccessInformeAsesoras} onOpenLineaBloqueadaModal={() => setShowLineaBloqueadaModal(true)} />
         </aside>
         <div className="admin-main">
           <div className="admin-topbar">
@@ -7929,6 +7953,7 @@ export default function Admin() {
           listaPqrs={listaPqrs}
           isInformeAsesorasUnlocked={isInformeAsesorasUnlocked}
           onRequestInformeAsesoras={requestAccessInformeAsesoras}
+          onOpenLineaBloqueadaModal={() => setShowLineaBloqueadaModal(true)}
         />
       </aside>
 
@@ -8130,6 +8155,43 @@ export default function Admin() {
                       >
                         <ExternalLink size={13} />
                       </a>
+
+                      {/* Botón ¿Línea bloqueada? Contactar para Asesores */}
+                      {role === 'asesor' && (
+                        <button
+                          type="button"
+                          onClick={() => setShowLineaBloqueadaModal(true)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            background: '#fff7ed',
+                            color: '#c2410c',
+                            border: '1.5px solid #fed7aa',
+                            borderRadius: '8px',
+                            padding: '0.35rem 0.65rem',
+                            fontSize: '0.74rem',
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                            boxShadow: '0 1px 3px rgba(234, 88, 12, 0.1)',
+                            fontFamily: "'Poppins', sans-serif",
+                            flexShrink: 0
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.background = '#ffedd5';
+                            e.currentTarget.style.borderColor = '#fdba74';
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.background = '#fff7ed';
+                            e.currentTarget.style.borderColor = '#fed7aa';
+                          }}
+                          title="¿Línea de WhatsApp suspendida o limitada? Contactar o recuperar a tus clientes desde una nueva línea"
+                        >
+                          <PhoneForwarded size={13} color="#ea580c" />
+                          <span>¿Línea bloqueada? Contactar</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -8465,36 +8527,6 @@ export default function Admin() {
                         <Clock size={14} color={isInformeAsesorasUnlocked ? '#059669' : '#db2777'} /> 
                         <span className="btn-text-desktop">Informe Diario</span>
                         <Lock size={12} color={isInformeAsesorasUnlocked ? '#059669' : '#db2777'} />
-                      </button>
-                    )}
-
-                    {/* Botón de Contingencia: Contactar Números de Línea Bloqueada */}
-                    {activeTab === 'asesores' && (
-                      <button
-                        type="button"
-                        className="btn-secondary hover-lift"
-                        onClick={() => setShowLineaBloqueadaModal(true)}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.4rem',
-                          padding: '0 0.85rem',
-                          height: '38px',
-                          borderRadius: '10px',
-                          fontSize: '0.82rem',
-                          fontWeight: 500,
-                          cursor: 'pointer',
-                          whiteSpace: 'nowrap',
-                          background: '#fff7ed',
-                          color: '#c2410c',
-                          border: '1px solid #fed7aa',
-                          flexShrink: 0,
-                          fontFamily: "'Poppins', sans-serif"
-                        }}
-                        title="Contactar y recuperar clientes de una línea de WhatsApp bloqueada"
-                      >
-                        <PhoneForwarded size={14} color="#ea580c" />
-                        <span className="btn-text-desktop">Líneas Bloqueadas</span>
                       </button>
                     )}
 
@@ -10652,6 +10684,71 @@ export default function Admin() {
 
             return (
               <>
+                {/* Banner de Contingencia para Asesores: Línea Bloqueada */}
+                {role === 'asesor' && (
+                  <div style={{
+                    background: 'linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%)',
+                    border: '1.5px solid #fed7aa',
+                    borderRadius: '16px',
+                    padding: '0.85rem 1.25rem',
+                    marginBottom: '1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '1rem',
+                    flexWrap: 'wrap',
+                    boxShadow: '0 2px 8px rgba(234, 88, 12, 0.08)'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0 }}>
+                      <div style={{
+                        width: '38px',
+                        height: '38px',
+                        borderRadius: '10px',
+                        background: '#ea580c',
+                        color: '#ffffff',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        flexShrink: 0
+                      }}>
+                        <PhoneForwarded size={18} />
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <h4 style={{ margin: 0, fontSize: '0.88rem', fontWeight: 600, color: '#9a3412', fontFamily: "'Poppins', sans-serif" }}>
+                          ¿Línea de WhatsApp suspendida o con límite de mensajes?
+                        </h4>
+                        <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.76rem', color: '#c2410c', fontFamily: "'Poppins', sans-serif" }}>
+                          Genera tarjetas directas para escribirle por WhatsApp a tus clientes desde una nueva línea.
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowLineaBloqueadaModal(true)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        background: '#ea580c',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '0.5rem 0.95rem',
+                        fontSize: '0.78rem',
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 6px rgba(234, 88, 12, 0.25)',
+                        fontFamily: "'Poppins', sans-serif",
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0
+                      }}
+                    >
+                      <PhoneForwarded size={14} />
+                      <span>¿Línea bloqueada? Contactar</span>
+                    </button>
+                  </div>
+                )}
+
                 <div className="admin-panel" style={{ borderRadius: '20px', padding: '1.5rem 1.75rem' }}>
                   <div className="panel-header" style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem', textAlign: 'left' }}>
                     <span style={{ fontSize: '1.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>📊</span>
@@ -16359,6 +16456,48 @@ export default function Admin() {
 
             return (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                {role === 'asesor' && (
+                  <div style={{
+                    background: '#fff7ed',
+                    border: '1px solid #fed7aa',
+                    borderRadius: '12px',
+                    padding: '0.65rem 1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '0.75rem',
+                    flexWrap: 'wrap'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <PhoneForwarded size={16} color="#ea580c" />
+                      <span style={{ fontSize: '0.82rem', color: '#9a3412', fontWeight: 500, fontFamily: "'Poppins', sans-serif" }}>
+                        ¿Tu WhatsApp tiene límite de mensajes o fue bloqueado? Rescata a tus clientes aquí:
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowLineaBloqueadaModal(true)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        background: '#ea580c',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '0.35rem 0.85rem',
+                        fontSize: '0.76rem',
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        fontFamily: "'Poppins', sans-serif",
+                        whiteSpace: 'nowrap'
+                      }}
+                    >
+                      <PhoneForwarded size={13} />
+                      <span>¿Línea bloqueada? Contactar</span>
+                    </button>
+                  </div>
+                )}
                 {showOrderFilters && (
                   <div className="creation-form-card">
                     <div className="creation-form-header">
@@ -21009,6 +21148,7 @@ export default function Admin() {
         leads={leads}
         configuracion={configuracion}
         tenantId={getTenantId()}
+        currentAsesor={currentAsesor}
       />
     </div>
   );

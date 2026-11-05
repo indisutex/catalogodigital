@@ -33,6 +33,7 @@ interface RecuperarLineaBloqueadaModalProps {
   leads: any[];
   configuracion?: Configuracion | null;
   tenantId: string;
+  currentAsesor?: Asesor | null;
 }
 
 export const RecuperarLineaBloqueadaModal: React.FC<RecuperarLineaBloqueadaModalProps> = ({
@@ -42,10 +43,13 @@ export const RecuperarLineaBloqueadaModal: React.FC<RecuperarLineaBloqueadaModal
   pedidos,
   leads,
   configuracion,
-  tenantId
+  tenantId,
+  currentAsesor
 }) => {
-  const storageKey = `tarjetas_linea_bloqueada_${tenantId || 'general'}`;
-  const msgStorageKey = `msg_linea_bloqueada_${tenantId || 'general'}`;
+  const advisorKey = currentAsesor?.id ? `_${currentAsesor.id}` : '';
+  const storageKey = `tarjetas_linea_bloqueada_${tenantId || 'general'}${advisorKey}`;
+  const fallbackStorageKey = `tarjetas_linea_bloqueada_${tenantId || 'general'}`;
+  const msgStorageKey = `msg_linea_bloqueada_${tenantId || 'general'}${advisorKey}`;
 
   // ── ESTADOS ──
   const [activeTab, setActiveTab] = useState<'pegar' | 'extraer_db'>('pegar');
@@ -76,11 +80,20 @@ export const RecuperarLineaBloqueadaModal: React.FC<RecuperarLineaBloqueadaModal
   const [copiedAll, setCopiedAll] = useState<boolean>(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // ── CARGAR Y GUARDAR LOCALSTORAGE ──
+  // ── CARGAR Y GUARDAR LOCALSTORAGE & AUTO-SELECCIÓN DE ASESOR ──
   useEffect(() => {
     if (!isOpen) return;
+
+    // Si hay un asesor activo en sesión, pre-seleccionarlo
+    if (currentAsesor?.id) {
+      setSelectedAsesorId(currentAsesor.id);
+    }
+
     try {
-      const saved = localStorage.getItem(storageKey);
+      let saved = localStorage.getItem(storageKey);
+      if (!saved && advisorKey) {
+        saved = localStorage.getItem(fallbackStorageKey);
+      }
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
@@ -90,7 +103,7 @@ export const RecuperarLineaBloqueadaModal: React.FC<RecuperarLineaBloqueadaModal
     } catch (e) {
       console.warn('Error leyendo tarjetas guardadas:', e);
     }
-  }, [isOpen, storageKey]);
+  }, [isOpen, storageKey, fallbackStorageKey, advisorKey, currentAsesor]);
 
   const saveTarjetasToStorage = (newTarjetas: TarjetaContactoBloqueado[]) => {
     setTarjetas(newTarjetas);
@@ -594,6 +607,25 @@ export const RecuperarLineaBloqueadaModal: React.FC<RecuperarLineaBloqueadaModal
                 <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b' }}>
                   Selecciona la asesora cuya línea fue bloqueada. El sistema buscará en la base de datos todos los clientes que le escribieron en el período seleccionado:
                 </p>
+
+                {currentAsesor && (
+                  <div style={{
+                    background: '#eff6ff',
+                    border: '1px solid #bfdbfe',
+                    borderRadius: '10px',
+                    padding: '0.45rem 0.75rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    fontSize: '0.78rem',
+                    color: '#1e40af'
+                  }}>
+                    <Sparkles size={14} color="#2563eb" style={{ flexShrink: 0 }} />
+                    <span>
+                      Sesión de asesora activa: <span style={{ fontWeight: 600 }}>{currentAsesor.nombre}</span> ({currentAsesor.telefono || 'Sin teléfono'}). Se extraerán directamente tus clientes asignados.
+                    </span>
+                  </div>
+                )}
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
                   <div>
