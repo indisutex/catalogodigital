@@ -332,6 +332,37 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
     });
   }, [pedidos, tenantId]);
 
+  // Detectar pedidos duplicados en el backlog (mismo teléfono y total enviados con menos de 5 min de diferencia por clics repetidos)
+  const duplicateContraOrderIds = useMemo(() => {
+    const ids = new Set<string>();
+    const map = new Map<string, Array<{ id: string; time: number }>>();
+
+    unconfirmedContraOrders.forEach(p => {
+      const phone = (p.cliente_telefono || '').replace(/\D/g, '');
+      const total = p.total || 0;
+      if (!phone) return;
+      const key = `${phone}_${total}`;
+      const time = new Date(p.created_at).getTime();
+      if (!map.has(key)) map.set(key, []);
+      map.get(key)!.push({ id: p.id, time });
+    });
+
+    map.forEach(list => {
+      if (list.length > 1) {
+        list.sort((a, b) => a.time - b.time);
+        for (let i = 1; i < list.length; i++) {
+          if (list[i].time - list[0].time <= 5 * 60 * 1000) {
+            ids.add(list[i].id);
+          }
+        }
+      }
+    });
+
+    return ids;
+  }, [unconfirmedContraOrders]);
+
+  const [isCleaningDuplicates, setIsCleaningDuplicates] = useState(false);
+
   // Desglose de contra entregas sin confirmar por Asesora
   const contraBreakdownByAsesor = useMemo(() => {
     return asesores.map(a => {
@@ -571,6 +602,33 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
       }
     } catch (err) {
       console.error('Error al cancelar pedido:', err);
+    }
+  };
+
+  const handleCleanAllDuplicates = async () => {
+    if (duplicateContraOrderIds.size === 0) return;
+    if (!confirm(`Se detectaron ${duplicateContraOrderIds.size} pedidos duplicados por toques repetidos en la web.\n\n¿Deseas descartar estos ${duplicateContraOrderIds.size} duplicados automáticamente para conservar únicamente 1 pedido original por cliente?`)) {
+      return;
+    }
+
+    setIsCleaningDuplicates(true);
+    try {
+      const idsToCancel = Array.from(duplicateContraOrderIds);
+      const { error } = await supabase
+        .from('pedidos')
+        .update({ estado: 'cancelado' })
+        .in('id', idsToCancel);
+
+      if (!error) {
+        if (onReloadData) onReloadData();
+        alert(`Se descartaron con éxito los ${idsToCancel.length} pedidos duplicados.`);
+      } else {
+        alert('Hubo un error al descartar duplicados: ' + error.message);
+      }
+    } catch (err) {
+      console.error('Error al limpiar duplicados:', err);
+    } finally {
+      setIsCleaningDuplicates(false);
     }
   };
 
@@ -2416,6 +2474,57 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
 
           {/* Listado de Pedidos Contra Entrega para Confirmar o Gestionar */}
           <div style={{ background: '#ffffff', borderRadius: '16px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
+            {/* Banner de alerta de duplicados por clics rápidos */}
+            {duplicateContraOrderIds.size > 0 && (
+              <div style={{
+                marginBottom: '1rem',
+                padding: '0.85rem 1rem',
+                background: '#fffbeb',
+                border: '1.5px solid #fde68a',
+                borderRadius: '12px',
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '0.75rem',
+                fontFamily: "'Poppins', sans-serif"
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                  <span style={{ fontSize: '1.35rem' }}>⚠️</span>
+                  <div>
+                    <div style={{ fontSize: '0.84rem', fontWeight: 600, color: '#92400e' }}>
+                      Se detectaron {duplicateContraOrderIds.size} pedidos duplicados por toques repetidos en la web
+                    </div>
+                    <div style={{ fontSize: '0.74rem', color: '#b45309' }}>
+                      Ocurrió cuando clientes dieron varios clics rápidos seguidos al enviar su pedido (como Patricia Montero). Solo 1 es la orden real.
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  disabled={isCleaningDuplicates}
+                  onClick={handleCleanAllDuplicates}
+                  style={{
+                    background: '#d97706',
+                    color: '#ffffff',
+                    border: 'none',
+                    padding: '0.45rem 0.9rem',
+                    borderRadius: '8px',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    cursor: isCleaningDuplicates ? 'not-allowed' : 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    boxShadow: '0 2px 6px rgba(217, 119, 6, 0.25)',
+                    fontFamily: "'Poppins', sans-serif"
+                  }}
+                >
+                  <span>🗑️ Descartar {duplicateContraOrderIds.size} duplicados</span>
+                </button>
+              </div>
+            )}
+
             <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.85rem', marginBottom: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <span style={{ fontSize: '0.88rem', fontWeight: 600, color: '#0f172a' }}>
@@ -2456,6 +2565,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                   const createdCol = parseToColombiaTime(p.created_at);
                   const daysAgo = Math.floor((Date.now() - new Date(p.created_at).getTime()) / (1000 * 3600 * 24));
                   const isOld = daysAgo >= 3;
+                  const isDuplicate = duplicateContraOrderIds.has(p.id);
 
                   // Nombre asesora
                   const cleanPhone = (p.linea_whatsapp || '').replace(/\D/g, '');
@@ -2473,8 +2583,9 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                       style={{
                         padding: '0.85rem 1rem',
                         borderRadius: '12px',
-                        border: isOld ? '1.5px solid #fed7aa' : '1px solid #e2e8f0',
-                        background: isOld ? '#fffbf5' : '#ffffff',
+                        border: isDuplicate ? '1.5px dashed #f59e0b' : (isOld ? '1.5px solid #fed7aa' : '1px solid #e2e8f0'),
+                        background: isDuplicate ? '#fffdf5' : (isOld ? '#fffbf5' : '#ffffff'),
+                        opacity: isDuplicate ? 0.8 : 1,
                         display: 'flex',
                         flexWrap: 'wrap',
                         alignItems: 'center',
@@ -2487,8 +2598,8 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                           width: '38px',
                           height: '38px',
                           borderRadius: '50%',
-                          background: '#ffedd5',
-                          color: '#ea580c',
+                          background: isDuplicate ? '#fef3c7' : '#ffedd5',
+                          color: isDuplicate ? '#b45309' : '#ea580c',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -2504,6 +2615,11 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                             <span style={{ fontSize: '0.68rem', fontWeight: 500, padding: '0.1rem 0.4rem', borderRadius: '4px', background: '#fff7ed', color: '#c2410c', border: '1px solid #fed7aa' }}>
                               🚚 Contra Entrega
                             </span>
+                            {isDuplicate && (
+                              <span style={{ fontSize: '0.68rem', fontWeight: 500, padding: '0.1rem 0.45rem', borderRadius: '4px', background: '#fef3c7', color: '#b45309', border: '1px solid #fde68a' }}>
+                                ⚠️ Clic Repetido (Duplicado)
+                              </span>
+                            )}
                             <span style={{
                               fontSize: '0.68rem',
                               fontWeight: 500,

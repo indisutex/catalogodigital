@@ -1469,10 +1469,12 @@ export default function MenuDigital() {
   });
   const [modalidadPago, setModalidadPago] = useState<'transferencia' | 'contra_entrega' | 'whatsapp'>('contra_entrega');
   const [leadId, setLeadId] = useState<string | null>(null);
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
 
   const leadIdRef = useRef<string | null>(null);
   const isInsertingRef = useRef(false);
   const isOrderSubmittedRef = useRef(false);
+  const isSubmittingOrderRef = useRef(false);
 
   const getStoreWhatsAppNumber = (customerPhone?: string) => {
     const cleanCustomer = (customerPhone || formData?.telefono || '').replace(/\D/g, '');
@@ -1900,6 +1902,9 @@ export default function MenuDigital() {
   const handleEnviarPedido = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Evitar múltiples envíos si ya hay un envío en curso
+    if (isSubmittingOrderRef.current) return;
+    
     if (buyerType === 'mayorista' && totalUnits < 6) {
       alert(`Tienes que comprar mínimo 6 unidades para poder comprar en nuestro catálogo mayorista. Actualmente llevas ${totalUnits} ${totalUnits === 1 ? 'unidad' : 'unidades'}. Agrega ${6 - totalUnits} más a tu carrito.`);
       return;
@@ -1946,233 +1951,244 @@ export default function MenuDigital() {
       }
     }
     
-    // Construir el mensaje para WhatsApp
-    let buyerLabel = '';
-    if (buyerType === 'mayorista') buyerLabel = 'Mayorista';
-    if (buyerType === 'detal' || buyerType === null) buyerLabel = isBulkDiscountApplied ? 'Al detal (Con descuento por mayor aplicable)' : 'Al detal';
-    if (buyerType === '50_unidades') buyerLabel = '50+ unidades';
+    // Bloqueo inmediato para prevenir clics repetidos
+    isSubmittingOrderRef.current = true;
+    setIsSubmittingOrder(true);
 
-    let mensaje = `Hola, mi nombre es ${formData.nombre}.\n`;
-    if (formData.cedula) {
-      mensaje += `*Cédula:* ${formData.cedula}\n`;
-    }
-    if (formData.email?.trim()) {
-      mensaje += `*Correo:* ${formData.email.trim()}\n`;
-    }
-    const metodoPagoLabel = isInternational
-      ? '[ Pago Internacional ]'
-      : (modalidadPago === 'transferencia' ? '[ Transferencia Bancaria ]' : '[ Pago Contra Entrega ]');
-
-    mensaje += `*Tipo de compra:* ${buyerLabel}\n`;
-    mensaje += `*Método de pago:* ${metodoPagoLabel}\n`;
-    if (isBulkDiscountApplied) {
-      mensaje += `*DESCUENTO AL POR MAYOR APLICADO* (Llevas 6 o mas productos)\n`;
-    }
-    if (isInternational) {
-      mensaje += `*País de destino:* ${country.flag} ${country.name} (${country.dialCode})\n`;
-      mensaje += `*Moneda de liquidación:* Dólares (USD) 🌎\n`;
-    }
-    mensaje += `*Teléfono:* ${country.dialCode ? `${country.dialCode} ` : ''}${formData.telefono}\n`;
-    const dirTexto = formData.barrio ? `${formData.direccion} (Barrio ${formData.barrio})` : formData.direccion;
-    mensaje += `*Dirección:* ${dirTexto}, ${formData.ciudad}\n\n`;
-    
-    mensaje += `*PRODUCTOS:*\n`;
-    const mensajeProductos = items.map(item => {
-      const itemPrice = getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * item.cantidad;
-      return `- ${item.cantidad}x ${item.nombre} ${item.talla ? `(Talla: ${item.talla}) ` : ''}${item.estampado ? `(Estampado: ${item.estampado}) ` : ''}- ${formatPrice(itemPrice)}`;
-    }).join('\n');
-    mensaje += mensajeProductos;
-    
-    if (isInternational) {
-      mensaje += `\n\n*TOTAL PRODUCTOS:* ${formatPrice(total)} (~$${total.toLocaleString('es-CO')} COP)`;
-      mensaje += `\n*Tasa aplicada:* 1 USD ≈ $${Math.round(exchangeRate).toLocaleString('es-CO')} COP`;
-      mensaje += `\n*ENVÍO INTERNACIONAL:* Pendiente por cotizar según peso y país (${country.name}).`;
-      mensaje += `\n\n_Hola asesor, por favor indícame las opciones de pago internacional (Transferencia, Enlace de pago, etc.) y el valor del envío a mi país._`;
-    } else if (modalidadPago === 'transferencia') {
-      mensaje += `\n\n*TOTAL PRODUCTOS:* ${formatPrice(total)}`;
-      mensaje += `\n*ENVÍO:* Pendiente por calcular.`;
-      
-      let metodosInfo = '';
-      if (configuracion?.metodos_pago) {
-        try {
-          const parsed = JSON.parse(configuracion.metodos_pago);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            const validMetodos = parsed.filter((m: any) => (m.banco && m.banco.trim()) || (m.numero && m.numero.trim()));
-            if (validMetodos.length > 0) {
-              metodosInfo = `\n\n💳 *DATOS PARA TRANSFERENCIA:*\n` + validMetodos.map((m: any) => `• *${m.banco}* ${m.tipo ? `(${m.tipo})` : ''}: \`${m.numero}\``).join('\n');
-            }
-          } else if (typeof configuracion.metodos_pago === 'string' && configuracion.metodos_pago.trim()) {
-            metodosInfo = `\n\n💳 *DATOS PARA TRANSFERENCIA:*\n${configuracion.metodos_pago}`;
-          }
-        } catch {
-          if (typeof configuracion.metodos_pago === 'string' && configuracion.metodos_pago.trim()) {
-            metodosInfo = `\n\n💳 *DATOS PARA TRANSFERENCIA:*\n${configuracion.metodos_pago}`;
-          }
-        }
-      }
-      if (metodosInfo) {
-        mensaje += metodosInfo;
-        mensaje += `\n\n_Por favor envía el comprobante de pago por este chat para procesar y despachar tu pedido._`;
-      }
-    } else {
-      mensaje += `\n\n*TOTAL PRODUCTOS:* ${formatPrice(total)}`;
-      mensaje += `\n*ENVÍO:* PAGO CONTRA ENTREGA\n\nCancela al momento de recibir tu pedido el valor de las prendas + el costo del envío. ¡Fácil, seguro y sin pagos anticipados!`;
-    }
-
-    const numeroWhatsApp = getStoreWhatsAppNumber(formData.telefono);
-
-    let orderId = '';
-    // Guardar en la base de datos de pedidos
     try {
-      const metodoEnvioLabel = metodoRecepcion === 'tienda' 
-        ? `Recoger en Tienda (${configuracion?.direccion || 'Sede Principal'})` 
-        : `Envío a domicilio`;
+      // Construir el mensaje para WhatsApp
+      let buyerLabel = '';
+      if (buyerType === 'mayorista') buyerLabel = 'Mayorista';
+      if (buyerType === 'detal' || buyerType === null) buyerLabel = isBulkDiscountApplied ? 'Al detal (Con descuento por mayor aplicable)' : 'Al detal';
+      if (buyerType === '50_unidades') buyerLabel = '50+ unidades';
 
-      const metodoPagoStr = metodoPagoLabel;
+      let mensaje = `Hola, mi nombre es ${formData.nombre}.\n`;
+      if (formData.cedula) {
+        mensaje += `*Cédula:* ${formData.cedula}\n`;
+      }
+      if (formData.email?.trim()) {
+        mensaje += `*Correo:* ${formData.email.trim()}\n`;
+      }
+      const metodoPagoLabel = isInternational
+        ? '[ Pago Internacional ]'
+        : (modalidadPago === 'transferencia' ? '[ Transferencia Bancaria ]' : '[ Pago Contra Entrega ]');
 
-      const ciudadFormateada = isInternational
-        ? (formData.ciudad ? `${formData.ciudad}, ${country.name}` : country.name)
-        : (formData.ciudad 
-          ? (selectedDepartamento && !formData.ciudad.includes(selectedDepartamento) ? `${formData.ciudad}, ${selectedDepartamento}` : formData.ciudad)
-          : (selectedDepartamento || ''));
-
-      const direccionFormateada = formData.direccion 
-        ? formData.direccion 
-        : (metodoRecepcion === 'tienda' ? `Recoger en Tienda (${configuracion?.direccion || 'Sede Principal'})` : '');
-
-      const productosProcesados = items.map(item => {
-        let effectivePrice = getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
-        const isWholesale = effectiveCartBuyerType === 'mayorista' || isBulkDiscountApplied || buyerType === 'mayorista';
-        const isFam = isFamiliarProduct(item);
-        if (effectivePrice < 1000) {
-          if (isFam) {
-            effectivePrice = isWholesale ? 26000 : 36000;
-          } else if (item.precio && item.precio > 1000) {
-            effectivePrice = item.precio;
+      mensaje += `*Tipo de compra:* ${buyerLabel}\n`;
+      mensaje += `*Método de pago:* ${metodoPagoLabel}\n`;
+      if (isBulkDiscountApplied) {
+        mensaje += `*DESCUENTO AL POR MAYOR APLICADO* (Llevas 6 o mas productos)\n`;
+      }
+      if (isInternational) {
+        mensaje += `*País de destino:* ${country.flag} ${country.name} (${country.dialCode})\n`;
+        mensaje += `*Moneda de liquidación:* Dólares (USD) 🌎\n`;
+      }
+      mensaje += `*Teléfono:* ${country.dialCode ? `${country.dialCode} ` : ''}${formData.telefono}\n`;
+      const dirTexto = formData.barrio ? `${formData.direccion} (Barrio ${formData.barrio})` : formData.direccion;
+      mensaje += `*Dirección:* ${dirTexto}, ${formData.ciudad}\n\n`;
+      
+      mensaje += `*PRODUCTOS:*\n`;
+      const mensajeProductos = items.map(item => {
+        const itemPrice = getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * item.cantidad;
+        return `- ${item.cantidad}x ${item.nombre} ${item.talla ? `(Talla: ${item.talla}) ` : ''}${item.estampado ? `(Estampado: ${item.estampado}) ` : ''}- ${formatPrice(itemPrice)}`;
+      }).join('\n');
+      mensaje += mensajeProductos;
+      
+      if (isInternational) {
+        mensaje += `\n\n*TOTAL PRODUCTOS:* ${formatPrice(total)} (~$${total.toLocaleString('es-CO')} COP)`;
+        mensaje += `\n*Tasa aplicada:* 1 USD ≈ $${Math.round(exchangeRate).toLocaleString('es-CO')} COP`;
+        mensaje += `\n*ENVÍO INTERNACIONAL:* Pendiente por cotizar según peso y país (${country.name}).`;
+        mensaje += `\n\n_Hola asesor, por favor indícame las opciones de pago internacional (Transferencia, Enlace de pago, etc.) y el valor del envío a mi país._`;
+      } else if (modalidadPago === 'transferencia') {
+        mensaje += `\n\n*TOTAL PRODUCTOS:* ${formatPrice(total)}`;
+        mensaje += `\n*ENVÍO:* Pendiente por calcular.`;
+        
+        let metodosInfo = '';
+        if (configuracion?.metodos_pago) {
+          try {
+            const parsed = JSON.parse(configuracion.metodos_pago);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const validMetodos = parsed.filter((m: any) => (m.banco && m.banco.trim()) || (m.numero && m.numero.trim()));
+              if (validMetodos.length > 0) {
+                metodosInfo = `\n\n💳 *DATOS PARA TRANSFERENCIA:*\n` + validMetodos.map((m: any) => `• *${m.banco}* ${m.tipo ? `(${m.tipo})` : ''}: \`${m.numero}\``).join('\n');
+              }
+            } else if (typeof configuracion.metodos_pago === 'string' && configuracion.metodos_pago.trim()) {
+              metodosInfo = `\n\n💳 *DATOS PARA TRANSFERENCIA:*\n${configuracion.metodos_pago}`;
+            }
+          } catch {
+            if (typeof configuracion.metodos_pago === 'string' && configuracion.metodos_pago.trim()) {
+              metodosInfo = `\n\n💳 *DATOS PARA TRANSFERENCIA:*\n${configuracion.metodos_pago}`;
+            }
           }
         }
-        const itemImg = getVariantImageUrl(item, productos) || item.imagen_url;
-        return {
-          ...item,
-          imagen_url: itemImg,
-          precio_detal: (item.precio_detal && item.precio_detal > 1000) ? item.precio_detal : (item.precio && item.precio > 1000 ? item.precio : (isFam ? 36000 : 32000)),
-          precio: effectivePrice,
-          precio_aplicado_mayor: isWholesale,
-          _metodo_pago: metodoPagoStr,
-          _metodo_envio: metodoEnvioLabel,
-          _tipo_compra: buyerLabel,
-          _departamento: selectedDepartamento || ''
+        if (metodosInfo) {
+          mensaje += metodosInfo;
+          mensaje += `\n\n_Por favor envía el comprobante de pago por este chat para procesar y despachar tu pedido._`;
+        }
+      } else {
+        mensaje += `\n\n*TOTAL PRODUCTOS:* ${formatPrice(total)}`;
+        mensaje += `\n*ENVÍO:* PAGO CONTRA ENTREGA\n\nCancela al momento de recibir tu pedido el valor de las prendas + el costo del envío. ¡Fácil, seguro y sin pagos anticipados!`;
+      }
+
+      const numeroWhatsApp = getStoreWhatsAppNumber(formData.telefono);
+
+      let orderId = '';
+      // Guardar en la base de datos de pedidos
+      try {
+        const metodoEnvioLabel = metodoRecepcion === 'tienda' 
+          ? `Recoger en Tienda (${configuracion?.direccion || 'Sede Principal'})` 
+          : `Envío a domicilio`;
+
+        const metodoPagoStr = metodoPagoLabel;
+
+        const ciudadFormateada = isInternational
+          ? (formData.ciudad ? `${formData.ciudad}, ${country.name}` : country.name)
+          : (formData.ciudad 
+            ? (selectedDepartamento && !formData.ciudad.includes(selectedDepartamento) ? `${formData.ciudad}, ${selectedDepartamento}` : formData.ciudad)
+            : (selectedDepartamento || ''));
+
+        const direccionFormateada = formData.direccion 
+          ? formData.direccion 
+          : (metodoRecepcion === 'tienda' ? `Recoger en Tienda (${configuracion?.direccion || 'Sede Principal'})` : '');
+
+        const productosProcesados = items.map(item => {
+          let effectivePrice = getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
+          const isWholesale = effectiveCartBuyerType === 'mayorista' || isBulkDiscountApplied || buyerType === 'mayorista';
+          const isFam = isFamiliarProduct(item);
+          if (effectivePrice < 1000) {
+            if (isFam) {
+              effectivePrice = isWholesale ? 26000 : 36000;
+            } else if (item.precio && item.precio > 1000) {
+              effectivePrice = item.precio;
+            }
+          }
+          const itemImg = getVariantImageUrl(item, productos) || item.imagen_url;
+          return {
+            ...item,
+            imagen_url: itemImg,
+            precio_detal: (item.precio_detal && item.precio_detal > 1000) ? item.precio_detal : (item.precio && item.precio > 1000 ? item.precio : (isFam ? 36000 : 32000)),
+            precio: effectivePrice,
+            precio_aplicado_mayor: isWholesale,
+            _metodo_pago: metodoPagoStr,
+            _metodo_envio: metodoEnvioLabel,
+            _tipo_compra: buyerLabel,
+            _departamento: selectedDepartamento || ''
+          };
+        });
+
+        const cedVal = (formData.cedula || '').trim();
+        const emailVal = (formData.email || '').trim();
+
+        let direccionConDatos = direccionFormateada;
+        if (cedVal && !direccionConDatos.includes(cedVal)) {
+          direccionConDatos += ` | CC: ${cedVal}`;
+        }
+        if (emailVal && !direccionConDatos.includes(emailVal)) {
+          direccionConDatos += ` | Email: ${emailVal}`;
+        }
+
+        let insertPayload: any = {
+          cliente_nombre: formData.nombre,
+          cliente_telefono: formData.telefono,
+          cliente_cedula: cedVal,
+          cliente_email: emailVal,
+          direccion: direccionConDatos,
+          ciudad: ciudadFormateada,
+          total: total,
+          productos: productosProcesados,
+          linea_whatsapp: numeroWhatsApp,
+          tenant_id: effectiveTenant || getTenantId(),
+          metodo_pago: metodoPagoStr,
+          metodo_envio: metodoEnvioLabel,
+          modalidad_pago: modalidadPago,
+          metodo_recepcion: metodoRecepcion,
+          tipo_compra: buyerLabel,
+          departamento: isInternational ? country.name : (selectedDepartamento || ''),
+          estado: modalidadPago === 'contra_entrega' ? 'contra_entrega' : 'pendiente'
         };
+
+        let { data: newOrder, error: dbErr } = await supabase.from('pedidos').insert(insertPayload).select('id').single();
+
+        if (dbErr) {
+          console.warn('Insert pedido falló:', dbErr.message);
+          // Reintento sin columnas opcionales por si alguna falta
+          const pClean = { ...insertPayload };
+          delete pClean.cliente_cedula; delete pClean.cliente_email;
+          delete pClean.metodo_pago; delete pClean.metodo_envio; delete pClean.modalidad_pago;
+          delete pClean.metodo_recepcion; delete pClean.tipo_compra; delete pClean.departamento;
+          const retry = await supabase.from('pedidos').insert(pClean).select('id').single();
+          if (!retry.error) {
+            newOrder = retry.data;
+            dbErr = null;
+          } else {
+            console.error('Error en reintento de pedido:', retry.error);
+          }
+        }
+
+        if (newOrder) {
+          orderId = newOrder.id;
+        }
+
+        isOrderSubmittedRef.current = true;
+        const currentLeadId = leadIdRef.current || leadId;
+        if (currentLeadId) {
+          await supabase.from('leads').update({ estado: 'completado' }).eq('id', currentLeadId);
+          setLeadId(null);
+          leadIdRef.current = null;
+        }
+      } catch (dbErr) {
+        console.error('Error al registrar pedido en base de datos:', dbErr);
+      }
+
+      if (modalidadPago === 'transferencia') {
+        const finalTargetId = orderId || (leadIdRef.current || leadId);
+        if (finalTargetId) {
+          const shortOrderId = finalTargetId.slice(0, 8);
+          const uploadLink = `${window.location.origin}/pago/${shortOrderId}`;
+          mensaje += `\n*Sube tu comprobante de pago aqui:* ${uploadLink}\n`;
+        }
+      } else if (modalidadPago === 'contra_entrega') {
+        const finalTargetId = orderId || (leadIdRef.current || leadId);
+        if (finalTargetId) {
+          const shortOrderId = finalTargetId.slice(0, 8);
+          const guiaLink = `${window.location.origin}/guia/${shortOrderId}`;
+          mensaje += `\n*Ver guia / evidencia de envio:* ${guiaLink}\n`;
+        }
+      }
+
+      let cleanWhatsApp = numeroWhatsApp.replace(/\D/g, '');
+      if (cleanWhatsApp.length === 10) {
+        cleanWhatsApp = '57' + cleanWhatsApp;
+      }
+      const whatsappUrl = `https://wa.me/${cleanWhatsApp}?text=${encodeURIComponent(mensaje)}`;
+
+      const dateCode = new Date().toISOString().slice(0,10).replace(/-/g,'');
+      const seqNum = orderId ? orderId.slice(0,4).toUpperCase() : Math.floor(1000 + Math.random() * 9000).toString();
+      const formattedOrderCode = `#HER-${dateCode}-${seqNum}`;
+
+      setOrderSummaryData({
+        orderCode: formattedOrderCode,
+        subtotal: total,
+        total: total,
+        metodoPagoLabel: metodoPagoLabel,
+        modalidadPago: modalidadPago,
+        whatsappUrl: whatsappUrl
       });
 
-      const cedVal = (formData.cedula || '').trim();
-      const emailVal = (formData.email || '').trim();
-
-      let direccionConDatos = direccionFormateada;
-      if (cedVal && !direccionConDatos.includes(cedVal)) {
-        direccionConDatos += ` | CC: ${cedVal}`;
-      }
-      if (emailVal && !direccionConDatos.includes(emailVal)) {
-        direccionConDatos += ` | Email: ${emailVal}`;
-      }
-
-      let insertPayload: any = {
-        cliente_nombre: formData.nombre,
-        cliente_telefono: formData.telefono,
-        cliente_cedula: cedVal,
-        cliente_email: emailVal,
-        direccion: direccionConDatos,
-        ciudad: ciudadFormateada,
-        total: total,
-        productos: productosProcesados,
-        linea_whatsapp: numeroWhatsApp,
-        tenant_id: effectiveTenant || getTenantId(),
-        metodo_pago: metodoPagoStr,
-        metodo_envio: metodoEnvioLabel,
-        modalidad_pago: modalidadPago,
-        metodo_recepcion: metodoRecepcion,
-        tipo_compra: buyerLabel,
-        departamento: isInternational ? country.name : (selectedDepartamento || ''),
-        estado: modalidadPago === 'contra_entrega' ? 'contra_entrega' : 'pendiente'
-      };
-
-      let { data: newOrder, error: dbErr } = await supabase.from('pedidos').insert(insertPayload).select('id').single();
-
-      if (dbErr) {
-        console.warn('Insert pedido falló:', dbErr.message);
-        // Reintento sin columnas opcionales por si alguna falta
-        const pClean = { ...insertPayload };
-        delete pClean.cliente_cedula; delete pClean.cliente_email;
-        delete pClean.metodo_pago; delete pClean.metodo_envio; delete pClean.modalidad_pago;
-        delete pClean.metodo_recepcion; delete pClean.tipo_compra; delete pClean.departamento;
-        const retry = await supabase.from('pedidos').insert(pClean).select('id').single();
-        if (!retry.error) {
-          newOrder = retry.data;
-          dbErr = null;
-        } else {
-          console.error('Error en reintento de pedido:', retry.error);
-        }
-      }
-
-      if (newOrder) {
-        orderId = newOrder.id;
-      }
-
-      isOrderSubmittedRef.current = true;
-      const currentLeadId = leadIdRef.current || leadId;
-      if (currentLeadId) {
-        await supabase.from('leads').update({ estado: 'completado' }).eq('id', currentLeadId);
-        setLeadId(null);
-        leadIdRef.current = null;
-      }
-    } catch (dbErr) {
-      console.error('Error al registrar pedido en base de datos:', dbErr);
+      // Limpiar después de enviar
+      setIsCartOpen(false);
+      setIsCheckoutMode(false);
+      clearCart();
+      setFormData({ nombre: '', cedula: '', email: '', telefono: '', direccion: '', barrio: '', ciudad: '' });
+    } catch (err) {
+      console.error('Error al procesar el pedido:', err);
+      alert('Ocurrió un error al procesar el pedido. Por favor intenta nuevamente.');
+    } finally {
+      setTimeout(() => {
+        isOrderSubmittedRef.current = false;
+        isSubmittingOrderRef.current = false;
+        setIsSubmittingOrder(false);
+      }, 2000);
     }
-
-    if (modalidadPago === 'transferencia') {
-      const finalTargetId = orderId || (leadIdRef.current || leadId);
-      if (finalTargetId) {
-        const shortOrderId = finalTargetId.slice(0, 8);
-        const uploadLink = `${window.location.origin}/pago/${shortOrderId}`;
-        mensaje += `\n*Sube tu comprobante de pago aqui:* ${uploadLink}\n`;
-      }
-    } else if (modalidadPago === 'contra_entrega') {
-      const finalTargetId = orderId || (leadIdRef.current || leadId);
-      if (finalTargetId) {
-        const shortOrderId = finalTargetId.slice(0, 8);
-        const guiaLink = `${window.location.origin}/guia/${shortOrderId}`;
-        mensaje += `\n*Ver guia / evidencia de envio:* ${guiaLink}\n`;
-      }
-    }
-
-
-    let cleanWhatsApp = numeroWhatsApp.replace(/\D/g, '');
-    if (cleanWhatsApp.length === 10) {
-      cleanWhatsApp = '57' + cleanWhatsApp;
-    }
-    const whatsappUrl = `https://wa.me/${cleanWhatsApp}?text=${encodeURIComponent(mensaje)}`;
-
-    const dateCode = new Date().toISOString().slice(0,10).replace(/-/g,'');
-    const seqNum = orderId ? orderId.slice(0,4).toUpperCase() : Math.floor(1000 + Math.random() * 9000).toString();
-    const formattedOrderCode = `#HER-${dateCode}-${seqNum}`;
-
-    setOrderSummaryData({
-      orderCode: formattedOrderCode,
-      subtotal: total,
-      total: total,
-      metodoPagoLabel: metodoPagoLabel,
-      modalidadPago: modalidadPago,
-      whatsappUrl: whatsappUrl
-    });
-
-    // Limpiar después de enviar
-    setIsCartOpen(false);
-    setIsCheckoutMode(false);
-    clearCart();
-    setFormData({ nombre: '', cedula: '', email: '', telefono: '', direccion: '', barrio: '', ciudad: '' });
-    setTimeout(() => {
-      isOrderSubmittedRef.current = false;
-    }, 2000);
   };
 
   return (
@@ -4020,28 +4036,39 @@ export default function MenuDigital() {
                       {/* ── 5. BOTÓN DE CONFIRMACIÓN FINAL (UNA SOLA ACCIÓN) ── */}
                       <button 
                         type="submit" 
+                        disabled={isSubmittingOrder}
                         style={{
                           width: '100%',
                           padding: '0.95rem 1.25rem',
                           borderRadius: '16px',
                           border: 'none',
-                          background: brandColor,
+                          background: isSubmittingOrder ? '#94a3b8' : brandColor,
                           color: '#ffffff',
                           fontSize: '1.02rem',
                           fontWeight: 600,
-                          cursor: 'pointer',
+                          cursor: isSubmittingOrder ? 'not-allowed' : 'pointer',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
                           gap: '0.55rem',
-                          boxShadow: `0 4px 16px ${brandColor}40`,
+                          boxShadow: isSubmittingOrder ? 'none' : `0 4px 16px ${brandColor}40`,
                           fontFamily: "'Poppins', sans-serif",
                           marginTop: '0.25rem',
-                          transition: 'transform 0.15s ease'
+                          transition: 'all 0.15s ease',
+                          opacity: isSubmittingOrder ? 0.8 : 1
                         }}
                       >
-                        <Check size={20} strokeWidth={2.4} />
-                        <span>Terminar Compra y Enviar Pedido — {formatPrice(total)}</span>
+                        {isSubmittingOrder ? (
+                          <>
+                            <Loader2 size={20} className="spin" style={{ animation: 'spin 0.8s linear infinite' }} />
+                            <span>Procesando pedido...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Check size={20} strokeWidth={2.4} />
+                            <span>Terminar Compra y Enviar Pedido — {formatPrice(total)}</span>
+                          </>
+                        )}
                       </button>
                     </>
                   );
