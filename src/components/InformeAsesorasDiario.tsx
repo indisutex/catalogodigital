@@ -1,6 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import type { Pedido, Asesor, Configuracion } from '../types';
 import { 
+  Share2,
+  Copy,
+  Check,
   Clock, 
   AlertTriangle, 
   CheckCircle2, 
@@ -275,6 +278,9 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showHourlyTimeline, setShowHourlyTimeline] = useState<boolean>(false);
   const [showCustomDate, setShowCustomDate] = useState<boolean>(false);
+  const [showShareModal, setShowShareModal] = useState<boolean>(false);
+  const [copiedMessage, setCopiedMessage] = useState<boolean>(false);
+  const [copiedLink, setCopiedLink] = useState<boolean>(false);
 
   // ── SUSCRIPCIÓN EN TIEMPO REAL (Supabase Realtime) ──
   useEffect(() => {
@@ -1164,6 +1170,93 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
     setSelectedDate(parseToColombiaTime(dateObj).dateStr);
   };
 
+  const shareData = useMemo(() => {
+    const shopName = configuracion?.nombre_negocio || 'Indisutex';
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    const targetTenant = tenantId || 'saramantha';
+    const directLink = `${baseUrl}/${targetTenant}/reporte?pin=1107`;
+
+    let dateTitle = '';
+    if (selectedDate === 'historico') {
+      dateTitle = 'Todo el Histórico Acumulado';
+    } else if (selectedDate === hoyColombiaStr) {
+      dateTitle = `Hoy (${selectedDate}) - Corte de las ${cutoffHour > 12 ? `${cutoffHour - 12}:00 PM` : `${cutoffHour}:00 AM`}`;
+    } else {
+      dateTitle = `${selectedDate} - Corte de las ${cutoffHour > 12 ? `${cutoffHour - 12}:00 PM` : `${cutoffHour}:00 AM`}`;
+    }
+
+    let msg = `📊 *INFORME EJECUTIVO - AUDITORÍA DE VENTAS Y ASESORAS*\n`;
+    msg += `🏢 *Empresa:* ${shopName}\n`;
+    msg += `📅 *Período:* ${dateTitle}\n`;
+    msg += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+    if (mainViewMode === 'diario') {
+      msg += `📥 *Total Chats Recibidos:* ${totalRecibidos}\n`;
+      msg += `✅ *Chats Atendidos:* ${totalAtendidos} (${porcentajeAtendidos}% de efectividad)\n`;
+      msg += `⚠️ *Chats Sin Atender:* ${totalSinAtender} (${porcentajeSinAtender}%)\n`;
+      msg += `💰 *Ventas en Riesgo:* $${valorSinAtender.toLocaleString('es-CO')}\n\n`;
+
+      msg += `👥 *RENDIMIENTO POR ASESORA:*\n`;
+      comparativaAsesores.forEach(ca => {
+        const pct = ca.totalRecibidos > 0 ? Math.round((ca.atendidos / ca.totalRecibidos) * 100) : 0;
+        msg += `• *${ca.asesor.nombre}:* ${ca.sinAtender} sin atender | ${ca.atendidos} atendidos (${pct}%) | $${ca.valorSinAtender.toLocaleString('es-CO')} en riesgo\n`;
+      });
+    } else if (mainViewMode === 'contra_acumulado') {
+      const totalMonto = unconfirmedContraOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+      msg += `🚚 *BACKLOG CONTRA ENTREGA SIN CONFIRMAR*\n`;
+      msg += `📦 *Total Pedidos Pendientes:* ${unconfirmedContraOrders.length}\n`;
+      msg += `💰 *Monto Acumulado:* $${totalMonto.toLocaleString('es-CO')}\n\n`;
+      msg += `👥 *PENDIENTES POR ASESORA:*\n`;
+      contraBreakdownByAsesor.forEach(ca => {
+        msg += `• *${ca.asesor.nombre}:* ${ca.count} pedidos ($${ca.totalAmount.toLocaleString('es-CO')})\n`;
+      });
+    } else if (mainViewMode === 'interesados_acumulado') {
+      const totalMonto = unconfirmedInteresados.reduce((sum, o) => sum + (o.total || 0), 0);
+      msg += `✨ *INTERESADAS Y CARRITOS ABANDONADOS*\n`;
+      msg += `🛒 *Total Clientes por Recuperar:* ${unconfirmedInteresados.length}\n`;
+      msg += `💰 *Ventas Potenciales:* $${totalMonto.toLocaleString('es-CO')}\n\n`;
+      msg += `👥 *POR ASESORA:*\n`;
+      interesadosBreakdownByAsesor.forEach(ia => {
+        msg += `• *${ia.asesor.nombre}:* ${ia.count} carritos ($${ia.totalAmount.toLocaleString('es-CO')})\n`;
+      });
+    } else if (mainViewMode === 'pendientes_pago_acumulado') {
+      const totalMonto = unconfirmedPendientesPago.reduce((sum, o) => sum + (o.total || 0), 0);
+      msg += `⏳ *PENDIENTES POR PAGO / TRANSFERENCIA*\n`;
+      msg += `💳 *Total Pedidos Pendientes:* ${unconfirmedPendientesPago.length}\n`;
+      msg += `💰 *Monto en Espera de Pago:* $${totalMonto.toLocaleString('es-CO')}\n\n`;
+      msg += `👥 *POR ASESORA:*\n`;
+      pendientesPagoBreakdownByAsesor.forEach(pa => {
+        msg += `• *${pa.asesor.nombre}:* ${pa.count} pedidos ($${pa.totalAmount.toLocaleString('es-CO')})\n`;
+      });
+    }
+
+    msg += `\n━━━━━━━━━━━━━━━━━━━━━\n`;
+    msg += `📲 *Ver informe interactivo para dueños:*\n${directLink}\n`;
+    msg += `🔐 _Acceso con PIN de seguridad: 1107_`;
+
+    return { text: msg, link: directLink };
+  }, [
+    configuracion,
+    tenantId,
+    selectedDate,
+    hoyColombiaStr,
+    cutoffHour,
+    mainViewMode,
+    totalRecibidos,
+    totalAtendidos,
+    totalSinAtender,
+    porcentajeAtendidos,
+    porcentajeSinAtender,
+    valorSinAtender,
+    comparativaAsesores,
+    unconfirmedContraOrders,
+    contraBreakdownByAsesor,
+    unconfirmedInteresados,
+    interesadosBreakdownByAsesor,
+    unconfirmedPendientesPago,
+    pendientesPagoBreakdownByAsesor
+  ]);
+
   const friendlyDateStr = useMemo(() => {
     if (selectedDate === 'historico') return 'Todo el Histórico Acumulado';
     if (!selectedDate) return '';
@@ -1357,6 +1450,30 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
           >
             <RefreshCw size={14} style={{ animation: isRefreshing ? 'spin 1s linear infinite' : 'none' }} />
             <span>{isRefreshing ? 'Actualizando...' : 'Refrescar'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowShareModal(true)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              padding: '0.5rem 0.95rem',
+              borderRadius: '10px',
+              border: 'none',
+              background: '#16a34a',
+              color: '#ffffff',
+              fontSize: '0.78rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              boxShadow: '0 2px 8px rgba(22, 163, 74, 0.28)',
+              fontFamily: "'Poppins', sans-serif"
+            }}
+            title="Compartir resumen y enlace a los dueños por WhatsApp"
+          >
+            <Share2 size={14} />
+            <span>📲 Compartir a Dueños</span>
           </button>
 
           <button
@@ -3279,6 +3396,211 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
             )}
           </div>
 
+        </div>
+      )}
+
+      {/* ── MODAL COMPARTIR INFORME CON PROPIETARIOS / DIRECTORES ── */}
+      {showShareModal && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 99999,
+            padding: '1rem',
+            fontFamily: "'Poppins', sans-serif"
+          }}
+          onClick={() => setShowShareModal(false)}
+        >
+          <div
+            style={{
+              background: '#ffffff',
+              borderRadius: '24px',
+              padding: '2rem',
+              maxWidth: '540px',
+              width: '100%',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              border: '1.5px solid #d1fae5',
+              position: 'relative',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column'
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setShowShareModal(false)}
+              style={{
+                position: 'absolute',
+                top: '1rem',
+                right: '1rem',
+                background: '#f1f5f9',
+                border: 'none',
+                borderRadius: '50%',
+                width: '32px',
+                height: '32px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                color: '#64748b'
+              }}
+            >
+              <XCircle size={18} />
+            </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+              <div style={{
+                width: '46px',
+                height: '46px',
+                borderRadius: '12px',
+                background: '#ecfdf5',
+                color: '#16a34a',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}>
+                <Share2 size={22} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 600, color: '#0f172a' }}>
+                  Compartir Informe Ejecutivo
+                </h3>
+                <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.76rem', color: '#64748b' }}>
+                  Listo para enviar a WhatsApp a propietarios, socios o directores
+                </p>
+              </div>
+            </div>
+
+            <div style={{
+              background: '#f0fdf4',
+              border: '1px solid #bbf7d0',
+              borderRadius: '10px',
+              padding: '0.55rem 0.85rem',
+              marginBottom: '0.85rem',
+              fontSize: '0.76rem',
+              color: '#166534',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem'
+            }}>
+              <span>🔐</span>
+              <span>Incluye enlace interactivo directo protegido con PIN <strong>1107</strong></span>
+            </div>
+
+            {/* Vista previa del mensaje */}
+            <div style={{
+              flex: 1,
+              overflowY: 'auto',
+              background: '#f8fafc',
+              border: '1px solid #cbd5e1',
+              borderRadius: '12px',
+              padding: '0.85rem 1rem',
+              fontSize: '0.78rem',
+              lineHeight: 1.5,
+              whiteSpace: 'pre-wrap',
+              color: '#1e293b',
+              marginBottom: '1rem',
+              maxHeight: '280px',
+              fontFamily: "'Courier New', Courier, monospace"
+            }}>
+              {shareData.text}
+            </div>
+
+            {/* Botones de acción */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareData.text)}`, '_blank');
+                }}
+                style={{
+                  flex: '1 1 180px',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '12px',
+                  border: 'none',
+                  background: '#16a34a',
+                  color: '#ffffff',
+                  fontSize: '0.84rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.45rem',
+                  boxShadow: '0 4px 12px rgba(22, 163, 74, 0.3)',
+                  fontFamily: "'Poppins', sans-serif"
+                }}
+              >
+                <Phone size={15} />
+                <span>Abrir en WhatsApp</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(shareData.text);
+                  setCopiedMessage(true);
+                  setTimeout(() => setCopiedMessage(false), 2000);
+                }}
+                style={{
+                  flex: '1 1 140px',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '12px',
+                  border: '1px solid #cbd5e1',
+                  background: copiedMessage ? '#ecfdf5' : '#ffffff',
+                  color: copiedMessage ? '#166534' : '#334155',
+                  fontSize: '0.82rem',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.45rem',
+                  fontFamily: "'Poppins', sans-serif"
+                }}
+              >
+                {copiedMessage ? <Check size={15} color="#16a34a" /> : <Copy size={15} />}
+                <span>{copiedMessage ? '¡Texto Copiado!' : 'Copiar Texto'}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(shareData.link);
+                  setCopiedLink(true);
+                  setTimeout(() => setCopiedLink(false), 2000);
+                }}
+                style={{
+                  flex: '1 1 140px',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '12px',
+                  border: '1px solid #cbd5e1',
+                  background: copiedLink ? '#ecfdf5' : '#ffffff',
+                  color: copiedLink ? '#166534' : '#334155',
+                  fontSize: '0.82rem',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.45rem',
+                  fontFamily: "'Poppins', sans-serif"
+                }}
+              >
+                {copiedLink ? <Check size={15} color="#16a34a" /> : <Share2 size={15} />}
+                <span>{copiedLink ? '¡Enlace Copiado!' : 'Copiar Enlace'}</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

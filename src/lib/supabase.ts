@@ -42,7 +42,7 @@ export const findClosestTenant = (raw: string): ClosestStoreInfo | null => {
 
   const systemRoutes = [
     'admin', 'superadmin', 'pago', 'guia', 'menu', 'dist', 
-    'assets', 'api', 'sw.js', 'manifest.json', 'products', 
+    'reporte', 'informe', 'assets', 'api', 'sw.js', 'manifest.json', 'products', 
     'orders', 'favicon.ico', 'robots.txt'
   ];
   if (systemRoutes.includes(clean)) return null;
@@ -114,7 +114,7 @@ export const getTenantId = () => {
   
   const systemRoutes = [
     'admin', 'superadmin', 'pago', 'guia', 'menu', 'dist', 
-    'assets', 'api', 'sw.js', 'manifest.json', 'products', 
+    'reporte', 'informe', 'assets', 'api', 'sw.js', 'manifest.json', 'products', 
     'orders', 'favicon.ico', 'robots.txt'
   ];
   

@@ -6,6 +6,7 @@ import { ErrorBoundary } from './components/ErrorBoundary';
 
 const Admin = lazy(() => import('./pages/Admin'));
 const SuperAdmin = lazy(() => import('./pages/SuperAdmin'));
+const ReporteEjecutivo = lazy(() => import('./pages/ReporteEjecutivo'));
 
 const LoadingFallback = () => (
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#f8fafc', fontFamily: 'Inter, sans-serif' }}>
@@ -33,6 +34,12 @@ function App() {
             <Route path="/admin" element={<Admin />} />
             <Route path="/:tenant/admin" element={<Admin />} />
             <Route path="/superadmin" element={<SuperAdmin />} />
+
+            {/* Informe Ejecutivo Compartible para Propietarios y Directores */}
+            <Route path="/reporte" element={<ReporteEjecutivo />} />
+            <Route path="/:tenant/reporte" element={<ReporteEjecutivo />} />
+            <Route path="/informe" element={<ReporteEjecutivo />} />
+            <Route path="/:tenant/informe" element={<ReporteEjecutivo />} />
 
             {/* Pago Nequi - página pública para subir comprobante (Transferencia) */}
             <Route path="/pago/:pedidoId" element={<PagoNequi mode="pago" />} />
