@@ -16,6 +16,7 @@ import { ERPContabilidadService } from '../lib/erpContabilidadService';
 import { ERPMainModule, type ERPTab } from '../components/erp/ERPMainModule';
 import WhatsAppPhoneVerifier, { validateWhatsAppPhone } from '../components/WhatsAppPhoneVerifier';
 import { QRCodeGeneratorModule } from '../components/QRCodeGeneratorModule';
+import { InformeAsesorasDiario } from '../components/InformeAsesorasDiario';
 
 const SECRET_PIN = '0000';
 
@@ -183,7 +184,7 @@ const emptyProduct: ProductFormData = {
   precios_detallados_fam: defaultFamDetailedPrices
 };
 
-type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'ventas_pos' | 'clientes' | 'asesores' | 'asistencia' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor' | 'material_apoyo' | 'material_asesor' | 'productos_asesor' | 'productos_mayorista' | 'ranking_mayorista' | 'pqrs' | 'contabilidad' | 'erp' | 'zonificacion';
+type TabType = 'dashboard' | 'productos' | 'categorias' | 'config' | 'pedidos' | 'siigo' | 'pos' | 'ventas_pos' | 'clientes' | 'asesores' | 'informe_asesoras' | 'asistencia' | 'mayoristas' | 'perfil_asesor' | 'resumen_asesor' | 'notificaciones_asesor' | 'material_apoyo' | 'material_asesor' | 'productos_asesor' | 'productos_mayorista' | 'ranking_mayorista' | 'pqrs' | 'contabilidad' | 'erp' | 'zonificacion';
 
 type Toast = { message: string; type: 'success' | 'error' } | null;
 
@@ -786,6 +787,10 @@ function SidebarContent({
               <span className="nav-icon"><Users size={14} /></span> Asesores
               {activeTab === 'asesores' && <span className="active-dot"></span>}
             </button>
+            <button className={`nav-item ${activeTab === 'informe_asesoras' ? 'active' : ''}`} onClick={() => handleSelectTab('informe_asesoras')}>
+              <span className="nav-icon"><BarChart2 size={14} /></span> Informe Diario Asesoras
+              {activeTab === 'informe_asesoras' && <span className="active-dot"></span>}
+            </button>
             <button className={`nav-item ${activeTab === 'asistencia' ? 'active' : ''}`} onClick={() => handleSelectTab('asistencia')}>
               <span className="nav-icon"><Clock size={14} /></span> Control de Asistencia
               {activeTab === 'asistencia' && <span className="active-dot"></span>}
@@ -917,7 +922,7 @@ export default function Admin() {
     const defaultTab = (userRole === 'asesor') ? 'pedidos' : (userRole === 'mayorista' ? 'resumen_asesor' : 'productos');
     const saved = localStorage.getItem('admin_active_tab') as string;
     if (saved === 'perfil_admin' || saved === 'perfil_admin_tab') return 'dashboard';
-    const allowedTabs: string[] = ['dashboard', 'productos', 'categorias', 'pedidos', 'clientes', 'asesores', 'asistencia', 'mayoristas', 'pos', 'ventas_pos', 'siigo', 'config', 'perfil_asesor', 'resumen_asesor', 'notificaciones_asesor', 'material_apoyo', 'material_asesor', 'productos_asesor', 'productos_mayorista', 'ranking_mayorista', 'contabilidad', 'erp'];
+    const allowedTabs: string[] = ['dashboard', 'productos', 'categorias', 'pedidos', 'clientes', 'asesores', 'informe_asesoras', 'asistencia', 'mayoristas', 'pos', 'ventas_pos', 'siigo', 'config', 'perfil_asesor', 'resumen_asesor', 'notificaciones_asesor', 'material_apoyo', 'material_asesor', 'productos_asesor', 'productos_mayorista', 'ranking_mayorista', 'contabilidad', 'erp'];
     
     if (urlTab && allowedTabs.includes(urlTab)) return urlTab;
     
@@ -8356,6 +8361,18 @@ export default function Admin() {
                       </button>
                     )}
 
+                    {/* Botón Acceso Rápido: Informe Diario de Asesoras */}
+                    {activeTab === 'asesores' && (
+                      <button
+                        type="button"
+                        className="btn-secondary hover-lift"
+                        onClick={() => setActiveTab('informe_asesoras')}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0 0.85rem', height: '38px', borderRadius: '10px', fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap', background: '#f8fafc', color: '#1e293b', border: '1px solid #cbd5e1', flexShrink: 0, fontFamily: "'Poppins', sans-serif" }}
+                      >
+                        <Clock size={14} color="var(--primary-color, #00a6f9)" /> <span className="btn-text-desktop">Informe Diario por Hora</span>
+                      </button>
+                    )}
+
                     {activeTab === 'mayoristas' && (
                       <button
                         type="button"
@@ -8732,6 +8749,7 @@ export default function Admin() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <div className="topbar-left-info">
                   <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '30px', height: '30px', borderRadius: '10px', background: '#ffffff', border: '1px solid #e2e8f0', color: 'var(--primary-color, #0ea5e9)', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                    {activeTab === 'informe_asesoras' && <Clock size={16} />}
                     {activeTab === 'asistencia' && <Clock size={16} />}
                     {activeTab === 'dashboard' && <LayoutDashboard size={16} />}
                     {activeTab === 'categorias' && <Tag size={16} />}
@@ -8748,12 +8766,13 @@ export default function Admin() {
                     {activeTab === 'pedidos' && <ShoppingBag size={16} />}
                     {activeTab === 'mayoristas' && <Building2 size={16} />}
                     {![
-                      'asistencia', 'dashboard', 'categorias', 'pos', 'ventas_pos',
+                      'informe_asesoras', 'asistencia', 'dashboard', 'categorias', 'pos', 'ventas_pos',
                       'material_apoyo', 'zonificacion', 'pqrs', 'productos', 'contabilidad',
                       'siigo', 'clientes', 'asesores', 'pedidos', 'mayoristas'
                     ].includes(activeTab) && <LayoutDashboard size={16} />}
                   </div>
                   <span style={{ fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>
+                    {activeTab === 'informe_asesoras' && 'Informe Diario por Asesora y Auditoría de Chats'}
                     {activeTab === 'asistencia' && 'Control de Asistencia'}
                     {activeTab === 'dashboard' && 'Dashboard General'}
                     {activeTab === 'categorias' && 'Categorías y Subcategorías'}
@@ -8770,7 +8789,7 @@ export default function Admin() {
                     {activeTab === 'pedidos' && 'Pedidos'}
                     {activeTab === 'mayoristas' && 'Mayoristas'}
                     {![
-                      'asistencia', 'dashboard', 'categorias', 'pos', 'ventas_pos',
+                      'informe_asesoras', 'asistencia', 'dashboard', 'categorias', 'pos', 'ventas_pos',
                       'material_apoyo', 'zonificacion', 'pqrs', 'productos', 'contabilidad',
                       'siigo', 'clientes', 'asesores', 'pedidos', 'mayoristas'
                     ].includes(activeTab) && activeTab.replace(/_/g, ' ')}
@@ -13777,6 +13796,21 @@ export default function Admin() {
                 </div>
               </div>
             </div>
+          )}
+
+          {/* ── INFORME DIARIO DE ASESORAS Y AUDITORÍA DE CHATS ── */}
+          {activeTab === 'informe_asesoras' && (
+            <InformeAsesorasDiario
+              pedidos={pedidos}
+              leads={leads}
+              asesores={asesores}
+              configuracion={configuracion}
+              tenantId={getTenantId()}
+              currentAsesor={currentAsesor}
+              onAtenderPedido={handleAtenderPedido}
+              onUpdateLeadStatus={handleUpdateLeadStatus}
+              onSelectPedido={(p) => setSelectedPedido(p)}
+            />
           )}
 
           {/* ── CONTROL DE ASISTENCIA TAB ── */}
