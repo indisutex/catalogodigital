@@ -9,7 +9,7 @@ import { AsesorShiftBar } from '../components/asistencia/AsesorShiftBar';
 import { ControlAsistenciaAdmin } from '../components/asistencia/ControlAsistenciaAdmin';
 import { asistenciaService } from '../lib/asistenciaService';
 import './Admin.css';
-import { Lock, X, FileText, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Minus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, ChevronRight, Wrench, ArrowUpDown, Filter, MapPin, XCircle, Truck, Clock, FileCheck, CheckCircle, Landmark, BookOpen, LifeBuoy, ShoppingCart, ClipboardList, Star, Ban, ExternalLink, Flame, RotateCcw, Sparkles, QrCode } from 'lucide-react';
+import { Lock, X, FileText, Upload, Package, Tag, Settings, LayoutDashboard, Plus, Minus, Trash2, Pencil, Check, Eye, EyeOff, Phone, LogOut, User, ShoppingBag, Copy, RefreshCw, Search, Calculator, Code, Menu, Users, Home, Lightbulb, Bell, CreditCard, Download, Building2, Trophy, MessageSquare, Link, PackageCheck, ArrowRightLeft, BarChart2, Palette, Printer, Code2, ChevronDown, ChevronRight, Wrench, ArrowUpDown, Filter, MapPin, XCircle, Truck, Clock, FileCheck, CheckCircle, Landmark, BookOpen, LifeBuoy, ShoppingCart, ClipboardList, Star, Ban, ExternalLink, Flame, RotateCcw, Sparkles, QrCode, PhoneForwarded } from 'lucide-react';
 
 import * as XLSX from 'xlsx';
 import { ERPContabilidadService } from '../lib/erpContabilidadService';
@@ -17,6 +17,7 @@ import { ERPMainModule, type ERPTab } from '../components/erp/ERPMainModule';
 import WhatsAppPhoneVerifier, { validateWhatsAppPhone } from '../components/WhatsAppPhoneVerifier';
 import { QRCodeGeneratorModule } from '../components/QRCodeGeneratorModule';
 import { InformeAsesorasDiario } from '../components/InformeAsesorasDiario';
+import { RecuperarLineaBloqueadaModal } from '../components/RecuperarLineaBloqueadaModal';
 
 const SECRET_PIN = '0000';
 const INFORME_PIN = '1107';
@@ -936,6 +937,7 @@ export default function Admin() {
     return sessionStorage.getItem('informe_asesoras_unlocked') === 'true';
   });
   const [showInformePinModal, setShowInformePinModal] = useState(false);
+  const [showLineaBloqueadaModal, setShowLineaBloqueadaModal] = useState(false);
   const [informePinInput, setInformePinInput] = useState('');
   const [informePinError, setInformePinError] = useState('');
   const [failedThumbnails, setFailedThumbnails] = useState<Record<string, boolean>>({});
@@ -8463,6 +8465,36 @@ export default function Admin() {
                         <Clock size={14} color={isInformeAsesorasUnlocked ? '#059669' : '#db2777'} /> 
                         <span className="btn-text-desktop">Informe Diario</span>
                         <Lock size={12} color={isInformeAsesorasUnlocked ? '#059669' : '#db2777'} />
+                      </button>
+                    )}
+
+                    {/* Botón de Contingencia: Contactar Números de Línea Bloqueada */}
+                    {activeTab === 'asesores' && (
+                      <button
+                        type="button"
+                        className="btn-secondary hover-lift"
+                        onClick={() => setShowLineaBloqueadaModal(true)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
+                          padding: '0 0.85rem',
+                          height: '38px',
+                          borderRadius: '10px',
+                          fontSize: '0.82rem',
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          background: '#fff7ed',
+                          color: '#c2410c',
+                          border: '1px solid #fed7aa',
+                          flexShrink: 0,
+                          fontFamily: "'Poppins', sans-serif"
+                        }}
+                        title="Contactar y recuperar clientes de una línea de WhatsApp bloqueada"
+                      >
+                        <PhoneForwarded size={14} color="#ea580c" />
+                        <span className="btn-text-desktop">Líneas Bloqueadas</span>
                       </button>
                     )}
 
@@ -20967,6 +20999,17 @@ export default function Admin() {
           </div>
         </div>
       )}
+
+      {/* ── MODAL RECUPERAR LÍNEAS BLOQUEADAS ── */}
+      <RecuperarLineaBloqueadaModal
+        isOpen={showLineaBloqueadaModal}
+        onClose={() => setShowLineaBloqueadaModal(false)}
+        asesores={asesores}
+        pedidos={pedidos}
+        leads={leads}
+        configuracion={configuracion}
+        tenantId={getTenantId()}
+      />
     </div>
   );
 }

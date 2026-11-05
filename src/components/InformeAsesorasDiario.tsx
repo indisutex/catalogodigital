@@ -24,9 +24,11 @@ import {
   ChevronDown,
   ChevronUp,
   Calendar,
-  Zap
+  Zap,
+  PhoneForwarded
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { RecuperarLineaBloqueadaModal } from './RecuperarLineaBloqueadaModal';
 
 interface InformeAsesorasDiarioProps {
   pedidos: Pedido[];
@@ -279,6 +281,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
   const [showHourlyTimeline, setShowHourlyTimeline] = useState<boolean>(false);
   const [showCustomDate, setShowCustomDate] = useState<boolean>(false);
   const [showShareModal, setShowShareModal] = useState<boolean>(false);
+  const [showLineaBloqueadaModal, setShowLineaBloqueadaModal] = useState<boolean>(false);
   const [copiedMessage, setCopiedMessage] = useState<boolean>(false);
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
 
@@ -1475,6 +1478,29 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
           >
             <Share2 size={14} />
             <span>📲 Compartir a Dueños</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowLineaBloqueadaModal(true)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              padding: '0.5rem 0.95rem',
+              borderRadius: '10px',
+              border: '1px solid #fed7aa',
+              background: '#fff7ed',
+              color: '#c2410c',
+              fontSize: '0.78rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              fontFamily: "'Poppins', sans-serif"
+            }}
+            title="Recuperar y contactar clientes de una línea de WhatsApp bloqueada"
+          >
+            <PhoneForwarded size={14} color="#ea580c" />
+            <span>🚨 Línea Bloqueada</span>
           </button>
 
           <button
@@ -3604,6 +3630,17 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
           </div>
         </div>
       )}
+
+      {/* ── MODAL RECUPERAR LÍNEAS BLOQUEADAS ── */}
+      <RecuperarLineaBloqueadaModal
+        isOpen={showLineaBloqueadaModal}
+        onClose={() => setShowLineaBloqueadaModal(false)}
+        asesores={asesores}
+        pedidos={pedidos}
+        leads={leads}
+        configuracion={configuracion}
+        tenantId={tenantId}
+      />
 
     </div>
   );
