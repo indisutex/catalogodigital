@@ -17,7 +17,8 @@ import {
   RefreshCw,
   Truck,
   XCircle,
-  Eye
+  Eye,
+  CreditCard
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -248,8 +249,8 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
 }) => {
   const primaryColor = configuracion?.color_primario || '#00a6f9';
 
-  // Selector de Modo Principal: Flujo Diario (por horas) vs Backlog Acumulado de Contra Entregas
-  const [mainViewMode, setMainViewMode] = useState<'diario' | 'contra_acumulado'>('diario');
+  // Selector de Modo Principal: Auditoría Diaria vs Backlogs Acumulados
+  const [mainViewMode, setMainViewMode] = useState<'diario' | 'contra_acumulado' | 'interesados_acumulado' | 'pendientes_pago_acumulado'>('diario');
 
   // Fecha actual en Colombia por defecto
   const hoyColombiaStr = useMemo(() => {
@@ -370,6 +371,166 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
     return [...list].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
   }, [unconfirmedContraOrders, selectedAsesorId, asesores, searchQuery]);
 
+  // ── MODO 3: INTERESADOS / CARRITOS ABANDONADOS (ACUMULADO HISTÓRICO) ──
+  const unconfirmedInteresados = useMemo(() => {
+    const normalizePhone = (phone?: string | null) => {
+      if (!phone) return '';
+      const clean = phone.replace(/\D/g, '');
+      return clean.length >= 10 ? clean.slice(-10) : clean;
+    };
+
+    let tempLeads = (leads || []).filter(l => {
+      if (l.tenant_id && l.tenant_id !== tenantId) return false;
+      if (l.estado === 'completado' || l.estado === 'contra_entrega' || l.estado === 'cancelado') return false;
+      const cleanLeadPhone = normalizePhone(l.telefono);
+      if (!cleanLeadPhone) return true;
+      const hasOrder = (pedidos || []).some(p => {
+        const cleanOrderPhone = normalizePhone(p.cliente_telefono);
+        if (!cleanOrderPhone || cleanOrderPhone !== cleanLeadPhone) return false;
+        const orderTime = new Date(p.created_at).getTime();
+        const leadTime = new Date(l.created_at).getTime();
+        return orderTime >= leadTime - 2 * 60 * 1000;
+      });
+      return !hasOrder;
+    }).map(l => ({
+      id: l.id,
+      source: 'lead' as const,
+      cliente_nombre: l.nombre || 'Cliente Interesado',
+      cliente_telefono: l.telefono || '',
+      ciudad: l.ciudad || '',
+      linea_whatsapp: l.linea_whatsapp || '',
+      total: Number(l.total || l.valor_estimado || 0),
+      created_at: l.created_at,
+      estado: l.estado || 'interesado',
+      retargeting_estado: l.retargeting_estado || 'sin_contactar',
+      productos: l.productos,
+      raw: l
+    }));
+
+    const pedidosAbandonados = (pedidos || [])
+      .filter(p => {
+        if (p.tenant_id && p.tenant_id !== tenantId) return false;
+        return p.estado === 'abandonado';
+      })
+      .map(p => ({
+        id: p.id,
+        source: 'pedido_abandonado' as const,
+        cliente_nombre: p.cliente_nombre || 'Cliente',
+        cliente_telefono: p.cliente_telefono || '',
+        ciudad: p.ciudad || '',
+        linea_whatsapp: p.linea_whatsapp || '',
+        total: Number(p.total || 0),
+        created_at: p.created_at,
+        estado: 'abandonado',
+        retargeting_estado: (p as any).retargeting_estado || 'sin_contactar',
+        productos: p.productos,
+        raw: p
+      }));
+
+    return [...tempLeads, ...pedidosAbandonados];
+  }, [leads, pedidos, tenantId]);
+
+  // Desglose de interesados por Asesora
+  const interesadosBreakdownByAsesor = useMemo(() => {
+    return asesores.map(a => {
+      const aPhones = (a.telefono || '').split(',').map(p => p.replace(/\D/g, '')).filter(Boolean);
+      const items = unconfirmedInteresados.filter(it => {
+        const itemPhone = (it.linea_whatsapp || '').replace(/\D/g, '');
+        return aPhones.includes(itemPhone);
+      });
+      const totalAmount = items.reduce((sum, it) => sum + (it.total || 0), 0);
+      return {
+        asesor: a,
+        count: items.length,
+        totalAmount,
+        items
+      };
+    });
+  }, [asesores, unconfirmedInteresados]);
+
+  // Lista filtrada de interesados
+  const filteredInteresadosList = useMemo(() => {
+    let list = unconfirmedInteresados;
+    if (selectedAsesorId !== 'todas') {
+      const targetAsesor = asesores.find(a => a.id === selectedAsesorId);
+      if (targetAsesor) {
+        const aPhones = (targetAsesor.telefono || '').split(',').map(p => p.replace(/\D/g, '')).filter(Boolean);
+        list = list.filter(it => {
+          const itemPhone = (it.linea_whatsapp || '').replace(/\D/g, '');
+          return aPhones.includes(itemPhone);
+        });
+      }
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter(it => 
+        (it.cliente_nombre || '').toLowerCase().includes(q) ||
+        (it.cliente_telefono || '').includes(q) ||
+        (it.ciudad || '').toLowerCase().includes(q)
+      );
+    }
+
+    return [...list].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }, [unconfirmedInteresados, selectedAsesorId, asesores, searchQuery]);
+
+  // ── MODO 4: PENDIENTES POR PAGO / TRANSFERENCIA (ACUMULADO HISTÓRICO) ──
+  const unconfirmedPendientesPago = useMemo(() => {
+    return (pedidos || []).filter(p => {
+      if (p.tenant_id && p.tenant_id !== tenantId) return false;
+      const mp = (p.metodo_pago || '').toLowerCase();
+      const mod = ((p as any).modalidad_pago || '').toLowerCase();
+      const est = (p.estado || '').toLowerCase();
+      const isContra = mp.includes('contra') || mod.includes('contra') || est.includes('contra');
+      const isCompleted = est === 'confirmado' || est === 'contra_confirmado' || est === 'despachado' || est === 'contra_despachado' || est === 'completado' || est === 'entregado_pagado' || est === 'cancelado' || est === 'abandonado';
+      return !isContra && !isCompleted;
+    });
+  }, [pedidos, tenantId]);
+
+  // Desglose de pendientes por pago por Asesora
+  const pendientesPagoBreakdownByAsesor = useMemo(() => {
+    return asesores.map(a => {
+      const aPhones = (a.telefono || '').split(',').map(p => p.replace(/\D/g, '')).filter(Boolean);
+      const orders = unconfirmedPendientesPago.filter(p => {
+        const orderPhone = (p.linea_whatsapp || '').replace(/\D/g, '');
+        return aPhones.includes(orderPhone) || (p.asesor && p.asesor.toLowerCase() === a.nombre.toLowerCase());
+      });
+      const totalAmount = orders.reduce((sum, o) => sum + (o.total || 0), 0);
+      return {
+        asesor: a,
+        count: orders.length,
+        totalAmount,
+        orders
+      };
+    });
+  }, [asesores, unconfirmedPendientesPago]);
+
+  // Lista filtrada de pendientes por pago
+  const filteredPendientesPagoList = useMemo(() => {
+    let list = unconfirmedPendientesPago;
+    if (selectedAsesorId !== 'todas') {
+      const targetAsesor = asesores.find(a => a.id === selectedAsesorId);
+      if (targetAsesor) {
+        const aPhones = (targetAsesor.telefono || '').split(',').map(p => p.replace(/\D/g, '')).filter(Boolean);
+        list = list.filter(p => {
+          const orderPhone = (p.linea_whatsapp || '').replace(/\D/g, '');
+          return aPhones.includes(orderPhone) || (p.asesor && p.asesor.toLowerCase() === targetAsesor.nombre.toLowerCase());
+        });
+      }
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter(p => 
+        (p.cliente_nombre || '').toLowerCase().includes(q) ||
+        (p.cliente_telefono || '').includes(q) ||
+        (p.linea_whatsapp || '').includes(q)
+      );
+    }
+
+    return [...list].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }, [unconfirmedPendientesPago, selectedAsesorId, asesores, searchQuery]);
+
   // Confirmar un pedido contra entrega desde el informe
   const handleConfirmContraOrder = async (orderId: string) => {
     try {
@@ -405,6 +566,102 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
       }
     } catch (err) {
       console.error('Error al cancelar pedido:', err);
+    }
+  };
+
+  const handleConfirmPendientePago = async (orderId: string) => {
+    try {
+      const nowIso = new Date().toISOString();
+      const { error } = await supabase
+        .from('pedidos')
+        .update({
+          estado: 'confirmado',
+          atendido: true,
+          fecha_envio_mensaje: nowIso
+        })
+        .eq('id', orderId);
+      if (!error) {
+        if (onReloadData) onReloadData();
+      }
+    } catch (err) {
+      console.error('Error al confirmar pedido pendiente de pago:', err);
+    }
+  };
+
+  const handleCancelPendientePago = async (orderId: string) => {
+    if (!confirm('¿Deseas cancelar este pedido pendiente de pago?')) return;
+    try {
+      const { error } = await supabase
+        .from('pedidos')
+        .update({
+          estado: 'cancelado'
+        })
+        .eq('id', orderId);
+      if (!error) {
+        if (onReloadData) onReloadData();
+      }
+    } catch (err) {
+      console.error('Error al cancelar pedido pendiente de pago:', err);
+    }
+  };
+
+  const handleContactarInteresado = async (item: any) => {
+    try {
+      const nowIso = new Date().toISOString();
+      if (item.source === 'lead') {
+        const { error } = await supabase
+          .from('leads')
+          .update({
+            retargeting_estado: 'contactado',
+            atendido: true,
+            fecha_envio_mensaje: nowIso
+          })
+          .eq('id', item.id);
+        if (!error) {
+          if (onUpdateLeadStatus) onUpdateLeadStatus(item.id, 'contactado');
+          if (onReloadData) onReloadData();
+        }
+      } else {
+        const { error } = await supabase
+          .from('pedidos')
+          .update({
+            retargeting_estado: 'contactado',
+            atendido: true,
+            fecha_envio_mensaje: nowIso
+          })
+          .eq('id', item.id);
+        if (!error) {
+          if (onReloadData) onReloadData();
+        }
+      }
+    } catch (err) {
+      console.error('Error al contactar interesado:', err);
+    }
+  };
+
+  const handleDescartarInteresado = async (item: any) => {
+    if (!confirm(`¿Deseas descartar este cliente interesado (${item.cliente_nombre})?`)) return;
+    try {
+      if (item.source === 'lead') {
+        const { error } = await supabase
+          .from('leads')
+          .update({
+            estado: 'cancelado',
+            retargeting_estado: 'cancelado'
+          })
+          .eq('id', item.id);
+        if (!error && onReloadData) onReloadData();
+      } else {
+        const { error } = await supabase
+          .from('pedidos')
+          .update({
+            estado: 'cancelado'
+          })
+          .eq('id', item.id);
+        if (!error && onReloadData) onReloadData();
+      }
+    } catch (err) {
+      console.error('Error al descartar interesado:', err);
     }
   };
 
@@ -738,12 +995,24 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
     }
   };
 
-  const handleOpenWhatsAppChat = (item: ChatInteractionItem | any) => {
-    const rawPhone = item.clienteTelefono || item.cliente_telefono || '';
+  const handleOpenWhatsAppChat = (item: ChatInteractionItem | any, modeOverride?: 'contra' | 'lead' | 'pago') => {
+    const rawPhone = item.clienteTelefono || item.cliente_telefono || item.telefono || '';
     const cleanPhone = rawPhone.replace(/\D/g, '');
     const fullPhone = cleanPhone.startsWith('57') ? cleanPhone : `57${cleanPhone}`;
-    const name = item.clienteNombre || item.cliente_nombre || 'Cliente';
-    const text = encodeURIComponent(`¡Hola ${name}! 👋 Te escribo de ${configuracion?.nombre_negocio || 'la tienda'}. ¿Cómo estás?`);
+    const name = item.clienteNombre || item.cliente_nombre || item.nombre || 'Cliente';
+    const shopName = configuracion?.nombre_negocio || 'la tienda';
+    const total = item.total ? `$${Number(item.total).toLocaleString('es-CO')}` : '';
+
+    let textStr = `¡Hola ${name}! 👋 Te escribo de ${shopName}. ¿Cómo estás?`;
+    if (modeOverride === 'contra' || mainViewMode === 'contra_acumulado') {
+      textStr = `¡Hola ${name}! 👋 Te escribimos de ${shopName} para confirmar tu pedido con pago Contra Entrega ${total ? `por valor de ${total}` : ''}. ¿Nos confirmas por favor si tus datos y dirección de entrega están correctos para programar el despacho?`;
+    } else if (modeOverride === 'lead' || mainViewMode === 'interesados_acumulado') {
+      textStr = `¡Hola ${name}! 👋 Te saludamos de ${shopName}. Vimos que guardaste unos productos en tu carrito y no completaste tu orden. ¿Te gustaría que te ayudemos a finalizar tu compra hoy?`;
+    } else if (modeOverride === 'pago' || mainViewMode === 'pendientes_pago_acumulado') {
+      textStr = `¡Hola ${name}! 👋 Te escribimos de ${shopName} respecto a tu pedido ${total ? `por ${total}` : ''}. Te recordamos que estamos atentos a tu comprobante de transferencia para despacharte de inmediato. ¿Tienes alguna pregunta con las cuentas de pago?`;
+    }
+
+    const text = encodeURIComponent(textStr);
     window.open(`https://api.whatsapp.com/send?phone=${fullPhone}&text=${text}`, '_blank');
   };
 
@@ -761,17 +1030,23 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
       'Detalle'
     ];
 
-    const rows = (mainViewMode === 'diario' ? interactionsUpToCutoff : unconfirmedContraOrders).map((it: any) => {
+    let exportItems: any[] = [];
+    if (mainViewMode === 'diario') exportItems = interactionsUpToCutoff;
+    else if (mainViewMode === 'contra_acumulado') exportItems = unconfirmedContraOrders;
+    else if (mainViewMode === 'interesados_acumulado') exportItems = unconfirmedInteresados;
+    else if (mainViewMode === 'pendientes_pago_acumulado') exportItems = unconfirmedPendientesPago;
+
+    const rows = exportItems.map((it: any) => {
       const isSinAtender = mainViewMode === 'diario' 
         ? sinAtenderAtCutoff.some(s => s.id === it.id)
         : true;
       return [
         `"${it.colDateStr || it.created_at}"`,
         `"${it.colTimeFormatted || ''}"`,
-        `"${(it.clienteNombre || it.cliente_nombre || '').replace(/"/g, '""')}"`,
-        `"${it.clienteTelefono || it.cliente_telefono || ''}"`,
+        `"${(it.clienteNombre || it.cliente_nombre || it.nombre || '').replace(/"/g, '""')}"`,
+        `"${it.clienteTelefono || it.cliente_telefono || it.telefono || ''}"`,
         `"${(it.asesorNombre || it.asesor || '').replace(/"/g, '""')}"`,
-        `"${it.source === 'pedido' || it.modalidad_pago ? 'Contra Entrega' : 'Lead'}"`,
+        `"${it.source === 'pedido' || it.modalidad_pago ? 'Contra Entrega' : it.source === 'lead' ? 'Lead' : 'Pedido'}"`,
         `"${isSinAtender ? 'Sin Atender / Sin Confirmar' : 'Atendido'}"`,
         `"${it.statusLabel || it.estado}"`,
         it.total || 0,
@@ -824,58 +1099,126 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
         border: '1px solid #e2e8f0',
         boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
       }}>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
+          {/* Tab 1: Diario */}
           <button
             type="button"
             onClick={() => setMainViewMode('diario')}
             style={{
-              padding: '0.55rem 1rem',
+              padding: '0.5rem 0.85rem',
               borderRadius: '10px',
               border: mainViewMode === 'diario' ? `1.5px solid ${primaryColor}` : '1px solid #cbd5e1',
               background: mainViewMode === 'diario' ? 'rgba(0, 166, 249, 0.08)' : '#ffffff',
               color: mainViewMode === 'diario' ? primaryColor : '#475569',
-              fontSize: '0.84rem',
+              fontSize: '0.82rem',
               fontWeight: 600,
               cursor: 'pointer',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '0.45rem',
+              gap: '0.4rem',
               fontFamily: "'Poppins', sans-serif"
             }}
           >
-            <Clock size={16} />
+            <Clock size={15} />
             <span>Auditoría Diaria por Horas</span>
           </button>
 
+          {/* Tab 2: Contra Entrega */}
           <button
             type="button"
             onClick={() => setMainViewMode('contra_acumulado')}
             style={{
-              padding: '0.55rem 1rem',
+              padding: '0.5rem 0.85rem',
               borderRadius: '10px',
               border: mainViewMode === 'contra_acumulado' ? '1.5px solid #ea580c' : '1px solid #cbd5e1',
               background: mainViewMode === 'contra_acumulado' ? '#fff7ed' : '#ffffff',
               color: mainViewMode === 'contra_acumulado' ? '#ea580c' : '#475569',
-              fontSize: '0.84rem',
+              fontSize: '0.82rem',
               fontWeight: 600,
               cursor: 'pointer',
               display: 'inline-flex',
               alignItems: 'center',
-              gap: '0.45rem',
+              gap: '0.4rem',
               fontFamily: "'Poppins', sans-serif"
             }}
           >
-            <Truck size={16} color="#ea580c" />
-            <span>🚚 Contra Entregas Sin Confirmar (Acumulado)</span>
+            <Truck size={15} color="#ea580c" />
+            <span>🚚 Contra Entrega Sin Confirmar</span>
             <span style={{
               background: '#ea580c',
               color: '#ffffff',
-              padding: '0.1rem 0.5rem',
-              borderRadius: '12px',
-              fontSize: '0.74rem',
+              padding: '0.1rem 0.45rem',
+              borderRadius: '10px',
+              fontSize: '0.72rem',
               fontWeight: 600
             }}>
               {unconfirmedContraOrders.length}
+            </span>
+          </button>
+
+          {/* Tab 3: Interesadas / Carritos */}
+          <button
+            type="button"
+            onClick={() => setMainViewMode('interesados_acumulado')}
+            style={{
+              padding: '0.5rem 0.85rem',
+              borderRadius: '10px',
+              border: mainViewMode === 'interesados_acumulado' ? '1.5px solid #9333ea' : '1px solid #cbd5e1',
+              background: mainViewMode === 'interesados_acumulado' ? '#faf5ff' : '#ffffff',
+              color: mainViewMode === 'interesados_acumulado' ? '#9333ea' : '#475569',
+              fontSize: '0.82rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              fontFamily: "'Poppins', sans-serif"
+            }}
+          >
+            <Sparkles size={15} color="#9333ea" />
+            <span>✨ Interesadas / Carritos</span>
+            <span style={{
+              background: '#9333ea',
+              color: '#ffffff',
+              padding: '0.1rem 0.45rem',
+              borderRadius: '10px',
+              fontSize: '0.72rem',
+              fontWeight: 600
+            }}>
+              {unconfirmedInteresados.length}
+            </span>
+          </button>
+
+          {/* Tab 4: Pendientes por Pago */}
+          <button
+            type="button"
+            onClick={() => setMainViewMode('pendientes_pago_acumulado')}
+            style={{
+              padding: '0.5rem 0.85rem',
+              borderRadius: '10px',
+              border: mainViewMode === 'pendientes_pago_acumulado' ? '1.5px solid #d97706' : '1px solid #cbd5e1',
+              background: mainViewMode === 'pendientes_pago_acumulado' ? '#fffbeb' : '#ffffff',
+              color: mainViewMode === 'pendientes_pago_acumulado' ? '#d97706' : '#475569',
+              fontSize: '0.82rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              fontFamily: "'Poppins', sans-serif"
+            }}
+          >
+            <CreditCard size={15} color="#d97706" />
+            <span>⏳ Pendientes por Pago</span>
+            <span style={{
+              background: '#d97706',
+              color: '#ffffff',
+              padding: '0.1rem 0.45rem',
+              borderRadius: '10px',
+              fontSize: '0.72rem',
+              fontWeight: 600
+            }}>
+              {unconfirmedPendientesPago.length}
             </span>
           </button>
         </div>
@@ -949,7 +1292,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
       {/* ══════════════════════════════════════════════════════════════════ */}
       {/* VISTA 1: FLUJO DIARIO POR HORAS                                   */}
       {/* ══════════════════════════════════════════════════════════════════ */}
-      {mainViewMode === 'diario' ? (
+      {mainViewMode === 'diario' && (
         <>
           {/* Header y Controles Diarios */}
           <div style={{
@@ -1531,10 +1874,12 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
             )}
           </div>
         </>
-      ) : (
-        /* ══════════════════════════════════════════════════════════════════ */
-        /* VISTA 2: CONTRA ENTREGAS SIN CONFIRMAR (ACUMULADO HISTÓRICO)       */
-        /* ══════════════════════════════════════════════════════════════════ */
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {/* VISTA 2: CONTRA ENTREGAS SIN CONFIRMAR (ACUMULADO HISTÓRICO)       */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {mainViewMode === 'contra_acumulado' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           
           {/* Banner Explicativo */}
@@ -1801,6 +2146,584 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                           onClick={() => handleCancelContraOrder(p.id)}
                           style={{ padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #fecaca', background: '#fff5f5', color: '#dc2626', fontSize: '0.76rem', fontWeight: 500, cursor: 'pointer' }}
                           title="Cancelar pedido si el cliente no quiso o no responde"
+                        >
+                          <XCircle size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {/* VISTA 3: INTERESADAS / CARRITOS ABANDONADOS (ACUMULADO HISTÓRICO)  */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {mainViewMode === 'interesados_acumulado' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          
+          {/* Banner Explicativo */}
+          <div style={{
+            background: 'linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%)',
+            border: '1.5px solid #d8b4fe',
+            borderRadius: '16px',
+            padding: '1.25rem 1.5rem',
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '1rem'
+          }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem' }}>
+                <Sparkles size={20} color="#7c3aed" />
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 600, color: '#6b21a8' }}>
+                  Backlog Acumulado: Clientes Interesadas y Carritos Abandonados
+                </h3>
+              </div>
+              <p style={{ margin: 0, fontSize: '0.84rem', color: '#6b21a8', opacity: 0.9 }}>
+                Aquí se encuentran los <strong>{unconfirmedInteresados.length} clientes interesados</strong> que iniciaron compra en la web o dejaron prendas en el carrito y que las asesoras aún no han cerrado.
+              </p>
+            </div>
+
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 500, color: '#7c3aed', textTransform: 'uppercase' }}>Valor Potencial Estimado</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: 600, color: '#6b21a8' }}>
+                ${unconfirmedInteresados.reduce((acc, it) => acc + (it.total || 0), 0).toLocaleString('es-CO')}
+              </div>
+            </div>
+          </div>
+
+          {/* Comparativa por Asesora del Backlog Interesados */}
+          <div style={{ background: '#ffffff', borderRadius: '16px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
+            <h4 style={{ margin: '0 0 0.85rem 0', fontSize: '0.96rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+              <Users size={16} color="#7c3aed" /> Carritos e Interesadas Asignadas por Asesora
+            </h4>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.84rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #f1f5f9', background: '#f8fafc' }}>
+                    <th style={{ padding: '0.65rem 0.85rem', fontWeight: 600, color: '#475569' }}>Asesora</th>
+                    <th style={{ padding: '0.65rem 0.85rem', fontWeight: 600, color: '#475569', textAlign: 'center' }}>Línea WhatsApp</th>
+                    <th style={{ padding: '0.65rem 0.85rem', fontWeight: 600, color: '#7c3aed', textAlign: 'center' }}>Carritos / Leads</th>
+                    <th style={{ padding: '0.65rem 0.85rem', fontWeight: 600, color: '#475569', textAlign: 'right' }}>Monto Estimado ($)</th>
+                    <th style={{ padding: '0.65rem 0.85rem', fontWeight: 600, color: '#475569', textAlign: 'center' }}>Filtro</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {interesadosBreakdownByAsesor.map(item => (
+                    <tr key={item.asesor.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '0.75rem 0.85rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#f3e8ff', color: '#7c3aed', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>
+                            {item.asesor.nombre.charAt(0)}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 600, color: '#0f172a' }}>{item.asesor.nombre}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: '0.75rem 0.85rem', textAlign: 'center', color: '#64748b' }}>
+                        {(item.asesor.telefono || '').split(',').join(' · ')}
+                      </td>
+                      <td style={{ padding: '0.75rem 0.85rem', textAlign: 'center' }}>
+                        <span style={{
+                          padding: '0.2rem 0.65rem',
+                          borderRadius: '12px',
+                          fontSize: '0.82rem',
+                          fontWeight: 600,
+                          background: item.count > 0 ? '#f3e8ff' : '#f1f5f9',
+                          color: item.count > 0 ? '#7c3aed' : '#64748b'
+                        }}>
+                          {item.count} interesadas
+                        </span>
+                      </td>
+                      <td style={{ padding: '0.75rem 0.85rem', textAlign: 'right', fontWeight: 600, color: item.count > 0 ? '#7c3aed' : '#94a3b8' }}>
+                        ${item.totalAmount.toLocaleString('es-CO')}
+                      </td>
+                      <td style={{ padding: '0.75rem 0.85rem', textAlign: 'center' }}>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedAsesorId(selectedAsesorId === item.asesor.id ? 'todas' : item.asesor.id)}
+                          style={{
+                            padding: '0.3rem 0.75rem',
+                            borderRadius: '6px',
+                            border: '1px solid #cbd5e1',
+                            background: selectedAsesorId === item.asesor.id ? primaryColor : '#ffffff',
+                            color: selectedAsesorId === item.asesor.id ? '#ffffff' : '#334155',
+                            fontSize: '0.76rem',
+                            fontWeight: 500,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {selectedAsesorId === item.asesor.id ? 'Viendo esta asesora ✓' : 'Filtrar'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Listado de Clientes Interesadas */}
+          <div style={{ background: '#ffffff', borderRadius: '16px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.85rem', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.88rem', fontWeight: 600, color: '#0f172a' }}>
+                  Listado de Interesadas ({filteredInteresadosList.length}):
+                </span>
+                {selectedAsesorId !== 'todas' && (
+                  <span style={{ fontSize: '0.75rem', color: primaryColor, background: 'rgba(0,166,249,0.08)', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 500 }}>
+                    Filtrado por: {asesores.find(a => a.id === selectedAsesorId)?.nombre}
+                    <button type="button" onClick={() => setSelectedAsesorId('todas')} style={{ border: 'none', background: 'transparent', marginLeft: '0.3rem', cursor: 'pointer', color: primaryColor, fontWeight: 600 }}>✕</button>
+                  </span>
+                )}
+              </div>
+
+              <div style={{ position: 'relative', width: '280px' }}>
+                <Search size={15} color="#94a3b8" style={{ position: 'absolute', left: '0.65rem', top: '50%', transform: 'translateY(-50%)' }} />
+                <input
+                  type="text"
+                  placeholder="Buscar por cliente o teléfono..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  style={{ width: '100%', padding: '0.45rem 0.65rem 0.45rem 2rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.8rem', fontFamily: "'Poppins', sans-serif" }}
+                />
+              </div>
+            </div>
+
+            {filteredInteresadosList.length === 0 ? (
+              <div style={{ padding: '2.5rem 1rem', textAlign: 'center', color: '#64748b' }}>
+                <div style={{ fontSize: '2.2rem', marginBottom: '0.4rem' }}>🎉</div>
+                <h4 style={{ margin: '0 0 0.25rem 0', color: '#0f172a', fontWeight: 600 }}>
+                  ¡No hay clientes interesadas pendientes!
+                </h4>
+                <p style={{ margin: 0, fontSize: '0.82rem' }}>Todos los carritos y leads fueron gestionados o convertidos.</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                {filteredInteresadosList.map(it => {
+                  const createdCol = parseToColombiaTime(it.created_at);
+                  const daysAgo = Math.floor((Date.now() - new Date(it.created_at).getTime()) / (1000 * 3600 * 24));
+                  const isOld = daysAgo >= 2;
+
+                  let asesorName = 'Sin Asignar';
+                  const cleanPhone = (it.linea_whatsapp || '').replace(/\D/g, '');
+                  for (const [, item] of asesoresPhoneMap) {
+                    if (item.phones.includes(cleanPhone)) {
+                      asesorName = item.asesor.nombre;
+                      break;
+                    }
+                  }
+
+                  let prodText = 'Prendas sin especificar';
+                  if (Array.isArray(it.productos) && it.productos.length > 0) {
+                    prodText = it.productos.map((prod: any) => `${prod.cantidad || 1}x ${prod.nombre || prod.title || 'Prenda'}`).slice(0, 3).join(', ');
+                    if (it.productos.length > 3) prodText += ` (+${it.productos.length - 3} más)`;
+                  }
+
+                  const isContactado = it.retargeting_estado === 'contactado';
+
+                  return (
+                    <div
+                      key={it.id}
+                      style={{
+                        padding: '0.85rem 1rem',
+                        borderRadius: '12px',
+                        border: isOld ? '1.5px solid #e9d5ff' : '1px solid #e2e8f0',
+                        background: '#ffffff',
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '0.85rem'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: '220px' }}>
+                        <div style={{
+                          width: '38px',
+                          height: '38px',
+                          borderRadius: '50%',
+                          background: '#f3e8ff',
+                          color: '#7c3aed',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 600,
+                          fontSize: '0.92rem',
+                          flexShrink: 0
+                        }}>
+                          {(it.cliente_nombre || 'C').charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                            <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.88rem' }}>{it.cliente_nombre}</span>
+                            <span style={{ fontSize: '0.68rem', fontWeight: 500, padding: '0.1rem 0.4rem', borderRadius: '4px', background: '#faf5ff', color: '#7c3aed', border: '1px solid #d8b4fe' }}>
+                              ✨ {it.source === 'lead' ? 'Carrito Web' : 'Pedido Abandonado'}
+                            </span>
+                            <span style={{
+                              fontSize: '0.68rem',
+                              fontWeight: 500,
+                              padding: '0.1rem 0.4rem',
+                              borderRadius: '4px',
+                              background: isContactado ? '#ecfdf5' : '#fffbeb',
+                              color: isContactado ? '#15803d' : '#b45309'
+                            }}>
+                              {isContactado ? '✓ Contactado' : '⏱️ Sin Contactar'}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.76rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.15rem' }}>
+                            <span>📱 {it.cliente_telefono || 'Sin teléfono'}</span>
+                            <span>•</span>
+                            <span>Asesora: <strong>{asesorName}</strong></span>
+                            <span>•</span>
+                            <span style={{ color: isOld ? '#7c3aed' : '#64748b', fontWeight: isOld ? 500 : 400 }}>
+                              {daysAgo === 0 ? 'Hoy' : daysAgo === 1 ? 'Ayer' : `Hace ${daysAgo} días`} ({createdCol.dateStr})
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ minWidth: '130px', textAlign: 'right' }}>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#0f172a' }}>
+                          ${(it.total || 0).toLocaleString('es-CO')}
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: '#64748b', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={prodText}>
+                          {prodText}
+                        </div>
+                      </div>
+
+                      {/* Botones de Acción */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        {it.raw && onSelectPedido && it.source === 'pedido_abandonado' && (
+                          <button
+                            type="button"
+                            onClick={() => onSelectPedido(it.raw)}
+                            style={{ padding: '0.45rem 0.65rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#475569', fontSize: '0.76rem', fontWeight: 500, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                            title="Ver detalles completos del pedido"
+                          >
+                            <Eye size={13} />
+                            <span>Ver</span>
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleOpenWhatsAppChat(it, 'lead')}
+                          style={{ padding: '0.45rem 0.75rem', borderRadius: '8px', border: '1px solid #bbf7d0', background: '#f0fdf4', color: '#15803d', fontSize: '0.76rem', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                          title="Escribir por WhatsApp para recuperar carrito"
+                        >
+                          <Phone size={13} />
+                          <span>WhatsApp</span>
+                        </button>
+
+                        {!isContactado && (
+                          <button
+                            type="button"
+                            onClick={() => handleContactarInteresado(it)}
+                            style={{ padding: '0.45rem 0.75rem', borderRadius: '8px', border: 'none', background: '#7c3aed', color: '#ffffff', fontSize: '0.76rem', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                            title="Marcar como contactado"
+                          >
+                            <CheckCircle2 size={13} />
+                            <span>Contactado</span>
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleDescartarInteresado(it)}
+                          style={{ padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #fecaca', background: '#fff5f5', color: '#dc2626', fontSize: '0.76rem', fontWeight: 500, cursor: 'pointer' }}
+                          title="Descartar este lead/interesado"
+                        >
+                          <XCircle size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {/* VISTA 4: PENDIENTES POR PAGO (ACUMULADO HISTÓRICO)                  */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {mainViewMode === 'pendientes_pago_acumulado' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          
+          {/* Banner Explicativo */}
+          <div style={{
+            background: 'linear-gradient(135deg, #fefce8 0%, #fef9c3 100%)',
+            border: '1.5px solid #fde047',
+            borderRadius: '16px',
+            padding: '1.25rem 1.5rem',
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '1rem'
+          }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem' }}>
+                <CreditCard size={20} color="#ca8a04" />
+                <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 600, color: '#854d0e' }}>
+                  Backlog Acumulado: Pedidos Pendientes por Pago (Transferencia Bancaria)
+                </h3>
+              </div>
+              <p style={{ margin: 0, fontSize: '0.84rem', color: '#854d0e', opacity: 0.9 }}>
+                Aquí se encuentran los <strong>{unconfirmedPendientesPago.length} pedidos por transferencia</strong> (Bancolombia, Nequi, etc.) que están pendientes de comprobante o en espera de aprobación de pago.
+              </p>
+            </div>
+
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 500, color: '#854d0e', textTransform: 'uppercase' }}>Valor Total en Retención</div>
+              <div style={{ fontSize: '1.8rem', fontWeight: 600, color: '#ca8a04' }}>
+                ${unconfirmedPendientesPago.reduce((acc, p) => acc + (p.total || 0), 0).toLocaleString('es-CO')}
+              </div>
+            </div>
+          </div>
+
+          {/* Comparativa por Asesora del Backlog Pendientes de Pago */}
+          <div style={{ background: '#ffffff', borderRadius: '16px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
+            <h4 style={{ margin: '0 0 0.85rem 0', fontSize: '0.96rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+              <Users size={16} color="#ca8a04" /> Pendientes por Pago Asignados por Asesora
+            </h4>
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.84rem' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #f1f5f9', background: '#f8fafc' }}>
+                    <th style={{ padding: '0.65rem 0.85rem', fontWeight: 600, color: '#475569' }}>Asesora</th>
+                    <th style={{ padding: '0.65rem 0.85rem', fontWeight: 600, color: '#475569', textAlign: 'center' }}>Línea WhatsApp</th>
+                    <th style={{ padding: '0.65rem 0.85rem', fontWeight: 600, color: '#ca8a04', textAlign: 'center' }}>Pedidos Pendientes</th>
+                    <th style={{ padding: '0.65rem 0.85rem', fontWeight: 600, color: '#475569', textAlign: 'right' }}>Monto Retenido ($)</th>
+                    <th style={{ padding: '0.65rem 0.85rem', fontWeight: 600, color: '#475569', textAlign: 'center' }}>Filtro</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pendientesPagoBreakdownByAsesor.map(item => (
+                    <tr key={item.asesor.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '0.75rem 0.85rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                          <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#fef9c3', color: '#ca8a04', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>
+                            {item.asesor.nombre.charAt(0)}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 600, color: '#0f172a' }}>{item.asesor.nombre}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td style={{ padding: '0.75rem 0.85rem', textAlign: 'center', color: '#64748b' }}>
+                        {(item.asesor.telefono || '').split(',').join(' · ')}
+                      </td>
+                      <td style={{ padding: '0.75rem 0.85rem', textAlign: 'center' }}>
+                        <span style={{
+                          padding: '0.2rem 0.65rem',
+                          borderRadius: '12px',
+                          fontSize: '0.82rem',
+                          fontWeight: 600,
+                          background: item.count > 0 ? '#fef9c3' : '#f1f5f9',
+                          color: item.count > 0 ? '#854d0e' : '#64748b'
+                        }}>
+                          {item.count} pedidos
+                        </span>
+                      </td>
+                      <td style={{ padding: '0.75rem 0.85rem', textAlign: 'right', fontWeight: 600, color: item.count > 0 ? '#854d0e' : '#94a3b8' }}>
+                        ${item.totalAmount.toLocaleString('es-CO')}
+                      </td>
+                      <td style={{ padding: '0.75rem 0.85rem', textAlign: 'center' }}>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedAsesorId(selectedAsesorId === item.asesor.id ? 'todas' : item.asesor.id)}
+                          style={{
+                            padding: '0.3rem 0.75rem',
+                            borderRadius: '6px',
+                            border: '1px solid #cbd5e1',
+                            background: selectedAsesorId === item.asesor.id ? primaryColor : '#ffffff',
+                            color: selectedAsesorId === item.asesor.id ? '#ffffff' : '#334155',
+                            fontSize: '0.76rem',
+                            fontWeight: 500,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {selectedAsesorId === item.asesor.id ? 'Viendo esta asesora ✓' : 'Filtrar'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Listado de Pedidos Pendientes de Pago */}
+          <div style={{ background: '#ffffff', borderRadius: '16px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '0.85rem', marginBottom: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '0.88rem', fontWeight: 600, color: '#0f172a' }}>
+                  Listado de Pedidos Pendientes ({filteredPendientesPagoList.length}):
+                </span>
+                {selectedAsesorId !== 'todas' && (
+                  <span style={{ fontSize: '0.75rem', color: primaryColor, background: 'rgba(0,166,249,0.08)', padding: '0.2rem 0.5rem', borderRadius: '6px', fontWeight: 500 }}>
+                    Filtrado por: {asesores.find(a => a.id === selectedAsesorId)?.nombre}
+                    <button type="button" onClick={() => setSelectedAsesorId('todas')} style={{ border: 'none', background: 'transparent', marginLeft: '0.3rem', cursor: 'pointer', color: primaryColor, fontWeight: 600 }}>✕</button>
+                  </span>
+                )}
+              </div>
+
+              <div style={{ position: 'relative', width: '280px' }}>
+                <Search size={15} color="#94a3b8" style={{ position: 'absolute', left: '0.65rem', top: '50%', transform: 'translateY(-50%)' }} />
+                <input
+                  type="text"
+                  placeholder="Buscar por cliente o teléfono..."
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  style={{ width: '100%', padding: '0.45rem 0.65rem 0.45rem 2rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.8rem', fontFamily: "'Poppins', sans-serif" }}
+                />
+              </div>
+            </div>
+
+            {filteredPendientesPagoList.length === 0 ? (
+              <div style={{ padding: '2.5rem 1rem', textAlign: 'center', color: '#64748b' }}>
+                <div style={{ fontSize: '2.2rem', marginBottom: '0.4rem' }}>🎉</div>
+                <h4 style={{ margin: '0 0 0.25rem 0', color: '#0f172a', fontWeight: 600 }}>
+                  ¡No hay pedidos pendientes por pago!
+                </h4>
+                <p style={{ margin: 0, fontSize: '0.82rem' }}>Todos los pedidos por transferencia fueron pagados o confirmados.</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+                {filteredPendientesPagoList.map(p => {
+                  const createdCol = parseToColombiaTime(p.created_at);
+                  const daysAgo = Math.floor((Date.now() - new Date(p.created_at).getTime()) / (1000 * 3600 * 24));
+                  const isOld = daysAgo >= 2;
+
+                  let asesorName = p.asesor || 'Sin Asignar';
+                  const cleanPhone = (p.linea_whatsapp || '').replace(/\D/g, '');
+                  for (const [, item] of asesoresPhoneMap) {
+                    if (item.phones.includes(cleanPhone)) {
+                      asesorName = item.asesor.nombre;
+                      break;
+                    }
+                  }
+
+                  const hasPantallazo = Boolean(p.pantallazo_url);
+
+                  return (
+                    <div
+                      key={p.id}
+                      style={{
+                        padding: '0.85rem 1rem',
+                        borderRadius: '12px',
+                        border: isOld ? '1.5px solid #fef08a' : '1px solid #e2e8f0',
+                        background: '#ffffff',
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '0.85rem'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: '220px' }}>
+                        <div style={{
+                          width: '38px',
+                          height: '38px',
+                          borderRadius: '50%',
+                          background: hasPantallazo ? '#eff6ff' : '#fef9c3',
+                          color: hasPantallazo ? '#2563eb' : '#ca8a04',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontWeight: 600,
+                          fontSize: '0.92rem',
+                          flexShrink: 0
+                        }}>
+                          {(p.cliente_nombre || 'C').charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                            <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.88rem' }}>{p.cliente_nombre}</span>
+                            <span style={{ fontSize: '0.68rem', fontWeight: 500, padding: '0.1rem 0.4rem', borderRadius: '4px', background: '#fefce8', color: '#a16207', border: '1px solid #fef08a' }}>
+                              💳 {p.metodo_pago || 'Transferencia'}
+                            </span>
+                            <span style={{
+                              fontSize: '0.68rem',
+                              fontWeight: 500,
+                              padding: '0.1rem 0.4rem',
+                              borderRadius: '4px',
+                              background: hasPantallazo ? '#dbeafe' : '#f1f5f9',
+                              color: hasPantallazo ? '#1e40af' : '#475569'
+                            }}>
+                              {hasPantallazo ? '🧾 Comprobante Subido' : '⏳ Esperando Pago'}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.76rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.15rem' }}>
+                            <span>📱 {p.cliente_telefono || 'Sin teléfono'}</span>
+                            <span>•</span>
+                            <span>Asesora: <strong>{asesorName}</strong></span>
+                            <span>•</span>
+                            <span style={{ color: isOld ? '#b45309' : '#64748b', fontWeight: isOld ? 500 : 400 }}>
+                              {daysAgo === 0 ? 'Hoy' : daysAgo === 1 ? 'Ayer' : `Hace ${daysAgo} días`} ({createdCol.dateStr})
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ minWidth: '130px', textAlign: 'right' }}>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#0f172a' }}>
+                          ${(p.total || 0).toLocaleString('es-CO')}
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                          {p.ciudad || 'Colombia'}
+                        </div>
+                      </div>
+
+                      {/* Botones de Acción */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        {onSelectPedido && (
+                          <button
+                            type="button"
+                            onClick={() => onSelectPedido(p)}
+                            style={{ padding: '0.45rem 0.65rem', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#475569', fontSize: '0.76rem', fontWeight: 500, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
+                            title="Ver detalles completos del pedido"
+                          >
+                            <Eye size={13} />
+                            <span>Ver</span>
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => handleOpenWhatsAppChat(p, 'pago')}
+                          style={{ padding: '0.45rem 0.75rem', borderRadius: '8px', border: '1px solid #bbf7d0', background: '#f0fdf4', color: '#15803d', fontSize: '0.76rem', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                          title="Abrir WhatsApp para recordar o verificar pago"
+                        >
+                          <Phone size={13} />
+                          <span>WhatsApp</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleConfirmPendientePago(p.id)}
+                          style={{ padding: '0.45rem 0.75rem', borderRadius: '8px', border: 'none', background: '#10b981', color: '#ffffff', fontSize: '0.76rem', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}
+                          title="Confirmar recepción del pago"
+                        >
+                          <CheckCircle2 size={13} />
+                          <span>✓ Pago Recibido</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleCancelPendientePago(p.id)}
+                          style={{ padding: '0.45rem 0.6rem', borderRadius: '8px', border: '1px solid #fecaca', background: '#fff5f5', color: '#dc2626', fontSize: '0.76rem', fontWeight: 500, cursor: 'pointer' }}
+                          title="Cancelar pedido si no pagó"
                         >
                           <XCircle size={13} />
                         </button>
