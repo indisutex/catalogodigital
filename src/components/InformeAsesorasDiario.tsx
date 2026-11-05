@@ -11,14 +11,17 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Users, 
-  DollarSign,
   ArrowUpRight,
   Sparkles,
   RefreshCw,
   Truck,
   XCircle,
   Eye,
-  CreditCard
+  CreditCard,
+  ChevronDown,
+  ChevronUp,
+  Calendar,
+  Zap
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
@@ -270,6 +273,8 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
   const [filterStatusTab, setFilterStatusTab] = useState<'sin_atender' | 'atendidos' | 'todos'>('sin_atender');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showHourlyTimeline, setShowHourlyTimeline] = useState<boolean>(false);
+  const [showCustomDate, setShowCustomDate] = useState<boolean>(false);
 
   // ── SUSCRIPCIÓN EN TIEMPO REAL (Supabase Realtime) ──
   useEffect(() => {
@@ -1325,448 +1330,748 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
       {/* ══════════════════════════════════════════════════════════════════ */}
       {mainViewMode === 'diario' && (
         <>
-          {/* Header y Controles Diarios */}
+          {/* Centro de Control Rápido Anti-Bobos */}
           <div style={{
             background: '#ffffff',
             borderRadius: '16px',
             padding: '1.25rem 1.5rem',
             border: '1px solid #e2e8f0',
-            boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '1rem'
+            gap: '1rem',
+            fontFamily: "'Poppins', sans-serif"
           }}>
+            {/* Fila 1: Selector de Período y Hora de Control */}
             <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-              gap: '0.85rem',
-              background: '#f8fafc',
-              padding: '1rem',
-              borderRadius: '12px',
-              border: '1px solid #edf2f7'
+              display: 'flex',
+              flexWrap: 'wrap',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '1rem'
             }}>
-              
-              {/* Selector de Asesora */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 500, color: '#475569', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  👩‍💼 Asesora a Auditar
-                </label>
-                <select
-                  value={selectedAsesorId}
-                  onChange={e => setSelectedAsesorId(e.target.value)}
+              {/* Botones de Período */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.74rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginRight: '0.2rem' }}>
+                  📅 Período:
+                </span>
+
+                {/* Hoy */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedDate(hoyColombiaStr);
+                    setShowCustomDate(false);
+                  }}
                   style={{
-                    width: '100%',
-                    padding: '0.55rem 0.75rem',
-                    borderRadius: '8px',
-                    border: '1px solid #cbd5e1',
-                    background: '#ffffff',
-                    fontSize: '0.84rem',
-                    fontWeight: 500,
-                    color: '#1e293b',
+                    padding: '0.45rem 0.9rem',
+                    borderRadius: '10px',
+                    border: selectedDate === hoyColombiaStr ? `1.5px solid ${primaryColor}` : '1px solid #cbd5e1',
+                    background: selectedDate === hoyColombiaStr ? 'rgba(0, 166, 249, 0.08)' : '#ffffff',
+                    color: selectedDate === hoyColombiaStr ? primaryColor : '#334155',
+                    fontSize: '0.82rem',
+                    fontWeight: selectedDate === hoyColombiaStr ? 600 : 500,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
                     fontFamily: "'Poppins', sans-serif",
-                    cursor: 'pointer'
+                    transition: 'all 0.15s ease'
                   }}
                 >
-                  <option value="todas">👥 Todas las Asesoras (Comparativa General)</option>
-                  {asesores.map(a => (
-                    <option key={a.id} value={a.id}>
-                      {a.nombre} {a.telefono ? `(${a.telefono.split(',')[0].trim()})` : ''}
-                    </option>
-                  ))}
-                </select>
+                  <Zap size={14} color={selectedDate === hoyColombiaStr ? primaryColor : '#64748b'} />
+                  <span>Hoy</span>
+                </button>
+
+                {/* Ayer */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedDate(ayerColombiaStr);
+                    setShowCustomDate(false);
+                  }}
+                  style={{
+                    padding: '0.45rem 0.9rem',
+                    borderRadius: '10px',
+                    border: selectedDate === ayerColombiaStr ? `1.5px solid ${primaryColor}` : '1px solid #cbd5e1',
+                    background: selectedDate === ayerColombiaStr ? 'rgba(0, 166, 249, 0.08)' : '#ffffff',
+                    color: selectedDate === ayerColombiaStr ? primaryColor : '#334155',
+                    fontSize: '0.82rem',
+                    fontWeight: selectedDate === ayerColombiaStr ? 600 : 500,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    fontFamily: "'Poppins', sans-serif",
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  <Clock size={14} color={selectedDate === ayerColombiaStr ? primaryColor : '#64748b'} />
+                  <span>Ayer</span>
+                </button>
+
+                {/* Todo el Histórico */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedDate('historico');
+                    setCutoffHour(24);
+                    setShowCustomDate(false);
+                  }}
+                  style={{
+                    padding: '0.45rem 0.9rem',
+                    borderRadius: '10px',
+                    border: isHistorico ? '1.5px solid #7c3aed' : '1px solid #cbd5e1',
+                    background: isHistorico ? '#faf5ff' : '#ffffff',
+                    color: isHistorico ? '#7c3aed' : '#334155',
+                    fontSize: '0.82rem',
+                    fontWeight: isHistorico ? 600 : 500,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.45rem',
+                    fontFamily: "'Poppins', sans-serif",
+                    transition: 'all 0.15s ease'
+                  }}
+                  title="Ver acumulado de todos los chats de la historia"
+                >
+                  <span>♾️ Todo el Histórico</span>
+                  {allHistorySinAtenderCount > 0 && (
+                    <span style={{
+                      background: '#dc2626',
+                      color: '#ffffff',
+                      borderRadius: '10px',
+                      padding: '0.1rem 0.45rem',
+                      fontSize: '0.7rem',
+                      fontWeight: 600
+                    }}>
+                      {allHistorySinAtenderCount} sin atender
+                    </span>
+                  )}
+                </button>
+
+                {/* Otra Fecha */}
+                <button
+                  type="button"
+                  onClick={() => setShowCustomDate(!showCustomDate)}
+                  style={{
+                    padding: '0.45rem 0.8rem',
+                    borderRadius: '10px',
+                    border: !isHistorico && selectedDate !== hoyColombiaStr && selectedDate !== ayerColombiaStr ? `1.5px solid ${primaryColor}` : '1px solid #cbd5e1',
+                    background: !isHistorico && selectedDate !== hoyColombiaStr && selectedDate !== ayerColombiaStr ? 'rgba(0, 166, 249, 0.08)' : '#ffffff',
+                    color: !isHistorico && selectedDate !== hoyColombiaStr && selectedDate !== ayerColombiaStr ? primaryColor : '#475569',
+                    fontSize: '0.8rem',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    fontFamily: "'Poppins', sans-serif"
+                  }}
+                >
+                  <Calendar size={14} />
+                  <span>{!isHistorico && selectedDate !== hoyColombiaStr && selectedDate !== ayerColombiaStr ? selectedDate : 'Otra Fecha'}</span>
+                  <ChevronDown size={13} />
+                </button>
               </div>
 
-              {/* Selector de Fecha */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
-                  <label style={{ fontSize: '0.72rem', fontWeight: 500, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    📅 Día del Informe
-                  </label>
-                  <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedDate(hoyColombiaStr)}
-                      style={{
-                        padding: '0.15rem 0.5rem',
-                        borderRadius: '4px',
-                        border: 'none',
-                        fontSize: '0.68rem',
-                        fontWeight: selectedDate === hoyColombiaStr ? 600 : 500,
-                        cursor: 'pointer',
-                        background: selectedDate === hoyColombiaStr ? primaryColor : '#e2e8f0',
-                        color: selectedDate === hoyColombiaStr ? '#ffffff' : '#475569'
-                      }}
-                    >
-                      Hoy
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedDate(ayerColombiaStr)}
-                      style={{
-                        padding: '0.15rem 0.5rem',
-                        borderRadius: '4px',
-                        border: 'none',
-                        fontSize: '0.68rem',
-                        fontWeight: selectedDate === ayerColombiaStr ? 600 : 500,
-                        cursor: 'pointer',
-                        background: selectedDate === ayerColombiaStr ? primaryColor : '#e2e8f0',
-                        color: selectedDate === ayerColombiaStr ? '#ffffff' : '#475569'
-                      }}
-                    >
-                      Ayer
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedDate('historico');
-                        setCutoffHour(24);
-                      }}
-                      style={{
-                        padding: '0.15rem 0.6rem',
-                        borderRadius: '4px',
-                        border: isHistorico ? '1px solid #7c3aed' : 'none',
-                        fontSize: '0.68rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        background: isHistorico ? '#7c3aed' : '#e2e8f0',
-                        color: isHistorico ? '#ffffff' : '#334155',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.25rem'
-                      }}
-                      title="Ver el acumulado de todos los chats de la historia y el total sin atender"
-                    >
-                      <span>♾️ Todo el Histórico</span>
-                      {allHistorySinAtenderCount > 0 && (
-                        <span style={{
-                          background: isHistorico ? '#ffffff' : '#dc2626',
-                          color: isHistorico ? '#7c3aed' : '#ffffff',
-                          borderRadius: '8px',
-                          padding: '0 0.35rem',
-                          fontSize: '0.62rem',
-                          fontWeight: 600
-                        }}>
-                          {allHistorySinAtenderCount}
-                        </span>
-                      )}
-                    </button>
-                  </div>
-                </div>
-                
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              {/* Hora de Corte */}
+              {!isHistorico && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.74rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginRight: '0.2rem' }}>
+                    ⏱️ Corte:
+                  </span>
+
                   <button
                     type="button"
-                    onClick={() => handleStepDay(-1)}
+                    onClick={() => setCutoffHour(16)}
                     style={{
-                      width: '34px',
-                      height: '34px',
-                      borderRadius: '8px',
-                      border: '1px solid #cbd5e1',
-                      background: '#ffffff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
+                      padding: '0.45rem 0.85rem',
+                      borderRadius: '10px',
+                      border: cutoffHour === 16 ? `1.5px solid ${primaryColor}` : '1px solid #cbd5e1',
+                      background: cutoffHour === 16 ? 'rgba(0, 166, 249, 0.08)' : '#ffffff',
+                      color: cutoffHour === 16 ? primaryColor : '#334155',
+                      fontSize: '0.8rem',
+                      fontWeight: cutoffHour === 16 ? 600 : 500,
                       cursor: 'pointer',
-                      color: '#475569'
-                    }}
-                    title="Día anterior"
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
-                  <input
-                    type="date"
-                    value={selectedDate === 'historico' ? hoyColombiaStr : selectedDate}
-                    onChange={e => setSelectedDate(e.target.value)}
-                    style={{
-                      flex: 1,
-                      padding: '0.5rem 0.6rem',
-                      borderRadius: '8px',
-                      border: isHistorico ? '1.5px solid #7c3aed' : '1px solid #cbd5e1',
-                      background: '#ffffff',
-                      fontSize: '0.84rem',
-                      fontWeight: 500,
-                      color: isHistorico ? '#7c3aed' : '#1e293b',
                       fontFamily: "'Poppins', sans-serif"
                     }}
-                  />
+                  >
+                    ⭐ 4:00 PM (Control)
+                  </button>
+
                   <button
                     type="button"
-                    onClick={() => handleStepDay(1)}
+                    onClick={() => setCutoffHour(24)}
                     style={{
-                      width: '34px',
-                      height: '34px',
-                      borderRadius: '8px',
+                      padding: '0.45rem 0.85rem',
+                      borderRadius: '10px',
+                      border: cutoffHour === 24 ? `1.5px solid ${primaryColor}` : '1px solid #cbd5e1',
+                      background: cutoffHour === 24 ? 'rgba(0, 166, 249, 0.08)' : '#ffffff',
+                      color: cutoffHour === 24 ? primaryColor : '#334155',
+                      fontSize: '0.8rem',
+                      fontWeight: cutoffHour === 24 ? 600 : 500,
+                      cursor: 'pointer',
+                      fontFamily: "'Poppins', sans-serif"
+                    }}
+                  >
+                    🌙 Cierre del Día
+                  </button>
+
+                  {/* Selector desplegable de más horas */}
+                  <select
+                    value={cutoffHour}
+                    onChange={e => setCutoffHour(Number(e.target.value))}
+                    style={{
+                      padding: '0.42rem 0.65rem',
+                      borderRadius: '10px',
                       border: '1px solid #cbd5e1',
                       background: '#ffffff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                      color: '#475569'
+                      fontSize: '0.78rem',
+                      fontWeight: 500,
+                      color: '#475569',
+                      fontFamily: "'Poppins', sans-serif",
+                      cursor: 'pointer'
                     }}
-                    title="Día siguiente"
                   >
-                    <ChevronRight size={16} />
-                  </button>
+                    <option value={9}>09:00 AM</option>
+                    <option value={10}>10:00 AM</option>
+                    <option value={11}>11:00 AM</option>
+                    <option value={12}>12:00 PM</option>
+                    <option value={13}>01:00 PM</option>
+                    <option value={14}>02:00 PM</option>
+                    <option value={15}>03:00 PM</option>
+                    <option value={16}>04:00 PM</option>
+                    <option value={17}>05:00 PM</option>
+                    <option value={18}>06:00 PM</option>
+                    <option value={19}>07:00 PM</option>
+                    <option value={20}>08:00 PM</option>
+                    <option value={24}>Todo el día</option>
+                  </select>
                 </div>
-              </div>
-
-              {/* Selector de Hora de Corte */}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 500, color: '#475569', marginBottom: '0.35rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                  ⏱️ Corte de Hora a Auditar
-                </label>
-                <select
-                  value={cutoffHour}
-                  onChange={e => setCutoffHour(Number(e.target.value))}
-                  style={{
-                    width: '100%',
-                    padding: '0.55rem 0.75rem',
-                    borderRadius: '8px',
-                    border: cutoffHour === 16 ? `2px solid ${primaryColor}` : '1px solid #cbd5e1',
-                    background: cutoffHour === 16 ? 'rgba(0, 166, 249, 0.04)' : '#ffffff',
-                    fontSize: '0.84rem',
-                    fontWeight: 600,
-                    color: '#0f172a',
-                    fontFamily: "'Poppins', sans-serif",
-                    cursor: 'pointer'
-                  }}
-                >
-                  <option value={9}>09:00 AM (Apertura)</option>
-                  <option value={10}>10:00 AM</option>
-                  <option value={11}>11:00 AM</option>
-                  <option value={12}>12:00 PM (Mediodía)</option>
-                  <option value={13}>01:00 PM</option>
-                  <option value={14}>02:00 PM</option>
-                  <option value={15}>03:00 PM</option>
-                  <option value={16}>⭐ 04:00 PM (Hora de Control)</option>
-                  <option value={17}>05:00 PM</option>
-                  <option value={18}>06:00 PM (Cierre turno tarde)</option>
-                  <option value={19}>07:00 PM</option>
-                  <option value={20}>08:00 PM</option>
-                  <option value={24}>23:59 (Todo el día completo / Histórico)</option>
-                </select>
-              </div>
+              )}
             </div>
 
+            {/* Selector de Fecha desplegable (si el usuario presionó 'Otra Fecha') */}
+            {showCustomDate && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                background: '#f8fafc',
+                padding: '0.65rem 0.85rem',
+                borderRadius: '10px',
+                border: '1px solid #e2e8f0',
+                width: 'fit-content'
+              }}>
+                <button
+                  type="button"
+                  onClick={() => handleStepDay(-1)}
+                  style={{ padding: '0.35rem 0.55rem', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', cursor: 'pointer', color: '#475569' }}
+                  title="Día anterior"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+                <input
+                  type="date"
+                  value={selectedDate === 'historico' ? hoyColombiaStr : selectedDate}
+                  onChange={e => setSelectedDate(e.target.value)}
+                  style={{
+                    padding: '0.35rem 0.6rem',
+                    borderRadius: '6px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.82rem',
+                    fontFamily: "'Poppins', sans-serif",
+                    color: '#1e293b'
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => handleStepDay(1)}
+                  style={{ padding: '0.35rem 0.55rem', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', cursor: 'pointer', color: '#475569' }}
+                  title="Día siguiente"
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            )}
+
+            {/* Fila 2: Filtro Rápido de Asesoras */}
             <div style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '0.5rem',
-              fontSize: '0.82rem',
-              color: isHistorico ? '#6b21a8' : '#334155',
-              background: isHistorico ? '#faf5ff' : '#f1f5f9',
-              border: isHistorico ? '1px solid #e9d5ff' : '1px solid transparent',
-              padding: '0.5rem 0.85rem',
+              gap: '0.55rem',
+              flexWrap: 'wrap',
+              paddingTop: '0.75rem',
+              borderTop: '1px solid #f1f5f9'
+            }}>
+              <span style={{ fontSize: '0.74rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginRight: '0.2rem' }}>
+                👩‍💼 Asesora:
+              </span>
+
+              {/* Botón Ambas / Todas */}
+              <button
+                type="button"
+                onClick={() => setSelectedAsesorId('todas')}
+                style={{
+                  padding: '0.4rem 0.85rem',
+                  borderRadius: '20px',
+                  border: selectedAsesorId === 'todas' ? `1.5px solid ${primaryColor}` : '1px solid #cbd5e1',
+                  background: selectedAsesorId === 'todas' ? 'rgba(0, 166, 249, 0.08)' : '#ffffff',
+                  color: selectedAsesorId === 'todas' ? primaryColor : '#334155',
+                  fontSize: '0.82rem',
+                  fontWeight: selectedAsesorId === 'todas' ? 600 : 500,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  fontFamily: "'Poppins', sans-serif"
+                }}
+              >
+                <Users size={14} />
+                <span>👥 Todas las Asesoras</span>
+              </button>
+
+              {/* Botón para cada Asesora */}
+              {asesores.map(a => {
+                const isSelected = selectedAsesorId === a.id;
+                return (
+                  <button
+                    key={a.id}
+                    type="button"
+                    onClick={() => setSelectedAsesorId(a.id)}
+                    style={{
+                      padding: '0.35rem 0.8rem',
+                      borderRadius: '20px',
+                      border: isSelected ? `1.5px solid ${primaryColor}` : '1px solid #cbd5e1',
+                      background: isSelected ? 'rgba(0, 166, 249, 0.08)' : '#ffffff',
+                      color: isSelected ? primaryColor : '#334155',
+                      fontSize: '0.82rem',
+                      fontWeight: isSelected ? 600 : 500,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.45rem',
+                      fontFamily: "'Poppins', sans-serif"
+                    }}
+                  >
+                    {a.foto_url ? (
+                      <img src={a.foto_url} alt={a.nombre} style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover' }} />
+                    ) : (
+                      <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#e0f2fe', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 600 }}>
+                        {a.nombre.charAt(0)}
+                      </div>
+                    )}
+                    <span>{a.nombre}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Subtítulo aclaratorio simple */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.45rem',
+              fontSize: '0.8rem',
+              color: isHistorico ? '#6b21a8' : '#475569',
+              background: isHistorico ? '#faf5ff' : '#f8fafc',
+              border: isHistorico ? '1px solid #e9d5ff' : '1px solid #f1f5f9',
+              padding: '0.45rem 0.8rem',
               borderRadius: '8px'
             }}>
-              <Sparkles size={15} color={isHistorico ? '#7c3aed' : primaryColor} />
+              <Sparkles size={14} color={isHistorico ? '#7c3aed' : primaryColor} />
               <span>
                 {isHistorico ? (
-                  <>Mostrando auditoría acumulada de <strong>TODO EL HISTÓRICO</strong> ({allInteractions.length} chats y leads recibidos en total):</>
+                  <>Auditoría acumulada de <strong>TODO EL HISTÓRICO</strong> ({allInteractions.length} clientes y leads en total):</>
                 ) : (
-                  <>Mostrando auditoría para <strong>{friendlyDateStr}</strong> a las <strong>{cutoffHour === 24 ? 'Cierre del día' : `${cutoffHour % 12 || 12}:00 ${cutoffHour >= 12 ? 'PM' : 'AM'}`}</strong>:</>
+                  <>Auditoría para <strong>{friendlyDateStr}</strong> al corte de las <strong>{cutoffHour === 24 ? 'Cierre del día' : `${cutoffHour % 12 || 12}:00 ${cutoffHour >= 12 ? 'PM' : 'AM'}`}</strong>:</>
                 )}
               </span>
             </div>
           </div>
 
-          {/* Tarjetas KPI del Flujo Diario */}
+          {/* 3 Tarjetas KPI Anti-Bobos */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
-            gap: '0.85rem'
+            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+            gap: '1rem',
+            fontFamily: "'Poppins', sans-serif"
           }}>
-            <div style={{ background: '#ffffff', borderRadius: '14px', padding: '1rem 1.15rem', border: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-                <span style={{ fontSize: '0.72rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase' }}>Chats Recibidos</span>
-                <MessageSquare size={16} color="#64748b" />
-              </div>
-              <div style={{ fontSize: '1.75rem', fontWeight: 600, color: '#0f172a', lineHeight: 1 }}>{totalRecibidos}</div>
-              <div style={{ fontSize: '0.73rem', color: '#64748b', marginTop: '0.4rem' }}>
-                {isHistorico ? 'En todo el histórico' : `Hasta las ${cutoffHour === 24 ? '23:59' : `${cutoffHour % 12 || 12}:00 ${cutoffHour >= 12 ? 'PM' : 'AM'}`}`}
-              </div>
-            </div>
-
-            <div style={{ background: '#f0fdf4', borderRadius: '14px', padding: '1rem 1.15rem', border: '1px solid #bbf7d0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-                <span style={{ fontSize: '0.72rem', fontWeight: 500, color: '#166534', textTransform: 'uppercase' }}>Chats Atendidos</span>
-                <CheckCircle2 size={16} color="#16a34a" />
-              </div>
-              <div style={{ fontSize: '1.75rem', fontWeight: 600, color: '#15803d', lineHeight: 1 }}>{totalAtendidos}</div>
-              <div style={{ fontSize: '0.73rem', color: '#166534', marginTop: '0.4rem' }}>
-                {porcentajeAtendidos}% de efectividad {isHistorico ? 'histórica' : 'a esa hora'}
-              </div>
-            </div>
-
-            <div style={{ borderRadius: '14px', padding: '1rem 1.15rem', border: totalSinAtender > 0 ? '1.5px solid #fca5a5' : '1px solid #e2e8f0', background: totalSinAtender > 0 ? '#fef2f2' : '#ffffff' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-                <span style={{ fontSize: '0.72rem', fontWeight: 600, color: totalSinAtender > 0 ? '#991b1b' : '#64748b', textTransform: 'uppercase' }}>
-                  {isHistorico ? '⚠️ Sin Atender (Histórico)' : '⚠️ Sin Atender a esa Hora'}
+            {/* Tarjeta 1: Recibidos */}
+            <div style={{
+              background: '#ffffff',
+              borderRadius: '16px',
+              padding: '1.25rem 1.4rem',
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.45rem' }}>
+                <span style={{ fontSize: '0.74rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  📬 Chats Recibidos
                 </span>
-                <AlertTriangle size={16} color={totalSinAtender > 0 ? '#dc2626' : '#94a3b8'} />
+                <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <MessageSquare size={16} color="#64748b" />
+                </div>
               </div>
-              <div style={{ fontSize: '1.75rem', fontWeight: 600, color: totalSinAtender > 0 ? '#b91c1c' : '#0f172a', lineHeight: 1 }}>{totalSinAtender}</div>
-              <div style={{ fontSize: '0.73rem', color: totalSinAtender > 0 ? '#991b1b' : '#64748b', marginTop: '0.4rem' }}>
+              <div style={{ fontSize: '2.4rem', fontWeight: 600, color: '#0f172a', lineHeight: 1, margin: '0.3rem 0' }}>
+                {totalRecibidos}
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 400 }}>
                 {isHistorico 
-                  ? `${porcentajeSinAtender}% sin respuesta en el histórico` 
-                  : totalSinAtender > 0 ? `${porcentajeSinAtender}% sin respuesta` : 'Todo al día ✓'}
+                  ? 'Total de clientes y leads en todo el histórico' 
+                  : `Clientes que entraron hasta las ${cutoffHour === 24 ? '23:59' : `${cutoffHour % 12 || 12}:00 ${cutoffHour >= 12 ? 'PM' : 'AM'}`}`}
               </div>
+            </div>
+
+            {/* Tarjeta 2: Atendidos */}
+            <div style={{
+              background: '#ffffff',
+              borderRadius: '16px',
+              padding: '1.25rem 1.4rem',
+              border: '1px solid #bbf7d0',
+              boxShadow: '0 2px 8px rgba(16,185,129,0.04)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.45rem' }}>
+                <span style={{ fontSize: '0.74rem', fontWeight: 500, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  ✅ Chats Atendidos
+                </span>
+                <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <CheckCircle2 size={16} color="#16a34a" />
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.6rem', margin: '0.3rem 0' }}>
+                <span style={{ fontSize: '2.4rem', fontWeight: 600, color: '#15803d', lineHeight: 1 }}>{totalAtendidos}</span>
+                <span style={{ fontSize: '1rem', fontWeight: 500, color: '#16a34a' }}>({porcentajeAtendidos}%)</span>
+              </div>
+              <div style={{ fontSize: '0.78rem', color: '#166534', fontWeight: 400 }}>
+                Respondidos oportunamente por el equipo
+              </div>
+            </div>
+
+            {/* Tarjeta 3: Sin Atender (Semáforo Dinámico: Verde si 0, Rojo Alerta si > 0) */}
+            <div style={{
+              background: totalSinAtender > 0 ? '#fef2f2' : '#f0fdf4',
+              borderRadius: '16px',
+              padding: '1.25rem 1.4rem',
+              border: totalSinAtender > 0 ? '1.5px solid #fca5a5' : '1px solid #86efac',
+              boxShadow: totalSinAtender > 0 ? '0 2px 10px rgba(239,68,68,0.08)' : '0 2px 8px rgba(16,185,129,0.04)',
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'space-between'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.45rem' }}>
+                <span style={{ fontSize: '0.74rem', fontWeight: 600, color: totalSinAtender > 0 ? '#991b1b' : '#166534', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  {totalSinAtender > 0 ? '🚨 Sin Atender' : '🎉 Estado General'}
+                </span>
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '10px',
+                  background: totalSinAtender > 0 ? '#fee2e2' : '#dcfce7',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  {totalSinAtender > 0 ? <AlertTriangle size={16} color="#dc2626" /> : <CheckCircle2 size={16} color="#16a34a" />}
+                </div>
+              </div>
+
+              {totalSinAtender > 0 ? (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.6rem', margin: '0.3rem 0' }}>
+                    <span style={{ fontSize: '2.4rem', fontWeight: 600, color: '#b91c1c', lineHeight: 1 }}>{totalSinAtender}</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 500, color: '#dc2626' }}>({porcentajeSinAtender}% pendientes)</span>
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#991b1b', fontWeight: 500 }}>
+                    ⚠️ ${valorSinAtender.toLocaleString('es-CO')} en ventas en riesgo
+                    {!isHistorico && promedioEsperaMins > 0 ? ` • Espera prom: ${formatMinsToDuration(promedioEsperaMins)}` : ''}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize: '1.5rem', fontWeight: 600, color: '#15803d', margin: '0.3rem 0', lineHeight: 1.2 }}>
+                    ¡Todo al día! ✓
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: '#166534', fontWeight: 400 }}>
+                    {isHistorico ? 'Cero chats pendientes en el histórico' : `Ningún cliente esperando a las ${cutoffHour % 12 || 12}:00 ${cutoffHour >= 12 ? 'PM' : 'AM'}`}
+                  </div>
+                </>
+              )}
+
+              {/* Acceso rápido al histórico si no está en histórico */}
               {!isHistorico && (
-                <div style={{ marginTop: '0.55rem', paddingTop: '0.45rem', borderTop: '1px dashed #cbd5e1', fontSize: '0.72rem', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span>Histórico acumulado:</span>
+                <div style={{
+                  marginTop: '0.65rem',
+                  paddingTop: '0.5rem',
+                  borderTop: totalSinAtender > 0 ? '1px dashed #fca5a5' : '1px dashed #bbf7d0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  fontSize: '0.74rem'
+                }}>
+                  <span style={{ color: '#475569' }}>Total en histórico:</span>
                   <button
                     type="button"
                     onClick={() => {
                       setSelectedDate('historico');
                       setCutoffHour(24);
                     }}
-                    style={{ border: 'none', background: 'transparent', padding: 0, color: primaryColor, fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', fontFamily: "'Poppins', sans-serif" }}
+                    style={{
+                      border: 'none',
+                      background: 'transparent',
+                      padding: 0,
+                      color: '#7c3aed',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.2rem',
+                      fontFamily: "'Poppins', sans-serif"
+                    }}
                   >
-                    {allHistorySinAtenderCount} sin atender ➔
+                    <span>{allHistorySinAtenderCount} sin atender (${allHistorySinAtenderValor.toLocaleString('es-CO')})</span>
+                    <ArrowUpRight size={13} />
                   </button>
                 </div>
               )}
             </div>
-
-            <div style={{ background: '#ffffff', borderRadius: '14px', padding: '1rem 1.15rem', border: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-                <span style={{ fontSize: '0.72rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase' }}>Demora Promedio</span>
-                <Clock size={16} color="#64748b" />
-              </div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 600, color: '#0f172a', lineHeight: 1 }}>
-                {totalSinAtender > 0 && !isHistorico ? formatMinsToDuration(promedioEsperaMins) : totalSinAtender > 0 ? `${totalSinAtender} pend.` : '0 min'}
-              </div>
-              <div style={{ fontSize: '0.73rem', color: '#64748b', marginTop: '0.4rem' }}>
-                {isHistorico ? 'Pendientes por responder' : 'Tiempo de espera'}
-              </div>
-            </div>
-
-            <div style={{ background: '#ffffff', borderRadius: '14px', padding: '1rem 1.15rem', border: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.4rem' }}>
-                <span style={{ fontSize: '0.72rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase' }}>Ventas en Riesgo</span>
-                <DollarSign size={16} color="#d97706" />
-              </div>
-              <div style={{ fontSize: '1.45rem', fontWeight: 600, color: '#b45309', lineHeight: 1 }}>${valorSinAtender.toLocaleString('es-CO')}</div>
-              <div style={{ fontSize: '0.73rem', color: '#64748b', marginTop: '0.4rem' }}>
-                {isHistorico 
-                  ? 'En todo el histórico' 
-                  : allHistorySinAtenderValor > 0 
-                    ? `Histórico: $${allHistorySinAtenderValor.toLocaleString('es-CO')}` 
-                    : 'En pedidos sin atender'}
-              </div>
-            </div>
           </div>
 
-          {/* Comparativa de Asesoras */}
+          {/* Comparativa de Asesoras (Tarjetas Visuales Anti-Bobos) */}
           {selectedAsesorId === 'todas' && (
-            <div style={{ background: '#ffffff', borderRadius: '16px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
-              <h3 style={{ margin: '0 0 0.85rem 0', fontSize: '0.98rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                <Users size={17} color={primaryColor} /> {isHistorico ? 'Comparativa de Asesoras en Todo el Histórico' : `Comparativa de Asesoras al Corte de las ${cutoffHour % 12 || 12}:00 ${cutoffHour >= 12 ? 'PM' : 'AM'}`}
-              </h3>
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.84rem' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '2px solid #f1f5f9', background: '#f8fafc' }}>
-                      <th style={{ padding: '0.65rem 0.85rem', fontWeight: 600, color: '#475569' }}>Asesora</th>
-                      <th style={{ padding: '0.65rem 0.85rem', fontWeight: 600, color: '#475569', textAlign: 'center' }}>Chats Recibidos</th>
-                      <th style={{ padding: '0.65rem 0.85rem', fontWeight: 600, color: '#16a34a', textAlign: 'center' }}>Atendidos</th>
-                      <th style={{ padding: '0.65rem 0.85rem', fontWeight: 600, color: '#dc2626', textAlign: 'center' }}>Sin Atender</th>
-                      <th style={{ padding: '0.65rem 0.85rem', fontWeight: 600, color: '#475569', textAlign: 'center' }}>Efectividad</th>
-                      <th style={{ padding: '0.65rem 0.85rem', fontWeight: 600, color: '#475569', textAlign: 'right' }}>Ventas en Riesgo</th>
-                      <th style={{ padding: '0.65rem 0.85rem', fontWeight: 600, color: '#475569', textAlign: 'center' }}>Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {comparativaAsesores.map(c => {
-                      const hasSinAtender = c.sinAtender > 0;
-                      return (
-                        <tr key={c.asesor.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                          <td style={{ padding: '0.75rem 0.85rem' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                              {c.asesor.foto_url ? (
-                                <img src={c.asesor.foto_url} alt={c.asesor.nombre} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }} />
-                              ) : (
-                                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#e0f2fe', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>
-                                  {c.asesor.nombre.charAt(0)}
-                                </div>
-                              )}
-                              <div>
-                                <div style={{ fontWeight: 600, color: '#0f172a' }}>{c.asesor.nombre}</div>
-                                <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 400 }}>📱 {(c.asesor.telefono || '').split(',')[0]}</div>
-                              </div>
+            <div style={{
+              background: '#ffffff',
+              borderRadius: '16px',
+              padding: '1.25rem 1.5rem',
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+              fontFamily: "'Poppins', sans-serif"
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                    <Users size={18} color={primaryColor} /> 
+                    <span>Comparativa: ¿Quién tiene chats pendientes?</span>
+                  </h3>
+                  <p style={{ margin: '0.2rem 0 0 0', fontSize: '0.76rem', color: '#64748b' }}>
+                    {isHistorico ? 'Estado acumulado de todo el histórico' : `Corte de auditoría a las ${cutoffHour % 12 || 12}:00 ${cutoffHour >= 12 ? 'PM' : 'AM'}`}
+                  </p>
+                </div>
+              </div>
+
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: '1rem'
+              }}>
+                {comparativaAsesores.map(c => {
+                  const hasSinAtender = c.sinAtender > 0;
+                  const phone = (c.asesor.telefono || '').split(',')[0].trim();
+                  return (
+                    <div
+                      key={c.asesor.id}
+                      style={{
+                        borderRadius: '14px',
+                        border: hasSinAtender ? '1.5px solid #fca5a5' : '1px solid #bbf7d0',
+                        background: hasSinAtender ? '#fffafa' : '#f0fdf4',
+                        padding: '1.15rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        justifyContent: 'space-between',
+                        gap: '0.85rem'
+                      }}
+                    >
+                      {/* Header Asesora */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          {c.asesor.foto_url ? (
+                            <img
+                              src={c.asesor.foto_url}
+                              alt={c.asesor.nombre}
+                              style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #ffffff', boxShadow: '0 2px 4px rgba(0,0,0,0.08)' }}
+                            />
+                          ) : (
+                            <div style={{ width: '42px', height: '42px', borderRadius: '50%', background: '#e0f2fe', color: '#0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600, fontSize: '1rem' }}>
+                              {c.asesor.nombre.charAt(0)}
                             </div>
-                          </td>
-                          <td style={{ padding: '0.75rem 0.85rem', textAlign: 'center', fontWeight: 600, color: '#0f172a' }}>{c.totalRecibidos}</td>
-                          <td style={{ padding: '0.75rem 0.85rem', textAlign: 'center', fontWeight: 600, color: '#16a34a' }}>{c.atendidos}</td>
-                          <td style={{ padding: '0.75rem 0.85rem', textAlign: 'center' }}>
-                            <span style={{ padding: '0.2rem 0.6rem', borderRadius: '12px', fontSize: '0.78rem', fontWeight: 600, background: hasSinAtender ? '#fee2e2' : '#f0fdf4', color: hasSinAtender ? '#b91c1c' : '#15803d' }}>
-                              {c.sinAtender}
-                            </span>
-                          </td>
-                          <td style={{ padding: '0.75rem 0.85rem', textAlign: 'center', fontWeight: 500 }}>
-                            {c.totalRecibidos > 0 ? (
-                              <span style={{ color: c.pctSinAtender > 30 ? '#dc2626' : '#16a34a' }}>{100 - c.pctSinAtender}%</span>
-                            ) : (
-                              <span style={{ color: '#94a3b8' }}>Sin chats</span>
+                          )}
+                          <div>
+                            <div style={{ fontWeight: 600, color: '#0f172a', fontSize: '0.92rem' }}>{c.asesor.nombre}</div>
+                            {phone && (
+                              <div style={{ fontSize: '0.74rem', color: '#64748b' }}>
+                                📱 {phone}
+                              </div>
                             )}
-                          </td>
-                          <td style={{ padding: '0.75rem 0.85rem', textAlign: 'right', fontWeight: 600, color: hasSinAtender ? '#b45309' : '#94a3b8' }}>${c.valorSinAtender.toLocaleString('es-CO')}</td>
-                          <td style={{ padding: '0.75rem 0.85rem', textAlign: 'center' }}>
-                            <button
-                              type="button"
-                              onClick={() => setSelectedAsesorId(c.asesor.id)}
-                              style={{ padding: '0.3rem 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', background: '#ffffff', color: '#334155', fontSize: '0.76rem', fontWeight: 500, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}
-                            >
-                              <span>Ver detalle</span>
-                              <ArrowUpRight size={13} />
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                          </div>
+                        </div>
+
+                        {/* Badge de Estado Gigante */}
+                        <span style={{
+                          padding: '0.35rem 0.75rem',
+                          borderRadius: '20px',
+                          fontSize: '0.76rem',
+                          fontWeight: 600,
+                          background: hasSinAtender ? '#fee2e2' : '#dcfce7',
+                          color: hasSinAtender ? '#b91c1c' : '#15803d',
+                          border: hasSinAtender ? '1px solid #fca5a5' : '1px solid #86efac'
+                        }}>
+                          {hasSinAtender ? `🚨 ${c.sinAtender} sin atender` : '✓ Al día (0)'}
+                        </span>
+                      </div>
+
+                      {/* Métricas de la Asesora */}
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(3, 1fr)',
+                        gap: '0.5rem',
+                        background: '#ffffff',
+                        padding: '0.75rem',
+                        borderRadius: '10px',
+                        border: '1px solid #e2e8f0',
+                        textAlign: 'center'
+                      }}>
+                        <div>
+                          <div style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 500, textTransform: 'uppercase' }}>Recibidos</div>
+                          <div style={{ fontSize: '1.15rem', fontWeight: 600, color: '#0f172a', marginTop: '0.15rem' }}>{c.totalRecibidos}</div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '0.68rem', color: '#166534', fontWeight: 500, textTransform: 'uppercase' }}>Atendidos</div>
+                          <div style={{ fontSize: '1.15rem', fontWeight: 600, color: '#15803d', marginTop: '0.15rem' }}>
+                            {c.atendidos}
+                            {c.totalRecibidos > 0 && (
+                              <span style={{ fontSize: '0.68rem', fontWeight: 500, color: '#16a34a', display: 'block' }}>
+                                {100 - c.pctSinAtender}%
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '0.68rem', color: hasSinAtender ? '#b45309' : '#64748b', fontWeight: 500, textTransform: 'uppercase' }}>En Riesgo</div>
+                          <div style={{ fontSize: '1.05rem', fontWeight: 600, color: hasSinAtender ? '#b45309' : '#94a3b8', marginTop: '0.15rem' }}>
+                            ${c.valorSinAtender.toLocaleString('es-CO')}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Botón de Acción Directo */}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedAsesorId(c.asesor.id)}
+                        style={{
+                          width: '100%',
+                          padding: '0.55rem',
+                          borderRadius: '8px',
+                          border: hasSinAtender ? '1px solid #fca5a5' : '1px solid #cbd5e1',
+                          background: '#ffffff',
+                          color: hasSinAtender ? '#b91c1c' : '#334155',
+                          fontSize: '0.78rem',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '0.4rem',
+                          fontFamily: "'Poppins', sans-serif"
+                        }}
+                      >
+                        <span>{hasSinAtender ? `Ver los ${c.sinAtender} chats de ${c.asesor.nombre.split(' ')[0]}` : `Ver chats de ${c.asesor.nombre.split(' ')[0]}`}</span>
+                        <ArrowUpRight size={14} />
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
 
-          {/* Línea de Tiempo Hora a Hora (Disponible para días específicos) */}
+          {/* Línea de Tiempo Hora a Hora (Colapsable) */}
           {!isHistorico && (
-            <div style={{ background: '#ffffff', borderRadius: '16px', padding: '1.25rem', border: '1px solid #e2e8f0' }}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.85rem', gap: '0.5rem' }}>
-                <h3 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                  <Clock size={17} color={primaryColor} /> Evolución Hora a Hora del Día (8:00 AM - 8:00 PM)
-                </h3>
-                <span style={{ fontSize: '0.76rem', color: '#64748b' }}>Haz clic en cualquier hora para auditarla como corte</span>
+            <div style={{
+              background: '#ffffff',
+              borderRadius: '16px',
+              padding: '0.9rem 1.25rem',
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+              fontFamily: "'Poppins', sans-serif"
+            }}>
+              <div
+                onClick={() => setShowHourlyTimeline(!showHourlyTimeline)}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  cursor: 'pointer',
+                  userSelect: 'none'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <Clock size={16} color={primaryColor} />
+                  <span style={{ fontSize: '0.86rem', fontWeight: 600, color: '#0f172a' }}>
+                    Evolución hora a hora del día (8:00 AM - 8:00 PM)
+                  </span>
+                  <span style={{ fontSize: '0.74rem', color: '#64748b' }}>
+                    ({showHourlyTimeline ? 'Clic para ocultar' : 'Clic para ver corte de cada hora'})
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  style={{
+                    border: 'none',
+                    background: '#f1f5f9',
+                    borderRadius: '6px',
+                    padding: '0.3rem 0.6rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.25rem',
+                    fontSize: '0.74rem',
+                    fontWeight: 500,
+                    color: '#475569',
+                    fontFamily: "'Poppins', sans-serif"
+                  }}
+                >
+                  <span>{showHourlyTimeline ? 'Ocultar' : 'Ver Horas'}</span>
+                  {showHourlyTimeline ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                </button>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))', gap: '0.45rem', overflowX: 'auto', paddingBottom: '0.4rem' }}>
-                {hourlyBreakdown.map(hb => {
-                  const isCurrentCutoff = cutoffHour === hb.hourNumber;
-                  const hasSinAtender = hb.sinAtenderAcumulados > 0;
-                  return (
-                    <button
-                      key={hb.hourNumber}
-                      type="button"
-                      onClick={() => setCutoffHour(hb.hourNumber)}
-                      style={{
-                        padding: '0.65rem 0.4rem',
-                        borderRadius: '10px',
-                        border: isCurrentCutoff ? `2px solid ${primaryColor}` : '1px solid #e2e8f0',
-                        background: isCurrentCutoff ? 'rgba(0, 166, 249, 0.08)' : '#f8fafc',
-                        cursor: 'pointer',
-                        textAlign: 'center',
-                        fontFamily: "'Poppins', sans-serif",
-                        position: 'relative'
-                      }}
-                    >
-                      <div style={{ fontSize: '0.72rem', fontWeight: 600, color: isCurrentCutoff ? primaryColor : '#475569', marginBottom: '0.25rem' }}>{hb.label}</div>
-                      <div style={{ fontSize: '1.05rem', fontWeight: 600, color: hasSinAtender ? '#dc2626' : '#16a34a', lineHeight: 1 }}>{hb.sinAtenderAcumulados}</div>
-                      <div style={{ fontSize: '0.64rem', color: '#64748b', marginTop: '0.2rem' }}>{hb.nuevos > 0 ? `+${hb.nuevos} nuevo` : '0 nuevo'}</div>
-                    </button>
-                  );
-                })}
-              </div>
+
+              {showHourlyTimeline && (
+                <div style={{ marginTop: '0.85rem', paddingTop: '0.85rem', borderTop: '1px solid #f1f5f9' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(75px, 1fr))', gap: '0.4rem', overflowX: 'auto' }}>
+                    {hourlyBreakdown.map(hb => {
+                      const isCurrentCutoff = cutoffHour === hb.hourNumber;
+                      const hasSinAtender = hb.sinAtenderAcumulados > 0;
+                      return (
+                        <button
+                          key={hb.hourNumber}
+                          type="button"
+                          onClick={() => setCutoffHour(hb.hourNumber)}
+                          style={{
+                            padding: '0.55rem 0.35rem',
+                            borderRadius: '10px',
+                            border: isCurrentCutoff ? `2px solid ${primaryColor}` : '1px solid #e2e8f0',
+                            background: isCurrentCutoff ? 'rgba(0, 166, 249, 0.08)' : '#f8fafc',
+                            cursor: 'pointer',
+                            textAlign: 'center',
+                            fontFamily: "'Poppins', sans-serif"
+                          }}
+                        >
+                          <div style={{ fontSize: '0.7rem', fontWeight: 600, color: isCurrentCutoff ? primaryColor : '#475569', marginBottom: '0.2rem' }}>{hb.label}</div>
+                          <div style={{ fontSize: '0.98rem', fontWeight: 600, color: hasSinAtender ? '#dc2626' : '#16a34a', lineHeight: 1 }}>{hb.sinAtenderAcumulados}</div>
+                          <div style={{ fontSize: '0.62rem', color: '#64748b', marginTop: '0.2rem' }}>{hb.nuevos > 0 ? `+${hb.nuevos}` : '0'}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
