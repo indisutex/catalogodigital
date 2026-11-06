@@ -3,7 +3,7 @@ import { supabase, getTenantId, normalizeTenantId, findClosestTenant } from '../
 import { updatePWAManifestAndIcons } from '../lib/pwa';
 import type { Producto, Categoria, Subcategoria, Configuracion } from '../types';
 import { Loader2, Search, Plus, ShoppingBag, X, ShoppingCart, Volume2, VolumeX, Package, HelpCircle, RefreshCw, Menu, Check, Filter, LayoutGrid, Users, Sparkles, Shirt, Baby, Moon, Layers, Tag, Heart, Gift, ChevronDown, ChevronLeft, Download, Trash2, CreditCard, MessageCircle, ArrowLeft, ChevronRight, Coins } from 'lucide-react';
-import { useCart, getEffectivePrice } from '../context/CartContext';
+import { useCart, getEffectivePrice, getFamilyOptionPrices } from '../context/CartContext';
 import { useCurrency, COUNTRIES_DATABASE } from '../context/CurrencyContext';
 import PqrsModal from '../components/PqrsModal';
 import { getOptimizedImageUrl } from '../lib/imageOptimizer';
@@ -1085,25 +1085,25 @@ export default function MenuDigital() {
         : (preciosMap[key] ? Number(preciosMap[key]) : fallbackDetal);
       let mayor = (optObj?.mayor !== undefined && optObj?.mayor !== null && Number(optObj.mayor) > 0)
         ? Number(optObj.mayor)
-        : (optObj?.detal ? Number(optObj.detal) : fallbackMayor);
+        : (fallbackMayor > 0 ? fallbackMayor : (detal > 0 ? detal : 0));
       return {
-        detal: getEffectivePrice({ ...prod, precio: detal, precio_detal: detal, precio_por_mayor: mayor, familia_opcion_key: key, talla: key } as any, 'detal', markupPorcentaje, ajustesProductos, descuentoPromocional),
-        mayor: getEffectivePrice({ ...prod, precio: mayor, precio_detal: detal, precio_por_mayor: mayor, familia_opcion_key: key, talla: key } as any, 'mayorista', markupPorcentaje, ajustesProductos, descuentoPromocional)
+        detal: detal > 0 ? getEffectivePrice({ ...prod, precio: detal, precio_detal: detal, precio_por_mayor: mayor, familia_opcion_key: key, talla: key } as any, 'detal', markupPorcentaje, ajustesProductos, descuentoPromocional) : 0,
+        mayor: mayor > 0 ? getEffectivePrice({ ...prod, precio: mayor, precio_detal: detal, precio_por_mayor: mayor, familia_opcion_key: key, talla: key } as any, 'mayorista', markupPorcentaje, ajustesProductos, descuentoPromocional) : 0
       };
     };
 
-    const dama = getPrices('Dama Única', Number(fam.dama_unica || fam.mujer || 36000), 26000);
-    const damaPlus = getPrices('Dama Plus', Number(fam.dama_plus || 41000), 31000);
-    const caballero = getPrices('Caballero Única', Number(fam.caballero_unica || fam.hombre || 41000), 31000);
-    const unisex2xl = getPrices('2XL Unisex', Number(fam.unisex_2xl || 44000), 34000);
-    const nino = getPrices('2/4', Number(fam.nino || 32000), 22000);
+    const dama = getPrices('Dama Única', Number(fam.dama_unica || fam.mujer || 0), 0);
+    const damaPlus = getPrices('Dama Plus', Number(fam.dama_plus || 0), 0);
+    const caballero = getPrices('Caballero Única', Number(fam.caballero_unica || fam.hombre || 0), 0);
+    const unisex2xl = getPrices('2XL Unisex', Number(fam.unisex_2xl || 0), 0);
+    const nino = getPrices('2/4', Number(fam.nino || 0), 0);
 
     return { dama, damaPlus, caballero, unisex2xl, nino };
   };
 
   const getFamilyPriceRange = (prod: Producto) => {
     if (!isFamiliarProduct(prod) || !prod.precios_familia) {
-      return { minDetal: prod.precio > 1000 ? prod.precio : 0, minMayor: (prod.precio_por_mayor && prod.precio_por_mayor > 1000) ? prod.precio_por_mayor : 0 };
+      return { minDetal: prod.precio > 0 ? prod.precio : 0, minMayor: (prod.precio_por_mayor && prod.precio_por_mayor > 0) ? prod.precio_por_mayor : 0 };
     }
     const fam = prod.precios_familia as any || {};
     const preciosDetallados = fam.precios_detallados || {};
@@ -1138,12 +1138,12 @@ export default function MenuDigital() {
         else if (['2/4', '6/8', '10/12', '14/16', '18'].includes(key) && fam.nino) d = Number(fam.nino);
       }
 
-      if (d > 1000) detalPrices.push(d);
-      if (m > 1000) mayorPrices.push(m);
+      if (d > 0) detalPrices.push(d);
+      if (m > 0) mayorPrices.push(m);
     });
 
-    const minDetalRaw = detalPrices.length > 0 ? Math.min(...detalPrices) : (prod.precio > 1000 ? prod.precio : 36000);
-    const minMayorRaw = mayorPrices.length > 0 ? Math.min(...mayorPrices) : 22000;
+    const minDetalRaw = detalPrices.length > 0 ? Math.min(...detalPrices) : (prod.precio > 0 ? prod.precio : 0);
+    const minMayorRaw = mayorPrices.length > 0 ? Math.min(...mayorPrices) : (prod.precio_por_mayor && prod.precio_por_mayor > 0 ? Number(prod.precio_por_mayor) : 0);
 
     const minDetal = minDetalRaw > 0 ? getEffectivePrice({ ...prod, precio: minDetalRaw }, 'detal', markupPorcentaje, ajustesProductos, descuentoPromocional) : 0;
     const minMayor = minMayorRaw > 0 ? getEffectivePrice({ ...prod, precio: minMayorRaw }, 'mayorista', markupPorcentaje, ajustesProductos, descuentoPromocional) : 0;
@@ -1187,53 +1187,49 @@ export default function MenuDigital() {
       if (miembro === 'dama_unica') {
         const p = getOptionPrice('Dama Única');
         if (p > 0) return p;
-        if (currentBuyerMode === 'mayorista') {
+        if (currentBuyerMode === 'mayorista' || currentBuyerMode === '50_unidades') {
           if (preciosDetallados['Dama Única']?.mayor > 0) return Number(preciosDetallados['Dama Única'].mayor);
-          return 26000;
         }
         if (preciosDetallados['Dama Única']?.detal > 0) return Number(preciosDetallados['Dama Única'].detal);
         if (fam.dama_unica) return Number(fam.dama_unica);
-        return 36000;
+        return 0;
       }
       if (miembro === 'dama_plus') {
         const p = getOptionPrice('Dama Plus');
         if (p > 0) return p;
-        if (currentBuyerMode === 'mayorista') {
+        if (currentBuyerMode === 'mayorista' || currentBuyerMode === '50_unidades') {
           if (preciosDetallados['Dama Plus']?.mayor > 0) return Number(preciosDetallados['Dama Plus'].mayor);
-          return 31000;
         }
         if (preciosDetallados['Dama Plus']?.detal > 0) return Number(preciosDetallados['Dama Plus'].detal);
         if (fam.dama_plus) return Number(fam.dama_plus);
-        return 41000;
+        return 0;
       }
       if (miembro === 'caballero_unica') {
         const p = getOptionPrice('Caballero Única');
         if (p > 0) return p;
-        if (currentBuyerMode === 'mayorista') {
+        if (currentBuyerMode === 'mayorista' || currentBuyerMode === '50_unidades') {
           if (preciosDetallados['Caballero Única']?.mayor > 0) return Number(preciosDetallados['Caballero Única'].mayor);
-          return 31000;
         }
         if (preciosDetallados['Caballero Única']?.detal > 0) return Number(preciosDetallados['Caballero Única'].detal);
         if (fam.caballero_unica) return Number(fam.caballero_unica);
-        return 41000;
+        return 0;
       }
       if (miembro === 'unisex_2xl') {
         const p = getOptionPrice('2XL Unisex');
         if (p > 0) return p;
-        if (currentBuyerMode === 'mayorista') {
+        if (currentBuyerMode === 'mayorista' || currentBuyerMode === '50_unidades') {
           if (preciosDetallados['2XL Unisex']?.mayor > 0) return Number(preciosDetallados['2XL Unisex'].mayor);
-          return 34000;
         }
         if (preciosDetallados['2XL Unisex']?.detal > 0) return Number(preciosDetallados['2XL Unisex'].detal);
         if (fam.unisex_2xl) return Number(fam.unisex_2xl);
-        return 44000;
+        return 0;
       }
 
       if (miembro === 'nino') {
         if (talla && talla !== 'Única') {
           const p = getOptionPrice(talla);
           if (p > 0) return p;
-          if (currentBuyerMode === 'mayorista') {
+          if (currentBuyerMode === 'mayorista' || currentBuyerMode === '50_unidades') {
             if (preciosDetallados[talla]?.mayor > 0) return Number(preciosDetallados[talla].mayor);
           } else {
             if (preciosDetallados[talla]?.detal > 0) return Number(preciosDetallados[talla].detal);
@@ -1241,19 +1237,19 @@ export default function MenuDigital() {
         }
         const p = getOptionPrice('2/4');
         if (p > 0) return p;
-        if (currentBuyerMode === 'mayorista') {
-          if (talla === '14/16') return (preciosDetallados['14/16']?.mayor > 0 ? Number(preciosDetallados['14/16'].mayor) : 22500);
-          if (talla === '18') return (preciosDetallados['18']?.mayor > 0 ? Number(preciosDetallados['18'].mayor) : 26000);
+        if (currentBuyerMode === 'mayorista' || currentBuyerMode === '50_unidades') {
+          if (talla && preciosDetallados[talla]?.mayor > 0) return Number(preciosDetallados[talla].mayor);
           if (preciosDetallados['2/4']?.mayor > 0) return Number(preciosDetallados['2/4'].mayor);
-          return 22000;
         }
         if (preciosDetallados['2/4']?.detal > 0) return Number(preciosDetallados['2/4'].detal);
-        return Number(fam.nino || 32000);
+        if (fam.nino) return Number(fam.nino);
+        return 0;
       }
 
       const { minDetal, minMayor } = getFamilyPriceRange(prod);
-      if (currentBuyerMode === 'mayorista' && minMayor > 0) return minMayor;
+      if ((currentBuyerMode === 'mayorista' || currentBuyerMode === '50_unidades') && minMayor > 0) return minMayor;
       if (minDetal > 0) return minDetal;
+      return 0;
     }
 
     const currentBuyerMode = bType || buyerType;
@@ -1264,7 +1260,7 @@ export default function MenuDigital() {
     if (currentBuyerMode === 'mayorista' && prod.precio_por_mayor && Number(prod.precio_por_mayor) > 0) {
       return Number(prod.precio_por_mayor);
     }
-    return prod.precio;
+    return prod.precio || 0;
   };
 
   const handleAddFromDetail = () => {
@@ -1306,16 +1302,12 @@ export default function MenuDigital() {
 
         const resolvedImg = getVariantImageUrl({ ...detailProduct, estampado: selectedEstampado }, productos) || detailProduct.imagen_url || (detailProduct.imagenes_extra && detailProduct.imagenes_extra.length > 0 ? decodeExtraImage(detailProduct.imagenes_extra[0]).url : '');
 
-        const defaultMayorPrice = (key === 'caballero_unica' || key === 'dama_plus') ? 31000 : (key === 'unisex_2xl' ? 34000 : (['2/4','6/8','10/12'].includes(key) ? 22000 : key === '14/16' ? 22500 : 26000));
-        const defaultDetalPrice = (key === 'caballero_unica' || key === 'dama_plus') ? 41000 : (key === 'unisex_2xl' ? 44000 : (['2/4','6/8','10/12'].includes(key) ? 32000 : key === '14/16' ? 33000 : 36000));
-        const defaultP50Price = (key === 'caballero_unica' || key === 'dama_plus') ? 30000 : (key === 'unisex_2xl' ? 33000 : (['2/4','6/8','10/12'].includes(key) ? 21000 : key === '14/16' ? 21500 : 25000));
-
         const productToAdd = {
           ...detailProduct,
           es_producto_familiar: true,
-          precio: priceDetal > 1000 ? priceDetal : defaultDetalPrice,
-          precio_por_mayor: priceMayor > 1000 ? priceMayor : defaultMayorPrice,
-          precio_50_unidades: price50 > 1000 ? price50 : defaultP50Price,
+          precio: priceDetal > 0 ? priceDetal : 0,
+          precio_por_mayor: priceMayor > 0 ? priceMayor : null,
+          precio_50_unidades: price50 > 0 ? price50 : null,
           familia_opcion_key: famKey,
           nombre: `${detailProduct.nombre} (${label})`,
           imagen_url: resolvedImg
@@ -2010,7 +2002,8 @@ export default function MenuDigital() {
       mensaje += `*PRODUCTOS:*\n`;
       const mensajeProductos = items.map(item => {
         const itemPrice = getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * item.cantidad;
-        return `- ${item.cantidad}x ${item.nombre} ${item.talla ? `(Talla: ${item.talla}) ` : ''}${item.estampado ? `(Estampado: ${item.estampado}) ` : ''}- ${formatPrice(itemPrice)}`;
+        const priceText = itemPrice > 0 ? formatPrice(itemPrice) : 'Precio por acordar con asesor';
+        return `- ${item.cantidad}x ${item.nombre} ${item.talla ? `(Talla: ${item.talla}) ` : ''}${item.estampado ? `(Estampado: ${item.estampado}) ` : ''}- ${priceText}`;
       }).join('\n');
       mensaje += mensajeProductos;
       
@@ -2075,21 +2068,13 @@ export default function MenuDigital() {
           let effectivePrice = getEffectivePrice(item, effectiveCartBuyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
           const isWholesale = effectiveCartBuyerType === 'mayorista' || isBulkDiscountApplied || buyerType === 'mayorista';
           const isFam = isFamiliarProduct(item);
-          if (effectivePrice < 1000) {
-            if (isFam) {
-              const optLower = (item.familia_opcion_key || item.talla || item.nombre || '').toLowerCase();
-              if (optLower.includes('caballero') || optLower.includes('hombre') || optLower.includes('dama plus')) {
-                effectivePrice = isWholesale ? 31000 : 41000;
-              } else if (optLower.includes('2xl') || optLower.includes('unisex')) {
-                effectivePrice = isWholesale ? 34000 : 44000;
-              } else if (optLower.includes('14/16')) {
-                effectivePrice = isWholesale ? 22500 : 33000;
-              } else if (optLower.includes('2/4') || optLower.includes('6/8') || optLower.includes('10/12') || optLower.includes('nino') || optLower.includes('niño')) {
-                effectivePrice = isWholesale ? 22000 : 32000;
-              } else {
-                effectivePrice = isWholesale ? 26000 : 36000;
+          if (effectivePrice <= 0) {
+            if (isFam && item.precios_familia) {
+              const famPrices = getFamilyOptionPrices(item, item.talla, item.nombre, item.familia_opcion_key);
+              if (famPrices) {
+                effectivePrice = isWholesale ? (famPrices.mayor || famPrices.detal || 0) : (famPrices.detal || 0);
               }
-            } else if (item.precio && item.precio > 1000) {
+            } else if (item.precio && item.precio > 0) {
               effectivePrice = item.precio;
             }
           }
@@ -2097,8 +2082,8 @@ export default function MenuDigital() {
           return {
             ...item,
             imagen_url: itemImg,
-            precio_detal: (item.precio_detal && item.precio_detal > 1000) ? item.precio_detal : (item.precio && item.precio > 1000 ? item.precio : (isFam ? 36000 : 32000)),
-            precio: effectivePrice,
+            precio_detal: (item.precio_detal && item.precio_detal > 0) ? item.precio_detal : (item.precio && item.precio > 0 ? item.precio : 0),
+            precio: effectivePrice > 0 ? effectivePrice : 0,
             precio_aplicado_mayor: isWholesale,
             _metodo_pago: metodoPagoStr,
             _metodo_envio: metodoEnvioLabel,
@@ -3169,19 +3154,31 @@ export default function MenuDigital() {
 
                     if (isFamiliarProduct(producto)) {
                       const famBreakdown = getFamilyPriceBreakdown(producto);
-                      const damaMayor = famBreakdown?.dama.mayor || 26000;
-                      const caballeroMayor = famBreakdown?.caballero.mayor || 31000;
-                      const ninoMayor = famBreakdown?.nino.mayor || 22000;
-                      const minMayor = Math.min(damaMayor, caballeroMayor, ninoMayor);
+                      const validMayorPrices = [
+                        famBreakdown?.dama?.mayor,
+                        famBreakdown?.caballero?.mayor,
+                        famBreakdown?.nino?.mayor,
+                        famBreakdown?.damaPlus?.mayor,
+                        famBreakdown?.unisex2xl?.mayor,
+                      ].filter((p): p is number => typeof p === 'number' && p > 0);
+                      const minMayor = validMayorPrices.length > 0 ? Math.min(...validMayorPrices) : 0;
 
                       return (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.18rem', marginTop: '0.12rem', fontFamily: "'Poppins', sans-serif" }}>
                           {/* Fila 1: Precio desde */}
                           <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.2rem' }}>
-                            <span style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 400 }}>Desde</span>
-                            <strong style={{ fontSize: '0.88rem', fontWeight: 600, color: '#166534', lineHeight: 1.15 }}>
-                              {formatPrice(minMayor)}
-                            </strong>
+                            {minMayor > 0 ? (
+                              <>
+                                <span style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 400 }}>Desde</span>
+                                <strong style={{ fontSize: '0.88rem', fontWeight: 600, color: '#166534', lineHeight: 1.15 }}>
+                                  {formatPrice(minMayor)}
+                                </strong>
+                              </>
+                            ) : (
+                              <strong style={{ fontSize: '0.8rem', fontWeight: 500, color: '#64748b', lineHeight: 1.15 }}>
+                                Consultar con asesor
+                              </strong>
+                            )}
                           </div>
 
                           {/* Fila 2: Ver opciones */}
@@ -3238,9 +3235,15 @@ export default function MenuDigital() {
 
                     return (
                       <div style={{ marginTop: '0.1rem' }}>
-                        <strong style={{ fontSize: '1.05rem', fontWeight: 600, color: companyColor, fontFamily: "'Poppins', sans-serif" }}>
-                          {formatPrice(priceDetal)}
-                        </strong>
+                        {priceDetal > 0 ? (
+                          <strong style={{ fontSize: '1.05rem', fontWeight: 600, color: companyColor, fontFamily: "'Poppins', sans-serif" }}>
+                            {formatPrice(priceDetal)}
+                          </strong>
+                        ) : (
+                          <span style={{ fontSize: '0.8rem', fontWeight: 500, color: '#64748b', fontFamily: "'Poppins', sans-serif" }}>
+                            Consultar con asesor
+                          </span>
+                        )}
                       </div>
                     );
                   })()}
@@ -5056,22 +5059,36 @@ export default function MenuDigital() {
                         }
 
                         // Cuando no hay unidades seleccionadas aún (al abrir el modal)
-                        const damaMayor = famBreakdown?.dama.mayor || 26000;
-                        const caballeroMayor = famBreakdown?.caballero.mayor || 31000;
-                        const ninoMayor = famBreakdown?.nino.mayor || 22000;
+                        const validMayorPrices = [
+                          famBreakdown?.dama?.mayor,
+                          famBreakdown?.caballero?.mayor,
+                          famBreakdown?.nino?.mayor,
+                          famBreakdown?.damaPlus?.mayor,
+                          famBreakdown?.unisex2xl?.mayor,
+                        ].filter((p): p is number => typeof p === 'number' && p > 0);
 
-                        const minMayor = Math.min(damaMayor, caballeroMayor, ninoMayor);
+                        const minMayor = validMayorPrices.length > 0 ? Math.min(...validMayorPrices) : 0;
+
+                        if (minMayor > 0) {
+                          return (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', textAlign: 'right', alignItems: 'flex-end', fontFamily: "'Poppins', sans-serif" }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'flex-end', whiteSpace: 'nowrap' }}>
+                                <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#15803d', background: '#dcfce7', padding: '0.12rem 0.4rem', borderRadius: '5px', border: '1px solid #bbf7d0' }}>
+                                  Por mayor:
+                                </span>
+                                <strong style={{ fontSize: '1.24rem', fontWeight: 600, color: '#166534' }}>
+                                  Desde {formatPrice(minMayor)}
+                                </strong>
+                              </div>
+                            </div>
+                          );
+                        }
 
                         return (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', textAlign: 'right', alignItems: 'flex-end', fontFamily: "'Poppins', sans-serif" }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', justifyContent: 'flex-end', whiteSpace: 'nowrap' }}>
-                              <span style={{ fontSize: '0.72rem', fontWeight: 600, color: '#15803d', background: '#dcfce7', padding: '0.12rem 0.4rem', borderRadius: '5px', border: '1px solid #bbf7d0' }}>
-                                Por mayor:
-                              </span>
-                              <strong style={{ fontSize: '1.24rem', fontWeight: 600, color: '#166534' }}>
-                                Desde {formatPrice(minMayor)}
-                              </strong>
-                            </div>
+                            <span style={{ fontSize: '0.85rem', fontWeight: 500, color: '#64748b' }}>
+                              Consultar con asesor
+                            </span>
                           </div>
                         );
                       }
@@ -5111,9 +5128,15 @@ export default function MenuDigital() {
                       return (
                         <div style={{ textAlign: 'right', whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>
                           <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 500 }}>Detal</div>
-                          <span style={{ fontSize: '1.18rem', fontWeight: 600, color: configuracion?.color_primario || 'var(--primary, #f36b8e)' }}>
-                            {formatPrice(priceDetal)}
-                          </span>
+                          {priceDetal > 0 ? (
+                            <span style={{ fontSize: '1.18rem', fontWeight: 600, color: configuracion?.color_primario || 'var(--primary, #f36b8e)' }}>
+                              {formatPrice(priceDetal)}
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: '0.85rem', fontWeight: 500, color: '#64748b' }}>
+                              Consultar con asesor
+                            </span>
+                          )}
                         </div>
                       );
                     })()}
@@ -5231,7 +5254,7 @@ export default function MenuDigital() {
                                             marginTop: '0.04rem'
                                           }}>
                                             <span style={{ fontSize: '0.66rem', fontWeight: 400, color: '#94a3b8' }}>Detal: </span>
-                                            {formatPrice(optDetal)}
+                                            {optDetal > 0 ? formatPrice(optDetal) : 'Por acordar'}
                                           </div>
                                         </div>
 
@@ -5331,7 +5354,7 @@ export default function MenuDigital() {
                                             marginTop: '0.04rem'
                                           }}>
                                             <span style={{ fontSize: '0.66rem', fontWeight: 400, color: '#94a3b8' }}>Detal: </span>
-                                            {formatPrice(optDetal)}
+                                            {optDetal > 0 ? formatPrice(optDetal) : 'Por acordar'}
                                           </div>
                                         </div>
 
@@ -5573,12 +5596,16 @@ export default function MenuDigital() {
                               <ShoppingCart size={18} />
                               <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                 {totalFamUnits > 0
-                                  ? `Añadir • ${formatPrice(totalFamPrice)} (${totalFamUnits} ${totalFamUnits === 1 ? 'prenda' : 'prendas'})`
+                                  ? (totalFamPrice > 0 
+                                      ? `Añadir • ${formatPrice(totalFamPrice)} (${totalFamUnits} ${totalFamUnits === 1 ? 'prenda' : 'prendas'})` 
+                                      : `Añadir (${totalFamUnits} ${totalFamUnits === 1 ? 'prenda' : 'prendas'}) • Precio por acordar`)
                                   : 'Añadir al carrito'}
                               </span>
                             </button>
                           );
                         }
+                        const unitPrice = getEffectivePrice({ ...detailProduct, precio: getActiveUnitPrice(detailProduct, selectedMiembroFamilia, selectedTalla, buyerType) }, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional);
+                        const subtotalPrice = unitPrice * selectedCantidad;
                         return (
                           <button 
                             className="detail-add-btn" 
@@ -5586,7 +5613,7 @@ export default function MenuDigital() {
                             onClick={handleAddFromDetail}
                           >
                             <ShoppingCart size={18} />
-                            <span>Añadir • {formatPrice(getEffectivePrice({ ...detailProduct, precio: getActiveUnitPrice(detailProduct, selectedMiembroFamilia, selectedTalla, buyerType) }, buyerType, markupPorcentaje, ajustesProductos, descuentoPromocional) * selectedCantidad)}</span>
+                            <span>{subtotalPrice > 0 ? `Añadir • ${formatPrice(subtotalPrice)}` : 'Añadir al carrito (Precio por acordar)'}</span>
                           </button>
                         );
                       })()}

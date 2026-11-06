@@ -4014,19 +4014,19 @@ export default function Admin() {
         });
       }
 
-      const pDamaUnica = preciosDetalladosMap["Dama Única"]?.detal || 36000;
-      const pDamaPlus = preciosDetalladosMap["Dama Plus"]?.detal || 41000;
-      const pCaballeroUnica = preciosDetalladosMap["Caballero Única"]?.detal || 41000;
-      const p2xlUnisex = preciosDetalladosMap["2XL Unisex"]?.detal || 44000;
+      const pDamaUnica = preciosDetalladosMap["Dama Única"]?.detal || 0;
+      const pDamaPlus = preciosDetalladosMap["Dama Plus"]?.detal || 0;
+      const pCaballeroUnica = preciosDetalladosMap["Caballero Única"]?.detal || 0;
+      const p2xlUnisex = preciosDetalladosMap["2XL Unisex"]?.detal || 0;
 
-      const basePrice = parseFloat(f.precio) || (isFam ? (preciosTallasMap["2/4"] || 32000) : 0);
+      const basePrice = parseFloat(f.precio) || (isFam ? (preciosTallasMap["2/4"] || 0) : 0);
 
       const preciosFam = isFam ? {
         dama_unica: pDamaUnica,
         dama_plus: pDamaPlus,
         caballero_unica: pCaballeroUnica,
         unisex_2xl: p2xlUnisex,
-        nino: preciosTallasMap["2/4"] || 32000,
+        nino: preciosTallasMap["2/4"] || 0,
         hombre: pCaballeroUnica,
         mujer: pDamaUnica,
         opciones_deshabilitadas: opcionesDeshabilitadas,
@@ -4529,17 +4529,17 @@ export default function Admin() {
       });
     }
 
-    const pDamaUnica = preciosDetalladosMap["Dama Única"]?.detal || 36000;
-    const pDamaPlus = preciosDetalladosMap["Dama Plus"]?.detal || 41000;
-    const pCaballeroUnica = preciosDetalladosMap["Caballero Única"]?.detal || 41000;
-    const p2xlUnisex = preciosDetalladosMap["2XL Unisex"]?.detal || 44000;
+    const pDamaUnica = preciosDetalladosMap["Dama Única"]?.detal || 0;
+    const pDamaPlus = preciosDetalladosMap["Dama Plus"]?.detal || 0;
+    const pCaballeroUnica = preciosDetalladosMap["Caballero Única"]?.detal || 0;
+    const p2xlUnisex = preciosDetalladosMap["2XL Unisex"]?.detal || 0;
 
     const preciosFam = isFam ? {
       dama_unica: pDamaUnica,
       dama_plus: pDamaPlus,
       caballero_unica: pCaballeroUnica,
       unisex_2xl: p2xlUnisex,
-      nino: preciosTallasMap["2/4"] || 32000,
+      nino: preciosTallasMap["2/4"] || 0,
       hombre: pCaballeroUnica,
       mujer: pDamaUnica,
       opciones_deshabilitadas: opcionesDeshabilitadas,
@@ -9931,11 +9931,11 @@ export default function Admin() {
                                       };
 
                                       const rows = [
-                                        { label: '👩 Dama Única', ...getOpt('Dama Única', fam.dama_unica || 36000) },
-                                        { label: '👩 Dama Plus', ...getOpt('Dama Plus', fam.dama_plus || 41000) },
-                                        { label: '👨 Caballero Única', ...getOpt('Caballero Única', fam.caballero_unica || 41000) },
-                                        { label: '🧑 2XL Unisex', ...getOpt('2XL Unisex', fam.unisex_2xl || 44000) },
-                                        { label: '👶 Niños (2/4 a 18)', ...getOpt('2/4', fam.nino || 32000) },
+                                        { label: '👩 Dama Única', ...getOpt('Dama Única', fam.dama_unica || 0) },
+                                        { label: '👩 Dama Plus', ...getOpt('Dama Plus', fam.dama_plus || 0) },
+                                        { label: '👨 Caballero Única', ...getOpt('Caballero Única', fam.caballero_unica || 0) },
+                                        { label: '🧑 2XL Unisex', ...getOpt('2XL Unisex', fam.unisex_2xl || 0) },
+                                        { label: '👶 Niños (2/4 a 18)', ...getOpt('2/4', fam.nino || 0) },
                                       ];
 
                                       const activeRows = rows.filter(r => !r.isOff);
