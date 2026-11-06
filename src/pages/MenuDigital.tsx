@@ -1187,33 +1187,45 @@ export default function MenuDigital() {
       if (miembro === 'dama_unica') {
         const p = getOptionPrice('Dama Única');
         if (p > 0) return p;
+        if (currentBuyerMode === 'mayorista') {
+          if (preciosDetallados['Dama Única']?.mayor > 0) return Number(preciosDetallados['Dama Única'].mayor);
+          return 26000;
+        }
         if (preciosDetallados['Dama Única']?.detal > 0) return Number(preciosDetallados['Dama Única'].detal);
         if (fam.dama_unica) return Number(fam.dama_unica);
-        if (currentBuyerMode === 'mayorista') return 26000;
         return 36000;
       }
       if (miembro === 'dama_plus') {
         const p = getOptionPrice('Dama Plus');
         if (p > 0) return p;
+        if (currentBuyerMode === 'mayorista') {
+          if (preciosDetallados['Dama Plus']?.mayor > 0) return Number(preciosDetallados['Dama Plus'].mayor);
+          return 31000;
+        }
         if (preciosDetallados['Dama Plus']?.detal > 0) return Number(preciosDetallados['Dama Plus'].detal);
         if (fam.dama_plus) return Number(fam.dama_plus);
-        if (currentBuyerMode === 'mayorista') return 31000;
         return 41000;
       }
       if (miembro === 'caballero_unica') {
         const p = getOptionPrice('Caballero Única');
         if (p > 0) return p;
+        if (currentBuyerMode === 'mayorista') {
+          if (preciosDetallados['Caballero Única']?.mayor > 0) return Number(preciosDetallados['Caballero Única'].mayor);
+          return 31000;
+        }
         if (preciosDetallados['Caballero Única']?.detal > 0) return Number(preciosDetallados['Caballero Única'].detal);
         if (fam.caballero_unica) return Number(fam.caballero_unica);
-        if (currentBuyerMode === 'mayorista') return 31000;
         return 41000;
       }
       if (miembro === 'unisex_2xl') {
         const p = getOptionPrice('2XL Unisex');
         if (p > 0) return p;
+        if (currentBuyerMode === 'mayorista') {
+          if (preciosDetallados['2XL Unisex']?.mayor > 0) return Number(preciosDetallados['2XL Unisex'].mayor);
+          return 34000;
+        }
         if (preciosDetallados['2XL Unisex']?.detal > 0) return Number(preciosDetallados['2XL Unisex'].detal);
         if (fam.unisex_2xl) return Number(fam.unisex_2xl);
-        if (currentBuyerMode === 'mayorista') return 34000;
         return 44000;
       }
 
@@ -1221,16 +1233,21 @@ export default function MenuDigital() {
         if (talla && talla !== 'Única') {
           const p = getOptionPrice(talla);
           if (p > 0) return p;
-          if (preciosDetallados[talla]?.detal > 0) return Number(preciosDetallados[talla].detal);
+          if (currentBuyerMode === 'mayorista') {
+            if (preciosDetallados[talla]?.mayor > 0) return Number(preciosDetallados[talla].mayor);
+          } else {
+            if (preciosDetallados[talla]?.detal > 0) return Number(preciosDetallados[talla].detal);
+          }
         }
         const p = getOptionPrice('2/4');
         if (p > 0) return p;
-        if (preciosDetallados['2/4']?.detal > 0) return Number(preciosDetallados['2/4'].detal);
         if (currentBuyerMode === 'mayorista') {
-          if (talla === '14/16') return 22500;
-          if (talla === '18') return 26000;
+          if (talla === '14/16') return (preciosDetallados['14/16']?.mayor > 0 ? Number(preciosDetallados['14/16'].mayor) : 22500);
+          if (talla === '18') return (preciosDetallados['18']?.mayor > 0 ? Number(preciosDetallados['18'].mayor) : 26000);
+          if (preciosDetallados['2/4']?.mayor > 0) return Number(preciosDetallados['2/4'].mayor);
           return 22000;
         }
+        if (preciosDetallados['2/4']?.detal > 0) return Number(preciosDetallados['2/4'].detal);
         return Number(fam.nino || 32000);
       }
 
@@ -1289,12 +1306,16 @@ export default function MenuDigital() {
 
         const resolvedImg = getVariantImageUrl({ ...detailProduct, estampado: selectedEstampado }, productos) || detailProduct.imagen_url || (detailProduct.imagenes_extra && detailProduct.imagenes_extra.length > 0 ? decodeExtraImage(detailProduct.imagenes_extra[0]).url : '');
 
+        const defaultMayorPrice = (key === 'caballero_unica' || key === 'dama_plus') ? 31000 : (key === 'unisex_2xl' ? 34000 : (['2/4','6/8','10/12'].includes(key) ? 22000 : key === '14/16' ? 22500 : 26000));
+        const defaultDetalPrice = (key === 'caballero_unica' || key === 'dama_plus') ? 41000 : (key === 'unisex_2xl' ? 44000 : (['2/4','6/8','10/12'].includes(key) ? 32000 : key === '14/16' ? 33000 : 36000));
+        const defaultP50Price = (key === 'caballero_unica' || key === 'dama_plus') ? 30000 : (key === 'unisex_2xl' ? 33000 : (['2/4','6/8','10/12'].includes(key) ? 21000 : key === '14/16' ? 21500 : 25000));
+
         const productToAdd = {
           ...detailProduct,
           es_producto_familiar: true,
-          precio: priceDetal > 1000 ? priceDetal : 36000,
-          precio_por_mayor: priceMayor > 1000 ? priceMayor : 26000,
-          precio_50_unidades: price50 > 1000 ? price50 : 25000,
+          precio: priceDetal > 1000 ? priceDetal : defaultDetalPrice,
+          precio_por_mayor: priceMayor > 1000 ? priceMayor : defaultMayorPrice,
+          precio_50_unidades: price50 > 1000 ? price50 : defaultP50Price,
           familia_opcion_key: famKey,
           nombre: `${detailProduct.nombre} (${label})`,
           imagen_url: resolvedImg
@@ -2056,7 +2077,18 @@ export default function MenuDigital() {
           const isFam = isFamiliarProduct(item);
           if (effectivePrice < 1000) {
             if (isFam) {
-              effectivePrice = isWholesale ? 26000 : 36000;
+              const optLower = (item.familia_opcion_key || item.talla || item.nombre || '').toLowerCase();
+              if (optLower.includes('caballero') || optLower.includes('hombre') || optLower.includes('dama plus')) {
+                effectivePrice = isWholesale ? 31000 : 41000;
+              } else if (optLower.includes('2xl') || optLower.includes('unisex')) {
+                effectivePrice = isWholesale ? 34000 : 44000;
+              } else if (optLower.includes('14/16')) {
+                effectivePrice = isWholesale ? 22500 : 33000;
+              } else if (optLower.includes('2/4') || optLower.includes('6/8') || optLower.includes('10/12') || optLower.includes('nino') || optLower.includes('niño')) {
+                effectivePrice = isWholesale ? 22000 : 32000;
+              } else {
+                effectivePrice = isWholesale ? 26000 : 36000;
+              }
             } else if (item.precio && item.precio > 1000) {
               effectivePrice = item.precio;
             }
