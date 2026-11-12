@@ -1253,14 +1253,15 @@ export default function MenuDigital() {
     }
 
     const currentBuyerMode = bType || buyerType;
+    let basePrice = prod.precio || 0;
     if (currentBuyerMode === '50_unidades') {
-      if (prod.precio_50_unidades && Number(prod.precio_50_unidades) > 0) return Number(prod.precio_50_unidades);
-      if (prod.precio_por_mayor && Number(prod.precio_por_mayor) > 0) return Number(prod.precio_por_mayor);
+      if (prod.precio_50_unidades && Number(prod.precio_50_unidades) > 0) basePrice = Number(prod.precio_50_unidades);
+      else if (prod.precio_por_mayor && Number(prod.precio_por_mayor) > 0) basePrice = Number(prod.precio_por_mayor);
+    } else if (currentBuyerMode === 'mayorista' && prod.precio_por_mayor && Number(prod.precio_por_mayor) > 0) {
+      basePrice = Number(prod.precio_por_mayor);
     }
-    if (currentBuyerMode === 'mayorista' && prod.precio_por_mayor && Number(prod.precio_por_mayor) > 0) {
-      return Number(prod.precio_por_mayor);
-    }
-    return prod.precio || 0;
+    if (basePrice > 0 && basePrice < 1000) basePrice *= 1000;
+    return basePrice;
   };
 
   const handleAddFromDetail = () => {

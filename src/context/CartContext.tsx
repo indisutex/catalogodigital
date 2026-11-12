@@ -172,6 +172,11 @@ export const getEffectivePrice = (producto: Producto, buyerType: BuyerType, mark
     }
   }
 
+  // Protección anti-error humano: Si una asesora ingresó el precio en miles sin ceros (ej: 34 en vez de 34000)
+  if (price > 0 && price < 1000) {
+    price = price * 1000;
+  }
+
   let finalPrice = price;
   let hasCustomPrice = false;
 

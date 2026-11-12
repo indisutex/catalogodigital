@@ -4034,13 +4034,20 @@ export default function Admin() {
         precios_detallados: preciosDetalladosMap
       } : null;
 
+      let normPrice = basePrice;
+      if (normPrice > 0 && normPrice < 1000) normPrice *= 1000;
+      let normMayor = parseFloat(f.precio_por_mayor) || null;
+      if (normMayor && normMayor > 0 && normMayor < 1000) normMayor *= 1000;
+      let norm50 = parseFloat(f.precio_50_unidades) || null;
+      if (norm50 && norm50 > 0 && norm50 < 1000) norm50 *= 1000;
+
       return {
         nombre: f.nombre,
         referencia: f.referencia || f.sku || null,
         descripcion: f.descripcion,
-        precio: basePrice,
-        precio_por_mayor: parseFloat(f.precio_por_mayor) || null,
-        precio_50_unidades: parseFloat(f.precio_50_unidades) || null,
+        precio: normPrice,
+        precio_por_mayor: normMayor,
+        precio_50_unidades: norm50,
         categoria: f.categoria,
         subcategoria: f.subcategoria || null,
         imagen_url: mainImg,
@@ -4246,24 +4253,33 @@ export default function Admin() {
     e.preventDefault();
     if (excelProducts.length === 0) return;
     setLoading(true);
-    const newProducts = excelProducts.map(p => ({
-      nombre: p.nombre,
-      descripcion: p.descripcion,
-      precio: p.precio,
-      categoria: p.categoria,
-      subcategoria: p.subcategoria || null,
-      imagen_url: p.imagen_url || '',
-      video_url: p.video_url || null,
-      tallas: p.tallas || null,
-      referencia: p.referencia || null,
-      costo: p.costo || null,
-      precio_por_mayor: p.precio_por_mayor || null,
-      precio_50_unidades: p.precio_50_unidades || null,
-      stock: p.stock || 0,
-      estampados: p.estampados || null,
-      descuento: p.descuento || 0,
-      tenant_id: getTenantId()
-    }));
+    const newProducts = excelProducts.map(p => {
+      let pDetal = Number(p.precio) || 0;
+      if (pDetal > 0 && pDetal < 1000) pDetal *= 1000;
+      let pMayor = p.precio_por_mayor ? Number(p.precio_por_mayor) : null;
+      if (pMayor && pMayor > 0 && pMayor < 1000) pMayor *= 1000;
+      let p50 = p.precio_50_unidades ? Number(p.precio_50_unidades) : null;
+      if (p50 && p50 > 0 && p50 < 1000) p50 *= 1000;
+
+      return {
+        nombre: p.nombre,
+        descripcion: p.descripcion,
+        precio: pDetal,
+        categoria: p.categoria,
+        subcategoria: p.subcategoria || null,
+        imagen_url: p.imagen_url || '',
+        video_url: p.video_url || null,
+        tallas: p.tallas || null,
+        referencia: p.referencia || null,
+        costo: p.costo || null,
+        precio_por_mayor: pMayor,
+        precio_50_unidades: p50,
+        stock: p.stock || 0,
+        estampados: p.estampados || null,
+        descuento: p.descuento || 0,
+        tenant_id: getTenantId()
+      };
+    });
     const { error } = await supabase.from('productos').insert(newProducts);
     setLoading(false);
     if (error) {
@@ -4547,13 +4563,20 @@ export default function Admin() {
       precios_detallados: preciosDetalladosMap
     } : null;
 
+    let normEditPrice = Number(editingProduct.precio) || 0;
+    if (normEditPrice > 0 && normEditPrice < 1000) normEditPrice *= 1000;
+    let normEditMayor = editingProduct.precio_por_mayor ? Number(editingProduct.precio_por_mayor) : null;
+    if (normEditMayor && normEditMayor > 0 && normEditMayor < 1000) normEditMayor *= 1000;
+    let normEdit50 = editingProduct.precio_50_unidades ? Number(editingProduct.precio_50_unidades) : null;
+    if (normEdit50 && normEdit50 > 0 && normEdit50 < 1000) normEdit50 *= 1000;
+
     const { error } = await supabase.from('productos').update({
       nombre: editingProduct.nombre,
       referencia: editingProduct.referencia || editingProduct.sku || null,
       descripcion: editingProduct.descripcion,
-      precio: editingProduct.precio,
-      precio_por_mayor: editingProduct.precio_por_mayor || null,
-      precio_50_unidades: editingProduct.precio_50_unidades || null,
+      precio: normEditPrice,
+      precio_por_mayor: normEditMayor,
+      precio_50_unidades: normEdit50,
       categoria: editingProduct.categoria,
       subcategoria: editingProduct.subcategoria || null,
       imagen_url: mainImg,
