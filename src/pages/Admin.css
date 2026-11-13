@@ -2850,15 +2850,32 @@ body {
   border-color: #cbd5e1;
 }
 
+/* Responsividad para Topbar, Cotizaciones y Shift Bar */
+.mobile-title-compact,
+.topbar-bloqueada-text-mobile,
+.asesor-shift-mobile-info,
+.asesor-shift-btn-text-mobile {
+  display: none !important;
+}
+
+.asesor-shift-desktop-info {
+  display: flex !important;
+}
+
+.asesor-shift-btn-text-desktop,
+.topbar-bloqueada-text-full {
+  display: inline !important;
+}
+
 @media (max-width: 992px) {
   .topbar-motivational-quote {
     display: block !important;
-    font-size: 0.76rem !important;
+    font-size: 0.74rem !important;
     line-height: 1.2 !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
-    max-width: calc(100vw - 160px) !important;
+    max-width: 150px !important;
     margin-top: 1px !important;
   }
   
@@ -2872,13 +2889,146 @@ body {
   
   .btn-home-header {
     padding: 0 !important;
-    width: 38px !important;
-    height: 38px !important;
+    width: 36px !important;
+    height: 36px !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
     border-radius: 10px !important;
     flex-shrink: 0 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  /* En móviles ocultamos la frase motivacional para dar espacio a botones */
+  .topbar-motivational-quote {
+    display: none !important;
+  }
+
+  .mobile-title-compact {
+    display: inline !important;
+  }
+
+  .topbar-user-name {
+    max-width: 95px !important;
+    font-size: 0.84rem !important;
+  }
+
+  .topbar-section-title {
+    max-width: 145px !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  .topbar-btn-copy-link .topbar-btn-text-desktop {
+    display: none !important;
+  }
+
+  .topbar-btn-copy-link {
+    width: 34px !important;
+    height: 34px !important;
+    padding: 0 !important;
+    justify-content: center !important;
+    border-radius: 8px !important;
+    flex: 0 0 34px !important;
+  }
+
+  .topbar-btn-ext-link {
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 6px !important;
+  }
+
+  .topbar-bloqueada-text-full {
+    display: none !important;
+  }
+
+  .topbar-bloqueada-text-mobile {
+    display: inline !important;
+    font-size: 0.7rem !important;
+  }
+
+  .topbar-btn-linea-bloqueada {
+    height: 34px !important;
+    padding: 0 0.45rem !important;
+    gap: 0.2rem !important;
+  }
+
+  /* Shift Bar modo compacto en móvil */
+  .asesor-shift-desktop-info,
+  .asesor-shift-btn-text-desktop {
+    display: none !important;
+  }
+
+  .asesor-shift-mobile-info {
+    display: flex !important;
+  }
+
+  .asesor-shift-btn-text-mobile {
+    display: inline !important;
+  }
+
+  .asesor-shift-bar-container {
+    padding: 0.22rem 0.4rem !important;
+    gap: 0.3rem !important;
+    max-width: 135px !important;
+  }
+
+  .asesor-shift-btn {
+    padding: 0.22rem 0.4rem !important;
+    font-size: 0.68rem !important;
+  }
+
+  .topbar-btn-lock-informe {
+    width: 34px !important;
+    height: 34px !important;
+    padding: 0 !important;
+    justify-content: center !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .topbar-user-name {
+    max-width: 75px !important;
+    font-size: 0.78rem !important;
+  }
+
+  .topbar-bloqueada-text-mobile {
+    display: none !important;
+  }
+
+  .topbar-btn-linea-bloqueada {
+    width: 32px !important;
+    height: 32px !important;
+    padding: 0 !important;
+    justify-content: center !important;
+    flex: 0 0 32px !important;
+  }
+
+  .topbar-btn-copy-link {
+    width: 32px !important;
+    height: 32px !important;
+    flex: 0 0 32px !important;
+  }
+
+  .topbar-btn-ext-link {
+    display: none !important;
+  }
+
+  .asesor-shift-bar-container {
+    padding: 0.18rem 0.35rem !important;
+    max-width: 110px !important;
+    gap: 0.2rem !important;
+  }
+
+  .asesor-shift-mobile-info span {
+    font-size: 0.64rem !important;
+  }
+
+  .asesor-shift-btn {
+    padding: 0.18rem 0.3rem !important;
+    font-size: 0.64rem !important;
   }
 }
 
@@ -3892,6 +4042,71 @@ button:active { transform: scale(0.95); }
   }
   .pedido-card-actions {
     gap: 0.3rem !important;
+  }
+
+  /* ── RESPONSIVE PARA INFORME ASESORAS Y CHATS ── */
+  .informe-chat-item-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    padding: 0.75rem 0.85rem !important;
+    gap: 0.65rem !important;
+  }
+  .informe-chat-customer-col {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+  .informe-chat-time-col {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+  .informe-chat-price-col {
+    min-width: 0 !important;
+    width: 100% !important;
+    text-align: left !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    border-top: 1px dashed #e2e8f0 !important;
+    padding-top: 0.45rem !important;
+  }
+  .informe-chat-actions-col {
+    width: 100% !important;
+    display: flex !important;
+    gap: 0.35rem !important;
+    flex-wrap: wrap !important;
+  }
+  .informe-chat-actions-col > button {
+    flex: 1 1 auto !important;
+    justify-content: center !important;
+    padding: 0.45rem 0.5rem !important;
+    font-size: 0.72rem !important;
+  }
+
+  /* ── RESPONSIVE PARA CONTROL DE ASISTENCIA ── */
+  .asistencia-header-card {
+    padding: 1rem 1.15rem !important;
+    gap: 0.85rem !important;
+  }
+  .asistencia-header-title {
+    font-size: 1.15rem !important;
+  }
+  .asistencia-header-actions {
+    width: 100% !important;
+    gap: 0.4rem !important;
+  }
+  .asistencia-header-actions > button {
+    flex: 1 1 auto !important;
+    justify-content: center !important;
+    padding: 0.45rem 0.65rem !important;
+    font-size: 0.76rem !important;
+  }
+  .asistencia-kpis-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.65rem !important;
+  }
+  .asistencia-kpis-grid > div {
+    padding: 0.85rem 1rem !important;
+    gap: 0.65rem !important;
   }
 }
 

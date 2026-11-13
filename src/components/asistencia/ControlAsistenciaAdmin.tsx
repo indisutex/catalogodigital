@@ -250,6 +250,7 @@ export const ControlAsistenciaAdmin: React.FC<ControlAsistenciaAdminProps> = ({
     <div style={{ fontFamily: "'Poppins', sans-serif", paddingBottom: '2.5rem' }}>
       {/* ── ENCABEZADO DE SECCIÓN ── */}
       <div
+        className="asistencia-header-card"
         style={{
           display: 'flex',
           justifyContent: 'space-between',
@@ -275,12 +276,13 @@ export const ControlAsistenciaAdmin: React.FC<ControlAsistenciaAdminProps> = ({
                 color: '#10b981',
                 display: 'inline-flex',
                 alignItems: 'center',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                flexShrink: 0
               }}
             >
               <Clock size={18} />
             </span>
-            <h2 style={{ margin: 0, fontSize: '1.35rem', fontWeight: 600, color: '#0f172a' }}>
+            <h2 className="asistencia-header-title" style={{ margin: 0, fontSize: '1.35rem', fontWeight: 600, color: '#0f172a' }}>
               Control de Asistencia y Jornadas Laborales
             </h2>
           </div>
@@ -290,7 +292,7 @@ export const ControlAsistenciaAdmin: React.FC<ControlAsistenciaAdminProps> = ({
         </div>
 
         {/* Botones de acción principales */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', flexWrap: 'wrap' }}>
+        <div className="asistencia-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.55rem', flexWrap: 'wrap' }}>
           <button
             type="button"
             onClick={cargarAsistencia}
@@ -367,6 +369,7 @@ export const ControlAsistenciaAdmin: React.FC<ControlAsistenciaAdminProps> = ({
 
       {/* ── TARJETAS DE RESUMEN (KPIS) ── */}
       <div
+        className="asistencia-kpis-grid"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
@@ -784,8 +787,8 @@ export const ControlAsistenciaAdmin: React.FC<ControlAsistenciaAdminProps> = ({
           overflow: 'hidden'
         }}
       >
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
+        <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <table style={{ width: '100%', minWidth: '740px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
             <thead>
               <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#64748b', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
                 <th style={{ padding: '0.85rem 1rem', fontWeight: 600 }}>Asesor</th>

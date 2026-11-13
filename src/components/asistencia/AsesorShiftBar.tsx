@@ -84,24 +84,27 @@ export const AsesorShiftBar: React.FC<AsesorShiftBarProps> = ({
     <>
       {/* ── BARRA O PILL ENCABEZADO: JORNADA ACTIVA CON ALERTA DE SALIDA ── */}
       <div
+        className="asesor-shift-bar-container"
         style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: '0.65rem',
+          gap: '0.5rem',
           background: alertaSalida.isCompleted ? '#fef2f2' : isAlertActive ? '#fffbeb' : '#f0fdf4',
           border: alertaSalida.isCompleted ? '1.5px solid #f87171' : isAlertActive ? '1.5px solid #f59e0b' : '1.5px solid #bbf7d0',
           borderRadius: '12px',
-          padding: '0.35rem 0.65rem',
+          padding: '0.3rem 0.55rem',
           boxShadow: isAlertActive ? '0 2px 10px rgba(245, 158, 11, 0.2)' : '0 2px 8px rgba(16, 185, 129, 0.08)',
           fontFamily: "'Poppins', sans-serif",
-          transition: 'all 0.25s ease'
+          transition: 'all 0.25s ease',
+          flexShrink: 0
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+        {/* Vista Desktop / Tablet amplia: Entrada + Transcurrido completo */}
+        <div className="asesor-shift-desktop-info" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
           <span
             style={{
-              width: '9px',
-              height: '9px',
+              width: '8px',
+              height: '8px',
               borderRadius: '50%',
               background: alertaSalida.isCompleted ? '#ef4444' : isAlertActive ? '#f59e0b' : '#10b981',
               boxShadow: alertaSalida.isCompleted
@@ -109,7 +112,8 @@ export const AsesorShiftBar: React.FC<AsesorShiftBarProps> = ({
                 : isAlertActive
                 ? '0 0 0 3px rgba(245, 158, 11, 0.3)'
                 : '0 0 0 3px rgba(16, 185, 129, 0.25)',
-              display: 'inline-block'
+              display: 'inline-block',
+              flexShrink: 0
             }}
           />
           <div style={{ lineHeight: 1.2 }}>
@@ -146,24 +150,56 @@ export const AsesorShiftBar: React.FC<AsesorShiftBarProps> = ({
           </div>
         </div>
 
+        {/* Vista Móvil compacta (<= 768px): Pulso + Tiempo transcurrido compacto */}
+        <div className="asesor-shift-mobile-info" style={{ display: 'none', alignItems: 'center', gap: '0.35rem' }}>
+          <span
+            style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              background: alertaSalida.isCompleted ? '#ef4444' : isAlertActive ? '#f59e0b' : '#10b981',
+              boxShadow: alertaSalida.isCompleted
+                ? '0 0 0 2.5px rgba(239, 68, 68, 0.3)'
+                : isAlertActive
+                ? '0 0 0 2.5px rgba(245, 158, 11, 0.3)'
+                : '0 0 0 2.5px rgba(16, 185, 129, 0.25)',
+              display: 'inline-block',
+              flexShrink: 0
+            }}
+          />
+          <span
+            style={{
+              fontSize: '0.72rem',
+              fontWeight: 500,
+              color: alertaSalida.isCompleted ? '#b91c1c' : isAlertActive ? '#b45309' : '#166534',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            {isAlertActive ? '⏰ Turno' : `⏱️ ${elapsedText}`}
+          </span>
+        </div>
+
         <button
           type="button"
           onClick={() => setShowModal(true)}
+          className="asesor-shift-btn"
           style={{
             background: alertaSalida.isCompleted ? '#ef4444' : isAlertActive ? '#f59e0b' : '#ffffff',
             border: isAlertActive ? 'none' : '1px solid #86efac',
             color: isAlertActive ? '#ffffff' : '#15803d',
             borderRadius: '8px',
-            padding: '0.35rem 0.65rem',
+            padding: '0.32rem 0.6rem',
             fontSize: '0.72rem',
             fontWeight: 600,
             cursor: 'pointer',
             display: 'inline-flex',
             alignItems: 'center',
-            gap: '0.3rem',
+            gap: '0.25rem',
             transition: 'all 0.15s ease',
             whiteSpace: 'nowrap',
-            boxShadow: isAlertActive ? '0 2px 6px rgba(245, 158, 11, 0.35)' : 'none'
+            boxShadow: isAlertActive ? '0 2px 6px rgba(245, 158, 11, 0.35)' : 'none',
+            flexShrink: 0,
+            fontFamily: "'Poppins', sans-serif"
           }}
           onMouseEnter={e => {
             if (!isAlertActive) e.currentTarget.style.background = '#dcfce7';
@@ -173,7 +209,8 @@ export const AsesorShiftBar: React.FC<AsesorShiftBarProps> = ({
           }}
         >
           <LogOut size={13} />
-          <span>{isAlertActive ? 'CERRAR TURNO' : 'MARCAR SALIDA'}</span>
+          <span className="asesor-shift-btn-text-desktop">{isAlertActive ? 'CERRAR TURNO' : 'MARCAR SALIDA'}</span>
+          <span className="asesor-shift-btn-text-mobile">{isAlertActive ? 'Cerrar' : 'Salir'}</span>
         </button>
       </div>
 
@@ -199,10 +236,13 @@ export const AsesorShiftBar: React.FC<AsesorShiftBarProps> = ({
               background: '#ffffff',
               borderRadius: '20px',
               maxWidth: '440px',
-              width: '100%',
-              padding: '1.75rem',
+              width: '92vw',
+              padding: '1.35rem 1.25rem',
               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-              border: '1px solid #f1f5f9'
+              border: '1px solid #f1f5f9',
+              maxHeight: '92vh',
+              overflowY: 'auto',
+              boxSizing: 'border-box'
             }}
             onClick={e => e.stopPropagation()}
           >
@@ -381,10 +421,13 @@ export const AsesorShiftBar: React.FC<AsesorShiftBarProps> = ({
               background: '#ffffff',
               borderRadius: '22px',
               maxWidth: '460px',
-              width: '100%',
-              padding: '2rem',
+              width: '92vw',
+              padding: '1.5rem 1.25rem',
               boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-              border: '1px solid #fee2e2'
+              border: '1px solid #fee2e2',
+              maxHeight: '92vh',
+              overflowY: 'auto',
+              boxSizing: 'border-box'
             }}
           >
             <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>

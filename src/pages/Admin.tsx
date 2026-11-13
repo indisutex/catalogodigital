@@ -8087,20 +8087,20 @@ export default function Admin() {
                 }
 
                 return (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flex: '1 1 auto', minWidth: 0, flexWrap: 'nowrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', minWidth: 0, flexShrink: 1 }}>
-                      <div style={{ background: currentUser.foto_url ? 'transparent' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '38px', height: '38px', borderRadius: '50%', border: '1.5px solid #cbd5e1', overflow: 'hidden', flexShrink: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flex: '1 1 auto', minWidth: 0, flexWrap: 'nowrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', minWidth: 0, flexShrink: 1 }}>
+                      <div style={{ background: currentUser.foto_url ? 'transparent' : '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '36px', height: '36px', borderRadius: '50%', border: '1.5px solid #cbd5e1', overflow: 'hidden', flexShrink: 0 }}>
                         {currentUser.foto_url ? (
                           <img src={currentUser.foto_url} alt={currentUser.nombre} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
-                          <span style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--primary-color, #0ea5e9)' }}>{currentUser.nombre.charAt(0)}</span>
+                          <span style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--primary-color, #0ea5e9)' }}>{currentUser.nombre.charAt(0)}</span>
                         )}
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'left', minWidth: 0 }}>
-                        <h2 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Poppins', sans-serif" }}>
+                        <h2 className="topbar-user-name" style={{ margin: 0, fontSize: '0.9rem', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: "'Poppins', sans-serif" }}>
                           {currentUser.nombre}
                         </h2>
-                        <p className="topbar-motivational-quote" style={{ margin: '0.05rem 0 0 0', fontSize: '0.76rem', color: configuracion?.color_primario || '#0ea5e9', fontWeight: 400, fontStyle: 'normal', fontFamily: "'Poppins', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        <p className="topbar-motivational-quote" style={{ margin: '0.05rem 0 0 0', fontSize: '0.74rem', color: configuracion?.color_primario || '#0ea5e9', fontWeight: 400, fontStyle: 'normal', fontFamily: "'Poppins', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {getMotivationalPhrase(currentUser.id)}
                         </p>
                       </div>
@@ -8110,12 +8110,13 @@ export default function Admin() {
                     <div style={{
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '0.4rem',
+                      gap: '0.35rem',
                       fontFamily: "'Poppins', sans-serif",
                       flexShrink: 0
                     }}>
                       <button
                         type="button"
+                        className="topbar-btn-copy-link"
                         onClick={(e) => {
                           e.stopPropagation();
                           navigator.clipboard.writeText(catalogUrl);
@@ -8132,8 +8133,8 @@ export default function Admin() {
                           color: copiedHeaderLink ? '#15803d' : '#ffffff',
                           border: `1.5px solid ${copiedHeaderLink ? '#86efac' : 'transparent'}`,
                           borderRadius: '8px',
-                          padding: '0.35rem 0.75rem',
-                          fontSize: '0.76rem',
+                          padding: '0.32rem 0.65rem',
+                          fontSize: '0.75rem',
                           fontWeight: 500,
                           cursor: 'pointer',
                           transition: 'all 0.2s ease',
@@ -8145,12 +8146,12 @@ export default function Admin() {
                         {copiedHeaderLink ? (
                           <>
                             <Check size={13} />
-                            <span>¡Enlace Copiado!</span>
+                            <span className="topbar-btn-text-desktop">¡Enlace Copiado!</span>
                           </>
                         ) : (
                           <>
                             <Copy size={13} />
-                            <span>Copiar Enlace</span>
+                            <span className="topbar-btn-text-desktop">Copiar Enlace</span>
                           </>
                         )}
                       </button>
@@ -8159,6 +8160,7 @@ export default function Admin() {
                         href={catalogUrl}
                         target="_blank"
                         rel="noopener noreferrer"
+                        className="topbar-btn-ext-link"
                         title={`Abrir catálogo: ${catalogUrl}`}
                         style={{
                           display: 'inline-flex',
@@ -8171,7 +8173,8 @@ export default function Admin() {
                           border: '1px solid #cbd5e1',
                           borderRadius: '8px',
                           textDecoration: 'none',
-                          transition: 'all 0.15s ease'
+                          transition: 'all 0.15s ease',
+                          flexShrink: 0
                         }}
                         onMouseEnter={e => { e.currentTarget.style.color = 'var(--primary-color, #0ea5e9)'; e.currentTarget.style.borderColor = 'var(--primary-color, #0ea5e9)'; }}
                         onMouseLeave={e => { e.currentTarget.style.color = '#475569'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
@@ -8183,17 +8186,18 @@ export default function Admin() {
                       {role === 'asesor' && (
                         <button
                           type="button"
+                          className="topbar-btn-linea-bloqueada"
                           onClick={() => setShowLineaBloqueadaModal(true)}
                           style={{
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '0.35rem',
+                            gap: '0.3rem',
                             background: '#fff7ed',
                             color: '#c2410c',
                             border: '1.5px solid #fed7aa',
                             borderRadius: '8px',
-                            padding: '0.35rem 0.65rem',
-                            fontSize: '0.74rem',
+                            padding: '0.32rem 0.55rem',
+                            fontSize: '0.73rem',
                             fontWeight: 500,
                             cursor: 'pointer',
                             whiteSpace: 'nowrap',
@@ -8212,7 +8216,8 @@ export default function Admin() {
                           title="¿Línea de WhatsApp suspendida o limitada? Contactar o recuperar a tus clientes desde una nueva línea"
                         >
                           <PhoneForwarded size={13} color="#ea580c" />
-                          <span>¿Línea bloqueada? Contactar</span>
+                          <span className="topbar-bloqueada-text-full">¿Línea bloqueada? Contactar</span>
+                          <span className="topbar-bloqueada-text-mobile">Línea bloqueada</span>
                         </button>
                       )}
                     </div>
@@ -8951,18 +8956,63 @@ export default function Admin() {
                       'siigo', 'clientes', 'asesores', 'pedidos', 'mayoristas'
                     ].includes(activeTab) && <LayoutDashboard size={16} />}
                   </div>
-                  <span style={{ fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>
-                    {activeTab === 'informe_asesoras' && 'Informe Diario por Asesora y Auditoría de Chats'}
-                    {activeTab === 'asistencia' && 'Control de Asistencia'}
+                  <span className="topbar-section-title" style={{ fontSize: '0.92rem', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', fontFamily: "'Poppins', sans-serif" }}>
+                    {activeTab === 'informe_asesoras' && (
+                      <>
+                        <span className="btn-text-desktop">Informe Diario por Asesora y Auditoría</span>
+                        <span className="mobile-title-compact">Informe Diario</span>
+                      </>
+                    )}
+                    {activeTab === 'asistencia' && (
+                      <>
+                        <span className="btn-text-desktop">Control de Asistencia y Jornadas</span>
+                        <span className="mobile-title-compact">Asistencia</span>
+                      </>
+                    )}
                     {activeTab === 'dashboard' && 'Dashboard General'}
-                    {activeTab === 'categorias' && 'Categorías y Subcategorías'}
-                    {activeTab === 'pos' && 'Caja POS (Punto de Venta)'}
-                    {activeTab === 'ventas_pos' && 'Historial de Ventas POS'}
-                    {activeTab === 'material_apoyo' && 'Material de Apoyo & Google Drive'}
-                    {activeTab === 'zonificacion' && 'Zonificación & Cobertura de Envíos'}
-                    {activeTab === 'pqrs' && 'Centro de Soporte & PQRS'}
-                    {activeTab === 'productos' && (isAddingProduct ? 'Agregar Nuevo Producto' : 'Catálogo')}
-                    {activeTab === 'contabilidad' && 'Contabilidad & Finanzas'}
+                    {activeTab === 'categorias' && (
+                      <>
+                        <span className="btn-text-desktop">Categorías y Subcategorías</span>
+                        <span className="mobile-title-compact">Categorías</span>
+                      </>
+                    )}
+                    {activeTab === 'pos' && (
+                      <>
+                        <span className="btn-text-desktop">Caja POS (Punto de Venta)</span>
+                        <span className="mobile-title-compact">Caja POS</span>
+                      </>
+                    )}
+                    {activeTab === 'ventas_pos' && (
+                      <>
+                        <span className="btn-text-desktop">Historial de Ventas POS</span>
+                        <span className="mobile-title-compact">Ventas POS</span>
+                      </>
+                    )}
+                    {activeTab === 'material_apoyo' && (
+                      <>
+                        <span className="btn-text-desktop">Material de Apoyo & Google Drive</span>
+                        <span className="mobile-title-compact">Material Apoyo</span>
+                      </>
+                    )}
+                    {activeTab === 'zonificacion' && (
+                      <>
+                        <span className="btn-text-desktop">Zonificación & Cobertura de Envíos</span>
+                        <span className="mobile-title-compact">Zonificación</span>
+                      </>
+                    )}
+                    {activeTab === 'pqrs' && (
+                      <>
+                        <span className="btn-text-desktop">Centro de Soporte & PQRS</span>
+                        <span className="mobile-title-compact">Soporte PQRS</span>
+                      </>
+                    )}
+                    {activeTab === 'productos' && (isAddingProduct ? 'Nuevo Producto' : 'Catálogo')}
+                    {activeTab === 'contabilidad' && (
+                      <>
+                        <span className="btn-text-desktop">Contabilidad & Finanzas</span>
+                        <span className="mobile-title-compact">Contabilidad</span>
+                      </>
+                    )}
                     {activeTab === 'siigo' && 'Integración Siigo'}
                     {activeTab === 'clientes' && 'Clientes'}
                     {activeTab === 'asesores' && 'Asesores'}
@@ -8983,6 +9033,7 @@ export default function Admin() {
               <button
                 type="button"
                 onClick={handleLockInformeAsesoras}
+                className="topbar-btn-lock-informe"
                 style={{
                   display: 'inline-flex',
                   alignItems: 'center',

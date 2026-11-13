@@ -1282,12 +1282,25 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
         justifyContent: 'space-between',
         gap: '0.85rem',
         background: '#ffffff',
-        padding: '0.85rem 1.25rem',
+        padding: '0.85rem 1rem',
         borderRadius: '16px',
         border: '1px solid #e2e8f0',
         boxShadow: '0 2px 8px rgba(0,0,0,0.02)'
       }}>
-        <div style={{ display: 'flex', gap: '0.45rem', flexWrap: 'wrap' }}>
+        {/* Pestañas de Modo con scroll horizontal suave en móvil */}
+        <div
+          className="informe-tabs-scroll-container"
+          style={{
+            display: 'flex',
+            gap: '0.45rem',
+            flexWrap: 'nowrap',
+            overflowX: 'auto',
+            WebkitOverflowScrolling: 'touch',
+            scrollbarWidth: 'none',
+            paddingBottom: '2px',
+            maxWidth: '100%'
+          }}
+        >
           {/* Tab 1: Diario */}
           <button
             type="button"
@@ -1304,7 +1317,9 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.4rem',
-              fontFamily: "'Poppins', sans-serif"
+              fontFamily: "'Poppins', sans-serif",
+              whiteSpace: 'nowrap',
+              flexShrink: 0
             }}
           >
             <Clock size={15} />
@@ -1327,7 +1342,9 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.4rem',
-              fontFamily: "'Poppins', sans-serif"
+              fontFamily: "'Poppins', sans-serif",
+              whiteSpace: 'nowrap',
+              flexShrink: 0
             }}
           >
             <Truck size={15} color="#ea580c" />
@@ -1360,7 +1377,9 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.4rem',
-              fontFamily: "'Poppins', sans-serif"
+              fontFamily: "'Poppins', sans-serif",
+              whiteSpace: 'nowrap',
+              flexShrink: 0
             }}
           >
             <Sparkles size={15} color="#9333ea" />
@@ -1393,7 +1412,9 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
               display: 'inline-flex',
               alignItems: 'center',
               gap: '0.4rem',
-              fontFamily: "'Poppins', sans-serif"
+              fontFamily: "'Poppins', sans-serif",
+              whiteSpace: 'nowrap',
+              flexShrink: 0
             }}
           >
             <CreditCard size={15} color="#d97706" />
@@ -2220,7 +2241,18 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
 
               {showHourlyTimeline && (
                 <div style={{ marginTop: '0.85rem', paddingTop: '0.85rem', borderTop: '1px solid #f1f5f9' }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(75px, 1fr))', gap: '0.4rem', overflowX: 'auto' }}>
+                  <div
+                    className="informe-hourly-scroll-container"
+                    style={{
+                      display: 'flex',
+                      gap: '0.45rem',
+                      overflowX: 'auto',
+                      WebkitOverflowScrolling: 'touch',
+                      scrollbarWidth: 'none',
+                      paddingBottom: '0.4rem',
+                      maxWidth: '100%'
+                    }}
+                  >
                     {hourlyBreakdown.map(hb => {
                       const isCurrentCutoff = cutoffHour === hb.hourNumber;
                       const hasSinAtender = hb.sinAtenderAcumulados > 0;
@@ -2230,13 +2262,15 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                           type="button"
                           onClick={() => setCutoffHour(hb.hourNumber)}
                           style={{
-                            padding: '0.55rem 0.35rem',
+                            padding: '0.55rem 0.5rem',
                             borderRadius: '10px',
                             border: isCurrentCutoff ? `2px solid ${primaryColor}` : '1px solid #e2e8f0',
                             background: isCurrentCutoff ? 'rgba(0, 166, 249, 0.08)' : '#f8fafc',
                             cursor: 'pointer',
                             textAlign: 'center',
-                            fontFamily: "'Poppins', sans-serif"
+                            fontFamily: "'Poppins', sans-serif",
+                            flex: '0 0 auto',
+                            minWidth: '72px'
                           }}
                         >
                           <div style={{ fontSize: '0.7rem', fontWeight: 600, color: isCurrentCutoff ? primaryColor : '#475569', marginBottom: '0.2rem' }}>{hb.label}</div>
@@ -2356,6 +2390,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                   return (
                     <div
                       key={item.id}
+                      className="informe-chat-item-card"
                       style={{
                         padding: '0.85rem 1rem',
                         borderRadius: '12px',
@@ -2368,7 +2403,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                         gap: '0.85rem'
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: '220px' }}>
+                      <div className="informe-chat-customer-col" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: '220px' }}>
                         <div style={{
                           width: '38px',
                           height: '38px',
@@ -2416,7 +2451,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                         </div>
                       </div>
 
-                      <div style={{ minWidth: '160px' }}>
+                      <div className="informe-chat-time-col" style={{ minWidth: '160px' }}>
                         <div style={{ fontSize: '0.78rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                           <Clock size={14} color="#64748b" />
                           <span>Llegó: <strong>{isHistorico ? `${item.colDateStr} ${item.colTimeFormatted}` : item.colTimeFormatted}</strong></span>
@@ -2435,12 +2470,12 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                         )}
                       </div>
 
-                      <div style={{ minWidth: '140px', textAlign: 'right' }}>
+                      <div className="informe-chat-price-col" style={{ minWidth: '140px', textAlign: 'right' }}>
                         <div style={{ fontSize: '0.92rem', fontWeight: 600, color: '#0f172a' }}>${(item.total || 0).toLocaleString('es-CO')}</div>
                         <div style={{ fontSize: '0.72rem', color: '#64748b', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={item.productosResumen}>{item.productosResumen}</div>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <div className="informe-chat-actions-col" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                         {item.source === 'pedido' && item.raw && onSelectPedido && (
                           <button
                             type="button"
@@ -2698,6 +2733,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                   return (
                     <div
                       key={p.id}
+                      className="informe-chat-item-card"
                       style={{
                         padding: '0.85rem 1rem',
                         borderRadius: '12px',
@@ -2711,7 +2747,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                         gap: '0.85rem'
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: '220px' }}>
+                      <div className="informe-chat-customer-col" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: '220px' }}>
                         <div style={{
                           width: '38px',
                           height: '38px',
@@ -2761,7 +2797,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                         </div>
                       </div>
 
-                      <div style={{ minWidth: '130px', textAlign: 'right' }}>
+                      <div className="informe-chat-price-col" style={{ minWidth: '130px', textAlign: 'right' }}>
                         <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#0f172a' }}>
                           ${(p.total || 0).toLocaleString('es-CO')}
                         </div>
@@ -2771,7 +2807,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                       </div>
 
                       {/* Botones de Acción */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <div className="informe-chat-actions-col" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                         {onSelectPedido && (
                           <button
                             type="button"
@@ -2994,6 +3030,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                   return (
                     <div
                       key={it.id}
+                      className="informe-chat-item-card"
                       style={{
                         padding: '0.85rem 1rem',
                         borderRadius: '12px',
@@ -3006,7 +3043,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                         gap: '0.85rem'
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: '220px' }}>
+                      <div className="informe-chat-customer-col" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: '220px' }}>
                         <div style={{
                           width: '38px',
                           height: '38px',
@@ -3051,7 +3088,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                         </div>
                       </div>
 
-                      <div style={{ minWidth: '130px', textAlign: 'right' }}>
+                      <div className="informe-chat-price-col" style={{ minWidth: '130px', textAlign: 'right' }}>
                         <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#0f172a' }}>
                           ${(it.total || 0).toLocaleString('es-CO')}
                         </div>
@@ -3061,7 +3098,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                       </div>
 
                       {/* Botones de Acción */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <div className="informe-chat-actions-col" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                         {it.raw && onSelectPedido && it.source === 'pedido_abandonado' && (
                           <button
                             type="button"
@@ -3281,6 +3318,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                   return (
                     <div
                       key={p.id}
+                      className="informe-chat-item-card"
                       style={{
                         padding: '0.85rem 1rem',
                         borderRadius: '12px',
@@ -3293,7 +3331,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                         gap: '0.85rem'
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: '220px' }}>
+                      <div className="informe-chat-customer-col" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: '220px' }}>
                         <div style={{
                           width: '38px',
                           height: '38px',
@@ -3338,7 +3376,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                         </div>
                       </div>
 
-                      <div style={{ minWidth: '130px', textAlign: 'right' }}>
+                      <div className="informe-chat-price-col" style={{ minWidth: '130px', textAlign: 'right' }}>
                         <div style={{ fontSize: '0.95rem', fontWeight: 600, color: '#0f172a' }}>
                           ${(p.total || 0).toLocaleString('es-CO')}
                         </div>
@@ -3348,7 +3386,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                       </div>
 
                       {/* Botones de Acción */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <div className="informe-chat-actions-col" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                         {onSelectPedido && (
                           <button
                             type="button"
