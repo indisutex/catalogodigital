@@ -466,7 +466,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const targetItem = items.find(i => i.id === id && (nombre ? i.nombre === nombre : true) && i.talla === talla && i.estampado === estampado);
     const diff = targetItem ? cantidad - targetItem.cantidad : 0;
     const newTotal = totalUnits + diff;
-    
+
     setItems(prevItems =>
       prevItems.map(item =>
         (item.id === id && (nombre ? item.nombre === nombre : true) && item.talla === talla && item.estampado === estampado) ? { ...item, cantidad } : item
@@ -500,20 +500,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <CartContext.Provider value={{ 
-      items, 
-      addToCart, 
-      removeFromCart, 
-      updateQuantity, 
-      clearCart, 
-      total, 
-      buyerType, 
-      setBuyerType, 
-      markupPorcentaje, 
-      setMarkupPorcentaje, 
-      ajustesProductos, 
-      setAjustesProductos, 
-      descuentoPromocional, 
+    <CartContext.Provider value={{
+      items,
+      addToCart,
+      removeFromCart,
+      updateQuantity,
+      clearCart,
+      total,
+      buyerType,
+      setBuyerType,
+      markupPorcentaje,
+      setMarkupPorcentaje,
+      ajustesProductos,
+      setAjustesProductos,
+      descuentoPromocional,
       setDescuentoPromocional,
       isBulkDiscountEnabled,
       setIsBulkDiscountEnabled,
