@@ -4408,6 +4408,119 @@ button:active { transform: scale(0.95); }
   gap: 0.3rem !important;
 }
 
+/* ── RESPONSIVE ENHANCEMENTS: INFORME DIARIO & ADMIN DASHBOARD ── */
+
+/* 1. Asesoras filter row: smooth touch scroll on mobile without line breaks */
+.informe-asesoras-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .informe-asesoras-filter-row {
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 0.4rem !important;
+    scrollbar-width: none;
+  }
+  .informe-asesoras-filter-row::-webkit-scrollbar {
+    display: none;
+  }
+  .informe-asesoras-filter-row button {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+}
+
+/* 2. KPIs Grid: adapts to 2 columns on tablet and 1 column on mobile */
+.informe-kpis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .informe-kpis-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 0.75rem !important;
+  }
+  .informe-kpis-grid > .informe-kpi-card:nth-child(3) {
+    grid-column: span 2 !important;
+  }
+  .informe-kpi-card {
+    padding: 1rem !important;
+    border-radius: 14px !important;
+  }
+  .informe-kpi-number {
+    font-size: 1.75rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .informe-kpis-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.65rem !important;
+  }
+  .informe-kpis-grid > .informe-kpi-card:nth-child(3) {
+    grid-column: auto !important;
+  }
+}
+
+/* 3. Comparativa de Asesoras Grid & Header */
+.informe-comparativa-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 640px) {
+  .informe-comparativa-grid {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+  .informe-asesora-card-header {
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+  }
+}
+
+/* 4. Search box wrappers in all 4 tabs */
+@media (max-width: 768px) {
+  .informe-search-box-wrapper {
+    width: 100% !important;
+    flex: 1 1 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+/* 5. Modal Compartir a Dueños */
+@media (max-width: 640px) {
+  .informe-share-dialog {
+    padding: 1.25rem 1rem !important;
+    border-radius: 18px !important;
+    max-height: 94vh !important;
+  }
+  .informe-share-actions-row {
+    flex-direction: column !important;
+  }
+  .informe-share-actions-row button {
+    width: 100% !important;
+  }
+}
+
+/* 6. Bottom navigation flexible item distribution */
+@media (max-width: 768px) {
+  .bottom-nav-item {
+    min-width: 50px !important;
+    max-width: none !important;
+    flex: 1 1 0 !important;
+  }
+}
+
+
 
 
 

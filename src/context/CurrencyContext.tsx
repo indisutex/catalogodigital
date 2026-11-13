@@ -53,12 +53,9 @@ export function getCountryInfo(code: string, fallbackName?: string): CountryInfo
 function guessCountryFromTimezone(): string {
   try {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
-    if (tz.includes('Bogota')) return 'CO';
-    if (tz.includes('Panama')) return 'PA';
+    if (tz.includes('Bogota') || tz.includes('Panama') || tz.includes('Guayaquil') || tz.includes('Lima') || tz.includes('GMT-5') || tz.includes('UTC-5')) return 'CO';
     if (tz.includes('Costa_Rica')) return 'CR';
     if (tz.includes('Santiago')) return 'CL';
-    if (tz.includes('Guayaquil') || tz.includes('Galapagos')) return 'EC';
-    if (tz.includes('Lima')) return 'PE';
     if (tz.includes('Mexico') || tz.includes('Monterrey') || tz.includes('Cancun') || tz.includes('Tijuana')) return 'MX';
     if (tz.includes('New_York') || tz.includes('Chicago') || tz.includes('Los_Angeles') || tz.includes('Denver')) return 'US';
     if (tz.includes('Madrid')) return 'ES';
@@ -66,7 +63,6 @@ function guessCountryFromTimezone(): string {
     if (tz.includes('Caracas')) return 'VE';
     if (tz.includes('Guatemala')) return 'GT';
     if (tz.includes('Santo_Domingo')) return 'DO';
-    // Si la zona horaria no es Bogotá, lo más probable es que sea internacional
     if (tz && !tz.includes('Bogota')) return 'NON_CO';
   } catch {}
   return 'CO';
@@ -91,13 +87,11 @@ const CurrencyContext = createContext<CurrencyContextType | undefined>(undefined
 const DEFAULT_EXCHANGE_RATE = 4000; // 1 USD = 4,000 COP fallback
 
 export function CurrencyProvider({ children }: { children: React.ReactNode }) {
-  // 1. Moneda inicial
+  // 1. Moneda inicial: Por defecto SIEMPRE en COP para que ningún comprador o asesora en Colombia vea USD por error
   const [currency, setCurrencyState] = useState<CurrencyCode>(() => {
+    const isManual = localStorage.getItem('indisutex_currency_manual') === 'true';
     const saved = localStorage.getItem('indisutex_currency');
-    if (saved === 'USD' || saved === 'COP') return saved;
-    const initialGuess = guessCountryFromTimezone();
-    // Si la zona horaria detecta que está fuera de Colombia, dolarizar desde el primer render
-    if (initialGuess !== 'CO') return 'USD';
+    if (isManual && (saved === 'USD' || saved === 'COP')) return saved;
     return 'COP';
   });
 
@@ -212,14 +206,10 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem('indisutex_country_code', info.code);
           localStorage.setItem('indisutex_country_name', info.name);
 
-          // Si el país detectado NO es Colombia ('CO'), dolarizar en automático
+          // Si el país detectado NO es Colombia ('CO'), mostrar banner informativo para que el usuario decida si dolarizar
           if (detectedCode !== 'CO') {
-            if (!isManual) {
-              setCurrencyState('USD');
-              localStorage.setItem('indisutex_currency', 'USD');
-              if (!isBannerDismissed) {
-                setShowDetectedBanner(true);
-              }
+            if (!isManual && !isBannerDismissed) {
+              setShowDetectedBanner(true);
             }
           } else {
             // Si está en Colombia y no eligió moneda manualmente, mantener COP
@@ -286,26 +276,36 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
   // 6. Funciones de conversión y formateo
   const convertPrice = useCallback(
     (amountCOP: number): number => {
-      if (!amountCOP || isNaN(amountCOP)) return 0;
+      if (!amountCOP || isNaN(amountCOP) || amountCOP <= 0) return 0;
+      let normalized = Number(amountCOP);
+      if (normalized > 0 && normalized < 1000) {
+        normalized = normalized * 1000;
+      }
       if (currency === 'USD') {
-        const usd = amountCOP / exchangeRate;
+        const usd = normalized / exchangeRate;
         return Number(usd.toFixed(2));
       }
-      return Math.round(amountCOP);
+      return Math.round(normalized);
     },
     [currency, exchangeRate]
   );
 
   const formatPrice = useCallback(
     (amountCOP: number, options?: { showCode?: boolean }): string => {
-      if (amountCOP === undefined || amountCOP === null || isNaN(amountCOP)) {
-        return currency === 'USD' ? '$0.00 USD' : '$0';
+      if (amountCOP === undefined || amountCOP === null || isNaN(amountCOP) || amountCOP <= 0) {
+        return 'Consultar con asesor';
+      }
+
+      // Si por error humano fue guardado un valor en miles abreviado (ej: 34 en vez de 34000)
+      let normalized = Number(amountCOP);
+      if (normalized > 0 && normalized < 1000) {
+        normalized = normalized * 1000;
       }
 
       const showCode = options?.showCode ?? true;
 
       if (currency === 'USD') {
-        const usdVal = amountCOP / exchangeRate;
+        const usdVal = normalized / exchangeRate;
         const formatted = usdVal.toLocaleString('en-US', {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
@@ -314,7 +314,7 @@ export function CurrencyProvider({ children }: { children: React.ReactNode }) {
       }
 
       // COP
-      const formatted = Math.round(amountCOP).toLocaleString('es-CO');
+      const formatted = Math.round(normalized).toLocaleString('es-CO');
       return `$${formatted}`;
     },
     [currency, exchangeRate]

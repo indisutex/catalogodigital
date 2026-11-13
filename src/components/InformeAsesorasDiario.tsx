@@ -1528,27 +1528,36 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
       {mainViewMode === 'diario' && (
         <>
           {/* Centro de Control Rápido Anti-Bobos */}
-          <div style={{
-            background: '#ffffff',
-            borderRadius: '16px',
-            padding: '1.25rem 1.5rem',
-            border: '1px solid #e2e8f0',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1rem',
-            fontFamily: "'Poppins', sans-serif"
-          }}>
-            {/* Fila 1: Selector de Período y Hora de Control */}
-            <div style={{
+          <div
+            className="informe-control-box"
+            style={{
+              background: '#ffffff',
+              borderRadius: '16px',
+              padding: '1.25rem 1.5rem',
+              border: '1px solid #e2e8f0',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
               display: 'flex',
-              flexWrap: 'wrap',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: '1rem'
-            }}>
+              flexDirection: 'column',
+              gap: '1rem',
+              fontFamily: "'Poppins', sans-serif"
+            }}
+          >
+            {/* Fila 1: Selector de Período y Hora de Control */}
+            <div
+              className="informe-period-control-row"
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '1rem'
+              }}
+            >
               {/* Botones de Período */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+              <div
+                className="informe-period-btns-container"
+                style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}
+              >
                 <span style={{ fontSize: '0.74rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginRight: '0.2rem' }}>
                   📅 Período:
                 </span>
@@ -1674,7 +1683,10 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
 
               {/* Hora de Corte */}
               {!isHistorico && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}>
+                <div
+                  className="informe-cutoff-selector-box"
+                  style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', flexWrap: 'wrap' }}
+                >
                   <span style={{ fontSize: '0.74rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginRight: '0.2rem' }}>
                     ⏱️ Corte:
                   </span>
@@ -1794,14 +1806,17 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
             )}
 
             {/* Fila 2: Filtro Rápido de Asesoras */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.55rem',
-              flexWrap: 'wrap',
-              paddingTop: '0.75rem',
-              borderTop: '1px solid #f1f5f9'
-            }}>
+            <div
+              className="informe-asesoras-filter-row"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.55rem',
+                flexWrap: 'wrap',
+                paddingTop: '0.75rem',
+                borderTop: '1px solid #f1f5f9'
+              }}
+            >
               <span style={{ fontSize: '0.74rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px', marginRight: '0.2rem' }}>
                 👩‍💼 Asesora:
               </span>
@@ -1889,23 +1904,29 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
           </div>
 
           {/* 3 Tarjetas KPI Anti-Bobos */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
-            gap: '1rem',
-            fontFamily: "'Poppins', sans-serif"
-          }}>
+          <div
+            className="informe-kpis-grid"
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+              gap: '1rem',
+              fontFamily: "'Poppins', sans-serif"
+            }}
+          >
             {/* Tarjeta 1: Recibidos */}
-            <div style={{
-              background: '#ffffff',
-              borderRadius: '16px',
-              padding: '1.25rem 1.4rem',
-              border: '1px solid #e2e8f0',
-              boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}>
+            <div
+              className="informe-kpi-card"
+              style={{
+                background: '#ffffff',
+                borderRadius: '16px',
+                padding: '1.25rem 1.4rem',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.02)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.45rem' }}>
                 <span style={{ fontSize: '0.74rem', fontWeight: 500, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   📬 Chats Recibidos
@@ -1914,7 +1935,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                   <MessageSquare size={16} color="#64748b" />
                 </div>
               </div>
-              <div style={{ fontSize: '2.4rem', fontWeight: 600, color: '#0f172a', lineHeight: 1, margin: '0.3rem 0' }}>
+              <div className="informe-kpi-number" style={{ fontSize: '2.4rem', fontWeight: 600, color: '#0f172a', lineHeight: 1, margin: '0.3rem 0' }}>
                 {totalRecibidos}
               </div>
               <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 400 }}>
@@ -1925,16 +1946,19 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
             </div>
 
             {/* Tarjeta 2: Atendidos */}
-            <div style={{
-              background: '#ffffff',
-              borderRadius: '16px',
-              padding: '1.25rem 1.4rem',
-              border: '1px solid #bbf7d0',
-              boxShadow: '0 2px 8px rgba(16,185,129,0.04)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}>
+            <div
+              className="informe-kpi-card"
+              style={{
+                background: '#ffffff',
+                borderRadius: '16px',
+                padding: '1.25rem 1.4rem',
+                border: '1px solid #bbf7d0',
+                boxShadow: '0 2px 8px rgba(16,185,129,0.04)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.45rem' }}>
                 <span style={{ fontSize: '0.74rem', fontWeight: 500, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   ✅ Chats Atendidos
@@ -1944,7 +1968,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.6rem', margin: '0.3rem 0' }}>
-                <span style={{ fontSize: '2.4rem', fontWeight: 600, color: '#15803d', lineHeight: 1 }}>{totalAtendidos}</span>
+                <span className="informe-kpi-number" style={{ fontSize: '2.4rem', fontWeight: 600, color: '#15803d', lineHeight: 1 }}>{totalAtendidos}</span>
                 <span style={{ fontSize: '1rem', fontWeight: 500, color: '#16a34a' }}>({porcentajeAtendidos}%)</span>
               </div>
               <div style={{ fontSize: '0.78rem', color: '#166534', fontWeight: 400 }}>
@@ -1953,16 +1977,19 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
             </div>
 
             {/* Tarjeta 3: Sin Atender (Semáforo Dinámico: Verde si 0, Rojo Alerta si > 0) */}
-            <div style={{
-              background: totalSinAtender > 0 ? '#fef2f2' : '#f0fdf4',
-              borderRadius: '16px',
-              padding: '1.25rem 1.4rem',
-              border: totalSinAtender > 0 ? '1.5px solid #fca5a5' : '1px solid #86efac',
-              boxShadow: totalSinAtender > 0 ? '0 2px 10px rgba(239,68,68,0.08)' : '0 2px 8px rgba(16,185,129,0.04)',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between'
-            }}>
+            <div
+              className="informe-kpi-card"
+              style={{
+                background: totalSinAtender > 0 ? '#fef2f2' : '#f0fdf4',
+                borderRadius: '16px',
+                padding: '1.25rem 1.4rem',
+                border: totalSinAtender > 0 ? '1.5px solid #fca5a5' : '1px solid #86efac',
+                boxShadow: totalSinAtender > 0 ? '0 2px 10px rgba(239,68,68,0.08)' : '0 2px 8px rgba(16,185,129,0.04)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between'
+              }}
+            >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.45rem' }}>
                 <span style={{ fontSize: '0.74rem', fontWeight: 600, color: totalSinAtender > 0 ? '#991b1b' : '#166534', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   {totalSinAtender > 0 ? '🚨 Sin Atender' : '🎉 Estado General'}
@@ -1983,7 +2010,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
               {totalSinAtender > 0 ? (
                 <>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.6rem', margin: '0.3rem 0' }}>
-                    <span style={{ fontSize: '2.4rem', fontWeight: 600, color: '#b91c1c', lineHeight: 1 }}>{totalSinAtender}</span>
+                    <span className="informe-kpi-number" style={{ fontSize: '2.4rem', fontWeight: 600, color: '#b91c1c', lineHeight: 1 }}>{totalSinAtender}</span>
                     <span style={{ fontSize: '0.85rem', fontWeight: 500, color: '#dc2626' }}>({porcentajeSinAtender}% pendientes)</span>
                   </div>
                   <div style={{ fontSize: '0.78rem', color: '#991b1b', fontWeight: 500 }}>
@@ -1993,7 +2020,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                 </>
               ) : (
                 <>
-                  <div style={{ fontSize: '1.5rem', fontWeight: 600, color: '#15803d', margin: '0.3rem 0', lineHeight: 1.2 }}>
+                  <div className="informe-kpi-number" style={{ fontSize: '1.5rem', fontWeight: 600, color: '#15803d', margin: '0.3rem 0', lineHeight: 1.2 }}>
                     ¡Todo al día! ✓
                   </div>
                   <div style={{ fontSize: '0.78rem', color: '#166534', fontWeight: 400 }}>
@@ -2063,11 +2090,14 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                 </div>
               </div>
 
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-                gap: '1rem'
-              }}>
+              <div
+                className="informe-comparativa-grid"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                  gap: '1rem'
+                }}
+              >
                 {comparativaAsesores.map(c => {
                   const hasSinAtender = c.sinAtender > 0;
                   const phone = (c.asesor.telefono || '').split(',')[0].trim();
@@ -2086,7 +2116,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                       }}
                     >
                       {/* Header Asesora */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div className="informe-asesora-card-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                           {c.asesor.foto_url ? (
                             <img
@@ -2353,7 +2383,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                 </button>
               </div>
 
-              <div style={{ position: 'relative', width: '240px' }}>
+              <div className="informe-search-box-wrapper" style={{ position: 'relative', width: '240px' }}>
                 <Search size={15} color="#94a3b8" style={{ position: 'absolute', left: '0.65rem', top: '50%', transform: 'translateY(-50%)' }} />
                 <input
                   type="text"
@@ -2694,7 +2724,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                 )}
               </div>
 
-              <div style={{ position: 'relative', width: '250px' }}>
+              <div className="informe-search-box-wrapper" style={{ position: 'relative', width: '250px' }}>
                 <Search size={15} color="#94a3b8" style={{ position: 'absolute', left: '0.65rem', top: '50%', transform: 'translateY(-50%)' }} />
                 <input
                   type="text"
@@ -2983,7 +3013,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                 )}
               </div>
 
-              <div style={{ position: 'relative', width: '280px' }}>
+              <div className="informe-search-box-wrapper" style={{ position: 'relative', width: '280px' }}>
                 <Search size={15} color="#94a3b8" style={{ position: 'absolute', left: '0.65rem', top: '50%', transform: 'translateY(-50%)' }} />
                 <input
                   type="text"
@@ -3277,7 +3307,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
                 )}
               </div>
 
-              <div style={{ position: 'relative', width: '280px' }}>
+              <div className="informe-search-box-wrapper" style={{ position: 'relative', width: '280px' }}>
                 <Search size={15} color="#94a3b8" style={{ position: 'absolute', left: '0.65rem', top: '50%', transform: 'translateY(-50%)' }} />
                 <input
                   type="text"
@@ -3459,6 +3489,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
           onClick={() => setShowShareModal(false)}
         >
           <div
+            className="informe-share-dialog"
             style={{
               background: '#ffffff',
               borderRadius: '24px',
@@ -3555,7 +3586,7 @@ export const InformeAsesorasDiario: React.FC<InformeAsesorasDiarioProps> = ({
             </div>
 
             {/* Botones de acción */}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
+            <div className="informe-share-actions-row" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem' }}>
               <button
                 type="button"
                 onClick={() => {
