@@ -6025,6 +6025,27 @@ export default function MenuDigital() {
         tenantSlug={mayoristaBranding?.slug || (effectiveTenant && effectiveTenant !== 'default' ? effectiveTenant : '')}
       />
 
+      {/* ── Marca de versión: permite confirmar a simple vista qué despliegue está en vivo ── */}
+      <div
+        style={{
+          position: 'fixed',
+          left: '8px',
+          bottom: '8px',
+          zIndex: 50,
+          padding: '3px 9px',
+          borderRadius: '999px',
+          background: 'rgba(15, 23, 42, 0.78)',
+          color: '#ffffff',
+          fontSize: '0.68rem',
+          fontWeight: 600,
+          fontFamily: "'Poppins', sans-serif",
+          letterSpacing: '0.02em',
+          pointerEvents: 'none'
+        }}
+      >
+        v2026.11.21 · prueba
+      </div>
+
     </div>
   );
 }
