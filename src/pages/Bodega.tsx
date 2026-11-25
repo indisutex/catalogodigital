@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase';
 
-interface Tienda { id: string; nombre: string; color: string }
+interface Tienda { id: string; nombre: string; color: string; logo?: string }
 
 interface Conteo {
   id: string;
@@ -38,11 +38,12 @@ interface ProductoRef {
 }
 
 const FONT = "'Poppins', 'Inter', sans-serif";
+const LOGO_BASE = 'https://dowbsbxvxjzjjhyqmyfr.supabase.co/storage/v1/object/public/archivos/';
 const TIENDAS_BASE: Tienda[] = [
-  { id: 'sublimados_majestic', nombre: 'Sublimados Majestic', color: '#f50081' },
-  { id: 'lucerito', nombre: 'Pijamas Lucerito', color: '#a855f7' },
-  { id: 'saramantha', nombre: 'Saramantha', color: '#ff0fdf' },
-  { id: 'lovely', nombre: 'Lovely', color: '#d561ff' }
+  { id: 'sublimados_majestic', nombre: 'Sublimados Majestic', color: '#f50081', logo: LOGO_BASE + 'logo_1788193731295.webp' },
+  { id: 'lucerito', nombre: 'Pijamas Lucerito', color: '#a855f7', logo: LOGO_BASE + 'logo_1788197445120.webp' },
+  { id: 'saramantha', nombre: 'Saramantha', color: '#ff0fdf', logo: LOGO_BASE + 'logo_1788197423178.webp' },
+  { id: 'lovely', nombre: 'Lovely', color: '#d561ff', logo: LOGO_BASE + 'logo_1788197761050.webp' }
 ];
 const CIERRE_TENANT = 'general';
 
@@ -65,12 +66,43 @@ function textoSobre(hex: string): string {
   return lum > 0.72 ? '#1e1b4b' : '#ffffff';
 }
 
+function Logo({ t, size }: { t: Tienda; size: number }) {
+  const [fallo, setFallo] = useState(false);
+  if (t.logo && !fallo) {
+    return <img src={t.logo} alt={t.nombre} onError={() => setFallo(true)} style={{ width: size, height: size, objectFit: 'contain', display: 'block' }} />;
+  }
+  return (
+    <span style={{ width: size, height: size, borderRadius: size / 4, background: t.color, color: textoSobre(t.color), display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: size * 0.45 }}>
+      {t.nombre.trim().charAt(0).toUpperCase()}
+    </span>
+  );
+}
+
+const ICONOS: Record<string, string> = {
+  caja: 'M21 8l-9-5-9 5v8l9 5 9-5V8zM3.3 7.5L12 12.3l8.7-4.8M12 12.3V21',
+  buscar: 'M11 19a8 8 0 100-16 8 8 0 000 16zM21 21l-4.3-4.3',
+  atras: 'M15 18l-6-6 6-6',
+  cerrar: 'M6 6l12 12M18 6L6 18',
+  basura: 'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3',
+  pin: 'M12 21s-7-6.2-7-11a7 7 0 1114 0c0 4.8-7 11-7 11zM12 12a2.5 2.5 0 100-5 2.5 2.5 0 000 5z',
+  usuario: 'M20 21a8 8 0 10-16 0M12 12a4 4 0 100-8 4 4 0 000 8z',
+  flecha: 'M5 12h14M13 6l6 6-6 6',
+  check: 'M5 12.5l4.5 4.5L19 7.5'
+};
+function Ico({ n, s = 20 }: { n: keyof typeof ICONOS; s?: number }) {
+  return (
+    <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flex: 'none' }}>
+      <path d={ICONOS[n]} />
+    </svg>
+  );
+}
+
 const CSS = `
 .bd { min-height:100vh; background:#eef0f6; font-family:${FONT}; color:#0f172a; font-size:17px; -webkit-tap-highlight-color:transparent; }
 .bd *, .bd *::before, .bd *::after { box-sizing:border-box; }
 .bd button, .bd input { font-family:${FONT}; }
 .bd button { cursor:pointer; border:none; }
-.bd-top { background:#0f172a; color:#fff; padding:.8rem 1.2rem; display:flex; align-items:center; justify-content:space-between; gap:.6rem; position:sticky; top:0; z-index:20; }
+.bd-top { background:#0b1220; color:#fff; padding:.8rem 1.2rem; display:flex; align-items:center; justify-content:space-between; gap:.6rem; position:sticky; top:0; z-index:20; }
 .bd-top h1 { font-size:1.2rem; margin:0; font-weight:700; display:flex; align-items:center; gap:.6rem; color:#fff; }
 .bd-nav { display:flex; gap:.4rem; align-items:center; flex-wrap:wrap; }
 .bd-nb { background:rgba(255,255,255,.12); color:#fff; border-radius:12px; padding:.65rem 1.1rem; font-weight:600; font-size:.95rem; min-height:46px; }
@@ -79,15 +111,30 @@ const CSS = `
 .bd-badge { background:#fbbf24; color:#78350f; font-size:.7rem; padding:2px 9px; border-radius:99px; font-weight:700; }
 .bd-wrap { max-width:1240px; margin:0 auto; padding:1.2rem; }
 .bd-h2 { font-size:1.5rem; font-weight:700; margin:.2rem 0 1rem; color:#0f172a; }
-.bd-tiles { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:1rem; }
-.bd-tile { text-align:left; border-radius:22px; padding:1.3rem 1.3rem 1.1rem; min-height:170px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 8px 22px rgba(15,23,42,.14); transition:transform .12s; }
-.bd-tile:active { transform:scale(.98); }
-.bd-tile .ini { width:52px; height:52px; border-radius:16px; background:rgba(255,255,255,.25); display:flex; align-items:center; justify-content:center; font-size:1.5rem; font-weight:700; }
-.bd-tile .nom { font-size:1.25rem; font-weight:700; line-height:1.2; margin-top:.8rem; }
-.bd-tile .num { font-size:.9rem; opacity:.9; margin-top:.2rem; }
 .bd-card h1, .bd-card h2 { color:#0f172a; }
+.bd-tiles { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:1.1rem; }
+.bd-tile { background:#fff; border-radius:22px; overflow:hidden; text-align:left; display:flex; flex-direction:column; border:1px solid #e6e9f2; box-shadow:0 1px 2px rgba(15,23,42,.05), 0 10px 28px rgba(15,23,42,.07); transition:transform .12s, box-shadow .12s; }
+.bd-tile:active { transform:scale(.985); }
+.bd-tile .bar { height:6px; background:var(--c); }
+.bd-tile .logo { height:150px; display:flex; align-items:center; justify-content:center; background:linear-gradient(180deg,#fafbfe,#f1f4fa); padding:1.2rem; }
+.bd-tile .info { padding:1rem 1.2rem 1.2rem; }
+.bd-tile .nom { font-size:1.15rem; font-weight:700; color:#0f172a; }
+.bd-tile .st { display:flex; gap:1.4rem; margin-top:.6rem; }
+.bd-tile .st b { display:block; font-size:1.35rem; color:#0f172a; font-variant-numeric:tabular-nums; line-height:1.1; }
+.bd-tile .st span { font-size:.72rem; color:#64748b; text-transform:uppercase; letter-spacing:.04em; font-weight:600; }
+.bd-tile .cta { margin-top:1rem; background:var(--c); color:var(--t); border-radius:14px; padding:.8rem 1rem; font-weight:700; display:flex; justify-content:space-between; align-items:center; }
+.bd-kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:1rem; margin-bottom:1.4rem; }
+.bd-kpi { background:#fff; border-radius:18px; padding:1rem 1.2rem; border:1px solid #e6e9f2; }
+.bd-kpi b { display:block; font-size:1.9rem; line-height:1.1; font-variant-numeric:tabular-nums; color:#0f172a; }
+.bd-kpi span { font-size:.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:.04em; }
+.bd-who { display:flex; align-items:center; gap:.6rem; background:#fff; border:1px solid #e6e9f2; border-radius:16px; padding:0 1rem; color:#64748b; margin-top:1.2rem; }
+.bd-who input { border:none; outline:none; flex:1; min-height:56px; font-size:1.05rem; background:transparent; }
+.bd-sw { position:relative; }
+.bd-sw svg { position:absolute; left:1.1rem; top:50%; transform:translateY(-50%); color:#94a3b8; }
+.bd-sw .bd-search { padding-left:3.2rem; }
+.bd-logo-s { width:42px; height:42px; border-radius:12px; background:#fff; display:flex; align-items:center; justify-content:center; padding:4px; flex:none; }
 .bd-card { background:#fff; border-radius:20px; padding:1.1rem; box-shadow:0 2px 10px rgba(15,23,42,.07); min-width:0; }
-.bd-send { width:100%; min-height:64px; border-radius:18px; background:#0f766e; color:#fff; font-size:1.15rem; font-weight:700; margin-top:1.2rem; }
+.bd-send { width:100%; min-height:64px; border-radius:18px; background:#0f172a; color:#fff; font-size:1.1rem; font-weight:700; margin-top:1.2rem; display:flex; align-items:center; justify-content:center; gap:.6rem; }
 .bd-send:disabled { opacity:.45; }
 .bd-split { display:grid; grid-template-columns:minmax(0,1fr); gap:1.2rem; align-items:start; }
 @media (min-width:900px) { .bd-split { grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); } .bd-side { position:sticky; top:84px; max-height:calc(100vh - 100px); overflow:auto; } }
@@ -182,12 +229,12 @@ export default function Bodega() {
 
   async function cargarTodo() {
     setCargando(true);
-    const { data: cfg } = await supabase.from('configuracion').select('tenant_id,nombre_negocio,color_primario');
+    const { data: cfg } = await supabase.from('configuracion').select('tenant_id,nombre_negocio,color_primario,logo_url');
     if (cfg && cfg.length) {
       const mapa = new Map<string, Tienda>();
-      for (const c of cfg as { tenant_id: string; nombre_negocio?: string; color_primario?: string }[]) {
+      for (const c of cfg as { tenant_id: string; nombre_negocio?: string; color_primario?: string; logo_url?: string }[]) {
         if (!c.tenant_id || c.tenant_id === 'default' || mapa.has(c.tenant_id)) continue;
-        mapa.set(c.tenant_id, { id: c.tenant_id, nombre: c.nombre_negocio || c.tenant_id, color: c.color_primario || '#6366f1' });
+        mapa.set(c.tenant_id, { id: c.tenant_id, nombre: c.nombre_negocio || c.tenant_id, color: c.color_primario || '#6366f1', logo: c.logo_url || TIENDAS_BASE.find(t => t.id === c.tenant_id)?.logo });
       }
       if (mapa.size) setTiendas([...mapa.values()].sort((a, b) => a.nombre.localeCompare(b.nombre)));
     }
@@ -314,7 +361,7 @@ export default function Bodega() {
     const error = await sumar(tienda, hoja.referencia, hoja.nombre || null, talla.trim(), color.trim(), ubicacion.trim(), cant);
     setGuardando(false);
     if (error) return mostrar('error', 'No se pudo guardar: ' + error.message);
-    mostrar('ok', `✓ +${cant} ${hoja.referencia}${talla ? ' · ' + talla : ''}`);
+    mostrar('ok', `+${cant} ${hoja.referencia}${talla ? ' · ' + talla : ''}`);
     setHoja(null);
     setBusqueda('');
     cargarConteos();
@@ -409,7 +456,7 @@ export default function Bodega() {
       <div className="bd" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', background: 'linear-gradient(160deg,#0f172a,#312e81)' }}>
         <style>{CSS}</style>
         <form onSubmit={entrar} className="bd-card" style={{ width: '100%', maxWidth: 380, textAlign: 'center', padding: '2.2rem 1.6rem', borderRadius: 28 }}>
-          <div style={{ fontSize: '3rem' }}>📦</div>
+          <div style={{ display: 'flex', justifyContent: 'center', color: '#4f46e5' }}><Ico n="caja" s={48} /></div>
           <h1 style={{ fontSize: '1.6rem', margin: '.3rem 0 .2rem' }}>Bodega</h1>
           <p style={{ color: '#64748b', margin: '0 0 1.2rem' }}>Ingresa tu PIN</p>
           <input className="bd-in" type="password" inputMode="numeric" autoFocus value={pin} onChange={e => setPin(e.target.value)} placeholder="••••" style={{ textAlign: 'center', letterSpacing: '.4em', fontSize: '1.8rem', minHeight: 68 }} />
@@ -431,9 +478,12 @@ export default function Bodega() {
       <header className="bd-top">
         <h1>
           {enTienda ? (
-            <button className="bd-nb" onClick={() => { setTienda(null); setBusqueda(''); }}>← Tiendas</button>
-          ) : <span>📦 Bodega</span>}
-          {enTienda && <span>{infoTienda!.nombre}</span>}
+            <>
+              <button className="bd-nb" onClick={() => { setTienda(null); setBusqueda(''); }} style={{ display: 'flex', alignItems: 'center', gap: '.4rem' }}><Ico n="atras" /> Tiendas</button>
+              <span className="bd-logo-s"><Logo t={infoTienda!} size={34} /></span>
+              <span>{infoTienda!.nombre}</span>
+            </>
+          ) : <span style={{ display: 'flex', alignItems: 'center', gap: '.6rem' }}><Ico n="caja" s={24} /> Bodega</span>}
           {esAdmin && <span className="bd-badge">Admin</span>}
         </h1>
         <nav className="bd-nav">
@@ -448,36 +498,44 @@ export default function Bodega() {
         {/* ───────────── INICIO: elegir tienda ───────────── */}
         {vista === 'inicio' && !tienda && (
           <>
-            <h2 className="bd-h2">¿Qué tienda vas a contar?</h2>
+            <h2 className="bd-h2">Control de bodega</h2>
+            <div className="bd-kpis">
+              <div className="bd-kpi"><b>{totalUnidades}</b><span>Unidades contadas</span></div>
+              <div className="bd-kpi"><b>{conteos.length}</b><span>Líneas</span></div>
+              <div className="bd-kpi"><b>{resumenTienda.size}<small style={{ fontSize: '1rem', color: '#94a3b8' }}> / {tiendas.length}</small></b><span>Tiendas con conteo</span></div>
+              <div className="bd-kpi"><b style={{ fontSize: '1.2rem', paddingTop: '.35rem' }}>{hayPendiente ? 'En aprobación' : 'Sin envíos pendientes'}</b><span>Estado</span></div>
+            </div>
+            <div style={{ fontSize: '.8rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.05em', margin: '0 0 .7rem' }}>Selecciona la tienda a contar</div>
             <div className="bd-tiles">
               {tiendas.map(t => {
                 const r = resumenTienda.get(t.id);
-                const tx = textoSobre(t.color);
                 return (
-                  <button key={t.id} className="bd-tile" onClick={() => { setTienda(t.id); setBusqueda(''); }} style={{ background: `linear-gradient(145deg, ${t.color}, ${t.color}dd)`, color: tx }}>
-                    <span className="ini">{t.nombre.trim().charAt(0).toUpperCase()}</span>
-                    <span>
-                      <span className="nom" style={{ display: 'block' }}>{t.nombre}</span>
-                      <span className="num" style={{ display: 'block' }}>{r ? `${r.unidades} unidades · ${r.lineas} líneas` : 'Sin conteo todavía'}</span>
-                    </span>
+                  <button key={t.id} className="bd-tile" onClick={() => { setTienda(t.id); setBusqueda(''); }} style={{ ['--c' as string]: t.color, ['--t' as string]: textoSobre(t.color) }}>
+                    <div className="bar" />
+                    <div className="logo"><Logo t={t} size={110} /></div>
+                    <div className="info">
+                      <div className="nom">{t.nombre}</div>
+                      <div className="st">
+                        <div><b>{r ? r.unidades : 0}</b><span>Unidades</span></div>
+                        <div><b>{r ? r.lineas : 0}</b><span>Líneas</span></div>
+                      </div>
+                      <div className="cta"><span>Contar</span><Ico n="flecha" /></div>
+                    </div>
                   </button>
                 );
               })}
             </div>
 
-            <div className="bd-card" style={{ marginTop: '1.2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-              <div>
-                <strong style={{ fontSize: '1.3rem' }}>{totalUnidades} unidades</strong>
-                <div style={{ color: '#64748b', fontSize: '.9rem' }}>{conteos.length} líneas contadas en total</div>
-              </div>
-              <input className="bd-in" style={{ maxWidth: 280 }} value={contador} placeholder="👤 Quién cuenta" onChange={e => {
+            <div className="bd-who">
+              <Ico n="usuario" />
+              <input value={contador} placeholder="Quién cuenta (nombre)" onChange={e => {
                 setContador(e.target.value);
                 try { localStorage.setItem('bodega_contador', e.target.value); } catch { /* sin almacenamiento */ }
               }} />
             </div>
 
             <button className="bd-send" onClick={enviarAprobacion} disabled={conteos.length === 0 || hayPendiente}>
-              {hayPendiente ? 'Hay un conteo esperando aprobación' : 'Terminar y enviar a aprobación'}
+              {hayPendiente ? 'Hay un conteo esperando aprobación' : <><Ico n="check" /> Terminar y enviar a aprobación</>}
             </button>
             {cargando && <p style={{ textAlign: 'center', color: '#94a3b8' }}>Cargando...</p>}
           </>
@@ -487,7 +545,7 @@ export default function Bodega() {
         {enTienda && (
           <div className="bd-split">
             <div style={{ minWidth: 0 }}>
-              <input className="bd-search" value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="🔍  Buscar referencia o nombre" autoFocus />
+              <div className="bd-sw"><Ico n="buscar" s={22} /><input className="bd-search" value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Buscar referencia o nombre" autoFocus /></div>
               {cargandoProd && <p style={{ color: '#94a3b8', textAlign: 'center', marginTop: '1.5rem' }}>Cargando productos...</p>}
               <div className="bd-grid">
                 {busqueda.trim() && !hayExacta && (
@@ -524,13 +582,13 @@ export default function Bodega() {
                     <div style={{ fontSize: '.8rem', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.producto_nombre}</div>
                     {c.talla && <span className="bd-pill">Talla {c.talla}</span>}
                     {c.color && <span className="bd-pill">{c.color}</span>}
-                    {c.ubicacion && <span className="bd-pill">📍 {c.ubicacion}</span>}
+                    {c.ubicacion && <span className="bd-pill">Estante {c.ubicacion}</span>}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', flex: 'none' }}>
                     <button className="bd-step" onClick={() => ajustar(c, -1)}>−</button>
                     <input key={c.id + ':' + c.cantidad} className="bd-q" type="number" inputMode="numeric" min={0} defaultValue={c.cantidad} onBlur={e => fijar(c, parseInt(e.target.value, 10))} />
                     <button className="bd-step" onClick={() => ajustar(c, 1)}>+</button>
-                    <button onClick={() => eliminar(c)} aria-label="Quitar" style={{ background: 'transparent', fontSize: '1.2rem', width: 44, height: 44 }}>🗑</button>
+                    <button onClick={() => eliminar(c)} aria-label="Quitar" style={{ background: 'transparent', color: '#94a3b8', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Ico n="basura" /></button>
                   </div>
                 </div>
               ))}
@@ -604,9 +662,9 @@ export default function Bodega() {
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ fontSize: '1.35rem', fontWeight: 700 }}>{hoja.referencia}</div>
                 <div style={{ color: '#64748b', fontSize: '.9rem' }}>{hoja.nombre || 'Referencia nueva'}</div>
-                <span className="bd-pill" style={{ background: colorTienda, color: textoSobre(colorTienda) }}>{nombreTienda(tienda)}</span>
+                <span className="bd-pill" style={{ background: colorTienda, color: textoSobre(colorTienda), display: 'inline-flex', alignItems: 'center', gap: 6 }}>{nombreTienda(tienda)}</span>
               </div>
-              <button onClick={() => setHoja(null)} aria-label="Cerrar" style={{ background: '#f1f5f9', width: 46, height: 46, borderRadius: 14, fontSize: '1.2rem', flex: 'none' }}>✕</button>
+              <button onClick={() => setHoja(null)} aria-label="Cerrar" style={{ background: '#f1f5f9', width: 46, height: 46, borderRadius: 14, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Ico n="cerrar" /></button>
             </div>
 
             <span className="bd-lbl">Talla</span>
