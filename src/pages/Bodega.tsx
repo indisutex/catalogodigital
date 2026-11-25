@@ -35,6 +35,7 @@ interface ProductoRef {
   nombre: string;
   imagen_url: string | null;
   tallas: string[];
+  categoria: string;
 }
 
 const FONT = "'Poppins', 'Inter', sans-serif";
@@ -57,6 +58,28 @@ function parseTallas(v: unknown): string[] {
     try { return (JSON.parse(t) as unknown[]).map(x => String(x).trim()).filter(Boolean); } catch { /* sigue */ }
   }
   return t.split(/[,;|]/).map(x => x.trim()).filter(Boolean);
+}
+
+// Trae todas las filas de una consulta (Supabase entrega máximo 1000 por petición)
+async function traerTodo<T>(armar: (desde: number, hasta: number) => PromiseLike<{ data: unknown; error: unknown }>): Promise<T[]> {
+  const todo: T[] = [];
+  for (let desde = 0; desde < 20000; desde += 1000) {
+    const { data, error } = await armar(desde, desde + 999);
+    if (error || !Array.isArray(data)) break;
+    todo.push(...(data as T[]));
+    if (data.length < 1000) break;
+  }
+  return todo;
+}
+
+const PALETA = ['#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#14b8a6', '#f97316', '#6366f1'];
+function colorDe(id: string): string {
+  let h = 0;
+  for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return PALETA[h % PALETA.length];
+}
+function nombreDe(id: string): string {
+  return id.replace(/[_-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
 // Color de texto legible sobre el color de la tienda
@@ -131,6 +154,11 @@ const CSS = `
 .bd-kpi span { font-size:.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:.04em; }
 .bd-who { display:flex; align-items:center; gap:.6rem; background:#fff; border:1px solid #e6e9f2; border-radius:16px; padding:0 1rem; color:#64748b; margin-top:1.2rem; }
 .bd-who input { border:none; outline:none; flex:1; min-height:56px; font-size:1.05rem; background:transparent; }
+.bd-cats { display:flex; gap:.5rem; overflow-x:auto; padding:.9rem 0 .2rem; -webkit-overflow-scrolling:touch; }
+.bd-cat { flex:none; background:#fff; border:1px solid #e1e5ef; border-radius:99px; padding:.6rem 1.05rem; font-weight:600; font-size:.92rem; color:#334155; min-height:46px; }
+.bd-cat i { font-style:normal; font-size:.75rem; background:#f1f5f9; border-radius:99px; padding:1px 8px; margin-left:4px; color:#64748b; }
+.bd-cat.on { background:var(--c); border-color:var(--c); color:var(--t); }
+.bd-cat.on i { background:rgba(255,255,255,.28); color:inherit; }
 .bd-sw { position:relative; }
 .bd-sw svg { position:absolute; left:1.1rem; top:50%; transform:translateY(-50%); color:#94a3b8; }
 .bd-sw .bd-search { padding-left:3.2rem; }
@@ -202,6 +230,7 @@ export default function Bodega() {
     try { return localStorage.getItem('bodega_contador') || ''; } catch { return ''; }
   });
   const [busqueda, setBusqueda] = useState('');
+  const [cat, setCat] = useState<string>('todas');
   const [hoja, setHoja] = useState<ProductoRef | null>(null);
   const [talla, setTalla] = useState('');
   const [color, setColor] = useState('');
@@ -231,15 +260,21 @@ export default function Bodega() {
 
   async function cargarTodo() {
     setCargando(true);
-    const { data: cfg } = await supabase.from('configuracion').select('tenant_id,nombre_negocio,color_primario,logo_url');
-    if (cfg && cfg.length) {
-      const mapa = new Map<string, Tienda>();
-      for (const c of cfg as { tenant_id: string; nombre_negocio?: string; color_primario?: string; logo_url?: string }[]) {
-        if (!c.tenant_id || NO_TIENDAS.includes(c.tenant_id.toLowerCase()) || mapa.has(c.tenant_id)) continue;
-        mapa.set(c.tenant_id, { id: c.tenant_id, nombre: c.nombre_negocio || c.tenant_id, color: c.color_primario || '#6366f1', logo: c.logo_url || TIENDAS_BASE.find(t => t.id === c.tenant_id)?.logo });
-      }
-      if (mapa.size) setTiendas([...mapa.values()].sort((a, b) => a.nombre.localeCompare(b.nombre)));
+    const [cfg, marcas] = await Promise.all([
+      supabase.from('configuracion').select('tenant_id,nombre_negocio,color_primario,logo_url').then(r => (r.data as { tenant_id: string; nombre_negocio?: string; color_primario?: string; logo_url?: string }[]) || []),
+      traerTodo<{ tenant_id: string }>((d, h) => supabase.from('productos').select('tenant_id').range(d, h))
+    ]);
+    const mapa = new Map<string, Tienda>();
+    const valido = (id: string | null | undefined): id is string => !!id && !NO_TIENDAS.includes(id.toLowerCase());
+    for (const c of cfg) {
+      if (!valido(c.tenant_id) || mapa.has(c.tenant_id)) continue;
+      mapa.set(c.tenant_id, { id: c.tenant_id, nombre: c.nombre_negocio || nombreDe(c.tenant_id), color: c.color_primario || colorDe(c.tenant_id), logo: c.logo_url || TIENDAS_BASE.find(t => t.id === c.tenant_id)?.logo });
     }
+    for (const m of marcas) {
+      if (!valido(m.tenant_id) || mapa.has(m.tenant_id)) continue;
+      mapa.set(m.tenant_id, { id: m.tenant_id, nombre: nombreDe(m.tenant_id), color: colorDe(m.tenant_id) });
+    }
+    if (mapa.size) setTiendas([...mapa.values()].sort((a, b) => a.nombre.localeCompare(b.nombre)));
     await Promise.all([cargarConteos(), cargarCierres()]);
     setCargando(false);
   }
@@ -249,31 +284,36 @@ export default function Bodega() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autenticado]);
 
-  // Productos de la tienda abierta
+  // Productos de la tienda abierta (todos, ordenados por categoría)
   useEffect(() => {
     if (!autenticado || !tienda) return;
     let vigente = true;
     setProductos([]);
+    setCat('todas');
     setCargandoProd(true);
-    supabase
-      .from('productos')
-      .select('referencia,sku,nombre,imagen_url,tallas')
-      .eq('tenant_id', tienda)
-      .limit(3000)
-      .then(({ data }) => {
-        if (!vigente) return;
-        const lista = ((data as { referencia?: string; sku?: string; nombre: string; imagen_url: string | null; tallas: unknown }[]) || [])
-          .map(p => ({
-            referencia: String(p.referencia || p.sku || p.nombre || '').trim(),
-            nombre: p.nombre || '',
-            imagen_url: p.imagen_url,
-            tallas: parseTallas(p.tallas)
-          }))
-          .filter(p => p.referencia)
-          .sort((a, b) => a.referencia.localeCompare(b.referencia, 'es', { numeric: true }));
-        setProductos(lista);
-        setCargandoProd(false);
-      });
+    traerTodo<{ referencia: string | null; nombre: string | null; imagen_url: string | null; tallas: unknown; categoria: string | null; created_at: string }>(
+      (d, h) => supabase.from('productos').select('referencia,nombre,imagen_url,tallas,categoria,created_at').eq('tenant_id', tienda).order('created_at', { ascending: true }).range(d, h)
+    ).then(filas => {
+      if (!vigente) return;
+      const usados = new Map<string, number>();
+      const lista: ProductoRef[] = [];
+      for (const p of filas) {
+        const base = String(p.referencia || p.nombre || '').trim();
+        if (!base) continue;
+        const veces = (usados.get(base) || 0) + 1;
+        usados.set(base, veces);
+        lista.push({
+          referencia: veces > 1 ? `${base} (${veces})` : base,
+          nombre: (p.nombre || '').trim(),
+          imagen_url: p.imagen_url,
+          tallas: parseTallas(p.tallas),
+          categoria: (p.categoria || '').trim() || 'Sin categoría'
+        });
+      }
+      lista.sort((x, y) => x.categoria.localeCompare(y.categoria, 'es') || x.nombre.localeCompare(y.nombre, 'es', { numeric: true }));
+      setProductos(lista);
+      setCargandoProd(false);
+    });
     return () => { vigente = false; };
   }, [tienda, autenticado]);
 
@@ -331,11 +371,20 @@ export default function Bodega() {
   const hayPendiente = cierres.some(c => c.estado === 'pendiente');
   const pendientes = cierres.filter(c => c.estado === 'pendiente').length;
 
+  const categorias = useMemo(() => {
+    const m = new Map<string, number>();
+    productos.forEach(p => m.set(p.categoria, (m.get(p.categoria) || 0) + 1));
+    return [...m.entries()];
+  }, [productos]);
+
   const resultados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
-    const base = q ? productos.filter(p => p.referencia.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q)) : productos;
-    return base.slice(0, 60);
-  }, [productos, busqueda]);
+    let base = productos;
+    if (cat === '__contados') base = base.filter(p => (unidadesRef.get(p.referencia) || 0) > 0);
+    else if (cat !== 'todas') base = base.filter(p => p.categoria === cat);
+    if (q) base = base.filter(p => p.referencia.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q));
+    return base.slice(0, 300);
+  }, [productos, busqueda, cat, unidadesRef]);
 
   const hayExacta = productos.some(p => p.referencia.toLowerCase() === busqueda.trim().toLowerCase());
 
@@ -548,10 +597,19 @@ export default function Bodega() {
           <div className="bd-split">
             <div style={{ minWidth: 0 }}>
               <div className="bd-sw"><Ico n="buscar" s={22} /><input className="bd-search" value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Buscar referencia o nombre" autoFocus /></div>
+              {productos.length > 0 && (
+                <div className="bd-cats">
+                  <button className={`bd-cat ${cat === 'todas' ? 'on' : ''}`} onClick={() => setCat('todas')}>Todas <i>{productos.length}</i></button>
+                  <button className={`bd-cat ${cat === '__contados' ? 'on' : ''}`} onClick={() => setCat('__contados')}>Contados <i>{[...unidadesRef.values()].filter(v => v > 0).length}</i></button>
+                  {categorias.map(([c, n]) => (
+                    <button key={c} className={`bd-cat ${cat === c ? 'on' : ''}`} onClick={() => setCat(c)}>{c} <i>{n}</i></button>
+                  ))}
+                </div>
+              )}
               {cargandoProd && <p style={{ color: '#94a3b8', textAlign: 'center', marginTop: '1.5rem' }}>Cargando productos...</p>}
               <div className="bd-grid">
                 {busqueda.trim() && !hayExacta && (
-                  <button className="bd-nuevo" onClick={() => abrirHoja({ referencia: busqueda.trim(), nombre: '', imagen_url: null, tallas: [] })}>
+                  <button className="bd-nuevo" onClick={() => abrirHoja({ referencia: busqueda.trim(), nombre: '', imagen_url: null, tallas: [], categoria: 'Sin categoría' })}>
                     + Referencia nueva<br />«{busqueda.trim()}»
                   </button>
                 )}
@@ -567,7 +625,7 @@ export default function Bodega() {
                 })}
               </div>
               {!cargandoProd && resultados.length === 0 && !busqueda.trim() && (
-                <p style={{ color: '#64748b', textAlign: 'center', marginTop: '2rem' }}>Esta tienda no tiene productos con referencia. Escribe una arriba para agregarla.</p>
+                <p style={{ color: '#64748b', textAlign: 'center', marginTop: '2rem' }}>No hay productos que coincidan. Si es una referencia nueva, escríbela arriba para agregarla.</p>
               )}
             </div>
 
