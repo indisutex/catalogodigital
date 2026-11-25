@@ -47,8 +47,8 @@ const TIENDAS_BASE: Tienda[] = [
   { id: 'lovely', nombre: 'Lovely', color: '#d561ff', logo: LOGO_BASE + 'logo_1788197761050.webp' }
 ];
 const CIERRE_TENANT = 'general';
-// Cuentas internas que no son tiendas con mercancía (el super administrador)
-const NO_TIENDAS = ['indisutex', 'default', 'superadmin'];
+// Cuentas que no se cuentan en bodega (super administrador y negocios que no son de la bodega)
+const NO_TIENDAS = ['indisutex', 'default', 'superadmin', 'mamamia'];
 
 function parseTallas(v: unknown): string[] {
   if (Array.isArray(v)) return v.map(x => String(x).trim()).filter(Boolean);
