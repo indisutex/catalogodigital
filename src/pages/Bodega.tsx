@@ -46,6 +46,8 @@ const TIENDAS_BASE: Tienda[] = [
   { id: 'lovely', nombre: 'Lovely', color: '#d561ff', logo: LOGO_BASE + 'logo_1788197761050.webp' }
 ];
 const CIERRE_TENANT = 'general';
+// Cuentas internas que no son tiendas con mercancía (el super administrador)
+const NO_TIENDAS = ['indisutex', 'default', 'superadmin'];
 
 function parseTallas(v: unknown): string[] {
   if (Array.isArray(v)) return v.map(x => String(x).trim()).filter(Boolean);
@@ -233,7 +235,7 @@ export default function Bodega() {
     if (cfg && cfg.length) {
       const mapa = new Map<string, Tienda>();
       for (const c of cfg as { tenant_id: string; nombre_negocio?: string; color_primario?: string; logo_url?: string }[]) {
-        if (!c.tenant_id || c.tenant_id === 'default' || mapa.has(c.tenant_id)) continue;
+        if (!c.tenant_id || NO_TIENDAS.includes(c.tenant_id.toLowerCase()) || mapa.has(c.tenant_id)) continue;
         mapa.set(c.tenant_id, { id: c.tenant_id, nombre: c.nombre_negocio || c.tenant_id, color: c.color_primario || '#6366f1', logo: c.logo_url || TIENDAS_BASE.find(t => t.id === c.tenant_id)?.logo });
       }
       if (mapa.size) setTiendas([...mapa.values()].sort((a, b) => a.nombre.localeCompare(b.nombre)));
