@@ -36,9 +36,8 @@ function App() {
             <Route path="/:tenant/admin" element={<Admin />} />
             <Route path="/superadmin" element={<SuperAdmin />} />
 
-            {/* Conteo de bodega (inventario físico) */}
+            {/* Bodega general: conteo de inventario para todas las tiendas */}
             <Route path="/bodega" element={<Bodega />} />
-            <Route path="/:tenant/bodega" element={<Bodega />} />
 
             {/* Informe Ejecutivo Compartible para Propietarios y Directores */}
             <Route path="/reporte" element={<ReporteEjecutivo />} />
