@@ -50,7 +50,7 @@ import { decodeExtraImage, isMediaVideo, getVariantImageUrl } from '../lib/media
 const normalizeSlug = (str?: string) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
 
 const SYSTEM_ROUTES = [
-  'admin', 'superadmin', 'pago', 'guia', 'menu', 'dist', 
+  'admin', 'superadmin', 'bodega', 'pago', 'guia', 'menu', 'dist', 
   'assets', 'api', 'sw.js', 'manifest.json', 'products', 
   'orders', 'favicon.ico', 'robots.txt', 'indisutex', 
   'sublimadosmajestic', 'sublimados_majestic', 'default'
@@ -339,7 +339,7 @@ export default function MenuDigital() {
           .from('mayoristas')
           .select('*');
 
-        const systemRoutes = ['admin', 'superadmin', 'pago', 'guia', 'menu', 'dist', 'assets', 'api', 'sw.js', 'manifest.json', 'products', 'orders', 'favicon.ico', 'robots.txt', 'indisutex', 'sublimadosmajestic', 'sublimados_majestic', 'default'];
+        const systemRoutes = ['admin', 'superadmin', 'bodega', 'pago', 'guia', 'menu', 'dist', 'assets', 'api', 'sw.js', 'manifest.json', 'products', 'orders', 'favicon.ico', 'robots.txt', 'indisutex', 'sublimadosmajestic', 'sublimados_majestic', 'default'];
         
         // A. Match por slug de negocio o nombre en la URL (ej: /magentapijamas)
         if (rawPathSlug && !systemRoutes.includes(rawPathSlug)) {

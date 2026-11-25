@@ -41,7 +41,7 @@ export const findClosestTenant = (raw: string): ClosestStoreInfo | null => {
   const clean = raw.toLowerCase().trim().replace(/-/g, '_');
 
   const systemRoutes = [
-    'admin', 'superadmin', 'pago', 'guia', 'menu', 'dist', 
+    'admin', 'superadmin', 'bodega', 'pago', 'guia', 'menu', 'dist', 
     'reporte', 'informe', 'assets', 'api', 'sw.js', 'manifest.json', 'products', 
     'orders', 'favicon.ico', 'robots.txt'
   ];
@@ -113,7 +113,7 @@ export const getTenantId = () => {
   const firstPart = pathname.split('/')[0].toLowerCase();
   
   const systemRoutes = [
-    'admin', 'superadmin', 'pago', 'guia', 'menu', 'dist', 
+    'admin', 'superadmin', 'bodega', 'pago', 'guia', 'menu', 'dist', 
     'reporte', 'informe', 'assets', 'api', 'sw.js', 'manifest.json', 'products', 
     'orders', 'favicon.ico', 'robots.txt'
   ];
