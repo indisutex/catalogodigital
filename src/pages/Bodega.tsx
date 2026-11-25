@@ -38,7 +38,6 @@ interface ProductoRef {
 }
 
 const FONT = "'Poppins', 'Inter', sans-serif";
-const ACCENT = '#6366f1';
 const TIENDAS_BASE: Tienda[] = [
   { id: 'sublimados_majestic', nombre: 'Sublimados Majestic', color: '#f50081' },
   { id: 'lucerito', nombre: 'Pijamas Lucerito', color: '#a855f7' },
@@ -57,6 +56,77 @@ function parseTallas(v: unknown): string[] {
   return t.split(/[,;|]/).map(x => x.trim()).filter(Boolean);
 }
 
+// Color de texto legible sobre el color de la tienda
+function textoSobre(hex: string): string {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return '#ffffff';
+  const n = parseInt(m[1], 16);
+  const lum = (0.299 * ((n >> 16) & 255) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255)) / 255;
+  return lum > 0.72 ? '#1e1b4b' : '#ffffff';
+}
+
+const CSS = `
+.bd { min-height:100vh; background:#eef0f6; font-family:${FONT}; color:#0f172a; font-size:17px; -webkit-tap-highlight-color:transparent; }
+.bd *, .bd *::before, .bd *::after { box-sizing:border-box; }
+.bd button, .bd input { font-family:${FONT}; }
+.bd button { cursor:pointer; border:none; }
+.bd-top { background:#0f172a; color:#fff; padding:.8rem 1.2rem; display:flex; align-items:center; justify-content:space-between; gap:.6rem; position:sticky; top:0; z-index:20; }
+.bd-top h1 { font-size:1.2rem; margin:0; font-weight:700; display:flex; align-items:center; gap:.6rem; color:#fff; }
+.bd-nav { display:flex; gap:.4rem; align-items:center; flex-wrap:wrap; }
+.bd-nb { background:rgba(255,255,255,.12); color:#fff; border-radius:12px; padding:.65rem 1.1rem; font-weight:600; font-size:.95rem; min-height:46px; }
+.bd-nb.on { background:#fff; color:#0f172a; }
+.bd-nb.ok { background:#10b981; }
+.bd-badge { background:#fbbf24; color:#78350f; font-size:.7rem; padding:2px 9px; border-radius:99px; font-weight:700; }
+.bd-wrap { max-width:1240px; margin:0 auto; padding:1.2rem; }
+.bd-h2 { font-size:1.5rem; font-weight:700; margin:.2rem 0 1rem; color:#0f172a; }
+.bd-tiles { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:1rem; }
+.bd-tile { text-align:left; border-radius:22px; padding:1.3rem 1.3rem 1.1rem; min-height:170px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 8px 22px rgba(15,23,42,.14); transition:transform .12s; }
+.bd-tile:active { transform:scale(.98); }
+.bd-tile .ini { width:52px; height:52px; border-radius:16px; background:rgba(255,255,255,.25); display:flex; align-items:center; justify-content:center; font-size:1.5rem; font-weight:700; }
+.bd-tile .nom { font-size:1.25rem; font-weight:700; line-height:1.2; margin-top:.8rem; }
+.bd-tile .num { font-size:.9rem; opacity:.9; margin-top:.2rem; }
+.bd-card h1, .bd-card h2 { color:#0f172a; }
+.bd-card { background:#fff; border-radius:20px; padding:1.1rem; box-shadow:0 2px 10px rgba(15,23,42,.07); min-width:0; }
+.bd-send { width:100%; min-height:64px; border-radius:18px; background:#0f766e; color:#fff; font-size:1.15rem; font-weight:700; margin-top:1.2rem; }
+.bd-send:disabled { opacity:.45; }
+.bd-split { display:grid; grid-template-columns:minmax(0,1fr); gap:1.2rem; align-items:start; }
+@media (min-width:900px) { .bd-split { grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); } .bd-side { position:sticky; top:84px; max-height:calc(100vh - 100px); overflow:auto; } }
+.bd-search { width:100%; padding:1rem 1.2rem; border:none; border-radius:16px; font-size:1.2rem; background:#fff; box-shadow:0 2px 10px rgba(15,23,42,.08); min-height:60px; outline:2px solid transparent; }
+.bd-search:focus { outline-color:var(--c,#6366f1); }
+.bd-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:.8rem; margin-top:1rem; }
+.bd-prod { background:#fff; border-radius:18px; overflow:hidden; text-align:left; box-shadow:0 2px 10px rgba(15,23,42,.07); position:relative; display:flex; flex-direction:column; }
+.bd-prod:active { transform:scale(.98); }
+.bd-prod .img { aspect-ratio:1/1; background:#e2e8f0 center/cover no-repeat; }
+.bd-prod .tx { padding:.6rem .7rem .8rem; }
+.bd-prod .rf { font-weight:700; font-size:.95rem; }
+.bd-prod .nm { font-size:.78rem; color:#64748b; line-height:1.25; margin-top:2px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+.bd-prod .hay { position:absolute; top:8px; right:8px; background:var(--c); color:var(--t); border-radius:99px; padding:3px 10px; font-size:.75rem; font-weight:700; }
+.bd-nuevo { border:3px dashed #94a3b8; background:transparent; color:#475569; border-radius:18px; padding:1rem; font-weight:600; min-height:150px; }
+.bd-row { display:flex; align-items:center; justify-content:space-between; gap:.6rem; padding:.8rem 0; border-top:1px solid #f1f5f9; }
+.bd-row:first-child { border-top:none; }
+.bd-step { width:50px; height:50px; border-radius:14px; background:#f1f5f9; font-size:1.6rem; font-weight:700; color:#0f172a; flex:none; }
+.bd-q { width:74px; text-align:center; font-size:1.3rem; font-weight:700; border:none; background:transparent; padding:.3rem 0; }
+.bd-pill { display:inline-block; background:#f1f5f9; border-radius:99px; padding:2px 10px; font-size:.78rem; font-weight:600; color:#475569; margin:2px 4px 0 0; }
+.bd-ov { position:fixed; inset:0; background:rgba(15,23,42,.55); z-index:50; display:flex; align-items:flex-end; justify-content:center; }
+@media (min-width:700px) { .bd-ov { align-items:center; } }
+.bd-sheet { background:#fff; width:100%; max-width:560px; border-radius:26px 26px 0 0; padding:1.3rem; max-height:94vh; overflow:auto; }
+@media (min-width:700px) { .bd-sheet { border-radius:26px; } }
+.bd-lbl { font-size:.75rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.04em; margin:1.1rem 0 .5rem; display:block; }
+.bd-chips { display:flex; gap:.5rem; flex-wrap:wrap; }
+.bd-ch { min-width:68px; min-height:56px; padding:.5rem 1rem; border-radius:14px; background:#f1f5f9; font-weight:700; font-size:1.1rem; color:#0f172a; }
+.bd-ch small { display:block; font-size:.65rem; font-weight:600; opacity:.7; }
+.bd-in { width:100%; min-height:54px; padding:.8rem 1rem; border-radius:14px; border:2px solid #e2e8f0; font-size:1.05rem; background:#fff; }
+.bd-qty { display:flex; align-items:center; gap:.6rem; }
+.bd-qty .bd-step { width:68px; height:68px; font-size:2rem; }
+.bd-qty input { flex:1; min-width:0; height:68px; text-align:center; font-size:2.2rem; font-weight:700; border:2px solid #e2e8f0; border-radius:16px; }
+.bd-go { width:100%; min-height:64px; border-radius:18px; font-size:1.2rem; font-weight:700; margin-top:1.1rem; }
+.bd-toast { position:fixed; left:50%; bottom:22px; transform:translateX(-50%); padding:.9rem 1.4rem; border-radius:16px; font-weight:600; z-index:80; box-shadow:0 8px 24px rgba(15,23,42,.3); max-width:92vw; }
+.bd-env { display:grid; grid-template-columns:minmax(0,1fr); gap:.9rem; }
+.bd table { width:100%; border-collapse:collapse; }
+.bd th { text-align:left; padding:.5rem; color:#64748b; font-size:.7rem; text-transform:uppercase; }
+.bd td { padding:.5rem; border-top:1px solid #f1f5f9; }
+`;
+
 export default function Bodega() {
   const [autenticado, setAutenticado] = useState(() => {
     try { return localStorage.getItem('bodega_auth') === 'true'; } catch { return false; }
@@ -69,54 +139,44 @@ export default function Bodega() {
   const [verificando, setVerificando] = useState(false);
 
   const [tiendas, setTiendas] = useState<Tienda[]>(TIENDAS_BASE);
-  const [tienda, setTienda] = useState<string>(TIENDAS_BASE[0].id);
+  const [tienda, setTienda] = useState<string | null>(null);
+  const [vista, setVista] = useState<'inicio' | 'envios'>('inicio');
   const [productos, setProductos] = useState<ProductoRef[]>([]);
+  const [cargandoProd, setCargandoProd] = useState(false);
   const [conteos, setConteos] = useState<Conteo[]>([]);
   const [cierres, setCierres] = useState<Cierre[]>([]);
   const [cargando, setCargando] = useState(false);
   const [aviso, setAviso] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
-  const [vista, setVista] = useState<'conteo' | 'envios'>('conteo');
   const [abierto, setAbierto] = useState<string | null>(null);
 
   const [contador, setContador] = useState(() => {
     try { return localStorage.getItem('bodega_contador') || ''; } catch { return ''; }
   });
   const [busqueda, setBusqueda] = useState('');
-  const [sel, setSel] = useState<{ referencia: string; nombre: string; tallas: string[] } | null>(null);
+  const [hoja, setHoja] = useState<ProductoRef | null>(null);
   const [talla, setTalla] = useState('');
   const [color, setColor] = useState('');
   const [ubicacion, setUbicacion] = useState('');
   const [cant, setCant] = useState(1);
   const [guardando, setGuardando] = useState(false);
 
-  const [verTienda, setVerTienda] = useState<string>('todas');
-  const [filtro, setFiltro] = useState('');
-
   const mostrar = (tipo: 'ok' | 'error', texto: string) => {
     setAviso({ tipo, texto });
-    window.setTimeout(() => setAviso(null), 3500);
+    window.setTimeout(() => setAviso(null), 3200);
   };
 
   const nombreTienda = (id: string) => tiendas.find(t => t.id === id)?.nombre || id;
-  const colorTienda = (id: string) => tiendas.find(t => t.id === id)?.color || '#64748b';
+  const infoTienda = tiendas.find(t => t.id === tienda) || null;
+  const colorTienda = infoTienda?.color || '#6366f1';
 
   async function cargarConteos() {
-    const { data, error } = await supabase
-      .from('bodega_conteos')
-      .select('*')
-      .order('updated_at', { ascending: false })
-      .limit(5000);
+    const { data, error } = await supabase.from('bodega_conteos').select('*').order('updated_at', { ascending: false }).limit(5000);
     if (error) mostrar('error', 'No se pudo cargar. ¿Ya ejecutaste el SQL de bodega en Supabase?');
     else setConteos((data as Conteo[]) || []);
   }
 
   async function cargarCierres() {
-    const { data } = await supabase
-      .from('bodega_cierres')
-      .select('*')
-      .eq('tenant_id', CIERRE_TENANT)
-      .order('enviado_at', { ascending: false })
-      .limit(100);
+    const { data } = await supabase.from('bodega_cierres').select('*').eq('tenant_id', CIERRE_TENANT).order('enviado_at', { ascending: false }).limit(100);
     setCierres((data as Cierre[]) || []);
   }
 
@@ -129,11 +189,7 @@ export default function Bodega() {
         if (!c.tenant_id || c.tenant_id === 'default' || mapa.has(c.tenant_id)) continue;
         mapa.set(c.tenant_id, { id: c.tenant_id, nombre: c.nombre_negocio || c.tenant_id, color: c.color_primario || '#6366f1' });
       }
-      if (mapa.size) {
-        const lista = [...mapa.values()].sort((a, b) => a.nombre.localeCompare(b.nombre));
-        setTiendas(lista);
-        setTienda(prev => (lista.some(t => t.id === prev) ? prev : lista[0].id));
-      }
+      if (mapa.size) setTiendas([...mapa.values()].sort((a, b) => a.nombre.localeCompare(b.nombre)));
     }
     await Promise.all([cargarConteos(), cargarCierres()]);
     setCargando(false);
@@ -144,26 +200,31 @@ export default function Bodega() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autenticado]);
 
-  // Productos de la tienda elegida (para buscar por referencia o nombre)
+  // Productos de la tienda abierta
   useEffect(() => {
-    if (!autenticado) return;
+    if (!autenticado || !tienda) return;
     let vigente = true;
     setProductos([]);
+    setCargandoProd(true);
     supabase
       .from('productos')
-      .select('referencia,nombre,imagen_url,tallas')
+      .select('referencia,sku,nombre,imagen_url,tallas')
       .eq('tenant_id', tienda)
-      .not('referencia', 'is', null)
       .limit(3000)
       .then(({ data }) => {
         if (!vigente) return;
-        const lista = ((data as { referencia: string; nombre: string; imagen_url: string | null; tallas: unknown }[]) || [])
-          .filter(p => p.referencia && String(p.referencia).trim())
-          .map(p => ({ referencia: String(p.referencia).trim(), nombre: p.nombre, imagen_url: p.imagen_url, tallas: parseTallas(p.tallas) }));
+        const lista = ((data as { referencia?: string; sku?: string; nombre: string; imagen_url: string | null; tallas: unknown }[]) || [])
+          .map(p => ({
+            referencia: String(p.referencia || p.sku || p.nombre || '').trim(),
+            nombre: p.nombre || '',
+            imagen_url: p.imagen_url,
+            tallas: parseTallas(p.tallas)
+          }))
+          .filter(p => p.referencia)
+          .sort((a, b) => a.referencia.localeCompare(b.referencia, 'es', { numeric: true }));
         setProductos(lista);
+        setCargandoProd(false);
       });
-    setSel(null);
-    setBusqueda('');
     return () => { vigente = false; };
   }, [tienda, autenticado]);
 
@@ -194,30 +255,50 @@ export default function Bodega() {
     try { localStorage.removeItem('bodega_auth'); localStorage.removeItem('bodega_role'); } catch { /* sin almacenamiento */ }
     setAutenticado(false);
     setEsAdmin(false);
-    setVista('conteo');
+    setTienda(null);
+    setVista('inicio');
     setPin('');
   }
 
-  const sugerencias = useMemo(() => {
+  const conteosTienda = useMemo(() => conteos.filter(c => c.tenant_id === tienda), [conteos, tienda]);
+  const unidadesRef = useMemo(() => {
+    const m = new Map<string, number>();
+    conteosTienda.forEach(c => m.set(c.referencia, (m.get(c.referencia) || 0) + c.cantidad));
+    return m;
+  }, [conteosTienda]);
+
+  const resumenTienda = useMemo(() => {
+    const m = new Map<string, { unidades: number; lineas: number }>();
+    conteos.forEach(c => {
+      const r = m.get(c.tenant_id) || { unidades: 0, lineas: 0 };
+      r.unidades += c.cantidad;
+      r.lineas += 1;
+      m.set(c.tenant_id, r);
+    });
+    return m;
+  }, [conteos]);
+
+  const totalUnidades = conteos.reduce((s, c) => s + c.cantidad, 0);
+  const hayPendiente = cierres.some(c => c.estado === 'pendiente');
+  const pendientes = cierres.filter(c => c.estado === 'pendiente').length;
+
+  const resultados = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
-    if (!q) return [];
-    return productos
-      .filter(p => p.referencia.toLowerCase().includes(q) || (p.nombre || '').toLowerCase().includes(q))
-      .slice(0, 12);
+    const base = q ? productos.filter(p => p.referencia.toLowerCase().includes(q) || p.nombre.toLowerCase().includes(q)) : productos;
+    return base.slice(0, 60);
   }, [productos, busqueda]);
 
   const hayExacta = productos.some(p => p.referencia.toLowerCase() === busqueda.trim().toLowerCase());
 
-  function elegir(p: ProductoRef) {
-    setSel({ referencia: p.referencia, nombre: p.nombre, tallas: p.tallas });
+  function abrirHoja(p: ProductoRef) {
+    setHoja(p);
     setTalla(p.tallas.length === 1 ? p.tallas[0] : '');
-    setBusqueda('');
+    setColor('');
+    setUbicacion('');
     setCant(1);
   }
 
-  async function sumar(
-    t: string, ref: string, nombre: string | null, tl: string, col: string, ubi: string, n: number
-  ) {
+  async function sumar(t: string, ref: string, nombre: string | null, tl: string, col: string, ubi: string, n: number) {
     const { error } = await supabase.rpc('bodega_sumar', {
       p_tenant: t, p_referencia: ref, p_producto: nombre, p_talla: tl,
       p_color: col, p_ubicacion: ubi, p_cantidad: n, p_por: contador.trim() || null
@@ -226,18 +307,16 @@ export default function Bodega() {
   }
 
   async function guardar() {
-    if (!sel) return;
-    if (sel.tallas.length > 1 && !talla.trim()) return mostrar('error', 'Elige la talla');
+    if (!hoja || !tienda) return;
+    if (hoja.tallas.length > 1 && !talla.trim()) return mostrar('error', 'Elige la talla');
     if (cant < 1) return mostrar('error', 'La cantidad debe ser 1 o más');
     setGuardando(true);
-    const error = await sumar(tienda, sel.referencia, sel.nombre || null, talla.trim(), color.trim(), ubicacion.trim(), cant);
+    const error = await sumar(tienda, hoja.referencia, hoja.nombre || null, talla.trim(), color.trim(), ubicacion.trim(), cant);
     setGuardando(false);
     if (error) return mostrar('error', 'No se pudo guardar: ' + error.message);
-    mostrar('ok', `+${cant} ${sel.referencia}${talla ? ' ' + talla : ''} · ${nombreTienda(tienda)}`);
-    setSel(null);
-    setTalla('');
-    setColor('');
-    setCant(1);
+    mostrar('ok', `✓ +${cant} ${hoja.referencia}${talla ? ' · ' + talla : ''}`);
+    setHoja(null);
+    setBusqueda('');
     cargarConteos();
   }
 
@@ -251,48 +330,22 @@ export default function Bodega() {
   async function fijar(c: Conteo, nueva: number) {
     if (Number.isNaN(nueva) || nueva < 0 || nueva === c.cantidad) return;
     setConteos(prev => prev.map(x => (x.id === c.id ? { ...x, cantidad: nueva } : x)));
-    const { error } = await supabase
-      .from('bodega_conteos')
-      .update({ cantidad: nueva, contado_por: contador.trim() || c.contado_por, updated_at: new Date().toISOString() })
-      .eq('id', c.id);
+    const { error } = await supabase.from('bodega_conteos').update({ cantidad: nueva, contado_por: contador.trim() || c.contado_por, updated_at: new Date().toISOString() }).eq('id', c.id);
     if (error) { mostrar('error', 'No se pudo actualizar'); cargarConteos(); }
   }
 
   async function eliminar(c: Conteo) {
-    if (!window.confirm(`¿Eliminar ${c.referencia} ${c.talla} ${c.color} de ${nombreTienda(c.tenant_id)}?`)) return;
+    if (!window.confirm(`¿Quitar ${c.referencia} ${c.talla} ${c.color}?`)) return;
     const { error } = await supabase.from('bodega_conteos').delete().eq('id', c.id);
-    if (error) return mostrar('error', 'No se pudo eliminar');
+    if (error) return mostrar('error', 'No se pudo quitar');
     setConteos(prev => prev.filter(x => x.id !== c.id));
   }
 
-  const visibles = useMemo(() => {
-    const q = filtro.trim().toLowerCase();
-    return conteos.filter(c =>
-      (verTienda === 'todas' || c.tenant_id === verTienda) &&
-      (!q || [c.referencia, c.producto_nombre, c.talla, c.color, c.ubicacion].some(v => (v || '').toLowerCase().includes(q)))
-    );
-  }, [conteos, verTienda, filtro]);
-
-  const totalesTienda = useMemo(() => {
-    const m = new Map<string, number>();
-    conteos.forEach(c => m.set(c.tenant_id, (m.get(c.tenant_id) || 0) + c.cantidad));
-    return m;
-  }, [conteos]);
-
-  const totalVisible = visibles.reduce((s, c) => s + c.cantidad, 0);
-  const hayPendiente = cierres.some(c => c.estado === 'pendiente');
-
   function exportar() {
-    const filas = visibles.map(c => ({
-      Tienda: nombreTienda(c.tenant_id),
-      Referencia: c.referencia,
-      Producto: c.producto_nombre || '',
-      Talla: c.talla,
-      Color: c.color,
-      Ubicación: c.ubicacion,
-      Cantidad: c.cantidad,
-      'Contado por': c.contado_por || '',
-      Actualizado: new Date(c.updated_at).toLocaleString('es-CO')
+    const filas = conteos.map(c => ({
+      Tienda: nombreTienda(c.tenant_id), Referencia: c.referencia, Producto: c.producto_nombre || '',
+      Talla: c.talla, Color: c.color, Ubicación: c.ubicacion, Cantidad: c.cantidad,
+      'Contado por': c.contado_por || '', Actualizado: new Date(c.updated_at).toLocaleString('es-CO')
     }));
     const ws = XLSX.utils.json_to_sheet(filas);
     const wb = XLSX.utils.book_new();
@@ -303,25 +356,22 @@ export default function Bodega() {
   async function enviarAprobacion() {
     if (conteos.length === 0) return mostrar('error', 'No hay nada para enviar');
     if (hayPendiente) return mostrar('error', 'Ya hay un conteo esperando aprobación');
-    const unidades = conteos.reduce((s, c) => s + c.cantidad, 0);
-    if (!window.confirm(`¿Enviar ${conteos.length} líneas (${unidades} unidades, todas las tiendas) a aprobación? La lista de trabajo quedará vacía.`)) return;
+    if (!window.confirm(`¿Enviar ${conteos.length} líneas (${totalUnidades} unidades, todas las tiendas) a aprobación? La lista de trabajo quedará vacía.`)) return;
     const detalle = conteos.map(({ id: _id, ...resto }) => resto);
     const { error } = await supabase.from('bodega_cierres').insert({
-      tenant_id: CIERRE_TENANT,
-      enviado_por: contador.trim() || null,
-      total_lineas: conteos.length,
-      total_unidades: unidades,
-      detalle
+      tenant_id: CIERRE_TENANT, enviado_por: contador.trim() || null,
+      total_lineas: conteos.length, total_unidades: totalUnidades, detalle
     });
     if (error) return mostrar('error', 'No se pudo enviar: ' + error.message);
     const ids = conteos.map(c => c.id);
     let fallo = false;
     for (let i = 0; i < ids.length; i += 100) {
-      const { error: errBorrar } = await supabase.from('bodega_conteos').delete().in('id', ids.slice(i, i + 100));
-      if (errBorrar) fallo = true;
+      const { error: eb } = await supabase.from('bodega_conteos').delete().in('id', ids.slice(i, i + 100));
+      if (eb) fallo = true;
     }
-    if (fallo) mostrar('error', 'Se envió, pero no se pudo vaciar toda la lista de trabajo');
-    else mostrar('ok', 'Conteo enviado. Espera la aprobación del administrador.');
+    if (fallo) mostrar('error', 'Se envió, pero no se pudo vaciar toda la lista');
+    else mostrar('ok', 'Enviado. Falta la aprobación del administrador.');
+    setTienda(null);
     setVista('envios');
     cargarTodo();
   }
@@ -334,11 +384,9 @@ export default function Bodega() {
     } else if (!window.confirm(`¿Aprobar el conteo de ${c.total_lineas} líneas y ${c.total_unidades} unidades?`)) {
       return;
     }
-    const { error } = await supabase
-      .from('bodega_cierres')
+    const { error } = await supabase.from('bodega_cierres')
       .update({ estado, nota, resuelto_por: contador.trim() || 'Administrador', resuelto_at: new Date().toISOString() })
-      .eq('id', c.id)
-      .eq('estado', 'pendiente');
+      .eq('id', c.id).eq('estado', 'pendiente');
     if (error) return mostrar('error', 'No se pudo guardar la decisión');
     mostrar('ok', estado === 'aprobado' ? 'Conteo aprobado' : 'Conteo rechazado');
     cargarCierres();
@@ -347,47 +395,26 @@ export default function Bodega() {
   async function recuperar(c: Cierre) {
     if (conteos.length > 0 && !window.confirm('Ya hay líneas en la lista de trabajo. Si coinciden con las del envío rechazado, se reemplaza su cantidad. ¿Continuar?')) return;
     const ahora = new Date().toISOString();
-    const filas = c.detalle.map(d => ({ ...d, updated_at: ahora }));
-    const { error } = await supabase
-      .from('bodega_conteos')
-      .upsert(filas, { onConflict: 'tenant_id,referencia,talla,color,ubicacion' });
+    const { error } = await supabase.from('bodega_conteos')
+      .upsert(c.detalle.map(d => ({ ...d, updated_at: ahora })), { onConflict: 'tenant_id,referencia,talla,color,ubicacion' });
     if (error) return mostrar('error', 'No se pudo recuperar: ' + error.message);
     mostrar('ok', 'Líneas recuperadas. Corrígelas y vuelve a enviar.');
-    setVista('conteo');
+    setVista('inicio');
     cargarConteos();
   }
 
-  const estilos = (
-    <style>{`
-      .bod { min-height:100vh; background:#f1f5f9; font-family:${FONT}; color:#0f172a; font-size:17px; }
-      .bod button, .bod input { font-family:${FONT}; }
-      .bod-grid { display:grid; grid-template-columns:minmax(0,1fr); gap:1rem; align-items:start; }
-      @media (min-width: 860px) { .bod-grid { grid-template-columns:minmax(0,430px) minmax(0,1fr); } .bod-sticky { position:sticky; top:76px; } }
-      .bod-chips { display:flex; gap:.5rem; flex-wrap:wrap; }
-      .bod-chip { border:2px solid #e2e8f0; background:#fff; color:#334155; border-radius:14px; padding:.7rem 1rem; min-height:52px; font-weight:600; font-size:1rem; cursor:pointer; }
-      .bod-chip small { display:block; font-weight:500; font-size:.72rem; opacity:.8; }
-      .bod-big { min-height:56px; border:none; border-radius:14px; font-weight:700; font-size:1.1rem; color:#fff; cursor:pointer; width:100%; }
-      .bod-step { width:60px; height:60px; border-radius:14px; border:2px solid #cbd5e1; background:#fff; font-size:1.8rem; font-weight:700; cursor:pointer; flex:none; }
-      .bod-card { background:#fff; border-radius:18px; padding:1rem; box-shadow:0 2px 8px rgba(15,23,42,.06); min-width:0; }
-      .bod-in { width:100%; box-sizing:border-box; padding:.85rem 1rem; border:2px solid #cbd5e1; border-radius:12px; font-size:1.05rem; background:#fff; min-height:52px; }
-      .bod-lbl { display:block; font-size:.72rem; font-weight:700; color:#64748b; margin:.9rem 0 .35rem; text-transform:uppercase; letter-spacing:.03em; }
-      .bod table { width:100%; border-collapse:collapse; }
-      .bod th { text-align:left; padding:.6rem .6rem; color:#64748b; font-size:.7rem; text-transform:uppercase; }
-      .bod td { padding:.55rem .6rem; vertical-align:middle; border-top:1px solid #f1f5f9; }
-    `}</style>
-  );
-
+  // ───────────── Pantalla de PIN ─────────────
   if (!autenticado) {
     return (
-      <div className="bod" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-        {estilos}
-        <form onSubmit={entrar} className="bod-card" style={{ width: '100%', maxWidth: '360px', textAlign: 'center', padding: '2rem' }}>
-          <div style={{ fontSize: '2.4rem' }}>📦</div>
-          <h1 style={{ fontSize: '1.4rem', margin: '.4rem 0 .2rem' }}>Bodega</h1>
-          <p style={{ color: '#64748b', fontSize: '.9rem', marginTop: 0 }}>Ingresa el PIN para continuar</p>
-          <input className="bod-in" type="password" inputMode="numeric" autoFocus value={pin} onChange={e => setPin(e.target.value)} placeholder="PIN" style={{ textAlign: 'center', letterSpacing: '.3em', fontSize: '1.5rem' }} />
-          {pinError && <p style={{ color: '#dc2626', margin: '.6rem 0 0' }}>{pinError}</p>}
-          <button className="bod-big" type="submit" disabled={verificando || !pin.trim()} style={{ background: ACCENT, marginTop: '1rem', opacity: verificando || !pin.trim() ? 0.6 : 1 }}>
+      <div className="bd" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', background: 'linear-gradient(160deg,#0f172a,#312e81)' }}>
+        <style>{CSS}</style>
+        <form onSubmit={entrar} className="bd-card" style={{ width: '100%', maxWidth: 380, textAlign: 'center', padding: '2.2rem 1.6rem', borderRadius: 28 }}>
+          <div style={{ fontSize: '3rem' }}>📦</div>
+          <h1 style={{ fontSize: '1.6rem', margin: '.3rem 0 .2rem' }}>Bodega</h1>
+          <p style={{ color: '#64748b', margin: '0 0 1.2rem' }}>Ingresa tu PIN</p>
+          <input className="bd-in" type="password" inputMode="numeric" autoFocus value={pin} onChange={e => setPin(e.target.value)} placeholder="••••" style={{ textAlign: 'center', letterSpacing: '.4em', fontSize: '1.8rem', minHeight: 68 }} />
+          {pinError && <p style={{ color: '#dc2626', fontWeight: 600, margin: '.7rem 0 0' }}>{pinError}</p>}
+          <button className="bd-go" type="submit" disabled={verificando || !pin.trim()} style={{ background: '#4f46e5', color: '#fff', opacity: verificando || !pin.trim() ? 0.55 : 1 }}>
             {verificando ? 'Verificando...' : 'Entrar'}
           </button>
         </form>
@@ -395,214 +422,235 @@ export default function Bodega() {
     );
   }
 
-  const pendientes = cierres.filter(c => c.estado === 'pendiente').length;
+  const enTienda = !!tienda && !!infoTienda && vista === 'inicio';
 
   return (
-    <div className="bod">
-      {estilos}
-      <header style={{ background: '#fff', borderBottom: '1px solid #e2e8f0', padding: '.7rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '.5rem', position: 'sticky', top: 0, zIndex: 5 }}>
-        <strong style={{ fontSize: '1.15rem' }}>
-          📦 Bodega {esAdmin && <span style={{ fontSize: '.7rem', background: '#fef3c7', color: '#92400e', padding: '2px 8px', borderRadius: '999px', marginLeft: '4px' }}>Admin</span>}
-        </strong>
-        <div style={{ display: 'flex', gap: '.5rem' }}>
-          <button onClick={exportar} disabled={visibles.length === 0} className="bod-chip" style={{ background: '#059669', color: '#fff', borderColor: '#059669', minHeight: '46px', padding: '.4rem 1rem' }}>Excel</button>
-          <button onClick={salir} className="bod-chip" style={{ minHeight: '46px', padding: '.4rem 1rem' }}>Salir</button>
-        </div>
+    <div className="bd" style={{ ['--c' as string]: colorTienda, ['--t' as string]: textoSobre(colorTienda) }}>
+      <style>{CSS}</style>
+
+      <header className="bd-top">
+        <h1>
+          {enTienda ? (
+            <button className="bd-nb" onClick={() => { setTienda(null); setBusqueda(''); }}>← Tiendas</button>
+          ) : <span>📦 Bodega</span>}
+          {enTienda && <span>{infoTienda!.nombre}</span>}
+          {esAdmin && <span className="bd-badge">Admin</span>}
+        </h1>
+        <nav className="bd-nav">
+          <button className={`bd-nb ${vista === 'inicio' ? 'on' : ''}`} onClick={() => { setVista('inicio'); setTienda(null); }}>Conteo</button>
+          <button className={`bd-nb ${vista === 'envios' ? 'on' : ''}`} onClick={() => setVista('envios')}>Envíos{pendientes ? ` · ${pendientes}` : ''}</button>
+          <button className="bd-nb" onClick={exportar} disabled={conteos.length === 0}>Excel</button>
+          <button className="bd-nb" onClick={salir}>Salir</button>
+        </nav>
       </header>
 
-      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '1rem' }}>
-        <div style={{ display: 'flex', gap: '.5rem', marginBottom: '.9rem' }}>
-          <button className="bod-chip" onClick={() => setVista('conteo')} style={{ flex: 1, ...(vista === 'conteo' ? { background: ACCENT, color: '#fff', borderColor: ACCENT } : {}) }}>Conteo</button>
-          <button className="bod-chip" onClick={() => setVista('envios')} style={{ flex: 1, ...(vista === 'envios' ? { background: ACCENT, color: '#fff', borderColor: ACCENT } : {}) }}>
-            Envíos{pendientes > 0 ? ` (${pendientes} pendiente)` : ''}
-          </button>
-        </div>
-
-        {aviso && (
-          <div style={{ marginBottom: '.8rem', padding: '.8rem 1rem', borderRadius: '12px', background: aviso.tipo === 'ok' ? '#dcfce7' : '#fee2e2', color: aviso.tipo === 'ok' ? '#166534' : '#991b1b', fontWeight: 600 }}>
-            {aviso.texto}
-          </div>
-        )}
-
-        {vista === 'envios' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr)', gap: '.8rem' }}>
-            {cierres.length === 0 && <div className="bod-card" style={{ textAlign: 'center', color: '#94a3b8' }}>Aún no se ha enviado ningún conteo.</div>}
-            {cierres.map(c => (
-              <div key={c.id} className="bod-card">
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                  <div style={{ minWidth: 0 }}>
-                    <strong>{new Date(c.enviado_at).toLocaleString('es-CO')}</strong>
-                    <div style={{ fontSize: '.85rem', color: '#64748b' }}>{c.total_lineas} líneas · {c.total_unidades} unidades{c.enviado_por ? ` · ${c.enviado_por}` : ''}</div>
-                  </div>
-                  <span style={{ padding: '4px 12px', borderRadius: '999px', fontSize: '.8rem', fontWeight: 700, background: c.estado === 'aprobado' ? '#dcfce7' : c.estado === 'rechazado' ? '#fee2e2' : '#fef3c7', color: c.estado === 'aprobado' ? '#166534' : c.estado === 'rechazado' ? '#991b1b' : '#92400e' }}>
-                    {c.estado === 'pendiente' ? 'Pendiente de aprobación' : c.estado === 'aprobado' ? 'Aprobado' : 'Rechazado'}
-                  </span>
-                </div>
-                {c.resuelto_at && (
-                  <div style={{ fontSize: '.85rem', color: '#64748b', marginTop: '.4rem' }}>
-                    {c.estado === 'aprobado' ? 'Aprobó' : 'Rechazó'}: {c.resuelto_por || 'Administrador'} · {new Date(c.resuelto_at).toLocaleString('es-CO')}{c.nota ? ` · Motivo: ${c.nota}` : ''}
-                  </div>
-                )}
-                <div style={{ display: 'flex', gap: '.5rem', marginTop: '.8rem', flexWrap: 'wrap' }}>
-                  <button className="bod-chip" onClick={() => setAbierto(abierto === c.id ? null : c.id)}>{abierto === c.id ? 'Ocultar detalle' : 'Ver detalle'}</button>
-                  {esAdmin && c.estado === 'pendiente' && (
-                    <>
-                      <button className="bod-chip" onClick={() => resolver(c, 'aprobado')} style={{ background: '#059669', color: '#fff', borderColor: '#059669' }}>Aprobar</button>
-                      <button className="bod-chip" onClick={() => resolver(c, 'rechazado')} style={{ background: '#dc2626', color: '#fff', borderColor: '#dc2626' }}>Rechazar</button>
-                    </>
-                  )}
-                  {c.estado === 'rechazado' && <button className="bod-chip" onClick={() => recuperar(c)} style={{ background: ACCENT, color: '#fff', borderColor: ACCENT }}>Recuperar para corregir</button>}
-                </div>
-                {!esAdmin && c.estado === 'pendiente' && <p style={{ margin: '.6rem 0 0', fontSize: '.8rem', color: '#94a3b8' }}>Solo el administrador (con su PIN) puede aprobar.</p>}
-                {abierto === c.id && (
-                  <div style={{ overflowX: 'auto', marginTop: '.7rem' }}>
-                    <table style={{ minWidth: '460px', fontSize: '.9rem' }}>
-                      <thead><tr><th>Tienda</th><th>Referencia</th><th>Talla</th><th>Color</th><th style={{ textAlign: 'right' }}>Cant.</th></tr></thead>
-                      <tbody>
-                        {c.detalle.map((d, i) => (
-                          <tr key={i}>
-                            <td>{nombreTienda(d.tenant_id)}</td>
-                            <td>{d.referencia}{d.producto_nombre ? ` · ${d.producto_nombre}` : ''}</td>
-                            <td>{d.talla || '—'}</td><td>{d.color || '—'}</td>
-                            <td style={{ textAlign: 'right', fontWeight: 700 }}>{d.cantidad}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {vista === 'conteo' && (
-          <div className="bod-grid">
-            {/* ── Columna izquierda: agregar mercancía ── */}
-            <div className="bod-card">
-              <span className="bod-lbl" style={{ marginTop: 0 }}>1 · ¿De qué tienda es?</span>
-              <div className="bod-chips">
-                {tiendas.map(t => (
-                  <button key={t.id} className="bod-chip" onClick={() => setTienda(t.id)}
-                    style={tienda === t.id ? { background: t.color, borderColor: t.color, color: '#fff' } : { borderColor: t.color }}>
-                    {t.nombre}
+      <main className="bd-wrap">
+        {/* ───────────── INICIO: elegir tienda ───────────── */}
+        {vista === 'inicio' && !tienda && (
+          <>
+            <h2 className="bd-h2">¿Qué tienda vas a contar?</h2>
+            <div className="bd-tiles">
+              {tiendas.map(t => {
+                const r = resumenTienda.get(t.id);
+                const tx = textoSobre(t.color);
+                return (
+                  <button key={t.id} className="bd-tile" onClick={() => { setTienda(t.id); setBusqueda(''); }} style={{ background: `linear-gradient(145deg, ${t.color}, ${t.color}dd)`, color: tx }}>
+                    <span className="ini">{t.nombre.trim().charAt(0).toUpperCase()}</span>
+                    <span>
+                      <span className="nom" style={{ display: 'block' }}>{t.nombre}</span>
+                      <span className="num" style={{ display: 'block' }}>{r ? `${r.unidades} unidades · ${r.lineas} líneas` : 'Sin conteo todavía'}</span>
+                    </span>
                   </button>
-                ))}
+                );
+              })}
+            </div>
+
+            <div className="bd-card" style={{ marginTop: '1.2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+              <div>
+                <strong style={{ fontSize: '1.3rem' }}>{totalUnidades} unidades</strong>
+                <div style={{ color: '#64748b', fontSize: '.9rem' }}>{conteos.length} líneas contadas en total</div>
               </div>
-
-              <span className="bod-lbl">2 · Referencia o nombre</span>
-              <input className="bod-in" value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Escribe para buscar..." disabled={!!sel} />
-              {!sel && busqueda.trim() && (
-                <div style={{ display: 'grid', gap: '.4rem', marginTop: '.5rem' }}>
-                  {sugerencias.map(p => (
-                    <button key={p.referencia} onClick={() => elegir(p)} style={{ display: 'flex', alignItems: 'center', gap: '.7rem', textAlign: 'left', border: '2px solid #e2e8f0', background: '#fff', borderRadius: '12px', padding: '.5rem', minHeight: '60px', cursor: 'pointer' }}>
-                      {p.imagen_url ? <img src={p.imagen_url} alt="" style={{ width: 44, height: 44, objectFit: 'cover', borderRadius: 8, flex: 'none' }} /> : <span style={{ width: 44, height: 44, background: '#f1f5f9', borderRadius: 8, flex: 'none' }} />}
-                      <span style={{ minWidth: 0 }}><strong>{p.referencia}</strong><br /><span style={{ fontSize: '.85rem', color: '#64748b' }}>{p.nombre}</span></span>
-                    </button>
-                  ))}
-                  {!hayExacta && (
-                    <button onClick={() => elegir({ referencia: busqueda.trim(), nombre: '', imagen_url: null, tallas: [] })} style={{ border: '2px dashed #94a3b8', background: '#fff', borderRadius: '12px', padding: '.7rem', minHeight: '56px', cursor: 'pointer', color: '#475569', fontWeight: 600 }}>
-                      + Usar «{busqueda.trim()}» como referencia nueva
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {sel && (
-                <>
-                  <div style={{ marginTop: '.7rem', padding: '.7rem .9rem', background: '#f8fafc', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '.5rem' }}>
-                    <span style={{ minWidth: 0 }}><strong>{sel.referencia}</strong><br /><span style={{ fontSize: '.85rem', color: '#64748b' }}>{sel.nombre || 'Referencia sin producto'} · {nombreTienda(tienda)}</span></span>
-                    <button className="bod-chip" onClick={() => setSel(null)} style={{ minHeight: '44px', padding: '.3rem .8rem' }}>Cambiar</button>
-                  </div>
-
-                  <span className="bod-lbl">3 · Talla</span>
-                  <div className="bod-chips">
-                    {sel.tallas.map(t => (
-                      <button key={t} className="bod-chip" onClick={() => setTalla(t)} style={{ minWidth: '64px', ...(talla === t ? { background: ACCENT, borderColor: ACCENT, color: '#fff' } : {}) }}>{t}</button>
-                    ))}
-                    <input className="bod-in" value={sel.tallas.includes(talla) ? '' : talla} onChange={e => setTalla(e.target.value)} placeholder={sel.tallas.length ? 'otra' : 'Talla (opcional)'} style={{ width: '130px' }} />
-                  </div>
-
-                  <details style={{ marginTop: '.7rem' }} open={!!(color || ubicacion)}>
-                    <summary style={{ cursor: 'pointer', color: '#475569', fontWeight: 600, padding: '.4rem 0' }}>+ Color o ubicación (opcional)</summary>
-                    <div style={{ display: 'flex', gap: '.5rem', marginTop: '.4rem' }}>
-                      <input className="bod-in" value={color} onChange={e => setColor(e.target.value)} placeholder="Color" />
-                      <input className="bod-in" value={ubicacion} onChange={e => setUbicacion(e.target.value)} placeholder="Estante" />
-                    </div>
-                  </details>
-
-                  <span className="bod-lbl">4 · Cantidad a sumar</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '.5rem' }}>
-                    <button className="bod-step" onClick={() => setCant(c => Math.max(1, c - 1))}>−</button>
-                    <input className="bod-in" type="number" inputMode="numeric" min={1} value={cant} onChange={e => setCant(Math.max(0, parseInt(e.target.value, 10) || 0))} style={{ textAlign: 'center', fontSize: '1.8rem', fontWeight: 700, minHeight: '60px' }} />
-                    <button className="bod-step" onClick={() => setCant(c => c + 1)}>+</button>
-                  </div>
-                  <div className="bod-chips" style={{ marginTop: '.5rem' }}>
-                    {[5, 10, 20, 50].map(n => <button key={n} className="bod-chip" onClick={() => setCant(c => c + n)} style={{ flex: 1 }}>+{n}</button>)}
-                  </div>
-
-                  <button className="bod-big" onClick={guardar} disabled={guardando} style={{ background: '#059669', marginTop: '1rem', opacity: guardando ? 0.6 : 1 }}>
-                    {guardando ? 'Guardando...' : `Sumar ${cant} a bodega`}
-                  </button>
-                </>
-              )}
-
-              <span className="bod-lbl">Quién cuenta</span>
-              <input className="bod-in" value={contador} placeholder="Tu nombre" onChange={e => {
+              <input className="bd-in" style={{ maxWidth: 280 }} value={contador} placeholder="👤 Quién cuenta" onChange={e => {
                 setContador(e.target.value);
                 try { localStorage.setItem('bodega_contador', e.target.value); } catch { /* sin almacenamiento */ }
               }} />
             </div>
 
-            {/* ── Columna derecha: lo que hay en bodega ── */}
+            <button className="bd-send" onClick={enviarAprobacion} disabled={conteos.length === 0 || hayPendiente}>
+              {hayPendiente ? 'Hay un conteo esperando aprobación' : 'Terminar y enviar a aprobación'}
+            </button>
+            {cargando && <p style={{ textAlign: 'center', color: '#94a3b8' }}>Cargando...</p>}
+          </>
+        )}
+
+        {/* ───────────── DENTRO DE UNA TIENDA ───────────── */}
+        {enTienda && (
+          <div className="bd-split">
             <div style={{ minWidth: 0 }}>
-              <div className="bod-chips" style={{ marginBottom: '.7rem' }}>
-                <button className="bod-chip" onClick={() => setVerTienda('todas')} style={verTienda === 'todas' ? { background: '#0f172a', color: '#fff', borderColor: '#0f172a' } : {}}>
-                  Todas<small>{[...totalesTienda.values()].reduce((a, b) => a + b, 0)} unidades</small>
-                </button>
-                {tiendas.map(t => (
-                  <button key={t.id} className="bod-chip" onClick={() => setVerTienda(t.id)} style={verTienda === t.id ? { background: t.color, borderColor: t.color, color: '#fff' } : { borderColor: t.color }}>
-                    {t.nombre}<small>{totalesTienda.get(t.id) || 0} unidades</small>
+              <input className="bd-search" value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="🔍  Buscar referencia o nombre" autoFocus />
+              {cargandoProd && <p style={{ color: '#94a3b8', textAlign: 'center', marginTop: '1.5rem' }}>Cargando productos...</p>}
+              <div className="bd-grid">
+                {busqueda.trim() && !hayExacta && (
+                  <button className="bd-nuevo" onClick={() => abrirHoja({ referencia: busqueda.trim(), nombre: '', imagen_url: null, tallas: [] })}>
+                    + Referencia nueva<br />«{busqueda.trim()}»
                   </button>
-                ))}
+                )}
+                {resultados.map(p => {
+                  const hay = unidadesRef.get(p.referencia) || 0;
+                  return (
+                    <button key={p.referencia} className="bd-prod" onClick={() => abrirHoja(p)}>
+                      <div className="img" style={p.imagen_url ? { backgroundImage: `url("${p.imagen_url}")` } : undefined} />
+                      {hay > 0 && <span className="hay">{hay}</span>}
+                      <div className="tx"><div className="rf">{p.referencia}</div><div className="nm">{p.nombre}</div></div>
+                    </button>
+                  );
+                })}
               </div>
-              <input className="bod-in" placeholder="Filtrar lo contado..." value={filtro} onChange={e => setFiltro(e.target.value)} style={{ marginBottom: '.7rem' }} />
-
-              <div className="bod-card" style={{ padding: 0, overflowX: 'auto' }}>
-                <table style={{ minWidth: '600px' }}>
-                  <thead>
-                    <tr><th>Tienda</th><th>Referencia</th><th>Talla</th><th>Color</th><th style={{ textAlign: 'center' }}>Cantidad</th><th></th></tr>
-                  </thead>
-                  <tbody>
-                    {cargando && <tr><td colSpan={6} style={{ textAlign: 'center', color: '#94a3b8', padding: '1.5rem' }}>Cargando...</td></tr>}
-                    {!cargando && visibles.length === 0 && <tr><td colSpan={6} style={{ textAlign: 'center', color: '#94a3b8', padding: '1.5rem' }}>Aún no hay nada contado.</td></tr>}
-                    {visibles.map(c => (
-                      <tr key={c.id}>
-                        <td><span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: colorTienda(c.tenant_id), marginRight: 6 }} />{nombreTienda(c.tenant_id)}</td>
-                        <td><strong>{c.referencia}</strong>{c.producto_nombre && <div style={{ fontSize: '.78rem', color: '#64748b' }}>{c.producto_nombre}</div>}{c.ubicacion && <div style={{ fontSize: '.75rem', color: '#94a3b8' }}>📍 {c.ubicacion}</div>}</td>
-                        <td>{c.talla || '—'}</td>
-                        <td>{c.color || '—'}</td>
-                        <td style={{ textAlign: 'center', whiteSpace: 'nowrap' }}>
-                          <button className="bod-step" style={{ width: 46, height: 46, fontSize: '1.4rem' }} onClick={() => ajustar(c, -1)}>−</button>
-                          <input key={c.id + ':' + c.cantidad} type="number" inputMode="numeric" min={0} defaultValue={c.cantidad} onBlur={e => fijar(c, parseInt(e.target.value, 10))}
-                            style={{ width: 70, textAlign: 'center', padding: '.5rem', margin: '0 4px', border: '2px solid #cbd5e1', borderRadius: 10, fontSize: '1.1rem', fontWeight: 700 }} />
-                          <button className="bod-step" style={{ width: 46, height: 46, fontSize: '1.4rem' }} onClick={() => ajustar(c, 1)}>+</button>
-                        </td>
-                        <td><button onClick={() => eliminar(c)} aria-label="Eliminar" style={{ width: 46, height: 46, border: 'none', background: 'transparent', fontSize: '1.2rem', cursor: 'pointer' }}>🗑</button></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <p style={{ color: '#64748b', fontSize: '.85rem', margin: '.6rem .2rem' }}>{visibles.length} líneas · {totalVisible} unidades</p>
-
-              <button className="bod-big" onClick={enviarAprobacion} disabled={conteos.length === 0 || hayPendiente} style={{ background: '#0f766e', marginTop: '.4rem', opacity: conteos.length === 0 || hayPendiente ? 0.5 : 1 }}>
-                {hayPendiente ? 'Hay un conteo esperando aprobación' : 'Terminar y enviar a aprobación'}
-              </button>
+              {!cargandoProd && resultados.length === 0 && !busqueda.trim() && (
+                <p style={{ color: '#64748b', textAlign: 'center', marginTop: '2rem' }}>Esta tienda no tiene productos con referencia. Escribe una arriba para agregarla.</p>
+              )}
             </div>
+
+            <aside className="bd-card bd-side">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <strong style={{ fontSize: '1.15rem' }}>Contado en {infoTienda!.nombre}</strong>
+                <span style={{ color: '#64748b', fontWeight: 600 }}>{conteosTienda.reduce((s, c) => s + c.cantidad, 0)} u.</span>
+              </div>
+              {conteosTienda.length === 0 && <p style={{ color: '#94a3b8', marginBottom: 0 }}>Toca un producto para empezar a sumar.</p>}
+              {conteosTienda.map(c => (
+                <div key={c.id} className="bd-row">
+                  <div style={{ minWidth: 0 }}>
+                    <strong>{c.referencia}</strong>
+                    <div style={{ fontSize: '.8rem', color: '#64748b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.producto_nombre}</div>
+                    {c.talla && <span className="bd-pill">Talla {c.talla}</span>}
+                    {c.color && <span className="bd-pill">{c.color}</span>}
+                    {c.ubicacion && <span className="bd-pill">📍 {c.ubicacion}</span>}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', flex: 'none' }}>
+                    <button className="bd-step" onClick={() => ajustar(c, -1)}>−</button>
+                    <input key={c.id + ':' + c.cantidad} className="bd-q" type="number" inputMode="numeric" min={0} defaultValue={c.cantidad} onBlur={e => fijar(c, parseInt(e.target.value, 10))} />
+                    <button className="bd-step" onClick={() => ajustar(c, 1)}>+</button>
+                    <button onClick={() => eliminar(c)} aria-label="Quitar" style={{ background: 'transparent', fontSize: '1.2rem', width: 44, height: 44 }}>🗑</button>
+                  </div>
+                </div>
+              ))}
+            </aside>
           </div>
         )}
+
+        {/* ───────────── ENVÍOS / APROBACIÓN ───────────── */}
+        {vista === 'envios' && (
+          <>
+            <h2 className="bd-h2">Envíos a aprobación</h2>
+            <div className="bd-env">
+              {cierres.length === 0 && <div className="bd-card" style={{ textAlign: 'center', color: '#94a3b8' }}>Aún no se ha enviado ningún conteo.</div>}
+              {cierres.map(c => (
+                <div key={c.id} className="bd-card">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: '.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <div style={{ minWidth: 0 }}>
+                      <strong>{new Date(c.enviado_at).toLocaleString('es-CO')}</strong>
+                      <div style={{ fontSize: '.85rem', color: '#64748b' }}>{c.total_lineas} líneas · {c.total_unidades} unidades{c.enviado_por ? ` · ${c.enviado_por}` : ''}</div>
+                    </div>
+                    <span style={{ padding: '5px 14px', borderRadius: 99, fontSize: '.8rem', fontWeight: 700, background: c.estado === 'aprobado' ? '#dcfce7' : c.estado === 'rechazado' ? '#fee2e2' : '#fef3c7', color: c.estado === 'aprobado' ? '#166534' : c.estado === 'rechazado' ? '#991b1b' : '#92400e' }}>
+                      {c.estado === 'pendiente' ? 'Pendiente de aprobación' : c.estado === 'aprobado' ? 'Aprobado' : 'Rechazado'}
+                    </span>
+                  </div>
+                  {c.resuelto_at && (
+                    <div style={{ fontSize: '.85rem', color: '#64748b', marginTop: '.5rem' }}>
+                      {c.estado === 'aprobado' ? 'Aprobó' : 'Rechazó'}: {c.resuelto_por || 'Administrador'} · {new Date(c.resuelto_at).toLocaleString('es-CO')}{c.nota ? ` · Motivo: ${c.nota}` : ''}
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', gap: '.5rem', marginTop: '.9rem', flexWrap: 'wrap' }}>
+                    <button className="bd-nb" style={{ background: '#e2e8f0', color: '#0f172a' }} onClick={() => setAbierto(abierto === c.id ? null : c.id)}>{abierto === c.id ? 'Ocultar detalle' : 'Ver detalle'}</button>
+                    {esAdmin && c.estado === 'pendiente' && (
+                      <>
+                        <button className="bd-nb" style={{ background: '#059669' }} onClick={() => resolver(c, 'aprobado')}>Aprobar</button>
+                        <button className="bd-nb" style={{ background: '#dc2626' }} onClick={() => resolver(c, 'rechazado')}>Rechazar</button>
+                      </>
+                    )}
+                    {c.estado === 'rechazado' && <button className="bd-nb" style={{ background: '#4f46e5' }} onClick={() => recuperar(c)}>Recuperar para corregir</button>}
+                  </div>
+                  {!esAdmin && c.estado === 'pendiente' && <p style={{ margin: '.7rem 0 0', fontSize: '.8rem', color: '#94a3b8' }}>Solo el administrador (con su PIN) puede aprobar.</p>}
+                  {abierto === c.id && (
+                    <div style={{ overflowX: 'auto', marginTop: '.8rem' }}>
+                      <table style={{ minWidth: 460, fontSize: '.9rem' }}>
+                        <thead><tr><th>Tienda</th><th>Referencia</th><th>Talla</th><th>Color</th><th style={{ textAlign: 'right' }}>Cant.</th></tr></thead>
+                        <tbody>
+                          {c.detalle.map((d, i) => (
+                            <tr key={i}>
+                              <td>{nombreTienda(d.tenant_id)}</td>
+                              <td>{d.referencia}{d.producto_nombre ? ` · ${d.producto_nombre}` : ''}</td>
+                              <td>{d.talla || '—'}</td><td>{d.color || '—'}</td>
+                              <td style={{ textAlign: 'right', fontWeight: 700 }}>{d.cantidad}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </>
+        )}
       </main>
+
+      {/* ───────────── Ventana para sumar ───────────── */}
+      {hoja && tienda && (
+        <div className="bd-ov" onClick={() => setHoja(null)}>
+          <div className="bd-sheet" onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', gap: '.9rem', alignItems: 'center' }}>
+              <div style={{ width: 72, height: 72, borderRadius: 16, background: '#e2e8f0 center/cover no-repeat', backgroundImage: hoja.imagen_url ? `url("${hoja.imagen_url}")` : undefined, flex: 'none' }} />
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: '1.35rem', fontWeight: 700 }}>{hoja.referencia}</div>
+                <div style={{ color: '#64748b', fontSize: '.9rem' }}>{hoja.nombre || 'Referencia nueva'}</div>
+                <span className="bd-pill" style={{ background: colorTienda, color: textoSobre(colorTienda) }}>{nombreTienda(tienda)}</span>
+              </div>
+              <button onClick={() => setHoja(null)} aria-label="Cerrar" style={{ background: '#f1f5f9', width: 46, height: 46, borderRadius: 14, fontSize: '1.2rem', flex: 'none' }}>✕</button>
+            </div>
+
+            <span className="bd-lbl">Talla</span>
+            <div className="bd-chips">
+              {hoja.tallas.map(t => {
+                const ya = conteosTienda.filter(c => c.referencia === hoja.referencia && c.talla === t).reduce((s, c) => s + c.cantidad, 0);
+                const on = talla === t;
+                return (
+                  <button key={t} className="bd-ch" onClick={() => setTalla(t)} style={on ? { background: colorTienda, color: textoSobre(colorTienda) } : undefined}>
+                    {t}{ya > 0 && <small>{ya} en bodega</small>}
+                  </button>
+                );
+              })}
+              <input className="bd-in" style={{ width: 150 }} value={hoja.tallas.includes(talla) ? '' : talla} onChange={e => setTalla(e.target.value)} placeholder={hoja.tallas.length ? 'Otra talla' : 'Talla (opcional)'} />
+            </div>
+
+            <span className="bd-lbl">Cantidad a sumar</span>
+            <div className="bd-qty">
+              <button className="bd-step" onClick={() => setCant(c => Math.max(1, c - 1))}>−</button>
+              <input type="number" inputMode="numeric" min={1} value={cant || ''} onChange={e => setCant(Math.max(0, parseInt(e.target.value, 10) || 0))} />
+              <button className="bd-step" onClick={() => setCant(c => c + 1)}>+</button>
+            </div>
+            <div className="bd-chips" style={{ marginTop: '.6rem' }}>
+              {[5, 10, 20, 50].map(n => <button key={n} className="bd-ch" style={{ flex: 1 }} onClick={() => setCant(c => c + n)}>+{n}</button>)}
+            </div>
+
+            <details style={{ marginTop: '1rem' }}>
+              <summary style={{ cursor: 'pointer', color: '#475569', fontWeight: 600, padding: '.4rem 0' }}>Color o ubicación (opcional)</summary>
+              <div style={{ display: 'flex', gap: '.5rem', marginTop: '.4rem' }}>
+                <input className="bd-in" value={color} onChange={e => setColor(e.target.value)} placeholder="Color" />
+                <input className="bd-in" value={ubicacion} onChange={e => setUbicacion(e.target.value)} placeholder="Estante" />
+              </div>
+            </details>
+
+            <button className="bd-go" onClick={guardar} disabled={guardando} style={{ background: colorTienda, color: textoSobre(colorTienda), opacity: guardando ? 0.6 : 1 }}>
+              {guardando ? 'Guardando...' : `Sumar ${cant} a bodega`}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {aviso && (
+        <div className="bd-toast" style={{ background: aviso.tipo === 'ok' ? '#065f46' : '#991b1b', color: '#fff' }}>{aviso.texto}</div>
+      )}
     </div>
   );
 }
