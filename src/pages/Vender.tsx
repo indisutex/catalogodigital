@@ -4,7 +4,7 @@ import { getEffectivePrice } from '../context/CartContext';
 import type { BuyerType } from '../context/CartContext';
 import type { Producto } from '../types';
 import { DEPARTAMENTOS_COLOMBIA } from '../data/colombiaData';
-import { etiqueta, codigo, compartirImagen, copiarTexto, urlWhatsAppGrupo, totalUnidades } from '../lib/fichaPedido';
+import { etiqueta, codigo, compartirImagen, copiarTexto, urlWhatsAppGrupo, totalUnidades, enviarAlCliente, descargarImagen, textoCliente, textoRecordatorioPago, textoDespacho, urlWhatsAppCliente } from '../lib/fichaPedido';
 import type { PedidoVista } from '../lib/fichaPedido';
 import { estadoDe, lineaTiempo } from '../lib/trazabilidadPedido';
 import type { GrupoPago } from '../lib/trazabilidadPedido';
@@ -151,6 +151,18 @@ const CSS = `
 .vd-kpi b { display:block; font-size:1.7rem; line-height:1.1; }
 .vd-kpi span { font-size:.74rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.03em; }
 .vd-kpi i { display:block; font-style:normal; font-size:.85rem; color:#475569; margin-top:2px; }
+.vd-envio { display:grid; gap:.6rem; margin-top:.9rem; }
+.vd-wa, .vd-grupo { display:flex; align-items:center; gap:.8rem; width:100%; text-align:left; padding:.9rem 1.1rem; border-radius:18px; color:#fff; min-height:68px; }
+.vd-wa { background:#16a34a; box-shadow:0 8px 18px rgba(22,163,74,.28); }
+.vd-grupo { background:#4f46e5; box-shadow:0 8px 18px rgba(79,70,229,.25); }
+.vd-wa:disabled, .vd-grupo:disabled { opacity:.6; }
+.vd-wa b, .vd-grupo b { display:block; font-size:1.05rem; }
+.vd-wa small, .vd-grupo small { display:block; opacity:.88; font-size:.78rem; margin-top:1px; }
+.vd-mas { margin-top:.6rem; }
+.vd-mas summary { cursor:pointer; list-style:none; display:inline-flex; align-items:center; min-height:50px; padding:.5rem 1rem; border-radius:14px; background:#f1f5f9; font-weight:600; font-size:.98rem; }
+.vd-mas summary::-webkit-details-marker { display:none; }
+.vd-mas[open] > div { display:grid; gap:.3rem; margin-top:.5rem; background:#f8fafc; border-radius:14px; padding:.5rem; }
+.vd-mas > div button, .vd-mas > div a { text-align:left; background:#fff; border-radius:10px; padding:.7rem .9rem; min-height:46px; font-weight:600; color:#0f172a; text-decoration:none; font-size:.92rem; display:block; }
 .vd-tabs { display:flex; gap:.5rem; overflow-x:auto; padding:.1rem 0 .7rem; }
 .vd-tab { display:flex; align-items:center; flex:none; background:#fff; border:2px solid #e1e5ef; border-radius:14px; }
 .vd-tab.on { background:var(--c); border-color:var(--c); color:var(--t); }
@@ -253,7 +265,7 @@ export default function Vender() {
 
   const color = config.color_primario || '#6366f1';
   const sobre = textoSobre(color);
-  const mostrar = (tipo: 'ok' | 'error', texto: string) => { setAviso({ tipo, texto }); window.setTimeout(() => setAviso(null), 3200); };
+  const mostrar = (tipo: 'ok' | 'error', texto: string, ms = 3200) => { setAviso({ tipo, texto }); window.setTimeout(() => setAviso(null), ms); };
 
   // Asesores (sin PIN) y datos de cada marca para elegir quién eres
   useEffect(() => {
@@ -545,17 +557,18 @@ export default function Vender() {
 
   const ciudades = f.depto ? DEPARTAMENTOS_COLOMBIA[f.depto] || [] : [];
 
-  function datosTransferencia(): string {
+  // Datos para pagar por transferencia, uno por línea (se usan en el texto y en la imagen del cliente)
+  function lineasPago(): string[] {
     const crudo = String(config.metodos_pago || '').split('__EXTRA_CONFIG__')[0].trim();
-    if (!crudo) return '';
+    if (!crudo) return [];
     try {
       const arr = JSON.parse(crudo);
       if (Array.isArray(arr)) {
-        const v = arr.filter((m: any) => (m.banco && m.banco.trim()) || (m.numero && m.numero.trim()));
-        if (v.length) return `\n\n💳 *DATOS PARA TRANSFERENCIA:*\n` + v.map((m: any) => `• *${m.banco}* ${m.tipo ? `(${m.tipo})` : ''}: ${m.numero}`).join('\n');
+        return arr.filter((m: any) => (m.banco && String(m.banco).trim()) || (m.numero && String(m.numero).trim()))
+          .map((m: any) => `${String(m.banco || '').trim()}${m.tipo ? ` (${m.tipo})` : ''}: ${String(m.numero || '').trim()}`);
       }
-    } catch { return `\n\n💳 *DATOS PARA TRANSFERENCIA:*\n${crudo}`; }
-    return '';
+    } catch { return [crudo]; }
+    return [];
   }
 
   async function guardar() {
@@ -643,35 +656,20 @@ export default function Vender() {
       const { data: nn, error: en } = await supabase.from('pedidos').select('numero_pedido').eq('id', nuevo.id).maybeSingle();
       if (!en && nn && (nn as { numero_pedido?: number }).numero_pedido) numero = Number((nn as { numero_pedido: number }).numero_pedido);
     } catch { /* la columna del consecutivo todavía no existe */ }
-    const etiquetaNum = numero ? `N° ${numero}` : `#${nuevo.id.slice(0, 8).toUpperCase()}`;
-    const corto = nuevo.id.slice(0, 8);
-    let msg = `Hola ${nombre}, soy ${asesor.nombre} de ${config.nombre_negocio || 'la tienda'}. Tu pedido es el *${etiquetaNum}*. Este es el resumen:\n\n`;
-    msg += lineas.map(l => {
-      const o = opcionesDe(l.prod).find(x => x.clave === l.talla);
-      const detalle = [(l.prod.nombre || '').trim(), o && l.talla ? o.texto : '', l.estampado].filter(Boolean).join(' · ');
-      return `• ${l.cantidad}x ${detalle} — ${peso(precioLinea(l, tier) * l.cantidad)}`;
-    }).join('\n');
-    msg += `\n\n*TOTAL PRODUCTOS:* ${peso(total)}\n*Tipo de compra:* ${tipoCompra}`;
-    if (f.pago === 'transferencia') {
-      msg += `\n*ENVÍO:* Pendiente por calcular.` + datosTransferencia();
-      msg += `\n\n*Sube tu comprobante de pago aquí:* ${window.location.origin}/pago/${corto}`;
-      msg += `\n\n_Por favor envía el comprobante de pago para procesar y despachar tu pedido._`;
-    } else {
-      msg += `\n*ENVÍO:* PAGO CONTRA ENTREGA\n\nCancela al momento de recibir tu pedido el valor de las prendas + el costo del envío.`;
-    }
     const ficha: PedidoVista = {
       id: nuevo.id, numero, estadoPago: f.pago === 'transferencia' ? 'Esperando comprobante' : 'Contra entrega · se cobra al recibir', creado: new Date().toISOString(), tienda: config.nombre_negocio || '', color, logo: config.logo_url || null,
       asesor: asesor.nombre, cliente: nombre, telefono: tel, ciudad: String(payload.ciudad || ''),
       direccion: f.recepcion === 'tienda' ? 'Recoge en tienda' : f.direccion.trim() + (f.barrio.trim() ? `, Barrio ${f.barrio.trim()}` : ''),
       pago: f.pago === 'transferencia' ? 'Transferencia' : 'Contra entrega', entrega: f.recepcion === 'tienda' ? 'Recoge en tienda' : 'Domicilio',
-      tipo: tipoCompra, total, nota: f.nota.trim() || undefined, estado: String(payload.estado || ''),
+      tipo: tipoCompra, total, nota: f.nota.trim() || undefined, estado: String(payload.estado || ''), pagoInfo: lineasPago(),
       items: lineas.map(l => ({
         nombre: (l.prod.nombre || '').trim(), imagen: imagenDeEstampado(l.prod, l.estampado) || l.prod.imagen_url || null,
         etiqueta: l.talla ? (opcionesDe(l.prod).find(x => x.clave === l.talla)?.texto || l.talla) : '', estampado: l.estampado,
         cantidad: l.cantidad, precio: precioLinea(l, tier)
       }))
     };
-    setListo({ id: nuevo.id, total, url: `https://wa.me/57${tel}?text=${encodeURIComponent(msg)}`, ficha });
+    setAviso(null);
+    setListo({ id: nuevo.id, total, url: urlWhatsAppCliente(ficha, textoCliente(ficha)), ficha });
     cerrarBorrador(activoRef.current, false);
     setCobro(false); setVerPedido(false);
   }
@@ -696,25 +694,61 @@ export default function Vender() {
       cliente: r.cliente_nombre, telefono: r.cliente_telefono, ciudad: r.ciudad || '', direccion: partes[0] || '',
       pago: r.modalidad_pago === 'contra_entrega' ? 'Contra entrega' : 'Transferencia',
       entrega: r.metodo_recepcion === 'tienda' ? 'Recoge en tienda' : 'Domicilio',
-      tipo: r.tipo_compra || 'Al detal', total: Number(r.total) || 0, nota, estado: r.estado, items
+      tipo: r.tipo_compra || 'Al detal', total: Number(r.total) || 0, nota, estado: r.estado, pagoInfo: lineasPago(), items
     };
   }
 
-  async function compartir(v: PedidoVista) {
-    setOcupado(v.id);
+  async function enviarGrupo(v: PedidoVista) {
+    setOcupado('g' + v.id);
     try {
       const r = await compartirImagen(v);
-      if (r === 'descargado') mostrar('ok', 'Imagen descargada: adjúntala en el grupo de WhatsApp');
+      if (r === 'copiado') mostrar('ok', 'Imagen copiada. Abre el grupo en WhatsApp y pégala con Ctrl + V.', 9000);
+      else if (r === 'descargado') mostrar('ok', 'Imagen descargada. Adjúntala en el grupo de WhatsApp.', 7000);
     } catch { mostrar('error', 'No se pudo crear la imagen'); }
     setOcupado('');
   }
 
-  const acciones = (v: PedidoVista) => (
-    <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginTop: '.8rem' }}>
-      <button className="vd-chip on" onClick={() => compartir(v)} disabled={ocupado === v.id}>{ocupado === v.id ? 'Creando imagen...' : 'Compartir imagen'}</button>
-      <a className="vd-chip" href={urlWhatsAppGrupo(v)} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>Texto a WhatsApp</a>
-      <button className="vd-chip" onClick={async () => { const ok = await copiarTexto(v); mostrar(ok ? 'ok' : 'error', ok ? 'Texto copiado' : 'No se pudo copiar'); }}>Copiar texto</button>
+  async function enviarCliente(v: PedidoVista) {
+    setOcupado('w' + v.id);
+    try {
+      const r = await enviarAlCliente(v, urlWhatsAppCliente(v, textoCliente(v)), textoCliente(v));
+      if (r === 'copiado') mostrar('ok', 'Se abrió el chat del cliente. Presiona Ctrl + V para pegar la imagen y envía.', 10000);
+      else if (r === 'descargado') mostrar('ok', 'Imagen descargada. Adjúntala en el chat del cliente.', 8000);
+    } catch { mostrar('error', 'No se pudo preparar el envío'); }
+    setOcupado('');
+  }
+
+  const abrirChat = (v: PedidoVista, texto: string) => window.open(urlWhatsAppCliente(v, texto), '_blank', 'noopener');
+
+  const iconoWA = (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.04 2a9.9 9.9 0 0 0-8.5 14.9L2 22l5.27-1.38A9.9 9.9 0 1 0 12.04 2zm0 1.8a8.1 8.1 0 1 1-4.3 15l-.3-.18-3.13.82.84-3.05-.2-.32A8.1 8.1 0 0 1 12.04 3.8zm-3.1 4.1c-.17 0-.45.06-.69.32-.24.26-.9.88-.9 2.15s.92 2.5 1.05 2.67c.13.17 1.8 2.86 4.45 3.9 2.2.86 2.65.69 3.13.65.48-.04 1.55-.63 1.77-1.24.22-.61.22-1.13.15-1.24-.06-.11-.24-.17-.5-.3-.26-.13-1.55-.77-1.79-.86-.24-.09-.41-.13-.59.13-.17.26-.68.86-.83 1.04-.15.17-.3.2-.57.07-.26-.13-1.1-.4-2.1-1.3-.78-.69-1.3-1.55-1.45-1.81-.15-.26-.02-.4.11-.53.12-.12.26-.3.39-.45.13-.15.17-.26.26-.44.09-.17.04-.33-.02-.46-.07-.13-.59-1.42-.81-1.94-.21-.5-.43-.43-.59-.44h-.5z" /></svg>
+  );
+
+  // Botones grandes y claros para enviar el pedido
+  const accionesEnvio = (v: PedidoVista) => (
+    <div className="vd-envio">
+      <button className="vd-wa" onClick={() => enviarCliente(v)} disabled={ocupado === 'w' + v.id}>
+        {iconoWA}
+        <span><b>{ocupado === 'w' + v.id ? 'Preparando imagen...' : 'Enviar al cliente'}</b><small>Abre su chat con el resumen y la imagen del pedido</small></span>
+      </button>
+      <button className="vd-grupo" onClick={() => enviarGrupo(v)} disabled={ocupado === 'g' + v.id}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM21 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+        <span><b>{ocupado === 'g' + v.id ? 'Creando imagen...' : 'Enviar al grupo'}</b><small>Comparte la imagen del pedido con el equipo</small></span>
+      </button>
     </div>
+  );
+
+  const masOpciones = (v: PedidoVista) => (
+    <details className="vd-mas">
+      <summary>Más opciones</summary>
+      <div>
+        <button onClick={async () => { const ok = await copiarTexto(v); mostrar(ok ? 'ok' : 'error', ok ? 'Texto copiado' : 'No se pudo copiar'); }}>Copiar texto del pedido</button>
+        <a href={urlWhatsAppGrupo(v)} target="_blank" rel="noreferrer">Texto para el grupo (WhatsApp)</a>
+        <button onClick={() => descargarImagen(v, 'cliente')}>Descargar imagen del cliente</button>
+        <button onClick={() => descargarImagen(v, 'grupo')}>Descargar imagen del grupo</button>
+        <button onClick={() => abrirChat(v, textoCliente(v))}>Abrir chat del cliente (solo texto)</button>
+      </div>
+    </details>
   );
 
   async function adjuntarComprobante(r: any, archivo: File) {
@@ -815,15 +849,20 @@ export default function Vender() {
               </div>
               <div style={{ color: '#64748b', fontSize: '.85rem', marginTop: '.6rem' }}>{totalUnidades(v)} unidades · {v.ciudad || 'Sin ciudad'} · {v.pago} · {v.telefono}</div>
 
-              {acciones(v)}
-              <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginTop: '.5rem' }}>
+              {accionesEnvio(v)}
+              <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginTop: '.6rem', alignItems: 'center' }}>
                 <button className="vd-chip" onClick={() => setAbiertoId(abierto ? null : r.id)}>{abierto ? 'Ocultar historial' : 'Ver historial'}</button>
                 {e.grupo === 'esperando' && (
-                  <label className="vd-chip" style={{ cursor: 'pointer', background: '#fef3c7' }}>
-                    {ocupado === 'c' + r.id ? 'Subiendo...' : 'Adjuntar comprobante'}
-                    <input type="file" accept="image/*" hidden disabled={ocupado === 'c' + r.id} onChange={ev => { const a = ev.target.files?.[0]; if (a) adjuntarComprobante(r, a); ev.target.value = ''; }} />
-                  </label>
+                  <>
+                    <button className="vd-chip" style={{ background: '#fee2e2' }} onClick={() => abrirChat(v, textoRecordatorioPago(v))}>Recordar pago</button>
+                    <label className="vd-chip" style={{ cursor: 'pointer', background: '#fef3c7' }}>
+                      {ocupado === 'c' + r.id ? 'Subiendo...' : 'Adjuntar comprobante'}
+                      <input type="file" accept="image/*" hidden disabled={ocupado === 'c' + r.id} onChange={ev => { const a = ev.target.files?.[0]; if (a) adjuntarComprobante(r, a); ev.target.value = ''; }} />
+                    </label>
+                  </>
                 )}
+                {e.guia && <button className="vd-chip" style={{ background: '#e0e7ff' }} onClick={() => abrirChat(v, textoDespacho(v, e.guia))}>Avisar despacho</button>}
+                {masOpciones(v)}
               </div>
 
               {abierto && (
@@ -934,23 +973,25 @@ export default function Vender() {
 
   // ───────────── Pedido guardado ─────────────
   if (listo) {
+    const fv = listo.ficha;
     return (
       <div className="vd" style={{ ...raiz, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
         <style>{CSS}</style>
-        <div className="vd-card" style={{ width: '100%', maxWidth: 460, textAlign: 'center', padding: '2rem 1.4rem', borderRadius: 28 }}>
-          <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#dcfce7', color: '#166534', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', fontSize: '2.2rem' }}>✓</div>
-          <h1 style={{ fontSize: '1.5rem', margin: '0 0 .2rem', color: '#0f172a' }}>Pedido guardado</h1>
-          <p style={{ margin: 0, fontWeight: 700, fontSize: '1.4rem', color: '#0f172a' }}>{codigo(listo.ficha)}</p>
-          <p style={{ color: '#64748b', margin: '.1rem 0 0' }}>{peso(listo.total)} · {listo.ficha.estadoPago}</p>
-          <p style={{ color: '#64748b', fontSize: '.9rem' }}>Ya aparece en el admin, en Pedidos, y queda en tu lista para seguirlo.</p>
-          <div style={{ background: '#f8fafc', borderRadius: 16, padding: '.8rem', marginTop: '.8rem', textAlign: 'left' }}>
-            <div style={{ fontSize: '.78rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.04em' }}>Para el grupo de WhatsApp</div>
-            {acciones(listo.ficha)}
+        <div className="vd-card" style={{ width: '100%', maxWidth: 520, textAlign: 'center', padding: '1.8rem 1.3rem', borderRadius: 28 }}>
+          <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#dcfce7', color: '#166534', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto .8rem', fontSize: '2rem' }}>✓</div>
+          <h1 style={{ fontSize: '1.4rem', margin: '0 0 .1rem', color: '#0f172a' }}>¡Pedido guardado!</h1>
+          <p style={{ margin: 0, fontWeight: 700, fontSize: '1.5rem', color: '#0f172a' }}>{codigo(fv)} · {peso(listo.total)}</p>
+          <p style={{ color: '#64748b', margin: '.2rem 0 1rem', fontSize: '.9rem' }}>{fv.cliente} · {fv.estadoPago}</p>
+          <div style={{ textAlign: 'left' }}>
+            <div className="vd-lbl" style={{ marginTop: 0 }}>¿Qué quieres hacer ahora?</div>
+            {accionesEnvio(fv)}
+            {masOpciones(fv)}
+            <p style={{ color: '#94a3b8', fontSize: '.78rem', margin: '.7rem 0 0' }}>En computador, la imagen se copia sola: en WhatsApp presiona <b>Ctrl + V</b> para pegarla y envía. En celular se abre el menú de compartir.</p>
           </div>
-          <a href={listo.url} target="_blank" rel="noreferrer" className="vd-go" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', background: '#16a34a', color: '#fff', marginTop: '.9rem' }}>Enviar resumen al cliente</a>
-          <button className="vd-go" onClick={() => setListo(null)} style={{ marginTop: '.7rem', background: '#0f172a' }}>Nuevo pedido</button>
-          <button onClick={() => { setListo(null); setVista('lista'); }} style={{ background: 'transparent', color: '#475569', fontWeight: 600, marginTop: '.6rem', minHeight: 44 }}>Ver pedidos solicitados manuales</button>
+          <button className="vd-go" onClick={() => setListo(null)} style={{ marginTop: '1rem', background: '#0f172a' }}>Hacer otro pedido</button>
+          <button onClick={() => { setListo(null); setVista('lista'); }} style={{ background: 'transparent', color: '#475569', fontWeight: 600, marginTop: '.4rem', minHeight: 44 }}>Ver pedidos solicitados manuales</button>
         </div>
+        {aviso && <div className="vd-toast" style={{ background: aviso.tipo === 'ok' ? '#065f46' : '#991b1b' }}>{aviso.texto}</div>}
       </div>
     );
   }
