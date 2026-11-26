@@ -1702,6 +1702,12 @@ export default function Admin() {
       if (local) currentLogs = JSON.parse(local);
     } catch {}
 
+    // Si este navegador no tiene el historial (p. ej. el pedido lo cargó un asesor desde otro equipo), parte del que ya está guardado en la base
+    if (currentLogs.length === 0) {
+      const guardado = pedidos.find(p => p.id === pedId) || (selectedPedido && selectedPedido.id === pedId ? selectedPedido : null);
+      if (guardado && Array.isArray((guardado as any).historial)) currentLogs = (guardado as any).historial;
+    }
+
     const updatedLogs = [...currentLogs, newLog];
     localStorage.setItem(`indisutex_audit_${pedId}`, JSON.stringify(updatedLogs));
 
@@ -17726,7 +17732,7 @@ export default function Admin() {
                       <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.85rem', marginBottom: '1.25rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
                           <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 600, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                            📦 Detalle del Pedido #{selectedPedido.id.slice(0, 8)}
+                            📦 Detalle del Pedido {(selectedPedido as any).numero_pedido ? `N° ${(selectedPedido as any).numero_pedido}` : `#${selectedPedido.id.slice(0, 8)}`}
                           </h3>
                           {(() => {
                             const isOrderExitoso = selectedPedido.estado === 'completado' || selectedPedido.estado === 'entregado_pagado' || selectedPedido.estado === 'entregado' || contraStatus === 'entregado_pagado';

@@ -6,6 +6,9 @@ import type { Producto } from '../types';
 import { DEPARTAMENTOS_COLOMBIA } from '../data/colombiaData';
 import { etiqueta, codigo, compartirImagen, copiarTexto, urlWhatsAppGrupo, totalUnidades } from '../lib/fichaPedido';
 import type { PedidoVista } from '../lib/fichaPedido';
+import { estadoDe, lineaTiempo } from '../lib/trazabilidadPedido';
+import type { GrupoPago } from '../lib/trazabilidadPedido';
+import { compressImage } from '../lib/imageCompression';
 
 interface Asesor { id: string; nombre: string; telefono: string; tenant_id: string; foto_url?: string | null }
 
@@ -135,6 +138,11 @@ const CSS = `
 .vd-marca .logo > * { max-width:100%; max-height:100%; }
 .vd-marca .nom { font-weight:700; font-size:1.05rem; color:#0f172a; padding:0 .6rem; }
 .vd-marca .cant { font-size:.8rem; color:#64748b; padding:.15rem 0 1rem; }
+.vd-kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:.7rem; margin-bottom:1rem; }
+.vd-kpi { background:#fff; border-radius:16px; padding:.8rem 1rem; border-top:4px solid #cbd5e1; box-shadow:0 2px 10px rgba(15,23,42,.06); }
+.vd-kpi b { display:block; font-size:1.7rem; line-height:1.1; }
+.vd-kpi span { font-size:.74rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.03em; }
+.vd-kpi i { display:block; font-style:normal; font-size:.85rem; color:#475569; margin-top:2px; }
 .vd-seg { display:flex; gap:.5rem; }
 .vd-seg button { flex:1; min-height:52px; border-radius:14px; background:#f1f5f9; font-weight:600; color:#334155; }
 .vd-seg button.on { background:var(--c); color:var(--t); }
@@ -186,6 +194,10 @@ export default function Vender() {
   const [cargandoLista, setCargandoLista] = useState(false);
   const [soloMios, setSoloMios] = useState(true);
   const [ocupado, setOcupado] = useState('');
+  const [recarga, setRecarga] = useState(0);
+  const [filtroPago, setFiltroPago] = useState<'todos' | GrupoPago>('todos');
+  const [busquedaPed, setBusquedaPed] = useState('');
+  const [abiertoId, setAbiertoId] = useState<string | null>(null);
   const [aviso, setAviso] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
 
   const [f, setF] = useState({ nombre: '', telefono: '', cedula: '', email: '', recepcion: 'domicilio', pago: 'transferencia', depto: '', ciudad: '', direccion: '', barrio: '', nota: '' });
@@ -238,7 +250,7 @@ export default function Vender() {
     setCargandoLista(true);
     (async () => {
       const [ped, ases] = await Promise.all([
-        supabase.from('pedidos').select('id,created_at,cliente_nombre,cliente_telefono,ciudad,direccion,total,productos,linea_whatsapp,metodo_pago,modalidad_pago,metodo_recepcion,tipo_compra,estado')
+        supabase.from('pedidos').select('*')
           .eq('tenant_id', asesor.tenant_id).eq('origen', 'asesor').order('created_at', { ascending: false }).limit(80),
         supabase.from('asesores').select('nombre,telefono')
       ]);
@@ -250,7 +262,7 @@ export default function Vender() {
       setCargandoLista(false);
     })();
     return () => { vigente = false; };
-  }, [asesor, vista, listo]);
+  }, [asesor, vista, listo, recarga]);
 
   async function entrar(e: React.FormEvent) {
     e.preventDefault();
@@ -410,7 +422,13 @@ export default function Vender() {
       tipo_compra: tipoCompra,
       departamento: f.depto || '',
       estado: f.pago === 'contra_entrega' ? 'contra_entrega' : 'pendiente',
-      origen: 'asesor'
+      origen: 'asesor',
+      historial: [{
+        estado: f.pago === 'contra_entrega' ? 'contra_entrega' : 'pendiente',
+        usuario: `Asesor ${asesor.nombre}`,
+        fecha: new Date().toISOString(),
+        accion: 'Pedido manual cargado por el asesor'
+      }]
     };
 
     // Si la base no tiene alguna columna opcional, se quita y se reintenta
@@ -429,8 +447,14 @@ export default function Vender() {
     setGuardando(false);
     if (!nuevo) return mostrar('error', 'No se pudo guardar: ' + ultimoError);
 
+    let numero: number | null = null;
+    try {
+      const { data: nn, error: en } = await supabase.from('pedidos').select('numero_pedido').eq('id', nuevo.id).maybeSingle();
+      if (!en && nn && (nn as { numero_pedido?: number }).numero_pedido) numero = Number((nn as { numero_pedido: number }).numero_pedido);
+    } catch { /* la columna del consecutivo todavía no existe */ }
+    const etiquetaNum = numero ? `N° ${numero}` : `#${nuevo.id.slice(0, 8).toUpperCase()}`;
     const corto = nuevo.id.slice(0, 8);
-    let msg = `Hola ${nombre}, soy ${asesor.nombre} de ${config.nombre_negocio || 'la tienda'}. Este es el resumen de tu pedido:\n\n`;
+    let msg = `Hola ${nombre}, soy ${asesor.nombre} de ${config.nombre_negocio || 'la tienda'}. Tu pedido es el *${etiquetaNum}*. Este es el resumen:\n\n`;
     msg += lineas.map(l => {
       const o = opcionesDe(l.prod).find(x => x.clave === l.talla);
       const detalle = [(l.prod.nombre || '').trim(), o && l.talla ? o.texto : '', l.estampado].filter(Boolean).join(' · ');
@@ -445,7 +469,7 @@ export default function Vender() {
       msg += `\n*ENVÍO:* PAGO CONTRA ENTREGA\n\nCancela al momento de recibir tu pedido el valor de las prendas + el costo del envío.`;
     }
     const ficha: PedidoVista = {
-      id: nuevo.id, creado: new Date().toISOString(), tienda: config.nombre_negocio || '', color, logo: config.logo_url || null,
+      id: nuevo.id, numero, estadoPago: f.pago === 'transferencia' ? 'Esperando comprobante' : 'Contra entrega · se cobra al recibir', creado: new Date().toISOString(), tienda: config.nombre_negocio || '', color, logo: config.logo_url || null,
       asesor: asesor.nombre, cliente: nombre, telefono: tel, ciudad: String(payload.ciudad || ''),
       direccion: f.recepcion === 'tienda' ? 'Recoge en tienda' : f.direccion.trim() + (f.barrio.trim() ? `, Barrio ${f.barrio.trim()}` : ''),
       pago: f.pago === 'transferencia' ? 'Transferencia' : 'Contra entrega', entrega: f.recepcion === 'tienda' ? 'Recoge en tienda' : 'Domicilio',
@@ -476,7 +500,7 @@ export default function Vender() {
     }));
     const tel = soloDigitos(r.linea_whatsapp).slice(-10);
     return {
-      id: r.id, creado: r.created_at, tienda: config.nombre_negocio || '', color, logo: config.logo_url || null,
+      id: r.id, numero: r.numero_pedido ? Number(r.numero_pedido) : null, estadoPago: estadoDe(r).pago.texto, creado: r.created_at, tienda: config.nombre_negocio || '', color, logo: config.logo_url || null,
       asesor: nombresAs.get(tel) || (tel ? `Asesor ···${tel.slice(-4)}` : 'Asesor'),
       cliente: r.cliente_nombre, telefono: r.cliente_telefono, ciudad: r.ciudad || '', direccion: partes[0] || '',
       pago: r.modalidad_pago === 'contra_entrega' ? 'Contra entrega' : 'Transferencia',
@@ -502,42 +526,95 @@ export default function Vender() {
     </div>
   );
 
-  const ESTADOS: Record<string, [string, string, string]> = {
-    pendiente: ['Pendiente de pago', '#fef3c7', '#92400e'],
-    contra_entrega: ['Contra entrega', '#e0f2fe', '#075985'],
-    mensaje_enviado: ['Mensaje enviado', '#e0e7ff', '#3730a3'],
-    completado: ['Completado', '#dcfce7', '#166534'],
-    entregado: ['Entregado', '#dcfce7', '#166534']
-  };
+  async function adjuntarComprobante(r: any, archivo: File) {
+    if (!asesor) return;
+    setOcupado('c' + r.id);
+    try {
+      const comp = await compressImage(archivo, 1000, 0.7);
+      const nombreArchivo = `pago_${r.id}_${Date.now()}.${comp.name.split('.').pop() || 'jpg'}`;
+      const { error: up } = await supabase.storage.from('archivos').upload(nombreArchivo, comp);
+      if (up) throw up;
+      const url = supabase.storage.from('archivos').getPublicUrl(nombreArchivo).data.publicUrl;
+      const historial = [...(Array.isArray(r.historial) ? r.historial : []), {
+        estado: 'comprobante_recibido', usuario: `Asesor ${asesor.nombre}`, fecha: new Date().toISOString(), accion: 'Comprobante de pago adjuntado por el asesor'
+      }];
+      let { error } = await supabase.from('pedidos').update({ pantallazo_url: url, historial }).eq('id', r.id);
+      if (error) ({ error } = await supabase.from('pedidos').update({ pantallazo_url: url }).eq('id', r.id));
+      if (error) throw error;
+      mostrar('ok', 'Comprobante adjuntado. El administrador lo valida.');
+      setRecarga(n => n + 1);
+    } catch {
+      mostrar('error', 'No se pudo adjuntar el comprobante');
+    }
+    setOcupado('');
+  }
 
-  const listaManual = filas.filter(r => !soloMios || misNumeros.has(soloDigitos(r.linea_whatsapp).slice(-10)));
+  const baseLista = filas
+    .filter(r => !soloMios || misNumeros.has(soloDigitos(r.linea_whatsapp).slice(-10)))
+    .map(r => ({ r, v: vistaDeFila(r), e: estadoDe(r) }));
+  const delGrupo = (g: GrupoPago) => baseLista.filter(x => x.e.grupo === g);
+  const sumaDe = (arr: typeof baseLista) => arr.reduce((t, x) => t + x.v.total, 0);
+  const qPed = busquedaPed.trim().toLowerCase();
+  const listaManual = baseLista.filter(x =>
+    (filtroPago === 'todos' || x.e.grupo === filtroPago) &&
+    (!qPed || [String(x.v.numero || ''), x.v.id.slice(0, 8), x.v.cliente, x.v.telefono, ...x.v.items.map(i => i.nombre)].some(t => String(t || '').toLowerCase().includes(qPed)))
+  );
+  const filtros: [('todos' | GrupoPago), string, number][] = [
+    ['todos', 'Todos', baseLista.length],
+    ['esperando', 'Esperando pago', delGrupo('esperando').length],
+    ['validar', 'Por validar', delGrupo('validar').length],
+    ['pagado', 'Pagados', delGrupo('pagado').length],
+    ['contra', 'Contra entrega', delGrupo('contra').length],
+    ['cancelado', 'Cancelados', delGrupo('cancelado').length]
+  ];
+  const fechaHora = (d: string) => new Date(d).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
 
   const listaJSX = (
-    <div style={{ maxWidth: 820, margin: '0 auto' }}>
+    <div style={{ maxWidth: 860, margin: '0 auto' }}>
       <h2 style={{ fontSize: '1.5rem', margin: '.2rem 0 .3rem', color: '#0f172a' }}>Pedidos solicitados manuales</h2>
-      <p style={{ color: '#64748b', margin: '0 0 .8rem', fontSize: '.92rem' }}>Pedidos que los asesores cargaron a mano. Cada uno se puede compartir como imagen o texto en el grupo.</p>
-      <div className="vd-seg" style={{ marginBottom: '1rem', maxWidth: 360 }}>
+      <p style={{ color: '#64748b', margin: '0 0 .9rem', fontSize: '.92rem' }}>Pedidos que los asesores cargaron a mano, con su número, estado de pago e historial.</p>
+
+      <div className="vd-kpis">
+        <div className="vd-kpi" style={{ borderTopColor: '#dc2626' }}><b>{delGrupo('esperando').length}</b><span>Esperando comprobante</span><i>{peso(sumaDe(delGrupo('esperando')))}</i></div>
+        <div className="vd-kpi" style={{ borderTopColor: '#ea580c' }}><b>{delGrupo('validar').length}</b><span>Por validar</span><i>{peso(sumaDe(delGrupo('validar')))}</i></div>
+        <div className="vd-kpi" style={{ borderTopColor: '#16a34a' }}><b>{delGrupo('pagado').length}</b><span>Pagados</span><i>{peso(sumaDe(delGrupo('pagado')))}</i></div>
+      </div>
+
+      <input className="vd-search" value={busquedaPed} onChange={e => setBusquedaPed(e.target.value)} placeholder="Buscar por número, cliente, celular o producto" />
+      <div className="vd-cats">
+        {filtros.map(([k, t, n]) => <button key={k} className={`vd-cat ${filtroPago === k ? 'on' : ''}`} onClick={() => setFiltroPago(k)}>{t} ({n})</button>)}
+      </div>
+      <div className="vd-seg" style={{ margin: '.6rem 0 1rem', maxWidth: 360 }}>
         <button className={soloMios ? 'on' : ''} onClick={() => setSoloMios(true)}>Solo los míos</button>
         <button className={!soloMios ? 'on' : ''} onClick={() => setSoloMios(false)}>Todos</button>
       </div>
+
       {cargandoLista && <p style={{ textAlign: 'center', color: '#94a3b8' }}>Cargando pedidos...</p>}
-      {!cargandoLista && listaManual.length === 0 && <div className="vd-card" style={{ textAlign: 'center', color: '#94a3b8' }}>Todavía no hay pedidos manuales.</div>}
+      {!cargandoLista && listaManual.length === 0 && <div className="vd-card" style={{ textAlign: 'center', color: '#94a3b8' }}>No hay pedidos con ese filtro.</div>}
       <div style={{ display: 'grid', gap: '.9rem' }}>
-        {listaManual.map(r => {
-          const v = vistaDeFila(r);
-          const est = ESTADOS[String(r.estado)] || [String(r.estado || 'Pendiente'), '#f1f5f9', '#475569'];
+        {listaManual.map(({ r, v, e }) => {
           const grupos = new Map<string, { nombre: string; estampado: string; lineas: string[] }>();
           v.items.forEach(i => { const k = i.nombre + '|' + i.estampado; const g = grupos.get(k) || { nombre: i.nombre, estampado: i.estampado, lineas: [] }; g.lineas.push(`${i.etiqueta || 'Cantidad'} = ${i.cantidad}`); grupos.set(k, g); });
+          const abierto = abiertoId === r.id;
           return (
             <div key={r.id} className="vd-card">
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                <div>
-                  <strong style={{ fontSize: '1.05rem' }}>{v.cliente}</strong>
-                  <div style={{ fontSize: '.82rem', color: '#64748b' }}>{codigo(v.id)} · {new Date(v.creado).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })} · {v.asesor}</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '.6rem', flexWrap: 'wrap', alignItems: 'flex-start' }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem', flexWrap: 'wrap' }}>
+                    <span style={{ background: color, color: sobre, borderRadius: 10, padding: '3px 12px', fontWeight: 700, fontSize: '.95rem' }}>{codigo(v)}</span>
+                    <strong style={{ fontSize: '1.05rem' }}>{v.cliente}</strong>
+                  </div>
+                  <div style={{ fontSize: '.8rem', color: '#64748b', marginTop: 4 }}>{fechaHora(v.creado)} · {v.asesor}</div>
                 </div>
-                <span style={{ background: est[1], color: est[2], borderRadius: 99, padding: '4px 12px', fontSize: '.78rem', fontWeight: 700 }}>{est[0]}</span>
+                <strong style={{ fontSize: '1.3rem' }}>{peso(v.total)}</strong>
               </div>
-              <div style={{ margin: '.7rem 0', display: 'grid', gap: '.5rem' }}>
+
+              <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', margin: '.7rem 0' }}>
+                <span style={{ background: e.pago.bg, color: e.pago.fg, borderRadius: 99, padding: '4px 12px', fontSize: '.78rem', fontWeight: 700 }}>Pago: {e.pago.texto}</span>
+                <span style={{ background: e.envio.bg, color: e.envio.fg, borderRadius: 99, padding: '4px 12px', fontSize: '.78rem', fontWeight: 700 }}>Envío: {e.envio.texto}</span>
+              </div>
+
+              <div style={{ display: 'grid', gap: '.5rem' }}>
                 {[...grupos.values()].map((g, i) => (
                   <div key={i} style={{ background: '#f8fafc', borderRadius: 14, padding: '.6rem .8rem' }}>
                     <div style={{ fontWeight: 700, fontSize: '.92rem' }}>{g.nombre}{g.estampado ? ` · ${g.estampado}` : ''}</div>
@@ -545,11 +622,45 @@ export default function Vender() {
                   </div>
                 ))}
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                <span style={{ color: '#64748b', fontSize: '.88rem' }}>{totalUnidades(v)} unidades · {v.ciudad || 'Sin ciudad'} · {v.pago}</span>
-                <strong style={{ fontSize: '1.3rem' }}>{peso(v.total)}</strong>
-              </div>
+              <div style={{ color: '#64748b', fontSize: '.85rem', marginTop: '.6rem' }}>{totalUnidades(v)} unidades · {v.ciudad || 'Sin ciudad'} · {v.pago} · {v.telefono}</div>
+
               {acciones(v)}
+              <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginTop: '.5rem' }}>
+                <button className="vd-chip" onClick={() => setAbiertoId(abierto ? null : r.id)}>{abierto ? 'Ocultar historial' : 'Ver historial'}</button>
+                {e.grupo === 'esperando' && (
+                  <label className="vd-chip" style={{ cursor: 'pointer', background: '#fef3c7' }}>
+                    {ocupado === 'c' + r.id ? 'Subiendo...' : 'Adjuntar comprobante'}
+                    <input type="file" accept="image/*" hidden disabled={ocupado === 'c' + r.id} onChange={ev => { const a = ev.target.files?.[0]; if (a) adjuntarComprobante(r, a); ev.target.value = ''; }} />
+                  </label>
+                )}
+              </div>
+
+              {abierto && (
+                <div style={{ marginTop: '.8rem', background: '#f8fafc', borderRadius: 14, padding: '.9rem' }}>
+                  <div className="vd-lbl" style={{ marginTop: 0 }}>Historial del pedido</div>
+                  {lineaTiempo(r).map((ev, i) => (
+                    <div key={i} style={{ display: 'flex', gap: '.7rem', padding: '.35rem 0' }}>
+                      <span style={{ width: 10, height: 10, borderRadius: '50%', background: color, marginTop: 7, flex: 'none' }} />
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '.92rem' }}>{ev.texto}</div>
+                        <div style={{ fontSize: '.78rem', color: '#64748b' }}>{ev.fecha ? fechaHora(ev.fecha) : 'Sin fecha registrada'}{ev.usuario ? ` · ${ev.usuario}` : ''}</div>
+                      </div>
+                    </div>
+                  ))}
+                  {(r.pantallazo_url || r.evidencia_despacho_url || r.evidencia_entrega_url || e.guia) && (
+                    <>
+                      <div className="vd-lbl">Evidencias</div>
+                      <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+                        {r.pantallazo_url && <a className="vd-chip" href={r.pantallazo_url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>Comprobante de pago</a>}
+                        {r.evidencia_despacho_url && <a className="vd-chip" href={r.evidencia_despacho_url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>Evidencia de despacho</a>}
+                        {r.evidencia_entrega_url && <a className="vd-chip" href={r.evidencia_entrega_url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>Evidencia de entrega</a>}
+                        {e.guia && <span className="vd-chip">Guía: {e.guia}</span>}
+                      </div>
+                    </>
+                  )}
+                  <p style={{ margin: '.8rem 0 0', fontSize: '.78rem', color: '#94a3b8' }}>El pago lo valida el administrador desde el panel de Pedidos.</p>
+                </div>
+              )}
             </div>
           );
         })}
@@ -638,8 +749,9 @@ export default function Vender() {
         <div className="vd-card" style={{ width: '100%', maxWidth: 460, textAlign: 'center', padding: '2rem 1.4rem', borderRadius: 28 }}>
           <div style={{ width: 72, height: 72, borderRadius: '50%', background: '#dcfce7', color: '#166534', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', fontSize: '2.2rem' }}>✓</div>
           <h1 style={{ fontSize: '1.5rem', margin: '0 0 .2rem', color: '#0f172a' }}>Pedido guardado</h1>
-          <p style={{ color: '#64748b', margin: 0 }}>#{listo.id.slice(0, 8).toUpperCase()} · {peso(listo.total)}</p>
-          <p style={{ color: '#64748b', fontSize: '.9rem' }}>Ya aparece en el admin, en Pedidos.</p>
+          <p style={{ margin: 0, fontWeight: 700, fontSize: '1.4rem', color: '#0f172a' }}>{codigo(listo.ficha)}</p>
+          <p style={{ color: '#64748b', margin: '.1rem 0 0' }}>{peso(listo.total)} · {listo.ficha.estadoPago}</p>
+          <p style={{ color: '#64748b', fontSize: '.9rem' }}>Ya aparece en el admin, en Pedidos, y queda en tu lista para seguirlo.</p>
           <div style={{ background: '#f8fafc', borderRadius: 16, padding: '.8rem', marginTop: '.8rem', textAlign: 'left' }}>
             <div style={{ fontSize: '.78rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.04em' }}>Para el grupo de WhatsApp</div>
             {acciones(listo.ficha)}

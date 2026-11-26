@@ -11,6 +11,8 @@ export interface ItemVista {
 
 export interface PedidoVista {
   id: string;
+  numero?: number | null;
+  estadoPago?: string;
   creado: string;
   tienda: string;
   color: string;
@@ -41,8 +43,9 @@ export const etiqueta = (k: string) => ETIQ[k] || (/^\d+\/\d+$/.test(k) ? `Niño
 
 export const peso = (n: number) => '$' + Math.round(n).toLocaleString('es-CO');
 
-export function codigo(id: string): string {
-  return '#' + id.slice(0, 8).toUpperCase();
+// Número del pedido: el consecutivo (N° 1042) y, si todavía no existe, el código corto del admin
+export function codigo(v: { id: string; numero?: number | null }): string {
+  return v.numero ? `N° ${v.numero}` : '#' + v.id.slice(0, 8).toUpperCase();
 }
 
 interface Grupo { nombre: string; estampado: string; imagen: string | null; lineas: { texto: string; cantidad: number }[] }
@@ -63,7 +66,7 @@ export const totalUnidades = (v: PedidoVista) => v.items.reduce((s, i) => s + i.
 
 export function textoPedido(v: PedidoVista): string {
   const L: string[] = [];
-  L.push(`*PEDIDO MANUAL* ${codigo(v.id)}`);
+  L.push(`*PEDIDO MANUAL ${codigo(v)}*`);
   L.push(`${v.tienda} · Asesor: ${v.asesor}`);
   L.push(new Date(v.creado).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' }));
   L.push('');
@@ -72,6 +75,7 @@ export function textoPedido(v: PedidoVista): string {
   L.push(`*Ciudad:* ${v.ciudad || '—'}`);
   if (v.direccion) L.push(`*Dirección:* ${v.direccion}`);
   L.push(`*Pago:* ${v.pago} · *Entrega:* ${v.entrega}`);
+  if (v.estadoPago) L.push(`*Estado de pago:* ${v.estadoPago}`);
   if (v.nota) L.push(`*Nota:* ${v.nota}`);
   for (const g of agrupar(v.items)) {
     L.push('');
@@ -152,6 +156,7 @@ export async function dibujarFicha(v: PedidoVista): Promise<Blob> {
     ['Dirección', dirLineas],
     ['Pago', [`${v.pago} · ${v.entrega}`]]
   ];
+  if (v.estadoPago) filasCliente.push(['Estado pago', [v.estadoPago]]);
   if (v.nota) filasCliente.push(['Nota', envolver(medir, v.nota, W - P * 2 - 250, 2)]);
   const altoCliente = 40 + filasCliente.reduce((s, [, l]) => s + l.length * 42 + 8, 0);
 
@@ -184,7 +189,7 @@ export async function dibujarFicha(v: PedidoVista): Promise<Blob> {
   ctx.fillText(envolver(ctx, v.tienda || 'Pedido', W - P * 2 - 250, 1)[0], P, 124);
   ctx.font = `500 26px ${FUENTE}`;
   ctx.fillStyle = 'rgba(255,255,255,.9)';
-  ctx.fillText(`${codigo(v.id)} · ${new Date(v.creado).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })}`, P, 168);
+  ctx.fillText(`${codigo(v)} · ${new Date(v.creado).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })}`, P, 168);
   if (logo) {
     ctx.fillStyle = '#fff';
     camino(ctx, W - P - 130, 35, 130, 130, 24);
@@ -284,11 +289,11 @@ export type ResultadoCompartir = 'compartido' | 'descargado' | 'cancelado';
 
 export async function compartirImagen(v: PedidoVista): Promise<ResultadoCompartir> {
   const blob = await dibujarFicha(v);
-  const archivo = new File([blob], `pedido-${v.id.slice(0, 8)}.png`, { type: 'image/png' });
+  const archivo = new File([blob], `pedido-${v.numero || v.id.slice(0, 8)}.png`, { type: 'image/png' });
   const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean };
   if (nav.canShare && nav.canShare({ files: [archivo] })) {
     try {
-      await nav.share({ files: [archivo], title: `Pedido manual ${codigo(v.id)}` });
+      await nav.share({ files: [archivo], title: `Pedido manual ${codigo(v)}` });
       return 'compartido';
     } catch (e) {
       if ((e as DOMException)?.name === 'AbortError') return 'cancelado';
