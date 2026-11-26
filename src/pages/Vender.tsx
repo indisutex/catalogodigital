@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { getEffectivePrice } from '../context/CartContext';
 import type { BuyerType } from '../context/CartContext';
@@ -29,6 +29,12 @@ interface Linea { key: string; prod: Producto; talla: string; opcion: string; es
 
 const FONT = "'Poppins', 'Inter', sans-serif";
 const SESION = 'vender_asesor';
+const MAX_PEDIDOS_ABIERTOS = 8;
+
+const FORM_VACIO = { nombre: '', telefono: '', cedula: '', email: '', recepcion: 'domicilio', pago: 'transferencia', depto: '', ciudad: '', direccion: '', barrio: '', nota: '' };
+type FormCliente = typeof FORM_VACIO;
+interface Borrador { id: string; lineas: Linea[]; f: FormCliente }
+const nuevoBorrador = (): Borrador => ({ id: `b${Date.now()}${Math.random().toString(36).slice(2, 6)}`, lineas: [], f: { ...FORM_VACIO } });
 
 const peso = (n: number) => '$' + Math.round(n).toLocaleString('es-CO');
 const soloDigitos = (s?: string | null) => (s || '').replace(/\D/g, '');
@@ -145,6 +151,12 @@ const CSS = `
 .vd-kpi b { display:block; font-size:1.7rem; line-height:1.1; }
 .vd-kpi span { font-size:.74rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.03em; }
 .vd-kpi i { display:block; font-style:normal; font-size:.85rem; color:#475569; margin-top:2px; }
+.vd-tabs { display:flex; gap:.5rem; overflow-x:auto; padding:.1rem 0 .7rem; }
+.vd-tab { display:flex; align-items:center; flex:none; background:#fff; border:2px solid #e1e5ef; border-radius:14px; }
+.vd-tab.on { background:var(--c); border-color:var(--c); color:var(--t); }
+.vd-tab button { background:transparent; color:inherit; font-weight:600; padding:.55rem .9rem; min-height:46px; font-size:.92rem; }
+.vd-tab i { font-style:normal; background:rgba(15,23,42,.14); border-radius:99px; padding:1px 8px; margin-left:6px; font-size:.75rem; }
+.vd-tab-new { flex:none; min-height:50px; padding:0 1rem; border-radius:14px; background:transparent; border:2px dashed #94a3b8 !important; color:#475569; font-weight:600; }
 .vd-ia { width:100%; display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:.9rem 1.2rem; margin-bottom:.8rem; border-radius:16px; color:#fff; background:linear-gradient(120deg,#4f46e5,#9333ea); box-shadow:0 8px 20px rgba(79,70,229,.3); text-align:left; }
 .vd-ia span { font-weight:700; font-size:1.05rem; }
 .vd-ia small { opacity:.85; font-size:.8rem; }
@@ -193,7 +205,25 @@ export default function Vender() {
   const [busqueda, setBusqueda] = useState('');
   const [cat, setCat] = useState('todas');
 
-  const [lineas, setLineas] = useState<Linea[]>([]);
+  // Varios pedidos abiertos a la vez (uno por cliente). Cada uno guarda su carrito y los datos del cliente.
+  const [borradores, setBorradores] = useState<Borrador[]>(() => [nuevoBorrador()]);
+  const [activoId, setActivoId] = useState('');
+  const activo = borradores.find(b => b.id === activoId) || borradores[0];
+  const lineas = activo.lineas;
+  const f = activo.f;
+  const borradoresRef = useRef(borradores);
+  borradoresRef.current = borradores;
+  const activoRef = useRef(activo.id);
+  activoRef.current = activo.id;
+  const borradoresListos = useRef(false);
+  const setLineas = (u: Linea[] | ((p: Linea[]) => Linea[])) => {
+    const id = activo.id;
+    setBorradores(bs => bs.map(b => (b.id === id ? { ...b, lineas: typeof u === 'function' ? u(b.lineas) : u } : b)));
+  };
+  const setF = (u: FormCliente | ((p: FormCliente) => FormCliente)) => {
+    const id = activo.id;
+    setBorradores(bs => bs.map(b => (b.id === id ? { ...b, f: typeof u === 'function' ? u(b.f) : u } : b)));
+  };
   const [hoja, setHoja] = useState<Producto | null>(null);
   const [cants, setCants] = useState<Record<string, number>>({});
   const [est, setEst] = useState('');
@@ -220,7 +250,6 @@ export default function Vender() {
   const [abiertoId, setAbiertoId] = useState<string | null>(null);
   const [aviso, setAviso] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
 
-  const [f, setF] = useState({ nombre: '', telefono: '', cedula: '', email: '', recepcion: 'domicilio', pago: 'transferencia', depto: '', ciudad: '', direccion: '', barrio: '', nota: '' });
 
   const color = config.color_primario || '#6366f1';
   const sobre = textoSobre(color);
@@ -283,6 +312,61 @@ export default function Vender() {
     })();
     return () => { vigente = false; };
   }, [asesor, vista, listo, recarga]);
+
+  useEffect(() => {
+    if (!asesor) return;
+    borradoresListos.current = false;
+    try {
+      const guardado = localStorage.getItem(`vender_pedidos_${asesor.id}`);
+      if (guardado) {
+        const d = JSON.parse(guardado) as { borradores?: Borrador[]; activoId?: string };
+        if (Array.isArray(d.borradores) && d.borradores.length > 0) {
+          setBorradores(d.borradores.slice(0, MAX_PEDIDOS_ABIERTOS));
+          setActivoId(d.activoId && d.borradores.some(b => b.id === d.activoId) ? d.activoId : d.borradores[0].id);
+        }
+      }
+    } catch { /* sin pedidos guardados */ }
+    borradoresListos.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [asesor?.id]);
+
+  useEffect(() => {
+    if (!asesor || !borradoresListos.current) return;
+    try { localStorage.setItem(`vender_pedidos_${asesor.id}`, JSON.stringify({ borradores, activoId: activo.id })); } catch { /* sin almacenamiento */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [borradores, activoId, asesor?.id]);
+
+  // Al cargar el catálogo, los pedidos guardados toman los precios y datos más recientes de cada producto
+  useEffect(() => {
+    if (productos.length === 0) return;
+    setBorradores(bs => bs.map(b => ({ ...b, lineas: b.lineas.map(l => { const p = productos.find(x => x.id === l.prod.id); return p ? { ...l, prod: p } : l; }) })));
+  }, [productos]);
+
+  function nuevoPedido() {
+    if (borradoresRef.current.length >= MAX_PEDIDOS_ABIERTOS) return mostrar('error', `Máximo ${MAX_PEDIDOS_ABIERTOS} pedidos abiertos a la vez`);
+    const b = nuevoBorrador();
+    setBorradores([...borradoresRef.current, b]);
+    setActivoId(b.id);
+    setBusqueda('');
+    setCobro(false);
+    setVerPedido(false);
+  }
+
+  function cerrarBorrador(id: string, confirmar = true) {
+    const todos = borradoresRef.current;
+    const b = todos.find(x => x.id === id);
+    if (!b) return;
+    if (confirmar && b.lineas.length > 0 && !window.confirm('Este pedido tiene productos sin guardar. ¿Descartarlo?')) return;
+    const resto = todos.filter(x => x.id !== id);
+    if (resto.length === 0) {
+      const n = nuevoBorrador();
+      setBorradores([n]);
+      setActivoId(n.id);
+      return;
+    }
+    setBorradores(resto);
+    if (id === activoRef.current) setActivoId(resto[Math.max(0, todos.findIndex(x => x.id === id) - 1)].id);
+  }
 
   useEffect(() => {
     if (!asesor) return;
@@ -385,7 +469,7 @@ export default function Vender() {
   function salir() {
     try { localStorage.removeItem(SESION); localStorage.removeItem(SESION + '_pin'); } catch { /* sin almacenamiento */ }
     setPinSesion('');
-    setAsesor(null); setElegido(null); setPin(''); setLineas([]); setProductos([]);
+    setAsesor(null); setElegido(null); setPin(''); setBorradores([nuevoBorrador()]); setProductos([]);
   }
 
   const bulkActivo = config.descuento_mayor_carrito_activo !== false;
@@ -588,8 +672,8 @@ export default function Vender() {
       }))
     };
     setListo({ id: nuevo.id, total, url: `https://wa.me/57${tel}?text=${encodeURIComponent(msg)}`, ficha });
-    setLineas([]); setCobro(false); setVerPedido(false);
-    setF({ nombre: '', telefono: '', cedula: '', email: '', recepcion: 'domicilio', pago: 'transferencia', depto: '', ciudad: '', direccion: '', barrio: '', nota: '' });
+    cerrarBorrador(activoRef.current, false);
+    setCobro(false); setVerPedido(false);
   }
 
   const misNumeros = new Set((asesor?.telefono || '').split(/[,;/]/).map(t => soloDigitos(t).slice(-10)).filter(Boolean));
@@ -935,6 +1019,20 @@ export default function Vender() {
         {vista === 'lista' ? listaJSX : (
         <div className="vd-main">
           <div style={{ minWidth: 0 }}>
+            <div className="vd-tabs">
+              {borradores.map((b, i) => {
+                const u = b.lineas.reduce((t, l) => t + l.cantidad, 0);
+                const nombre = b.f.nombre.trim().split(' ')[0] || `Pedido ${i + 1}`;
+                const esActivo = b.id === activo.id;
+                return (
+                  <div key={b.id} className={`vd-tab ${esActivo ? 'on' : ''}`}>
+                    <button onClick={() => { setActivoId(b.id); setCobro(false); setVerPedido(false); }}>{nombre}{u > 0 && <i>{u}</i>}</button>
+                    {(borradores.length > 1 || u > 0) && <button aria-label={`Cerrar ${nombre}`} onClick={() => cerrarBorrador(b.id)} style={{ paddingLeft: 0, opacity: .7 }}>✕</button>}
+                  </div>
+                );
+              })}
+              {borradores.length < MAX_PEDIDOS_ABIERTOS && <button className="vd-tab-new" onClick={nuevoPedido}>+ Otro pedido</button>}
+            </div>
             {iaOk && (
               <button className="vd-ia" onClick={() => { setIaAbierta(true); setIaRev(null); setIaError(''); }} disabled={cargando || productos.length === 0}>
                 <span>Leer chat de WhatsApp con IA</span>
