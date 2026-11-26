@@ -4,6 +4,8 @@ import { getEffectivePrice } from '../context/CartContext';
 import type { BuyerType } from '../context/CartContext';
 import type { Producto } from '../types';
 import { DEPARTAMENTOS_COLOMBIA } from '../data/colombiaData';
+import { etiqueta, codigo, compartirImagen, copiarTexto, urlWhatsAppGrupo, totalUnidades } from '../lib/fichaPedido';
+import type { PedidoVista } from '../lib/fichaPedido';
 
 interface Asesor { id: string; nombre: string; telefono: string; tenant_id: string; foto_url?: string | null }
 
@@ -28,14 +30,6 @@ const soloDigitos = (s?: string | null) => (s || '').replace(/\D/g, '');
 const primerTel = (t: string) => soloDigitos((t || '').split(/[,;/]/)[0]).slice(-10);
 const tierDe = (u: number, activo: boolean): BuyerType => (!activo ? 'detal' : u >= 50 ? '50_unidades' : u >= 6 ? 'mayorista' : 'detal');
 
-const ETIQ: Record<string, string> = {
-  'Caballero Única': 'Hombre única',
-  '2XL Unisex': 'Hombre extra plus (2XL)',
-  'Dama Única': 'Dama única',
-  'Dama Plus': 'Dama plus',
-  '18': 'Talla 18'
-};
-const etiqueta = (k: string) => ETIQ[k] || (/^\d+\/\d+$/.test(k) ? `Niño/a ${k}` : k || 'Cantidad');
 
 function parseTallas(v: unknown): string[] {
   if (Array.isArray(v)) return v.map(x => String(x).trim()).filter(Boolean);
@@ -169,7 +163,13 @@ export default function Vender() {
   const [verPedido, setVerPedido] = useState(false);
   const [cobro, setCobro] = useState(false);
   const [guardando, setGuardando] = useState(false);
-  const [listo, setListo] = useState<{ id: string; total: number; url: string } | null>(null);
+  const [listo, setListo] = useState<{ id: string; total: number; url: string; ficha: PedidoVista } | null>(null);
+  const [vista, setVista] = useState<'nuevo' | 'lista'>('nuevo');
+  const [filas, setFilas] = useState<any[]>([]);
+  const [nombresAs, setNombresAs] = useState<Map<string, string>>(new Map());
+  const [cargandoLista, setCargandoLista] = useState(false);
+  const [soloMios, setSoloMios] = useState(true);
+  const [ocupado, setOcupado] = useState('');
   const [aviso, setAviso] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
 
   const [f, setF] = useState({ nombre: '', telefono: '', cedula: '', email: '', recepcion: 'domicilio', pago: 'transferencia', depto: '', ciudad: '', direccion: '', barrio: '', nota: '' });
@@ -205,6 +205,26 @@ export default function Vender() {
     })();
     return () => { vigente = false; };
   }, [asesor]);
+
+  useEffect(() => {
+    if (!asesor || vista !== 'lista') return;
+    let vigente = true;
+    setCargandoLista(true);
+    (async () => {
+      const [ped, ases] = await Promise.all([
+        supabase.from('pedidos').select('id,created_at,cliente_nombre,cliente_telefono,ciudad,direccion,total,productos,linea_whatsapp,metodo_pago,modalidad_pago,metodo_recepcion,tipo_compra,estado')
+          .eq('tenant_id', asesor.tenant_id).eq('origen', 'asesor').order('created_at', { ascending: false }).limit(80),
+        supabase.from('asesores').select('nombre,telefono')
+      ]);
+      if (!vigente) return;
+      const m = new Map<string, string>();
+      ((ases.data as { nombre: string; telefono: string }[]) || []).forEach(a => String(a.telefono || '').split(/[,;/]/).forEach(t => { const d = soloDigitos(t).slice(-10); if (d) m.set(d, a.nombre); }));
+      setNombresAs(m);
+      setFilas((ped.data as any[]) || []);
+      setCargandoLista(false);
+    })();
+    return () => { vigente = false; };
+  }, [asesor, vista, listo]);
 
   async function entrar(e: React.FormEvent) {
     e.preventDefault();
@@ -326,6 +346,7 @@ export default function Vender() {
       const detal = getEffectivePrice(itemDe(l), 'detal', 0, {}, promo);
       return {
         ...l.prod,
+        imagen_url: imagenDeEstampado(l.prod, l.estampado) || l.prod.imagen_url,
         cantidad: l.cantidad,
         talla: l.talla,
         estampado: l.estampado || undefined,
@@ -397,10 +418,118 @@ export default function Vender() {
     } else {
       msg += `\n*ENVÍO:* PAGO CONTRA ENTREGA\n\nCancela al momento de recibir tu pedido el valor de las prendas + el costo del envío.`;
     }
-    setListo({ id: nuevo.id, total, url: `https://wa.me/57${tel}?text=${encodeURIComponent(msg)}` });
+    const ficha: PedidoVista = {
+      id: nuevo.id, creado: new Date().toISOString(), tienda: config.nombre_negocio || '', color, logo: config.logo_url || null,
+      asesor: asesor.nombre, cliente: nombre, telefono: tel, ciudad: String(payload.ciudad || ''),
+      direccion: f.recepcion === 'tienda' ? 'Recoge en tienda' : f.direccion.trim() + (f.barrio.trim() ? `, Barrio ${f.barrio.trim()}` : ''),
+      pago: f.pago === 'transferencia' ? 'Transferencia' : 'Contra entrega', entrega: f.recepcion === 'tienda' ? 'Recoge en tienda' : 'Domicilio',
+      tipo: tipoCompra, total, nota: f.nota.trim() || undefined, estado: String(payload.estado || ''),
+      items: lineas.map(l => ({
+        nombre: (l.prod.nombre || '').trim(), imagen: imagenDeEstampado(l.prod, l.estampado) || l.prod.imagen_url || null,
+        etiqueta: l.talla ? (opcionesDe(l.prod).find(x => x.clave === l.talla)?.texto || l.talla) : '', estampado: l.estampado,
+        cantidad: l.cantidad, precio: precioLinea(l, tier)
+      }))
+    };
+    setListo({ id: nuevo.id, total, url: `https://wa.me/57${tel}?text=${encodeURIComponent(msg)}`, ficha });
     setLineas([]); setCobro(false); setVerPedido(false);
     setF({ nombre: '', telefono: '', cedula: '', email: '', recepcion: 'domicilio', pago: 'transferencia', depto: '', ciudad: '', direccion: '', barrio: '', nota: '' });
   }
+
+  const misNumeros = new Set((asesor?.telefono || '').split(/[,;/]/).map(t => soloDigitos(t).slice(-10)).filter(Boolean));
+
+  function vistaDeFila(r: any): PedidoVista {
+    const partes = String(r.direccion || '').split(' | ');
+    const nota = partes.find(x => x.startsWith('Nota: '))?.slice(6);
+    const items = (Array.isArray(r.productos) ? r.productos : []).map((p: any) => ({
+      nombre: String(p.nombre || '').trim(),
+      imagen: imagenDeEstampado(p as Producto, String(p.estampado || '')) || p.imagen_url || null,
+      etiqueta: p.talla ? etiqueta(String(p.familia_opcion_key || p.talla)) : '',
+      estampado: String(p.estampado || ''),
+      cantidad: Number(p.cantidad) || 0,
+      precio: Number(p.precio) || 0
+    }));
+    const tel = soloDigitos(r.linea_whatsapp).slice(-10);
+    return {
+      id: r.id, creado: r.created_at, tienda: config.nombre_negocio || '', color, logo: config.logo_url || null,
+      asesor: nombresAs.get(tel) || (tel ? `Asesor ···${tel.slice(-4)}` : 'Asesor'),
+      cliente: r.cliente_nombre, telefono: r.cliente_telefono, ciudad: r.ciudad || '', direccion: partes[0] || '',
+      pago: r.modalidad_pago === 'contra_entrega' ? 'Contra entrega' : 'Transferencia',
+      entrega: r.metodo_recepcion === 'tienda' ? 'Recoge en tienda' : 'Domicilio',
+      tipo: r.tipo_compra || 'Al detal', total: Number(r.total) || 0, nota, estado: r.estado, items
+    };
+  }
+
+  async function compartir(v: PedidoVista) {
+    setOcupado(v.id);
+    try {
+      const r = await compartirImagen(v);
+      if (r === 'descargado') mostrar('ok', 'Imagen descargada: adjúntala en el grupo de WhatsApp');
+    } catch { mostrar('error', 'No se pudo crear la imagen'); }
+    setOcupado('');
+  }
+
+  const acciones = (v: PedidoVista) => (
+    <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap', marginTop: '.8rem' }}>
+      <button className="vd-chip on" onClick={() => compartir(v)} disabled={ocupado === v.id}>{ocupado === v.id ? 'Creando imagen...' : 'Compartir imagen'}</button>
+      <a className="vd-chip" href={urlWhatsAppGrupo(v)} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>Texto a WhatsApp</a>
+      <button className="vd-chip" onClick={async () => { const ok = await copiarTexto(v); mostrar(ok ? 'ok' : 'error', ok ? 'Texto copiado' : 'No se pudo copiar'); }}>Copiar texto</button>
+    </div>
+  );
+
+  const ESTADOS: Record<string, [string, string, string]> = {
+    pendiente: ['Pendiente de pago', '#fef3c7', '#92400e'],
+    contra_entrega: ['Contra entrega', '#e0f2fe', '#075985'],
+    mensaje_enviado: ['Mensaje enviado', '#e0e7ff', '#3730a3'],
+    completado: ['Completado', '#dcfce7', '#166534'],
+    entregado: ['Entregado', '#dcfce7', '#166534']
+  };
+
+  const listaManual = filas.filter(r => !soloMios || misNumeros.has(soloDigitos(r.linea_whatsapp).slice(-10)));
+
+  const listaJSX = (
+    <div style={{ maxWidth: 820, margin: '0 auto' }}>
+      <h2 style={{ fontSize: '1.5rem', margin: '.2rem 0 .3rem', color: '#0f172a' }}>Pedidos solicitados manuales</h2>
+      <p style={{ color: '#64748b', margin: '0 0 .8rem', fontSize: '.92rem' }}>Pedidos que los asesores cargaron a mano. Cada uno se puede compartir como imagen o texto en el grupo.</p>
+      <div className="vd-seg" style={{ marginBottom: '1rem', maxWidth: 360 }}>
+        <button className={soloMios ? 'on' : ''} onClick={() => setSoloMios(true)}>Solo los míos</button>
+        <button className={!soloMios ? 'on' : ''} onClick={() => setSoloMios(false)}>Todos</button>
+      </div>
+      {cargandoLista && <p style={{ textAlign: 'center', color: '#94a3b8' }}>Cargando pedidos...</p>}
+      {!cargandoLista && listaManual.length === 0 && <div className="vd-card" style={{ textAlign: 'center', color: '#94a3b8' }}>Todavía no hay pedidos manuales.</div>}
+      <div style={{ display: 'grid', gap: '.9rem' }}>
+        {listaManual.map(r => {
+          const v = vistaDeFila(r);
+          const est = ESTADOS[String(r.estado)] || [String(r.estado || 'Pendiente'), '#f1f5f9', '#475569'];
+          const grupos = new Map<string, { nombre: string; estampado: string; lineas: string[] }>();
+          v.items.forEach(i => { const k = i.nombre + '|' + i.estampado; const g = grupos.get(k) || { nombre: i.nombre, estampado: i.estampado, lineas: [] }; g.lineas.push(`${i.etiqueta || 'Cantidad'} = ${i.cantidad}`); grupos.set(k, g); });
+          return (
+            <div key={r.id} className="vd-card">
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '.6rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                <div>
+                  <strong style={{ fontSize: '1.05rem' }}>{v.cliente}</strong>
+                  <div style={{ fontSize: '.82rem', color: '#64748b' }}>{codigo(v.id)} · {new Date(v.creado).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })} · {v.asesor}</div>
+                </div>
+                <span style={{ background: est[1], color: est[2], borderRadius: 99, padding: '4px 12px', fontSize: '.78rem', fontWeight: 700 }}>{est[0]}</span>
+              </div>
+              <div style={{ margin: '.7rem 0', display: 'grid', gap: '.5rem' }}>
+                {[...grupos.values()].map((g, i) => (
+                  <div key={i} style={{ background: '#f8fafc', borderRadius: 14, padding: '.6rem .8rem' }}>
+                    <div style={{ fontWeight: 700, fontSize: '.92rem' }}>{g.nombre}{g.estampado ? ` · ${g.estampado}` : ''}</div>
+                    <div style={{ fontSize: '.9rem', color: '#334155' }}>{g.lineas.join('  ·  ')}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <span style={{ color: '#64748b', fontSize: '.88rem' }}>{totalUnidades(v)} unidades · {v.ciudad || 'Sin ciudad'} · {v.pago}</span>
+                <strong style={{ fontSize: '1.3rem' }}>{peso(v.total)}</strong>
+              </div>
+              {acciones(v)}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 
   const raiz = { ['--c' as string]: color, ['--t' as string]: sobre };
 
@@ -446,8 +575,13 @@ export default function Vender() {
           <h1 style={{ fontSize: '1.5rem', margin: '0 0 .2rem', color: '#0f172a' }}>Pedido guardado</h1>
           <p style={{ color: '#64748b', margin: 0 }}>#{listo.id.slice(0, 8).toUpperCase()} · {peso(listo.total)}</p>
           <p style={{ color: '#64748b', fontSize: '.9rem' }}>Ya aparece en el admin, en Pedidos.</p>
-          <a href={listo.url} target="_blank" rel="noreferrer" className="vd-go" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', background: '#16a34a', color: '#fff', marginTop: '1rem' }}>Enviar resumen al cliente por WhatsApp</a>
+          <div style={{ background: '#f8fafc', borderRadius: 16, padding: '.8rem', marginTop: '.8rem', textAlign: 'left' }}>
+            <div style={{ fontSize: '.78rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '.04em' }}>Para el grupo de WhatsApp</div>
+            {acciones(listo.ficha)}
+          </div>
+          <a href={listo.url} target="_blank" rel="noreferrer" className="vd-go" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', background: '#16a34a', color: '#fff', marginTop: '.9rem' }}>Enviar resumen al cliente</a>
           <button className="vd-go" onClick={() => setListo(null)} style={{ marginTop: '.7rem', background: '#0f172a' }}>Nuevo pedido</button>
+          <button onClick={() => { setListo(null); setVista('lista'); }} style={{ background: 'transparent', color: '#475569', fontWeight: 600, marginTop: '.6rem', minHeight: 44 }}>Ver pedidos solicitados manuales</button>
         </div>
       </div>
     );
@@ -506,10 +640,15 @@ export default function Vender() {
           {config.logo_url && <span style={{ width: 38, height: 38, borderRadius: 10, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 3, flex: 'none' }}><img src={config.logo_url} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} /></span>}
           <span style={{ minWidth: 0 }}><b>{config.nombre_negocio || 'Nuevo pedido'}</b><br /><span style={{ fontSize: '.75rem', opacity: .7 }}>Asesor: {asesor.nombre}</span></span>
         </span>
-        <button className="vd-nb" onClick={salir}>Salir</button>
+        <nav style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+          <button className="vd-nb" onClick={() => setVista('nuevo')} style={vista === 'nuevo' ? { background: '#fff', color: '#0f172a' } : undefined}>Nuevo pedido</button>
+          <button className="vd-nb" onClick={() => setVista('lista')} style={vista === 'lista' ? { background: '#fff', color: '#0f172a' } : undefined}>Pedidos solicitados manuales</button>
+          <button className="vd-nb" onClick={salir}>Salir</button>
+        </nav>
       </header>
 
       <main className="vd-wrap">
+        {vista === 'lista' ? listaJSX : (
         <div className="vd-main">
           <div style={{ minWidth: 0 }}>
             <input className="vd-search" value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Buscar producto o referencia" />
@@ -530,12 +669,13 @@ export default function Vender() {
           </div>
           {panel}
         </div>
+        )}
       </main>
 
-      <div className="vd-bar">
+      {vista === 'nuevo' && <div className="vd-bar">
         <div><div style={{ fontSize: '.8rem', color: '#64748b' }}>{unidades} unidades</div><strong style={{ fontSize: '1.3rem' }}>{peso(total)}</strong></div>
         <button className="vd-go" style={{ width: 'auto', padding: '0 1.6rem', minHeight: 54 }} onClick={() => setVerPedido(true)} disabled={lineas.length === 0}>Ver pedido</button>
-      </div>
+      </div>}
 
       {/* Ventana del producto */}
       {hoja && (() => {
