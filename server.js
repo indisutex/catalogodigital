@@ -88,6 +88,14 @@ app.get('/manifest.json', (req, res) => {
   });
 });
 
+// Lectura de pedidos con IA (capturas de WhatsApp). Si falta la librería o la llave, el sitio sigue funcionando igual.
+try {
+  const { registrarLeerPedido } = await import('./server/leerPedido.js');
+  registrarLeerPedido(app, express);
+} catch (e) {
+  console.error('Lectura de pedidos con IA desactivada:', e.message);
+}
+
 // Servir archivos estáticos generados por Vite (carpeta dist)
 app.use(express.static(path.join(__dirname, 'dist')));
 

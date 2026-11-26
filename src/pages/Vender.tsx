@@ -9,6 +9,8 @@ import type { PedidoVista } from '../lib/fichaPedido';
 import { estadoDe, lineaTiempo } from '../lib/trazabilidadPedido';
 import type { GrupoPago } from '../lib/trazabilidadPedido';
 import { compressImage } from '../lib/imageCompression';
+import { iaDisponible, leerConIA, prepararImagen, armarRevision, MAX_CAPTURAS } from '../lib/leerPedido';
+import type { ImagenIA, IaRevision, IaLinea } from '../lib/leerPedido';
 
 interface Asesor { id: string; nombre: string; telefono: string; tenant_id: string; foto_url?: string | null }
 
@@ -143,6 +145,16 @@ const CSS = `
 .vd-kpi b { display:block; font-size:1.7rem; line-height:1.1; }
 .vd-kpi span { font-size:.74rem; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.03em; }
 .vd-kpi i { display:block; font-style:normal; font-size:.85rem; color:#475569; margin-top:2px; }
+.vd-ia { width:100%; display:flex; flex-direction:column; align-items:flex-start; gap:2px; padding:.9rem 1.2rem; margin-bottom:.8rem; border-radius:16px; color:#fff; background:linear-gradient(120deg,#4f46e5,#9333ea); box-shadow:0 8px 20px rgba(79,70,229,.3); text-align:left; }
+.vd-ia span { font-weight:700; font-size:1.05rem; }
+.vd-ia small { opacity:.85; font-size:.8rem; }
+.vd-ia:disabled { opacity:.5; }
+.vd-drop { display:flex; flex-direction:column; align-items:center; gap:.2rem; padding:1.4rem 1rem; border:3px dashed #c7d2fe; border-radius:18px; background:#f8faff; color:#3730a3; cursor:pointer; text-align:center; }
+.vd-drop span { font-size:.82rem; color:#6366f1; }
+.vd-thumbs { display:flex; gap:.6rem; flex-wrap:wrap; margin-top:.8rem; }
+.vd-thumbs .th { position:relative; width:84px; height:112px; border-radius:12px; overflow:hidden; background:#e2e8f0; }
+.vd-thumbs .th img { width:100%; height:100%; object-fit:cover; display:block; }
+.vd-thumbs .th button { position:absolute; top:4px; right:4px; width:26px; height:26px; border-radius:50%; background:rgba(15,23,42,.75); color:#fff; font-size:.75rem; }
 .vd-seg { display:flex; gap:.5rem; }
 .vd-seg button { flex:1; min-height:52px; border-radius:14px; background:#f1f5f9; font-weight:600; color:#334155; }
 .vd-seg button.on { background:var(--c); color:var(--t); }
@@ -171,6 +183,7 @@ export default function Vender() {
   const [marca, setMarca] = useState<string | null>(null);
   const [marcas, setMarcas] = useState<Map<string, { nombre: string; color: string; logo?: string }>>(new Map());
   const [pin, setPin] = useState('');
+  const [pinSesion, setPinSesion] = useState(() => { try { return localStorage.getItem(SESION + '_pin') || ''; } catch { return ''; } });
   const [pinError, setPinError] = useState('');
   const [verificando, setVerificando] = useState(false);
 
@@ -195,6 +208,13 @@ export default function Vender() {
   const [soloMios, setSoloMios] = useState(true);
   const [ocupado, setOcupado] = useState('');
   const [recarga, setRecarga] = useState(0);
+  const [iaOk, setIaOk] = useState(false);
+  const [iaAbierta, setIaAbierta] = useState(false);
+  const [iaImgs, setIaImgs] = useState<ImagenIA[]>([]);
+  const [iaTexto, setIaTexto] = useState('');
+  const [iaLeyendo, setIaLeyendo] = useState(false);
+  const [iaError, setIaError] = useState('');
+  const [iaRev, setIaRev] = useState<IaRevision | null>(null);
   const [filtroPago, setFiltroPago] = useState<'todos' | GrupoPago>('todos');
   const [busquedaPed, setBusquedaPed] = useState('');
   const [abiertoId, setAbiertoId] = useState<string | null>(null);
@@ -264,6 +284,91 @@ export default function Vender() {
     return () => { vigente = false; };
   }, [asesor, vista, listo, recarga]);
 
+  useEffect(() => {
+    if (!asesor) return;
+    let vigente = true;
+    iaDisponible().then(ok => { if (vigente) setIaOk(ok); });
+    return () => { vigente = false; };
+  }, [asesor]);
+
+  async function agregarCapturas(archivos: File[]) {
+    const cupo = MAX_CAPTURAS - iaImgs.length;
+    if (cupo <= 0) return setIaError(`Máximo ${MAX_CAPTURAS} capturas por lectura.`);
+    setIaError('');
+    try {
+      const listas: ImagenIA[] = [];
+      for (const a of archivos.filter(x => x.type.startsWith('image/')).slice(0, cupo)) listas.push(await prepararImagen(a));
+      setIaImgs(prev => [...prev, ...listas].slice(0, MAX_CAPTURAS));
+    } catch { setIaError('No se pudo procesar una de las imágenes. Prueba con otra captura.'); }
+  }
+
+  useEffect(() => {
+    if (!iaAbierta || iaRev) return;
+    const alPegar = (ev: ClipboardEvent) => {
+      const imgs = [...(ev.clipboardData?.files || [])].filter(f => f.type.startsWith('image/'));
+      if (imgs.length) { ev.preventDefault(); agregarCapturas(imgs); }
+    };
+    window.addEventListener('paste', alPegar);
+    return () => window.removeEventListener('paste', alPegar);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [iaAbierta, iaRev, iaImgs.length]);
+
+  async function leerChat() {
+    if (!asesor) return;
+    setIaLeyendo(true);
+    setIaError('');
+    try {
+      const catalogo = productos.map((p, i) => ({ n: i, nombre: p.nombre || '', ref: String(p.referencia || ''), cat: p.categoria || '', opciones: opcionesDe(p).map(o => o.clave).filter(Boolean), estampados: estampadosDe(p) }));
+      const r = await leerConIA({ asesorId: asesor.id, pin: pinSesion, imagenes: iaImgs, texto: iaTexto, catalogo });
+      setIaRev(armarRevision(r, productos, { opcionesDe, estampadosDe }));
+    } catch (e) {
+      setIaError(e instanceof Error ? e.message : 'No se pudo leer el chat.');
+    }
+    setIaLeyendo(false);
+  }
+
+  const lineaIAIncompleta = (l: IaLinea) => {
+    const prod = productos.find(p => p.id === l.prodId);
+    if (!prod) return true;
+    const claves = opcionesDe(prod).map(o => o.clave).filter(Boolean);
+    return (claves.length > 0 && !l.opcion) || (estampadosDe(prod).length > 0 && !l.estampado);
+  };
+
+  function aplicarIA() {
+    if (!iaRev) return;
+    const rev = iaRev;
+    setLineas(prev => {
+      const sig = [...prev];
+      for (const l of rev.lineas) {
+        const prod = productos.find(p => p.id === l.prodId);
+        if (!prod) continue;
+        const key = `${prod.id}|${l.opcion}|${l.estampado}`;
+        const ya = sig.findIndex(x => x.key === key);
+        if (ya >= 0) sig[ya] = { ...sig[ya], cantidad: sig[ya].cantidad + l.cantidad };
+        else sig.push({ key, prod, talla: l.opcion, opcion: esFamiliar(prod) ? l.opcion : '', estampado: l.estampado, cantidad: l.cantidad });
+      }
+      return sig;
+    });
+    setF(prev => ({
+      ...prev,
+      nombre: rev.nombre || prev.nombre,
+      telefono: rev.celular || prev.telefono,
+      cedula: rev.cedula || prev.cedula,
+      email: rev.correo || prev.email,
+      recepcion: rev.recepcion || prev.recepcion,
+      pago: rev.pago || prev.pago,
+      depto: rev.depto || prev.depto,
+      ciudad: rev.depto ? rev.ciudad : (rev.ciudad || prev.ciudad),
+      direccion: rev.direccion || prev.direccion,
+      barrio: rev.barrio || prev.barrio,
+      nota: rev.nota ? (prev.nota ? `${prev.nota} · ${rev.nota}` : rev.nota) : prev.nota
+    }));
+    setIaAbierta(false);
+    setIaRev(null); setIaImgs([]); setIaTexto('');
+    setCobro(true);
+    mostrar('ok', 'Datos cargados. Revísalos y guarda el pedido.');
+  }
+
   async function entrar(e: React.FormEvent) {
     e.preventDefault();
     if (!elegido) return;
@@ -272,12 +377,14 @@ export default function Vender() {
     const { data } = await supabase.from('asesores').select('id,nombre,telefono,tenant_id,foto_url').eq('id', elegido.id).eq('pin', pin.trim()).maybeSingle();
     setVerificando(false);
     if (!data) return setPinError('PIN incorrecto');
-    try { localStorage.setItem(SESION, JSON.stringify(data)); } catch { /* sin almacenamiento */ }
+    try { localStorage.setItem(SESION, JSON.stringify(data)); localStorage.setItem(SESION + '_pin', pin.trim()); } catch { /* sin almacenamiento */ }
+    setPinSesion(pin.trim());
     setAsesor(data as Asesor);
   }
 
   function salir() {
-    try { localStorage.removeItem(SESION); } catch { /* sin almacenamiento */ }
+    try { localStorage.removeItem(SESION); localStorage.removeItem(SESION + '_pin'); } catch { /* sin almacenamiento */ }
+    setPinSesion('');
     setAsesor(null); setElegido(null); setPin(''); setLineas([]); setProductos([]);
   }
 
@@ -828,6 +935,12 @@ export default function Vender() {
         {vista === 'lista' ? listaJSX : (
         <div className="vd-main">
           <div style={{ minWidth: 0 }}>
+            {iaOk && (
+              <button className="vd-ia" onClick={() => { setIaAbierta(true); setIaRev(null); setIaError(''); }} disabled={cargando || productos.length === 0}>
+                <span>Leer chat de WhatsApp con IA</span>
+                <small>Sube la captura y se llena el pedido solo</small>
+              </button>
+            )}
             <input className="vd-search" value={busqueda} onChange={e => setBusqueda(e.target.value)} placeholder="Buscar producto o referencia" />
             <div className="vd-cats">
               <button className={`vd-cat ${cat === 'todas' ? 'on' : ''}`} onClick={() => setCat('todas')}>Todas ({productos.length})</button>
@@ -957,6 +1070,142 @@ export default function Vender() {
           </div>
         </div>
       )}
+
+      {iaAbierta && (() => {
+        const rev = iaRev;
+        const setRev = (patch: Partial<IaRevision>) => setIaRev(r => (r ? { ...r, ...patch } : r));
+        const cambiarLinea = (i: number, patch: Partial<IaLinea>) => setIaRev(r => (r ? { ...r, lineas: r.lineas.map((l, j) => (j === i ? { ...l, ...patch } : l)) } : r));
+        const ciudadesIA = rev && rev.depto ? DEPARTAMENTOS_COLOMBIA[rev.depto] || [] : [];
+        const incompletas = rev ? rev.lineas.filter(lineaIAIncompleta).length : 0;
+        return (
+          <div className="vd-ov" onClick={() => { if (!iaLeyendo) setIaAbierta(false); }}>
+            <div className="vd-sheet" onClick={e => e.stopPropagation()} style={{ maxWidth: 700 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <strong style={{ fontSize: '1.3rem' }}>{rev ? 'Revisa lo que leyó la IA' : 'Leer chat con IA'}</strong>
+                <button className="vd-step" aria-label="Cerrar" onClick={() => setIaAbierta(false)} disabled={iaLeyendo}>✕</button>
+              </div>
+
+              {!rev && (
+                <>
+                  <p style={{ color: '#64748b', fontSize: '.92rem', margin: '.5rem 0 .8rem' }}>Sube las capturas de la conversación con el cliente, o pega su texto. La IA llena el pedido y tú lo revisas antes de guardar.</p>
+                  <label className="vd-drop">
+                    <input type="file" accept="image/*" multiple hidden onChange={e => { agregarCapturas([...(e.target.files || [])]); e.target.value = ''; }} />
+                    <b>Toca para elegir capturas del chat</b>
+                    <span>o pégalas con Ctrl + V · hasta {MAX_CAPTURAS}</span>
+                  </label>
+                  {iaImgs.length > 0 && (
+                    <div className="vd-thumbs">
+                      {iaImgs.map(im => (
+                        <div key={im.id} className="th"><img src={im.vista} alt="Captura" /><button aria-label="Quitar captura" onClick={() => setIaImgs(prev => prev.filter(x => x.id !== im.id))}>✕</button></div>
+                      ))}
+                    </div>
+                  )}
+                  <span className="vd-lbl">O pega el texto del chat</span>
+                  <textarea className="vd-in" rows={4} value={iaTexto} onChange={e => setIaTexto(e.target.value)} placeholder="Ej: Hola, quiero 3 pijamas de hombre única y 4 de dama..." />
+                  {iaError && <p style={{ color: '#b91c1c', fontWeight: 600, margin: '.7rem 0 0' }}>{iaError}</p>}
+                  <button className="vd-go" onClick={leerChat} disabled={iaLeyendo || (iaImgs.length === 0 && !iaTexto.trim())} style={{ marginTop: '1rem' }}>
+                    {iaLeyendo ? 'Leyendo el chat... puede tardar unos segundos' : 'Leer con IA'}
+                  </button>
+                  <p style={{ color: '#94a3b8', fontSize: '.75rem', margin: '.7rem 0 0' }}>Las capturas se envían a la IA de Anthropic solo para leerlas. No se guardan en tu catálogo.</p>
+                </>
+              )}
+
+              {rev && (
+                <>
+                  <div style={{ background: '#fef3c7', color: '#92400e', borderRadius: 14, padding: '.7rem .9rem', margin: '.6rem 0', fontSize: '.88rem', fontWeight: 600 }}>La IA puede equivocarse. Corrige lo que haga falta antes de aplicar.</div>
+                  {rev.advertencias.length > 0 && (
+                    <ul style={{ margin: '.4rem 0 .8rem', paddingLeft: '1.2rem', color: '#b45309', fontSize: '.88rem' }}>
+                      {rev.advertencias.map((a, i) => <li key={i}>{a}</li>)}
+                    </ul>
+                  )}
+
+                  <span className="vd-lbl">Cliente</span>
+                  <div className="vd-two">
+                    <input className="vd-in" placeholder="Nombre" value={rev.nombre} onChange={e => setRev({ nombre: e.target.value })} />
+                    <input className="vd-in" placeholder="Celular (10 dígitos)" inputMode="numeric" value={rev.celular} onChange={e => setRev({ celular: e.target.value.replace(/\D/g, '').slice(-10) })} />
+                  </div>
+
+                  <span className="vd-lbl">Entrega y pago</span>
+                  <div className="vd-seg">
+                    <button className={rev.recepcion === 'domicilio' ? 'on' : ''} onClick={() => setRev({ recepcion: 'domicilio' })}>Domicilio</button>
+                    <button className={rev.recepcion === 'tienda' ? 'on' : ''} onClick={() => setRev({ recepcion: 'tienda' })}>Recoge en tienda</button>
+                  </div>
+                  <div className="vd-two" style={{ marginTop: '.6rem' }}>
+                    <select className="vd-in" value={rev.depto} onChange={e => setRev({ depto: e.target.value, ciudad: '' })}>
+                      <option value="">Departamento</option>
+                      {Object.keys(DEPARTAMENTOS_COLOMBIA).map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                    <select className="vd-in" value={rev.ciudad} onChange={e => setRev({ ciudad: e.target.value })} disabled={!rev.depto}>
+                      <option value="">Ciudad</option>
+                      {ciudadesIA.map(c => <option key={c} value={c}>{c}</option>)}
+                    </select>
+                    <input className="vd-in" placeholder="Dirección" value={rev.direccion} onChange={e => setRev({ direccion: e.target.value })} />
+                    <input className="vd-in" placeholder="Barrio" value={rev.barrio} onChange={e => setRev({ barrio: e.target.value })} />
+                  </div>
+                  <div className="vd-seg" style={{ marginTop: '.6rem' }}>
+                    <button className={rev.pago === 'transferencia' ? 'on' : ''} onClick={() => setRev({ pago: 'transferencia' })}>Transferencia</button>
+                    <button className={rev.pago === 'contra_entrega' ? 'on' : ''} onClick={() => setRev({ pago: 'contra_entrega' })}>Contra entrega</button>
+                  </div>
+                  <input className="vd-in" style={{ marginTop: '.6rem' }} placeholder="Nota (opcional)" value={rev.nota} onChange={e => setRev({ nota: e.target.value })} />
+
+                  <span className="vd-lbl">Productos que pidió</span>
+                  {rev.lineas.length === 0 && <p style={{ color: '#94a3b8', margin: 0 }}>No encontré productos del catálogo en el chat.</p>}
+                  {rev.lineas.map((l, i) => {
+                    const prod = productos.find(p => p.id === l.prodId);
+                    if (!prod) return null;
+                    const opciones = opcionesDe(prod).filter(o => o.clave);
+                    const ests = estampadosDe(prod);
+                    const mal = lineaIAIncompleta(l) || !l.seguro;
+                    return (
+                      <div key={i} style={{ border: `2px solid ${mal ? '#fbbf24' : '#e2e8f0'}`, borderRadius: 16, padding: '.7rem', marginBottom: '.6rem' }}>
+                        <div style={{ display: 'flex', gap: '.7rem', alignItems: 'center' }}>
+                          <div style={{ width: 52, height: 52, borderRadius: 12, background: '#e2e8f0 center/cover no-repeat', backgroundImage: prod.imagen_url ? `url("${prod.imagen_url}")` : undefined, flex: 'none' }} />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontWeight: 700, fontSize: '.92rem', lineHeight: 1.2 }}>{(prod.nombre || '').trim()}</div>
+                            {l.original && <div style={{ fontSize: '.78rem', color: '#64748b', fontStyle: 'italic' }}>Cliente dijo: «{l.original}»</div>}
+                          </div>
+                          <button aria-label="Quitar producto" onClick={() => setRev({ lineas: rev.lineas.filter((_, j) => j !== i) })} style={{ background: 'transparent', color: '#94a3b8', width: 40, height: 40, fontSize: '1.1rem' }}>✕</button>
+                        </div>
+                        <div className="vd-two" style={{ marginTop: '.6rem' }}>
+                          {opciones.length > 0 && (
+                            <select className="vd-in" value={l.opcion} onChange={e => cambiarLinea(i, { opcion: e.target.value, seguro: true })} style={!l.opcion ? { borderColor: '#f59e0b' } : undefined}>
+                              <option value="">Elige la talla / persona</option>
+                              {opciones.map(o => <option key={o.clave} value={o.clave}>{o.texto}</option>)}
+                            </select>
+                          )}
+                          {ests.length > 0 && (
+                            <select className="vd-in" value={l.estampado} onChange={e => cambiarLinea(i, { estampado: e.target.value, seguro: true })} style={!l.estampado ? { borderColor: '#f59e0b' } : undefined}>
+                              <option value="">Elige el estampado</option>
+                              {ests.map(e => <option key={e} value={e}>{e}</option>)}
+                            </select>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginTop: '.5rem' }}>
+                          <button className="vd-step" onClick={() => cambiarLinea(i, { cantidad: Math.max(1, l.cantidad - 1) })}>−</button>
+                          <span style={{ width: 44, textAlign: 'center', fontWeight: 700, fontSize: '1.1rem' }}>{l.cantidad}</span>
+                          <button className="vd-step" onClick={() => cambiarLinea(i, { cantidad: l.cantidad + 1 })}>+</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {rev.sinIdentificar.length > 0 && (
+                    <div style={{ background: '#fee2e2', color: '#991b1b', borderRadius: 14, padding: '.7rem .9rem', fontSize: '.88rem', marginTop: '.4rem' }}>
+                      <b>No encontré en el catálogo:</b>
+                      <ul style={{ margin: '.3rem 0 0', paddingLeft: '1.1rem' }}>{rev.sinIdentificar.map((t, i) => <li key={i}>{t}</li>)}</ul>
+                      <span>Agrégalos a mano buscándolos en el catálogo.</span>
+                    </div>
+                  )}
+
+                  <button className="vd-go" onClick={aplicarIA} disabled={incompletas > 0 || (rev.lineas.length === 0 && !rev.nombre && !rev.celular)} style={{ marginTop: '1rem' }}>
+                    {incompletas > 0 ? `Falta elegir talla o estampado en ${incompletas} producto${incompletas === 1 ? '' : 's'}` : 'Aplicar al pedido'}
+                  </button>
+                  <button onClick={() => setIaRev(null)} style={{ background: 'transparent', color: '#475569', fontWeight: 600, width: '100%', marginTop: '.4rem', minHeight: 46 }}>← Leer otro chat</button>
+                </>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {aviso && <div className="vd-toast" style={{ background: aviso.tipo === 'ok' ? '#065f46' : '#991b1b' }}>{aviso.texto}</div>}
     </div>
