@@ -88,13 +88,25 @@ app.get('/manifest.json', (req, res) => {
   });
 });
 
-// Lectura de pedidos con IA (capturas de WhatsApp). Si falta la librería o la llave, el sitio sigue funcionando igual.
-try {
-  const { registrarLeerPedido } = await import('./server/leerPedido.js');
-  registrarLeerPedido(app, express);
-} catch (e) {
-  console.error('Lectura de pedidos con IA desactivada:', e.message);
-}
+// Lectura de pedidos con IA (capturas/texto de WhatsApp).
+// El módulo se carga SOLO cuando llega una petición: así nunca puede impedir que el sitio arranque
+// (ni por una librería que falte ni por la forma en que el hosting carga este archivo).
+let manejadorIA = null;
+app.get('/api/leer-pedido/estado', (_req, res) => {
+  res.json({ activo: Boolean(process.env.ANTHROPIC_API_KEY) });
+});
+app.post('/api/leer-pedido', express.json({ limit: '16mb' }), async (req, res) => {
+  try {
+    if (!manejadorIA) {
+      const modulo = await import('./server/leerPedido.js');
+      manejadorIA = modulo.crearManejador();
+    }
+    return await manejadorIA(req, res);
+  } catch (e) {
+    console.error('Lectura de pedidos con IA no disponible:', e && e.message ? e.message : e);
+    return res.status(503).json({ ok: false, codigo: 'ia_apagada', error: 'La lectura con IA no está disponible por ahora.' });
+  }
+});
 
 // Servir archivos estáticos generados por Vite (carpeta dist)
 app.use(express.static(path.join(__dirname, 'dist')));
