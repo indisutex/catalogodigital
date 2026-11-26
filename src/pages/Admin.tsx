@@ -2522,7 +2522,7 @@ export default function Admin() {
                   }
 
                   const prodNames = Array.isArray(ped.productos) && ped.productos.length > 0
-                    ? ped.productos.map((p: any) => `${p.nombre} ${p.talla ? `(${p.talla})` : ''}`).join(', ')
+                    ? ped.productos.map((p: any) => `${p.nombre} ${p.talla ? `(${p.talla}${p.detalle ? ' · ' + p.detalle : ''})` : (p.detalle ? `(${p.detalle})` : '')}`).join(', ')
                     : '';
                   const text = ped.estado === 'cancelado'
                     ? `¡Hola ${nombreCliente || ''}! 👋 Vimos que tu pedido de ${prodNames ? `*${prodNames}*` : 'nuestro catálogo'} quedó cancelado. ¿Te gustaría reactivarlo o podemos ayudarte con alguna duda o forma de pago? ¡Logremos recuperar tu compra con gusto! 😊🛍️`
@@ -15192,6 +15192,7 @@ export default function Admin() {
                                 {item.nombre}
                                 {(item.referencia || item.producto?.referencia) ? <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}> [{item.referencia || item.producto?.referencia}]</span> : ''}
                                 {item.talla ? <span style={{ background: '#e0e7ff', color: '#4338ca', borderRadius: '4px', padding: '0 4px', fontSize: '0.72rem', marginLeft: '4px' }}>{item.talla}</span> : ''}
+                                {item.detalle ? <span style={{ background: '#dcfce7', color: '#166534', borderRadius: '4px', padding: '0 4px', fontSize: '0.72rem', marginLeft: '4px' }}>{item.detalle}</span> : ''}
                                 {item.estampado ? <span style={{ background: '#fef3c7', color: '#92400e', borderRadius: '4px', padding: '0 4px', fontSize: '0.72rem', marginLeft: '4px' }}>{item.estampado}</span> : ''}
                               </span>
                               <span style={{ fontWeight: 600, fontSize: '0.88rem', color: '#0f172a', marginLeft: '1rem' }}>${(item.precio * item.cantidad).toLocaleString()}</span>

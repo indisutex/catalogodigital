@@ -25,7 +25,7 @@ interface Config {
   descuento_mayor_carrito_activo?: boolean;
 }
 
-interface Linea { key: string; prod: Producto; talla: string; opcion: string; estampado: string; cantidad: number }
+interface Linea { key: string; prod: Producto; talla: string; opcion: string; estampado: string; cantidad: number; detalle?: string }
 
 const FONT = "'Poppins', 'Inter', sans-serif";
 const SESION = 'vender_asesor';
@@ -257,6 +257,8 @@ export default function Vender() {
   const [iaLeyendo, setIaLeyendo] = useState(false);
   const [iaError, setIaError] = useState('');
   const [iaRev, setIaRev] = useState<IaRevision | null>(null);
+  const [iaProd, setIaProd] = useState<Producto | null>(null);
+  const [iaProdQ, setIaProdQ] = useState('');
   const [filtroPago, setFiltroPago] = useState<'todos' | GrupoPago>('todos');
   const [busquedaPed, setBusquedaPed] = useState('');
   const [abiertoId, setAbiertoId] = useState<string | null>(null);
@@ -415,7 +417,7 @@ export default function Vender() {
     setIaError('');
     try {
       const catalogo = productos.map((p, i) => ({ n: i, nombre: p.nombre || '', ref: String(p.referencia || ''), cat: p.categoria || '', opciones: opcionesDe(p).map(o => o.clave).filter(Boolean), estampados: estampadosDe(p) }));
-      const r = await leerConIA({ asesorId: asesor.id, pin: pinSesion, imagenes: iaImgs, texto: iaTexto, catalogo });
+      const r = await leerConIA({ asesorId: asesor.id, pin: pinSesion, imagenes: iaImgs, texto: iaTexto, catalogo, productoIndicado: iaProd ? productos.indexOf(iaProd) : null });
       setIaRev(armarRevision(r, productos, { opcionesDe, estampadosDe }));
     } catch (e) {
       setIaError(e instanceof Error ? e.message : 'No se pudo leer el chat.');
@@ -438,10 +440,10 @@ export default function Vender() {
       for (const l of rev.lineas) {
         const prod = productos.find(p => p.id === l.prodId);
         if (!prod) continue;
-        const key = `${prod.id}|${l.opcion}|${l.estampado}`;
+        const key = `${prod.id}|${l.opcion}|${l.estampado}${l.detalle ? '|' + l.detalle : ''}`;
         const ya = sig.findIndex(x => x.key === key);
         if (ya >= 0) sig[ya] = { ...sig[ya], cantidad: sig[ya].cantidad + l.cantidad };
-        else sig.push({ key, prod, talla: l.opcion, opcion: esFamiliar(prod) ? l.opcion : '', estampado: l.estampado, cantidad: l.cantidad });
+        else sig.push({ key, prod, talla: l.opcion, opcion: esFamiliar(prod) ? l.opcion : '', estampado: l.estampado, cantidad: l.cantidad, detalle: l.detalle || undefined });
       }
       return sig;
     });
@@ -460,7 +462,7 @@ export default function Vender() {
       nota: rev.nota ? (prev.nota ? `${prev.nota} · ${rev.nota}` : rev.nota) : prev.nota
     }));
     setIaAbierta(false);
-    setIaRev(null); setIaImgs([]); setIaTexto('');
+    setIaRev(null); setIaImgs([]); setIaTexto(''); setIaProd(null); setIaProdQ('');
     setCobro(true);
     mostrar('ok', 'Datos cargados. Revísalos y guarda el pedido.');
   }
@@ -592,6 +594,7 @@ export default function Vender() {
         cantidad: l.cantidad,
         talla: l.talla,
         estampado: l.estampado || undefined,
+        detalle: l.detalle || undefined,
         familia_opcion_key: l.opcion || undefined,
         precio_detal: detal > 0 ? detal : precio,
         precio: precio > 0 ? precio : 0,
@@ -664,7 +667,7 @@ export default function Vender() {
       tipo: tipoCompra, total, nota: f.nota.trim() || undefined, estado: String(payload.estado || ''), pagoInfo: lineasPago(),
       items: lineas.map(l => ({
         nombre: (l.prod.nombre || '').trim(), imagen: imagenDeEstampado(l.prod, l.estampado) || l.prod.imagen_url || null,
-        etiqueta: l.talla ? (opcionesDe(l.prod).find(x => x.clave === l.talla)?.texto || l.talla) : '', estampado: l.estampado,
+        etiqueta: (l.talla ? (opcionesDe(l.prod).find(x => x.clave === l.talla)?.texto || l.talla) : '') + (l.detalle ? ` (${l.detalle})` : ''), estampado: l.estampado,
         cantidad: l.cantidad, precio: precioLinea(l, tier)
       }))
     };
@@ -682,7 +685,7 @@ export default function Vender() {
     const items = (Array.isArray(r.productos) ? r.productos : []).map((p: any) => ({
       nombre: String(p.nombre || '').trim(),
       imagen: imagenDeEstampado(p as Producto, String(p.estampado || '')) || p.imagen_url || null,
-      etiqueta: p.talla ? etiqueta(String(p.familia_opcion_key || p.talla)) : '',
+      etiqueta: (p.talla ? etiqueta(String(p.familia_opcion_key || p.talla)) : '') + (p.detalle ? ` (${p.detalle})` : ''),
       estampado: String(p.estampado || ''),
       cantidad: Number(p.cantidad) || 0,
       precio: Number(p.precio) || 0
@@ -1012,6 +1015,7 @@ export default function Vender() {
               <div style={{ fontWeight: 600, fontSize: '.92rem', lineHeight: 1.25 }}>{(l.prod.nombre || '').trim()}</div>
               {l.talla && <span className="vd-pill">{o ? o.texto : l.talla}</span>}
               {l.estampado && <span className="vd-pill">{l.estampado}</span>}
+              {l.detalle && <span className="vd-pill" style={{ background: '#dcfce7', color: '#166534' }}>{l.detalle}</span>}
               <div style={{ fontSize: '.82rem', color: '#64748b' }}>{peso(pu)} c/u · <b style={{ color: '#0f172a' }}>{peso(pu * l.cantidad)}</b></div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', flex: 'none' }}>
@@ -1216,6 +1220,13 @@ export default function Vender() {
         const cambiarLinea = (i: number, patch: Partial<IaLinea>) => setIaRev(r => (r ? { ...r, lineas: r.lineas.map((l, j) => (j === i ? { ...l, ...patch } : l)) } : r));
         const ciudadesIA = rev && rev.depto ? DEPARTAMENTOS_COLOMBIA[rev.depto] || [] : [];
         const incompletas = rev ? rev.lineas.filter(lineaIAIncompleta).length : 0;
+        const unidadesIA = rev ? rev.lineas.reduce((t, l) => t + l.cantidad, 0) : 0;
+        const tierIA = tierDe(unidadesIA, bulkActivo);
+        const totalIA = rev ? rev.lineas.reduce((t, l) => {
+          const prod = productos.find(pr => pr.id === l.prodId);
+          if (!prod) return t;
+          return t + precioLinea({ key: 'x', prod, talla: l.opcion, opcion: esFamiliar(prod) ? l.opcion : '', estampado: l.estampado, cantidad: l.cantidad }, tierIA) * l.cantidad;
+        }, 0) : 0;
         return (
           <div className="vd-ov" onClick={() => { if (!iaLeyendo) setIaAbierta(false); }}>
             <div className="vd-sheet" onClick={e => e.stopPropagation()} style={{ maxWidth: 700 }}>
@@ -1239,6 +1250,29 @@ export default function Vender() {
                       ))}
                     </div>
                   )}
+                  <span className="vd-lbl">¿De qué producto es el pedido? (opcional)</span>
+                  {iaProd ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '.6rem', background: '#eef2ff', borderRadius: 14, padding: '.5rem .7rem' }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 10, background: '#e2e8f0 center/cover no-repeat', backgroundImage: iaProd.imagen_url ? `url("${iaProd.imagen_url}")` : undefined, flex: 'none' }} />
+                      <strong style={{ flex: 1, fontSize: '.92rem' }}>{(iaProd.nombre || '').trim()}</strong>
+                      <button aria-label="Quitar producto" onClick={() => setIaProd(null)} style={{ background: 'transparent', color: '#64748b', width: 40, height: 40 }}>✕</button>
+                    </div>
+                  ) : (
+                    <>
+                      <input className="vd-in" value={iaProdQ} onChange={e => setIaProdQ(e.target.value)} placeholder="Búscalo si el chat solo trae la foto y no dice cuál es" />
+                      {iaProdQ.trim() && (
+                        <div style={{ display: 'grid', gap: '.3rem', marginTop: '.4rem' }}>
+                          {productos.filter(pr => (pr.nombre || '').toLowerCase().includes(iaProdQ.trim().toLowerCase()) || String(pr.referencia || '').toLowerCase().includes(iaProdQ.trim().toLowerCase())).slice(0, 6).map(pr => (
+                            <button key={pr.id} onClick={() => { setIaProd(pr); setIaProdQ(''); }} style={{ display: 'flex', alignItems: 'center', gap: '.6rem', background: '#f8fafc', borderRadius: 12, padding: '.4rem .6rem', textAlign: 'left', minHeight: 52 }}>
+                              <span style={{ width: 38, height: 38, borderRadius: 8, background: '#e2e8f0 center/cover no-repeat', backgroundImage: pr.imagen_url ? `url("${pr.imagen_url}")` : undefined, flex: 'none' }} />
+                              <span style={{ fontWeight: 600, fontSize: '.9rem' }}>{(pr.nombre || '').trim()}</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  )}
+
                   <span className="vd-lbl">O pega el texto del chat</span>
                   <textarea className="vd-in" rows={4} value={iaTexto} onChange={e => setIaTexto(e.target.value)} placeholder="Ej: Hola, quiero 3 pijamas de hombre única y 4 de dama..." />
                   {iaError && <p style={{ color: '#b91c1c', fontWeight: 600, margin: '.7rem 0 0' }}>{iaError}</p>}
@@ -1258,6 +1292,11 @@ export default function Vender() {
                     </ul>
                   )}
 
+                  {rev.totalMencionado != null && rev.lineas.length > 0 && (
+                    Math.round(totalIA) === rev.totalMencionado
+                      ? <div style={{ background: '#dcfce7', color: '#166534', borderRadius: 14, padding: '.7rem .9rem', margin: '.2rem 0 .6rem', fontSize: '.9rem', fontWeight: 700 }}>✓ El total coincide: {peso(totalIA)} ({unidadesIA} unidades)</div>
+                      : <div style={{ background: '#ffedd5', color: '#9a3412', borderRadius: 14, padding: '.7rem .9rem', margin: '.2rem 0 .6rem', fontSize: '.9rem', fontWeight: 600 }}>El cliente escribió {peso(rev.totalMencionado)} y el sistema calcula {peso(totalIA)}. Revisa cantidades y tallas.</div>
+                  )}
                   <span className="vd-lbl">Cliente</span>
                   <div className="vd-two">
                     <input className="vd-in" placeholder="Nombre" value={rev.nombre} onChange={e => setRev({ nombre: e.target.value })} />
@@ -1319,6 +1358,7 @@ export default function Vender() {
                             </select>
                           )}
                         </div>
+                        <input className="vd-in" style={{ marginTop: '.5rem' }} placeholder="Talla o detalle (opcional) · ej: Talla L" value={l.detalle} onChange={e => cambiarLinea(i, { detalle: e.target.value.slice(0, 40) })} />
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginTop: '.5rem' }}>
                           <button className="vd-step" onClick={() => cambiarLinea(i, { cantidad: Math.max(1, l.cantidad - 1) })}>−</button>
                           <span style={{ width: 44, textAlign: 'center', fontWeight: 700, fontSize: '1.1rem' }}>{l.cantidad}</span>

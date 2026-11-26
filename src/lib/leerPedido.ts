@@ -8,13 +8,14 @@ export interface RespuestaIA {
   entrega: { departamento: string | null; ciudad: string | null; direccion: string | null; barrio: string | null; recepcion: 'domicilio' | 'tienda' | null };
   pago: 'transferencia' | 'contra_entrega' | null;
   nota: string | null;
-  lineas: { producto: number | null; descripcion_original: string; opcion: string | null; estampado: string | null; cantidad: number; seguro: boolean }[];
+  lineas: { producto: number | null; descripcion_original: string; opcion: string | null; detalle?: string | null; estampado: string | null; cantidad: number; seguro: boolean }[];
+  total_mencionado?: number | null;
   advertencias: string[];
 }
 
 export interface ImagenIA { id: string; nombre: string; tipo: 'image/jpeg'; datos: string; vista: string }
 
-export interface IaLinea { prodId: string; opcion: string; estampado: string; cantidad: number; original: string; seguro: boolean }
+export interface IaLinea { prodId: string; opcion: string; detalle: string; estampado: string; cantidad: number; original: string; seguro: boolean }
 
 export interface IaRevision {
   nombre: string; celular: string; cedula: string; correo: string;
@@ -22,6 +23,7 @@ export interface IaRevision {
   recepcion: 'domicilio' | 'tienda' | ''; pago: 'transferencia' | 'contra_entrega' | '';
   nota: string;
   lineas: IaLinea[];
+  totalMencionado: number | null;
   sinIdentificar: string[];
   advertencias: string[];
 }
@@ -68,7 +70,7 @@ export async function iaDisponible(): Promise<boolean> {
 }
 
 export async function leerConIA(datos: {
-  asesorId: string; pin: string; imagenes: ImagenIA[]; texto: string;
+  asesorId: string; pin: string; imagenes: ImagenIA[]; texto: string; productoIndicado?: number | null;
   catalogo: { n: number; nombre: string; ref: string; cat: string; opciones: string[]; estampados: string[] }[];
 }): Promise<RespuestaIA> {
   let r: Response;
@@ -146,6 +148,7 @@ export function armarRevision(
     lineas.push({
       prodId: prod.id,
       opcion: opcion ?? '',
+      detalle: String(l.detalle || '').trim().slice(0, 40),
       estampado: estampado ?? '',
       cantidad,
       original,
@@ -171,6 +174,7 @@ export function armarRevision(
     pago: r.pago === 'transferencia' || r.pago === 'contra_entrega' ? r.pago : '',
     nota: String(r.nota || '').trim().slice(0, 200),
     lineas,
+    totalMencionado: Number.isFinite(Number(r.total_mencionado)) && Number(r.total_mencionado) > 0 ? Math.round(Number(r.total_mencionado)) : null,
     sinIdentificar,
     advertencias
   };
