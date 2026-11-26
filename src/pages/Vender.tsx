@@ -127,6 +127,14 @@ const CSS = `
 .vd-toast { position:fixed; left:50%; top:84px; transform:translateX(-50%); padding:.9rem 1.4rem; border-radius:16px; font-weight:600; z-index:90; box-shadow:0 8px 24px rgba(15,23,42,.3); max-width:92vw; color:#fff; }
 .vd-two { display:grid; grid-template-columns:1fr 1fr; gap:.6rem; }
 @media (max-width:520px) { .vd-two { grid-template-columns:1fr; } }
+.vd-marcas { display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:.9rem; }
+.vd-marca { background:#fff; border:1px solid #e6e9f2; border-radius:20px; overflow:hidden; text-align:center; display:flex; flex-direction:column; align-items:stretch; box-shadow:0 1px 2px rgba(15,23,42,.05), 0 8px 22px rgba(15,23,42,.07); }
+.vd-marca:active { transform:scale(.98); }
+.vd-marca .barra { height:6px; background:var(--c); }
+.vd-marca .logo { height:120px; margin:.9rem 1rem .4rem; display:flex; align-items:center; justify-content:center; }
+.vd-marca .logo > * { max-width:100%; max-height:100%; }
+.vd-marca .nom { font-weight:700; font-size:1.05rem; color:#0f172a; padding:0 .6rem; }
+.vd-marca .cant { font-size:.8rem; color:#64748b; padding:.15rem 0 1rem; }
 .vd-seg { display:flex; gap:.5rem; }
 .vd-seg button { flex:1; min-height:52px; border-radius:14px; background:#f1f5f9; font-weight:600; color:#334155; }
 .vd-seg button.on { background:var(--c); color:var(--t); }
@@ -140,12 +148,20 @@ function textoSobre(hex: string): string {
   return lum > 0.72 ? '#1e1b4b' : '#ffffff';
 }
 
+function LogoMarca({ nombre, logo, color }: { nombre: string; logo?: string; color: string }) {
+  const [fallo, setFallo] = useState(false);
+  if (logo && !fallo) return <img src={logo} alt={nombre} onError={() => setFallo(true)} style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />;
+  return <span style={{ width: '100%', height: '100%', borderRadius: 14, background: color, color: textoSobre(color), display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '1.6rem' }}>{nombre.trim().charAt(0).toUpperCase()}</span>;
+}
+
 export default function Vender() {
   const [asesor, setAsesor] = useState<Asesor | null>(() => {
     try { const s = localStorage.getItem(SESION); return s ? (JSON.parse(s) as Asesor) : null; } catch { return null; }
   });
   const [lista, setLista] = useState<Asesor[]>([]);
   const [elegido, setElegido] = useState<Asesor | null>(null);
+  const [marca, setMarca] = useState<string | null>(null);
+  const [marcas, setMarcas] = useState<Map<string, { nombre: string; color: string; logo?: string }>>(new Map());
   const [pin, setPin] = useState('');
   const [pinError, setPinError] = useState('');
   const [verificando, setVerificando] = useState(false);
@@ -178,10 +194,20 @@ export default function Vender() {
   const sobre = textoSobre(color);
   const mostrar = (tipo: 'ok' | 'error', texto: string) => { setAviso({ tipo, texto }); window.setTimeout(() => setAviso(null), 3200); };
 
-  // Lista de asesores (sin PIN) para elegir el nombre
+  // Asesores (sin PIN) y datos de cada marca para elegir quién eres
   useEffect(() => {
     if (asesor) return;
-    supabase.from('asesores').select('id,nombre,telefono,tenant_id,foto_url').order('nombre').then(({ data }) => setLista((data as Asesor[]) || []));
+    Promise.all([
+      supabase.from('asesores').select('id,nombre,telefono,tenant_id,foto_url').order('nombre'),
+      supabase.from('configuracion').select('tenant_id,nombre_negocio,color_primario,logo_url')
+    ]).then(([a, c]) => {
+      setLista((a.data as Asesor[]) || []);
+      const m = new Map<string, { nombre: string; color: string; logo?: string }>();
+      ((c.data as { tenant_id: string; nombre_negocio?: string; color_primario?: string; logo_url?: string }[]) || []).forEach(x => {
+        if (x.tenant_id && !m.has(x.tenant_id)) m.set(x.tenant_id, { nombre: x.nombre_negocio || x.tenant_id, color: x.color_primario || '#6366f1', logo: x.logo_url || undefined });
+      });
+      setMarcas(m);
+    });
   }, [asesor]);
 
   // Catálogo y configuración de la tienda del asesor
@@ -533,31 +559,70 @@ export default function Vender() {
 
   const raiz = { ['--c' as string]: color, ['--t' as string]: sobre };
 
-  // ───────────── Elegir asesor + PIN ─────────────
+  // ───────────── Elegir marca → asesor → PIN ─────────────
   if (!asesor) {
+    const ocultas = ['indisutex', 'default', 'superadmin'];
+    const porMarca = new Map<string, Asesor[]>();
+    lista.forEach(a => {
+      if (!a.tenant_id || ocultas.includes(a.tenant_id.toLowerCase())) return;
+      porMarca.set(a.tenant_id, [...(porMarca.get(a.tenant_id) || []), a]);
+    });
+    const info = (id: string) => marcas.get(id) || { nombre: id.replace(/[_-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase()), color: '#6366f1', logo: undefined };
+    const listaMarcas = [...porMarca.keys()].sort((x, y) => info(x).nombre.localeCompare(info(y).nombre, 'es'));
+    const asesoresMarca = marca ? porMarca.get(marca) || [] : [];
+    const im = marca ? info(marca) : null;
     return (
       <div className="vd" style={{ ...raiz, ['--c' as string]: '#4f46e5', ['--t' as string]: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem', background: 'linear-gradient(160deg,#0f172a,#312e81)' }}>
         <style>{CSS}</style>
-        <div className="vd-card" style={{ width: '100%', maxWidth: 520, padding: '1.8rem 1.4rem', borderRadius: 28 }}>
+        <div className="vd-card" style={{ width: '100%', maxWidth: marca ? 520 : 680, padding: '1.8rem 1.4rem', borderRadius: 28 }}>
           <h1 style={{ fontSize: '1.5rem', margin: '0 0 .2rem', textAlign: 'center', color: '#0f172a' }}>Nuevo pedido</h1>
-          <p style={{ color: '#64748b', textAlign: 'center', margin: '0 0 1.2rem' }}>{elegido ? `Hola ${elegido.nombre.split(' ')[0]}, ingresa tu PIN` : '¿Quién eres?'}</p>
-          {!elegido && (
-            <div style={{ display: 'grid', gap: '.6rem', maxHeight: '60vh', overflow: 'auto' }}>
-              {lista.length === 0 && <p style={{ textAlign: 'center', color: '#94a3b8' }}>Cargando asesores...</p>}
-              {lista.map(a => (
-                <button key={a.id} onClick={() => { setElegido(a); setPin(''); setPinError(''); }} style={{ display: 'flex', alignItems: 'center', gap: '.8rem', background: '#f8fafc', borderRadius: 16, padding: '.7rem .9rem', textAlign: 'left', minHeight: 64 }}>
-                  {a.foto_url ? <img src={a.foto_url} alt="" style={{ width: 44, height: 44, borderRadius: '50%', objectFit: 'cover' }} /> : <span style={{ width: 44, height: 44, borderRadius: '50%', background: '#c7d2fe', color: '#3730a3', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>{a.nombre.charAt(0).toUpperCase()}</span>}
-                  <span><strong>{a.nombre}</strong><br /><span style={{ fontSize: '.8rem', color: '#64748b' }}>{a.tenant_id.replace(/_/g, ' ')}</span></span>
-                </button>
-              ))}
-            </div>
+          <p style={{ color: '#64748b', textAlign: 'center', margin: '0 0 1.2rem' }}>
+            {elegido ? `Hola ${elegido.nombre.split(' ')[0]}, ingresa tu PIN` : marca ? 'Elige tu nombre' : '¿De qué marca eres?'}
+          </p>
+
+          {!marca && (
+            <>
+              {listaMarcas.length === 0 && <p style={{ textAlign: 'center', color: '#94a3b8' }}>Cargando marcas...</p>}
+              <div className="vd-marcas">
+                {listaMarcas.map(id => {
+                  const m = info(id);
+                  return (
+                    <button key={id} className="vd-marca" onClick={() => setMarca(id)} style={{ ['--c' as string]: m.color }}>
+                      <span className="barra" />
+                      <span className="logo"><LogoMarca nombre={m.nombre} logo={m.logo} color={m.color} /></span>
+                      <span className="nom">{m.nombre}</span>
+                      <span className="cant">{porMarca.get(id)!.length} asesora{porMarca.get(id)!.length === 1 ? '' : 's'}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </>
           )}
+
+          {marca && !elegido && im && (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '.8rem', background: '#f8fafc', borderRadius: 18, padding: '.6rem .8rem', marginBottom: '.9rem' }}>
+                <span style={{ width: 52, height: 52, flex: 'none' }}><LogoMarca nombre={im.nombre} logo={im.logo} color={im.color} /></span>
+                <strong style={{ fontSize: '1.15rem', flex: 1, color: '#0f172a' }}>{im.nombre}</strong>
+                <button onClick={() => setMarca(null)} className="vd-nb" style={{ background: '#e2e8f0', color: '#0f172a' }}>Cambiar marca</button>
+              </div>
+              <div style={{ display: 'grid', gap: '.6rem', maxHeight: '55vh', overflow: 'auto' }}>
+                {asesoresMarca.map(a => (
+                  <button key={a.id} onClick={() => { setElegido(a); setPin(''); setPinError(''); }} style={{ display: 'flex', alignItems: 'center', gap: '.8rem', background: '#f8fafc', borderRadius: 16, padding: '.7rem .9rem', textAlign: 'left', minHeight: 68, border: '2px solid transparent' }}>
+                    {a.foto_url ? <img src={a.foto_url} alt="" style={{ width: 48, height: 48, borderRadius: '50%', objectFit: 'cover' }} /> : <span style={{ width: 48, height: 48, borderRadius: '50%', background: im.color, color: textoSobre(im.color), display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>{a.nombre.charAt(0).toUpperCase()}</span>}
+                    <strong style={{ fontSize: '1.05rem' }}>{a.nombre}</strong>
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+
           {elegido && (
             <form onSubmit={entrar} style={{ textAlign: 'center' }}>
               <input className="vd-in" type="password" inputMode="numeric" autoFocus value={pin} onChange={e => setPin(e.target.value)} placeholder="PIN" style={{ textAlign: 'center', letterSpacing: '.4em', fontSize: '1.7rem', minHeight: 66 }} />
               {pinError && <p style={{ color: '#dc2626', fontWeight: 600 }}>{pinError}</p>}
               <button className="vd-go" type="submit" disabled={verificando || !pin.trim()} style={{ marginTop: '1rem' }}>{verificando ? 'Verificando...' : 'Entrar'}</button>
-              <button type="button" onClick={() => setElegido(null)} style={{ background: 'transparent', color: '#64748b', marginTop: '.8rem', fontWeight: 600, minHeight: 44 }}>← Cambiar de asesor</button>
+              <button type="button" onClick={() => setElegido(null)} style={{ background: 'transparent', color: '#64748b', marginTop: '.8rem', fontWeight: 600, minHeight: 44 }}>← Volver</button>
             </form>
           )}
         </div>
