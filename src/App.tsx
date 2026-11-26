@@ -8,6 +8,7 @@ const Admin = lazy(() => import('./pages/Admin'));
 const SuperAdmin = lazy(() => import('./pages/SuperAdmin'));
 const ReporteEjecutivo = lazy(() => import('./pages/ReporteEjecutivo'));
 const Bodega = lazy(() => import('./pages/Bodega'));
+const Vender = lazy(() => import('./pages/Vender'));
 
 const LoadingFallback = () => (
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#f8fafc', fontFamily: 'Inter, sans-serif' }}>
@@ -38,6 +39,9 @@ function App() {
 
             {/* Bodega general: conteo de inventario para todas las tiendas */}
             <Route path="/bodega" element={<Bodega />} />
+
+            {/* Pedidos que cargan los asesores a mano (reemplaza el Excel) */}
+            <Route path="/vender" element={<Vender />} />
 
             {/* Informe Ejecutivo Compartible para Propietarios y Directores */}
             <Route path="/reporte" element={<ReporteEjecutivo />} />

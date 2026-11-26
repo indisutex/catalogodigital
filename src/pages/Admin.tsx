@@ -3815,6 +3815,8 @@ export default function Admin() {
             {origen && (
               origen === 'pos' ? (
                 <span style={{ fontSize: '0.65rem', background: '#dcfce7', color: '#166534', padding: '1px 5px', borderRadius: '4px', fontWeight: 600, display: 'inline-block' }}>POS</span>
+              ) : origen === 'asesor' ? (
+                <span style={{ fontSize: '0.65rem', background: '#ede9fe', color: '#5b21b6', padding: '1px 5px', borderRadius: '4px', fontWeight: 600, display: 'inline-block' }}>Pedido de asesor</span>
               ) : (
                 <span style={{ fontSize: '0.65rem', background: '#e0f2fe', color: '#0369a1', padding: '1px 5px', borderRadius: '4px', fontWeight: 600, display: 'inline-block' }}>Catálogo</span>
               )
@@ -5304,7 +5306,7 @@ export default function Admin() {
 
     // 3. Ventas por origen (POS vs Catálogo) - Solo de ventas exitosas
     const posOrders = completados.filter(p => p.origen === 'pos');
-    const catalogOrders = completados.filter(p => p.origen === 'catalogo' || !p.origen);
+    const catalogOrders = completados.filter(p => p.origen === 'catalogo' || p.origen === 'asesor' || !p.origen);
 
     // 4. Pedidos por ciudad (agrupados) - Solo de ventas exitosas
     const cityCounts: { [city: string]: number } = {};
@@ -16574,6 +16576,7 @@ export default function Admin() {
                           <option value="todos">Todos los Orígenes</option>
                           <option value="catalogo">📱 Catálogo Digital</option>
                           <option value="pos">💻 Ventas POS</option>
+                          <option value="asesor">🧾 Pedidos de Asesor</option>
                         </select>
                       </div>
 

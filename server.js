@@ -19,7 +19,7 @@ app.get('/manifest.json', (req, res) => {
       const refUrl = new URL(req.headers.referer);
       const parts = refUrl.pathname.replace(/^\/+|\/+$/g, '').split('/');
       const first = parts[0];
-      const systemRoutes = ['admin', 'superadmin', 'bodega', 'pago', 'guia', 'menu', 'dist', 'assets', 'api'];
+      const systemRoutes = ['admin', 'superadmin', 'bodega', 'vender', 'pago', 'guia', 'menu', 'dist', 'assets', 'api'];
       if (first && !systemRoutes.includes(first.toLowerCase())) {
         tenant = first;
       }
