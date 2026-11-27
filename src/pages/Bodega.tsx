@@ -202,6 +202,50 @@ const CSS = `
 .bd table { width:100%; border-collapse:collapse; }
 .bd th { text-align:left; padding:.5rem; color:#64748b; font-size:.7rem; text-transform:uppercase; }
 .bd td { padding:.5rem; border-top:1px solid #f1f5f9; }
+.bd-row { flex-wrap:wrap; }
+.bd-row > div:first-child { flex:1 1 100%; min-width:0; }
+.bd-row > div:last-child { margin-left:auto; }
+/* ── Adaptable: celular y tablet ── */
+.bd-top h1 { flex-wrap:wrap; min-width:0; }
+.bd-bar { display:none; }
+.bd-cerrar-lista { display:none; }
+.bd-toast { bottom:24px; }
+.bd-pie { position:sticky; bottom:0; z-index:3; background:#fff; margin:1rem -1.3rem -1.3rem; padding:.8rem 1.3rem 1.3rem; border-top:1px solid #f1f5f9; }
+.bd-pie .bd-go { margin-top:0; }
+.bd-sheet details summary { min-height:48px; display:flex; align-items:center; }
+.bd-who input { min-width:0; width:100%; }
+@media (min-width:760px) {
+  .bd-split { grid-template-columns:minmax(0,1.5fr) minmax(0,1fr); }
+  .bd-side { position:sticky; top:84px; max-height:calc(100vh - 100px); overflow:auto; }
+}
+@media (max-width:759px) {
+  .bd-top { position:relative; flex-wrap:wrap; row-gap:.5rem; padding:.6rem .8rem; }
+  .bd-top h1 { flex:1 1 100%; font-size:1.05rem; gap:.5rem; }
+  .bd-nav { width:100%; display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.35rem; }
+  .bd-nb { padding:.55rem .2rem; font-size:.82rem; text-align:center; min-height:44px; }
+  .bd-wrap { padding:.8rem .8rem 6.5rem; }
+  .bd-h2 { font-size:1.25rem; }
+  .bd-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.6rem; }
+  .bd-kpi { padding:.7rem .8rem; }
+  .bd-kpi b { font-size:1.45rem; }
+  .bd-tiles { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.7rem; }
+  .bd-tile .logo { height:96px; padding:.7rem; }
+  .bd-tile .logo > * { width:72px !important; height:72px !important; }
+  .bd-tile .info { padding:.7rem .8rem .8rem; }
+  .bd-tile .nom { font-size:.98rem; }
+  .bd-tile .st { gap:1rem; margin-top:.4rem; }
+  .bd-tile .st b { font-size:1.15rem; }
+  .bd-tile .cta { margin-top:.6rem; padding:.6rem .8rem; }
+  .bd-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.6rem; }
+  .bd-side { display:none; }
+  .bd-side.open { display:block; position:fixed; inset:0; z-index:40; border-radius:0; overflow:auto; padding-bottom:6rem; }
+  .bd-cerrar-lista { display:block; }
+  .bd-bar { display:flex; position:fixed; left:0; right:0; bottom:0; z-index:30; background:#fff; border-top:1px solid #e2e8f0; padding:.7rem 1rem calc(.7rem + env(safe-area-inset-bottom)); align-items:center; justify-content:space-between; gap:.8rem; }
+  .bd-ov { align-items:stretch; }
+  .bd-sheet { max-width:none !important; height:100dvh; max-height:100dvh; border-radius:0; padding:1rem 1rem 0; }
+  .bd-pie { margin:1rem -1rem 0; padding:.7rem 1rem calc(.8rem + env(safe-area-inset-bottom)); }
+  .bd-toast { bottom:92px; width:calc(100% - 1.6rem); text-align:center; }
+}
 `;
 
 export default function Bodega() {
@@ -225,6 +269,7 @@ export default function Bodega() {
   const [cargando, setCargando] = useState(false);
   const [aviso, setAviso] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null);
   const [abierto, setAbierto] = useState<string | null>(null);
+  const [verLista, setVerLista] = useState(false);
 
   const [contador, setContador] = useState(() => {
     try { return localStorage.getItem('bodega_contador') || ''; } catch { return ''; }
@@ -629,10 +674,11 @@ export default function Bodega() {
               )}
             </div>
 
-            <aside className="bd-card bd-side">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <aside className={`bd-card bd-side ${verLista ? 'open' : ''}`}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '.6rem' }}>
                 <strong style={{ fontSize: '1.15rem' }}>Contado en {infoTienda!.nombre}</strong>
-                <span style={{ color: '#64748b', fontWeight: 600 }}>{conteosTienda.reduce((s, c) => s + c.cantidad, 0)} u.</span>
+                <span style={{ color: '#64748b', fontWeight: 600, marginLeft: 'auto' }}>{conteosTienda.reduce((s, c) => s + c.cantidad, 0)} u.</span>
+                <button className="bd-cerrar-lista bd-nb" onClick={() => setVerLista(false)} style={{ background: '#f1f5f9', color: '#0f172a' }}>Cerrar</button>
               </div>
               {conteosTienda.length === 0 && <p style={{ color: '#94a3b8', marginBottom: 0 }}>Toca un producto para empezar a sumar.</p>}
               {conteosTienda.map(c => (
@@ -759,10 +805,22 @@ export default function Bodega() {
               </div>
             </details>
 
-            <button className="bd-go" onClick={guardar} disabled={guardando} style={{ background: colorTienda, color: textoSobre(colorTienda), opacity: guardando ? 0.6 : 1 }}>
-              {guardando ? 'Guardando...' : `Sumar ${cant} a bodega`}
-            </button>
+            <div className="bd-pie">
+              <button className="bd-go" onClick={guardar} disabled={guardando} style={{ background: colorTienda, color: textoSobre(colorTienda), opacity: guardando ? 0.6 : 1 }}>
+                {guardando ? 'Guardando...' : `Sumar ${cant} a bodega`}
+              </button>
+            </div>
           </div>
+        </div>
+      )}
+
+      {enTienda && (
+        <div className="bd-bar">
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: '.78rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Contado en {infoTienda!.nombre}</div>
+            <strong style={{ fontSize: '1.25rem' }}>{conteosTienda.reduce((t, c) => t + c.cantidad, 0)} unidades</strong>
+          </div>
+          <button className="bd-go" onClick={() => setVerLista(true)} style={{ background: colorTienda, color: textoSobre(colorTienda), width: 'auto', padding: '0 1.4rem', minHeight: 52 }}>Ver lista</button>
         </div>
       )}
 

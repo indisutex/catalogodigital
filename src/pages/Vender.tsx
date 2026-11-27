@@ -99,9 +99,8 @@ const CSS = `
 .vd-nb { background:rgba(255,255,255,.12); color:#fff; border-radius:12px; padding:.6rem 1rem; font-weight:600; font-size:.92rem; min-height:44px; }
 .vd-wrap { max-width:1300px; margin:0 auto; padding:1rem; }
 .vd-main { display:grid; grid-template-columns:minmax(0,1fr); gap:1rem; align-items:start; }
-@media (min-width:1000px) { .vd-main { grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); } .vd-side { position:sticky; top:76px; max-height:calc(100vh - 92px); overflow:auto; } }
-@media (max-width:999px) { .vd-side { display:none; } .vd-side.open { display:block; position:fixed; inset:60px 0 0 0; z-index:40; border-radius:22px 22px 0 0; overflow:auto; box-shadow:0 -10px 40px rgba(15,23,42,.35); } .vd-wrap { padding-bottom:96px; } }
-@media (min-width:1000px) { .vd-bar { display:none; } }
+@media (min-width:760px) { .vd-main { grid-template-columns:minmax(0,1fr) minmax(300px,380px); } .vd-side { position:sticky; top:76px; max-height:calc(100vh - 92px); overflow:auto; } }
+@media (max-width:759px) { .vd-side { display:none; } .vd-side.open { display:block; position:fixed; inset:0; z-index:40; border-radius:0; overflow:auto; padding-bottom:6rem; } .vd-wrap { padding-bottom:96px; } }
 .vd-bar { display:flex; position:fixed; left:0; right:0; bottom:0; z-index:30; background:#fff; border-top:1px solid #e2e8f0; padding:.7rem 1rem; align-items:center; justify-content:space-between; gap:.8rem; }
 .vd-card { background:#fff; border-radius:20px; padding:1.1rem; box-shadow:0 2px 10px rgba(15,23,42,.07); min-width:0; }
 .vd-search { width:100%; padding:1rem 1.2rem; border:none; border-radius:16px; font-size:1.15rem; background:#fff; box-shadow:0 2px 10px rgba(15,23,42,.08); min-height:58px; outline:2px solid transparent; }
@@ -182,6 +181,49 @@ const CSS = `
 .vd-seg { display:flex; gap:.5rem; }
 .vd-seg button { flex:1; min-height:52px; border-radius:14px; background:#f1f5f9; font-weight:600; color:#334155; }
 .vd-seg button.on { background:var(--c); color:var(--t); }
+.vd-linea { padding:.75rem 0; border-top:1px solid #f1f5f9; }
+.vd-linea:first-of-type { border-top:none; }
+.vd-linea .top { display:flex; justify-content:space-between; align-items:flex-start; gap:.5rem; }
+.vd-linea .nm { font-weight:600; font-size:.95rem; line-height:1.25; min-width:0; }
+.vd-linea .bot { display:flex; align-items:center; justify-content:space-between; gap:.5rem; margin-top:.35rem; flex-wrap:wrap; }
+.vd-linea .st { display:flex; align-items:center; }
+/* ── Adaptable: celular y tablet ── */
+.vd-brand { display:flex; align-items:center; gap:.7rem; min-width:0; flex:1 1 auto; }
+.vd-brand .tx { min-width:0; }
+.vd-brand .tx b, .vd-brand .tx small { display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.vd-brand .tx small { font-size:.75rem; opacity:.7; }
+.vd-navtop { display:flex; gap:.4rem; }
+.vd-nb .corto { display:none; }
+.vd-titulo { font-size:1.5rem; }
+.vd-kpis { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.vd-toast { top:auto; bottom:24px; pointer-events:none; }
+.vd-q { width:64px; height:48px; font-size:1.25rem; }
+.vd-tab button[aria-label^="Cerrar"] { min-width:40px; }
+.vd-pie { position:sticky; bottom:0; z-index:3; background:#fff; margin:1rem -1.2rem -1.2rem; padding:.8rem 1.2rem 1.2rem; border-top:1px solid #f1f5f9; }
+.vd-pie .vd-go { margin-top:0; }
+@media (min-width:760px) { .vd-bar { display:none; } .vd-main { grid-template-columns:minmax(0,1fr) clamp(280px,34vw,400px); } .vd-grid { grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); } }
+@media (max-width:759px) {
+  .vd-top { position:relative; flex-wrap:wrap; row-gap:.55rem; padding:.65rem .8rem; }
+  .vd-brand { order:1; }
+  .vd-salir { order:2; }
+  .vd-navtop { order:3; width:100%; display:grid; grid-template-columns:1fr 1fr; }
+  .vd-navtop .vd-nb { padding:.6rem .4rem; font-size:.9rem; text-align:center; }
+  .vd-nb .largo { display:none; }
+  .vd-nb .corto { display:inline; }
+  .vd-wrap { padding:.8rem; }
+  .vd-titulo { font-size:1.2rem; }
+  .vd-kpis { gap:.5rem; }
+  .vd-kpi { padding:.6rem .7rem; }
+  .vd-kpi b { font-size:1.4rem; }
+  .vd-kpi span { font-size:.6rem; }
+  .vd-kpi i { font-size:.74rem; }
+  .vd-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:.6rem; }
+  .vd-ov { align-items:stretch; }
+  .vd-sheet { max-width:none !important; height:100dvh; max-height:100dvh; border-radius:0; padding:1rem 1rem 0; }
+  .vd-pie { margin:1rem -1rem 0; padding:.7rem 1rem calc(.8rem + env(safe-area-inset-bottom)); }
+  .vd-toast { bottom:96px; width:calc(100% - 1.6rem); text-align:center; }
+  .vd-bar { padding-bottom:calc(.7rem + env(safe-area-inset-bottom)); }
+}
 `;
 
 function textoSobre(hex: string): string {
@@ -326,6 +368,10 @@ export default function Vender() {
     })();
     return () => { vigente = false; };
   }, [asesor, vista, listo, recarga]);
+
+  useEffect(() => {
+    if (cobro || verPedido || iaAbierta) setAviso(null);
+  }, [cobro, verPedido, iaAbierta]);
 
   useEffect(() => {
     if (!asesor) return;
@@ -799,7 +845,7 @@ export default function Vender() {
 
   const listaJSX = (
     <div style={{ maxWidth: 860, margin: '0 auto' }}>
-      <h2 style={{ fontSize: '1.5rem', margin: '.2rem 0 .3rem', color: '#0f172a' }}>Pedidos solicitados manuales</h2>
+      <h2 className="vd-titulo" style={{ margin: '.2rem 0 .3rem', color: '#0f172a' }}>Pedidos solicitados manuales</h2>
       <p style={{ color: '#64748b', margin: '0 0 .9rem', fontSize: '.92rem' }}>Pedidos que los asesores cargaron a mano, con su número, estado de pago e historial.</p>
 
       <div className="vd-kpis">
@@ -1010,19 +1056,23 @@ export default function Vender() {
         const pu = precioLinea(l, tier);
         const o = opcionesDe(l.prod).find(x => x.clave === l.talla);
         return (
-          <div key={l.key} className="vd-row">
-            <div style={{ minWidth: 0, flex: 1 }}>
-              <div style={{ fontWeight: 600, fontSize: '.92rem', lineHeight: 1.25 }}>{(l.prod.nombre || '').trim()}</div>
+          <div key={l.key} className="vd-linea">
+            <div className="top">
+              <span className="nm">{(l.prod.nombre || '').trim()}</span>
+              <button onClick={() => quitar(l.key)} aria-label="Quitar" style={{ background: 'transparent', color: '#94a3b8', width: 40, height: 40, fontSize: '1.1rem', flex: 'none', marginTop: -8 }}>✕</button>
+            </div>
+            <div>
               {l.talla && <span className="vd-pill">{o ? o.texto : l.talla}</span>}
               {l.estampado && <span className="vd-pill">{l.estampado}</span>}
               {l.detalle && <span className="vd-pill" style={{ background: '#dcfce7', color: '#166534' }}>{l.detalle}</span>}
-              <div style={{ fontSize: '.82rem', color: '#64748b' }}>{peso(pu)} c/u · <b style={{ color: '#0f172a' }}>{peso(pu * l.cantidad)}</b></div>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', flex: 'none' }}>
-              <button className="vd-step" onClick={() => cambiar(l.key, -1)}>−</button>
-              <span style={{ width: 34, textAlign: 'center', fontWeight: 700 }}>{l.cantidad}</span>
-              <button className="vd-step" onClick={() => cambiar(l.key, 1)}>+</button>
-              <button onClick={() => quitar(l.key)} aria-label="Quitar" style={{ background: 'transparent', color: '#94a3b8', width: 40, height: 40, fontSize: '1.1rem' }}>✕</button>
+            <div className="bot">
+              <span style={{ fontSize: '.85rem', color: '#64748b' }}>{peso(pu)} c/u · <b style={{ color: '#0f172a', fontSize: '1rem' }}>{peso(pu * l.cantidad)}</b></span>
+              <span className="st">
+                <button className="vd-step" onClick={() => cambiar(l.key, -1)}>−</button>
+                <span style={{ width: 34, textAlign: 'center', fontWeight: 700 }}>{l.cantidad}</span>
+                <button className="vd-step" onClick={() => cambiar(l.key, 1)}>+</button>
+              </span>
             </div>
           </div>
         );
@@ -1049,15 +1099,15 @@ export default function Vender() {
     <div className="vd" style={raiz}>
       <style>{CSS}</style>
       <header className="vd-top">
-        <span style={{ display: 'flex', alignItems: 'center', gap: '.7rem', minWidth: 0 }}>
+        <span className="vd-brand">
           {config.logo_url && <span style={{ width: 38, height: 38, borderRadius: 10, background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 3, flex: 'none' }}><img src={config.logo_url} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} /></span>}
-          <span style={{ minWidth: 0 }}><b>{config.nombre_negocio || 'Nuevo pedido'}</b><br /><span style={{ fontSize: '.75rem', opacity: .7 }}>Asesor: {asesor.nombre}</span></span>
+          <span className="tx"><b>{config.nombre_negocio || 'Nuevo pedido'}</b><small>Asesor: {asesor.nombre}</small></span>
         </span>
-        <nav style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        <nav className="vd-navtop">
           <button className="vd-nb" onClick={() => setVista('nuevo')} style={vista === 'nuevo' ? { background: '#fff', color: '#0f172a' } : undefined}>Nuevo pedido</button>
-          <button className="vd-nb" onClick={() => setVista('lista')} style={vista === 'lista' ? { background: '#fff', color: '#0f172a' } : undefined}>Pedidos solicitados manuales</button>
-          <button className="vd-nb" onClick={salir}>Salir</button>
+          <button className="vd-nb" onClick={() => setVista('lista')} style={vista === 'lista' ? { background: '#fff', color: '#0f172a' } : undefined}><span className="largo">Pedidos solicitados manuales</span><span className="corto">Pedidos manuales</span></button>
         </nav>
+        <button className="vd-nb vd-salir" onClick={salir}>Salir</button>
       </header>
 
       <main className="vd-wrap">
@@ -1155,7 +1205,7 @@ export default function Vender() {
                 );
               })}
 
-              <button className="vd-go" onClick={agregar} disabled={suma === 0} style={{ marginTop: '1rem' }}>{suma > 0 ? `Agregar ${suma} al pedido` : 'Agregar al pedido'}</button>
+              <div className="vd-pie"><button className="vd-go" onClick={agregar} disabled={suma === 0}>{suma > 0 ? `Agregar ${suma} al pedido` : 'Agregar al pedido'}</button></div>
             </div>
           </div>
         );
@@ -1205,11 +1255,13 @@ export default function Vender() {
 
             <input className="vd-in" style={{ marginTop: '.8rem' }} placeholder="Nota del pedido (opcional)" value={f.nota} onChange={e => setF({ ...f, nota: e.target.value })} />
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', margin: '1rem 0 .6rem' }}>
-              <span style={{ color: '#64748b', fontWeight: 600 }}>{unidades} unidades · {etiquetaTier}</span>
-              <strong style={{ fontSize: '1.6rem' }}>{peso(total)}</strong>
+            <div className="vd-pie">
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '.5rem' }}>
+                <span style={{ color: '#64748b', fontWeight: 600, fontSize: '.88rem' }}>{unidades} unidades · {etiquetaTier}</span>
+                <strong style={{ fontSize: '1.5rem' }}>{peso(total)}</strong>
+              </div>
+              <button className="vd-go" onClick={guardar} disabled={guardando}>{guardando ? 'Guardando...' : 'Guardar pedido'}</button>
             </div>
-            <button className="vd-go" onClick={guardar} disabled={guardando}>{guardando ? 'Guardando...' : 'Guardar pedido'}</button>
           </div>
         </div>
       )}
@@ -1276,10 +1328,12 @@ export default function Vender() {
                   <span className="vd-lbl">O pega el texto del chat</span>
                   <textarea className="vd-in" rows={4} value={iaTexto} onChange={e => setIaTexto(e.target.value)} placeholder="Ej: Hola, quiero 3 pijamas de hombre única y 4 de dama..." />
                   {iaError && <p style={{ color: '#b91c1c', fontWeight: 600, margin: '.7rem 0 0' }}>{iaError}</p>}
-                  <button className="vd-go" onClick={leerChat} disabled={iaLeyendo || (iaImgs.length === 0 && !iaTexto.trim())} style={{ marginTop: '1rem' }}>
-                    {iaLeyendo ? 'Leyendo el chat... puede tardar unos segundos' : 'Leer con IA'}
-                  </button>
                   <p style={{ color: '#94a3b8', fontSize: '.75rem', margin: '.7rem 0 0' }}>Las capturas se envían a la IA de Anthropic solo para leerlas. No se guardan en tu catálogo.</p>
+                  <div className="vd-pie">
+                    <button className="vd-go" onClick={leerChat} disabled={iaLeyendo || (iaImgs.length === 0 && !iaTexto.trim())}>
+                      {iaLeyendo ? 'Leyendo el chat... puede tardar unos segundos' : 'Leer con IA'}
+                    </button>
+                  </div>
                 </>
               )}
 
@@ -1375,10 +1429,12 @@ export default function Vender() {
                     </div>
                   )}
 
-                  <button className="vd-go" onClick={aplicarIA} disabled={incompletas > 0 || (rev.lineas.length === 0 && !rev.nombre && !rev.celular)} style={{ marginTop: '1rem' }}>
-                    {incompletas > 0 ? `Falta elegir talla o estampado en ${incompletas} producto${incompletas === 1 ? '' : 's'}` : 'Aplicar al pedido'}
-                  </button>
-                  <button onClick={() => setIaRev(null)} style={{ background: 'transparent', color: '#475569', fontWeight: 600, width: '100%', marginTop: '.4rem', minHeight: 46 }}>← Leer otro chat</button>
+                  <div className="vd-pie">
+                    <button className="vd-go" onClick={aplicarIA} disabled={incompletas > 0 || (rev.lineas.length === 0 && !rev.nombre && !rev.celular)}>
+                      {incompletas > 0 ? `Falta elegir talla o estampado en ${incompletas} producto${incompletas === 1 ? '' : 's'}` : 'Aplicar al pedido'}
+                    </button>
+                    <button onClick={() => setIaRev(null)} style={{ background: 'transparent', color: '#475569', fontWeight: 600, width: '100%', marginTop: '.3rem', minHeight: 44 }}>← Leer otro chat</button>
+                  </div>
                 </>
               )}
             </div>
