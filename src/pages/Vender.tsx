@@ -6,7 +6,8 @@ import type { Producto } from '../types';
 import { DEPARTAMENTOS_COLOMBIA } from '../data/colombiaData';
 import { etiqueta, codigo, compartirImagen, copiarTexto, urlWhatsAppGrupo, totalUnidades, enviarAlCliente, descargarImagen, textoCliente, textoRecordatorioPago, textoDespacho, urlWhatsAppCliente } from '../lib/fichaPedido';
 import type { PedidoVista } from '../lib/fichaPedido';
-import { estadoDe, lineaTiempo } from '../lib/trazabilidadPedido';
+import { estadoDe, lineaTiempo, estadoBodega } from '../lib/trazabilidadPedido';
+import { vistaDePedido, imagenDeEstampado, lineasPagoDe } from '../lib/pedidosManuales';
 import type { GrupoPago } from '../lib/trazabilidadPedido';
 import { compressImage } from '../lib/imageCompression';
 import { iaDisponible, leerConIA, prepararImagen, armarRevision, MAX_CAPTURAS } from '../lib/leerPedido';
@@ -76,15 +77,6 @@ function estampadosDe(p: Producto): string[] {
     vistos.add(k);
     return true;
   });
-}
-
-function imagenDeEstampado(p: Producto, est: string): string | null {
-  if (!est) return null;
-  for (const e of p.imagenes_extra || []) {
-    const [url, marca] = String(e).split('|EST:');
-    if (marca && marca.trim().toLowerCase() === est.toLowerCase()) return url;
-  }
-  return null;
 }
 
 const itemDe = (l: Linea) => ({ ...l.prod, talla: l.talla, familia_opcion_key: l.opcion || undefined }) as unknown as Producto;
@@ -726,25 +718,12 @@ export default function Vender() {
   const misNumeros = new Set((asesor?.telefono || '').split(/[,;/]/).map(t => soloDigitos(t).slice(-10)).filter(Boolean));
 
   function vistaDeFila(r: any): PedidoVista {
-    const partes = String(r.direccion || '').split(' | ');
-    const nota = partes.find(x => x.startsWith('Nota: '))?.slice(6);
-    const items = (Array.isArray(r.productos) ? r.productos : []).map((p: any) => ({
-      nombre: String(p.nombre || '').trim(),
-      imagen: imagenDeEstampado(p as Producto, String(p.estampado || '')) || p.imagen_url || null,
-      etiqueta: (p.talla ? etiqueta(String(p.familia_opcion_key || p.talla)) : '') + (p.detalle ? ` (${p.detalle})` : ''),
-      estampado: String(p.estampado || ''),
-      cantidad: Number(p.cantidad) || 0,
-      precio: Number(p.precio) || 0
-    }));
     const tel = soloDigitos(r.linea_whatsapp).slice(-10);
-    return {
-      id: r.id, numero: r.numero_pedido ? Number(r.numero_pedido) : null, estadoPago: estadoDe(r).pago.texto, creado: r.created_at, tienda: config.nombre_negocio || '', color, logo: config.logo_url || null,
+    return vistaDePedido(r, {
+      tienda: config.nombre_negocio || '', color, logo: config.logo_url || null,
       asesor: nombresAs.get(tel) || (tel ? `Asesor ···${tel.slice(-4)}` : 'Asesor'),
-      cliente: r.cliente_nombre, telefono: r.cliente_telefono, ciudad: r.ciudad || '', direccion: partes[0] || '',
-      pago: r.modalidad_pago === 'contra_entrega' ? 'Contra entrega' : 'Transferencia',
-      entrega: r.metodo_recepcion === 'tienda' ? 'Recoge en tienda' : 'Domicilio',
-      tipo: r.tipo_compra || 'Al detal', total: Number(r.total) || 0, nota, estado: r.estado, pagoInfo: lineasPago(), items
-    };
+      pagoInfo: lineasPagoDe(config.metodos_pago)
+    });
   }
 
   async function enviarGrupo(v: PedidoVista) {
@@ -886,6 +865,7 @@ export default function Vender() {
               <div style={{ display: 'flex', gap: '.4rem', flexWrap: 'wrap', margin: '.7rem 0' }}>
                 <span style={{ background: e.pago.bg, color: e.pago.fg, borderRadius: 99, padding: '4px 12px', fontSize: '.78rem', fontWeight: 700 }}>Pago: {e.pago.texto}</span>
                 <span style={{ background: e.envio.bg, color: e.envio.fg, borderRadius: 99, padding: '4px 12px', fontSize: '.78rem', fontWeight: 700 }}>Envío: {e.envio.texto}</span>
+                {(() => { const eb = estadoBodega(r); return <span style={{ background: eb.chip.bg, color: eb.chip.fg, borderRadius: 99, padding: '4px 12px', fontSize: '.78rem', fontWeight: 700 }}>Bodega: {eb.chip.texto}{eb.por ? ` · ${eb.por}` : ''}</span>; })()}
               </div>
 
               <div style={{ display: 'grid', gap: '.5rem' }}>

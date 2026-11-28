@@ -1,6 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { supabase } from '../lib/supabase';
+import { estadoDe, estadoBodega } from '../lib/trazabilidadPedido';
+import type { ClaveBodega, EstadoBodega, EstadoPedido } from '../lib/trazabilidadPedido';
+import { vistaDePedido } from '../lib/pedidosManuales';
+import { compartirImagen as compartirFicha, totalUnidades as unidadesDe, codigo as codigoPedido, peso as pesos } from '../lib/fichaPedido';
+import type { PedidoVista } from '../lib/fichaPedido';
 
 interface Tienda { id: string; nombre: string; color: string; logo?: string }
 
@@ -112,7 +117,8 @@ const ICONOS: Record<string, string> = {
   pin: 'M12 21s-7-6.2-7-11a7 7 0 1114 0c0 4.8-7 11-7 11zM12 12a2.5 2.5 0 100-5 2.5 2.5 0 000 5z',
   usuario: 'M20 21a8 8 0 10-16 0M12 12a4 4 0 100-8 4 4 0 000 8z',
   flecha: 'M5 12h14M13 6l6 6-6 6',
-  check: 'M5 12.5l4.5 4.5L19 7.5'
+  check: 'M5 12.5l4.5 4.5L19 7.5',
+  campana: 'M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0'
 };
 function Ico({ n, s = 20 }: { n: keyof typeof ICONOS; s?: number }) {
   return (
@@ -246,6 +252,49 @@ const CSS = `
   .bd-pie { margin:1rem -1rem 0; padding:.7rem 1rem calc(.8rem + env(safe-area-inset-bottom)); }
   .bd-toast { bottom:92px; width:calc(100% - 1.6rem); text-align:center; }
 }
+.bd-util { display:flex; gap:.4rem; }
+.bd-largo { display:inline; } .bd-corto { display:none; }
+.bd-punto { display:inline-block; width:9px; height:9px; border-radius:50%; background:#f59e0b; margin-left:6px; vertical-align:middle; }
+.bd-nb2 { background:#f1f5f9; color:#0f172a; border-radius:14px; padding:.7rem 1rem; font-weight:600; min-height:52px; font-size:.95rem; }
+.bd-avisar { display:flex; align-items:center; gap:.9rem; margin-bottom:1rem; background:#eef2ff; color:#3730a3; }
+.bd-cats { display:flex; gap:.5rem; overflow-x:auto; }
+.bd-cat { flex:none; background:#fff; border:1px solid #e1e5ef; border-radius:99px; padding:.6rem 1.05rem; font-weight:600; font-size:.92rem; color:#334155; min-height:46px; }
+.bd-cat i { font-style:normal; font-size:.75rem; background:#f1f5f9; border-radius:99px; padding:1px 8px; margin-left:4px; color:#64748b; }
+.bd-cat.on { background:#0f172a; border-color:#0f172a; color:#fff; }
+.bd-cat.on i { background:rgba(255,255,255,.25); color:#fff; }
+.bd-ventas { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:1rem; align-items:start; }
+.bd-venta { background:#fff; border-radius:20px; padding:1rem; box-shadow:0 2px 10px rgba(15,23,42,.07); border-left:6px solid var(--c); min-width:0; }
+.bd-venta.nueva { box-shadow:0 0 0 3px #fbbf24, 0 6px 18px rgba(245,158,11,.25); animation:bdpulso 1.6s ease-in-out 3; }
+@keyframes bdpulso { 50% { box-shadow:0 0 0 6px rgba(251,191,36,.55), 0 6px 18px rgba(245,158,11,.25); } }
+.bd-venta .cab { display:flex; align-items:center; gap:.55rem; flex-wrap:wrap; }
+.bd-venta .num { background:var(--c); color:#fff; border-radius:10px; padding:3px 12px; font-weight:700; }
+.bd-venta .tienda { display:flex; align-items:center; gap:.35rem; font-weight:700; font-size:.92rem; }
+.bd-venta .hora { margin-left:auto; color:#64748b; font-size:.8rem; }
+.bd-venta .nuevo { background:#fbbf24; color:#78350f; border-radius:99px; padding:2px 10px; font-size:.7rem; font-weight:800; }
+.bd-venta .chips { display:flex; gap:.4rem; flex-wrap:wrap; margin:.6rem 0; }
+.bd-venta .chips span { border-radius:99px; padding:4px 12px; font-size:.76rem; font-weight:700; }
+.bd-venta .cli { font-size:.88rem; color:#475569; margin-bottom:.4rem; }
+.bd-venta .prod { display:flex; gap:.7rem; align-items:center; background:#f8fafc; border-radius:14px; padding:.5rem; margin-top:.45rem; }
+.bd-venta .foto { width:54px; height:54px; border-radius:10px; background:#e2e8f0 center/cover no-repeat; flex:none; }
+.bd-venta .nm { font-weight:700; font-size:.9rem; line-height:1.2; }
+.bd-venta .ln { font-size:.88rem; color:#334155; margin-top:2px; }
+.bd-venta .nota { background:#fef3c7; color:#92400e; border-radius:12px; padding:.5rem .7rem; font-size:.85rem; margin-top:.5rem; }
+.bd-venta .pie { display:flex; justify-content:space-between; align-items:baseline; margin:.7rem 0 .4rem; color:#64748b; }
+.bd-venta .pie strong { font-size:1.25rem; color:#0f172a; }
+.bd-venta .acc { display:grid; gap:.5rem; }
+.bd-alerta { position:fixed; top:12px; left:50%; transform:translateX(-50%); z-index:95; width:min(560px,calc(100% - 1.4rem)); background:#0f172a; color:#fff; border-radius:18px; padding:.8rem 1rem; display:flex; align-items:center; gap:.8rem; box-shadow:0 14px 34px rgba(15,23,42,.45); border:2px solid #fbbf24; }
+.bd-alerta b { color:#fbbf24; }
+.bd-alerta div div { font-size:.88rem; opacity:.95; }
+.bd-alerta button { background:#fbbf24; color:#78350f; border-radius:12px; padding:.55rem 1rem; font-weight:700; min-height:44px; }
+.bd-alerta button[aria-label] { background:transparent; color:#fff; padding:.4rem .6rem; }
+@media (max-width:759px) {
+  .bd-top h1 { flex:1 1 0; min-width:0; }
+  .bd-largo { display:none; } .bd-corto { display:inline; }
+  .bd-util { order:2; }
+  .bd-nav { order:3; grid-template-columns:repeat(3,minmax(0,1fr)); }
+  .bd-ventas { grid-template-columns:minmax(0,1fr); }
+  .bd-avisar { flex-wrap:wrap; }
+}
 `;
 
 export default function Bodega() {
@@ -261,7 +310,7 @@ export default function Bodega() {
 
   const [tiendas, setTiendas] = useState<Tienda[]>(TIENDAS_BASE);
   const [tienda, setTienda] = useState<string | null>(null);
-  const [vista, setVista] = useState<'inicio' | 'envios'>('inicio');
+  const [vista, setVista] = useState<'ventas' | 'inicio' | 'envios'>('ventas');
   const [productos, setProductos] = useState<ProductoRef[]>([]);
   const [cargandoProd, setCargandoProd] = useState(false);
   const [conteos, setConteos] = useState<Conteo[]>([]);
@@ -287,6 +336,165 @@ export default function Bodega() {
     setAviso({ tipo, texto });
     window.setTimeout(() => setAviso(null), 3200);
   };
+
+  // ───────── Ventas manuales entrantes: central de operaciones ─────────
+  const [ventas, setVentas] = useState<any[]>([]);
+  const [filtroVenta, setFiltroVenta] = useState<ClaveBodega | 'todas'>('por_alistar');
+  const [busquedaVenta, setBusquedaVenta] = useState('');
+  const [vistas, setVistas] = useState<string[]>(() => { try { return JSON.parse(localStorage.getItem('bodega_ventas_vistas') || '[]'); } catch { return []; } });
+  const [avisosOk, setAvisosOk] = useState(() => { try { return localStorage.getItem('bodega_avisos') === '1'; } catch { return false; } });
+  const [avisoVenta, setAvisoVenta] = useState<string | null>(null);
+  const [ocupadoVenta, setOcupadoVenta] = useState('');
+  const [nombresAs, setNombresAs] = useState<Map<string, string>>(new Map());
+  const vistasRef = useRef(new Set<string>(vistas));
+  const notificadasRef = useRef(new Set<string>());
+  const primeraCargaVentas = useRef(true);
+  const audioRef = useRef<AudioContext | null>(null);
+  const cargarVentasRef = useRef<() => Promise<void>>(async () => {});
+  const tituloOriginal = useRef(typeof document !== 'undefined' ? document.title : '');
+  const vistasSet = useMemo(() => new Set(vistas), [vistas]);
+
+  const guardarVistas = (ids: string[]) => {
+    vistasRef.current = new Set(ids);
+    setVistas(ids);
+    try { localStorage.setItem('bodega_ventas_vistas', JSON.stringify(ids.slice(-400))); } catch { /* sin almacenamiento */ }
+  };
+  const marcarVistas = (ids: string[]) => {
+    const todas = new Set(vistasRef.current);
+    let cambio = false;
+    ids.forEach(id => { if (!todas.has(id)) { todas.add(id); cambio = true; } });
+    if (cambio) guardarVistas([...todas]);
+  };
+
+  function desbloquearAudio() {
+    try {
+      const AC = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AC) return;
+      if (!audioRef.current) audioRef.current = new AC();
+      if (audioRef.current.state === 'suspended') void audioRef.current.resume();
+    } catch { /* sin audio */ }
+  }
+
+  function ding() {
+    try {
+      desbloquearAudio();
+      const ctx = audioRef.current;
+      if (!ctx) return;
+      const t = ctx.currentTime;
+      [[880, 0], [1320, 0.2], [880, 0.45]].forEach(([f, d]) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.type = 'sine';
+        o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t + d);
+        g.gain.exponentialRampToValueAtTime(0.45, t + d + 0.03);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + d + 0.32);
+        o.connect(g);
+        g.connect(ctx.destination);
+        o.start(t + d);
+        o.stop(t + d + 0.4);
+      });
+    } catch { /* sin audio */ }
+  }
+
+  async function activarAvisos() {
+    desbloquearAudio();
+    ding();
+    try {
+      if ('Notification' in window && Notification.permission === 'default') await Notification.requestPermission();
+    } catch { /* sin notificaciones del navegador */ }
+    setAvisosOk(true);
+    try { localStorage.setItem('bodega_avisos', '1'); } catch { /* sin almacenamiento */ }
+  }
+
+  function notificarNuevas(nuevas: any[]) {
+    const unidades = (r: any) => (Array.isArray(r.productos) ? r.productos : []).reduce((t: number, p: any) => t + (Number(p.cantidad) || 0), 0);
+    const nombreTienda = (r: any) => tiendasRef.current.find(x => x.id === r.tenant_id)?.nombre || r.tenant_id;
+    const texto = nuevas.length === 1
+      ? `${nuevas[0].numero_pedido ? `N° ${nuevas[0].numero_pedido}` : `#${String(nuevas[0].id).slice(0, 8).toUpperCase()}`} · ${nombreTienda(nuevas[0])} · ${unidades(nuevas[0])} unidades · ${nuevas[0].cliente_nombre}`
+      : `${nuevas.length} ventas manuales nuevas`;
+    setAvisoVenta(texto);
+    ding();
+    try {
+      if ('Notification' in window && Notification.permission === 'granted') new Notification('Nueva venta manual', { body: texto, tag: 'venta-manual' });
+    } catch { /* sin notificaciones del navegador */ }
+    window.setTimeout(() => setAvisoVenta(cur => (cur === texto ? null : cur)), 14000);
+  }
+
+  const tiendasRef = useRef(tiendas);
+  tiendasRef.current = tiendas;
+
+  async function cargarVentas() {
+    const desde = new Date(Date.now() - 7 * 86400e3).toISOString();
+    const { data, error } = await supabase.from('pedidos').select('*').eq('origen', 'asesor').gte('created_at', desde).order('created_at', { ascending: false }).limit(150);
+    if (error || !Array.isArray(data)) return;
+    const filas = data as any[];
+    if (primeraCargaVentas.current) {
+      primeraCargaVentas.current = false;
+    } else {
+      const nuevas = filas.filter(r => !notificadasRef.current.has(r.id) && !vistasRef.current.has(r.id));
+      if (nuevas.length) notificarNuevas(nuevas);
+    }
+    filas.forEach(r => notificadasRef.current.add(r.id));
+    setVentas(filas);
+  }
+  cargarVentasRef.current = cargarVentas;
+
+  useEffect(() => {
+    if (!autenticado) return;
+    const tick = () => { void cargarVentasRef.current(); };
+    tick();
+    const id = window.setInterval(tick, 15000);
+    const alVolver = () => { if (document.visibilityState === 'visible') tick(); };
+    document.addEventListener('visibilitychange', alVolver);
+    supabase.from('asesores').select('nombre,telefono').then(({ data }) => {
+      const m = new Map<string, string>();
+      ((data as { nombre: string; telefono: string }[]) || []).forEach(a => String(a.telefono || '').split(/[,;/]/).forEach(t => { const d = t.replace(/\D/g, '').slice(-10); if (d) m.set(d, a.nombre); }));
+      setNombresAs(m);
+    });
+    return () => { window.clearInterval(id); document.removeEventListener('visibilitychange', alVolver); };
+  }, [autenticado]);
+
+  const nuevasCount = ventas.filter(r => !vistasSet.has(r.id) && estadoDe(r).grupo !== 'cancelado').length;
+
+  useEffect(() => {
+    document.title = nuevasCount > 0 ? `(${nuevasCount}) Nueva venta · Operaciones` : 'Operaciones · Bodega';
+  }, [nuevasCount]);
+  useEffect(() => () => { document.title = tituloOriginal.current; }, []);
+
+  // Si la persona está mirando las ventas unos segundos, se dan por vistas
+  useEffect(() => {
+    if (vista !== 'ventas' || nuevasCount === 0) return;
+    const t = window.setTimeout(() => { if (document.visibilityState === 'visible') marcarVistas(ventas.map(r => r.id)); }, 8000);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vista, nuevasCount, ventas]);
+
+  async function cambiarBodega(r: any, clave: ClaveBodega) {
+    const textos: Record<ClaveBodega, string> = {
+      alistando: 'Bodega empezó a alistar el pedido',
+      listo: 'Bodega marcó el pedido listo para despachar',
+      por_alistar: 'Bodega devolvió el pedido a por alistar'
+    };
+    setOcupadoVenta(r.id);
+    const { data: actual } = await supabase.from('pedidos').select('historial').eq('id', r.id).maybeSingle();
+    const base = Array.isArray((actual as { historial?: unknown[] } | null)?.historial) ? (actual as { historial: unknown[] }).historial : (Array.isArray(r.historial) ? r.historial : []);
+    const historial = [...base, { estado: `bodega_${clave}`, usuario: `Bodega · ${contador.trim() || (esAdmin ? 'Administrador' : 'equipo')}`, fecha: new Date().toISOString(), accion: textos[clave] }];
+    const { error } = await supabase.from('pedidos').update({ historial }).eq('id', r.id);
+    setOcupadoVenta('');
+    if (error) return mostrar('error', 'No se pudo actualizar el pedido');
+    setVentas(prev => prev.map(x => (x.id === r.id ? { ...x, historial } : x)));
+    marcarVistas([r.id]);
+    mostrar('ok', clave === 'alistando' ? 'Pedido en alistamiento' : clave === 'listo' ? 'Pedido listo para despachar' : 'Pedido devuelto a por alistar');
+  }
+
+  async function compartirVenta(v: PedidoVista) {
+    try {
+      const r = await compartirFicha(v);
+      if (r === 'copiado') mostrar('ok', 'Imagen copiada. Pégala en el grupo con Ctrl + V.');
+      else if (r === 'descargado') mostrar('ok', 'Imagen descargada. Adjúntala en el grupo.');
+    } catch { mostrar('error', 'No se pudo crear la imagen'); }
+  }
 
   const nombreTienda = (id: string) => tiendas.find(t => t.id === id)?.nombre || id;
   const infoTienda = tiendas.find(t => t.id === tienda) || null;
@@ -390,7 +598,7 @@ export default function Bodega() {
     setAutenticado(false);
     setEsAdmin(false);
     setTienda(null);
-    setVista('inicio');
+    setVista('ventas');
     setPin('');
   }
 
@@ -415,6 +623,75 @@ export default function Bodega() {
   const totalUnidades = conteos.reduce((s, c) => s + c.cantidad, 0);
   const hayPendiente = cierres.some(c => c.estado === 'pendiente');
   const pendientes = cierres.filter(c => c.estado === 'pendiente').length;
+
+  const conBodega = ventas.filter(r => estadoDe(r).grupo !== 'cancelado').map(r => ({ r, e: estadoDe(r), b: estadoBodega(r) }));
+  const cuentaB = (k: ClaveBodega) => conBodega.filter(x => x.b.clave === k).length;
+  const sinPagoPendientes = conBodega.filter(x => x.b.clave !== 'listo' && (x.e.grupo === 'esperando' || x.e.grupo === 'validar')).length;
+  const qVenta = busquedaVenta.trim().toLowerCase();
+  const ventasVisibles = conBodega
+    .filter(x => (filtroVenta === 'todas' || x.b.clave === filtroVenta) && (!qVenta || [String(x.r.numero_pedido || ''), String(x.r.id).slice(0, 8), x.r.cliente_nombre, ...(Array.isArray(x.r.productos) ? x.r.productos.map((p: any) => p.nombre) : [])].some(t => String(t || '').toLowerCase().includes(qVenta))))
+    .sort((a, b) => (filtroVenta === 'por_alistar' || filtroVenta === 'alistando' ? 1 : -1) * (new Date(a.r.created_at).getTime() - new Date(b.r.created_at).getTime()));
+  const hace = (iso: string) => {
+    const m = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 60000));
+    if (m < 1) return 'ahora';
+    if (m < 60) return `hace ${m} min`;
+    const h = Math.floor(m / 60);
+    return h < 24 ? `hace ${h} h` : new Date(iso).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+  };
+
+  const tarjetaVenta = ({ r, e, b }: { r: any; e: EstadoPedido; b: EstadoBodega }) => {
+    const t = tiendas.find(x => x.id === r.tenant_id);
+    const tel = String(r.linea_whatsapp || '').replace(/\D/g, '').slice(-10);
+    const v = vistaDePedido(r, { tienda: t?.nombre || r.tenant_id, color: t?.color || '#6366f1', logo: t?.logo || null, asesor: nombresAs.get(tel) || (tel ? `Asesor ···${tel.slice(-4)}` : 'Asesor'), pagoInfo: [] });
+    const nueva = !vistasSet.has(r.id);
+    const grupos = new Map<string, { nombre: string; estampado: string; imagen: string | null; lineas: string[] }>();
+    v.items.forEach(i => {
+      const k = i.nombre + '|' + i.estampado;
+      const g = grupos.get(k) || { nombre: i.nombre, estampado: i.estampado, imagen: i.imagen, lineas: [] };
+      if (!g.imagen && i.imagen) g.imagen = i.imagen;
+      g.lineas.push(`${i.etiqueta || 'Cantidad'} = ${i.cantidad}`);
+      grupos.set(k, g);
+    });
+    const ocupada = ocupadoVenta === r.id;
+    return (
+      <div key={r.id} className={`bd-venta ${nueva ? 'nueva' : ''}`} style={{ ['--c' as string]: t?.color || '#6366f1' }}>
+        <div className="cab">
+          <span className="num">{codigoPedido(v)}</span>
+          <span className="tienda">{t && <Logo t={t} size={22} />}{t?.nombre || r.tenant_id}</span>
+          <span className="hora">{hace(r.created_at)}</span>
+          {nueva && <span className="nuevo">NUEVA</span>}
+        </div>
+        <div className="chips">
+          <span style={{ background: b.chip.bg, color: b.chip.fg }}>{b.chip.texto}{b.por ? ` · ${b.por}` : ''}</span>
+          <span style={{ background: e.pago.bg, color: e.pago.fg }}>{e.pago.texto}</span>
+          <span style={{ background: '#f1f5f9', color: '#334155' }}>{v.entrega}</span>
+        </div>
+        <div className="cli"><b>{v.cliente}</b> · {v.ciudad || 'Sin ciudad'} · Asesora: {v.asesor}</div>
+        {[...grupos.values()].map((g, i) => (
+          <div key={i} className="prod">
+            <span className="foto" style={g.imagen ? { backgroundImage: `url("${g.imagen}")` } : undefined} />
+            <div style={{ minWidth: 0 }}>
+              <div className="nm">{g.nombre}{g.estampado ? ` · ${g.estampado}` : ''}</div>
+              <div className="ln">{g.lineas.join('  ·  ')}</div>
+            </div>
+          </div>
+        ))}
+        {v.nota && <div className="nota">Nota: {v.nota}</div>}
+        <div className="pie"><span>{unidadesDe(v)} unidades</span><strong>{pesos(v.total)}</strong></div>
+        <div className="acc">
+          {b.clave === 'por_alistar' && <button className="bd-go" disabled={ocupada} style={{ background: '#4f46e5' }} onClick={() => cambiarBodega(r, 'alistando')}>Empezar a alistar</button>}
+          {b.clave === 'alistando' && (
+            <>
+              <button className="bd-go" disabled={ocupada} style={{ background: '#16a34a' }} onClick={() => cambiarBodega(r, 'listo')}>Marcar listo</button>
+              <button className="bd-nb2" disabled={ocupada} onClick={() => cambiarBodega(r, 'por_alistar')}>Volver a por alistar</button>
+            </>
+          )}
+          {b.clave === 'listo' && !b.automatico && <button className="bd-nb2" disabled={ocupada} onClick={() => cambiarBodega(r, 'alistando')}>Reabrir</button>}
+          <button className="bd-nb2" onClick={() => compartirVenta(v)}>Compartir imagen</button>
+        </div>
+      </div>
+    );
+  };
 
   const categorias = useMemo(() => {
     const m = new Map<string, number>();
@@ -553,7 +830,7 @@ export default function Bodega() {
         <style>{CSS}</style>
         <form onSubmit={entrar} className="bd-card" style={{ width: '100%', maxWidth: 380, textAlign: 'center', padding: '2.2rem 1.6rem', borderRadius: 28 }}>
           <div style={{ display: 'flex', justifyContent: 'center', color: '#4f46e5' }}><Ico n="caja" s={48} /></div>
-          <h1 style={{ fontSize: '1.6rem', margin: '.3rem 0 .2rem' }}>Bodega</h1>
+          <h1 style={{ fontSize: '1.5rem', margin: '.3rem 0 .2rem' }}>Central de operaciones</h1>
           <p style={{ color: '#64748b', margin: '0 0 1.2rem' }}>Ingresa tu PIN</p>
           <input className="bd-in" type="password" inputMode="numeric" autoFocus value={pin} onChange={e => setPin(e.target.value)} placeholder="••••" style={{ textAlign: 'center', letterSpacing: '.4em', fontSize: '1.8rem', minHeight: 68 }} />
           {pinError && <p style={{ color: '#dc2626', fontWeight: 600, margin: '.7rem 0 0' }}>{pinError}</p>}
@@ -579,18 +856,57 @@ export default function Bodega() {
               <span className="bd-logo-s"><Logo t={infoTienda!} size={34} /></span>
               <span>{infoTienda!.nombre}</span>
             </>
-          ) : <span style={{ display: 'flex', alignItems: 'center', gap: '.6rem' }}><Ico n="caja" s={24} /> Bodega</span>}
+          ) : <span style={{ display: 'flex', alignItems: 'center', gap: '.6rem' }}><Ico n="caja" s={24} /> <span className="bd-largo">Central de operaciones</span><span className="bd-corto">Operaciones</span></span>}
           {esAdmin && <span className="bd-badge">Admin</span>}
         </h1>
         <nav className="bd-nav">
+          <button className={`bd-nb ${vista === 'ventas' ? 'on' : ''}`} onClick={() => { setVista('ventas'); setTienda(null); }}>Ventas{cuentaB('por_alistar') ? ` · ${cuentaB('por_alistar')}` : ''}{nuevasCount > 0 && <i className="bd-punto" />}</button>
           <button className={`bd-nb ${vista === 'inicio' ? 'on' : ''}`} onClick={() => { setVista('inicio'); setTienda(null); }}>Conteo</button>
           <button className={`bd-nb ${vista === 'envios' ? 'on' : ''}`} onClick={() => setVista('envios')}>Envíos{pendientes ? ` · ${pendientes}` : ''}</button>
+        </nav>
+        <div className="bd-util">
           <button className="bd-nb" onClick={exportar} disabled={conteos.length === 0}>Excel</button>
           <button className="bd-nb" onClick={salir}>Salir</button>
-        </nav>
+        </div>
       </header>
 
       <main className="bd-wrap">
+        {/* ───────────── VENTAS MANUALES ENTRANTES ───────────── */}
+        {vista === 'ventas' && (
+          <>
+            <h2 className="bd-h2">Ventas manuales entrantes</h2>
+            <p style={{ color: '#64748b', margin: '-.5rem 0 1rem', fontSize: '.92rem' }}>Los pedidos que cargan las asesoras aparecen aquí solos, para alistarlos y despacharlos.</p>
+
+            {!avisosOk && (
+              <div className="bd-card bd-avisar">
+                <Ico n="campana" s={26} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <b>Activa los avisos de ventas nuevas</b>
+                  <div style={{ fontSize: '.85rem', color: '#64748b' }}>Suena un aviso y sale un mensaje cuando llega una venta. Funciona mientras esta pantalla esté abierta.</div>
+                </div>
+                <button className="bd-go" style={{ background: '#4f46e5', width: 'auto', padding: '0 1.2rem', minHeight: 48 }} onClick={activarAvisos}>Activar</button>
+              </div>
+            )}
+
+            <div className="bd-kpis">
+              <div className="bd-kpi" style={{ borderTop: '4px solid #f59e0b' }}><b>{cuentaB('por_alistar')}</b><span>Por alistar</span></div>
+              <div className="bd-kpi" style={{ borderTop: '4px solid #6366f1' }}><b>{cuentaB('alistando')}</b><span>Alistando</span></div>
+              <div className="bd-kpi" style={{ borderTop: '4px solid #16a34a' }}><b>{cuentaB('listo')}</b><span>Listos / despachados</span></div>
+              <div className="bd-kpi" style={{ borderTop: '4px solid #dc2626' }}><b>{sinPagoPendientes}</b><span>Sin pago confirmado</span></div>
+            </div>
+
+            <input className="bd-in" placeholder="Buscar por número, cliente o producto" value={busquedaVenta} onChange={e => setBusquedaVenta(e.target.value)} style={{ marginBottom: '.7rem' }} />
+            <div className="bd-cats" style={{ marginBottom: '.9rem' }}>
+              {([['por_alistar', 'Por alistar'], ['alistando', 'Alistando'], ['listo', 'Listos'], ['todas', 'Todas']] as [ClaveBodega | 'todas', string][]).map(([k, t]) => (
+                <button key={k} className={`bd-cat ${filtroVenta === k ? 'on' : ''}`} onClick={() => setFiltroVenta(k)}>{t} <i>{k === 'todas' ? conBodega.length : cuentaB(k as ClaveBodega)}</i></button>
+              ))}
+            </div>
+
+            {ventasVisibles.length === 0 && <div className="bd-card" style={{ textAlign: 'center', color: '#94a3b8' }}>{ventas.length === 0 ? 'Todavía no hay ventas manuales en los últimos 7 días.' : 'No hay ventas con este filtro.'}</div>}
+            <div className="bd-ventas">{ventasVisibles.map(x => tarjetaVenta(x))}</div>
+          </>
+        )}
+
         {/* ───────────── INICIO: elegir tienda ───────────── */}
         {vista === 'inicio' && !tienda && (
           <>
@@ -821,6 +1137,15 @@ export default function Bodega() {
             <strong style={{ fontSize: '1.25rem' }}>{conteosTienda.reduce((t, c) => t + c.cantidad, 0)} unidades</strong>
           </div>
           <button className="bd-go" onClick={() => setVerLista(true)} style={{ background: colorTienda, color: textoSobre(colorTienda), width: 'auto', padding: '0 1.4rem', minHeight: 52 }}>Ver lista</button>
+        </div>
+      )}
+
+      {avisoVenta && (
+        <div className="bd-alerta" role="alert">
+          <Ico n="campana" s={22} />
+          <div style={{ flex: 1, minWidth: 0 }}><b>Nueva venta manual</b><div>{avisoVenta}</div></div>
+          <button onClick={() => { setVista('ventas'); setTienda(null); setFiltroVenta('por_alistar'); setAvisoVenta(null); }}>Ver</button>
+          <button aria-label="Cerrar aviso" onClick={() => setAvisoVenta(null)} style={{ opacity: .8 }}>✕</button>
         </div>
       )}
 

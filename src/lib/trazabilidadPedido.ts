@@ -78,3 +78,35 @@ export function lineaTiempo(r: any): Evento[] {
     return 0;
   });
 }
+
+// ───────────── Estado de alistamiento en bodega ─────────────
+// Se guarda en el historial del pedido (estados "bodega_alistando", "bodega_listo", "bodega_por_alistar").
+export type ClaveBodega = 'por_alistar' | 'alistando' | 'listo';
+
+export interface EstadoBodega { clave: ClaveBodega; chip: Chip; por: string; fecha: string | null; automatico: boolean }
+
+const CHIPS_BODEGA: Record<ClaveBodega, Chip> = {
+  por_alistar: { texto: 'Por alistar', bg: '#fef3c7', fg: '#92400e' },
+  alistando: { texto: 'Alistando', bg: '#e0e7ff', fg: '#3730a3' },
+  listo: { texto: 'Listo para despachar', bg: '#dcfce7', fg: '#166534' }
+};
+
+const DESPACHADOS = ['despachado', 'contra_despachado', 'entregado_pagado', 'entregado', 'completado'];
+
+export function estadoBodega(r: any): EstadoBodega {
+  const hist = Array.isArray(r?.historial) ? r.historial : [];
+  for (let i = hist.length - 1; i >= 0; i--) {
+    const e = String(hist[i]?.estado || '');
+    if (e.startsWith('bodega_')) {
+      const clave = e.slice(7) as ClaveBodega;
+      if (CHIPS_BODEGA[clave]) {
+        return { clave, chip: CHIPS_BODEGA[clave], por: String(hist[i].usuario || '').replace(/^Bodega · /, ''), fecha: hist[i].fecha || null, automatico: false };
+      }
+    }
+  }
+  // Si el admin ya lo despachó o entregó, no debe seguir apareciendo como pendiente de alistar
+  if (DESPACHADOS.includes(String(r?.estado || '').toLowerCase())) {
+    return { clave: 'listo', chip: { texto: 'Despachado', bg: '#e0e7ff', fg: '#3730a3' }, por: '', fecha: null, automatico: true };
+  }
+  return { clave: 'por_alistar', chip: CHIPS_BODEGA.por_alistar, por: '', fecha: null, automatico: false };
+}

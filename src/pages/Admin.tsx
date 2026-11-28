@@ -1702,11 +1702,15 @@ export default function Admin() {
       if (local) currentLogs = JSON.parse(local);
     } catch {}
 
-    // Si este navegador no tiene el historial (p. ej. el pedido lo cargó un asesor desde otro equipo), parte del que ya está guardado en la base
-    if (currentLogs.length === 0) {
-      const guardado = pedidos.find(p => p.id === pedId) || (selectedPedido && selectedPedido.id === pedId ? selectedPedido : null);
-      if (guardado && Array.isArray((guardado as any).historial)) currentLogs = (guardado as any).historial;
-    }
+    // Une el historial de este navegador con el que está guardado en la base (lo que registran las asesoras o bodega desde otros equipos),
+    // para no perder esos pasos al guardar un cambio de estado.
+    try {
+      const { data: enBase } = await supabase.from('pedidos').select('historial').eq('id', pedId).maybeSingle();
+      const delaBase = Array.isArray((enBase as any)?.historial) ? (enBase as any).historial as EstadoAuditLog[] : [];
+      const mapa = new Map<string, EstadoAuditLog>();
+      [...delaBase, ...currentLogs].forEach(l => { if (l) mapa.set(`${l.fecha}|${l.estado}|${l.accion}`, l); });
+      currentLogs = [...mapa.values()].sort((x, y) => new Date(x.fecha).getTime() - new Date(y.fecha).getTime());
+    } catch { /* si no se puede leer la base, se usa el historial de este navegador */ }
 
     const updatedLogs = [...currentLogs, newLog];
     localStorage.setItem(`indisutex_audit_${pedId}`, JSON.stringify(updatedLogs));
